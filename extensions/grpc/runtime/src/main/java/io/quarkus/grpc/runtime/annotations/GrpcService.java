@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * Qualifier used to inject a GRPC Service (to consume it).
+ * Qualifier used to inject a gRPC Service (to consume it).
  */
 @Qualifier
 @Retention(RetentionPolicy.RUNTIME)

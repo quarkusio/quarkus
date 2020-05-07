@@ -8,10 +8,8 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
-import io.grpc.BindableService;
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
 import io.grpc.netty.NettyChannelProvider;
@@ -30,8 +28,8 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
+import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
-import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -51,10 +49,9 @@ public class GrpcServerProcessor {
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         Collection<ClassInfo> bindableServices = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(DotName.createSimple(BindableService.class.getName()));
+                .getAllKnownImplementors(GrpcDotNames.BINDABLE_SERVICE);
         for (ClassInfo service : bindableServices) {
             if (!Modifier.isAbstract(service.flags()) && service.classAnnotation(DotNames.SINGLETON) != null) {
-
                 bindables.produce(new BindableServiceBuildItem(service.name()));
             }
         }
@@ -82,7 +79,7 @@ public class GrpcServerProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(GrpcServerRecorder recorder, GrpcServerConfiguration config,
+    ServiceStartBuildItem build(GrpcServerRecorder recorder, GrpcConfiguration config,
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             VertxBuildItem vertx) {
         if (!bindables.isEmpty()) {

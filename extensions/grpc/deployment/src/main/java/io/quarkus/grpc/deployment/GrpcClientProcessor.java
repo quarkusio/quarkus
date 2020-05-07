@@ -30,6 +30,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.grpc.runtime.annotations.GrpcService;
+import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 
 public class GrpcClientProcessor {
 
@@ -43,6 +44,7 @@ public class GrpcClientProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcService.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcClientConfigProvider.class));
     }
 
     @BuildStep
@@ -105,16 +107,20 @@ public class GrpcClientProcessor {
     public void generateGrpcServicesProducers(List<GrpcServiceBuildItem> services,
             BeanRegistrationPhaseBuildItem phase,
             BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
+
         for (GrpcServiceBuildItem svc : services) {
             // We generate 3 producers:
             // 1. the channel
             // 2. the blocking stub - if blocking stub is set
             // 3. the mutiny stub - if mutiny stub is set
 
+            // IMPORTANT: the channel producer relies on the io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider
+            // bean that provides the GrpcClientConfiguration for the specific service.
+
             BeanConfigurator<Object> channelProducer = phase.getContext()
-                    .configure(DotName.createSimple(Channel.class.getName()))
+                    .configure(GrpcDotNames.CHANNEL)
                     .types(Channel.class)
-                    .addQualifier().annotation(GrpcService.class).addValue("value", svc.getServiceName()).done()
+                    .addQualifier().annotation(GrpcDotNames.GRPC_SERVICE).addValue("value", svc.getServiceName()).done()
                     .scope(Singleton.class)
                     .unremovable()
                     .creator(mc -> generateChannelProducer(mc, svc));
@@ -125,7 +131,7 @@ public class GrpcClientProcessor {
                 BeanConfigurator<Object> blockingStubProducer = phase.getContext()
                         .configure(svc.blockingStubClass.name())
                         .types(svc.blockingStubClass)
-                        .addQualifier().annotation(GrpcService.class).addValue("value", svc.getServiceName()).done()
+                        .addQualifier().annotation(GrpcDotNames.GRPC_SERVICE).addValue("value", svc.getServiceName()).done()
                         .scope(Singleton.class)
                         .creator(mc -> generateStubProducer(mc, svc, false));
                 blockingStubProducer.done();
@@ -136,7 +142,7 @@ public class GrpcClientProcessor {
                 BeanConfigurator<Object> blockingStubProducer = phase.getContext()
                         .configure(svc.mutinyStubClass.name())
                         .types(svc.mutinyStubClass)
-                        .addQualifier().annotation(GrpcService.class).addValue("value", svc.getServiceName()).done()
+                        .addQualifier().annotation(GrpcDotNames.GRPC_SERVICE).addValue("value", svc.getServiceName()).done()
                         .scope(Singleton.class)
                         .creator(mc -> generateStubProducer(mc, svc, true));
                 blockingStubProducer.done();
@@ -146,8 +152,8 @@ public class GrpcClientProcessor {
     }
 
     private void generateChannelProducer(MethodCreator mc, GrpcServiceBuildItem svc) {
-        ResultHandle prefix = mc.load(svc.getConfigPrefix());
-        ResultHandle result = mc.invokeStaticMethod(CREATE_CHANNEL_METHOD, prefix);
+        ResultHandle name = mc.load(svc.getServiceName());
+        ResultHandle result = mc.invokeStaticMethod(CREATE_CHANNEL_METHOD, name);
         mc.returnValue(result);
         mc.close();
     }

@@ -19,7 +19,7 @@ public final class GrpcServiceBuildItem extends MultiBuildItem {
     public void setBlockingStubClass(ClassType blockingStubClass) {
         if (this.blockingStubClass != null
                 && !this.blockingStubClass.name().equals(blockingStubClass.name())) {
-            throw new DeploymentException("Invalid GRPC Service - multiple stubs founds for " + name);
+            throw new DeploymentException("Invalid gRPC Service - multiple stubs founds for " + name);
         }
         this.blockingStubClass = blockingStubClass;
     }
@@ -27,7 +27,7 @@ public final class GrpcServiceBuildItem extends MultiBuildItem {
     public void setMutinyStubClass(ClassType mutinyStubClass) {
         if (this.mutinyStubClass != null
                 && !this.mutinyStubClass.name().equals(mutinyStubClass.name())) {
-            throw new DeploymentException("Invalid GRPC Service - multiple stubs founds for " + name);
+            throw new DeploymentException("Invalid gRPC Service - multiple stubs founds for " + name);
         }
 
         this.mutinyStubClass = mutinyStubClass;
@@ -35,10 +35,6 @@ public final class GrpcServiceBuildItem extends MultiBuildItem {
 
     public String getServiceName() {
         return name;
-    }
-
-    public String getConfigPrefix() {
-        return name + ".";
     }
 
     public String getBlockingGrpcServiceName() {

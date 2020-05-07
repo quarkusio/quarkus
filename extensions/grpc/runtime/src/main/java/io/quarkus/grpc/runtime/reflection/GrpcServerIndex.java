@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.protobuf.Descriptors;
 
@@ -156,7 +157,13 @@ public class GrpcServerIndex {
         String extensionName = extension.getContainingType().getFullName();
         int extensionNumber = extension.getNumber();
 
-        descriptorsByExtensionAndNumber.computeIfAbsent(extensionName, s -> new HashMap<>());
+        descriptorsByExtensionAndNumber.computeIfAbsent(extensionName,
+                new Function<String, Map<Integer, FileDescriptor>>() {
+                    @Override
+                    public Map<Integer, FileDescriptor> apply(String s) {
+                        return new HashMap<>();
+                    }
+                });
 
         if (descriptorsByExtensionAndNumber.get(extensionName).containsKey(extensionNumber)) {
             throw new IllegalStateException(

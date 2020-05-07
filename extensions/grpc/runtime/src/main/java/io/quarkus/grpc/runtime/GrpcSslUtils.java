@@ -12,7 +12,7 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
-import io.quarkus.grpc.runtime.config.SslConfig;
+import io.quarkus.grpc.runtime.config.SslServerConfig;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
@@ -20,31 +20,34 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 
+@SuppressWarnings("OptionalIsPresent")
 public class GrpcSslUtils {
 
     private static final Logger LOGGER = Logger.getLogger(GrpcSslUtils.class.getName());
 
     /**
-     * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
+     * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled.
+     * 
+     * @return whether plain text is used.
      */
-    static void applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)
+    static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)
             throws IOException {
 
         // Disable plain-text is the ssl configuration is set.
         if ((config.ssl.certificate.isPresent() || config.ssl.keyStore.isPresent())
                 && config.plainText) {
-            LOGGER.debug("Disabling gRPC plain-text as the SSL certificate is configured");
+            LOGGER.info("Disabling gRPC plain-text as the SSL certificate is configured");
             config.plainText = false;
         }
 
         if (config.plainText) {
             options.setSsl(false);
-            return;
+            return true;
         } else {
             options.setSsl(true);
         }
 
-        SslConfig sslConfig = config.ssl;
+        SslServerConfig sslConfig = config.ssl;
         final Optional<Path> certFile = sslConfig.certificate;
         final Optional<Path> keyFile = sslConfig.key;
         final Optional<Path> keyStoreFile = sslConfig.keyStore;
@@ -62,9 +65,12 @@ public class GrpcSslUtils {
         } else if (keyStoreFile.isPresent()) {
             final Path keyStorePath = keyStoreFile.get();
             final Optional<String> keyStoreFileType = sslConfig.keyStoreType;
-            final String type;
-            type = keyStoreFileType.map(String::toLowerCase)
-                    .orElseGet(() -> findKeystoreFileType(keyStorePath));
+            String type;
+            if (keyStoreFileType.isPresent()) {
+                type = keyStoreFileType.get().toLowerCase();
+            } else {
+                type = findKeystoreFileType(keyStorePath);
+            }
 
             byte[] data = getFileContent(keyStorePath);
             switch (type) {
@@ -93,11 +99,14 @@ public class GrpcSslUtils {
             if (!trustStorePassword.isPresent()) {
                 throw new IllegalArgumentException("No trust store password provided");
             }
-            final String type;
+            String type;
             final Optional<String> trustStoreFileType = sslConfig.trustStoreType;
             final Path trustStoreFilePath = trustStoreFile.get();
-            type = trustStoreFileType.map(String::toLowerCase)
-                    .orElseGet(() -> findKeystoreFileType(trustStoreFilePath));
+            if (trustStoreFileType.isPresent()) {
+                type = trustStoreFileType.get();
+            } else {
+                type = findKeystoreFileType(trustStoreFilePath);
+            }
             createTrustStoreOptions(trustStoreFilePath, trustStorePassword.get(), type, options);
         }
 
@@ -111,6 +120,7 @@ public class GrpcSslUtils {
             }
         }
         options.setClientAuth(sslConfig.clientAuth);
+        return false;
     }
 
     private static byte[] getFileContent(Path path) throws IOException {

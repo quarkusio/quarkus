@@ -1,5 +1,6 @@
 package io.quarkus.grpc.runtime;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.grpc.Status;
@@ -19,11 +20,19 @@ public class ServerCalls {
         try {
             Uni<O> uni = implementation.apply(request);
             uni.subscribe().with(
-                    item -> {
-                        response.onNext(item);
-                        response.onCompleted();
+                    new Consumer<O>() {
+                        @Override
+                        public void accept(O item) {
+                            response.onNext(item);
+                            response.onCompleted();
+                        }
                     },
-                    failure -> response.onError(toStatusFailure(failure)));
+                    new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable failure) {
+                            response.onError(toStatusFailure(failure));
+                        }
+                    });
         } catch (Throwable throwable) {
             response.onError(toStatusFailure(throwable));
         }
@@ -33,9 +42,24 @@ public class ServerCalls {
         try {
             implementation.apply(request)
                     .subscribe().with(
-                            response::onNext,
-                            response::onError,
-                            response::onCompleted);
+                            new Consumer<O>() {
+                                @Override
+                                public void accept(O v) {
+                                    response.onNext(v);
+                                }
+                            },
+                            new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) {
+                                    response.onError(throwable);
+                                }
+                            },
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    response.onCompleted();
+                                }
+                            });
         } catch (Throwable throwable) {
             response.onError(toStatusFailure(throwable));
         }
@@ -48,11 +72,19 @@ public class ServerCalls {
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
             Uni<O> uni = implementation.apply(input);
             uni.subscribe().with(
-                    item -> {
-                        response.onNext(item);
-                        response.onCompleted();
+                    new Consumer<O>() {
+                        @Override
+                        public void accept(O item) {
+                            response.onNext(item);
+                            response.onCompleted();
+                        }
                     },
-                    failure -> response.onError(toStatusFailure(failure)));
+                    new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable failure) {
+                            response.onError(toStatusFailure(failure));
+                        }
+                    });
             return pump;
         } catch (Throwable throwable) {
             response.onError(toStatusFailure(throwable));
@@ -67,9 +99,24 @@ public class ServerCalls {
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
             Multi<O> uni = implementation.apply(input);
             uni.subscribe().with(
-                    response::onNext,
-                    failure -> response.onError(toStatusFailure(failure)),
-                    response::onCompleted);
+                    new Consumer<O>() {
+                        @Override
+                        public void accept(O v) {
+                            response.onNext(v);
+                        }
+                    },
+                    new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable failure) {
+                            response.onError(toStatusFailure(failure));
+                        }
+                    },
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            response.onCompleted();
+                        }
+                    });
             return pump;
         } catch (Throwable throwable) {
             response.onError(toStatusFailure(throwable));

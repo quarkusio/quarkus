@@ -1,5 +1,8 @@
 package io.quarkus.grpc.runtime.health;
 
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -26,9 +29,17 @@ public class GrpcHealthEndpoint extends MutinyHealthGrpc.HealthImplBase {
 
         BroadcastProcessor<ServingStatus> broadcastProcessor = healthStorage.createStatusBroadcastProcessor(service);
         return Multi.createBy().concatenating().streams(
-                Multi.createFrom().item(() -> healthStorage.statusForService(service)),
-                // TODO: if there's no service, we still create a broadcast processor here.
-                // TODO: does it make sense resource-wise?
-                broadcastProcessor.map(healthStorage::resultForStatus)).transform().byDroppingRepetitions();
+                Multi.createFrom().item(new Supplier<HealthOuterClass.HealthCheckResponse>() {
+                    @Override
+                    public HealthOuterClass.HealthCheckResponse get() {
+                        return healthStorage.statusForService(service);
+                    }
+                }),
+                broadcastProcessor.map(new Function<ServingStatus, HealthOuterClass.HealthCheckResponse>() {
+                    @Override
+                    public HealthOuterClass.HealthCheckResponse apply(ServingStatus servingStatus) {
+                        return healthStorage.resultForStatus(servingStatus);
+                    }
+                })).transform().byDroppingRepetitions();
     }
 }

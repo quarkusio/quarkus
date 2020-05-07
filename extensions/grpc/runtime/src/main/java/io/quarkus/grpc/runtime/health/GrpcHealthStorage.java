@@ -2,6 +2,8 @@ package io.quarkus.grpc.runtime.health;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -21,7 +23,12 @@ public class GrpcHealthStorage {
 
     public GrpcHealthStorage() {
         BroadcastProcessor<ServingStatus> broadcastProcessor = BroadcastProcessor.create();
-        broadcastProcessor.subscribe().with(status -> statuses.put(DEFAULT_SERVICE_NAME, status));
+        broadcastProcessor.subscribe().with(new Consumer<ServingStatus>() {
+            @Override
+            public void accept(ServingStatus status) {
+                statuses.put(DEFAULT_SERVICE_NAME, status);
+            }
+        });
 
         statusBroadcasters.put(DEFAULT_SERVICE_NAME, broadcastProcessor);
         broadcastProcessor.onNext(ServingStatus.NOT_SERVING);
@@ -31,7 +38,12 @@ public class GrpcHealthStorage {
         String serviceName = service == null ? DEFAULT_SERVICE_NAME : service;
 
         BroadcastProcessor<ServingStatus> broadcastProcessor = statusBroadcasters.computeIfAbsent(serviceName,
-                this::createBroadcastProcessor);
+                new Function<String, BroadcastProcessor<ServingStatus>>() {
+                    @Override
+                    public BroadcastProcessor<ServingStatus> apply(String sn) {
+                        return GrpcHealthStorage.this.createBroadcastProcessor(sn);
+                    }
+                });
         broadcastProcessor.onNext(status);
     }
 
@@ -40,12 +52,19 @@ public class GrpcHealthStorage {
     }
 
     void shutdown(@Observes ShutdownEvent e) {
-        statusBroadcasters.values().forEach(BroadcastProcessor::onComplete);
+        for (BroadcastProcessor<ServingStatus> servingStatusBroadcastProcessor : statusBroadcasters.values()) {
+            servingStatusBroadcastProcessor.onComplete();
+        }
     }
 
     private BroadcastProcessor<ServingStatus> createBroadcastProcessor(String serviceName) {
         BroadcastProcessor<ServingStatus> processor = BroadcastProcessor.create();
-        processor.subscribe().with(status -> statuses.put(serviceName, status));
+        processor.subscribe().with(new Consumer<ServingStatus>() {
+            @Override
+            public void accept(ServingStatus status) {
+                statuses.put(serviceName, status);
+            }
+        });
         return processor;
     }
 
@@ -61,6 +80,12 @@ public class GrpcHealthStorage {
     }
 
     BroadcastProcessor<ServingStatus> createStatusBroadcastProcessor(String serviceName) {
-        return statusBroadcasters.computeIfAbsent(serviceName, this::createBroadcastProcessor);
+        return statusBroadcasters.computeIfAbsent(serviceName,
+                new Function<String, BroadcastProcessor<ServingStatus>>() {
+                    @Override
+                    public BroadcastProcessor<ServingStatus> apply(String sn) {
+                        return GrpcHealthStorage.this.createBroadcastProcessor(sn);
+                    }
+                });
     }
 }

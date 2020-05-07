@@ -14,7 +14,7 @@ public final class GrpcServiceLiteral extends AnnotationLiteral<GrpcService> imp
     /**
      * Creates a new instance of {@link GrpcServiceLiteral}.
      *
-     * @param value the name of the {@code GRPC Service}, must not be {@code null}, must not be {@code blank}
+     * @param value the name of the {@code gRPC Service}, must not be {@code null}, must not be {@code blank}
      * @return the {@link GrpcServiceLiteral} instance.
      */
     public static GrpcServiceLiteral of(String value) {
@@ -27,12 +27,12 @@ public final class GrpcServiceLiteral extends AnnotationLiteral<GrpcService> imp
      *
      * @param value the value.
      */
-    private GrpcServiceLiteral(String value) {
+    GrpcServiceLiteral(String value) {
         this.value = value;
     }
 
     /**
-     * @return the {@code GRPC Service} name.
+     * @return the {@code gRPC Service} name.
      */
     public String value() {
         return value;

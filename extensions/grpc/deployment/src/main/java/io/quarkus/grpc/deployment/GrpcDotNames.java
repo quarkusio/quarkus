@@ -4,6 +4,7 @@ import org.jboss.jandex.DotName;
 
 import com.google.protobuf.GeneratedMessageV3;
 
+import io.grpc.BindableService;
 import io.grpc.Channel;
 import io.grpc.LoadBalancerProvider;
 import io.grpc.NameResolverProvider;
@@ -13,6 +14,7 @@ import io.quarkus.grpc.runtime.supports.Channels;
 
 public class GrpcDotNames {
 
+    static final DotName BINDABLE_SERVICE = DotName.createSimple(BindableService.class.getName());
     static final DotName CHANNEL = DotName.createSimple(Channel.class.getName());
     static final DotName GRPC_SERVICE = DotName.createSimple(GrpcService.class.getName());
     static final DotName MESSAGE_BUILDER = DotName.createSimple(GeneratedMessageV3.Builder.class.getName());

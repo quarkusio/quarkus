@@ -69,7 +69,7 @@ Finally, add to the `build` section the `os-maven-plugin` extension and the `pro
                         <id>quarkus-grpc-protoc-plugin</id>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-                        <version>999-SNAPSHOT</version>
+                        <version>{quarkus-version}</version>
                         <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
                     </protocPlugin>
                 </protocPlugins>
@@ -303,7 +303,7 @@ In the `src/main/resources/application.properties` file, add the following prope
 
 [source, text]
 ----
-hello.host=localhost
+quarkus.grpc.clients.hello.host=localhost
 ----
 
 `hello` is the name of the service used in the `@GrpcService` annotation

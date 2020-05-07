@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
@@ -32,32 +35,56 @@ public class ReflectionService extends MutinyServerReflectionGrpc.ServerReflecti
     @Override
     public Multi<ServerReflectionResponse> serverReflectionInfo(Multi<ServerReflectionRequest> request) {
         return request
-                .onItem().apply(req -> {
-                    switch (req.getMessageRequestCase()) {
-                        case LIST_SERVICES:
-                            return getServiceList(req);
-                        case FILE_BY_FILENAME:
-                            return getFileByName(req);
-                        case FILE_CONTAINING_SYMBOL:
-                            return getFileContainingSymbol(req);
-                        case FILE_CONTAINING_EXTENSION:
-                            return getFileByExtension(req);
-                        case ALL_EXTENSION_NUMBERS_OF_TYPE:
-                            return getAllExtensions(req);
-                        default:
-                            return getErrorResponse(req, Status.Code.UNIMPLEMENTED,
-                                    "not implemented " + req.getMessageRequestCase());
+                .onItem().apply(new Function<ServerReflectionRequest, ServerReflectionResponse>() {
+                    @Override
+                    public ServerReflectionResponse apply(ServerReflectionRequest req) {
+                        switch (req.getMessageRequestCase()) {
+                            case LIST_SERVICES:
+                                return ReflectionService.this.getServiceList(req);
+                            case FILE_BY_FILENAME:
+                                return ReflectionService.this.getFileByName(req);
+                            case FILE_CONTAINING_SYMBOL:
+                                return ReflectionService.this.getFileContainingSymbol(req);
+                            case FILE_CONTAINING_EXTENSION:
+                                return ReflectionService.this.getFileByExtension(req);
+                            case ALL_EXTENSION_NUMBERS_OF_TYPE:
+                                return ReflectionService.this.getAllExtensions(req);
+                            default:
+                                return ReflectionService.this.getErrorResponse(req, Status.Code.UNIMPLEMENTED,
+                                        "not implemented " + req.getMessageRequestCase());
 
+                        }
                     }
                 });
     }
 
     private ServerReflectionResponse getServiceList(ServerReflectionRequest request) {
         ListServiceResponse response = index.getServiceNames().stream()
-                .map(s -> ServiceResponse.newBuilder().setName(s).build())
-                .collect(ListServiceResponse::newBuilder,
-                        ListServiceResponse.Builder::addService,
-                        (b1, b2) -> b1.addAllService(b2.getServiceList()))
+                .map(new Function<String, ServiceResponse>() { // NOSONAR
+                    @Override
+                    public ServiceResponse apply(String s) {
+                        return ServiceResponse.newBuilder().setName(s).build();
+                    }
+                })
+                .collect(new Supplier<ListServiceResponse.Builder>() {
+                    @Override
+                    public ListServiceResponse.Builder get() {
+                        return ListServiceResponse.newBuilder();
+                    }
+                },
+                        new BiConsumer<ListServiceResponse.Builder, ServiceResponse>() {
+                            @Override
+                            public void accept(ListServiceResponse.Builder builder, ServiceResponse value) {
+                                builder.addService(value);
+                            }
+                        },
+                        new BiConsumer<ListServiceResponse.Builder, ListServiceResponse.Builder>() { // NOSONAR
+                            @Override
+                            public void accept(ListServiceResponse.Builder b1,
+                                    ListServiceResponse.Builder b2) {
+                                b1.addAllService(b2.getServiceList());
+                            }
+                        })
                 .build();
 
         return ServerReflectionResponse.newBuilder()

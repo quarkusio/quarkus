@@ -4,13 +4,11 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import io.quarkus.grpc.runtime.GrpcTransportSecurity;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigGroup
 public class GrpcServerConfiguration {
 
     /**
@@ -37,13 +35,13 @@ public class GrpcServerConfiguration {
     public @ConfigItem OptionalInt maxInboundMessageSize;
 
     /**
-     * The SSL config.
+     * The SSL/TLS config.
      */
-    public SslConfig ssl;
+    public SslServerConfig ssl;
 
     /**
      * Disables SSL, and uses plain text instead.
-     * If disables, configure the ssl configuration.
+     * If disabled, configure the ssl configuration.
      */
     @ConfigItem(defaultValue = "true")
     public boolean plainText;

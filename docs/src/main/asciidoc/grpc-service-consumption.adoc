@@ -74,7 +74,7 @@ public Uni<String> helloMutiny(@PathParam("name") String name) {
 }
 ----
 
-Note that in this example, the `hello.host` property must be set.
+Note that in this example, the `grpc.quarkus.clients.hello.host` property must be set.
 
 === Handling streams
 
@@ -147,38 +147,11 @@ public class StreamingEndpoint {
 
 == Client configuration
 
-IMPORTANT: Client configuration is controlled with the `@GrpcService` annotation.
+For each gRPC service you inject in your application, you can configure the following attributes:
 
-For a given `$NAME` (value set in the `@GrpcService` annotation) , the following configuration properties are supported:
+include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-client-configuration.adoc[opts=optional, leveloffset=+1]
 
-|===
-|Property |Description |Default Value
-
-|$NAME.flow-control-window | The flow control window in bytes |
-|$NAME.host | The host name / IP on which the service is exposed.  | **mandatory**
-|$NAME.idle-timeout | The duration without ongoing RPCs before going to idle mode |
-|$NAME.keep-alive-time | The duration after which a keep alive ping is sent |
-|$NAME.keep-alive-timeout | The amount of time the sender of oa keep alive ping waits for an acknowledgement |
-|$NAME.keep-alive-without-calls | Whether keepalive will be performed when there are no outstanding RPC on a connection |
-|$NAME.max-hedged-attempts | The max number of hedged attempts |
-|$NAME.max-inbound-message-size | The maximum message size allowed for a single gRPC frame |
-|$NAME.max-inbound-metadata-size | The maximum size of metadata allowed to be received |
-|$NAME.max-retry-attempts | The maximum number of retry attempts (retry must be enabled) |
-|$NAME.max-trace-events | The maximum number of channel trace events to keep in the tracer for each channel or sub-channel |
-|$NAME.negotiation-type | The negotiation type for the HTTP/2 connection (_TLS_, _PLAINTEXT_UPGRADE_, _PLAINTEXT_) |
-|$NAME.override-authority | Overrides the authority used with TLS and HTTP virtual hosting  |
-|$NAME.per-rpc-buffer-limit | The per RPC buffer limit in bytes used for retry |
-|$NAME.port | The port on which the service is exposed.  | 9000
-|$NAME.plain-text | Whether `plain-text` should be used.  | `true` except if SSL is configured
-|$NAME.retry | Whether retry is enabled | `false`
-|$NAME.retry-buffer-size | The retry buffer size in bytes |
-|$NAME.ssl.certificate| The path to the trust-store |
-|$NAME.ssl.trust-store| The path to the certificate |
-|$NAME.ssl.key| The path to the key file |
-|$NAME.ssl.key| The path to the key file |
-|$NAME.user-agent | A custom _User-Agent_ |
-|===
-
+The `service-name` is the name set in the `@GrpcService`.
 
 == Example of configuration
 

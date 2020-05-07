@@ -181,36 +181,7 @@ In test or production mode, you need to enable it explicitly by setting `quarkus
 
 == Server configuration
 
-By default, the server is exposed on `localhost:9000` and uses `plain-text`.
-
-The following configuration properties are supported:
-
-|===
-|Property |Description |Default Value
-
-|quarkus.grpc-server.enable-reflection-service | Enables the reflection service  | `false` (`true` in dev mode)
-|quarkus.grpc-server.grpc-health.enabled | Whether to expose the gRPC health information | `true`
-|quarkus.grpc-server.health.enabled | Whether to add gRPC health information to MicroProfile Health | `true`
-|quarkus.grpc-server.host | The network interface on which the service is exposed.  | `0.0.0.0`
-|quarkus.grpc-server.port | The port on which the service is exposed.  | `9000`
-|quarkus.grpc-server.handshake-timeout | The max duration of the handshake.  |
-|quarkus.grpc-server.max-inbound-message-size | The max size of the inbound messages.  |
-|quarkus.grpc-server.plain-text | Whether plain-text is used.  | `true` except is `ssl` is configured
-|quarkus.grpc-server.alpn | Whether alpn is used.  | `true` if `ssl` is configured
-|quarkus.grpc-server.ssl.certificate | The path to the certificate file to use.  |
-|quarkus.grpc-server.ssl.key-file | The path to the key file to use.  |
-|quarkus.grpc-server.ssl.key-store | The path to the keystore file to use.  |
-|quarkus.grpc-server.ssl.key-store-type | The type of the key store file.   | based on file name
-|quarkus.grpc-server.ssl.key-store-password | The key store password.  | `password`
-|quarkus.grpc-server.ssl.trust-store | The path to the trust store file.  |
-|quarkus.grpc-server.ssl.trust-store-type | The type of the trust store file.  | based on file name
-|quarkus.grpc-server.ssl.trust-store-password | The trust store password. |
-|quarkus.grpc-server.ssl.cipher-suites | The cipher suites to use. If none is given, a reasonable default is selected. |
-|quarkus.grpc-server.ssl.protocols |  The list of protocols to explicitly enable. | `TLSv1.3`,`TLSv1.2`
-|quarkus.grpc-server.ssl.client-auth | Whether to require/request client authentication. Accepted values are: `NONE`, `REQUEST`, `REQUIRED` | `NONE`
-|quarkus.grpc-server.transport-security.file | The path to the certificate file |
-|quarkus.grpc-server.transport-security.key-file | The path to the key file |
-|===
+include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
 
 == Example of configuration
 

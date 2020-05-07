@@ -4,7 +4,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME, name = "grpc-server")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME, name = "grpc.server")
 public class GrpcServerBuildTimeConfig {
     /**
      * Whether or not a health check on gRPC status is published in case the smallrye-health extension is present.

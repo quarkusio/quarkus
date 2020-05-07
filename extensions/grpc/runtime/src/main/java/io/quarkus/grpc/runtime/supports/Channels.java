@@ -4,9 +4,10 @@ import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_HEADER_LIST_SIZE;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -15,9 +16,6 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Prioritized;
 import javax.net.ssl.SSLException;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.grpc.Channel;
 import io.grpc.ClientInterceptor;
@@ -29,72 +27,92 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.grpc.runtime.annotations.GrpcServiceLiteral;
+import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 
+@SuppressWarnings({ "OptionalIsPresent", "Convert2Lambda" })
 public class Channels {
 
     private Channels() {
         // Avoid direct instantiation
     }
 
-    public static Channel createChannel(String prefix) throws SSLException {
-        Config config = ConfigProvider.getConfig();
-        String host = getMandatoryProperty(config, prefix, "host", String.class);
-        int port = getOptionalProperty(config, prefix, "port", Integer.class, 9000);
-        boolean defaultPlainText = getOptionalProperty(config, prefix, "ssl.trust-store", String.class, null) == null;
-        boolean plainText = getOptionalProperty(config, prefix, "plain-text", Boolean.class, defaultPlainText);
+    public static Channel createChannel(String name) throws SSLException {
+        InstanceHandle<GrpcClientConfigProvider> instance = Arc.container().instance(GrpcClientConfigProvider.class);
+
+        if (!instance.isAvailable()) {
+            throw new IllegalStateException("Unable to find the GrpcClientConfigProvider");
+        }
+
+        GrpcClientConfiguration config = instance.get().getConfiguration(name);
+        String host = config.host;
+        int port = config.port;
+        boolean plainText = !config.ssl.trustStore.isPresent();
+        Optional<Boolean> usePlainText = config.plainText;
+        if (usePlainText.isPresent()) {
+            plainText = usePlainText.get();
+        }
 
         SslContext context = null;
         if (!plainText) {
-            String trustStorePath = getOptionalProperty(config, prefix, "ssl.trust-store", String.class, null);
-            String certificatePath = getOptionalProperty(config, prefix, "ssl.certificate", String.class, null);
-            String keyPath = getOptionalProperty(config, prefix, "ssl.key", String.class, null);
+            Path trustStorePath = config.ssl.trustStore.orElse(null);
+            Path certificatePath = config.ssl.certificate.orElse(null);
+            Path keyPath = config.ssl.key.orElse(null);
             SslContextBuilder sslContextBuilder = GrpcSslContexts.forClient();
             if (trustStorePath != null) {
-                sslContextBuilder.trustManager(new File(trustStorePath));
+                sslContextBuilder.trustManager(trustStorePath.toFile());
             }
 
-            if (certificatePath != null) {
-                sslContextBuilder.keyManager(new File(certificatePath), new File(keyPath));
+            if (certificatePath != null && keyPath != null) {
+                sslContextBuilder.keyManager(certificatePath.toFile(), keyPath.toFile());
             }
 
             context = sslContextBuilder.build();
         }
 
-        Optional<Duration> keepAliveTime = getOptionalProperty(config, prefix, "keep-alive-time", Duration.class);
-        Optional<Duration> keepAliveTimeout = getOptionalProperty(config, prefix, "keep-alive-timeout", Duration.class);
-        Optional<Duration> idleTimeout = getOptionalProperty(config, prefix, "idle-timeout", Duration.class);
-
         NettyChannelBuilder builder = NettyChannelBuilder.forAddress(host, port)
-                .flowControlWindow(getOptionalProperty(config, prefix, "flow-control-window", Integer.class,
-                        DEFAULT_FLOW_CONTROL_WINDOW))
-                .keepAliveWithoutCalls(
-                        getOptionalProperty(config, prefix, "keep-alive-without-calls", Boolean.class, false))
-                .maxHedgedAttempts(getOptionalProperty(config, prefix, "max-hedged-attempts", Integer.TYPE, 5))
-                .maxRetryAttempts(getOptionalProperty(config, prefix, "max-retry-attempts", Integer.TYPE, 5))
-                .maxInboundMetadataSize(getOptionalProperty(config, prefix, "max-inbound-metadata-size", Integer.TYPE,
-                        DEFAULT_MAX_HEADER_LIST_SIZE))
-                .maxInboundMessageSize(getOptionalProperty(config, prefix, "max-inbound-message-size", Integer.TYPE,
-                        DEFAULT_MAX_MESSAGE_SIZE))
-                .negotiationType(NegotiationType.valueOf(
-                        getOptionalProperty(config, prefix, "negotiation-type", String.class, "TLS").toUpperCase()));
+                .flowControlWindow(config.flowControlWindow.orElse(DEFAULT_FLOW_CONTROL_WINDOW))
+                .keepAliveWithoutCalls(config.keepAliveWithoutCalls)
+                .maxHedgedAttempts(config.maxHedgedAttempts)
+                .maxRetryAttempts(config.maxRetryAttempts)
+                .maxInboundMetadataSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
+                .maxInboundMetadataSize(config.maxInboundMessageSize.orElse(DEFAULT_MAX_MESSAGE_SIZE))
+                .negotiationType(NegotiationType.valueOf(config.negotiationType.toUpperCase()));
 
-        getOptionalProperty(config, prefix, "retry", Boolean.class).ifPresent(enabled -> {
-            if (enabled) {
-                builder.enableRetry();
-            } else {
-                builder.disableRetry();
-            }
-        });
+        if (config.retry) {
+            builder.enableRetry();
+        } else {
+            builder.disableRetry();
+        }
 
-        getOptionalProperty(config, prefix, "max-trace-events", Integer.class).ifPresent(builder::maxTraceEvents);
-        getOptionalProperty(config, prefix, "user-agent", String.class).ifPresent(builder::userAgent);
-        getOptionalProperty(config, prefix, "retry-buffer-size", Long.class).ifPresent(builder::retryBufferSize);
-        getOptionalProperty(config, prefix, "pre-rpc-buffer-limit", Long.class).ifPresent(builder::perRpcBufferLimit);
-        getOptionalProperty(config, prefix, "override-authority", String.class).ifPresent(builder::overrideAuthority);
-
-        keepAliveTime.ifPresent(duration -> builder.keepAliveTime(duration.toMillis(), TimeUnit.MILLISECONDS));
-        keepAliveTimeout.ifPresent(duration -> builder.keepAliveTimeout(duration.toMillis(), TimeUnit.MILLISECONDS));
-        idleTimeout.ifPresent(duration -> builder.idleTimeout(duration.toMillis(), TimeUnit.MILLISECONDS));
+        if (config.maxTraceEvents.isPresent()) {
+            builder.maxTraceEvents(config.maxTraceEvents.getAsInt());
+        }
+        Optional<String> userAgent = config.userAgent;
+        if (userAgent.isPresent()) {
+            builder.userAgent(userAgent.get());
+        }
+        if (config.retryBufferSize.isPresent()) {
+            builder.retryBufferSize(config.retryBufferSize.getAsLong());
+        }
+        if (config.perRpcBufferLimit.isPresent()) {
+            builder.perRpcBufferLimit(config.perRpcBufferLimit.getAsLong());
+        }
+        Optional<String> overrideAuthority = config.overrideAuthority;
+        if (overrideAuthority.isPresent()) {
+            builder.overrideAuthority(overrideAuthority.get());
+        }
+        Optional<Duration> keepAliveTime = config.keepAliveTime;
+        if (keepAliveTime.isPresent()) {
+            builder.keepAliveTime(keepAliveTime.get().toMillis(), TimeUnit.MILLISECONDS);
+        }
+        Optional<Duration> keepAliveTimeout = config.keepAliveTimeout;
+        if (keepAliveTimeout.isPresent()) {
+            builder.keepAliveTimeout(keepAliveTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+        }
+        Optional<Duration> idleTimeout = config.idleTimeout;
+        if (idleTimeout.isPresent()) {
+            builder.keepAliveTimeout(idleTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+        }
 
         if (plainText) {
             builder.usePlaintext();
@@ -106,7 +124,9 @@ public class Channels {
         // Client-side interceptors
         Instance<ClientInterceptor> interceptors = Arc.container().beanManager().createInstance()
                 .select(ClientInterceptor.class);
-        getSortedInterceptors(interceptors).forEach(builder::intercept);
+        for (ClientInterceptor clientInterceptor : getSortedInterceptors(interceptors)) {
+            builder.intercept(clientInterceptor);
+        }
 
         return builder.build();
     }
@@ -114,21 +134,9 @@ public class Channels {
     public static Channel retrieveChannel(String name) {
         InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, GrpcServiceLiteral.of(name));
         if (!instance.isAvailable()) {
-            throw new IllegalStateException("Unable to retrieve the GRPC Channel " + name);
+            throw new IllegalStateException("Unable to retrieve the gRPC Channel " + name);
         }
         return instance.get();
-    }
-
-    private static <T> T getMandatoryProperty(Config config, String prefix, String attr, Class<T> type) {
-        return config.getValue(prefix + attr, type);
-    }
-
-    private static <T> T getOptionalProperty(Config config, String prefix, String attr, Class<T> type, T defaultValue) {
-        return config.getOptionalValue(prefix + attr, type).orElse(defaultValue);
-    }
-
-    private static <T> Optional<T> getOptionalProperty(Config config, String prefix, String attr, Class<T> type) {
-        return config.getOptionalValue(prefix + attr, type);
     }
 
     private static List<ClientInterceptor> getSortedInterceptors(Instance<ClientInterceptor> interceptors) {
@@ -136,19 +144,22 @@ public class Channels {
             return Collections.emptyList();
         }
 
-        return interceptors.stream().sorted((si1, si2) -> {
-            int p1 = 0;
-            int p2 = 0;
-            if (si1 instanceof Prioritized) {
-                p1 = ((Prioritized) si1).getPriority();
+        return interceptors.stream().sorted(new Comparator<ClientInterceptor>() { // NOSONAR
+            @Override
+            public int compare(ClientInterceptor si1, ClientInterceptor si2) {
+                int p1 = 0;
+                int p2 = 0;
+                if (si1 instanceof Prioritized) {
+                    p1 = ((Prioritized) si1).getPriority();
+                }
+                if (si2 instanceof Prioritized) {
+                    p2 = ((Prioritized) si2).getPriority();
+                }
+                if (si1.equals(si2)) {
+                    return 0;
+                }
+                return Integer.compare(p1, p2);
             }
-            if (si2 instanceof Prioritized) {
-                p2 = ((Prioritized) si2).getPriority();
-            }
-            if (si1.equals(si2)) {
-                return 0;
-            }
-            return Integer.compare(p1, p2);
         }).collect(Collectors.toList());
     }
 

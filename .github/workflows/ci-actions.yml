@@ -122,7 +122,7 @@ jobs:
 
     services:
       keycloak:
-        image: quay.io/keycloak/keycloak:9.0.2
+        image: quay.io/keycloak/keycloak:10.0.0
         env:
           KEYCLOAK_USER: admin
           KEYCLOAK_PASSWORD: admin
@@ -514,7 +514,7 @@ jobs:
               -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M \
               -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true \
               -Dkeycloak.profile.feature.upload_scripts=enabled" \
-            -d quay.io/keycloak/keycloak:9.0.2
+            -d quay.io/keycloak/keycloak:10.0.0
         if: matrix.keycloak
       - uses: actions/checkout@v2
       - name: Set up JDK 11

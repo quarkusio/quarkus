@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.jaeger.runtime.JaegerBuildTimeConfig;
 import io.quarkus.jaeger.runtime.JaegerConfig;
 import io.quarkus.jaeger.runtime.JaegerDeploymentRecorder;
@@ -48,6 +49,15 @@ public class JaegerProcessor {
     @BuildStep
     public void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.JAEGER));
+    }
+
+    @BuildStep
+    public void reflectiveClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("io.jaegertracing.internal.samplers.http.SamplingStrategyResponse",
+                        "io.jaegertracing.internal.samplers.http.ProbabilisticSamplingStrategy")
+                .finalFieldsWritable(true)
+                .build());
     }
 
     private void produceMetrics(BuildProducer<MetricBuildItem> producer) {

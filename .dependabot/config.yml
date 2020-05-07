@@ -170,3 +170,23 @@ update_configs:
     update_schedule: "daily"
     default_labels:
       - "area/dependencies"
+
+  # 1.3
+  - package_manager: "java:maven"
+    target_branch: 1.3
+    directory: "/"
+    update_schedule: "daily"
+    default_labels:
+      - "area/dependencies"
+    allowed_updates:
+      - match:
+          update_type: "security"
+  - package_manager: "java:gradle"
+    target_branch: 1.3
+    directory: "/devtools/gradle"
+    update_schedule: "daily"
+    default_labels:
+      - "area/dependencies"
+    allowed_updates:
+      - match:
+          update_type: "security"

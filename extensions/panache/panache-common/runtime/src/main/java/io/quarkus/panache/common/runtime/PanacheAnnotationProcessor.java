@@ -20,7 +20,7 @@ import javax.tools.StandardLocation;
 
 /**
  * An annotation processor that is used to generate a marker file, to tell Quarkus that this archive has a dependency on
- * Pananche entities, and therefore may need to be transformed for enhanced field access.
+ * Panache entities, and therefore may need to be transformed for enhanced field access.
  *
  * This works because any archive that depends on Panache will have a transitive dependency on panache-common, which
  * contains this processor. The Javac compiler will then run this processor and create the marker file.

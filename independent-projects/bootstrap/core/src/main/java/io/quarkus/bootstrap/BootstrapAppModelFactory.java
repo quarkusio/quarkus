@@ -261,7 +261,7 @@ public class BootstrapAppModelFactory {
                                 ObjectInputStream in = new ObjectInputStream(reader);
                                 AppModel appModel = (AppModel) in.readObject();
 
-                                log.debugf("Loaded cached AppMode %s from %s", appModel, cachedCpPath);
+                                log.debugf("Loaded cached AppModel %s from %s", appModel, cachedCpPath);
                                 for (AppDependency i : appModel.getFullDeploymentDeps()) {
                                     for (Path p : i.getArtifact().getPaths()) {
                                         if (!Files.exists(p)) {

@@ -48,13 +48,17 @@ public class KubernetesDeployer {
     private static final String CONTAINER_IMAGE_EXTENSIONS_STR = Arrays.stream(CONTAINER_IMAGE_EXTENSIONS)
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
-    @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
+    @BuildStep(onlyIf = IsNormal.class)
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImageInfo,
             List<ContainerImageResultBuildItem> containerImageResults,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets,
             OutputTargetBuildItem outputTarget,
             BuildProducer<DeploymentResultBuildItem> deploymentResult) {
+
+        if (!KubernetesDeploy.INSTANCE.check()) {
+            return;
+        }
 
         if (containerImageResults.isEmpty()) {
             throw new RuntimeException(

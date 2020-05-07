@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -18,6 +19,14 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonWriteFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
@@ -35,8 +44,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -53,16 +60,22 @@ public class SwaggerUiProcessor {
     private static final String SWAGGER_UI_WEBJAR_ARTIFACT_ID = "swagger-ui";
     private static final String SWAGGER_UI_WEBJAR_PREFIX = "META-INF/resources/webjars/swagger-ui";
     private static final String SWAGGER_UI_FINAL_DESTINATION = "META-INF/swagger-ui-files";
-    private static final Pattern SWAGGER_UI_DEFAULT_API_URL_PATTERN = Pattern.compile("(.* url: \")(.*)(\",.*)",
+    private static final Pattern SWAGGER_UI_CONFIG_PATTERN = Pattern.compile(
+            "(.*SwaggerUIBundle\\()(.*)(presets:.*)(layout:.*)(\\).*)",
             Pattern.DOTALL);
     private static final String TEMP_DIR_PREFIX = "quarkus-swagger-ui_" + System.nanoTime();
+
+    private static ObjectMapper objectMapper;
 
     /**
      * The configuration for Swagger UI.
      */
     SwaggerUiConfig swaggerUiConfig;
 
-    SmallRyeOpenApiConfig openapi;
+    /**
+     * The configuration for OpenAPI.
+     */
+    SmallRyeOpenApiConfig openApiConfig;
 
     @Inject
     private LaunchModeBuildItem launch;
@@ -95,7 +108,7 @@ public class SwaggerUiProcessor {
             return;
         }
 
-        String openApiPath = httpRootPathBuildItem.adjustPath(openapi.path);
+        String openApiPath = httpRootPathBuildItem.adjustPath(openApiConfig.path);
         if (launch.getLaunchMode().isDevOrTest()) {
             CachedSwaggerUI cached = liveReloadBuildItem.getContextObject(CachedSwaggerUI.class);
 
@@ -118,7 +131,7 @@ public class SwaggerUiProcessor {
                     AppArtifact artifact = getSwaggerUiArtifact(curateOutcomeBuildItem);
                     Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
                     extractSwaggerUi(artifact, tempDir);
-                    updateApiUrl(tempDir.resolve("index.html"), openApiPath);
+                    updateSwaggerUiConfig(tempDir.resolve("index.html"), openApiPath);
                     cached.cachedDirectory = tempDir.toAbsolutePath().toString();
                     cached.cachedOpenAPIPath = openApiPath;
                 } catch (IOException e) {
@@ -147,8 +160,10 @@ public class SwaggerUiProcessor {
                                 String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
                                 byte[] content = FileUtil.readFileContents(inputStream);
                                 if (entry.getName().endsWith("index.html")) {
-                                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), openApiPath)
-                                            .getBytes(StandardCharsets.UTF_8);
+                                    final String html = updateConfig(new String(content, StandardCharsets.UTF_8), openApiPath);
+                                    if (html != null) {
+                                        content = html.getBytes(StandardCharsets.UTF_8);
+                                    }
                                 }
                                 String fileName = SWAGGER_UI_FINAL_DESTINATION + "/" + filename;
                                 generatedResources
@@ -198,47 +213,60 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private void updateApiUrl(Path indexHtml, String openApiPath) throws IOException {
+    private void updateSwaggerUiConfig(Path indexHtml, String openApiPath) throws IOException {
         String content = new String(Files.readAllBytes(indexHtml), StandardCharsets.UTF_8);
-        String result = updateApiUrl(content, openApiPath);
+        String result = updateConfig(content, openApiPath);
         if (result != null) {
             Files.write(indexHtml, result.getBytes(StandardCharsets.UTF_8));
         }
     }
 
-    public String updateApiUrl(String original, String openApiPath) {
-
-        Matcher uriMatcher = SWAGGER_UI_DEFAULT_API_URL_PATTERN.matcher(original);
-        if (uriMatcher.matches()) {
-            return uriMatcher.replaceFirst("$1" + openApiPath + "$3");
+    private String updateConfig(String original, String openApiPath) throws JsonProcessingException {
+        Matcher configMatcher = SWAGGER_UI_CONFIG_PATTERN.matcher(original);
+        if (configMatcher.matches()) {
+            objectMapper = initObjectMapper();
+            String defaultConfig = configMatcher.group(3).trim();
+            String config;
+            String html;
+            config = objectMapper.writeValueAsString(swaggerUiConfig.getSwaggerUiProps(openApiPath));
+            html = configMatcher.replaceFirst("$1" + buildConfig(defaultConfig, config) + "$5");
+            if (swaggerUiConfig.oauth.enable) {
+                html = addOauthConfig(html, swaggerUiConfig.oauth.getConfigParameters());
+            }
+            return html;
         } else {
-            log.warn("Unable to replace the default URL of Swagger UI");
+            log.warn("Unable to replace the default configuration of Swagger UI");
             return null;
         }
     }
 
-    @ConfigRoot
-    static final class SwaggerUiConfig {
-        /**
-         * The path where Swagger UI is available.
-         * <p>
-         * The value `/` is not allowed as it blocks the application from serving anything else.
-         */
-        @ConfigItem(defaultValue = "/swagger-ui")
-        String path;
+    private String buildConfig(String defaultConfig, String config) {
+        StringBuilder sb = new StringBuilder(config);
+        sb.insert(1, defaultConfig);
+        sb.insert(1, "\n");
+        return sb.toString();
+    }
 
-        /**
-         * If this should be included every time. By default this is only included when the application is running
-         * in dev mode.
-         */
-        @ConfigItem
-        boolean alwaysInclude;
+    private String addOauthConfig(String html, Map<String, Object> oauthParams) throws JsonProcessingException {
+        if (oauthParams.isEmpty()) {
+            return html;
+        }
+        StringBuilder sb = new StringBuilder("window.ui = ui\n");
+        sb.append("ui.initOAuth(\n");
+        String json = objectMapper.writeValueAsString(oauthParams);
+        sb.append(json);
+        sb.append("\n)");
+        return html.replace("window.ui = ui", sb.toString());
+    }
 
-        /**
-         * If Swagger UI should be enabled. By default, Swagger UI is enabled.
-         */
-        @ConfigItem(defaultValue = "true")
-        boolean enable;
+    private static ObjectMapper initObjectMapper() {
+        return JsonMapper.builder()
+                .serializationInclusion(JsonInclude.Include.NON_NULL)
+                .serializationInclusion(JsonInclude.Include.NON_ABSENT)
+                .disable(JsonWriteFeature.QUOTE_FIELD_NAMES)
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .addModule(new Jdk8Module())
+                .build();
     }
 
     private static final class CachedSwaggerUI implements Runnable {

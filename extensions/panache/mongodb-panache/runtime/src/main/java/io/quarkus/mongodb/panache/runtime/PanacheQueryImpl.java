@@ -12,6 +12,7 @@ import org.bson.conversions.Bson;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -29,6 +30,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private Range range;
 
+    private Collation collation;
+
     PanacheQueryImpl(MongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
@@ -42,6 +45,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         this.projections = projections;
         this.page = previousQuery.page;
         this.count = previousQuery.count;
+        this.range = previousQuery.range;
+        this.collation = previousQuery.collation;
     }
 
     // Builder
@@ -144,6 +149,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return (PanacheQuery<T>) this;
     }
 
+    @Override
+    public <T extends Entity> PanacheQuery<T> withCollation(Collation collation) {
+        this.collation = collation;
+        return (PanacheQuery<T>) this;
+    }
+
     // Results
 
     @Override
@@ -166,6 +177,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         FindIterable find = mongoQuery == null ? collection.find() : collection.find(mongoQuery);
         if (this.projections != null) {
             find.projection(projections);
+        }
+        if (this.collation != null) {
+            find.collation(collation);
         }
         manageOffsets(find, limit);
         MongoCursor<T> cursor = find.sort(sort).iterator();

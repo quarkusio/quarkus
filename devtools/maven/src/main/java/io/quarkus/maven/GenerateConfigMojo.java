@@ -132,6 +132,7 @@ public class GenerateConfigMojo extends AbstractMojo {
             try (CuratedApplication curatedApplication = QuarkusBootstrap
                     .builder()
                     .setAppArtifact(appArtifact)
+                    .setProjectRoot(project.getBasedir().toPath())
                     .setMavenArtifactResolver(resolver)
                     .setBaseClassLoader(getClass().getClassLoader())
                     .setBuildSystemProperties(project.getProperties())

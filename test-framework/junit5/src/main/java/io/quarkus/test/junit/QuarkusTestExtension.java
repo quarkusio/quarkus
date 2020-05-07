@@ -41,12 +41,12 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
-import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -96,32 +96,30 @@ public class QuarkusTestExtension
             testClassLocation = getTestClassesLocation(requiredTestClass);
             final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
-            originalCl = Thread.currentThread().getContextClassLoader();
-
-            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
-                    .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST);
-
-            if (Files.isDirectory(appClassLocation)) {
-                // this is a project that is a part of the workspace
-                runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
-            } else {
-                // this is an external JAR
-                runnerBuilder.setApplicationRoot(appClassLocation);
-            }
+            PathsCollection.Builder rootBuilder = PathsCollection.builder();
 
             if (!appClassLocation.equals(testClassLocation)) {
-                runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testClassLocation));
+                rootBuilder.add(testClassLocation);
                 // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
                 // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
                 if (Files.isDirectory(testClassLocation)) {
                     final Path testResourcesLocation = testClassLocation.getParent().getParent().getParent()
                             .resolve("resources").resolve("test");
                     if (Files.exists(testResourcesLocation)) {
-                        runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testResourcesLocation));
+                        rootBuilder.add(testResourcesLocation);
                     }
                 }
             }
+            originalCl = Thread.currentThread().getContextClassLoader();
+
+            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
+                    .setIsolateDeployment(true)
+                    .setMode(QuarkusBootstrap.Mode.TEST);
+
+            runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+
+            rootBuilder.add(appClassLocation);
+            runnerBuilder.setApplicationRoot(rootBuilder.build());
 
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)

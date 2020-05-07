@@ -77,7 +77,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public Path getClassesDir() {
         //TODO: fix all these
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
+        for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             return Paths.get(i.getResourcePath());
         }
         return null;
@@ -85,13 +85,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public List<Path> getSourcesDir() {
-        return context.getModules().stream().flatMap(m -> m.getSourcePaths().stream()).map(Paths::get).collect(toList());
+        return context.getAllModules().stream().flatMap(m -> m.getSourcePaths().stream()).map(Paths::get).collect(toList());
     }
 
     @Override
     public List<Path> getResourcesDir() {
         List<Path> ret = new ArrayList<>();
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
+        for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             if (i.getResourcePath() != null) {
                 ret.add(Paths.get(i.getResourcePath()));
             }
@@ -167,7 +167,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         boolean hasChanges = false;
         boolean ignoreFirstScanChanges = !firstScanDone;
 
-        for (DevModeContext.ModuleInfo module : context.getModules()) {
+        for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             final List<Path> moduleChangedSourceFilePaths = new ArrayList<>();
 
             for (String sourcePath : module.getSourcePaths()) {
@@ -297,7 +297,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     Set<String> checkForFileChange() {
         Set<String> ret = new HashSet<>();
-        for (DevModeContext.ModuleInfo module : context.getModules()) {
+        for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             final Set<Path> moduleResources = correspondingResources.computeIfAbsent(module.getName(),
                     m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
             boolean doCopy = true;
@@ -427,7 +427,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         this.watchedFilePaths = watchedFilePaths;
         watchedFileTimestamps.clear();
 
-        for (DevModeContext.ModuleInfo module : context.getModules()) {
+        for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             String rootPath = module.getResourcePath();
 
             if (rootPath == null) {

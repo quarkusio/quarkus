@@ -144,12 +144,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
     private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, CuratedApplication application)
             throws Exception {
-        if (!context.getModules().isEmpty()) {
+        if (!context.getAllModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();
             for (CompilationProvider provider : serviceLoader) {
                 compilationProviders.add(provider);
-                context.getModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
+                context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
             }
             ClassLoaderCompiler compiler;
             try {
@@ -253,9 +253,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                             for (AdditionalDependency i : curatedApplication.getQuarkusBootstrap()
                                                     .getAdditionalApplicationArchives()) {
                                                 if (i.isHotReloadable()) {
-                                                    Path p = i.getArchivePath().resolve(s.replace(".", "/") + ".class");
-                                                    if (Files.exists(p)) {
-                                                        return true;
+                                                    for (Path path : i.getArchivePath()) {
+                                                        Path p = path.resolve(s.replace(".", "/") + ".class");
+                                                        if (Files.exists(p)) {
+                                                            return true;
+                                                        }
                                                     }
                                                 }
                                             }

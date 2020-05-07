@@ -80,7 +80,7 @@ public class DevModeMain implements Closeable {
                 }
             }
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(context.getClassesRoots().get(0).toPath())
+                    .setApplicationRoot(Paths.get(context.getApplicationRoot().getClassesPath()))
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
@@ -90,12 +90,8 @@ public class DevModeMain implements Closeable {
             } else {
                 bootstrapBuilder.setProjectRoot(new File(".").toPath());
             }
-            for (int i = 1; i < context.getClassesRoots().size(); ++i) {
-                bootstrapBuilder.addAdditionalApplicationArchive(
-                        new AdditionalDependency(context.getClassesRoots().get(i).toPath(), false, false));
-            }
 
-            for (DevModeContext.ModuleInfo i : context.getModules()) {
+            for (DevModeContext.ModuleInfo i : context.getAllModules()) {
                 if (i.getClassesPath() != null) {
                     Path classesPath = Paths.get(i.getClassesPath());
                     bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));

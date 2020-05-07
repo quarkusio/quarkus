@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Files;
@@ -431,7 +430,7 @@ public class DevMojo extends AbstractMojo {
         return null;
     }
 
-    private void addProject(DevModeContext devModeContext, LocalProject localProject) {
+    private void addProject(DevModeContext devModeContext, LocalProject localProject, boolean root) {
 
         String projectDirectory = null;
         Set<String> sourcePaths = null;
@@ -473,16 +472,15 @@ public class DevMojo extends AbstractMojo {
                 sourcePaths,
                 classesPath,
                 resourcePath);
-        devModeContext.getModules().add(moduleInfo);
+        if (root) {
+            devModeContext.setApplicationRoot(moduleInfo);
+        } else {
+            devModeContext.getAdditionalModules().add(moduleInfo);
+        }
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
+    private void addToClassPaths(StringBuilder classPathManifest, File file) {
         final URI uri = file.toPath().toAbsolutePath().toUri();
-        try {
-            classPath.getClassPath().add(uri.toURL());
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
         classPathManifest.append(uri).append(" ");
     }
 
@@ -599,12 +597,12 @@ public class DevMojo extends AbstractMojo {
             final LocalProject localProject;
             if (noDeps) {
                 localProject = LocalProject.load(outputDirectory.toPath());
-                addProject(devModeContext, localProject);
+                addProject(devModeContext, localProject, true);
                 pomFiles.add(localProject.getDir().resolve("pom.xml"));
             } else {
                 localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                 for (LocalProject project : filterExtensionDependencies(localProject)) {
-                    addProject(devModeContext, project);
+                    addProject(devModeContext, project, project == localProject);
                     pomFiles.add(project.getDir().resolve("pom.xml"));
                 }
             }
@@ -612,18 +610,11 @@ public class DevMojo extends AbstractMojo {
             addQuarkusDevModeDeps(classPathManifest, devModeContext);
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            //wiring devmode is used for CDI beans that are not part of the user application (i.e. beans in 3rd party jars)
-            //we need this because these beans cannot be loaded by the runtime class loader, they must be loaded by the platform
-            //class loader
-            File wiringClassesDirectory = new File(buildDir, "wiring-devmode");
-            wiringClassesDirectory.mkdirs();
-
-            addToClassPaths(classPathManifest, devModeContext, wiringClassesDirectory);
 
             //in most cases these are not used, however they need to be present for some
             //parent-first cases such as logging
             for (Artifact appDep : project.getArtifacts()) {
-                addToClassPaths(classPathManifest, devModeContext, appDep.getFile());
+                addToClassPaths(classPathManifest, appDep.getFile());
             }
 
             //now we need to build a temporary jar to actually run
@@ -636,8 +627,6 @@ public class DevMojo extends AbstractMojo {
             }
             getLog().debug("Executable jar: " + tempFile.getAbsolutePath());
 
-            devModeContext.getClassesRoots().add(outputDirectory.getAbsoluteFile());
-            devModeContext.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             devModeContext.setCacheDir(new File(buildDir, "transformer-cache").getAbsoluteFile());
 
             // this is the jar file we will use to launch the dev mode main class
@@ -743,7 +732,7 @@ public class DevMojo extends AbstractMojo {
                 //we only use the launcher for launching from the IDE, we need to exclude it
                 if (!(appDep.getArtifact().getGroupId().equals("io.quarkus")
                         && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
-                    addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getFile());
+                    addToClassPaths(classPathManifest, appDep.getArtifact().getFile());
                 }
             }
         }

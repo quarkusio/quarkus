@@ -127,8 +127,10 @@ public class ApplicationArchiveBuildStep {
                 indexCache);
 
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
-            if (!root.getPaths().contains(i.getPath()) && indexedPaths.add(i.getPath())) {
-                appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, i.getPath()));
+            for (Path apPath : i.getPaths()) {
+                if (!root.getPaths().contains(apPath) && indexedPaths.add(apPath)) {
+                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath));
+                }
             }
         }
 

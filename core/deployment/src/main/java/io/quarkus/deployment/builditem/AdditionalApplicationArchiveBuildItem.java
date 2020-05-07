@@ -2,6 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import java.nio.file.Path;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -9,13 +10,18 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class AdditionalApplicationArchiveBuildItem extends MultiBuildItem {
 
-    private final Path path;
+    private final PathsCollection path;
 
-    public AdditionalApplicationArchiveBuildItem(Path path) {
+    public AdditionalApplicationArchiveBuildItem(PathsCollection path) {
         this.path = path;
     }
 
+    @Deprecated
     public Path getPath() {
+        return path.getSinglePath();
+    }
+
+    public PathsCollection getPaths() {
         return path;
     }
 }

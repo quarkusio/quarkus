@@ -59,8 +59,6 @@ public class QuarkusGenerateConfig extends QuarkusTask {
                 .setAppArtifact(appArtifact)
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
-                //.setConfigDir(extension().outputConfigDirectory().toPath())
-                //.setTargetDirectory(extension().outputDirectory().toPath())
                 .build().bootstrap()) {
             bootstrap.runInAugmentClassLoader(GenerateConfigTask.class.getName(),
                     Collections.singletonMap(GenerateConfigTask.CONFIG_FILE, new File(target, name).toPath()));

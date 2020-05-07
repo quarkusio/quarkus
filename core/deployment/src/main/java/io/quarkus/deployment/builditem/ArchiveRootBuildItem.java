@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.PathsCollection;
@@ -17,7 +18,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
 
     public static class Builder {
 
-        private Path archiveLocation;
         private List<Path> archiveRoots = new ArrayList<>();
         private Collection<Path> excludedFromIndexing;
 
@@ -39,8 +39,10 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Deprecated
         public Builder setArchiveLocation(Path archiveLocation) {
-            this.archiveLocation = archiveLocation;
+            this.archiveRoots.clear();
+            this.archiveRoots.add(archiveLocation);
             return this;
         }
 
@@ -53,7 +55,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         return new Builder();
     }
 
-    private final Path archiveLocation;
     private final Path archiveRoot;
     private final Collection<Path> excludedFromIndexing;
     private final PathsCollection rootDirs;
@@ -72,7 +73,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         if (!Files.isDirectory(archiveRoot)) {
             throw new IllegalArgumentException(archiveRoot + " does not point to the application output directory");
         }
-        this.archiveLocation = archiveLocation;
         this.rootDirs = PathsCollection.of(archiveRoot);
         this.paths = PathsCollection.of(archiveLocation);
         this.archiveRoot = archiveRoot;
@@ -80,7 +80,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     private ArchiveRootBuildItem(Builder builder, QuarkusBuildCloseablesBuildItem buildCloseables) throws IOException {
-        this.archiveLocation = builder.archiveLocation;
         this.excludedFromIndexing = builder.excludedFromIndexing;
         final PathsCollection.Builder rootDirs = PathsCollection.builder();
         final PathsCollection.Builder paths = PathsCollection.builder();
@@ -106,7 +105,12 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      */
     @Deprecated
     public Path getArchiveLocation() {
-        return archiveLocation;
+        final Iterator<Path> i = paths.iterator();
+        Path last = i.next();
+        while (i.hasNext()) {
+            last = i.next();
+        }
+        return last;
     }
 
     /**

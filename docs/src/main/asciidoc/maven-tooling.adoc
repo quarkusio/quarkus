@@ -555,7 +555,7 @@ Next create the `pom.xml` files for the submodules in there respective subfolder
 
 [WARNING]
 ====
-To enable Dependency Injection to work across submodules we need to add an empty `beans.xml` file in every submodules in the `src/main/resources/META-INF` directory.
+To enable Dependency Injection to work across submodules we need to add an empty `beans.xml` file in every submodules in the `src/main/resources/META-INF` directory of that module.
 ====
 
 Check the link:https://github.com/quarkusio/quarkus-quickstarts/tree/master/maven-multi-module-quickstart[quickstarts] for a full example.

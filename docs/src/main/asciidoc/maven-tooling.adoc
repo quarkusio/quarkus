@@ -458,7 +458,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 [[multi-module-maven]]
 === Multi-Module Maven project
-To set up a multi-module maven project we need to adjust the configuration given above slightly. Add or replace the following elements in your root `pom.xml` of the parent project:
+To set up a multi-module maven project we need to adjust the configuration given above slightly. Add or replace the following elements in your root `pom.xml` of the parent module:
 
 [source,xml,subs=attributes+]
 ----
@@ -507,10 +507,10 @@ To set up a multi-module maven project we need to adjust the configuration given
 <1> Set the packaging to `pom` as the parent module doesn't include any source code.
 <2> Set the version as a property to reuse the value in submodules.
 <3> Optionally use a BOM file to omit the version of the different Quarkus dependencies in your submodules.
-<4> Remove the `build` step from the plugin, we will add this to the submodule.
+<4> Remove the `build` step from the plugin, we will add this to one of the submodules.
 <5> Set up the submodules
 
-Next create the `pom.xml` files for the submodules in there respective subfolders:
+Next create the `pom.xml` files for the submodules in their respective subfolders:
 [source,xml,subs=attributes+]
 ----
 <project>
@@ -548,7 +548,7 @@ Next create the `pom.xml` files for the submodules in there respective subfolder
 </project>
 ----
 
-<1> Link to the parent and make sure it's the correct version by using the `revision` property.
+<1> Link to the parent and make sure it's using the correct version by using the `revision` property.
 <2> Name the submodule.
 <3> One of the submodules needs to include the Quarkus Maven plugin with the build step. Other modules can omit this plugin.
 <4> Include dependencies on other submodules and again make sure it's using the correct version by referencing the parent version.

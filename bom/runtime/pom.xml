@@ -171,7 +171,7 @@
         <kubernetes-client.version>4.10.2</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
-        <quarkus-spring-api.version>5.2.SP3</quarkus-spring-api.version>
+        <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
@@ -760,6 +760,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-scheduled</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

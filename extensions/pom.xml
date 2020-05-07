@@ -107,6 +107,7 @@
         <module>spring-boot-properties</module>
         <module>spring-cloud-config-client</module>
         <module>spring-cache</module>
+        <module>spring-scheduled</module>
 
         <!-- Security -->
         <module>security</module>

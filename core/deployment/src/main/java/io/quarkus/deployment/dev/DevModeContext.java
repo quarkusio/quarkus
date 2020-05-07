@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -213,7 +213,7 @@ public class DevModeContext implements Serializable {
                 String resourceOutputPath) {
             this.name = name;
             this.projectDirectory = projectDirectory;
-            this.sourcePaths = sourcePaths == null ? new HashSet<>() : new HashSet<>(sourcePaths);
+            this.sourcePaths = sourcePaths == null ? new LinkedHashSet<>() : new LinkedHashSet<>(sourcePaths);
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
             this.resourcesOutputPath = resourceOutputPath;

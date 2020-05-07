@@ -3,7 +3,6 @@ package io.quarkus.agroal.runtime;
 import java.util.function.Supplier;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.arc.Arc;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -21,8 +20,7 @@ public class AgroalRecorder {
 
     public Supplier<AgroalDataSource> agroalDataSourceSupplier(String dataSourceName,
             @SuppressWarnings("unused") DataSourcesRuntimeConfig dataSourcesRuntimeConfig) {
-        final AgroalDataSource agroalDataSource = Arc.container().instance(DataSources.class).get()
-                .createDataSource(dataSourceName);
+        final AgroalDataSource agroalDataSource = DataSources.fromName(dataSourceName);
         return new Supplier<AgroalDataSource>() {
             @Override
             public AgroalDataSource get() {

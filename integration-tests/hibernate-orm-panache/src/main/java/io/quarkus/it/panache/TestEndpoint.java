@@ -1299,4 +1299,24 @@ public class TestEndpoint {
 
         return "OK";
     }
+
+    @GET
+    @Path("9025")
+    @Transactional
+    public String testBug9025() {
+        Fruit apple = new Fruit("apple", "red");
+        Fruit orange = new Fruit("orange", "orange");
+        Fruit banana = new Fruit("banana", "yellow");
+
+        Fruit.persist(apple, orange, banana);
+
+        PanacheQuery<Fruit> query = Fruit.find(
+                "select name, color from Fruit").page(Page.ofSize(1));
+
+        List<Fruit> results = query.list();
+
+        int pageCount = query.pageCount();
+
+        return "OK";
+    }
 }

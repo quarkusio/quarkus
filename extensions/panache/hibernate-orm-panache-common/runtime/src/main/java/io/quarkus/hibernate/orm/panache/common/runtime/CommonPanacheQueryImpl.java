@@ -23,7 +23,13 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class CommonPanacheQueryImpl<Entity> {
 
-    private static final Pattern SELECT_PATTERN = Pattern.compile("^\\s*SELECT\\s+((?:DISTINCT\\s+)?[^\\s]+)\\s+([^\\s]+.*)$",
+    // match SELECT DISTINCT? id (AS id)? (, id (AS id)?)*
+    static final Pattern SELECT_PATTERN = Pattern.compile(
+            "^\\s*SELECT\\s+((?:DISTINCT\\s+)?\\w+(?:\\.\\w+)*)(?:\\s+AS\\s+\\w+)?(\\s*,\\s*\\w+(?:\\.\\w+)*(?:\\s+AS\\s+\\w+)?)*\\s+(.*)",
+            Pattern.CASE_INSENSITIVE);
+
+    // match FROM
+    static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*",
             Pattern.CASE_INSENSITIVE);
 
     private Object paramsArrayOrMap;
@@ -198,9 +204,24 @@ public class CommonPanacheQueryImpl<Entity> {
         Matcher selectMatcher = SELECT_PATTERN.matcher(query);
         String countQuery;
         if (selectMatcher.matches()) {
-            countQuery = "SELECT COUNT(" + selectMatcher.group(1) + ") " + selectMatcher.group(2);
-        } else {
+            // this one cannot be null
+            String firstSelection = selectMatcher.group(1).trim();
+            if (firstSelection.toLowerCase().startsWith("distinct ")) {
+                // this one can be null
+                String secondSelection = selectMatcher.group(2);
+                // we can only count distinct single columns
+                if (secondSelection != null && !secondSelection.trim().isEmpty()) {
+                    throw new PanacheQueryException("Count query not supported for select query: " + query);
+                }
+                countQuery = "SELECT COUNT(" + firstSelection + ") " + selectMatcher.group(3);
+            } else {
+                // it's not distinct, forget the column list
+                countQuery = "SELECT COUNT(*) " + selectMatcher.group(3);
+            }
+        } else if (FROM_PATTERN.matcher(query).matches()) {
             countQuery = "SELECT COUNT(*) " + query;
+        } else {
+            throw new PanacheQueryException("Count query not supported for select query: " + query);
         }
 
         // remove the order by clause

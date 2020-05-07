@@ -24,6 +24,8 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -59,7 +61,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
-public class PanacheResourceProcessor {
+public class PanacheMongoResourceProcessor {
     // blocking types
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheMongoRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheMongoRepository.class.getName());
@@ -81,6 +83,7 @@ public class PanacheResourceProcessor {
             .createSimple(ReactivePanacheMongoEntity.class.getName());
 
     private static final DotName DOTNAME_OBJECT_ID = DotName.createSimple(ObjectId.class.getName());
+    protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -116,7 +119,7 @@ public class PanacheResourceProcessor {
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
         IndexingUtil.indexClass(ObjectId.class.getName(), indexer, index.getIndex(), additionalIndex,
-                PanacheResourceProcessor.class.getClassLoader());
+                PanacheMongoResourceProcessor.class.getClassLoader());
         CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
         Type type = Type.create(DOTNAME_OBJECT_ID, Type.Kind.CLASS);
         return new ReflectiveHierarchyBuildItem(type, compositeIndex);
@@ -192,8 +195,10 @@ public class PanacheResourceProcessor {
                 modelEnhancer.collectFields(classInfo);
         }
 
+        Set<String> modelClassNamesInternal = new HashSet<>();
         // iterate over all the entity classes
         for (String modelClass : modelClasses) {
+            modelClassNamesInternal.add(modelClass.replace(".", "/"));
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
 
             //register for reflection entity classes
@@ -209,10 +214,17 @@ public class PanacheResourceProcessor {
         if (!modelEnhancer.entities.isEmpty()) {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(
                     modelEnhancer.getModelInfo());
-            for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
-                String className = classInfo.name().toString();
-                if (!modelClasses.contains(className)) {
-                    transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
+            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
+            for (ClassPathElement i : archives) {
+                for (String res : i.getProvidedResources()) {
+                    if (res.endsWith(".class")) {
+                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                        if (!modelClasses.contains(cn)) {
+                            transformers.produce(
+                                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
+                        }
+                    }
                 }
             }
         }

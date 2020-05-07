@@ -17,7 +17,7 @@ public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnh
     public final static DotName PANACHE_REPOSITORY_NAME = DotName.createSimple(ReactivePanacheMongoRepository.class.getName());
 
     public ReactivePanacheMongoRepositoryEnhancer(IndexView index) {
-        super(index, PanacheResourceProcessor.DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE);
+        super(index, PanacheMongoResourceProcessor.DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE);
     }
 
     @Override

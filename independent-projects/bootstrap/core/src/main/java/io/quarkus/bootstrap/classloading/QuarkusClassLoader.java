@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
@@ -71,6 +73,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile MemoryClassPathElement resettableElement;
 
     private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers;
+    private volatile Map<String, Predicate<byte[]>> transformerPredicates;
     private volatile ClassLoader transformerClassLoader;
     private volatile ClassLoaderState state;
 
@@ -99,6 +102,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.name = builder.name;
         this.elements = builder.elements;
         this.bytecodeTransformers = builder.bytecodeTransformers;
+        this.transformerPredicates = builder.transformerPredicates;
         this.bannedElements = builder.bannedElements;
         this.parentFirstElements = builder.parentFirstElements;
         this.lesserPriorityElements = builder.lesserPriorityElements;
@@ -126,12 +130,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     public void reset(Map<String, byte[]> resources,
             Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers,
+            Map<String, Predicate<byte[]>> transformerPredicates,
             ClassLoader transformerClassLoader) {
         if (resettableElement == null) {
             throw new IllegalStateException("Classloader is not resettable");
         }
         this.transformerClassLoader = transformerClassLoader;
         synchronized (this) {
+            this.transformerPredicates = transformerPredicates;
             resettableElement.reset(resources);
             this.bytecodeTransformers = bytecodeTransformers;
             state = null;
@@ -344,8 +350,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     if (classPathElementResource != null) { //can happen if the class loader was closed
                         byte[] data = classPathElementResource.getData();
                         List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
+                        Map<String, Predicate<byte[]>> constPoolEntries = transformerPredicates;
                         if (transformers != null) {
-                            data = handleTransform(name, data, transformers);
+                            data = handleTransform(name, data, transformers, constPoolEntries);
                         }
                         definePackage(name, classPathElement);
                         return defineClass(name, data, 0, data.length,
@@ -391,6 +398,19 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    public List<ClassPathElement> getElementsWithResource(String name) {
+        List<ClassPathElement> ret = new ArrayList<>();
+        if (parent instanceof QuarkusClassLoader) {
+            ret.addAll(((QuarkusClassLoader) parent).getElementsWithResource(name));
+        }
+        ClassPathElement[] classPathElements = getState().loadableResources.get(name);
+        if (classPathElements == null) {
+            return ret;
+        }
+        ret.addAll(Arrays.asList(classPathElements));
+        return ret;
+    }
+
     private String getPackageNameFromClassName(String className) {
         final int index = className.lastIndexOf('.');
         if (index == -1) {
@@ -403,7 +423,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private byte[] handleTransform(String name, byte[] bytes,
-            List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers) {
+            List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers,
+            Map<String, Predicate<byte[]>> transformerPredicates) {
+        if (transformerPredicates.containsKey(name)) {
+            if (!transformerPredicates.get(name).test(bytes)) {
+                return bytes;
+            }
+        }
         ClassReader cr = new ClassReader(bytes);
         ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
 
@@ -451,6 +477,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         final List<ClassPathElement> bannedElements = new ArrayList<>();
         final List<ClassPathElement> parentFirstElements = new ArrayList<>();
         final List<ClassPathElement> lesserPriorityElements = new ArrayList<>();
+        Map<String, Predicate<byte[]>> transformerPredicates = Collections.emptyMap();
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = Collections.emptyMap();
         final boolean parentFirst;
         MemoryClassPathElement resettableElement;
@@ -561,6 +588,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             } else {
                 this.bytecodeTransformers = bytecodeTransformers;
             }
+        }
+
+        /**
+         * Sets const pool entries that need to be present for a class to be transformed. This optimisation
+         * allows for transformation to be skipped if the scanner detects that no transformation is required.
+         */
+        public Builder setTransformerPredicates(Map<String, Predicate<byte[]>> transformerPredicates) {
+            this.transformerPredicates = transformerPredicates;
+            return this;
         }
 
         /**

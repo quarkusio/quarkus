@@ -21,11 +21,14 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -46,7 +49,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
-public final class PanacheResourceProcessor {
+public final class PanacheHibernateResourceProcessor {
 
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheRepository.class.getName());
@@ -58,6 +61,7 @@ public final class PanacheResourceProcessor {
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
+    protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -75,6 +79,11 @@ public final class PanacheResourceProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_ENTITY_MANAGER));
+    }
+
+    @BuildStep
+    AdditionalApplicationArchiveMarkerBuildItem marker() {
+        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
     }
 
     @BuildStep
@@ -133,7 +142,9 @@ public final class PanacheResourceProcessor {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
+        Set<String> modelClassNamesInternal = new HashSet<>();
         for (String modelClass : modelClasses) {
+            modelClassNamesInternal.add(modelClass.replace(".", "/"));
             transformers.produce(new BytecodeTransformerBuildItem(true, modelClass, modelEnhancer));
 
             // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
@@ -148,10 +159,17 @@ public final class PanacheResourceProcessor {
         MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();
         if (modelInfo.hasEntities()) {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-            for (ClassInfo classInfo : index.getIndex().getKnownClasses()) {
-                String className = classInfo.name().toString();
-                if (!modelClasses.contains(className)) {
-                    transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
+            QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+            List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
+            for (ClassPathElement i : archives) {
+                for (String res : i.getProvidedResources()) {
+                    if (res.endsWith(".class")) {
+                        String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                        if (!modelClasses.contains(cn)) {
+                            transformers.produce(
+                                    new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
+                        }
+                    }
                 }
             }
         }

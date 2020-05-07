@@ -31,7 +31,7 @@ public class ReactivePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<Me
     final Map<String, EntityModel> entities = new HashMap<>();
 
     public ReactivePanacheMongoEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, PanacheResourceProcessor.DOTNAME_MUTINY_PANACHE_ENTITY_BASE, methodCustomizers);
+        super(index, PanacheMongoResourceProcessor.DOTNAME_MUTINY_PANACHE_ENTITY_BASE, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 

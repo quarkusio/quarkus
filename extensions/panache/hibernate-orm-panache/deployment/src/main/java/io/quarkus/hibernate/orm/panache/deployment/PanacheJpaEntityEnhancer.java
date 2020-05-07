@@ -41,7 +41,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     public PanacheJpaEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, PanacheResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE, methodCustomizers);
+        super(index, PanacheHibernateResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 

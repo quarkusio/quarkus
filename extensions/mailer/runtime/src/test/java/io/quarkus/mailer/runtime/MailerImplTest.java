@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -60,7 +59,7 @@ class MailerImplTest {
     @BeforeEach
     void init() {
         mailer = new MutinyMailerImpl();
-        mailer.configure(Optional.of(FROM), Optional.empty(), false);
+        mailer.mailerSupport = new MailerSupport(FROM, null, false);
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
                 new MailConfig().setPort(wiser.getServer().getPort()));

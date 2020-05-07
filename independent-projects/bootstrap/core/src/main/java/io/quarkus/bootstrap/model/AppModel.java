@@ -208,7 +208,7 @@ public class AppModel implements Serializable {
                     .collect(Collectors.toList());
             AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
                     parentFirstArtifacts, lesserPriorityArtifacts);
-            log.debugf("Created AppMode %s", appModel);
+            log.debugf("Created AppModel %s", appModel);
             return appModel;
 
         }

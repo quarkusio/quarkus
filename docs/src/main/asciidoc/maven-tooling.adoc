@@ -456,6 +456,109 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <4> Enable the `native` package type. The build will therefore produce a native executable.
 <5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
+[[multi-module-maven]]
+=== Multi-Module Maven project
+To set up a multi-module maven project we need to adjust the configuration given above slightly. Add or replace the following elements in your root `pom.xml` of the parent project:
+
+[source,xml,subs=attributes+]
+----
+<project>
+    [...]
+    <packaging>pom</packaging> <1>
+    <groupId>org.acme</groupId>
+    <artifactId>quarkus-multi-module-example</artifactId>
+    <version>${revision}</version> <2>
+    <properties>
+        <revision>1.0.0-SNAPSHOT</revision>
+        [...]
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency> <3>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        [...]
+        <pluginManagement>
+            <plugins>
+                <plugin> <4>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    [...]
+    <modules> <5>
+        <module>webapp</module>
+        <module>...</module>
+    </modules>
+</project>
+----
+
+<1> Set the packaging to `pom` as the parent module doesn't include any source code.
+<2> Set the version as a property to reuse the value in submodules.
+<3> Optionally use a BOM file to omit the version of the different Quarkus dependencies in your submodules.
+<4> Remove the `build` step from the plugin, we will add this to the submodule.
+<5> Set up the submodules
+
+Next create the `pom.xml` files for the submodules in there respective subfolders:
+[source,xml,subs=attributes+]
+----
+<project>
+    [...]
+    <parent> <1>
+        <groupId>org.acme</groupId>
+        <artifactId>quarkus-multi-module-example</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <artifactId>webapp</artifactId> <2>
+    <build>
+        <plugins>
+            <plugin> <3>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency> <4>
+            <groupId>org.acme</groupId>
+            <artifactId>...</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        [...]
+    </dependencies>
+</project>
+----
+
+<1> Link to the parent and make sure it's the correct version by using the `revision` property.
+<2> Name the submodule.
+<3> One of you submodules needs to include the Quarkus Maven plugin with the build step. Other modules can omit this plugin.
+<4> Include dependencies on other submodules and again make sure it's using the correct version by referencing the parent version.
+
+[WARNING]
+====
+To enable Dependency Injection to work across submodules we need to add an empty `beans.xml` file in every submodules in the `src/main/resources/META-INF` directory.
+====
+
+Check the link:https://github.com/quarkusio/quarkus-quickstarts/tree/master/maven-multi-module-quickstart[quickstarts] for a full example.
+
 [[uber-jar-maven]]
 === Uber-Jar Creation
 

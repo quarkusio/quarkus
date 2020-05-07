@@ -2,13 +2,12 @@ package io.quarkus.qoder;
 
 import io.quarkus.dependencies.Extension;
 import io.quarkus.qoder.MavenProjectExtensionsManager.Range;
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 class MavenProjectExtensionsManagerTest {
 
@@ -17,7 +16,26 @@ class MavenProjectExtensionsManagerTest {
     @Test
     void shouldDetectDependenciesRange() throws Exception {
         final MavenProjectExtensionsManager mgr = new MavenProjectExtensionsManager(getResourcePath(VALID_POM_RESOURCE));
-        Assertions.assertThat(mgr.detectDependenciesRange()).hasValue(new Range(15, 28));
+        Assertions.assertThat(mgr.detectDependenciesRange()).hasValue(new Range(15, 35));
+    }
+
+    @Test
+    void shouldAlsoConsiderTheGroupId() throws Exception {
+        final MavenProjectExtensionsManager mgr = new MavenProjectExtensionsManager(getResourcePath(VALID_POM_RESOURCE));
+        Assertions.assertThat(mgr.hasExtension(new Extension("org.other", "some-other-ext", "1.0.0"))).isTrue();
+        Assertions.assertThat(mgr.hasExtension(new Extension("org.invalid", "some-other-ext", "1.0.0"))).isFalse();
+    }
+
+    @Test
+    void shouldNotDetectCommentedDependency() throws Exception {
+        final MavenProjectExtensionsManager mgr = new MavenProjectExtensionsManager(getResourcePath(VALID_POM_RESOURCE));
+        Assertions.assertThat(mgr.hasExtension(new Extension("org.other", "some-commented-ext", "1.0.0"))).isFalse();
+    }
+
+    @Test
+    void shouldDetectCommentedLines() throws Exception {
+        final MavenProjectExtensionsManager mgr = new MavenProjectExtensionsManager(getResourcePath(VALID_POM_RESOURCE));
+        Assertions.assertThat(mgr.detectCommentedLines()).containsExactlyInAnyOrder(16, 19, 23, 28, 29, 30, 31, 32, 33, 34);
     }
 
     @Test
@@ -30,7 +48,6 @@ class MavenProjectExtensionsManagerTest {
         mgr.removeExtension(extension);
         Assertions.assertThat(mgr.hasExtension(extension)).isFalse();
     }
-
 
     private Path getResourcePath(String name) throws URISyntaxException {
         return Paths.get(MavenProjectExtensionsManagerTest.class.getResource(name).toURI());

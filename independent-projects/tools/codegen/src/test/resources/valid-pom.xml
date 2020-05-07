@@ -26,5 +26,12 @@
             <artifactId>some-other-ext</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+           <dependency>
+                <groupId>org.other</groupId>
+                <artifactId>some-commented-ext</artifactId>
+                <scope>test</scope>
+            </dependency>
+        -->
     </dependencies>
 </project>

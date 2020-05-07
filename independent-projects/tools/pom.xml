@@ -54,7 +54,7 @@
     <modules>
         <module>platform-descriptor-api</module>
         <module>common</module>
-        <module>qoder</module>
+        <module>codegen</module>
         <module>utilities</module>
         <module>platform-descriptor-resolver-json</module>
     </modules>

@@ -16,7 +16,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 final class DeserializationUtil {
 
     private static final String DOCUMENT_DELIMITER = "---";
-    private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+    static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
     private DeserializationUtil() {
     }
@@ -39,7 +39,7 @@ final class DeserializationUtil {
         return items;
     }
 
-    private static String[] splitDocument(String[] lines) {
+    static String[] splitDocument(String[] lines) {
         List<String> documents = new ArrayList<>();
         int nLine = 0;
         StringBuilder builder = new StringBuilder();

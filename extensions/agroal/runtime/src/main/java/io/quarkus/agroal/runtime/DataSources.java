@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
@@ -43,18 +44,17 @@ import io.quarkus.vault.CredentialsProvider;
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
  *
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and its {@code  createDataSource} method is called at runtime in order to produce
- * the actual {@code AgroalDataSource} objects.
- *
- * CDI scopes and qualifiers are setup at build-time, which is why this class is devoid of
- * any CDI annotations
- *
+ * It isn't a CDI producer in the literal sense, but it created a synthetic bean
+ * from {@code AgroalProcessor}
+ * The {@code createDataSource} method is called at runtime (see
+ * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)})
+ * in order to produce the actual {@code AgroalDataSource} objects.
  */
 @SuppressWarnings("deprecation")
-public class DataSourceProducer {
+@Singleton
+public class DataSources {
 
-    private static final Logger log = Logger.getLogger(DataSourceProducer.class.getName());
+    private static final Logger log = Logger.getLogger(DataSources.class.getName());
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -69,7 +69,7 @@ public class DataSourceProducer {
 
     private final List<AgroalDataSource> dataSources = new ArrayList<>();
 
-    public DataSourceProducer(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+    public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
             LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,

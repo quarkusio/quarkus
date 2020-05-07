@@ -47,7 +47,7 @@ public class KubernetesDeployer {
             .values().stream()
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
-    @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
+    @BuildStep(onlyIf = IsNormal.class)
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets,
@@ -56,6 +56,10 @@ public class KubernetesDeployer {
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
+
+        if (!KubernetesDeploy.INSTANCE.check()) {
+            return;
+        }
 
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);

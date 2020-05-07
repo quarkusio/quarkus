@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
@@ -38,6 +39,11 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             }
         }
         this.resources = newResources;
+    }
+
+    @Override
+    public Path getRoot() {
+        return null;
     }
 
     @Override

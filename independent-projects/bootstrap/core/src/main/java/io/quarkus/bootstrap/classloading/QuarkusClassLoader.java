@@ -398,6 +398,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    private String getPackageNameFromClassName(String className) {
+        final int index = className.lastIndexOf('.');
+        if (index == -1) {
+            // we return null here since in this case no package is defined
+            // this is same behavior as Package.getPackage(clazz) exhibits
+            // when the class is in the default package
+            return null;
+        }
+        return className.substring(0, index);
+    }
+
     public List<ClassPathElement> getElementsWithResource(String name) {
         List<ClassPathElement> ret = new ArrayList<>();
         if (parent instanceof QuarkusClassLoader) {
@@ -409,17 +420,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
         ret.addAll(Arrays.asList(classPathElements));
         return ret;
-    }
-
-    private String getPackageNameFromClassName(String className) {
-        final int index = className.lastIndexOf('.');
-        if (index == -1) {
-            // we return null here since in this case no package is defined
-            // this is same behavior as Package.getPackage(clazz) exhibits
-            // when the class is in the default package
-            return null;
-        }
-        return className.substring(0, index);
     }
 
     private byte[] handleTransform(String name, byte[] bytes,

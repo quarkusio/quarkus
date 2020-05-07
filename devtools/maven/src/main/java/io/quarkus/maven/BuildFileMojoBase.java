@@ -80,7 +80,8 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
 
                 final List<Artifact> descrArtifactList = new ArrayList<>(2);
                 for (Dependency dep : mvnBuild.getManagedDependencies()) {
-                    if (!dep.getScope().equals("import") && !dep.getType().equals("pom")) {
+                    if ((dep.getScope() == null || !dep.getScope().equals("import"))
+                            && (dep.getType() == null || !dep.getType().equals("pom"))) {
                         continue;
                     }
                     // We don't know which BOM is the platform one, so we are trying every BOM here

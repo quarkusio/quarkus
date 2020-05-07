@@ -1110,35 +1110,6 @@ quarkus.log.file.path=/tmp/debug.log
 
 Since `format` is not defined in these properties, the default value from `@ConfigItem` will be used instead.
 
-=== Conditional Step Inclusion
-
-It is possible to only include a given `@BuildStep` under certain conditions.  The `@BuildStep` annotation
-has two optional parameters: `onlyIf` and `onlyIfNot`.  These parameters can be set to one or more classes
-which implement `BooleanSupplier`.  The build step will only be included when the method returns
-`true` (for `onlyIf`) or `false` (for `onlyIfNot`).
-
-The condition class can inject <<configuration-roots,configuration roots>> as long as they belong to
-a build-time phase.  Run time configuration is not available for condition classes.
-
-The condition class may also inject a value of type `io.quarkus.runtime.LaunchMode`.
-Constructor parameter and field injection is supported.
-
-.An example of a conditional build step
-[source%nowrap,java]
-----
-@BuildStep(onlyIf = IsDevMode.class)
-LogCategoryBuildItem enableDebugLogging() {
-    return new LogCategoryBuildItem("org.your.quarkus.extension", Level.DEBUG);
-}
-
-static class IsDevMode implements BooleanSupplier {
-    LaunchMode launchMode;
-
-    public boolean getAsBoolean() {
-        return launchMode == LaunchMode.DEVELOPMENT;
-    }
-}
-----
 
 ==== Enhanced conversion
 You can use enhanced conversion of a config item by using the `@ConvertWith` annotation which accepts a `Converter` class object.
@@ -1233,6 +1204,36 @@ public class SomeLogConfig {
 1. Use the default converter (built in or a custom converter) to convert `Level.class` enum.
 =====
 
+
+=== Conditional Step Inclusion
+
+It is possible to only include a given `@BuildStep` under certain conditions.  The `@BuildStep` annotation
+has two optional parameters: `onlyIf` and `onlyIfNot`.  These parameters can be set to one or more classes
+which implement `BooleanSupplier`.  The build step will only be included when the method returns
+`true` (for `onlyIf`) or `false` (for `onlyIfNot`).
+
+The condition class can inject <<configuration-roots,configuration roots>> as long as they belong to
+a build-time phase.  Run time configuration is not available for condition classes.
+
+The condition class may also inject a value of type `io.quarkus.runtime.LaunchMode`.
+Constructor parameter and field injection is supported.
+
+.An example of a conditional build step
+[source%nowrap,java]
+----
+@BuildStep(onlyIf = IsDevMode.class)
+LogCategoryBuildItem enableDebugLogging() {
+    return new LogCategoryBuildItem("org.your.quarkus.extension", Level.DEBUG);
+}
+
+static class IsDevMode implements BooleanSupplier {
+    LaunchMode launchMode;
+
+    public boolean getAsBoolean() {
+        return launchMode == LaunchMode.DEVELOPMENT;
+    }
+}
+----
 
 [id='bytecode-recording']
 === Bytecode Recording

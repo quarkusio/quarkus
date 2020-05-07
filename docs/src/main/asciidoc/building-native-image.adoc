@@ -299,7 +299,7 @@ target directory you can specify the executable with the `-Dnative.image.path=` 
 == Creating a container
 
 IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker 
-on Windows you should share your project's drive at Docker Desktop file share settings.
+on Windows you should share your project's drive at Docker Desktop file share settings and restart Docker Desktop.
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a container image using the produced native executable.

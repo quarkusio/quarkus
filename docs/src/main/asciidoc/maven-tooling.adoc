@@ -464,9 +464,9 @@ To set up a multi-module maven project we need to adjust the configuration given
 ----
 <project>
     [...]
-    <packaging>pom</packaging> <1>
     <groupId>org.acme</groupId>
     <artifactId>quarkus-multi-module-example</artifactId>
+    <packaging>pom</packaging> <1>
     <version>${revision}</version> <2>
     <properties>
         <revision>1.0.0-SNAPSHOT</revision>
@@ -475,9 +475,9 @@ To set up a multi-module maven project we need to adjust the configuration given
     <dependencyManagement>
         <dependencies>
             <dependency> <3>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -490,7 +490,7 @@ To set up a multi-module maven project we need to adjust the configuration given
                 <plugin> <4>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus-plugin.version}</version>
+                    <version>${quarkus.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -498,6 +498,7 @@ To set up a multi-module maven project we need to adjust the configuration given
     [...]
     <modules> <5>
         <module>webapp</module>
+        <module>domain</module>
         <module>...</module>
     </modules>
 </project>
@@ -538,7 +539,7 @@ Next create the `pom.xml` files for the submodules in there respective subfolder
     <dependencies>
         <dependency> <4>
             <groupId>org.acme</groupId>
-            <artifactId>...</artifactId>
+            <artifactId>domain</artifactId>
             <version>${project.parent.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -549,7 +550,7 @@ Next create the `pom.xml` files for the submodules in there respective subfolder
 
 <1> Link to the parent and make sure it's the correct version by using the `revision` property.
 <2> Name the submodule.
-<3> One of you submodules needs to include the Quarkus Maven plugin with the build step. Other modules can omit this plugin.
+<3> One of the submodules needs to include the Quarkus Maven plugin with the build step. Other modules can omit this plugin.
 <4> Include dependencies on other submodules and again make sure it's using the correct version by referencing the parent version.
 
 [WARNING]

@@ -1,8 +1,8 @@
 package io.quarkus.commandmode;
 
+import org.assertj.core.api.Assertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,8 +21,8 @@ public class SimpleCommandModeTestCase {
 
     @Test
     public void testRun() {
-        Assertions.assertTrue(config.getStartupConsoleOutput().contains("Hello World"));
-        Assertions.assertEquals(10, config.getExitCode());
+        Assertions.assertThat(config.getStartupConsoleOutput()).contains("Hello World");
+        Assertions.assertThat(config.getExitCode()).isEqualTo(10);
     }
 
 }

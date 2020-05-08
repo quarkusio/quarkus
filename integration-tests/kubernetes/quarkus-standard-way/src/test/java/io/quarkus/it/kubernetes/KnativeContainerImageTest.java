@@ -2,10 +2,12 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -13,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.knative.serving.v1.Service;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -36,22 +37,29 @@ public class KnativeContainerImageTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("knative.json"))
                 .isDirectoryContaining(p -> p.getFileName().endsWith("knative.yml"));
 
-        List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("knative.yml"));
-
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
-            assertThat(i).isInstanceOfSatisfying(Service.class, d -> {
-
-                assertThat(d.getSpec()).satisfies(serviceSpec -> {
-                    assertThat(serviceSpec.getTemplate()).satisfies(revisionTemplate -> {
-                        assertThat(revisionTemplate.getSpec()).satisfies(spec -> {
-                            assertThat(spec.getContainers()).satisfies(containers -> {
-                                assertThat(containers.get(0)).satisfies(c -> assertThat(c.getImage())
-                                        .isEqualTo("quay.io/grp/knative-with-container-image:0.1-SNAPSHOT"));
-                            });
-                        });
+        assertThat(getKNativeService(kubernetesDir).getSpec()).satisfies(serviceSpec -> {
+            assertThat(serviceSpec.getTemplate()).satisfies(revisionTemplate -> {
+                assertThat(revisionTemplate.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getContainers()).satisfies(containers -> {
+                        assertThat(containers.get(0)).satisfies(c -> assertThat(c.getImage())
+                                .isEqualTo("quay.io/grp/knative-with-container-image:0.1-SNAPSHOT"));
                     });
                 });
             });
         });
+    }
+
+    private Service getKNativeService(Path kubernetesDir) throws IOException {
+        String[] yamlFiles = DeserializationUtil.splitDocument(
+                Files.readAllLines(kubernetesDir.resolve("knative.yml"), StandardCharsets.UTF_8).toArray(new String[0]));
+
+        for (String yamlFile : yamlFiles) {
+            if (yamlFile.contains("\"Service\"")) {
+                return DeserializationUtil.MAPPER.readValue(yamlFile, Service.class);
+            }
+        }
+
+        fail("No KNative Service was generated");
+        return null; // keep the compiler happy
     }
 }

@@ -9,6 +9,7 @@ import javax.persistence.EntityManager;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.rest.common.deployment.DataAccessImplementor;
 
@@ -28,6 +29,16 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle listAll(BytecodeCreator creator) {
         return creator.invokeStaticMethod(ofMethod(entityClassName, "listAll", List.class));
+    }
+
+    @Override
+    public ResultHandle list(BytecodeCreator creator, ResultHandle limit) {
+        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        ResultHandle maxRange = creator.invokeStaticMethod(ofMethod(Integer.class, "sum", int.class, int.class, int.class),
+                limit, creator.load(-1));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "range", PanacheQuery.class, int.class, int.class),
+                query, creator.load(0), maxRange);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }
 
     @Override

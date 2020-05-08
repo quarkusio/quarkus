@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -12,6 +15,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.panache.rest.common.deployment.methods.AddHalMethodImplementor;
 import io.quarkus.panache.rest.common.deployment.methods.AddMethodImplementor;
 import io.quarkus.panache.rest.common.deployment.methods.DeleteMethodImplementor;
@@ -35,6 +40,8 @@ class CrudResourceImplementor {
 
     private final PanacheRestResourceAccessor panacheRestResourceAccessor;
 
+    private FieldDescriptor uriInfoField;
+
     public CrudResourceImplementor(IndexView index) {
         this.index = index;
         this.panacheRestResourceAccessor = new PanacheRestResourceAccessor(index);
@@ -51,6 +58,7 @@ class CrudResourceImplementor {
                 .interfaces(resourceInterfaceName)
                 .build();
         ResourceAnnotator.addPath(classCreator, "/");
+        uriInfoField = implementUriInfoField(classCreator);
 
         for (MethodImplementor methodImplementor : getMethodImplementors(resource)) {
             methodImplementor.implement(classCreator);
@@ -58,6 +66,12 @@ class CrudResourceImplementor {
 
         classCreator.close();
         LOGGER.tracef("Completed generation of '%s'", implementationClassName);
+    }
+
+    private FieldDescriptor implementUriInfoField(ClassCreator classCreator) {
+        FieldCreator fieldCreator = classCreator.getFieldCreator("uriInfo", UriInfo.class);
+        fieldCreator.addAnnotation(Context.class);
+        return fieldCreator.getFieldDescriptor();
     }
 
     private List<MethodImplementor> getMethodImplementors(PanacheCrudResourceBuildItem resource) {
@@ -83,7 +97,7 @@ class CrudResourceImplementor {
                 resourceClassInfo, GetMethodImplementor.NAME, idClassName));
 
         methodImplementors.add(getBasicMethodImplementor(
-                () -> new ListMethodImplementor(dataAccessImplementor, entityClassName),
+                () -> new ListMethodImplementor(dataAccessImplementor, entityClassName, uriInfoField),
                 resourceClassInfo, ListMethodImplementor.NAME));
 
         methodImplementors.add(getBasicMethodImplementor(
@@ -98,7 +112,7 @@ class CrudResourceImplementor {
         getHalMethodImplementor(() -> new GetHalMethodImplementor(dataAccessImplementor, idClassName, entityClassName),
                 resourceClassInfo, GetMethodImplementor.NAME, idClassName).ifPresent(methodImplementors::add);
 
-        getHalMethodImplementor(() -> new ListHalMethodImplementor(dataAccessImplementor, entityClassName),
+        getHalMethodImplementor(() -> new ListHalMethodImplementor(dataAccessImplementor, entityClassName, uriInfoField),
                 resourceClassInfo, ListMethodImplementor.NAME).ifPresent(methodImplementors::add);
 
         getHalMethodImplementor(

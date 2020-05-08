@@ -9,6 +9,8 @@ public interface DataAccessImplementor {
 
     ResultHandle listAll(BytecodeCreator creator);
 
+    ResultHandle list(BytecodeCreator creator, ResultHandle limit);
+
     ResultHandle persist(BytecodeCreator creator, ResultHandle entity);
 
     ResultHandle update(BytecodeCreator creator, ResultHandle entity);

@@ -12,6 +12,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.rest.common.deployment.DataAccessImplementor;
@@ -34,6 +35,17 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle listAll(BytecodeCreator creator) {
         return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "listAll", List.class),
                 getRepositoryInstance(creator));
+    }
+
+    @Override
+    public ResultHandle list(BytecodeCreator creator, ResultHandle limit) {
+        ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
+                getRepositoryInstance(creator));
+        ResultHandle maxRange = creator.invokeStaticMethod(ofMethod(Integer.class, "sum", int.class, int.class, int.class),
+                limit, creator.load(-1));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "range", PanacheQuery.class, int.class, int.class),
+                query, creator.load(0), maxRange);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }
 
     @Override

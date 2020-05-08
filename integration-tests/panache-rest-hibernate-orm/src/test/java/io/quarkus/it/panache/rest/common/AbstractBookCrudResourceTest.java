@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 import java.time.LocalDate;
 import java.util.AbstractMap;
@@ -30,7 +31,7 @@ public abstract class AbstractBookCrudResourceTest {
 
     private static final AuthorDto DOSTOEVSKY = new AuthorDto(1L, "Fyodor Dostoevsky", LocalDate.of(1821, 11, 11));
 
-    private static final AuthorDto ORWELL = new AuthorDto(2L, "George Orwell", LocalDate.of(1903, 06, 25));
+    private static final AuthorDto ORWELL = new AuthorDto(2L, "George Orwell", LocalDate.of(1903, 6, 25));
 
     private static final List<ReviewDto> CRIME_AND_PUNISHMENT_REVIEWS = Arrays.asList(
             new ReviewDto("first", "Captivating"),
@@ -84,6 +85,14 @@ public abstract class AbstractBookCrudResourceTest {
     }
 
     @Test
+    void shouldGetAllWithLimit() {
+        given().queryParam("limit", "1")
+                .when().get()
+                .then().statusCode(200)
+                .and().body("title", hasSize(1));
+    }
+
+    @Test
     void shouldGetAllBooksWithHal() {
         Response response = getAll(APPLICATION_HAL_JSON);
         assertThat(response.getStatusCode()).isEqualTo(200);
@@ -101,6 +110,15 @@ public abstract class AbstractBookCrudResourceTest {
 
         assertHalBook(firstExpectedBook, actualBooks.getJsonObject(0));
         assertHalBook(secondExpectedBook, actualBooks.getJsonObject(1));
+    }
+
+    @Test
+    void shouldGetAllWithHalAndLimit() {
+        given().queryParam("limit", "1")
+                .and().accept(APPLICATION_HAL_JSON)
+                .when().get()
+                .then().statusCode(200)
+                .and().body("_embedded." + getResourceName() + ".title", hasSize(1));
     }
 
     @Test

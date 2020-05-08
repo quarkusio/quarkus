@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.config.Config;
@@ -51,12 +52,22 @@ final class InterfaceConfigPropertiesUtil {
      * </pre>
      */
     static void addProducerMethodForInterfaceConfigProperties(ClassCreator classCreator, DotName interfaceName,
-            String generatedClassName) {
-        try (MethodCreator method = classCreator.getMethodCreator(
-                "produce" + interfaceName.withoutPackagePrefix(),
-                interfaceName.toString(), Config.class.getName())) {
+            String prefix, boolean needsQualifier, String generatedClassName) {
+        String methodName = "produce" + interfaceName.withoutPackagePrefix();
+        if (needsQualifier) {
+            // we need to differentiate the different producers of the same class
+            methodName = methodName + "WithPrefix" + HashUtil.sha1(prefix);
+        }
+        try (MethodCreator method = classCreator.getMethodCreator(methodName, interfaceName.toString(),
+                Config.class.getName())) {
 
             method.addAnnotation(Produces.class);
+            if (needsQualifier) {
+                method.addAnnotation(AnnotationInstance.create(DotNames.CONFIG_PREFIX, null,
+                        new AnnotationValue[] { AnnotationValue.createStringValue("value", prefix) }));
+            } else {
+                method.addAnnotation(Default.class);
+            }
             method.returnValue(method.newInstance(MethodDescriptor.ofConstructor(generatedClassName, Config.class),
                     method.getMethodParam(0)));
         }
@@ -70,7 +81,7 @@ final class InterfaceConfigPropertiesUtil {
         allInterfaces.add(originalInterface.name());
         collectInterfacesRec(originalInterface, index, allInterfaces);
 
-        String generatedClassName = createName(originalInterface.name());
+        String generatedClassName = createName(originalInterface.name(), prefixStr);
         try (ClassCreator interfaceImplClassCreator = ClassCreator.builder().classOutput(classOutput)
                 .interfaces(originalInterface.name().toString()).className(generatedClassName)
                 .build()) {
@@ -210,9 +221,9 @@ final class InterfaceConfigPropertiesUtil {
      * The name also needs to be unique so there are no clashes if there are multiple interfaces
      * annotated with @ConfigProperties
      */
-    private static String createName(DotName ifaceName) {
+    private static String createName(DotName ifaceName, String prefixStr) {
         return ConfigPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + "." + ifaceName.withoutPackagePrefix() + "_"
-                + HashUtil.sha1(ifaceName.toString());
+                + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(prefixStr);
     }
 
     private static boolean isDefault(short flags) {

@@ -3,6 +3,8 @@ package io.quarkus.deployment.pkg;
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -26,6 +28,16 @@ public class PackageConfig {
      */
     @ConfigItem(defaultValue = JAR)
     public String type;
+
+    /**
+     * Experimental property that allows for the creation of a 'mutable' application that
+     * can be re-augmented after creation.
+     *
+     * TODO: should this just be a different package type: 'mutable-jar'
+     *
+     */
+    @ConfigProperty(defaultValue = "false")
+    public boolean mutableApplication;
 
     /**
      * If the java runner should be packed as an uberjar

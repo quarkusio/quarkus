@@ -13,4 +13,6 @@ public interface ClassLoadingResource {
 
     ProtectionDomain getProtectionDomain(ClassLoader runnerClassLoader);
 
+    void close();
+
 }

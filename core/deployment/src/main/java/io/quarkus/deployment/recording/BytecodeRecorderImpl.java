@@ -1061,7 +1061,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 DeferredParameter key = loadObjectInstance(i.getKey(), existing, i.getKey().getClass());
                 DeferredParameter val = i.getValue() != null
                         ? loadObjectInstance(i.getValue(), existing, i.getValue().getClass())
-                        : null;
+                        : loadObjectInstance(null, existing, Object.class);
                 setupSteps.add(new SerialzationStep() {
                     @Override
                     public void handle(MethodContext context, MethodCreator method, DeferredArrayStoreParameter out) {

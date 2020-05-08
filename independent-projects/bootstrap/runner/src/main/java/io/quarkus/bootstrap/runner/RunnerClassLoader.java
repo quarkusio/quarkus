@@ -178,4 +178,12 @@ public class RunnerClassLoader extends ClassLoader {
             return null;
         }
     }
+
+    public void close() {
+        for (Map.Entry<String, ClassLoadingResource[]> entry : resourceDirectoryMap.entrySet()) {
+            for (ClassLoadingResource i : entry.getValue()) {
+                i.close();
+            }
+        }
+    }
 }

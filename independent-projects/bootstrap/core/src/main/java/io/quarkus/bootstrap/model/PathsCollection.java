@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -138,5 +139,9 @@ public class PathsCollection implements Iterable<Path>, Serializable {
             paths.add(Paths.get(in.readUTF()));
         }
         this.paths = Collections.unmodifiableList(paths);
+    }
+
+    public Collection<Path> toList() {
+        return new ArrayList<>(paths);
     }
 }

@@ -3,11 +3,17 @@ package io.quarkus.deployment.steps;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -16,8 +22,13 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.configuration.definition.ClassDefinition;
+import io.quarkus.deployment.configuration.definition.RootDefinition;
+import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.runtime.ConfigChangeRecorder;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.annotations.ConfigPhase;
 
 public class ConfigGenerationBuildStep {
 
@@ -44,8 +55,50 @@ public class ConfigGenerationBuildStep {
                 .collect(Collectors.toList());
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
-
         RunTimeConfigurationGenerator.generate(readResult, classOutput,
                 launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT, defaults, additionalConfigTypes);
     }
+
+    /**
+     * Warns if build time config properties have been changed at runtime.
+     */
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void checkForBuildTimeConfigChange(
+            ConfigChangeRecorder recorder, ConfigurationBuildItem configItem, LoggingSetupBuildItem loggingSetupBuildItem) {
+        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
+        Config config = ConfigProvider.getConfig();
+
+        Map<String, String> values = new HashMap<>();
+        for (RootDefinition root : readResult.getAllRoots()) {
+            if (root.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED ||
+                    root.getConfigPhase() == ConfigPhase.BUILD_TIME) {
+
+                Iterable<ClassDefinition.ClassMember> members = root.getMembers();
+                handleMembers(config, values, members, "quarkus." + root.getRootName() + ".");
+            }
+        }
+        values.remove("quarkus.profile");
+        recorder.handleConfigChange(values);
+    }
+
+    private void handleMembers(Config config, Map<String, String> values, Iterable<ClassDefinition.ClassMember> members,
+            String prefix) {
+        for (ClassDefinition.ClassMember member : members) {
+            if (member instanceof ClassDefinition.ItemMember) {
+                ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
+                String propertyName = prefix + member.getPropertyName();
+                Optional<String> val = config.getOptionalValue(propertyName, String.class);
+                if (val.isPresent()) {
+                    values.put(propertyName, val.get());
+                } else {
+                    values.put(propertyName, itemMember.getDefaultValue());
+                }
+            } else if (member instanceof ClassDefinition.GroupMember) {
+                handleMembers(config, values, ((ClassDefinition.GroupMember) member).getGroupDefinition().getMembers(),
+                        prefix + member.getDescriptor().getName() + ".");
+            }
+        }
+    }
+
 }

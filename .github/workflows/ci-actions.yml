@@ -467,9 +467,10 @@ jobs:
             test-modules: >
               kubernetes-client
           - category: Misc4
-            timeout: 10
+            timeout: 20
             test-modules: >
               smallrye-graphql
+              picocli-native
           - category: Spring
             timeout: 40
             test-modules: >

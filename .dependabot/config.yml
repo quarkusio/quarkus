@@ -167,6 +167,11 @@ update_configs:
           dependency_name: "com.github.tomakehurst:wiremock-jre8"
       - match:
           dependency_name: "uk.co.automatictester:wiremock-maven-plugin"
+      #Picocli
+      - match:
+          dependency_name: "info.picocli:picocli"
+      - match:
+          dependency_name: "info.picocli:picocli-codegen"
   - package_manager: "java:gradle"
     directory: "/devtools/gradle"
     update_schedule: "daily"

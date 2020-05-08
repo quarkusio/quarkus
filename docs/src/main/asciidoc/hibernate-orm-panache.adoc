@@ -3,18 +3,21 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified Hibernate ORM with Panache
+= Using simplified Hibernate ORM with Panache
 
 include::./attributes.adoc[]
 :config-file: application.properties
 
-Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.
+.Prerequisites
+You have a Quarkus Maven project that uses a JDBC datasource.
+
+Hibernate ORM is the de facto JPA implementation. It offers you the full breadth of an object relational mapper (ORM).
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate ORM with Panache focuses on making your entities trivial and fun to write in Quarkus.
 
-== First: an example
+== An example
 
-What we're doing in Panache is allow you to write your Hibernate ORM entities like this:
+In Panache, you can write your Hibernate ORM entities as shown in the following example:
 
 [source,java]
 ----
@@ -38,26 +41,38 @@ public class Person extends PanacheEntity {
 }
 ----
 
-You have noticed how much more compact and readable the code is?
-Does this look interesting? Read on!
+Notice how much more compact and readable the code is.
 
-NOTE: the `list()` method might be surprising at first. It takes fragments of HQL (JP-QL) queries and contextualizes the rest. That makes for very concise but yet readable code.
+NOTE: The `list()` method takes fragments of HQL (JP-QL) queries and contextualizes the rest which provides concise and readable code. What was described above is essentially the active record pattern, sometimes just called the entity pattern. Hibernate with Panache also allows for the use of the more classical repository pattern via PanacheRepository
 
 == Setting up and configuring Hibernate ORM with Panache
 
-To get started:
+NOTE: To see the completed example, clone the https://github.com/quarkusio/quarkus-quickstarts.git[Quarkus Quickstarts] Git repository or download the https://github.com/quarkusio/quarkus-quickstarts/archive/master.zip[Quarkus Quickstarts] archive. The solution is located in the `hibernate-orm-panache-quickstart` directory.
 
-* add your settings in `{config-file}`
-* annotate your entities with `@Entity` and make them extend `PanacheEntity`
-* place your entity logic in static methods in your entities
-
+.Prerequisites
 Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
 
-In your `pom.xml`, add the following dependencies:
 
-* the Panache JPA extension
-* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
+.Procedure
+. Add your settings in `{config-file}`.
+//What specifically do I need to add?
+. Annotate your entities with `@Entity` and make them extend `PanacheEntity`.
+//Can we have an example?
+. Place your entity logic in static methods in your entities.
+//Can we have an example?
 
+
+. In your `pom.xml` file, add the Panache JPA extension and your JDBC driver extension dependency. Quarkus support the following JDBC driver extensions:
++
+* `quarkus-jdbc-postgresql`
+* `quarkus-jdbc-h2`
+* `quarkus-jdbc-mariadb`
+* `quarkus-jdbc-mysql`
+* `quarkus-jdbc-mssql`
+* `quarkus-jdbc-derby`
++
+The following example shows how to add the Panache JPA extension and the PostgreSQL JDBC driver:
++
 [source,xml]
 ----
 <dependencies>
@@ -75,8 +90,8 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 ----
 
-Then add the relevant configuration properties in `{config-file}`.
-
+. Add the relevant configuration properties to the `{config-file}` file.
++
 [source,properties]
 ----
 # configure your datasource
@@ -89,11 +104,12 @@ quarkus.datasource.password = connor
 quarkus.hibernate-orm.database.generation = drop-and-create
 ----
 
-== Defining your entity
+== Using the active record pattern
+=== Defining your entity
 
-To define a Panache entity, simply extend `PanacheEntity`, annotate it with `@Entity` and add your
+To define a Panache entity, extend `PanacheEntity`, annotate it with `@Entity` and add your
 columns as public fields:
-
++
 [source,java]
 ----
 @Entity
@@ -103,8 +119,8 @@ public class Person extends PanacheEntity {
     public Status status;
 }
 ----
-
-You can put all your JPA column annotations on the public fields. If you need a field to not be persisted, use the
++
+. Put all of your JPA column annotations on the public fields. If you need a field to not be persisted, use the
 `@Transient` annotation on it. If you need to write accessors, you can:
 
 [source,java]
@@ -127,13 +143,13 @@ public class Person extends PanacheEntity {
 }
 ----
 
-And thanks to our field access rewrite, when your users read `person.name` they will actually call your `getName()` accessor,
+Because of field access rewrite, when  users read `person.name` they will actually call your `getName()` accessor,
 and similarly for field writes and the setter.
-This allows for proper encapsulation at runtime as all fields calls will be replaced by the corresponding getter/setter calls.
+This enables proper encapsulation at runtime because all fields calls will be replaced by the corresponding getter/setter calls.
 
 == Most useful operations
 
-Once you have written your entity, here are the most common operations you will be able to do:
+After you have written your entity, here are the most common operations you will be able to do:
 
 [source,java]
 ----
@@ -547,4 +563,3 @@ If you define your entities in the same project where you build your Quarkus app
 If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
 by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
-

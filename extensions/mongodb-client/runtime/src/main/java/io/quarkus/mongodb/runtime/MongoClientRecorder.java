@@ -18,9 +18,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class MongoClientRecorder {
 
-    public static final String DEFAULT_MONGOCLIENT_NAME = "<default>";
-    public static final String REACTIVE_CLIENT_NAME_SUFFIX = "reactive";
-
     public Supplier<MongoClientSupport> mongoClientSupportSupplier(List<String> codecProviders, List<String> bsonDiscriminators,
             List<ConnectionPoolListener> connectionPoolListeners, boolean disableSslSupport) {
         return new Supplier<MongoClientSupport>() {
@@ -31,18 +28,43 @@ public class MongoClientRecorder {
         };
     }
 
+    public Supplier<MongoClient> mongoClientSupplier(String clientName,
+            @SuppressWarnings("usused") MongodbConfig mongodbConfig) {
+        MongoClient mongoClient = Arc.container().instance(MongoClients.class).get().createMongoClient(clientName);
+        return new Supplier<MongoClient>() {
+            @Override
+            public MongoClient get() {
+                return mongoClient;
+            }
+        };
+    }
+
+    public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName,
+            @SuppressWarnings("usused") MongodbConfig mongodbConfig) {
+        ReactiveMongoClient reactiveMongoClient = Arc.container().instance(MongoClients.class).get()
+                .createReactiveMongoClient(clientName);
+        return new Supplier<ReactiveMongoClient>() {
+            @Override
+            public ReactiveMongoClient get() {
+                return reactiveMongoClient;
+            }
+        };
+    }
+
     public RuntimeValue<MongoClient> getClient(String name) {
         return new RuntimeValue<>(Arc.container().instance(MongoClient.class, literal(name)).get());
     }
 
     public RuntimeValue<ReactiveMongoClient> getReactiveClient(String name) {
         return new RuntimeValue<>(
-                Arc.container().instance(ReactiveMongoClient.class, literal(name + REACTIVE_CLIENT_NAME_SUFFIX)).get());
+                Arc.container()
+                        .instance(ReactiveMongoClient.class, literal(name + MongoClientBeanUtil.REACTIVE_CLIENT_NAME_SUFFIX))
+                        .get());
     }
 
     @SuppressWarnings("rawtypes")
     private AnnotationLiteral literal(String name) {
-        if (name.startsWith(DEFAULT_MONGOCLIENT_NAME)) {
+        if (name.startsWith(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
             return Default.Literal.INSTANCE;
         }
         return NamedLiteral.of(name);

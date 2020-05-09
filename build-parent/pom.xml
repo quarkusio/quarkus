@@ -336,16 +336,12 @@
                                             <exclude>org.springframework.boot:spring-boot</exclude>
                                             <!-- Ban checker-qual, we don't use Checker Framework -->
                                             <exclude>org.checkerframework:checker-qual</exclude>
-                                            <exclude>com.google.code.findbugs:jsr305</exclude>
                                             <!-- We use our own impl here, including this one causes problems-->
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->
                                             <include>jakarta.xml.bind:jakarta.xml.bind-api:*:*:test</include>
-                                            <!-- gRPC uses these annotations, they are required to compile the generated classes -->
-                                            <include>com.google.code.findbugs:jsr305:${findbugs.version}:jar:provided</include>
-                                            <include>com.google.code.findbugs:jsr305:${findbugs.version}:jar:test</include>
                                         </includes>
                                     </bannedDependencies>
                                 </rules>

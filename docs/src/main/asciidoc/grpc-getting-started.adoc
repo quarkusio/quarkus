@@ -23,14 +23,7 @@ Edit the `pom.xml` file to add the quarkus gRPC extension dependency and the JSR
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-grpc</artifactId>
 </dependency>
-<dependency>
- <groupId>com.google.code.findbugs</groupId>
- <artifactId>jsr305</artifactId>
- <scope>provided</scope>
-</dependency>
 ----
-
-NOTE: The jsr305 is only used to compile the generated classes. It is not required at runtime.
 
 In the `<properties>` section, define the 2 following properties:
 

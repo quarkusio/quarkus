@@ -130,11 +130,14 @@ public class SpringWebProcessor {
 
     @BuildStep
     public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
-        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(RESPONSE_ENTITY));
+        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(RESPONSE_ENTITY)));
         ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MimeType")));
+                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple("org.springframework.util.MimeType"))));
         ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("org.springframework.util.MultiValueMap")));
+                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple("org.springframework.util.MultiValueMap"))));
     }
 
     @BuildStep

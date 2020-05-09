@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -53,11 +54,13 @@ public abstract class AbstractMongoClientProducer {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractMongoClientProducer.class.getName());
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
-    private MongodbConfig mongodbConfig;
-    private boolean disableSslSupport = false;
-    private List<String> codecProviders;
-    private List<String> bsonDiscriminators;
-    private List<ConnectionPoolListener> connectionPoolListeners;
+
+    @Inject
+    MongodbConfig mongodbConfig;
+
+    @Inject
+    MongoClientSupport mongoClientSupport;
+
     private Map<String, MongoClient> mongoclients = new HashMap<>();
     private Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
 
@@ -214,7 +217,6 @@ public abstract class AbstractMongoClientProducer {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
-        checkCodec();
         CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
@@ -227,8 +229,8 @@ public abstract class AbstractMongoClientProducer {
         }
 
         List<CodecProvider> providers = new ArrayList<>();
-        if (!codecProviders.isEmpty()) {
-            providers.addAll(getCodecProviders(codecProviders));
+        if (!mongoClientSupport.getCodecProviders().isEmpty()) {
+            providers.addAll(getCodecProviders(mongoClientSupport.getCodecProviders()));
         }
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
@@ -237,7 +239,7 @@ public abstract class AbstractMongoClientProducer {
                 .conventions(Conventions.DEFAULT_CONVENTIONS);
         // register bson discriminators
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (String bsonDiscriminator : bsonDiscriminators) {
+        for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {
             try {
                 pojoCodecProviderBuilder
                         .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
@@ -277,10 +279,11 @@ public abstract class AbstractMongoClientProducer {
             settings.retryWrites(wc.retryWrites);
         }
         if (config.tls) {
-            settings.applyToSslSettings(new SslSettingsBuilder(config, disableSslSupport));
+            settings.applyToSslSettings(new SslSettingsBuilder(config, mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
-        settings.applyToConnectionPoolSettings(new ConnectionPoolSettingsBuilder(config, connectionPoolListeners));
+        settings.applyToConnectionPoolSettings(
+                new ConnectionPoolSettingsBuilder(config, mongoClientSupport.getConnectionPoolListeners()));
         settings.applyToServerSettings(new ServerSettingsBuilder(config));
         settings.applyToSocketSettings(new SocketSettingsBuilder(config));
 
@@ -383,33 +386,6 @@ public abstract class AbstractMongoClientProducer {
         }
 
         return providers;
-    }
-
-    public void setConfig(MongodbConfig config) {
-        this.mongodbConfig = config;
-    }
-
-    public void setCodecs(List<String> codecs) {
-        this.codecProviders = codecs;
-    }
-
-    public void setBsonDiscriminators(List<String> bsonDiscriminators) {
-        this.bsonDiscriminators = bsonDiscriminators;
-    }
-
-    public void setConnectionPoolListeners(List<ConnectionPoolListener> connectionPoolListeners) {
-        this.connectionPoolListeners = connectionPoolListeners;
-    }
-
-    public void disableSslSupport() {
-        this.disableSslSupport = true;
-    }
-
-    private void checkCodec() {
-        if (codecProviders == null) {
-            throw new IllegalStateException(
-                    "The mongo clients are not ready to be consumed: the codec list for mongo configuration has not been injected yet");
-        }
     }
 
     @PreDestroy

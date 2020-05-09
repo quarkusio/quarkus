@@ -27,10 +27,10 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
@@ -40,7 +40,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
@@ -58,7 +57,7 @@ import io.quarkus.mongodb.runtime.AbstractMongoClientProducer;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
-import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class MongoClientProcessor {
@@ -300,47 +299,46 @@ public class MongoClientProcessor {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.MONGODB_CLIENT);
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem ssl() {
+        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT);
+    }
+
     @Record(STATIC_INIT)
     @BuildStep
-    BeanContainerListenerBuildItem build(
+    void build(
             List<MongoClientNameBuildItem> mongoClientNames,
             RecorderContext recorderContext,
             MongoClientRecorder recorder,
-            BuildProducer<FeatureBuildItem> feature,
             Optional<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
-            SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<GeneratedBeanBuildItem> generatedBean) throws Exception {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MONGODB_CLIENT));
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT));
-
-        String mongoClientProducerClassName = getMongoClientProducerClassName();
-        createMongoClientProducerBean(mongoClientNames, generatedBean, mongoClientProducerClassName,
-                mongoUnremovableClientsBuildItem.isPresent());
-
-        return new BeanContainerListenerBuildItem(recorder.addMongoClient(
-                (Class<? extends AbstractMongoClientProducer>) recorderContext.classProxy(mongoClientProducerClassName),
-                sslNativeConfig.isExplicitlyDisabled()));
-    }
-
-    @Record(RUNTIME_INIT)
-    @BuildStep
-    void configureRuntimePropertiesAndBuildClients(MongoClientRecorder recorder,
-            CodecProviderBuildItem codecProvider, BsonDiscriminatorBuildItem bsonDiscriminator,
+            SslNativeConfigBuildItem sslNativeConfig,
+            CodecProviderBuildItem codecProvider,
+            BsonDiscriminatorBuildItem bsonDiscriminator,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
-            List<MongoClientNameBuildItem> mongoClientNames,
-            MongodbConfig mongodbConfig, ConfigurationBuildItem config,
-            BuildProducer<MongoConnectionNameBuildItem> mongoConnections) {
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         List<ConnectionPoolListener> poolListenerList = connectionPoolListenerProvider.stream()
                 .map(MongoConnectionPoolListenerBuildItem::getConnectionPoolListener)
                 .collect(Collectors.toList());
 
-        recorder.configureRuntimeProperties(codecProvider.getCodecProviderClassNames(),
-                bsonDiscriminator.getBsonDiscriminatorClassNames(),
-                mongodbConfig,
-                poolListenerList);
+        // create MongoClientSupport as a synthetic bean as it's used in AbstractMongoClientProducer
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MongoClientSupport.class)
+                .scope(Singleton.class)
+                .supplier(recorder.mongoClientSupportSupplier(codecProvider.getCodecProviderClassNames(),
+                        bsonDiscriminator.getBsonDiscriminatorClassNames(),
+                        poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
+                .done());
+
+        String mongoClientProducerClassName = getMongoClientProducerClassName();
+        createMongoClientProducerBean(mongoClientNames, generatedBean, mongoClientProducerClassName,
+                mongoUnremovableClientsBuildItem.isPresent());
 
         mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientRecorder.DEFAULT_MONGOCLIENT_NAME));
         for (MongoClientNameBuildItem bi : mongoClientNames) {

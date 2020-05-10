@@ -19,8 +19,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 import io.quarkus.maven.it.verifier.RunningInvoker;
 
 /**
@@ -75,7 +73,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 
         // Wait until we get "uuid"
         await()
@@ -87,7 +85,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of(uuid, "carambar"));
+        filter(source, Collections.singletonMap(uuid, "carambar"));
 
         // Wait until we get "carambar"
         await()
@@ -102,7 +100,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         // Edit the pom.xml.
         File source = new File(testDir, "pom.xml");
-        filter(source, ImmutableMap.of("<!-- insert test dependencies here -->",
+        filter(source, Collections.singletonMap("<!-- insert test dependencies here -->",
                 "        <dependency>\n" +
                         "            <groupId>io.quarkus</groupId>\n" +
                         "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
@@ -122,7 +120,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
         final String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 
         // Wait until we get "uuid"
         await()
@@ -134,7 +132,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of(uuid, "carambar"));
+        filter(source, Collections.singletonMap(uuid, "carambar"));
 
         // Wait until we get "carambar"
         await()
@@ -176,12 +174,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + UUID.randomUUID().toString() + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + UUID.randomUUID().toString() + "\";"));
 
         // Edit the greeting property.
         source = new File(testDir, "runner/src/main/resources/application.properties");
         final String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("greeting=bonjour", "greeting=" + uuid + ""));
+        filter(source, Collections.singletonMap("greeting=bonjour", "greeting=" + uuid + ""));
 
         // Wait until we get "uuid"
         await()
@@ -202,7 +200,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
         final String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 
         // Wait until we get "uuid"
         await()
@@ -281,7 +279,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(() -> getHttpResponse("/app/deletion").contains("to be deleted"));
 
         // Remove InnerClass
-        filter(source, ImmutableMap.of("public static class InnerClass {}", ""));
+        filter(source, Collections.singletonMap("public static class InnerClass {}", ""));
 
         File helloClassFile = new File(testDir, "target/classes/org/acme/Hello.class");
         File innerClassFile = new File(testDir, "target/classes/org/acme/ClassDeletionResource$InnerClass.class");
@@ -320,7 +318,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         // Edit the "Hello" message and provide a random string.
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 
         // Check that the random string is returned
         String greeting = getHttpResponse("/app/hello");
@@ -351,7 +349,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(source::isFile);
 
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("bonjour", uuid));
+        filter(source, Collections.singletonMap("bonjour", uuid));
 
         // Wait until we get "uuid"
         await()
@@ -461,7 +459,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\"")); // No semi-colon
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\"")); // No semi-colon
 
         // Wait until we get "uuid"
         AtomicReference<String> last = new AtomicReference<>();
@@ -481,7 +479,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
-        filter(source, ImmutableMap.of("\"" + uuid + "\"", "\"carambar\";"));
+        filter(source, Collections.singletonMap("\"" + uuid + "\"", "\"carambar\";"));
 
         // Wait until we get "uuid"
         await()
@@ -495,7 +493,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         // Edit the JAX-RS resource to be package private
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
-        filter(source, ImmutableMap.of("public class HelloResource", "class HelloResource"));
+        filter(source, Collections.singletonMap("public class HelloResource", "class HelloResource"));
 
         runAndExpectError();
         // Wait until we get the error page
@@ -510,7 +508,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         assertThat(last.get()).containsIgnoringCase("Error restarting Quarkus");
 
-        filter(source, ImmutableMap.of("class HelloResource", "public class HelloResource"));
+        filter(source, Collections.singletonMap("class HelloResource", "public class HelloResource"));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -558,7 +556,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of("message", "foobarbaz"));
+        filter(source, Collections.singletonMap("message", "foobarbaz"));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -607,7 +605,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .until(source::isFile);
 
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("Hola", uuid));
+        filter(source, Collections.singletonMap("Hola", uuid));
 
         // Wait until we get "uuid"
         await()

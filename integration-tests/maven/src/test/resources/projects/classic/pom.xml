@@ -16,6 +16,7 @@
   </properties>
   <dependencyManagement>
     <dependencies>
+      <!-- insert managed dependencies here -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>

@@ -29,7 +29,6 @@ import org.wildfly.security.password.Password;
 import org.wildfly.security.password.PasswordFactory;
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.ClearPassword;
-import org.wildfly.security.password.interfaces.DigestPassword;
 import org.wildfly.security.password.spec.DigestPasswordSpec;
 
 import io.quarkus.runtime.RuntimeValue;
@@ -143,7 +142,8 @@ public class ElytronPropertiesFileRecorder {
                                     .asUtf8String().hexDecode().drain();
 
                             password = PasswordFactory
-                                    .getInstance(DigestPassword.ALGORITHM_DIGEST_MD5, new WildFlyElytronPasswordProvider())
+                                    .getInstance(runtimeConfig.algorithm.getName(),
+                                            new WildFlyElytronPasswordProvider())
                                     .generatePassword(new DigestPasswordSpec(user, config.realmName, hashed));
                         } catch (Exception e) {
                             throw new RuntimeException("Unable to register password for user:" + user

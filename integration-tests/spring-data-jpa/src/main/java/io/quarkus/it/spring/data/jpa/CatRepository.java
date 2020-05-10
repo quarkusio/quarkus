@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Demonstrates various derived queries
@@ -39,4 +41,8 @@ public interface CatRepository extends CrudRepository<Cat, Long> {
     List<Cat> findCatsByBreedIsIn(Collection<String> breeds);
 
     List<Cat> findByDistinctiveFalse();
+
+    // issue 9192
+    @Query(value = "SELECT c.distinctive FROM Cat c where c.id = :id")
+    boolean customFindDistinctive(@Param("id") Long id);
 }

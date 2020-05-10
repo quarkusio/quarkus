@@ -8,21 +8,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class SimpleCommandModeTestCase {
+public class ExceptionThrowingCommandModeTestCase {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties")
-                    .addClasses(HelloWorldMain.class, NamedMain.class))
-            .setApplicationName("run-exit")
+                    .addClasses(ExceptionThrowingMain.class))
+            .setApplicationName("exception-throwing")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setExpectExit(true)
             .setRun(true);
 
     @Test
     public void testRun() {
-        Assertions.assertThat(config.getStartupConsoleOutput()).contains("Hello World");
-        Assertions.assertThat(config.getExitCode()).isEqualTo(10);
+        Assertions.assertThat(config.getStartupConsoleOutput())
+                .contains("exception-throwing").contains("ArrayIndexOutOfBoundsException");
+        Assertions.assertThat(config.getExitCode()).isEqualTo(1);
     }
 
 }

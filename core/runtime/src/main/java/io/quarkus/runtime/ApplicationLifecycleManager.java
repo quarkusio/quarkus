@@ -142,12 +142,8 @@ public class ApplicationLifecycleManager {
             } finally {
                 stateLock.unlock();
             }
-            application.stop(new Runnable() {
-                @Override
-                public void run() {
-                    (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1);
-                }
-            });
+            application.stop();
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1);
             return;
         }
         if (!alreadyStarted) {

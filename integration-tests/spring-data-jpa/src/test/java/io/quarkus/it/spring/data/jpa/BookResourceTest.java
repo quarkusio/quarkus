@@ -118,4 +118,18 @@ public class BookResourceTest {
                 .contentType("application/json")
                 .body(containsString("publicationYear"));
     }
+
+    @Test
+    void testCustomFindPublicationYearPrimitive() {
+        when().get("/book/customPublicationYearPrimitive/1").then()
+                .statusCode(200)
+                .body(is("2011"));
+    }
+
+    @Test
+    void testCustomFindPublicationYearObject() {
+        when().get("/book/customPublicationYearObject/1").then()
+                .statusCode(200)
+                .body(is("2011"));
+    }
 }

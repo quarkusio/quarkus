@@ -119,4 +119,11 @@ public class CatResource {
     public List<Cat> byDistinctiveFalse() {
         return catRepository.findByDistinctiveFalse();
     }
+
+    @GET
+    @Path("/customFindDistinctive/{id}")
+    @Produces("text/plain")
+    public Boolean customFindDistinctive(@PathParam("id") Long id) {
+        return catRepository.customFindDistinctive(id);
+    }
 }

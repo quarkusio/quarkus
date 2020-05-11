@@ -59,7 +59,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     @Override
     public abstract ClassVisitor apply(String className, ClassVisitor outputClassVisitor);
 
-    protected abstract static class PanacheEntityClassVisitor<EntityFieldType extends EntityField> extends ClassVisitor {
+    public abstract static class PanacheEntityClassVisitor<EntityFieldType extends EntityField> extends ClassVisitor {
 
         protected Type thisClass;
         protected Map<String, ? extends EntityFieldType> fields;
@@ -216,7 +216,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
         protected abstract void injectModel(MethodVisitor mv);
 
-        private void generateAccessors() {
+        protected void generateAccessors() {
             if (fields == null)
                 return;
             for (EntityField field : fields.values()) {

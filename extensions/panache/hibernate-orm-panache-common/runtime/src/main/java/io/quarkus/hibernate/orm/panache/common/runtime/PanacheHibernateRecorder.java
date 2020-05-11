@@ -1,9 +1,8 @@
-package io.quarkus.hibernate.orm.panache;
+package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.hibernate.orm.panache.runtime.NamedQueryUtil;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder

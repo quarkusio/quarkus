@@ -19,8 +19,8 @@ public class FileConfig {
     /**
      * If file logging should be enabled
      */
-    @ConfigItem
-    boolean enable;
+    @ConfigItem(deprecatedNames = "enable")
+    boolean enabled;
 
     /**
      * The log format

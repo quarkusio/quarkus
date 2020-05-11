@@ -1,5 +1,8 @@
 package io.quarkus.runtime.configuration;
 
+import static io.quarkus.annotation.processor.Constants.EMPTY;
+import static io.quarkus.annotation.processor.Constants.QUARKUS;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -54,7 +57,7 @@ public class ConfigInstantiator {
             return;
         }
         final String name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
-        handleObject("quarkus." + name, o, config);
+        handleObject(QUARKUS + "." + name, o, config);
     }
 
     private static void handleObject(String prefix, Object o, SmallRyeConfig config) {
@@ -86,25 +89,57 @@ public class ConfigInstantiator {
                     } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
                         name = field.getName();
                     }
-                    String fullName = prefix + "." + name;
+
                     final Type genericType = field.getGenericType();
                     final Converter<?> conv = getConverterFor(genericType);
-                    try {
-                        Optional<?> value = config.getOptionalValue(fullName, conv);
-                        if (value.isPresent()) {
-                            field.set(o, value.get());
-                        } else if (!configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
-                            //the runtime config source handles default automatically
-                            //however this may not have actually been installed depending on where the failure occured
-                            field.set(o, conv.convert(configItem.defaultValue()));
+
+                    // Check if the value exists for name
+                    final String fullName = prefix + "." + name;
+                    boolean success = setValueIfPresent(o, field, fullName, config, conv);
+                    if (success) {
+                        continue;
+                    }
+
+                    // Check if the value exists for deprecated names
+                    String[] deprecatedNames = configItem.deprecatedNames();
+                    for (String deprecatedName : deprecatedNames) {
+                        if (deprecatedName == null || EMPTY.equals(deprecatedName)) {
+                            continue;
                         }
-                    } catch (NoSuchElementException ignored) {
+                        String deprecatedFullName = prefix + "." + deprecatedName;
+                        success = setValueIfPresent(o, field, deprecatedFullName, config, conv);
+                        if (success) {
+                            // Only first one to get resolved will be used, ignore following names
+                            ConfigDiagnostic.deprecated(deprecatedFullName, fullName);
+                            break;
+                        }
+                    }
+
+                    // Checks for the default value
+                    if (!success && !configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
+                        //the runtime config source handles default automatically
+                        //however this may not have actually been installed depending on where the failure occurred
+                        field.set(o, conv.convert(configItem.defaultValue()));
                     }
                 }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean setValueIfPresent(Object obj, Field field, String name, SmallRyeConfig config,
+            Converter<?> converter) throws IllegalAccessException {
+        try {
+            Optional<?> value = config.getOptionalValue(name, converter);
+            if (value.isPresent()) {
+                field.set(obj, value.get());
+                return true;
+            }
+        } catch (NoSuchElementException ignored) {
+        }
+
+        return false;
     }
 
     private static Converter<?> getConverterFor(Type type) {
@@ -114,9 +149,9 @@ public class ConfigInstantiator {
         if (Enum.class.isAssignableFrom(rawType)) {
             return new HyphenateEnumConverter(rawType);
         } else if (rawType == Optional.class) {
-            return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0)));
+            return Converters.newOptionalConverter(getConverterFor(typeOfParameterFirstValue(type)));
         } else if (rawType == List.class) {
-            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0)), ArrayList::new);
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameterFirstValue(type)), ArrayList::new);
         } else {
             return config.getConverter(rawTypeOf(type));
         }
@@ -135,9 +170,9 @@ public class ConfigInstantiator {
         }
     }
 
-    static Type typeOfParameter(final Type type, final int paramIdx) {
+    private static Type typeOfParameterFirstValue(final Type type) {
         if (type instanceof ParameterizedType) {
-            return ((ParameterizedType) type).getActualTypeArguments()[paramIdx];
+            return ((ParameterizedType) type).getActualTypeArguments()[0];
         } else {
             throw new IllegalArgumentException("Type is not parameterized: " + type);
         }

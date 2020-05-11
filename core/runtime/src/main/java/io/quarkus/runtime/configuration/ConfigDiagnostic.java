@@ -47,6 +47,10 @@ public final class ConfigDiagnostic {
         log.warnf("Configuration key \"%s\" is deprecated", name);
     }
 
+    public static void deprecated(String deprecatedName, String name) {
+        log.warnf("Configuration key \"%s\" is deprecated; please use this instead \"%s\"", deprecatedName, name);
+    }
+
     public static void unknown(String name) {
         log.warnf("Unrecognized configuration key \"%s\" was provided; it will be ignored", name);
     }

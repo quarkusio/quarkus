@@ -96,18 +96,18 @@ public class LoggingSetupRecorder {
 
         final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());
 
-        if (config.console.enable) {
+        if (config.console.enabled) {
             final Handler consoleHandler = configureConsoleHandler(config.console, errorManager, filterElements,
                     possibleFormatters, possibleBannerSupplier);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
 
-        if (config.file.enable) {
+        if (config.file.enabled) {
             handlers.add(configureFileHandler(config.file, errorManager, filterElements));
         }
 
-        if (config.syslog.enable) {
+        if (config.syslog.enabled) {
             final Handler syslogHandler = configureSyslogHandler(config.syslog, errorManager, filterElements);
             if (syslogHandler != null) {
                 handlers.add(syslogHandler);
@@ -257,7 +257,7 @@ public class LoggingSetupRecorder {
         consoleHandler.setErrorManager(defaultErrorManager);
         consoleHandler.setFilter(new LogCleanupFilter(filterElements));
 
-        final Handler handler = config.async.enable ? createAsyncHandler(config.async, config.level, consoleHandler)
+        final Handler handler = config.async.enabled ? createAsyncHandler(config.async, config.level, consoleHandler)
                 : consoleHandler;
 
         if (formatterWarning) {
@@ -300,7 +300,7 @@ public class LoggingSetupRecorder {
         handler.setErrorManager(errorManager);
         handler.setLevel(config.level);
         handler.setFilter(new LogCleanupFilter(filterElements));
-        if (config.async.enable) {
+        if (config.async.enabled) {
             return createAsyncHandler(config.async, config.level, handler);
         }
         return handler;
@@ -324,7 +324,7 @@ public class LoggingSetupRecorder {
             handler.setFormatter(formatter);
             handler.setErrorManager(errorManager);
             handler.setFilter(new LogCleanupFilter(filterElements));
-            if (config.async.enable) {
+            if (config.async.enabled) {
                 return createAsyncHandler(config.async, config.level, handler);
             }
             return handler;

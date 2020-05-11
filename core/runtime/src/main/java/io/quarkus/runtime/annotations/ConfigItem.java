@@ -61,4 +61,15 @@ public @interface ConfigItem {
      * @return the default value documentation
      */
     String defaultValueDocumentation() default "";
+
+    /**
+     * To ensure backward compatibility with earlier names when a property is renamed.
+     * Will be ignored if the property exists with current name else this will be used to resolve the value and
+     * a warning will be printed that the given property key is deprecated.
+     * If properties are present for multiple deprecated names, then the first one(in the below array) to get resolved
+     * will be used and rest will be ignored.
+     *
+     * @return deprecated names for the Item.
+     */
+    String[] deprecatedNames() default {};
 }

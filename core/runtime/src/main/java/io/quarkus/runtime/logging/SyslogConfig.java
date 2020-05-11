@@ -17,8 +17,8 @@ public class SyslogConfig {
     /**
      * If syslog logging should be enabled
      */
-    @ConfigItem
-    boolean enable;
+    @ConfigItem(deprecatedNames = "enable")
+    boolean enabled;
 
     /**
      *

@@ -12,8 +12,8 @@ public class ConsoleConfig {
     /**
      * If console logging should be enabled
      */
-    @ConfigItem(defaultValue = "true")
-    boolean enable;
+    @ConfigItem(defaultValue = "true", deprecatedNames = "enable")
+    boolean enabled;
 
     /**
      * The log format. Note that this value will be ignored if an extension is present that takes

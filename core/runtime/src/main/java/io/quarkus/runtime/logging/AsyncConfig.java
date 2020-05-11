@@ -11,8 +11,8 @@ public class AsyncConfig {
     /**
      * Indicates whether to log asynchronously
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    boolean enable;
+    @ConfigItem(name = ConfigItem.PARENT, deprecatedNames = "enable")
+    boolean enabled;
     /**
      * The queue length to use before flushing writing
      */

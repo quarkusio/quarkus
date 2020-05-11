@@ -36,7 +36,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -230,10 +229,15 @@ public class AppModelGradleResolver implements AppModelResolver {
                         .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
                 final JavaPluginConvention javaConvention = depProject.getConvention().findPlugin(JavaPluginConvention.class);
                 if (javaConvention != null) {
-                    SourceSetContainer sourceSets = javaConvention.getSourceSets();
-                    SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                    dependency.getArtifact().setPath(
-                            Paths.get(QuarkusGradleUtils.getClassesDir(mainSourceSet, depProject.getBuildDir(), false)));
+                    SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                    final PathsCollection.Builder paths = PathsCollection.builder()
+                            .add(Paths.get(QuarkusGradleUtils.getClassesDir(mainSourceSet, depProject.getBuildDir(), false)));
+                    for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
+                        if (resourcesDir.exists()) {
+                            paths.add(resourcesDir.toPath());
+                        }
+                    }
+                    dependency.getArtifact().setPaths(paths.build());
                 }
             }
 

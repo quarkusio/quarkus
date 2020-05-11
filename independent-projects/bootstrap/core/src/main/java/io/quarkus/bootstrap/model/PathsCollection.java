@@ -57,6 +57,10 @@ public class PathsCollection implements Iterable<Path>, Serializable {
         return paths.isEmpty();
     }
 
+    public int size() {
+        return paths.size();
+    }
+
     public boolean isSinglePath() {
         return paths.size() == 1;
     }

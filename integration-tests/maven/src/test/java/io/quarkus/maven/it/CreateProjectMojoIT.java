@@ -22,6 +22,7 @@ import com.google.common.io.Files;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -353,12 +354,12 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         mvnRunProps.setProperty("debug", "false");
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
-        String resp = getHttpResponse();
+        String resp = DevModeTestUtils.getHttpResponse();
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/hello");
+        String greeting = DevModeTestUtils.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

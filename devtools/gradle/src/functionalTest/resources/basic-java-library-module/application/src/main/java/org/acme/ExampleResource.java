@@ -17,10 +17,8 @@ public class ExampleResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        KubernetesClient kubernetesClient = beanWithInjection.kubernetesClient;
-        System.out.println("KubernetesClient is: "+kubernetesClient);
+        KubernetesClient kubernetesClient = beanWithInjection.getKubernetesClient();
         kubernetesClient.pods(); // fails with NullPointerException
-
         return "hello";
     }
 }

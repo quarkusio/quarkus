@@ -1,33 +1,27 @@
 package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.Invoker;
-import org.apache.maven.shared.utils.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class MojoTestBase {
 
@@ -104,14 +98,7 @@ public class MojoTestBase {
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {
-        assertThat(input).isFile();
-        String data = FileUtils.readFileToString(input, "UTF-8");
-
-        for (Map.Entry<String, String> token : variables.entrySet()) {
-            String value = String.valueOf(token.getValue());
-            data = StringUtils.replace(data, token.getKey(), value);
-        }
-        FileUtils.write(input, data, "UTF-8");
+        DevModeTestUtils.filter(input, variables);
     }
 
     public Map<String, String> getEnv() {
@@ -121,149 +108,6 @@ public class MojoTestBase {
             env.put("MAVEN_OPTS", opts);
         }
         return env;
-    }
-
-    static void awaitUntilServerDown() {
-        await().atMost(1, TimeUnit.MINUTES).until(() -> {
-            try {
-                get(); // Ignore result on purpose
-                return false;
-            } catch (Exception e) {
-                return true;
-            }
-        });
-    }
-
-    String getHttpResponse() {
-        AtomicReference<String> resp = new AtomicReference<>();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
-                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
-                .atMost(20, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        String broken = getBrokenReason();
-                        if (broken != null) {
-                            //try and avoid waiting 20m
-                            resp.set("BROKEN: " + broken);
-                            return true;
-                        }
-                        String content = get();
-                        resp.set(content);
-                        return true;
-                    } catch (Exception e) {
-                        return false;
-                    }
-                });
-        return resp.get();
-    }
-
-    String getHttpErrorResponse() {
-        AtomicReference<String> resp = new AtomicReference<>();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
-                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
-                .atMost(20, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        String broken = getBrokenReason();
-                        if (broken != null) {
-                            //try and avoid waiting 20m
-                            resp.set("BROKEN: " + broken);
-                            return true;
-                        }
-                        boolean content = getHttpResponse("/", 500);
-                        return content;
-                    } catch (Exception e) {
-                        return false;
-                    }
-                });
-        return resp.get();
-    }
-
-    protected String getBrokenReason() {
-        return null;
-    }
-
-    public static String getHttpResponse(String path) {
-        return getHttpResponse(path, false);
-    }
-
-    static String getHttpResponse(String path, boolean allowError) {
-        AtomicReference<String> resp = new AtomicReference<>();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                        String content;
-                        if (!allowError) {
-                            content = IOUtils.toString(url, "UTF-8");
-                        } else {
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.8
-                            conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                            if (conn.getResponseCode() >= 400) {
-                                content = IOUtils.toString(conn.getErrorStream(), "UTF-8");
-                            } else {
-                                content = IOUtils.toString(conn.getInputStream(), "UTF-8");
-                            }
-                        }
-                        resp.set(content);
-                        return true;
-                    } catch (Exception e) {
-                        return false;
-                    }
-                });
-        return resp.get();
-    }
-
-    static boolean getHttpResponse(String path, int expectedStatus) {
-        AtomicBoolean code = new AtomicBoolean();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
-                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                        if (connection.getResponseCode() == expectedStatus) {
-                            code.set(true);
-                            return true;
-                        }
-                        return false;
-                    } catch (Exception e) {
-                        return false;
-                    }
-                });
-        return code.get();
-    }
-
-    // will fail if it receives any http response except the expected one
-    static boolean getStrictHttpResponse(String path, int expectedStatus) {
-        AtomicBoolean code = new AtomicBoolean();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
-                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                        code.set(connection.getResponseCode() == expectedStatus);
-                        //complete no matter what the response code was
-                        return true;
-                    } catch (Exception e) {
-                        return false;
-                    }
-                });
-        return code.get();
-    }
-
-    public static String get() throws IOException {
-        URL url = new URL("http://localhost:8080");
-        return IOUtils.toString(url, "UTF-8");
     }
 
     public static void assertThatOutputWorksCorrectly(String logs) {

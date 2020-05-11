@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 import io.quarkus.utilities.JavaBinFinder;
 
 @DisableForNative
@@ -52,7 +53,7 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/package", 200));
+                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 

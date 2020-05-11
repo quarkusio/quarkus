@@ -8,11 +8,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterEach;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class RunAndCheckWithAgentMojoTestBase extends RunAndCheckMojoTestBase {
 
@@ -28,7 +30,7 @@ public class RunAndCheckWithAgentMojoTestBase extends RunAndCheckMojoTestBase {
             if (runningAgent != null) {
                 runningAgent.stop();
             }
-            awaitUntilServerDown();
+            DevModeTestUtils.awaitUntilServerDown();
         }
     }
 
@@ -60,21 +62,23 @@ public class RunAndCheckWithAgentMojoTestBase extends RunAndCheckMojoTestBase {
     }
 
     @Override
-    protected String getBrokenReason() {
-        if (running != null && !running.getResult().getProcess().isAlive()) {
-            try {
-                return running.log();
-            } catch (IOException e) {
-                e.printStackTrace();
+    protected Supplier<String> getBrokenReason() {
+        return () -> {
+            if (running != null && !running.getResult().getProcess().isAlive()) {
+                try {
+                    return running.log();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        if (runningAgent != null && !runningAgent.getResult().getProcess().isAlive()) {
-            try {
-                return runningAgent.log();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (runningAgent != null && !runningAgent.getResult().getProcess().isAlive()) {
+                try {
+                    return runningAgent.log();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        return null;
+            return null;
+        };
     }
 }

@@ -11,6 +11,7 @@ import io.quarkus.bootstrap.model.AppModel;
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +42,7 @@ public class CuratedApplication implements Serializable, Closeable {
      *
      * This should not be used for hot reloadable elements
      */
-    private final Map<AppArtifact, ClassPathElement> augmentationElements = new HashMap<>();
+    private final Map<AppArtifact, List<ClassPathElement>> augmentationElements = new HashMap<>();
 
     /**
      * The augmentation class loader.
@@ -142,17 +143,20 @@ public class CuratedApplication implements Serializable, Closeable {
             consumer.accept(ClassPathElement.EMPTY);
             return;
         }
-        if (augmentationElements.containsKey(artifact)) {
-            consumer.accept(augmentationElements.get(artifact));
+        List<ClassPathElement> cpeList = augmentationElements.get(artifact);
+        if (cpeList != null) {
+            for (ClassPathElement cpe : cpeList) {
+                consumer.accept(cpe);
+            }
             return;
         }
-        artifact.getPaths().forEach(path -> {
+        cpeList = new ArrayList<>(2);
+        for (Path path : artifact.getPaths()) {
             final ClassPathElement element = ClassPathElement.fromPath(path);
-            if (artifact.getPaths().isSinglePath()) {
-                augmentationElements.put(artifact, element);
-            }
             consumer.accept(element);
-        });
+            cpeList.add(element);
+        }
+        augmentationElements.put(artifact, cpeList);
     }
 
     private void addCpElement(QuarkusClassLoader.Builder builder, AppArtifact dep, ClassPathElement element) {

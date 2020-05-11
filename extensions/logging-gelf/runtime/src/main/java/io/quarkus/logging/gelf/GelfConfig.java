@@ -98,4 +98,11 @@ public class GelfConfig {
      */
     @ConfigItem
     public boolean includeFullMdc;
+
+    /**
+     * Maximum message size (in bytes).
+     * If the message size is exceeded, the appender will submit the message in multiple chunks.
+     */
+    @ConfigItem(defaultValue = "8192")
+    public int maximumMessageSize;
 }

@@ -108,6 +108,44 @@ public void route(RoutingContext rc) {
 
 Each route can use different paths, methods...
 
+
+=== Handling conflicting routes
+
+You may end up with multiple routes matching a given path.
+In the following example, both route matches `/accounts/me`:
+
+[source, java]
+----
+@Route(path = "/accounts/:id", methods = HttpMethod.GET)
+void getAccount(RoutingContext ctx) {
+  ...
+}
+
+@Route(path = "/accounts/me", methods = HttpMethod.GET)
+void getCurrentUserAccount(RoutingContext ctx) {
+  ...
+}
+----
+
+As a consequence, the result is not the expected one as the first route is called with the path parameter `id` set to `me`.
+To avoid the conflict, use the `order` attribute:
+
+[source, java]
+----
+@Route(path = "/accounts/:id", methods = HttpMethod.GET, order = 2)
+void getAccount(RoutingContext ctx) {
+  ...
+}
+
+@Route(path = "/accounts/me", methods = HttpMethod.GET, order = 1)
+void getCurrentUserAccount(RoutingContext ctx) {
+  ...
+}
+----
+
+By giving a lower order to the second route, it gets evaluated first.
+If the request path matches, it is invoked, otherwise the other routes are evaluated.
+
 === `@RouteBase`
 
 This annotation can be used to configure some defaults for reactive routes declared on a class.

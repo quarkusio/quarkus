@@ -152,12 +152,17 @@ public class JarClassPathElement implements ClassPathElement {
 
     @Override
     public Manifest getManifest() {
-        try {
-            return jarFile.getManifest();
-        } catch (IOException e) {
-            log.warnf("Failed to parse manifest for %s", jarPath);
-            return null;
-        }
+        return withJarFile(new Function<JarFile, Manifest>() {
+            @Override
+            public Manifest apply(JarFile jarFile) {
+                try {
+                    return jarFile.getManifest();
+                } catch (IOException e) {
+                    log.warnf("Failed to parse manifest for %s", jarPath);
+                    return null;
+                }
+            }
+        });
     }
 
     @Override

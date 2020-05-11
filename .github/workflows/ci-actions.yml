@@ -441,7 +441,7 @@ jobs:
               virtual-http
               rest-client
           - category: Misc1
-            timeout: 45
+            timeout: 50
             test-modules: >
               maven
               jackson
@@ -450,6 +450,7 @@ jobs:
               jgit
               quartz
               qute
+              consul-config
           - category: Misc2
             timeout: 45
             test-modules: >

@@ -110,6 +110,7 @@
         <module>rest-client</module>
         <module>packaging</module>
         <module>simple with space</module>
+        <module>consul-config</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

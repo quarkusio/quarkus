@@ -1,0 +1,11 @@
+---
+name: "Consul Config"
+metadata:
+  keywords:
+  - "consul-client"
+  - "config"
+  - "configuration"
+  - "consul"
+  categories:
+  - "configuration"
+  status: "preview"

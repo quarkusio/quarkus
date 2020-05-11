@@ -208,6 +208,13 @@ public class PersonResource {
         return personRepository.findPeopleByAddressZipCode(zipCode);
     }
 
+    @GET
+    @Path("/addressId/{id}")
+    @Produces("application/json")
+    public List<Person> findByAddressId(@PathParam("id") Long id) {
+        return personRepository.findByAddressId(id);
+    }
+
     private Date changeNow(LocalDate now, BiFunction<LocalDate, Long, LocalDate> function, long diff) {
         return Date.from(function.apply(now, diff).atStartOfDay()
                 .atZone(ZoneId.systemDefault())

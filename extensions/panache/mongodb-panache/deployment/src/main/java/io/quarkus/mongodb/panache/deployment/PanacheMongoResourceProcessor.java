@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.panache.deployment;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +22,8 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import com.mongodb.client.MongoClient;
+
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
@@ -55,6 +57,7 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
@@ -126,12 +129,11 @@ public class PanacheMongoResourceProcessor {
     }
 
     @BuildStep
-    void unremovableProducers(BuildProducer<UnremovableBeanBuildItem> unremovable,
-            BeanArchiveIndexBuildItem beanArchiveIndex) {
+    void unremoveableClients(BuildProducer<UnremovableBeanBuildItem> unremovable) {
         unremovable.produce(
                 new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion(
-                                "io.quarkus.mongodb.runtime.MongoClientProducer")));
+                        new UnremovableBeanBuildItem.BeanClassNamesExclusion(new HashSet<>(
+                                Arrays.asList(MongoClient.class.getName(), ReactiveMongoClient.class.getName())))));
 
     }
 

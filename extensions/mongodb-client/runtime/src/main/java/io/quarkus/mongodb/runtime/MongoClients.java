@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -37,7 +38,6 @@ import com.mongodb.ReadPreference;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.mongodb.connection.ClusterConnectionMode;
 import com.mongodb.connection.ClusterSettings;
 import com.mongodb.connection.ConnectionPoolSettings;
@@ -49,53 +49,52 @@ import com.mongodb.event.ConnectionPoolListener;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 
-public abstract class AbstractMongoClientProducer {
+/**
+ * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
+ *
+ * It isn't a CDI producer in the literal sense, but it is marked as a bean
+ * and its {@code createMongoClient} and {@code createReactiveMongoClient} methods are called at runtime in order to produce
+ * the actual client objects.
+ *
+ *
+ */
+@Singleton
+public class MongoClients {
 
-    private static final Logger LOGGER = Logger.getLogger(AbstractMongoClientProducer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MongoClients.class.getName());
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
-    private MongodbConfig mongodbConfig;
-    private boolean disableSslSupport = false;
-    private List<String> codecProviders;
-    private List<String> bsonDiscriminators;
-    private List<ConnectionPoolListener> connectionPoolListeners;
+
+    private final MongodbConfig mongodbConfig;
+    private final MongoClientSupport mongoClientSupport;
+
     private Map<String, MongoClient> mongoclients = new HashMap<>();
     private Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
 
-    public MongoClientConfig getDefaultMongoClientConfig() {
-        return mongodbConfig.defaultMongoClientConfig;
+    public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport) {
+        this.mongodbConfig = mongodbConfig;
+        this.mongoClientSupport = mongoClientSupport;
     }
 
-    public MongoClient getClient(String name) {
-        return mongoclients.get(name);
-    }
-
-    public ReactiveMongoClient getReactiveClient(String name) {
-        return reactiveMongoClients.get(name);
-    }
-
-    public ReactiveMongoClient getLegacyReactiveClient(String name) {
-        return reactiveMongoClients.get(name);
-    }
-
-    public MongoClientConfig getMongoClientConfig(String clientName) {
-        return mongodbConfig.mongoClientConfigs.get(clientName);
-    }
-
-    public MongoClient createMongoClient(MongoClientConfig mongoClientConfig, String name) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(mongoClientConfig);
-        MongoClient client = MongoClients.create(mongoConfiguration);
-        mongoclients.put(name, client);
+    public MongoClient createMongoClient(String clientName) throws MongoException {
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
+        MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
+        mongoclients.put(clientName, client);
         return client;
     }
 
-    public ReactiveMongoClient createReactiveMongoClient(MongoClientConfig mongoClientConfig, String name)
+    public ReactiveMongoClient createReactiveMongoClient(String clientName)
             throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(mongoClientConfig);
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(getMatchingMongoClientConfig(clientName));
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
-        reactiveMongoClients.put(name, reactive);
+        reactiveMongoClients.put(clientName, reactive);
         return reactive;
+    }
+
+    private MongoClientConfig getMatchingMongoClientConfig(String clientName) {
+        return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig
+                : mongodbConfig.mongoClientConfigs.get(clientName);
     }
 
     private static class ClusterSettingBuilder implements Block<ClusterSettings.Builder> {
@@ -214,7 +213,6 @@ public abstract class AbstractMongoClientProducer {
         if (config == null) {
             throw new RuntimeException("mongo config is missing for creating mongo client.");
         }
-        checkCodec();
         CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
@@ -227,8 +225,8 @@ public abstract class AbstractMongoClientProducer {
         }
 
         List<CodecProvider> providers = new ArrayList<>();
-        if (!codecProviders.isEmpty()) {
-            providers.addAll(getCodecProviders(codecProviders));
+        if (!mongoClientSupport.getCodecProviders().isEmpty()) {
+            providers.addAll(getCodecProviders(mongoClientSupport.getCodecProviders()));
         }
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
@@ -237,7 +235,7 @@ public abstract class AbstractMongoClientProducer {
                 .conventions(Conventions.DEFAULT_CONVENTIONS);
         // register bson discriminators
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (String bsonDiscriminator : bsonDiscriminators) {
+        for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {
             try {
                 pojoCodecProviderBuilder
                         .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
@@ -277,10 +275,11 @@ public abstract class AbstractMongoClientProducer {
             settings.retryWrites(wc.retryWrites);
         }
         if (config.tls) {
-            settings.applyToSslSettings(new SslSettingsBuilder(config, disableSslSupport));
+            settings.applyToSslSettings(new SslSettingsBuilder(config, mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
-        settings.applyToConnectionPoolSettings(new ConnectionPoolSettingsBuilder(config, connectionPoolListeners));
+        settings.applyToConnectionPoolSettings(
+                new ConnectionPoolSettingsBuilder(config, mongoClientSupport.getConnectionPoolListeners()));
         settings.applyToServerSettings(new ServerSettingsBuilder(config));
         settings.applyToSocketSettings(new SocketSettingsBuilder(config));
 
@@ -383,33 +382,6 @@ public abstract class AbstractMongoClientProducer {
         }
 
         return providers;
-    }
-
-    public void setConfig(MongodbConfig config) {
-        this.mongodbConfig = config;
-    }
-
-    public void setCodecs(List<String> codecs) {
-        this.codecProviders = codecs;
-    }
-
-    public void setBsonDiscriminators(List<String> bsonDiscriminators) {
-        this.bsonDiscriminators = bsonDiscriminators;
-    }
-
-    public void setConnectionPoolListeners(List<ConnectionPoolListener> connectionPoolListeners) {
-        this.connectionPoolListeners = connectionPoolListeners;
-    }
-
-    public void disableSslSupport() {
-        this.disableSslSupport = true;
-    }
-
-    private void checkCodec() {
-        if (codecProviders == null) {
-            throw new IllegalStateException(
-                    "The mongo clients are not ready to be consumed: the codec list for mongo configuration has not been injected yet");
-        }
     }
 
     @PreDestroy

@@ -36,6 +36,7 @@ import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -66,6 +67,7 @@ public class JibProcessor {
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,
             MainClassBuildItem mainClass,
             OutputTargetBuildItem outputTarget, ApplicationInfoBuildItem applicationInfo,
@@ -81,7 +83,7 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(jibConfig,
                 sourceJar, outputTarget, mainClass, containerImageLabels);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
+        containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
@@ -89,6 +91,7 @@ public class JibProcessor {
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
     public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            ContainerImageInfoBuildItem containerImage,
             NativeImageBuildItem nativeImage,
             ApplicationInfoBuildItem applicationInfo,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
@@ -109,14 +112,18 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
 
-        containerize(applicationInfo, containerImageConfig, jibContainerBuilder, pushRequest.isPresent());
+        containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
+                pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 
     private JibContainer containerize(ApplicationInfoBuildItem applicationInfo, ContainerImageConfig containerImageConfig,
-            JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
-        Containerizer containerizer = createContainerizer(containerImageConfig, applicationInfo, pushRequested);
+            ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
+        Containerizer containerizer = createContainerizer(containerImageConfig, containerImage, applicationInfo, pushRequested);
+        for (String additionalTag : containerImage.getAdditionalTags()) {
+            containerizer.withAdditionalTag(additionalTag);
+        }
         try {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
@@ -131,9 +138,17 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
+            ContainerImageInfoBuildItem containerImage,
             ApplicationInfoBuildItem applicationInfo, boolean pushRequested) {
         Containerizer containerizer;
-        ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
+        ImageReference imageReference = getImageReference(containerImageConfig, containerImage, applicationInfo);
+
+        for (String additionalTag : containerImage.getAdditionalTags()) {
+            if (!ImageReference.isValidTag(additionalTag)) {
+                throw new IllegalArgumentException(
+                        "The supplied container-image additional tag '" + additionalTag + "' is invalid");
+            }
+        }
 
         if (pushRequested || containerImageConfig.push) {
             if (!containerImageConfig.registry.isPresent()) {
@@ -181,6 +196,7 @@ public class JibProcessor {
     }
 
     private ImageReference getImageReference(ContainerImageConfig containerImageConfig,
+            ContainerImageInfoBuildItem containerImage,
             ApplicationInfoBuildItem applicationInfo) {
 
         String registry = containerImageConfig.registry.orElse(null);
@@ -194,8 +210,8 @@ public class JibProcessor {
             throw new IllegalArgumentException("The supplied container-image repository '" + repository + "' is invalid");
         }
 
-        String tag = containerImageConfig.tag.orElse(applicationInfo.getVersion());
-        if (tag != null && !ImageReference.isValidTag(tag)) {
+        final String tag = containerImage.getTag();
+        if (!ImageReference.isValidTag(tag)) {
             throw new IllegalArgumentException("The supplied container-image tag '" + tag + "' is invalid");
         }
 

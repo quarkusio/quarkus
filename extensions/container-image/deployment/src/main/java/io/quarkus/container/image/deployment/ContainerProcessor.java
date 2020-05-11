@@ -1,5 +1,7 @@
 package io.quarkus.container.image.deployment;
 
+import java.util.Collections;
+
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -16,7 +18,8 @@ public class ContainerProcessor {
         return new ContainerImageInfoBuildItem(containerImageConfig.registry,
                 containerImageConfig.getEffectiveGroup(),
                 containerImageConfig.name.orElse(app.getName()),
-                containerImageConfig.tag.orElse(app.getVersion()));
+                containerImageConfig.tag.orElse(app.getVersion()),
+                containerImageConfig.additionalTags.orElse(Collections.emptyList()));
     }
 
     private void ensureSingleContainerImageExtension(Capabilities capabilities) {

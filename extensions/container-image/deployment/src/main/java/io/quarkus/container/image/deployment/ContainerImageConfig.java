@@ -1,5 +1,6 @@
 package io.quarkus.container.image.deployment;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -25,6 +26,12 @@ public class ContainerImageConfig {
      */
     @ConfigItem(defaultValue = "${quarkus.application.version:latest}")
     public Optional<String> tag;
+
+    /**
+     * Additional tags of the container image.
+     */
+    @ConfigItem
+    public Optional<List<String>> additionalTags;
 
     /**
      * The container registry to use

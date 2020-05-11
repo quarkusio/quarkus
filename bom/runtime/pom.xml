@@ -1796,6 +1796,11 @@
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${mongo-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-crypt</artifactId>
                 <version>${mongo-crypt.version}</version>
             </dependency>

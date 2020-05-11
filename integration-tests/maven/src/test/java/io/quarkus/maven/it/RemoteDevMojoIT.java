@@ -17,8 +17,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
@@ -38,7 +36,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(agentDir, "src/main/java/org/acme/HelloResource.java");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 
         // Wait until we get "uuid"
         await()
@@ -50,7 +48,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of(uuid, "carambar"));
+        filter(source, Collections.singletonMap(uuid, "carambar"));
 
         // Wait until we get "carambar"
         await()
@@ -116,7 +114,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 .until(source::isFile);
 
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("bonjour", uuid));
+        filter(source, Collections.singletonMap("bonjour", uuid));
 
         // Wait until we get "uuid"
         await()
@@ -167,7 +165,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(agentDir, "src/main/java/org/acme/HelloResource.java");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\"")); // No semi-colon
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\"")); // No semi-colon
 
         // Wait until we get "uuid"
         AtomicReference<String> last = new AtomicReference<>();
@@ -187,7 +185,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 .pollDelay(1, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
-        filter(source, ImmutableMap.of("\"" + uuid + "\"", "\"carambar\";"));
+        filter(source, Collections.singletonMap("\"" + uuid + "\"", "\"carambar\";"));
 
         // Wait until we get "uuid"
         await()
@@ -232,7 +230,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of("message", "foobarbaz"));
+        filter(source, Collections.singletonMap("message", "foobarbaz"));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)

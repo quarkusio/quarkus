@@ -175,13 +175,7 @@ class HibernateSearchElasticsearchProcessor {
             }
         }
 
-        for (Class<?> gsonClass : GSON_CLASSES) {
-            Class<?> currentClass = gsonClass;
-            while (currentClass != Object.class) {
-                reflectiveClassCollector.add(DotName.createSimple(currentClass.getName()));
-                currentClass = currentClass.getSuperclass();
-            }
-        }
+        reflectiveClassCollector.addAll(GSON_CLASSES);
 
         String[] reflectiveClasses = reflectiveClassCollector.stream().map(DotName::toString).toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.elasticsearch;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,8 +16,11 @@ import org.hibernate.search.backend.elasticsearch.lowlevel.index.analysis.impl.N
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.analysis.impl.TokenFilterDefinition;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.analysis.impl.TokenizerDefinition;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.AbstractTypeMapping;
+import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicTemplate;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicType;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.FormatJsonAdapter;
+import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.NamedDynamicTemplate;
+import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.NamedDynamicTemplateJsonAdapterFactory;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.PropertyMapping;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.PropertyMappingJsonAdapterFactory;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.RootTypeMapping;
@@ -37,27 +41,44 @@ class HibernateSearchClasses {
             org.hibernate.search.mapper.pojo.mapping.definition.annotation.processing.PropertyMapping.class.getName());
     static final DotName TYPE_MAPPING_META_ANNOTATION = DotName.createSimple(TypeMapping.class.getName());
 
-    static final List<Class<?>> GSON_CLASSES = Arrays.asList(
-            AbstractTypeMapping.class,
-            DynamicType.class,
-            FormatJsonAdapter.class,
-            RoutingTypeJsonAdapter.class,
-            PropertyMapping.class,
-            PropertyMappingJsonAdapterFactory.class,
-            RootTypeMapping.class,
-            RootTypeMappingJsonAdapterFactory.class,
-            RoutingType.class,
-            IndexSettings.class,
-            Analysis.class,
-            AnalysisDefinition.class,
-            AnalyzerDefinition.class,
-            AnalyzerDefinitionJsonAdapterFactory.class,
-            NormalizerDefinition.class,
-            NormalizerDefinitionJsonAdapterFactory.class,
-            TokenizerDefinition.class,
-            TokenFilterDefinition.class,
-            CharFilterDefinition.class,
-            AnalysisDefinitionJsonAdapterFactory.class,
-            IndexAliasDefinition.class,
-            IndexAliasDefinitionJsonAdapterFactory.class);
+    static final List<DotName> GSON_CLASSES = new ArrayList<>();
+    static {
+        // TODO this type should be public; see https://hibernate.atlassian.net/browse/HSEARCH-3916
+        GSON_CLASSES.add(DotName.createSimple(
+                "org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicTemplateJsonAdapterFactory"));
+
+        List<Class<?>> publicGsonClasses = Arrays.asList(
+                AbstractTypeMapping.class,
+                DynamicType.class,
+                FormatJsonAdapter.class,
+                RoutingTypeJsonAdapter.class,
+                PropertyMapping.class,
+                PropertyMappingJsonAdapterFactory.class,
+                RootTypeMapping.class,
+                RootTypeMappingJsonAdapterFactory.class,
+                RoutingType.class,
+                IndexSettings.class,
+                Analysis.class,
+                AnalysisDefinition.class,
+                AnalyzerDefinition.class,
+                AnalyzerDefinitionJsonAdapterFactory.class,
+                NormalizerDefinition.class,
+                NormalizerDefinitionJsonAdapterFactory.class,
+                TokenizerDefinition.class,
+                TokenFilterDefinition.class,
+                CharFilterDefinition.class,
+                AnalysisDefinitionJsonAdapterFactory.class,
+                IndexAliasDefinition.class,
+                IndexAliasDefinitionJsonAdapterFactory.class,
+                DynamicTemplate.class,
+                NamedDynamicTemplate.class,
+                NamedDynamicTemplateJsonAdapterFactory.class);
+        for (Class<?> publicGsonClass : publicGsonClasses) {
+            Class<?> currentClass = publicGsonClass;
+            while (currentClass != Object.class) {
+                GSON_CLASSES.add(DotName.createSimple(currentClass.getName()));
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+    }
 }

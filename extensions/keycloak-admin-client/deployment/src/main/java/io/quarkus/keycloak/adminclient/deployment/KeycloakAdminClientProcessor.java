@@ -21,7 +21,8 @@ public class KeycloakAdminClientProcessor {
     ReflectiveHierarchyIgnoreWarningBuildItem marker(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> prod) {
         prod.produce(new AdditionalApplicationArchiveMarkerBuildItem("org/keycloak/admin/client/"));
         prod.produce(new AdditionalApplicationArchiveMarkerBuildItem("org/keycloak/representations"));
-        return new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple(MultivaluedHashMap.class.getName()));
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                DotName.createSimple(MultivaluedHashMap.class.getName())));
     }
 
     @BuildStep

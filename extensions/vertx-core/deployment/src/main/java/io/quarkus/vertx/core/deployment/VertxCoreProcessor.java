@@ -57,12 +57,6 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    EventLoopSupplierBuildItem eventLoop(VertxCoreRecorder recorder) {
-        return new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     IOThreadDetectorBuildItem ioThreadDetector(VertxCoreRecorder recorder) {
         return new IOThreadDetectorBuildItem(recorder.detector());
     }
@@ -72,7 +66,8 @@ class VertxCoreProcessor {
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             BuildProducer<ServiceStartBuildItem> serviceStartBuildItem) {
 
         Collections.sort(vertxOptionsConsumers);
@@ -83,12 +78,15 @@ class VertxCoreProcessor {
 
         Supplier<Vertx> vertx = recorder.configureVertx(config,
                 launchMode.getLaunchMode(), shutdown, consumers);
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(Vertx.class)
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit()
                 .supplier(vertx).done());
+
+        // Event loops are only usable after the core vertx instance is configured
+        eventLoops.produce(new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier()));
 
         return new CoreVertxBuildItem(vertx);
     }

@@ -15,6 +15,7 @@ import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.util.HashUtil;
@@ -42,6 +43,7 @@ public class SyntheticBeansProcessor {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
+    @Produce(SyntheticBeansRuntimeInitBuildItem.class)
     @BuildStep
     ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {

@@ -233,6 +233,18 @@ public class PersonResourceTest {
     }
 
     @Test
+    void testFindByAddressId() {
+        when().get("/person/addressId/00000").then()
+                .statusCode(200)
+                .body("size()", is(0));
+
+        when().get("/person/addressId/2").then()
+                .statusCode(200)
+                .body("size()", is(1))
+                .body(containsString("Florence"));
+    }
+
+    @Test
     void testNewPerson() {
         Person person = when().get("/person/new/user").then()
                 .statusCode(200)

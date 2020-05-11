@@ -632,4 +632,23 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         assertThat(running.log()).doesNotContain("The project's sources directory does not exist");
     }
+
+    @Test
+    public void testThatTheApplicationIsNotStartedWithoutBuildGoal() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-no-build");
+        run(true);
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(30, TimeUnit.SECONDS)
+                .until(() -> running.log().contains("skipping quarkus:dev as this is assumed to be a support library"));
+    }
+
+    @Test
+    public void testThatTheApplicationIsStartedWithoutBuildGoalWhenNotEnforced() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-no-build", "projects/classic-no-build-not-enforced");
+        runAndCheck("-Dquarkus.enforceBuildGoal=false");
+
+        assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
+    }
 }

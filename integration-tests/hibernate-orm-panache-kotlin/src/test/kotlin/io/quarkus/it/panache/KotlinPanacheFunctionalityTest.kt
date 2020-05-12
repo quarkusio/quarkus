@@ -71,4 +71,8 @@ open class KotlinPanacheFunctionalityTest {
                 personAsString)
     }
 
+    @Test
+    fun testBug9036() {
+        RestAssured.`when`()["/test/9036"].then().body(Matchers.`is`("OK"))
+    }
 }

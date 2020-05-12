@@ -423,7 +423,7 @@ public class TestEndpoint {
         person3.persist();
 
         Sort sort1 = Sort.by("name", "status");
-        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        List<Person> order1 = Arrays.asList(person3, person2, person1);
 
         List<Person> list = Person.findAll(sort1).list();
         Assertions.assertEquals(order1, list);
@@ -435,7 +435,7 @@ public class TestEndpoint {
         Assertions.assertEquals(order1, list);
 
         Sort sort2 = Sort.descending("name", "status");
-        List<Person> order2 = Arrays.asList(person2, person1);
+        List<Person> order2 = Arrays.asList(person1, person2);
 
         list = Person.find("name", sort2, "stef").list();
         Assertions.assertEquals(order2, list);
@@ -750,7 +750,7 @@ public class TestEndpoint {
         personDao.persist(person3);
 
         Sort sort1 = Sort.by("name", "status");
-        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        List<Person> order1 = Arrays.asList(person3, person2, person1);
 
         List<Person> list = personDao.findAll(sort1).list();
         Assertions.assertEquals(order1, list);
@@ -762,7 +762,7 @@ public class TestEndpoint {
         Assertions.assertEquals(order1, list);
 
         Sort sort2 = Sort.descending("name", "status");
-        List<Person> order2 = Arrays.asList(person2, person1);
+        List<Person> order2 = Arrays.asList(person1, person2);
 
         list = personDao.find("name", sort2, "stef").list();
         Assertions.assertEquals(order2, list);
@@ -1316,6 +1316,47 @@ public class TestEndpoint {
         List<Fruit> results = query.list();
 
         int pageCount = query.pageCount();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("9036")
+    @Transactional
+    public String testBug9036() {
+        Person.deleteAll();
+
+        Person emptyPerson = new Person();
+        emptyPerson.persist();
+
+        Person deadPerson = new Person();
+        deadPerson.name = "Stef";
+        deadPerson.status = Status.DECEASED;
+        deadPerson.persist();
+
+        Person livePerson = new Person();
+        livePerson.name = "Stef";
+        livePerson.status = Status.LIVING;
+        livePerson.persist();
+
+        assertEquals(3, Person.count());
+        assertEquals(3, Person.listAll().size());
+
+        // should be filtered
+        PanacheQuery<Person> query = Person.findAll(Sort.by("id")).filter("Person.isAlive").filter("Person.hasName",
+                Parameters.with("name", "Stef"));
+        assertEquals(1, query.count());
+        assertEquals(1, query.list().size());
+        assertEquals(livePerson, query.list().get(0));
+        assertEquals(1, query.stream().count());
+        assertEquals(livePerson, query.firstResult());
+        assertEquals(livePerson, query.singleResult());
+
+        // these should be unaffected
+        assertEquals(3, Person.count());
+        assertEquals(3, Person.listAll().size());
+
+        Person.deleteAll();
 
         return "OK";
     }

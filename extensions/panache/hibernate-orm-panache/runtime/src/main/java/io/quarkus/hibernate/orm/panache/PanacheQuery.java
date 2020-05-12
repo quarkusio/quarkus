@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.panache;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -8,7 +9,11 @@ import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
 
+import org.hibernate.Session;
+import org.hibernate.annotations.FilterDef;
+
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
 
 /**
  * <p>
@@ -158,6 +163,53 @@ public interface PanacheQuery<Entity> {
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value);
+
+    /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> filter(String filterName, Parameters parameters);
+
+    /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> filter(String filterName, Map<String, Object> parameters);
+
+    /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> filter(String filterName);
 
     // Results
 

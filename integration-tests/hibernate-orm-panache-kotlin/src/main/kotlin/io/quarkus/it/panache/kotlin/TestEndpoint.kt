@@ -1018,4 +1018,45 @@ class TestEndpoint {
         Assertions.assertNull(f.getAnnotation(XmlAttribute::class.java))
         Assertions.assertNotNull(f.getAnnotation(XmlTransient::class.java))
     }
+
+
+    @GET
+    @Path("9036")
+    @Transactional
+    fun testBug9036(): String {
+        Person.deleteAll();
+        
+        val emptyPerson = Person();
+        emptyPerson.persist();
+        
+        val deadPerson = Person();
+        deadPerson.name = "Stef";
+        deadPerson.status = Status.DECEASED;
+        deadPerson.persist();
+        
+        val livePerson = Person();
+        livePerson.name = "Stef";
+        livePerson.status = Status.LIVING;
+        livePerson.persist();
+        
+        Assertions.assertEquals(3, Person.count());
+        Assertions.assertEquals(3, Person.listAll().size);
+        
+        // should be filtered
+        val query = Person.findAll(Sort.by("id")).filter("Person.isAlive").filter("Person.hasName", Parameters.with("name", "Stef"));
+        Assertions.assertEquals(1, query.count());
+        Assertions.assertEquals(1, query.list().size);
+        Assertions.assertEquals(livePerson, query.list().get(0));
+        Assertions.assertEquals(1, query.stream().count());
+        Assertions.assertEquals(livePerson, query.firstResult());
+        Assertions.assertEquals(livePerson, query.singleResult());
+        
+        // these should be unaffected
+        Assertions.assertEquals(3, Person.count());
+        Assertions.assertEquals(3, Person.listAll().size);
+
+        Person.deleteAll();
+        
+        return "OK";
+    }
 }

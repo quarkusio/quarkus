@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -10,6 +12,7 @@ import javax.persistence.LockModeType;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
@@ -110,6 +113,27 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value) {
         delegate.withHint(hintName, value);
+        return (PanacheQuery<T>) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Entity> PanacheQuery<T> filter(String filterName, Parameters parameters) {
+        delegate.filter(filterName, parameters.map());
+        return (PanacheQuery<T>) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Entity> PanacheQuery<T> filter(String filterName, Map<String, Object> parameters) {
+        delegate.filter(filterName, parameters);
+        return (PanacheQuery<T>) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T extends Entity> PanacheQuery<T> filter(String filterName) {
+        delegate.filter(filterName, Collections.emptyMap());
         return (PanacheQuery<T>) this;
     }
 

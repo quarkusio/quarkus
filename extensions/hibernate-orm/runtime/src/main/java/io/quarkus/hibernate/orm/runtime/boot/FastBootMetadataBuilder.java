@@ -40,10 +40,10 @@ import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
+import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
@@ -65,6 +65,7 @@ import org.hibernate.jpa.boot.spi.TypeContributorList;
 import org.hibernate.jpa.internal.util.LogHelper;
 import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
+import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.Service;
@@ -74,7 +75,9 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
@@ -194,18 +197,13 @@ public class FastBootMetadataBuilder {
 
     private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
 
-        final BootstrapServiceRegistryBuilder bsrBuilder = new BootstrapServiceRegistryBuilder();
-
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
-        // N.B. support for custom StrategySelector removed
-        // TODO see to inject a custom
-        // org.hibernate.boot.registry.selector.spi.StrategySelector ?
-
-        bsrBuilder.applyClassLoaderService(providedClassLoaderService);
-
-        return bsrBuilder.build();
+        final QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
+        final QuarkusStrategySelectorBuilder strategySelectorBuilder = new QuarkusStrategySelectorBuilder();
+        final StrategySelector strategySelector = strategySelectorBuilder.buildSelector(providedClassLoaderService);
+        return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 
     /**
@@ -260,6 +258,21 @@ public class FastBootMetadataBuilder {
         //Agroal already does disable auto-commit, so Hibernate ORM should trust that:
         cfg.put(AvailableSettings.CONNECTION_PROVIDER_DISABLES_AUTOCOMMIT, Boolean.TRUE.toString());
 
+        /**
+         * Set CONNECTION_HANDLING to DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION
+         * as it generally performs better, at no known drawbacks.
+         * This is a new mode in Hibernate ORM, it might become the default in the future.
+         *
+         * @see org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
+         */
+        {
+            final Object explicitSetting = cfg.get(AvailableSettings.CONNECTION_HANDLING);
+            if (explicitSetting == null) {
+                cfg.put(AvailableSettings.CONNECTION_HANDLING,
+                        PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
+            }
+        }
+
         if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
             LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
         }
@@ -273,8 +286,8 @@ public class FastBootMetadataBuilder {
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {
             LOG.warn("JACC is not supported. Disabling it.");
+            cfg.remove(JACC_ENABLED);
         }
-        cfg.remove(JACC_ENABLED);
 
         // here we are going to iterate the merged config settings looking for:
         // 1) additional JACC permissions

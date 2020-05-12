@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
-import org.hibernate.boot.cfgxml.internal.ConfigLoader;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
@@ -54,6 +53,8 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
  */
 public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
+    private static final String DISABLED_FEATURE_MSG = "This feature was disabled in Quarkus - this method should not have invoked, please report";
+
     private final Map settings;
     private final List<StandardServiceInitiator> initiators = standardInitiatorList();
     private final List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
@@ -62,7 +63,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     private boolean autoCloseRegistry = true;
 
     private final BootstrapServiceRegistry bootstrapServiceRegistry;
-    private final ConfigLoader configLoader;
     private final LoadedConfig aggregatedCfgXml;
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry) {
@@ -80,7 +80,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         super(bootstrapServiceRegistry, properties, loadedConfigBaseline, null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
-        this.configLoader = new ConfigLoader(bootstrapServiceRegistry);
         this.aggregatedCfgXml = loadedConfigBaseline;
     }
 
@@ -156,47 +155,16 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         return bootstrapServiceRegistry;
     }
 
-    /**
-     * Read settings from a {@link java.util.Properties} file by resource name.
-     * <p>
-     * Differs from {@link #configure()} and {@link #configure(String)} in that here
-     * we expect to read a {@link java.util.Properties} file while for
-     * {@link #configure} we read the XML variant.
-     *
-     * @param resourceName The name by which to perform a resource look up for the
-     *        properties file.
-     *
-     * @return this, for method chaining
-     *
-     * @see #configure()
-     * @see #configure(String)
-     */
     @Override
     @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder loadProperties(String resourceName) {
-        settings.putAll(configLoader.loadProperties(resourceName));
-        return this;
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
-    /**
-     * Read settings from a {@link java.util.Properties} file by File reference
-     * <p>
-     * Differs from {@link #configure()} and {@link #configure(String)} in that here
-     * we expect to read a {@link java.util.Properties} file while for
-     * {@link #configure} we read the XML variant.
-     *
-     * @param file The properties File reference
-     *
-     * @return this, for method chaining
-     *
-     * @see #configure()
-     * @see #configure(String)
-     */
     @Override
     @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder loadProperties(File file) {
-        settings.putAll(configLoader.loadProperties(file));
-        return this;
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     /**
@@ -214,35 +182,25 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         return configure(DEFAULT_CFG_RESOURCE_NAME);
     }
 
-    /**
-     * Read setting information from an XML file using the named resource location.
-     *
-     * @param resourceName The named resource
-     *
-     * @return this, for method chaining
-     */
     @Override
     public StandardServiceRegistryBuilder configure(String resourceName) {
-        return configure(configLoader.loadConfigXmlResource(resourceName));
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     @Override
     public StandardServiceRegistryBuilder configure(File configurationFile) {
-        return configure(configLoader.loadConfigXmlFile(configurationFile));
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     @Override
     public StandardServiceRegistryBuilder configure(URL url) {
-        return configure(configLoader.loadConfigXmlUrl(url));
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     @Override
     @SuppressWarnings({ "unchecked" })
     public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
-        aggregatedCfgXml.merge(loadedConfig);
-        settings.putAll(loadedConfig.getConfigurationValues());
-
-        return this;
+        throw new UnsupportedOperationException(DISABLED_FEATURE_MSG);
     }
 
     /**

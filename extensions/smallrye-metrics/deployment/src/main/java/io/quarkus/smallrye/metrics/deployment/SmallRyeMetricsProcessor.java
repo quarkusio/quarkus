@@ -2,18 +2,7 @@ package io.quarkus.smallrye.metrics.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.CONCURRENT_GAUGE_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.COUNTER_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.GAUGE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.GAUGE_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.HISTOGRAM_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METER_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_ANNOTATIONS;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_BINDING;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.SIMPLE_TIMER_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.*;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -85,10 +74,10 @@ import io.smallrye.metrics.MetricsRequestHandler;
 import io.smallrye.metrics.elementdesc.BeanInfo;
 import io.smallrye.metrics.interceptors.ConcurrentGaugeInterceptor;
 import io.smallrye.metrics.interceptors.CountedInterceptor;
+import io.smallrye.metrics.interceptors.GaugeRegistrationInterceptor;
 import io.smallrye.metrics.interceptors.MeteredInterceptor;
 import io.smallrye.metrics.interceptors.MetricNameFactory;
 import io.smallrye.metrics.interceptors.MetricsBinding;
-import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.SimplyTimedInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 
@@ -180,7 +169,7 @@ public class SmallRyeMetricsProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
                 MetricNameFactory.class,
                 MetricRegistries.class,
-                MetricsInterceptor.class,
+                GaugeRegistrationInterceptor.class,
                 MeteredInterceptor.class,
                 ConcurrentGaugeInterceptor.class,
                 CountedInterceptor.class,
@@ -251,7 +240,8 @@ public class SmallRyeMetricsProcessor {
                 // skip classes in package io.smallrye.metrics.interceptors
                 ClassInfo clazz = context.getTarget().asClass();
                 if (clazz.name().toString()
-                        .startsWith(io.smallrye.metrics.interceptors.MetricsInterceptor.class.getPackage().getName())) {
+                        .startsWith(
+                                io.smallrye.metrics.interceptors.GaugeRegistrationInterceptor.class.getPackage().getName())) {
                     return;
                 }
                 if (clazz.annotations().containsKey(GAUGE)) {
@@ -412,6 +402,10 @@ public class SmallRyeMetricsProcessor {
                         alreadyRegisteredNames.add(method.name());
                     }
                 }
+                superclass = index.getClassByName(superclass.superName());
+            }
+            superclass = clazz;
+            while (superclass != null && superclass.superName() != null) {
                 // find inherited default methods which are not overridden by the original bean
                 for (Type interfaceType : superclass.interfaceTypes()) {
                     ClassInfo ifaceInfo = beanArchiveIndex.getIndex().getClassByName(interfaceType.name());
@@ -484,7 +478,17 @@ public class SmallRyeMetricsProcessor {
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
-        IndexView index = beanArchiveIndex.getIndex();
+        for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
+            if (item.executionTime() == RUNTIME_INIT) {
+                recorder.registerMetrics(item.getConsumer());
+            }
+        }
+    }
+
+    @BuildStep
+    public void warnAboutMetricsFromProducers(ValidationPhaseBuildItem validationPhase,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> unused) {
         for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().beans().producers()) {
             ClassInfo implClazz = bean.getImplClazz();
             if (implClazz == null) {
@@ -494,38 +498,20 @@ public class SmallRyeMetricsProcessor {
             if (metricType != null) {
                 AnnotationTarget target = bean.getTarget().get();
                 AnnotationInstance metricAnnotation = null;
-                String memberName = null;
                 if (bean.isProducerField()) {
                     FieldInfo field = target.asField();
                     metricAnnotation = field.annotation(METRIC);
-                    memberName = field.name();
                 }
                 if (bean.isProducerMethod()) {
                     MethodInfo method = target.asMethod();
                     metricAnnotation = method.annotation(METRIC);
-                    memberName = method.name();
                 }
                 if (metricAnnotation != null) {
-                    String nameValue = metricAnnotation.valueWithDefault(index, "name").asString();
-                    boolean absolute = metricAnnotation.valueWithDefault(index, "absolute").asBoolean();
-                    String metricSimpleName = !nameValue.isEmpty() ? nameValue : memberName;
-                    String declaringClassName = bean.getDeclaringBean().getImplClazz().name().toString();
-                    String metricsFinalName = absolute ? metricSimpleName
-                            : MetricRegistry.name(declaringClassName, metricSimpleName);
-                    recorder.registerMetricFromProducer(
-                            bean.getIdentifier(),
-                            metricType,
-                            metricsFinalName,
-                            metricAnnotation.valueWithDefault(index, "tags").asStringArray(),
-                            metricAnnotation.valueWithDefault(index, "description").asString(),
-                            metricAnnotation.valueWithDefault(index, "displayName").asString(),
-                            metricAnnotation.valueWithDefault(index, "unit").asString());
+                    LOGGER.warn(
+                            "Metrics created from CDI producers are no longer supported. There will be no metric automatically registered "
+                                    +
+                                    "for producer " + target);
                 }
-            }
-        }
-        for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
-            if (item.executionTime() == RUNTIME_INIT) {
-                recorder.registerMetrics(item.getConsumer());
             }
         }
     }

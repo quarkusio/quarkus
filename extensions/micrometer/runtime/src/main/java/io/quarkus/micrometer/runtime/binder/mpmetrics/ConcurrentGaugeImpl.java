@@ -15,8 +15,8 @@ class ConcurrentGaugeImpl implements ConcurrentGauge, MeterHolder {
 
     ConcurrentGaugeImpl register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
         gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), longAdder, LongAdder::doubleValue)
-                .description(metadata.description())
-                .baseUnit(metadata.unit())
+                .description(metadata.getDescription())
+                .baseUnit(metadata.getUnit())
                 .tags(metricInfo.tags())
                 .strongReference(true)
                 .register(registry);

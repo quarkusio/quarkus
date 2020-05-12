@@ -95,6 +95,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SPRING_DATA_JPA = "spring-data-jpa";
     public static final String SPRING_SECURITY = "spring-security";
     public static final String SPRING_BOOT_PROPERTIES = "spring-boot-properties";
+    public static final String SPRING_CACHE = "spring-cache";
     public static final String SPRING_CLOUD_CONFIG_CLIENT = "spring-cloud-config-client";
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";

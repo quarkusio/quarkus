@@ -79,8 +79,12 @@ class CacheProcessor {
     @Record(RUNTIME_INIT)
     void recordCachesBuild(CombinedIndexBuildItem combinedIndex, BeanContainerBuildItem beanContainer, CacheConfig config,
             CaffeineCacheBuildRecorder caffeineRecorder,
+            List<AdditionalCacheNameBuildItem> additionalCacheNames,
             Optional<ManagedExecutorInitializedBuildItem> managedExecutorInitialized) {
         Set<String> cacheNames = getCacheNames(combinedIndex.getIndex());
+        for (AdditionalCacheNameBuildItem additionalCacheName : additionalCacheNames) {
+            cacheNames.add(additionalCacheName.getName());
+        }
         switch (config.type) {
             case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
                 Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames, config);

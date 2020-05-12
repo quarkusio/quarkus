@@ -3,6 +3,8 @@ package io.quarkus.launcher;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -34,13 +36,18 @@ public class QuarkusLauncher {
                 System.setProperty("quarkus.package.main-class", quarkusApplication);
             }
 
+            Map<String, Object> context = new HashMap<>();
+            context.put("app-classes", appClasses);
+            context.put("args", args);
+
             //todo : proper support for everything
             CuratedApplication app = QuarkusBootstrap.builder(appClasses)
                     .setBaseClassLoader(QuarkusLauncher.class.getClassLoader())
+                    .setProjectRoot(appClasses)
+                    .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.DEV)
                     .build().bootstrap();
-            app.createAugmentor()
-                    .createInitialRuntimeApplication().runMainClass(args);
+            app.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);
 
         } catch (Exception e) {
             throw new RuntimeException(e);

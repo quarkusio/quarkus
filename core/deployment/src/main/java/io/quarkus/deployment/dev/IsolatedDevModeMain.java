@@ -77,7 +77,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 System.out.println("Press Enter to restart or Ctrl + C to quit");
                                 try {
                                     while (System.in.read() != '\n') {
+                                        //noop
                                     }
+                                    while (System.in.available() > 0) {
+                                        System.in.read();
+                                    }
+                                    System.out.println("Restarting...");
                                     runtimeUpdatesProcessor.checkForChangedClasses();
                                     restartApp(runtimeUpdatesProcessor.checkForFileChange());
                                 } catch (Exception e) {

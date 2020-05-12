@@ -44,8 +44,8 @@ class MpMetadata implements Metadata {
     MpMetadata(Metadata other, MetricType type) {
         this.type = type;
         this.name = other.getName();
-        this.description = other.getDescription().orElse(null);
-        this.unit = other.getUnit().orElse(null);
+        this.description = other.description().orElse(null);
+        this.unit = other.unit().orElse(null);
     }
 
     public boolean mergeSameType(MpMetadata metadata) {
@@ -67,11 +67,11 @@ class MpMetadata implements Metadata {
         if (metadata.getTypeRaw() == MetricType.INVALID || this.type == metadata.getTypeRaw()) {
             if (description == null) {
                 dirty = true;
-                description = stringOrNull(metadata.getDescription().orElse(null));
+                description = stringOrNull(metadata.description().orElse(null));
             }
             if (unit == null) {
                 dirty = true;
-                unit = stringOrNull(metadata.getUnit().orElse(null));
+                unit = stringOrNull(metadata.unit().orElse(null));
             }
             return true;
         }
@@ -105,12 +105,12 @@ class MpMetadata implements Metadata {
         return this;
     }
 
-    public String description() {
-        return description;
+    public Optional<String> description() {
+        return Optional.ofNullable(description);
     }
 
-    public String unit() {
-        return unit;
+    public Optional<String> unit() {
+        return Optional.ofNullable(unit);
     }
 
     public boolean cleanDirtyMetadata() {
@@ -136,8 +136,13 @@ class MpMetadata implements Metadata {
     }
 
     @Override
-    public Optional<String> getDescription() {
-        return Optional.ofNullable(description);
+    public Optional<String> displayName() {
+        return Optional.ofNullable(name);
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
     }
 
     @Override
@@ -151,13 +156,8 @@ class MpMetadata implements Metadata {
     }
 
     @Override
-    public Optional<String> getUnit() {
-        return Optional.ofNullable(unit);
-    }
-
-    @Override
-    public boolean isReusable() {
-        return true;
+    public String getUnit() {
+        return unit;
     }
 
     @Override

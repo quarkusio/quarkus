@@ -1,5 +1,6 @@
 package io.quarkus.micrometer.runtime.binder.mpmetrics;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
@@ -26,9 +27,9 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
 
         public GaugeAdapter<Double> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, f)
-                    .description(metadata.description())
+                    .description(metadata.getDescription())
                     .tags(metricInfo.tags())
-                    .baseUnit(metadata.unit())
+                    .baseUnit(metadata.getUnit())
                     .strongReference(true)
                     .register(registry);
             return this;
@@ -50,6 +51,43 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
         }
     }
 
+    static class FunctionGauge<S, R extends Number> implements GaugeAdapter<R> {
+        io.micrometer.core.instrument.Gauge gauge;
+
+        final S obj;
+        final Function<S, R> f;
+
+        FunctionGauge(S obj, Function<S, R> f) {
+            this.obj = obj;
+            this.f = f;
+        }
+
+        public GaugeAdapter<R> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
+            gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, obj -> f.apply(obj).doubleValue())
+                    .description(metadata.getDescription())
+                    .tags(metricInfo.tags())
+                    .baseUnit(metadata.getUnit())
+                    .strongReference(true)
+                    .register(registry);
+            return this;
+        }
+
+        @Override
+        public Meter getMeter() {
+            return gauge;
+        }
+
+        @Override
+        public R getValue() {
+            return (R) (Double) gauge.value();
+        }
+
+        @Override
+        public MetricType getType() {
+            return MetricType.GAUGE;
+        }
+    }
+
     static class NumberSupplierGauge<T extends Number> implements GaugeAdapter<T> {
         io.micrometer.core.instrument.Gauge gauge;
         final Supplier<T> supplier;
@@ -62,9 +100,9 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
         public GaugeAdapter<T> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             if (gauge == null || metadata.cleanDirtyMetadata()) {
                 gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), (Supplier<Number>) supplier)
-                        .description(metadata.description())
+                        .description(metadata.getDescription())
                         .tags(metricInfo.tags())
-                        .baseUnit(metadata.unit())
+                        .baseUnit(metadata.getUnit())
                         .strongReference(true).register(registry);
             }
 

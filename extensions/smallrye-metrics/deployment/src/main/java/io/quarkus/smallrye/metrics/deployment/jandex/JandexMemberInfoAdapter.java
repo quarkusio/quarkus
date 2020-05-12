@@ -37,6 +37,7 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
 
         final List<AnnotationInfo> annotationInformation;
         final String name, declaringClassSimpleName, declaringClassName;
+        final String[] parameterTypeNames;
         JandexAnnotationInfoAdapter annotationInfoAdapter = new JandexAnnotationInfoAdapter(indexView);
         if (input.kind().equals(AnnotationTarget.Kind.METHOD)) {
             declaringClassName = input.asMethod().declaringClass().name().toString();
@@ -48,6 +49,9 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
+            parameterTypeNames = input.asMethod().parameters().stream()
+                    .map(type -> type.name().toString())
+                    .toArray(String[]::new);
         } else {
             declaringClassName = input.asField().declaringClass().name().toString();
             declaringClassSimpleName = input.asField().declaringClass().simpleName();
@@ -58,12 +62,14 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
+            parameterTypeNames = new String[0];
         }
 
         return new RawMemberInfo(memberType,
                 declaringClassName,
                 declaringClassSimpleName,
                 name,
-                annotationInformation);
+                annotationInformation,
+                parameterTypeNames);
     }
 }

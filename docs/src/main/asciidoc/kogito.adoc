@@ -41,6 +41,10 @@ install from Market place Eclipse BPMN2 Modeller plugin (with jBPM Runtime Exten
 
 Download and install the VSCode Extension from https://github.com/kiegroup/kogito-tooling/releases[Kogito Tooling release page] to edit and model process definitions from VSCode IDE.
 
+* Online
+
+To avoid any modeler installation you can use directly use https://bpmn.new[BPMN.new] to design and model your process through your favorite web browser.
+
 == Architecture
 
 In this example, we build a very simple microservice which offers one REST endpoint:

@@ -12,8 +12,8 @@ class MeterAdapter implements Meter, MeterHolder {
     public MeterAdapter register(MpMetadata metadata, MetricDescriptor descriptor, MeterRegistry registry) {
         if (counter == null || metadata.cleanDirtyMetadata()) {
             counter = io.micrometer.core.instrument.Counter.builder(descriptor.name())
-                    .description(metadata.description())
-                    .baseUnit(metadata.unit())
+                    .description(metadata.getDescription())
+                    .baseUnit(metadata.getUnit())
                     .tags(descriptor.tags())
                     .register(registry);
         }

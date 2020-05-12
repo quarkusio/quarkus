@@ -3,7 +3,6 @@ package io.quarkus.smallrye.metrics.runtime;
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetadataBuilder;
 import org.eclipse.microprofile.metrics.MetricType;
-import org.eclipse.microprofile.metrics.MetricUnits;
 
 /**
  * DefaultMetadata from MP Metrics API does not have a public default constructor so we use this custom wrapper
@@ -65,9 +64,9 @@ public class MetadataHolder {
         MetadataHolder result = new MetadataHolder();
         result.name = metadata.getName();
         result.metricType = metadata.getTypeRaw();
-        result.description = metadata.getDescription().orElse(null);
+        result.description = metadata.getDescription();
         result.displayName = metadata.getDisplayName();
-        result.unit = metadata.getUnit().orElse(MetricUnits.NONE);
+        result.unit = metadata.getUnit();
         return result;
     }
 

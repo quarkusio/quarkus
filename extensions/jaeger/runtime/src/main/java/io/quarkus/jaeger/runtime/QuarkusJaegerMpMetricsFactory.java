@@ -1,8 +1,9 @@
 package io.quarkus.jaeger.runtime;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.microprofile.metrics.Metadata;
@@ -84,7 +85,7 @@ public class QuarkusJaegerMpMetricsFactory implements MetricsFactory {
         return new Timer() {
             @Override
             public void durationMicros(long time) {
-                timer.update(time, TimeUnit.MICROSECONDS);
+                timer.update(Duration.of(time, ChronoUnit.MICROS));
             }
         };
     }
@@ -118,7 +119,6 @@ public class QuarkusJaegerMpMetricsFactory implements MetricsFactory {
                 .withType(type)
                 .withUnit("none")
                 .withDescription(name)
-                .reusable()
                 .build();
     }
 

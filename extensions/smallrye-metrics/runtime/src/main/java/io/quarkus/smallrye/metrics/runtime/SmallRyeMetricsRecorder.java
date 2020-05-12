@@ -154,7 +154,6 @@ public class SmallRyeMetricsRecorder {
                 .withDescription(description)
                 .withDisplayName(displayName)
                 .withUnit(unit)
-                .notReusable()
                 .build();
         registry.register(metadata, reference, TagsUtils.parseTagsAsArray(tags));
     }

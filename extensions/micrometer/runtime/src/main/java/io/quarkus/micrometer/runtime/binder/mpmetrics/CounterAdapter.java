@@ -13,8 +13,8 @@ class CounterAdapter implements org.eclipse.microprofile.metrics.Counter, MeterH
     public CounterAdapter register(MpMetadata metadata, MetricDescriptor descriptor, MeterRegistry registry) {
         if (counter == null || metadata.cleanDirtyMetadata()) {
             counter = io.micrometer.core.instrument.Counter.builder(descriptor.name())
-                    .description(metadata.description())
-                    .baseUnit(metadata.unit())
+                    .description(metadata.getDescription())
+                    .baseUnit(metadata.getUnit())
                     .tags(descriptor.tags())
                     .register(registry);
         }

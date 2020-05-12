@@ -126,6 +126,8 @@ update_configs:
       - match:
           dependency_name: "org.assertj:assertj-core"
       - match:
+          dependency_name: "org.testcontainers:testcontainers-bom"
+      - match:
           dependency_name: "org.testcontainers:testcontainers"
       - match:
           dependency_name: "org.testcontainers:postgresql"

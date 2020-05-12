@@ -23,6 +23,9 @@ public class HelloResource {
     @ConfigProperty(name = "other.greeting", defaultValue = "other")
     String otherGreeting;
 
+    @ConfigProperty(name = "quarkus.profile")
+    String profile;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
@@ -55,6 +58,13 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String otherGreeting() {
         return otherGreeting;
+    }
+
+    @GET
+    @Path("/profile")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String profile() {
+        return profile;
     }
 
 

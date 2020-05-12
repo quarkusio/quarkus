@@ -74,6 +74,13 @@ public class TestResource {
         Assertions.assertEquals(0, TestImperativeEntity.list("category = :category",
                 Parameters.with("category", null)).size());
 
+        // regex
+        TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
+        entityWithUpperCase.persist();
+        Assertions.assertEquals(1, TestImperativeEntity.list("category like ?1", "upperCase.*").size());
+        Assertions.assertEquals(1, TestImperativeEntity.list("category like ?1", "/uppercase.*/i").size());
+        entityWithUpperCase.delete();
+
         // sort
         TestImperativeEntity entityA = new TestImperativeEntity("aaa", "aaa", "aaa");
         entityA.persist();
@@ -186,6 +193,13 @@ public class TestResource {
         Assertions.assertEquals(0, testImperativeRepository.list("category", (Object) null).size());
         Assertions.assertEquals(0, testImperativeRepository.list("category = :category",
                 Parameters.with("category", null)).size());
+
+        // regex
+        TestImperativeEntity entityWithUpperCase = new TestImperativeEntity("title11", "upperCaseCategory", "desc");
+        testImperativeRepository.persist(entityWithUpperCase);
+        Assertions.assertEquals(1, testImperativeRepository.list("category like ?1", "upperCase.*").size());
+        Assertions.assertEquals(1, testImperativeRepository.list("category like ?1", "/uppercase.*/i").size());
+        testImperativeRepository.delete(entityWithUpperCase);
 
         // sort
         TestImperativeEntity entityA = new TestImperativeEntity("aaa", "aaa", "aaa");
@@ -374,6 +388,15 @@ public class TestResource {
         Assertions.assertEquals(0, TestReactiveEntity.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
 
+        // regex
+        TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");
+        entityWithUpperCase.persist().await().indefinitely();
+        Assertions.assertEquals(1, TestReactiveEntity.list("category like ?1", "upperCase.*")
+                .await().indefinitely().size());
+        Assertions.assertEquals(1, TestReactiveEntity.list("category like ?1", "/uppercase.*/i")
+                .await().indefinitely().size());
+        entityWithUpperCase.delete().await().indefinitely();
+
         // sort
         TestReactiveEntity entityA = new TestReactiveEntity("aaa", "aaa", "aaa");
         entityA.persist().await().indefinitely();
@@ -494,6 +517,15 @@ public class TestResource {
         Assertions.assertEquals(0, testReactiveRepository.list("category", (Object) null).await().indefinitely().size());
         Assertions.assertEquals(0, testReactiveRepository.list("category = :category",
                 Parameters.with("category", null)).await().indefinitely().size());
+
+        // regex
+        TestReactiveEntity entityWithUpperCase = new TestReactiveEntity("title11", "upperCaseCategory", "desc");
+        testReactiveRepository.persist(entityWithUpperCase).await().indefinitely();
+        Assertions.assertEquals(1, testReactiveRepository.list("category like ?1", "upperCase.*")
+                .await().indefinitely().size());
+        Assertions.assertEquals(1, testReactiveRepository.list("category like ?1", "/uppercase.*/i")
+                .await().indefinitely().size());
+        testReactiveRepository.delete(entityWithUpperCase).await().indefinitely();
 
         // sort
         TestReactiveEntity entityA = new TestReactiveEntity("aaa", "aaa", "aaa");

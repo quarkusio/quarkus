@@ -181,7 +181,7 @@ public class S2iProcessor {
 
         GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
                 .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
+                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
                 .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
 
         createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), jar.getPath(),
@@ -216,7 +216,7 @@ public class S2iProcessor {
 
         GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
                 .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
+                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
                 .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
 
         createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), nativeImage.getPath());

@@ -14,10 +14,13 @@ import java.util.Set;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -120,7 +123,7 @@ final class ClassConfigPropertiesUtil {
      */
     static boolean addProducerMethodForClassConfigProperties(ClassLoader classLoader, ClassInfo configPropertiesClassInfo,
             ClassCreator producerClassCreator, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
-            IndexView applicationIndex,
+            boolean needsQualifier, IndexView applicationIndex,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
 
         if (!configPropertiesClassInfo.hasNoArgsConstructor()) {
@@ -142,6 +145,8 @@ final class ClassConfigPropertiesUtil {
          * Add a method like this:
          *
          * @Produces
+         * 
+         * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config) {
          *
          * }
@@ -149,15 +154,27 @@ final class ClassConfigPropertiesUtil {
          * or
          *
          * @Produces
+         * 
+         * @Default // (or @ConfigPrefix qualifier)
          * public SomeClass produceSomeClass(Config config, Validator validator) {
          *
          * }
          */
 
+        String methodName = "produce" + configPropertiesClassInfo.name().withoutPackagePrefix();
+        if (needsQualifier) {
+            // we need to differentiate the different producers of the same class
+            methodName = methodName + "WithPrefix" + HashUtil.sha1(prefixStr);
+        }
         try (MethodCreator methodCreator = producerClassCreator.getMethodCreator(
-                "produce" + configPropertiesClassInfo.name().withoutPackagePrefix(),
-                configObjectClassStr, produceMethodParameterTypes)) {
+                methodName, configObjectClassStr, produceMethodParameterTypes)) {
             methodCreator.addAnnotation(Produces.class);
+            if (needsQualifier) {
+                methodCreator.addAnnotation(AnnotationInstance.create(DotNames.CONFIG_PREFIX, null,
+                        new AnnotationValue[] { AnnotationValue.createStringValue("value", prefixStr) }));
+            } else {
+                methodCreator.addAnnotation(Default.class);
+            }
 
             ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
                     methodCreator, applicationIndex, configProperties);

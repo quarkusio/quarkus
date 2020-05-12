@@ -45,13 +45,13 @@ public class ConfigurationPropertiesProcessor {
 
     private ConfigPropertiesMetadataBuildItem createConfigPropertiesMetadataFromClass(AnnotationInstance annotation) {
         return new ConfigPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation),
-                ConfigProperties.NamingStrategy.VERBATIM);
+                ConfigProperties.NamingStrategy.VERBATIM, false);
     }
 
     private ConfigPropertiesMetadataBuildItem createConfigPropertiesMetadataFromMethod(AnnotationInstance annotation,
             IndexView index) {
         return new ConfigPropertiesMetadataBuildItem(index.getClassByName(annotation.target().asMethod().returnType().name()),
-                getPrefix(annotation), ConfigProperties.NamingStrategy.VERBATIM);
+                getPrefix(annotation), ConfigProperties.NamingStrategy.VERBATIM, false);
     }
 
     private String getPrefix(AnnotationInstance annotation) {

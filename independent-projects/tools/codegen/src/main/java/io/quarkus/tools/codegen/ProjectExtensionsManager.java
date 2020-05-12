@@ -1,8 +1,9 @@
-package io.quarkus.qoder;
+package io.quarkus.tools.codegen;
 
 import io.quarkus.dependencies.Extension;
+import java.io.Closeable;
 
-public interface ProjectExtensionsManager {
+public interface ProjectExtensionsManager extends Closeable {
 
     void addExtension(Extension extension);
 

@@ -33,5 +33,9 @@
                 <scope>test</scope>
             </dependency>
         -->
+        <dependency>
+            <artifactId>some-ext-2</artifactId>
+            <groupId>io.quarkus</groupId>
+        </dependency>
     </dependencies>
 </project>

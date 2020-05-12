@@ -1,4 +1,4 @@
-package io.quarkus.qoder;
+package io.quarkus.tools.codegen;
 
 import com.google.common.collect.ImmutableSet;
 import io.quarkus.dependencies.Extension;
@@ -22,8 +22,8 @@ public class MavenProjectExtensionsManager implements ProjectExtensionsManager {
     private final Path pomPath;
     private List<String> storedLines = null;
 
-    public MavenProjectExtensionsManager(Path pomPath) {
-        this.pomPath = pomPath;
+    public MavenProjectExtensionsManager(Path projectPath) {
+        this.pomPath = projectPath.resolve("pom.xml");
     }
 
     @Override
@@ -45,6 +45,10 @@ public class MavenProjectExtensionsManager implements ProjectExtensionsManager {
             return;
         }
         storedLines.subList(interval.get().start, interval.get().end).clear();
+    }
+
+    @Override
+    public void close() throws IOException {
         saveLines();
     }
 
@@ -75,7 +79,7 @@ public class MavenProjectExtensionsManager implements ProjectExtensionsManager {
                     if (!commentedLines.contains(i) && lines.get(j).matches(getValueTagRegex("groupId", groupdId))) {
                         groupIdFound = true;
                     }
-                    if (!commentedLines.contains(i) && lines.get(j).matches(getOpenTagRegex("dependency"))) {
+                    if (!commentedLines.contains(i) && lines.get(j).matches(getCloseTagRegex("dependency"))) {
                         endIndex = j;
                     }
                 }

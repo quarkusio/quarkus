@@ -6,11 +6,18 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Map;
 
 import io.quarkus.test.common.QuarkusTestResource.List;
 
 /**
  * Used to define a test resource.
+ *
+ * <b>All</b> {@code QuarkusTestResource} annotations in the test module
+ * are discovered (regardless of the test which contains the annotation)
+ * and their corresponding {@code QuarkusTestResourceLifecycleManager}
+ * started <b>before</b> <b>any</b> test is run.
+ *
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -22,6 +29,13 @@ public @interface QuarkusTestResource {
      * @return The class managing the lifecycle of the test resource.
      */
     Class<? extends QuarkusTestResourceLifecycleManager> value();
+
+    /**
+     * @return The arguments to be passed to the {@code QuarkusTestResourceLifecycleManager}
+     *
+     * @see QuarkusTestResourceLifecycleManager#init(Map)
+     */
+    ResourceArg[] initArgs() default {};
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)

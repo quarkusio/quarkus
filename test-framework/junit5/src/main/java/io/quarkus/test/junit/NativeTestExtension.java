@@ -53,6 +53,7 @@ public class NativeTestExtension
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
+                testResourceManager.init();
                 Map<String, String> systemProps = testResourceManager.start();
                 NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
                 launcher.addSystemProperties(systemProps);

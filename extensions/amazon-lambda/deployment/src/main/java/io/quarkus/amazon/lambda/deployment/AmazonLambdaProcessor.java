@@ -102,9 +102,9 @@ public final class AmazonLambdaProcessor {
             reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
 
             String cdiName = null;
-            List<AnnotationInstance> named = info.annotations().get(NAMED);
-            if (named != null && !named.isEmpty()) {
-                cdiName = named.get(0).value().asString();
+            AnnotationInstance named = info.classAnnotation(NAMED);
+            if (named != null) {
+                cdiName = named.value().asString();
             }
 
             ClassInfo current = info;

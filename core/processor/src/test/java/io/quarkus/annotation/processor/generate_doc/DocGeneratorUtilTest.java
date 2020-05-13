@@ -208,7 +208,8 @@ public class DocGeneratorUtilTest {
     }
 
     @Test
-    public void shouldUseHyphenatedClassNameWithEverythingBeforeRuntimeOrDeploymentNamespaceReplacedByConfigRootNameWhenComputingConfigRootFileName() {
+    public void
+            shouldUseHyphenatedClassNameWithEverythingBeforeRuntimeOrDeploymentNamespaceReplacedByConfigRootNameWhenComputingConfigRootFileName() {
         String configRoot = "ClassName";
         String expected = "root-name-class-name.adoc";
         String fileName = computeConfigRootDocFileName(configRoot, "root-name");

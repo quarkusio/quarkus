@@ -17,7 +17,7 @@
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants" value="49"/>
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_expressions_in_array_initializer" value="16"/>
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_expressions_in_for_loop_header" value="0"/>
-<setting id="org.eclipse.jdt.core.formatter.alignment_for_method_declaration" value="0"/>
+<setting id="org.eclipse.jdt.core.formatter.alignment_for_method_declaration" value="16"/>
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_module_statements" value="16"/>
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_multiple_fields" value="16"/>
 <setting id="org.eclipse.jdt.core.formatter.alignment_for_parameterized_type_references" value="0"/>

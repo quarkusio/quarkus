@@ -24,7 +24,8 @@ public class PanacheUserEntity extends PanacheEntity {
     @Password(PasswordType.CLEAR)
     public String pass;
 
-    @JoinTable(name = "test_user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @JoinTable(name = "test_user_role", joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
     @ManyToMany
     @Roles
     public List<PanacheRoleEntity> roles = new ArrayList<>();

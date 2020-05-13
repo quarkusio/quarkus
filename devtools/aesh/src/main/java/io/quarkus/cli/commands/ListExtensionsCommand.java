@@ -29,10 +29,12 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
     @Option(shortName = 'a', hasValue = false, description = "Display all extensions or just the installable.")
     private boolean all = false;
 
-    @Option(shortName = 'f', hasValue = true, description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).")
+    @Option(shortName = 'f', hasValue = true,
+            description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).")
     private String format = "concise";
 
-    @Option(shortName = 's', hasValue = true, description = "Search filter on extension list. The format is based on Java Pattern.")
+    @Option(shortName = 's', hasValue = true,
+            description = "Search filter on extension list. The format is based on Java Pattern.")
     private String searchPattern;
 
     @Option(shortName = 'p', description = "path to the project")

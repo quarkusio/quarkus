@@ -13,7 +13,8 @@ import javax.servlet.annotation.WebInitParam;
 import javax.servlet.http.HttpFilter;
 
 @WebFilter(urlPatterns = SERVLET_ENDPOINT, description = "Haha Filter", initParams = {
-        @WebInitParam(name = "AnnotatedInitFilterParamName", value = "AnnotatedInitFilterParamValue", description = "Described filter init param")
+        @WebInitParam(name = "AnnotatedInitFilterParamName", value = "AnnotatedInitFilterParamValue",
+                description = "Described filter init param")
 })
 public class AnnotatedFilterInitParam extends HttpFilter {
 

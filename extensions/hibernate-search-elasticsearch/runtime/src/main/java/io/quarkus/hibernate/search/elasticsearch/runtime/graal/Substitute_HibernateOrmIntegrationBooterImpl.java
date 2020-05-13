@@ -14,7 +14,8 @@ final class Substitute_HibernateOrmIntegrationBooterImpl {
         throw new IllegalStateException("Partial build state should have been generated during the static init phase.");
     }
 
-    @TargetClass(className = "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateOrmIntegrationBooterImpl", innerClass = "HibernateOrmIntegrationPartialBuildState")
+    @TargetClass(className = "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateOrmIntegrationBooterImpl",
+            innerClass = "HibernateOrmIntegrationPartialBuildState")
     final static class HibernateOrmIntegrationPartialBuildState {
 
     }

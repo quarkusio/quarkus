@@ -8,7 +8,8 @@ import java.util.function.BooleanSupplier;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "com.sun.xml.bind.v2.model.nav.ReflectionNavigator", onlyWith = Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator.Selector.class)
+@TargetClass(className = "com.sun.xml.bind.v2.model.nav.ReflectionNavigator",
+        onlyWith = Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator.Selector.class)
 final class Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator {
 
     @Substitute
@@ -40,7 +41,8 @@ final class Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator {
     }
 }
 
-@TargetClass(className = "com.sun.xml.bind.v2.runtime.reflect.opt.AccessorInjector", onlyWith = Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector.Selector.class)
+@TargetClass(className = "com.sun.xml.bind.v2.runtime.reflect.opt.AccessorInjector",
+        onlyWith = Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector.Selector.class)
 @Substitute
 final class Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector {
 
@@ -71,7 +73,8 @@ final class Target_com_sun_xml_bind_v2_runtime_reflect_opt_AccessorInjector {
     }
 }
 
-@TargetClass(className = "com.sun.xml.internal.bind.v2.model.annotation.LocatableAnnotation", onlyWith = Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
+@TargetClass(className = "com.sun.xml.internal.bind.v2.model.annotation.LocatableAnnotation",
+        onlyWith = Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
 final class Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnotation {
 
     @Substitute
@@ -84,7 +87,8 @@ final class Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnota
         throw new RuntimeException("Not implemented");
     }
 
-    @TargetClass(className = "com.sun.xml.internal.bind.v2.model.annotation.Locatable", onlyWith = Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
+    @TargetClass(className = "com.sun.xml.internal.bind.v2.model.annotation.Locatable",
+            onlyWith = Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
     static final class Locatable {
 
     }
@@ -103,7 +107,8 @@ final class Target_com_sun_xml_internal_bind_v2_model_annotation_LocatableAnnota
     }
 }
 
-@TargetClass(className = "com.sun.xml.internal.bind.v2.model.nav.ReflectionNavigator", onlyWith = Target_com_sun_xml_internal_bind_v2_model_nav_ReflectionNavigator.Selector.class)
+@TargetClass(className = "com.sun.xml.internal.bind.v2.model.nav.ReflectionNavigator",
+        onlyWith = Target_com_sun_xml_internal_bind_v2_model_nav_ReflectionNavigator.Selector.class)
 final class Target_com_sun_xml_internal_bind_v2_model_nav_ReflectionNavigator {
 
     @Substitute
@@ -135,7 +140,8 @@ final class Target_com_sun_xml_internal_bind_v2_model_nav_ReflectionNavigator {
     }
 }
 
-@TargetClass(className = "com.sun.xml.internal.bind.v2.runtime.reflect.opt.AccessorInjector", onlyWith = Target_com_sun_xml_internal_bind_v2_runtime_reflect_opt_AccessorInjector.Selector.class)
+@TargetClass(className = "com.sun.xml.internal.bind.v2.runtime.reflect.opt.AccessorInjector",
+        onlyWith = Target_com_sun_xml_internal_bind_v2_runtime_reflect_opt_AccessorInjector.Selector.class)
 @Substitute
 final class Target_com_sun_xml_internal_bind_v2_runtime_reflect_opt_AccessorInjector {
 

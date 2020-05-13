@@ -33,7 +33,8 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * The dev mojo, that connects to a remote host.
  */
-@Mojo(name = "remote-dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "remote-dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class RemoteDevMojo extends AbstractMojo {
 
     /**

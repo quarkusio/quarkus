@@ -33,7 +33,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.undertow.util.IoUtils;
 
-@ServerEndpoint(value = HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD, configurator = HotReplacementWebsocketEndpoint.ServerConfigurator.class)
+@ServerEndpoint(value = HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD,
+        configurator = HotReplacementWebsocketEndpoint.ServerConfigurator.class)
 public class HotReplacementWebsocketEndpoint {
 
     static final String QUARKUS_HOT_RELOAD = "/quarkus/live-reload";

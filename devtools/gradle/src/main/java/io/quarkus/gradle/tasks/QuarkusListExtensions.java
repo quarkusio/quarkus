@@ -34,7 +34,8 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
         return format;
     }
 
-    @Option(description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).", option = "format")
+    @Option(description = "Select the output format among 'name' (display the name only), 'concise' (display name and description) and 'full' (concise format and version related columns).",
+            option = "format")
     public void setFormat(String format) {
         this.format = format;
     }

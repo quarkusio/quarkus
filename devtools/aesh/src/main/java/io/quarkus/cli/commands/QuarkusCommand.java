@@ -10,9 +10,9 @@ import org.aesh.command.option.Option;
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-@GroupCommandDefinition(name = QuarkusCommand.COMMAND_NAME, groupCommands = { ListExtensionsCommand.class,
-        AddExtensionCommand.class,
-        CreateProjectCommand.class }, description = "<command> [<args>] \n\nThese are the common quarkus commands used in various situations")
+@GroupCommandDefinition(name = QuarkusCommand.COMMAND_NAME,
+        groupCommands = { ListExtensionsCommand.class, AddExtensionCommand.class, CreateProjectCommand.class },
+        description = "<command> [<args>] \n\nThese are the common quarkus commands used in various situations")
 public class QuarkusCommand implements Command<CommandInvocation> {
     public static final String COMMAND_NAME = "quarkus";
 

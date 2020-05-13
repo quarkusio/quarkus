@@ -246,7 +246,8 @@ public class TestResource {
     @GET
     @Path("/openapi/responses")
     @Produces("application/json")
-    @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV1.class)))
+    @APIResponse(content = @Content(mediaType = "application/json",
+            schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV1.class)))
     public Response openApiResponse() {
         MyOpenApiEntityV1 entity = new MyOpenApiEntityV1();
         entity.setName("my openapi entity name");
@@ -257,8 +258,10 @@ public class TestResource {
     @Path("/openapi/responses/{version}")
     @Produces("application/json")
     @APIResponses({
-            @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV1.class))),
-            @APIResponse(content = @Content(mediaType = "application/json", schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV2.class)))
+            @APIResponse(content = @Content(mediaType = "application/json",
+                    schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV1.class))),
+            @APIResponse(content = @Content(mediaType = "application/json",
+                    schema = @Schema(type = SchemaType.OBJECT, implementation = MyOpenApiEntityV2.class)))
     })
     public Response openApiResponses(@PathParam("version") String version) {
         if ("v1".equals(version)) {

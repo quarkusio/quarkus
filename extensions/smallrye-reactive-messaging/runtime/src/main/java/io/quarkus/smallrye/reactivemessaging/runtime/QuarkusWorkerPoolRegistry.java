@@ -40,7 +40,8 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     private Map<String, WorkerExecutor> workerExecutors = new ConcurrentHashMap<>();
 
     public void terminate(
-            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(100) @BeforeDestroyed(ApplicationScoped.class) Object event) {
+            @Observes(
+                    notifyObserver = Reception.IF_EXISTS) @Priority(100) @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (!workerExecutors.isEmpty()) {
             for (WorkerExecutor executor : workerExecutors.values()) {
                 executor.close();

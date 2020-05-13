@@ -94,7 +94,8 @@ final class Package_jdk_internal_loader implements Function<TargetClass, String>
 }
 
 @Substitute
-@TargetClass(className = "sun.nio.ch.WindowsAsynchronousFileChannelImpl", innerClass = "DefaultIocpHolder", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "sun.nio.ch.WindowsAsynchronousFileChannelImpl", innerClass = "DefaultIocpHolder",
+        onlyWith = JDK11OrLater.class)
 @Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_WindowsAsynchronousFileChannelImpl_DefaultIocpHolder {
 

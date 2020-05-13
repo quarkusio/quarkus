@@ -37,7 +37,8 @@ import io.quarkus.runner.bootstrap.GenerateConfigTask;
  *
  * @author Stuart Douglas
  */
-@Mojo(name = "generate-config", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "generate-config", defaultPhase = LifecyclePhase.PACKAGE,
+        requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class GenerateConfigMojo extends AbstractMojo {
 
     /**

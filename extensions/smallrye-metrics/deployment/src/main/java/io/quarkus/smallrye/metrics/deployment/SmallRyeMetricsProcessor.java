@@ -344,7 +344,14 @@ public class SmallRyeMetricsProcessor {
                     case METHOD:
                         MethodInfo method = metricAnnotationTarget.asMethod();
                         if (!method.declaringClass().name().toString().startsWith("io.smallrye.metrics")) {
-                            collectedMetricsMethods.add(method);
+                            if (!Modifier.isPrivate(method.flags())) {
+                                collectedMetricsMethods.add(method);
+                            } else {
+                                LOGGER.warn("Private method is annotated with a metric: " + method +
+                                        " in class " + method.declaringClass().name() + ". Metrics " +
+                                        "are not collected for private methods. To enable metrics for this method, make " +
+                                        "it at least package-private.");
+                            }
                         }
                         break;
                     case CLASS:

@@ -510,6 +510,7 @@ Here are some query examples:
 - `amount > ?1 and firstname != ?2` will be mapped to `{'amount': {'$gt': ?1}, 'firstname': {'$ne': ?2}}`
 - `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern.
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
+- `status in ?1` will be mapped to `{'status':{$in: [?1]}}`
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate`, `LocalDateTime` or `Instant` will be mapped to the
 link:https://docs.mongodb.com/manual/reference/bson-types/#document-bson-type-date[BSON Date] using the `ISODate` type (UTC datetime).

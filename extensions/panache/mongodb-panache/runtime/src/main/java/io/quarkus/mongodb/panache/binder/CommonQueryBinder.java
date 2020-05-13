@@ -6,8 +6,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
 
@@ -27,6 +30,9 @@ final class CommonQueryBinder {
     static String escape(Object value) {
         if (value == null) {
             return "null";
+        }
+        if (value.getClass().isArray() || Collection.class.isAssignableFrom(value.getClass())) {
+            return arrayAsString(value);
         }
         if (Number.class.isAssignableFrom(value.getClass()) || value instanceof Boolean) {
             return value.toString();
@@ -54,5 +60,25 @@ final class CommonQueryBinder {
             return "ObjectId('" + objectId.toHexString() + "')";
         }
         return "'" + value.toString().replace("\\", "\\\\").replace("'", "\\'") + "'";
+    }
+
+    /**
+     * Converts Collection or Array to a String separated for ','. Used in $in operators
+     */
+    private static String arrayAsString(Object value) {
+        Object[] valueArray = convertToArray(value);
+
+        return Arrays.stream(valueArray)
+                .map(CommonQueryBinder::escape)
+                .collect(Collectors.joining(", "));
+    }
+
+    private static Object[] convertToArray(Object value) {
+        if (value.getClass().isArray()) {
+            return (Object[]) value;
+        }
+
+        Collection collection = (Collection) value;
+        return collection.toArray(new Object[collection.size()]);
     }
 }

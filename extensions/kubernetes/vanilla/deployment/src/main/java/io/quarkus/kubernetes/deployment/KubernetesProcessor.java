@@ -110,7 +110,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class KubernetesProcessor {
 
-    private static final Logger log = Logger.getLogger(KubernetesDeployer.class);
+    private static final Logger log = Logger.getLogger(KubernetesProcessor.class);
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
@@ -251,7 +251,7 @@ class KubernetesProcessor {
         final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
         Project project = createProject(applicationInfo, artifactPath);
         sessionWriter.setProject(project);
-        final Session session = Session.getSession();
+        final Session session = Session.getSession(new io.dekorate.logger.NoopLogger());
         session.setWriter(sessionWriter);
 
         session.feed(Maps.fromProperties(config));
@@ -293,6 +293,7 @@ class KubernetesProcessor {
         // write the generated resources to the filesystem
         generatedResourcesMap = session.close();
 
+        List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
             String fileName = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "");
             String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
@@ -308,11 +309,17 @@ class KubernetesProcessor {
                 }
             }
 
+            generatedFileNames.add(fileName.replace("/", ""));
             generatedResourceProducer.produce(
                     new GeneratedFileSystemResourceBuildItem(
                             // we need to make sure we are only passing the relative path to the build item
                             relativePath,
                             resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+        }
+
+        if (!generatedFileNames.isEmpty()) {
+            log.infof("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
+                    outputTarget.getOutputDirectory() + File.separator + KUBERNETES);
         }
 
         try {

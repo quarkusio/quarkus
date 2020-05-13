@@ -717,8 +717,8 @@ class KubernetesProcessor {
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
                 "jar", project.getBuildInfo().getBuildTool(),
                 artifactPath,
-                project.getBuildInfo().getOutputFile(),
-                project.getBuildInfo().getClassOutputDir());
+                project.getBuildInfo().getClassOutputDir(),
+                project.getBuildInfo().getResourceDir());
 
         return new Project(project.getRoot(), buildInfo, project.getScmInfo());
     }

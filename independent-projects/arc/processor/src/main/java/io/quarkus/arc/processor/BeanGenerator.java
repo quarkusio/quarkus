@@ -87,11 +87,12 @@ public class BeanGenerator extends AbstractGenerator {
     protected final ReflectionRegistration reflectionRegistration;
     protected final Set<String> existingClasses;
     protected final Map<BeanInfo, String> beanToGeneratedName;
+    protected final Predicate<DotName> injectionPointAnnotationsPredicate;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
             Set<String> existingClasses,
-            Map<BeanInfo, String> beanToGeneratedName) {
+            Map<BeanInfo, String> beanToGeneratedName, Predicate<DotName> injectionPointAnnotationsPredicate) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -99,6 +100,7 @@ public class BeanGenerator extends AbstractGenerator {
         this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
         this.beanToGeneratedName = beanToGeneratedName;
+        this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
     }
 
     /**
@@ -616,7 +618,7 @@ public class BeanGenerator extends AbstractGenerator {
                 builtinBean.getGenerator()
                         .generate(new GeneratorContext(classOutput, bean.getDeployment(), injectionPoint, beanCreator,
                                 constructor, injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean,
-                                reflectionRegistration));
+                                reflectionRegistration, injectionPointAnnotationsPredicate));
             } else {
 
                 if (BuiltinScope.DEPENDENT.is(injectionPoint.getResolvedBean().getScope()) && (injectionPoint.getResolvedBean()
@@ -1635,11 +1637,10 @@ public class BeanGenerator extends AbstractGenerator {
     private ResultHandle wrapCurrentInjectionPoint(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
             MethodCreator constructor, InjectionPointInfo injectionPoint, int paramIdx, ResultHandle tccl,
             ReflectionRegistration reflectionRegistration) {
-        ResultHandle requiredQualifiersHandle = collectQualifiers(classOutput, beanCreator, bean.getDeployment(), constructor,
-                injectionPoint,
-                annotationLiterals);
-        ResultHandle annotationsHandle = collectAnnotations(classOutput, beanCreator, bean.getDeployment(), constructor,
-                injectionPoint, annotationLiterals);
+        ResultHandle requiredQualifiersHandle = collectInjectionPointQualifiers(classOutput, beanCreator, bean.getDeployment(),
+                constructor, injectionPoint, annotationLiterals);
+        ResultHandle annotationsHandle = collectInjectionPointAnnotations(classOutput, beanCreator, bean.getDeployment(),
+                constructor, injectionPoint, annotationLiterals, injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint, reflectionRegistration);
 
         return constructor.newInstance(
@@ -1714,9 +1715,9 @@ public class BeanGenerator extends AbstractGenerator {
         return javaMemberHandle;
     }
 
-    static ResultHandle collectAnnotations(ClassOutput classOutput, ClassCreator beanCreator, BeanDeployment beanDeployment,
-            MethodCreator constructor,
-            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+    static ResultHandle collectInjectionPointAnnotations(ClassOutput classOutput, ClassCreator beanCreator,
+            BeanDeployment beanDeployment, MethodCreator constructor, InjectionPointInfo injectionPoint,
+            AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> injectionPointAnnotationsPredicate) {
         ResultHandle annotationsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         Collection<AnnotationInstance> annotations;
         if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
@@ -1728,22 +1729,28 @@ public class BeanGenerator extends AbstractGenerator {
                     method, injectionPoint.getPosition());
         }
         for (AnnotationInstance annotation : annotations) {
+            if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
+                continue;
+            }
+            ResultHandle annotationHandle;
             if (DotNames.INJECT.equals(annotation.name())) {
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
-                        constructor.readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class)));
+                annotationHandle = constructor
+                        .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
             } else {
                 // Create annotation literal if needed
                 ClassInfo literalClass = getClassByName(beanDeployment.getIndex(), annotation.name());
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
-                        annotationLiterals.process(constructor,
-                                classOutput, literalClass, annotation,
-                                Types.getPackageName(beanCreator.getClassName())));
+                annotationHandle = annotationLiterals.process(constructor,
+                        classOutput, literalClass, annotation,
+                        Types.getPackageName(beanCreator.getClassName()));
             }
+            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotationsHandle,
+                    annotationHandle);
         }
         return annotationsHandle;
     }
 
-    static ResultHandle collectQualifiers(ClassOutput classOutput, ClassCreator beanCreator, BeanDeployment beanDeployment,
+    static ResultHandle collectInjectionPointQualifiers(ClassOutput classOutput, ClassCreator beanCreator,
+            BeanDeployment beanDeployment,
             MethodCreator constructor,
             InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
         ResultHandle requiredQualifiersHandle;
@@ -1753,17 +1760,17 @@ public class BeanGenerator extends AbstractGenerator {
             requiredQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
                 BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+                ResultHandle qualifierHandle;
                 if (qualifier != null) {
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                            qualifier.getLiteralInstance(constructor));
+                    qualifierHandle = qualifier.getLiteralInstance(constructor);
                 } else {
                     // Create annotation literal if needed
-                    ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                            annotationLiterals.process(constructor,
-                                    classOutput, qualifierClass, qualifierAnnotation,
-                                    Types.getPackageName(beanCreator.getClassName())));
+                    qualifierHandle = annotationLiterals.process(constructor,
+                            classOutput, beanDeployment.getQualifier(qualifierAnnotation.name()), qualifierAnnotation,
+                            Types.getPackageName(beanCreator.getClassName()));
                 }
+                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
+                        qualifierHandle);
             }
         }
         return requiredQualifiersHandle;

@@ -45,10 +45,10 @@ public class InterceptorGenerator extends BeanGenerator {
 
     public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
-            Set<String> existingClasses,
-            Map<BeanInfo, String> beanToGeneratedName) {
+            Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
+            Predicate<DotName> injectionPointAnnotationsPredicate) {
         super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources, reflectionRegistration,
-                existingClasses, beanToGeneratedName);
+                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate);
     }
 
     /**

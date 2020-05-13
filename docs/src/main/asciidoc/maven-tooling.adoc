@@ -200,7 +200,7 @@ and `javac`:
 <plugin>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-maven-plugin</artifactId>
-  <version>${quarkus.version}</version>
+  <version>${quarkus-plugin.version}</version>
 
   <configuration>
     <source>${maven.compiler.source}</source>
@@ -293,7 +293,7 @@ To be able to use it, the following plugin configuration has to be added to the 
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${quarkus-plugin.version}</version>
             </plugin>
 ----
 
@@ -394,7 +394,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
         <dependency> <1>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom</artifactId>
-            <version>${quarkus.version}</version>
+            <version>${quarkus.platform.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -406,7 +406,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
         <plugin> <2>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
+            <version>${quarkus-plugin.version}</version>
             <executions>
                 <execution>
                     <goals>

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -148,13 +148,12 @@ class NettyProcessor {
         recorder.eagerlyInitChannelId();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void createExecutors(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
             NettyRecorder recorder) {
-        //TODO: configuration
         Supplier<Object> boss;
         Supplier<Object> main;
         if (loopSupplierBuildItem.isPresent()) {
@@ -165,18 +164,23 @@ class NettyProcessor {
             main = recorder.createEventLoop(0);
         }
 
+        // IMPLEMENTATION NOTE:
+        // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next() 
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method 
+        // is not generated and the invocation upon the client proxy results in an AbstractMethodError 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(boss)
-                .scope(ApplicationScoped.class)
+                .scope(Singleton.class)
                 .addQualifier(BossEventLoopGroup.class)
                 .unremovable()
+                .setRuntimeInit()
                 .done());
-
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
                 .supplier(main)
-                .scope(ApplicationScoped.class)
+                .scope(Singleton.class)
                 .addQualifier(MainEventLoopGroup.class)
                 .unremovable()
+                .setRuntimeInit()
                 .done());
     }
 

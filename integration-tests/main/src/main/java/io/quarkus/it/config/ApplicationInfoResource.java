@@ -16,9 +16,12 @@ public class ApplicationInfoResource {
     @ConfigProperty(name = "quarkus.application.name")
     String applicationName;
 
+    @ConfigProperty(name = "quarkus.profile")
+    String applicationProfile;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return applicationName + "/" + applicationVersion;
+        return applicationName + "/" + applicationVersion + "/" + applicationProfile;
     }
 }

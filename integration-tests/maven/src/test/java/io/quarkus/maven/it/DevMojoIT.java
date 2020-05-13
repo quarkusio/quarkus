@@ -47,6 +47,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         String pkg = DevModeTestUtils.getHttpResponse("/app/hello/package");
         assertThat(pkg).isEqualTo("org.acme");
 
+        //make sure the proper profile is set
+        String profile = DevModeTestUtils.getHttpResponse("/app/hello/profile");
+        assertThat(profile).isEqualTo("dev");
+
         //make sure webjars work
         DevModeTestUtils.getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
 

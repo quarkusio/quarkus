@@ -9,6 +9,8 @@ metadata:
   - "rest"
   - "jaxrs"
   - "resteasy"
+  guide: "https://quarkus.io/guides/rest-data-panache"
   categories:
   - "data"
+  - "web"
   status: "experimental"

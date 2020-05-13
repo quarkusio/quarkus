@@ -333,7 +333,7 @@ jobs:
       max-parallel: 8
       fail-fast: false
       matrix:
-        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Spring, gRPC]
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Security3, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Misc4, Spring, gRPC]
         include:
           - category: Main
             postgres: "true"
@@ -413,6 +413,12 @@ jobs:
               oidc-code-flow
               oidc-tenancy
               keycloak-authorization
+          - category: Security3
+            timeout: 40
+            test-modules: >
+              vault
+              vault-app
+              vault-agroal
           - category: Cache
             timeout: 35
             test-modules: >
@@ -455,6 +461,10 @@ jobs:
             timeout: 50
             test-modules: >
               kubernetes-client
+          - category: Misc4
+            timeout: 10
+            test-modules: >
+              smallrye-graphql
           - category: Spring
             timeout: 40
             test-modules: >
@@ -463,12 +473,6 @@ jobs:
               spring-data-jpa
               spring-boot-properties
               spring-cloud-config-client
-          - category: Vault
-            timeout: 30
-            test-modules: >
-              vault
-              vault-app
-              vault-agroal
           - category: gRPC
             timeout: 45
             test-modules: >

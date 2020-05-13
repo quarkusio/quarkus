@@ -100,6 +100,8 @@ public final class DotNames {
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
 
+    public static final DotName DEPRECATED = create(Deprecated.class);
+
     private DotNames() {
     }
 

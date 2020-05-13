@@ -33,14 +33,13 @@ import org.jboss.jandex.DotName;
 enum BuiltinBean {
 
     INSTANCE(ctx -> {
-        ResultHandle qualifiers = BeanGenerator.collectQualifiers(ctx.classOutput, ctx.clazzCreator, ctx.beanDeployment,
-                ctx.constructor,
-                ctx.injectionPoint,
-                ctx.annotationLiterals);
+        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(ctx.classOutput, ctx.clazzCreator,
+                ctx.beanDeployment,
+                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getRequiredType());
-        ResultHandle annotationsHandle = BeanGenerator.collectAnnotations(ctx.classOutput, ctx.clazzCreator, ctx.beanDeployment,
-                ctx.constructor,
-                ctx.injectionPoint, ctx.annotationLiterals);
+        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+                ctx.beanDeployment,
+                ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
         ResultHandle beanHandle;
@@ -253,11 +252,12 @@ enum BuiltinBean {
         final AnnotationLiteralProcessor annotationLiterals;
         final InjectionTargetInfo targetInfo;
         final ReflectionRegistration reflectionRegistration;
+        final Predicate<DotName> injectionPointAnnotationsPredicate;
 
         public GeneratorContext(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
                 ClassCreator clazzCreator, MethodCreator constructor, String providerName,
                 AnnotationLiteralProcessor annotationLiterals, InjectionTargetInfo targetInfo,
-                ReflectionRegistration reflectionRegistration) {
+                ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate) {
             this.classOutput = classOutput;
             this.beanDeployment = beanDeployment;
             this.injectionPoint = injectionPoint;
@@ -267,6 +267,7 @@ enum BuiltinBean {
             this.annotationLiterals = annotationLiterals;
             this.targetInfo = targetInfo;
             this.reflectionRegistration = reflectionRegistration;
+            this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
         }
     }
 

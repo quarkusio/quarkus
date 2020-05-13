@@ -63,11 +63,12 @@ public class ObserverGenerator extends AbstractGenerator {
     private final ReflectionRegistration reflectionRegistration;
     private final Set<String> existingClasses;
     private final Map<ObserverInfo, String> observerToGeneratedName;
+    private final Predicate<DotName> injectionPointAnnotationsPredicate;
 
     public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
             PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
-            Set<String> existingClasses,
-            Map<ObserverInfo, String> observerToGeneratedName) {
+            Set<String> existingClasses, Map<ObserverInfo, String> observerToGeneratedName,
+            Predicate<DotName> injectionPointAnnotationsPredicate) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -75,6 +76,7 @@ public class ObserverGenerator extends AbstractGenerator {
         this.reflectionRegistration = reflectionRegistration;
         this.existingClasses = existingClasses;
         this.observerToGeneratedName = observerToGeneratedName;
+        this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
     }
 
     /**
@@ -433,45 +435,51 @@ public class ObserverGenerator extends AbstractGenerator {
                             .generate(new GeneratorContext(classOutput, observer.getDeclaringBean().getDeployment(),
                                     injectionPoint, observerCreator, constructor,
                                     injectionPointToProviderField.get(injectionPoint),
-                                    annotationLiterals, observer, reflectionRegistration));
+                                    annotationLiterals, observer, reflectionRegistration, injectionPointAnnotationsPredicate));
                 } else {
                     if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
                             .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))) {
                         // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                         // reference provider
-                        ResultHandle requiredQualifiersHandle = BeanGenerator.collectQualifiers(classOutput, observerCreator,
+                        ResultHandle requiredQualifiersHandle = BeanGenerator.collectInjectionPointQualifiers(classOutput,
+                                observerCreator,
                                 observer.getDeclaringBean().getDeployment(), constructor,
                                 injectionPoint,
                                 annotationLiterals);
-                        ResultHandle annotationsHandle = BeanGenerator.collectAnnotations(classOutput, observerCreator,
-                                observer.getDeclaringBean().getDeployment(), constructor,
-                                injectionPoint, annotationLiterals);
+                        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(classOutput,
+                                observerCreator,
+                                observer.getDeclaringBean().getDeployment(), constructor, injectionPoint, annotationLiterals,
+                                injectionPointAnnotationsPredicate);
                         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
                                 reflectionRegistration);
 
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(
-                                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, constructor.getMethodParam(paramIdx++));
+                                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, constructor.getMethodParam(paramIdx));
 
                         ResultHandle wrapHandle = constructor.newInstance(
                                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                                         Supplier.class, java.lang.reflect.Type.class,
                                         Set.class, Set.class, Member.class, int.class),
-                                constructor.getThis(), delegateSupplier,
+                                constructor.loadNull(), delegateSupplier,
                                 Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
                                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                                 constructor.load(injectionPoint.getPosition()));
+                        ResultHandle wrapSupplierHandle = constructor.newInstance(
+                                MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
 
                         constructor.writeInstanceField(FieldDescriptor.of(observerCreator.getClassName(),
                                 injectionPointToProviderField.get(injectionPoint),
-                                Supplier.class.getName()), constructor.getThis(), wrapHandle);
+                                Supplier.class.getName()), constructor.getThis(), wrapSupplierHandle);
                     } else {
                         constructor.writeInstanceField(
                                 FieldDescriptor.of(observerCreator.getClassName(),
                                         injectionPointToProviderField.get(injectionPoint),
                                         Supplier.class.getName()),
-                                constructor.getThis(), constructor.getMethodParam(paramIdx++));
+                                constructor.getThis(), constructor.getMethodParam(paramIdx));
                     }
+                    // Next param injection point
+                    paramIdx++;
                 }
             }
         }

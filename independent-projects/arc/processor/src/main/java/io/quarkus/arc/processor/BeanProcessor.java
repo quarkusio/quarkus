@@ -64,6 +64,12 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
 
+    // This predicate is used to filter annotations for InjectionPoint metadata
+    // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
+    // The original use case is to ignore JDK annotations that would prevent an application built with JDK 9+ from targeting JDK 8
+    // Such as java.lang.Deprecated 
+    protected final Predicate<DotName> injectionPointAnnotationsPredicate;
+
     private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             ResourceOutput output,
             boolean sharedAnnotationLiterals,
@@ -109,6 +115,9 @@ public class BeanProcessor {
                 unusedBeansRemovalEnabled, unusedExclusions,
                 additionalStereotypes, interceptorBindingRegistrars,
                 transformUnproxyableClasses, jtaCapabilities, alternativePriorities);
+
+        // Make it configurable if we find that the set of annotations needs to grow
+        this.injectionPointAnnotationsPredicate = annotationName -> !annotationName.equals(DotNames.DEPRECATED);
     }
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
@@ -162,15 +171,18 @@ public class BeanProcessor {
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
                 applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
-                generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
+                generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                injectionPointAnnotationsPredicate);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
                 allowMocking, reflectionRegistration, existingClasses);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
+                injectionPointAnnotationsPredicate);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
                 generateSources, reflectionRegistration, existingClasses);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName,
+                injectionPointAnnotationsPredicate);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
 
         List<Resource> resources = new ArrayList<>();

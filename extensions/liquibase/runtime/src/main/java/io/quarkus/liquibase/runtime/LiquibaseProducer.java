@@ -19,7 +19,8 @@ public class LiquibaseProducer {
     /**
      * The error not ready message
      */
-    private static final String ERROR_NOT_READY = "The Liquibase settings are not ready to be consumed: the %s configuration has not been injected yet";
+    private static final String ERROR_NOT_READY =
+            "The Liquibase settings are not ready to be consumed: the %s configuration has not been injected yet";
 
     /**
      * The default data source

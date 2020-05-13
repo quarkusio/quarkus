@@ -129,7 +129,8 @@ public final class HibernateOrmProcessor {
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-    private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE = "META-INF/services/org.hibernate.service.spi.ServiceContributor";
+    private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE =
+            "META-INF/services/org.hibernate.service.spi.ServiceContributor";
 
     /**
      * Hibernate ORM configuration

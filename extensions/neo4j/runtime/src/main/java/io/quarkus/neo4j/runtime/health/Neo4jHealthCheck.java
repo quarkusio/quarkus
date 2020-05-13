@@ -33,7 +33,8 @@ public class Neo4jHealthCheck implements HealthCheck {
     /**
      * Message logged before retrying a health check.
      */
-    private static final String MESSAGE_SESSION_EXPIRED = "Neo4j session has expired, retrying one single time to retrieve server health.";
+    private static final String MESSAGE_SESSION_EXPIRED =
+            "Neo4j session has expired, retrying one single time to retrieve server health.";
     /**
      * The default session config to use while connecting.
      */

@@ -106,8 +106,9 @@ public class TestResourceManager implements Closeable {
         Set<TestResourceClassEntry> alreadyAddedEntries = new HashSet<>();
         for (AnnotationInstance annotation : findQuarkusTestResourceInstances(index)) {
             try {
-                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = (Class<? extends QuarkusTestResourceLifecycleManager>) Class
-                        .forName(annotation.value().asString(), true, Thread.currentThread().getContextClassLoader());
+                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass =
+                        (Class<? extends QuarkusTestResourceLifecycleManager>) Class
+                                .forName(annotation.value().asString(), true, Thread.currentThread().getContextClassLoader());
 
                 AnnotationValue argsAnnotationValue = annotation.value("initArgs");
                 Map<String, String> args;
@@ -141,7 +142,8 @@ public class TestResourceManager implements Closeable {
 
         testResourceEntries.sort(new Comparator<TestResourceEntry>() {
 
-            private final QuarkusTestResourceLifecycleManagerComparator lifecycleManagerComparator = new QuarkusTestResourceLifecycleManagerComparator();
+            private final QuarkusTestResourceLifecycleManagerComparator lifecycleManagerComparator =
+                    new QuarkusTestResourceLifecycleManagerComparator();
 
             @Override
             public int compare(TestResourceEntry o1, TestResourceEntry o2) {

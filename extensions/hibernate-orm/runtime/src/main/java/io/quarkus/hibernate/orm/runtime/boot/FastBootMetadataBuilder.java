@@ -588,7 +588,8 @@ public class FastBootMetadataBuilder {
         if (metadataBuilderContributorSetting instanceof MetadataBuilderContributor) {
             metadataBuilderContributor = (MetadataBuilderContributor) metadataBuilderContributorSetting;
         } else if (metadataBuilderContributorSetting instanceof Class) {
-            metadataBuilderContributorImplClass = (Class<? extends MetadataBuilderContributor>) metadataBuilderContributorSetting;
+            metadataBuilderContributorImplClass =
+                    (Class<? extends MetadataBuilderContributor>) metadataBuilderContributorSetting;
         } else if (metadataBuilderContributorSetting instanceof String) {
             final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
 

@@ -12,7 +12,8 @@ import org.flywaydb.core.Flyway;
 
 @ApplicationScoped
 public class FlywayProducer {
-    private static final String ERROR_NOT_READY = "The Flyway settings are not ready to be consumed: the %s configuration has not been injected yet";
+    private static final String ERROR_NOT_READY =
+            "The Flyway settings are not ready to be consumed: the %s configuration has not been injected yet";
 
     @Inject
     @Default

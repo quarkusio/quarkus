@@ -50,7 +50,8 @@ import io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromPar
 
 class SpringSecurityProcessor {
 
-    private static final String PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX = "#(\\w+)(\\.(\\w+))?\\s+[=!]=\\s+(authentication.)?principal.username";
+    private static final String PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX =
+            "#(\\w+)(\\.(\\w+))?\\s+[=!]=\\s+(authentication.)?principal.username";
     private static final Pattern PARAMETER_EQ_PRINCIPAL_USERNAME_PATTERN = Pattern
             .compile(PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX);
 

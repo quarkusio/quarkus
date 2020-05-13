@@ -67,7 +67,8 @@ public final class ConfigUtils {
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered) {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
+        final ApplicationPropertiesConfigSource.InFileSystem inFileSystem =
+                new ApplicationPropertiesConfigSource.InFileSystem();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
         builder.withSources(inFileSystem, inJar, mpConfig, new DotEnvConfigSource());

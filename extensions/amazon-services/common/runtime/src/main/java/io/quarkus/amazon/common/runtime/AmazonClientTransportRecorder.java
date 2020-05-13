@@ -99,10 +99,11 @@ public class AmazonClientTransportRecorder {
         }
 
         if (asyncConfig.proxy.enabled && asyncConfig.proxy.endpoint.isPresent()) {
-            software.amazon.awssdk.http.nio.netty.ProxyConfiguration.Builder proxyBuilder = software.amazon.awssdk.http.nio.netty.ProxyConfiguration
-                    .builder().scheme(asyncConfig.proxy.endpoint.get().getScheme())
-                    .host(asyncConfig.proxy.endpoint.get().getHost())
-                    .nonProxyHosts(new HashSet<>(asyncConfig.proxy.nonProxyHosts.orElse(Collections.emptyList())));
+            software.amazon.awssdk.http.nio.netty.ProxyConfiguration.Builder proxyBuilder =
+                    software.amazon.awssdk.http.nio.netty.ProxyConfiguration
+                            .builder().scheme(asyncConfig.proxy.endpoint.get().getScheme())
+                            .host(asyncConfig.proxy.endpoint.get().getHost())
+                            .nonProxyHosts(new HashSet<>(asyncConfig.proxy.nonProxyHosts.orElse(Collections.emptyList())));
 
             if (asyncConfig.proxy.endpoint.get().getPort() != -1) {
                 proxyBuilder.port(asyncConfig.proxy.endpoint.get().getPort());

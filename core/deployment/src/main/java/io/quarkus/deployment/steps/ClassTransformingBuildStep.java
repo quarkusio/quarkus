@@ -61,7 +61,8 @@ public class ClassTransformingBuildStep {
         // we also record if any additional archives needed transformation
         // when we copy these archives we will remove the problematic classes
         final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
+        final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed =
+                new ConcurrentLinkedDeque<>();
         try {
             ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
             for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers

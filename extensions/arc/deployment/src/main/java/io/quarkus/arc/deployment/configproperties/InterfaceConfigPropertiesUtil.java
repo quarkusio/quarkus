@@ -43,7 +43,7 @@ final class InterfaceConfigPropertiesUtil {
 
     /**
      * Add a method like this:
-     * 
+     *
      * <pre>
      *  &#64;Produces
      *  public SomeConfig produceSomeClass(Config config) {
@@ -157,9 +157,9 @@ final class InterfaceConfigPropertiesUtil {
                                 methodCreator.returnValue(result);
                             } else {
                                 // convert the String value and populate an Optional with it
-                                ConfigPropertiesUtil.ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(
-                                        fullConfigName,
-                                        genericType, method.declaringClass().name(), methodCreator, config);
+                                ConfigPropertiesUtil.ReadOptionalResponse readOptionalResponse =
+                                        createReadOptionalValueAndConvertIfNeeded(fullConfigName, genericType,
+                                                method.declaringClass().name(), methodCreator, config);
 
                                 // return Optional.empty() if no config value was read
                                 readOptionalResponse.getIsPresentFalse()

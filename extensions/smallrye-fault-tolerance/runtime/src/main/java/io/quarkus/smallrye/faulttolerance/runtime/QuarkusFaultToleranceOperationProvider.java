@@ -22,12 +22,13 @@ public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOpe
     private static final Logger LOG = Logger.getLogger(QuarkusFaultToleranceOperationProvider.class);
 
     private final Map<CacheKey, FaultToleranceOperation> operationCache = new ConcurrentHashMap<>();
-    private final Function<CacheKey, FaultToleranceOperation> cacheFunction = new Function<CacheKey, FaultToleranceOperation>() {
-        @Override
-        public FaultToleranceOperation apply(CacheKey key) {
-            return createAtRuntime(key);
-        }
-    };
+    private final Function<CacheKey, FaultToleranceOperation> cacheFunction =
+            new Function<CacheKey, FaultToleranceOperation>() {
+                @Override
+                public FaultToleranceOperation apply(CacheKey key) {
+                    return createAtRuntime(key);
+                }
+            };
 
     /**
      * Called by SmallryeFaultToleranceRecorder to init the operation cache.

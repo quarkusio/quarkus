@@ -53,8 +53,8 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 public class VirtualChannel extends AbstractChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(VirtualChannel.class);
     @SuppressWarnings({ "rawtypes" })
-    protected static final AtomicReferenceFieldUpdater<VirtualChannel, Future> FINISH_READ_FUTURE_UPDATER = AtomicReferenceFieldUpdater
-            .newUpdater(VirtualChannel.class, Future.class, "finishReadFuture");
+    protected static final AtomicReferenceFieldUpdater<VirtualChannel, Future> FINISH_READ_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(VirtualChannel.class, Future.class, "finishReadFuture");
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private static final int MAX_READER_STACK_DEPTH = 8;
 

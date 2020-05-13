@@ -317,7 +317,8 @@ public class SmallRyeMetricsRecorder {
         if (!ImageInfo.inImageCode()
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
-                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
+                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean =
+                        (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
                 meta = Metadata.builder()
                         .withName(PROCESS_CPU_LOAD)
                         .withType(MetricType.GAUGE)
@@ -351,7 +352,8 @@ public class SmallRyeMetricsRecorder {
         if (!ImageInfo.inImageCode()
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
-                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
+                com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean =
+                        (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
                 Metadata meta = Metadata.builder()
                         .withName(SYSTEM_CPU_LOAD)
                         .withType(MetricType.GAUGE)

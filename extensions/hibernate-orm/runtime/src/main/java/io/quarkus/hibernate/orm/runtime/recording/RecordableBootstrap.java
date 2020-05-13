@@ -53,7 +53,8 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
  */
 public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
-    private static final String DISABLED_FEATURE_MSG = "This feature was disabled in Quarkus - this method should not have invoked, please report";
+    private static final String DISABLED_FEATURE_MSG =
+            "This feature was disabled in Quarkus - this method should not have invoked, please report";
 
     private final Map settings;
     private final List<StandardServiceInitiator> initiators = standardInitiatorList();

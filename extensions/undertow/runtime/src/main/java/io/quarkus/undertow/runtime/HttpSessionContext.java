@@ -126,8 +126,8 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private ComputingCache<Key, ContextInstanceHandle<?>> getContextualInstances(HttpSession session) {
-        ComputingCache<Key, ContextInstanceHandle<?>> contextualInstances = (ComputingCache<Key, ContextInstanceHandle<?>>) session
-                .getAttribute(CONTEXTUAL_INSTANCES_KEY);
+        ComputingCache<Key, ContextInstanceHandle<?>> contextualInstances =
+                (ComputingCache<Key, ContextInstanceHandle<?>>) session.getAttribute(CONTEXTUAL_INSTANCES_KEY);
         if (contextualInstances == null) {
             synchronized (this) {
                 contextualInstances = (ComputingCache<Key, ContextInstanceHandle<?>>) session

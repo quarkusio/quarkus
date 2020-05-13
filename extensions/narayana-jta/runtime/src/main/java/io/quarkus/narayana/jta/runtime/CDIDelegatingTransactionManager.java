@@ -57,8 +57,9 @@ public class CDIDelegatingTransactionManager implements TransactionManager, Seri
      * Delegating transaction manager call to com.arjuna.ats.jta.{@link com.arjuna.ats.jta.TransactionManager}
      */
     public CDIDelegatingTransactionManager() {
-        delegate = (com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple) com.arjuna.ats.jta.TransactionManager
-                .transactionManager();
+        delegate =
+                (com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple) com.arjuna.ats.jta.TransactionManager
+                        .transactionManager();
     }
 
     /**

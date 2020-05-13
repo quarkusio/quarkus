@@ -30,7 +30,8 @@ public class TransactionContext implements InjectableContext {
     // marker object to be put as a key for SynchronizationRegistry to gather all beans created in the scope
     private static final Object TRANSACTION_CONTEXT_MARKER = new Object();
 
-    private final TransactionSynchronizationRegistry transactionSynchronizationRegistry = new TransactionSynchronizationRegistryImple();
+    private final TransactionSynchronizationRegistry transactionSynchronizationRegistry =
+            new TransactionSynchronizationRegistryImple();
     private final TransactionManager transactionManager = com.arjuna.ats.jta.TransactionManager.transactionManager();
 
     @Override
@@ -160,7 +161,8 @@ public class TransactionContext implements InjectableContext {
      */
     private static class TransactionContextState implements ContextState {
 
-        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
+        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle =
+                new ConcurrentHashMap<>();
 
         /**
          * Put the contextual bean and its handle to the container.

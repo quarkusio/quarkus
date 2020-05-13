@@ -25,7 +25,8 @@ import io.quarkus.vault.test.VaultTestLifecycleManager;
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class VaultTOTPITCase {
 
-    private static final String TEST_OTP_URL = "otpauth://totp/Vault:test@google.com?secret=Y64VEVMBTSXCYIWRSHRNDZW62MPGVU2G&issuer=Vault";
+    private static final String TEST_OTP_URL =
+            "otpauth://totp/Vault:test@google.com?secret=Y64VEVMBTSXCYIWRSHRNDZW62MPGVU2G&issuer=Vault";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

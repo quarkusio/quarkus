@@ -125,8 +125,8 @@ public class CuratedApplication implements Serializable, Closeable {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(cl);
-            Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>> clazz = (Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>>) cl
-                    .loadClass(consumerName);
+            Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>> clazz =
+                    (Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>>) cl.loadClass(consumerName);
             BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.newInstance();
             biConsumer.accept(this, params);
             return biConsumer;

@@ -44,42 +44,43 @@ public class HttpAuthorizer {
     /**
      * context that allows for running blocking tasks
      */
-    private static final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
-        @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identity,
-                BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
-            if (BlockingOperationControl.isBlockingAllowed()) {
-                try {
-                    HttpSecurityPolicy.CheckResult res = function.apply(context, identity.await().indefinitely());
-                    return Uni.createFrom().item(res);
-                } catch (Throwable t) {
-                    return Uni.createFrom().failure(t);
-                }
-            }
-            try {
-                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super HttpSecurityPolicy.CheckResult>>() {
-                    @Override
-                    public void accept(UniEmitter<? super HttpSecurityPolicy.CheckResult> uniEmitter) {
-
-                        ExecutorRecorder.getCurrent().execute(new Runnable() {
+    private static final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT =
+            new HttpSecurityPolicy.AuthorizationRequestContext() {
+                @Override
+                public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identity,
+                        BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
+                    if (BlockingOperationControl.isBlockingAllowed()) {
+                        try {
+                            HttpSecurityPolicy.CheckResult res = function.apply(context, identity.await().indefinitely());
+                            return Uni.createFrom().item(res);
+                        } catch (Throwable t) {
+                            return Uni.createFrom().failure(t);
+                        }
+                    }
+                    try {
+                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super HttpSecurityPolicy.CheckResult>>() {
                             @Override
-                            public void run() {
-                                try {
-                                    HttpSecurityPolicy.CheckResult val = function.apply(context,
-                                            identity.await().indefinitely());
-                                    uniEmitter.complete(val);
-                                } catch (Throwable t) {
-                                    uniEmitter.fail(t);
-                                }
+                            public void accept(UniEmitter<? super HttpSecurityPolicy.CheckResult> uniEmitter) {
+
+                                ExecutorRecorder.getCurrent().execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            HttpSecurityPolicy.CheckResult val = function.apply(context,
+                                                    identity.await().indefinitely());
+                                            uniEmitter.complete(val);
+                                        } catch (Throwable t) {
+                                            uniEmitter.fail(t);
+                                        }
+                                    }
+                                });
                             }
                         });
+                    } catch (Exception e) {
+                        return Uni.createFrom().failure(e);
                     }
-                });
-            } catch (Exception e) {
-                return Uni.createFrom().failure(e);
-            }
-        }
-    };
+                }
+            };
 
     /**
      * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will

@@ -109,9 +109,10 @@ public class AmazonLambdaRecorder {
             int namedTotal = namedHandlerClasses.size() + namedStreamHandlerClasses.size();
 
             if (unnamedTotal > 1 || namedTotal > 1 || (unnamedTotal > 0 && namedTotal > 0)) {
-                String errorMessage = "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
-                        + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName()
-                        + " implementation in the deployment";
+                String errorMessage =
+                        "Multiple handler classes, either specify the quarkus.lambda.handler property, or make sure there is only a single "
+                                + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName()
+                                + " implementation in the deployment";
                 throw new RuntimeException(errorMessage);
             } else if (unnamedTotal == 0 && namedTotal == 0) {
                 String errorMessage = "Unable to find handler class, make sure your deployment includes a single "

@@ -18,7 +18,8 @@ public final class BootstrapOnlyProxyFactoryFactoryInitiator implements Standard
     /**
      * Singleton access
      */
-    public static final StandardServiceInitiator<ProxyFactoryFactory> INSTANCE = new BootstrapOnlyProxyFactoryFactoryInitiator();
+    public static final StandardServiceInitiator<ProxyFactoryFactory> INSTANCE =
+            new BootstrapOnlyProxyFactoryFactoryInitiator();
 
     @Override
     public ProxyFactoryFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {

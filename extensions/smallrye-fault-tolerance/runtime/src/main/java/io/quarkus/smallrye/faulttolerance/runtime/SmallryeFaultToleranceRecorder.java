@@ -38,8 +38,8 @@ public class SmallryeFaultToleranceRecorder {
                             operation.validate();
 
                             // register the operation at validation time to avoid re-creating it at runtime
-                            QuarkusFaultToleranceOperationProvider.CacheKey cacheKey = new QuarkusFaultToleranceOperationProvider.CacheKey(
-                                    beanClass, method);
+                            QuarkusFaultToleranceOperationProvider.CacheKey cacheKey =
+                                    new QuarkusFaultToleranceOperationProvider.CacheKey(beanClass, method);
                             operationCache.put(cacheKey, operation);
                         } catch (FaultToleranceDefinitionException e) {
                             allExceptions.add(e);

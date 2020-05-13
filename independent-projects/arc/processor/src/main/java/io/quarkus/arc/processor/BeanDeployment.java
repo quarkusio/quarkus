@@ -177,27 +177,28 @@ public class BeanDeployment {
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
-        io.quarkus.arc.processor.ContextRegistrar.RegistrationContext registrationContext = new io.quarkus.arc.processor.ContextRegistrar.RegistrationContext() {
-            @Override
-            public <V> V put(Key<V> key, V value) {
-                return buildContext.put(key, value);
-            }
+        io.quarkus.arc.processor.ContextRegistrar.RegistrationContext registrationContext =
+                new io.quarkus.arc.processor.ContextRegistrar.RegistrationContext() {
+                    @Override
+                    public <V> V put(Key<V> key, V value) {
+                        return buildContext.put(key, value);
+                    }
 
-            @Override
-            public <V> V get(Key<V> key) {
-                return buildContext.get(key);
-            }
+                    @Override
+                    public <V> V get(Key<V> key) {
+                        return buildContext.get(key);
+                    }
 
-            @Override
-            public ContextConfigurator configure(Class<? extends Annotation> scopeAnnotation) {
-                return new ContextConfigurator(scopeAnnotation,
-                        c -> {
-                            ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);
-                            beanDefiningAnnotations.add(new BeanDefiningAnnotation(scope.getDotName(), null));
-                            customContexts.put(scope, c.creator);
-                        });
-            }
-        };
+                    @Override
+                    public ContextConfigurator configure(Class<? extends Annotation> scopeAnnotation) {
+                        return new ContextConfigurator(scopeAnnotation,
+                                c -> {
+                                    ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);
+                                    beanDefiningAnnotations.add(new BeanDefiningAnnotation(scope.getDotName(), null));
+                                    customContexts.put(scope, c.creator);
+                                });
+                    }
+                };
         for (ContextRegistrar contextRegistrar : contextRegistrars) {
             contextRegistrar.register(registrationContext);
         }

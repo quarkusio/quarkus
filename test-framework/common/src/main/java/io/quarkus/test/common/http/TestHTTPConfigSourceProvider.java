@@ -13,10 +13,12 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
  */
 public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
 
-    static final String TEST_URL_VALUE = "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8081}${quarkus.servlet.context-path:}";
+    static final String TEST_URL_VALUE =
+            "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8081}${quarkus.servlet.context-path:}";
     static final String TEST_URL_KEY = "test.url";
 
-    static final String TEST_URL_SSL_VALUE = "https://${quarkus.http.host:localhost}:${quarkus.http.test-ssl-port:8444}${quarkus.servlet.context-path:}";
+    static final String TEST_URL_SSL_VALUE =
+            "https://${quarkus.http.host:localhost}:${quarkus.http.test-ssl-port:8444}${quarkus.servlet.context-path:}";
     static final String TEST_URL_SSL_KEY = "test.url.ssl";
 
     static final Map<String, String> entries;

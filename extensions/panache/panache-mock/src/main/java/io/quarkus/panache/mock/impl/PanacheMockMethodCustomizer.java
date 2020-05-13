@@ -14,14 +14,14 @@ import io.quarkus.panache.mock.PanacheMock;
 public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
 
     private final static String PANACHE_MOCK_BINARY_NAME = PanacheMock.class.getName().replace('.', '/');
-    private final static String PANACHE_MOCK_INVOKE_REAL_METHOD_EXCEPTION_BINARY_NAME = PanacheMock.InvokeRealMethodException.class
-            .getName().replace('.', '/');
+    private final static String PANACHE_MOCK_INVOKE_REAL_METHOD_EXCEPTION_BINARY_NAME =
+            PanacheMock.InvokeRealMethodException.class.getName().replace('.', '/');
 
     @Override
     public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
         /*
          * Generated code:
-         * 
+         *
          * if(PanacheMock.IsMockEnabled && PanacheMock.isMocked(TestClass.class)) {
          * try {
          * return (int)PanacheMock.mockMethod(TestClass.class, "foo", new Class<?>[] {int.class}, new Object[] {arg});
@@ -29,9 +29,9 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
          * // fall-through
          * }
          * }
-         * 
+         *
          * Bytecode approx:
-         * 
+         *
          * 0: getstatic #16 // Field PanacheMock.IsMockEnabled:Z
          * 3: ifeq 50
          * 6: ldc #1 // class MyTestMockito$TestClass
@@ -39,7 +39,7 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
          * 11: ifeq 50
          * 14: ldc #1 // class MyTestMockito$TestClass
          * 16: ldc #26 // String foo
-         * 
+         *
          * 18: iconst_1
          * 19: anewarray #27 // class java/lang/Class
          * 22: dup
@@ -54,7 +54,7 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
          * 34: iload_0
          * 35: invokestatic #35 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
          * 38: aastore
-         * 
+         *
          * 39: invokestatic #39 // Method
          * PanacheMock.mockMethod:(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;
          * 42: checkcast #30 // class java/lang/Integer

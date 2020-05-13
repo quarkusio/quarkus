@@ -49,7 +49,8 @@ public class SpringDataJPAProcessor {
     private static final Pattern pattern = Pattern.compile("spring\\..*");
     public static final String SPRING_JPA_SHOW_SQL = "spring.jpa.show-sql";
     public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT = "spring.jpa.properties.hibernate.dialect";
-    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE = "spring.jpa.properties.hibernate.dialect.storage_engine";
+    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE =
+            "spring.jpa.properties.hibernate.dialect.storage_engine";
     public static final String SPRING_JPA_GENERATE_DDL = "spring.jpa.generate-ddl";
     public static final String SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY = "spring.jpa.hibernate.naming.physical-strategy";
     public static final String SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY = "spring.jpa.hibernate.naming.implicit-strategy";
@@ -58,8 +59,10 @@ public class SpringDataJPAProcessor {
     public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
     public static final String QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "quarkus.hibernate-orm.database.generation";
-    public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
-    public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";
+    public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY =
+            "quarkus.hibernate-orm.physical-naming-strategy";
+    public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY =
+            "quarkus.hibernate-orm.implicit-naming-strategy";
     private static final String QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT = "quarkus.hibernate-orm.sql-load-script";
 
     @BuildStep

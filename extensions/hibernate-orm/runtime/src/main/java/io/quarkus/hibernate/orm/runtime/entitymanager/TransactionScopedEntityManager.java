@@ -29,7 +29,8 @@ import io.quarkus.runtime.BlockingOperationControl;
 
 public class TransactionScopedEntityManager implements EntityManager {
 
-    protected static final String TRANSACTION_IS_NOT_ACTIVE = "Transaction is not active, consider adding @Transactional to your method to automatically activate one.";
+    protected static final String TRANSACTION_IS_NOT_ACTIVE =
+            "Transaction is not active, consider adding @Transactional to your method to automatically activate one.";
     private final TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry tsr;
     private final EntityManagerFactory emf;

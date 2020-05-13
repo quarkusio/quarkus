@@ -37,7 +37,8 @@ public final class Substitute_MemberAccessorFactory {
                     // Intentionally fall through (no break)
                 case FIELD_OR_GETTER_METHOD:
                 case FIELD_OR_GETTER_METHOD_WITH_SETTER:
-                    boolean getterOnly = memberAccessorType != MemberAccessorFactory.MemberAccessorType.FIELD_OR_GETTER_METHOD_WITH_SETTER;
+                    boolean getterOnly =
+                            memberAccessorType != MemberAccessorFactory.MemberAccessorType.FIELD_OR_GETTER_METHOD_WITH_SETTER;
                     ReflectionHelper.assertGetterMethod(method, annotationClass);
                     memberAccessor = new ReflectionBeanPropertyMemberAccessor(method, getterOnly);
                     break;

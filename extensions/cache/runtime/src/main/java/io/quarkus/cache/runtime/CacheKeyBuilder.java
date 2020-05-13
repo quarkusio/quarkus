@@ -6,7 +6,8 @@ import java.util.Objects;
 
 public class CacheKeyBuilder {
 
-    public static final String NULL_KEYS_NOT_SUPPORTED_MSG = "Null keys are not supported by the Quarkus application data cache";
+    public static final String NULL_KEYS_NOT_SUPPORTED_MSG =
+            "Null keys are not supported by the Quarkus application data cache";
 
     /**
      * Builds a default immutable and unique cache key from a cache name. This key is intended to be used for no-args methods

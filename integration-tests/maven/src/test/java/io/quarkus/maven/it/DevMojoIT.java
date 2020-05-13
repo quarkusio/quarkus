@@ -95,6 +95,41 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatSourceChangesAreDetectedOnPomChange() throws Exception {
+        testDir = initProject("projects/classic", "projects/project-classic-run-src-and-pom-change");
+        runAndCheck();
+
+        // Edit a Java file too
+        final File javaSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(javaSource, Collections.singletonMap("return \"hello\";", "return \"hello " + uuid + "\";"));
+
+        // edit the application.properties too
+        final File applicationProps = new File(testDir, "src/main/resources/application.properties");
+        filter(applicationProps, Collections.singletonMap("greeting=bonjour", "greeting=" + uuid + ""));
+
+        // Now edit the pom.xml to trigger the dev mode restart
+        final File pomSource = new File(testDir, "pom.xml");
+        filter(pomSource, Collections.singletonMap("<!-- insert test dependencies here -->",
+                "        <dependency>\n" +
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
+                        "        </dependency>"));
+
+        // Wait until we get the updated responses
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello " + uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greeting").contains(uuid));
+
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnPomChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-pom-change");
         runAndCheck();

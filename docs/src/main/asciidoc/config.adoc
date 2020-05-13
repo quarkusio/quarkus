@@ -394,6 +394,7 @@ You can override these runtime properties with the following mechanisms (in decr
 in that file will override the default configuration. Furthermore any runtime properties added to this file that were not part of the original `application.properties` file
 _will also_ be taken into account.
   * This works in the same way for runner jar and the native executable
+  * The `$PWD/config` directory can be overridden by setting the `QUARKUS_CONFIG_LOCATION` environment variable.
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 

@@ -96,12 +96,16 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
     }
 
     public static final class InFileSystem extends ApplicationPropertiesConfigSource {
+
+        private static final String QUARKUS_CONFIG_LOCATION_ENV = "QUARKUS_CONFIG_LOCATION";
+        private static final String DEFAULT_IN_FILE_SYSTEM_LOCATION = "config";
+
         public InFileSystem() {
             super(openStream(), 260);
         }
 
         private static InputStream openStream() {
-            final Path path = Paths.get("config", APPLICATION_PROPERTIES);
+            final Path path = Paths.get(getExternalConfigFilePath(), APPLICATION_PROPERTIES);
             if (Files.exists(path)) {
                 try {
                     return Files.newInputStream(path);
@@ -113,6 +117,10 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
             } else {
                 return null;
             }
+        }
+
+        private static String getExternalConfigFilePath() {
+            return System.getenv().getOrDefault(QUARKUS_CONFIG_LOCATION_ENV, DEFAULT_IN_FILE_SYSTEM_LOCATION);
         }
     }
 }

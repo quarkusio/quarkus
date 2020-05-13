@@ -61,7 +61,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleTestBase {
             DevModeTestUtils.awaitUntilServerDown();
 
             if (projectDir != null && projectDir.isDirectory()) {
-                FileUtils.deleteDirectory(projectDir);
+                FileUtils.deleteQuietly(projectDir);
             }
         }
     }

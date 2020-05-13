@@ -77,7 +77,8 @@ class AnnotationLiteralProcessor {
                             "Value is not set for %s.%s(). Most probably an older version of Jandex was used to index an application dependency. Make sure that Jandex 2.1+ is used.",
                             method.declaringClass().name(), method.name()));
                 }
-                ResultHandle retValue = AnnotationLiteralGenerator.loadValue(bytecode, value, annotationClass, method);
+                ResultHandle retValue = AnnotationLiteralGenerator.loadValue(literal.className, bytecode, value,
+                        annotationClass, method);
                 constructorParams[iterator.previousIndex()] = retValue;
             }
             return bytecode

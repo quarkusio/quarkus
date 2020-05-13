@@ -160,9 +160,12 @@
         <module>optaplanner-jackson</module>
         <module>optaplanner-jsonb</module>
 
-        <!-- vault -->
+        <!-- Vault -->
         <module>vault</module>
+
+        <!-- GraphQL -->
         <module>vertx-graphql</module>
+        <module>smallrye-graphql</module>
 
         <!-- Logging -->
         <module>logging-json</module>

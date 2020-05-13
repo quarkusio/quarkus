@@ -311,7 +311,7 @@ public class DevMojo extends AbstractMojo {
 
             DevModeRunner runner = new DevModeRunner(args);
 
-            runner.prepare();
+            runner.prepare(false);
             Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
@@ -325,18 +325,19 @@ public class DevMojo extends AbstractMojo {
                     if (!runner.process.isAlive()) {
                         return;
                     }
-                    boolean changed = false;
+                    final Set<Path> changed = new HashSet<>();
                     for (Map.Entry<Path, Long> e : pomFiles.entrySet()) {
                         long t = Files.getLastModifiedTime(e.getKey()).toMillis();
                         if (t > e.getValue()) {
-                            changed = true;
+                            changed.add(e.getKey());
                             pomFiles.put(e.getKey(), t);
                         }
                     }
-                    if (changed) {
+                    if (!changed.isEmpty()) {
+                        getLog().info("Changes detected to " + changed + ", restarting dev mode");
                         DevModeRunner newRunner = new DevModeRunner(args);
                         try {
-                            newRunner.prepare();
+                            newRunner.prepare(true);
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
@@ -369,19 +370,23 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
-            // compile the Kotlin sources if needed
-            final String kotlinMavenPluginKey = ORG_JETBRAINS_KOTLIN + ":" + KOTLIN_MAVEN_PLUGIN;
-            final Plugin kotlinMavenPlugin = project.getPlugin(kotlinMavenPluginKey);
-            if (kotlinMavenPlugin != null) {
-                executeCompileGoal(kotlinMavenPlugin, ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN);
-            }
+            triggerCompile();
+        }
+    }
 
-            // Compile the Java sources if needed
-            final String compilerPluginKey = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
-            final Plugin compilerPlugin = project.getPlugin(compilerPluginKey);
-            if (compilerPlugin != null) {
-                executeCompileGoal(compilerPlugin, ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN);
-            }
+    private void triggerCompile() throws MojoExecutionException {
+        // compile the Kotlin sources if needed
+        final String kotlinMavenPluginKey = ORG_JETBRAINS_KOTLIN + ":" + KOTLIN_MAVEN_PLUGIN;
+        final Plugin kotlinMavenPlugin = project.getPlugin(kotlinMavenPluginKey);
+        if (kotlinMavenPlugin != null) {
+            executeCompileGoal(kotlinMavenPlugin, ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN);
+        }
+
+        // Compile the Java sources if needed
+        final String compilerPluginKey = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
+        final Plugin compilerPlugin = project.getPlugin(compilerPluginKey);
+        if (compilerPlugin != null) {
+            executeCompileGoal(compilerPlugin, ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN);
         }
     }
 
@@ -495,7 +500,10 @@ public class DevMojo extends AbstractMojo {
         /**
          * Attempts to prepare the dev mode runner.
          */
-        void prepare() throws Exception {
+        void prepare(final boolean triggerCompile) throws Exception {
+            if (triggerCompile) {
+                triggerCompile();
+            }
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it

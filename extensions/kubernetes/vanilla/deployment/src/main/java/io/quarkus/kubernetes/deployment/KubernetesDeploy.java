@@ -11,8 +11,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.fabric8.kubernetes.api.model.RootPaths;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.VersionInfo;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
 
 public class KubernetesDeploy {
@@ -68,9 +68,10 @@ public class KubernetesDeploy {
         String masterURL = client.getConfiguration().getMasterUrl();
         try {
             masterURL = client.getConfiguration().getMasterUrl();
-            //Let's check id we can connect.
-            RootPaths paths = client.rootPaths();
+            //Let's check if we can connect.
+            VersionInfo version = client.getVersion();
             log.info("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
+            log.debugf("Kubernetes Version: %s.%s", version.getMajor(), version.getMinor());
             serverFound = true;
             client.close();
             return Result.enabled();

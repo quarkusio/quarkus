@@ -31,7 +31,6 @@ import java.util.zip.ZipOutputStream;
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -76,6 +75,8 @@ public class QuarkusDev extends QuarkusTask {
     private boolean preventnoverify = false;
 
     private List<String> args = new LinkedList<String>();
+
+    private List<String> compilerArgs = new LinkedList<>();
 
     public QuarkusDev() {
         super("Development mode: enables hot deployment with background compilation");
@@ -161,6 +162,17 @@ public class QuarkusDev extends QuarkusTask {
             "(which is on by default)", option = "prevent-noverify")
     public void setPreventnoverify(boolean preventnoverify) {
         this.preventnoverify = preventnoverify;
+    }
+
+    @Optional
+    @Input
+    public List<String> getCompilerArgs() {
+        return compilerArgs;
+    }
+
+    @Option(description = "Additional parameters to pass to javac when recompiling changed source files", option = "compiler-args")
+    public void setCompilerArgs(List<String> compilerArgs) {
+        this.compilerArgs = compilerArgs;
     }
 
     @TaskAction
@@ -289,7 +301,16 @@ public class QuarkusDev extends QuarkusTask {
 
             JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
             if (javaPluginConvention != null) {
+                context.setSourceJavaVersion(javaPluginConvention.getSourceCompatibility().toString());
                 context.setTargetJvmVersion(javaPluginConvention.getTargetCompatibility().toString());
+            }
+
+            if (getCompilerArgs().isEmpty()) {
+                getJavaCompileTask()
+                        .map(compileTask -> compileTask.getOptions().getCompilerArgs())
+                        .ifPresent(context::setCompilerOptions);
+            } else {
+                context.setCompilerOptions(getCompilerArgs());
             }
 
             // this is the jar file we will use to launch the dev mode main class
@@ -327,6 +348,10 @@ public class QuarkusDev extends QuarkusTask {
             args.add("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 
             extension.outputDirectory().mkdirs();
+
+            if (context.isEnablePreview()) {
+                args.add(DevModeContext.ENABLE_PREVIEW_FLAG);
+            }
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
@@ -408,11 +433,14 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private String getSourceEncoding() {
-        Task javaCompile = getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
-        if (javaCompile != null) {
-            return ((JavaCompile) javaCompile).getOptions().getEncoding();
-        }
-        return null;
+        return getJavaCompileTask()
+                .map(javaCompile -> javaCompile.getOptions().getEncoding())
+                .orElse(null);
+    }
+
+    private java.util.Optional<JavaCompile> getJavaCompileTask() {
+        return java.util.Optional
+                .ofNullable((JavaCompile) getProject().getTasks().getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME));
     }
 
     private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {

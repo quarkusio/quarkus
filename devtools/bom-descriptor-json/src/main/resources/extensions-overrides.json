@@ -97,6 +97,16 @@
       }
     },
     {
+      "name": "gRPC",
+      "id": "grpc",
+      "description": "gRPC integration",
+      "metadata": {
+        "pinned": [
+          "io.quarkus:quarkus-grpc"
+        ]
+      }
+    },
+    {
       "name": "Business Automation",
       "id": "business-automation",
       "description": "Rules engine, BPM, etc"

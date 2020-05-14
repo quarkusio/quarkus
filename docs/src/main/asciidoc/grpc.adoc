@@ -1,0 +1,29 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus gRPC
+
+include::./attributes.adoc[]
+
+https://grpc.io/[gRPC] is a high-performance RPC framework.
+It can efficiently connect services implemented using various languages and frameworks.
+It is also applicable in the last mile of distributed computing to connect devices, mobile applications, and browsers to backend services.
+
+In general, gRPC uses HTTP/2, TLS, and https://developers.google.com/protocol-buffers[Protobuf (Protocol Buffers)].
+In a microservice architecture, gRPC is an efficient, type-safe alternative to HTTP.
+
+The Quarkus gRPC extension integrate gRPC in Quarkus application.
+It:
+
+* supports implementing gRPC services
+* supports consuming gRPC services
+* integrates with the reactive engine from Quarkus as well as the reactive development model
+* allows plain-text communication as well as TLS, and TLS with mutual authentication
+
+Quarkus gRPC is based on https://vertx.io/docs/vertx-grpc/java/[Vert.x gRPC].
+
+* link:./grpc-getting-started.adoc[Getting Started]
+* link:./grpc-service-implementation.adoc[Implementing a gRPC Service]
+* link:./grpc-service-consumption.adoc[Consuming a gRPC Service]

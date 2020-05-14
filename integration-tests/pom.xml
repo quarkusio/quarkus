@@ -109,6 +109,15 @@
         <module>rest-client</module>
         <module>packaging</module>
         <module>simple with space</module>
+
+        <!-- gRPC tests -->
+        <module>grpc-plain-text</module>
+        <module>grpc-tls</module>
+        <module>grpc-mutual-auth</module>
+        <module>grpc-streaming</module>
+        <module>grpc-interceptors</module>
+        <module>grpc-proto-v2</module>
+        <module>grpc-health</module>
     </modules>
 
     <build>

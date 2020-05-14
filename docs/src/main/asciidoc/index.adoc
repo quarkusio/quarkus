@@ -61,6 +61,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:reactive-routes.html[Using Reactive Routes]
 * link:camel.html[Apache Camel]
 * link:command-mode-reference.html[Command Mode Applications]
+* link:grpc.html[Using gRPC]
 
 * link:faq.html[FAQs]
 

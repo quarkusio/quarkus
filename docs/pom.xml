@@ -113,6 +113,12 @@
                         <maven-version>${proposed-maven-version}</maven-version>
                         <gradle-version>${gradle-wrapper.version}</gradle-version>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
+
+                        <grpc-version>${grpc.version}</grpc-version>
+                        <protoc-version>${protoc.version}</protoc-version>
+                        <os-maven-plugin-version>${os-maven-plugin.version}</os-maven-plugin-version>
+                        <protobuf-maven-plugin-version>${protobuf-maven-plugin.version}</protobuf-maven-plugin-version>
+
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
                         <!-- Root URL of the GitHub organization -->

@@ -20,7 +20,8 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CONFIG_YAML = "config-yaml";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
-    public static final String LIQUIBASE = "liquibase";
+    public static final String GRPC_CLIENT = "grpc-client";
+    public static final String GRPC_SERVER = "grpc-server";
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
     public static final String HIBERNATE_ORM_PANACHE_KOTLIN = "hibernate-orm-panache-kotlin";
@@ -42,6 +43,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String KOTLIN = "kotlin";
     public static final String KUBERNETES = "kubernetes";
     public static final String KUBERNETES_CLIENT = "kubernetes-client";
+    public static final String LIQUIBASE = "liquibase";
     public static final String LOGGING_GELF = "logging-gelf";
     public static final String MAILER = "mailer";
     public static final String MONGODB_CLIENT = "mongodb-client";

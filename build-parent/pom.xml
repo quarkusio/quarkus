@@ -89,6 +89,12 @@
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <jacoco.version>0.8.5</jacoco.version>
+
+        <!-- grpc -->
+        <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
+        <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
+        <protoc.version>3.11.4</protoc.version>
+        <grpc.version>1.29.0</grpc.version>
     </properties>
 
     <dependencyManagement>
@@ -330,7 +336,6 @@
                                             <exclude>org.springframework.boot:spring-boot</exclude>
                                             <!-- Ban checker-qual, we don't use Checker Framework -->
                                             <exclude>org.checkerframework:checker-qual</exclude>
-                                            <exclude>com.google.code.findbugs:jsr305</exclude>
                                             <!-- We use our own impl here, including this one causes problems-->
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
                                         </excludes>
@@ -427,6 +432,16 @@
                             <version>${wiremock-jre8.version}</version>
                         </dependency>
                     </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>kr.motd.maven</groupId>
+                    <artifactId>os-maven-plugin</artifactId>
+                    <version>${os-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.xolstice.maven.plugins</groupId>
+                    <artifactId>protobuf-maven-plugin</artifactId>
+                    <version>${protobuf-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

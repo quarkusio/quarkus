@@ -15,7 +15,7 @@ public class SdkConfig {
     /**
      * The endpoint URI with which the SDK should communicate.
      * <p>
-     * If not specified, an appropriate endpoint to be used for DynamoDB service and region.
+     * If not specified, an appropriate endpoint to be used for the given service and region.
      */
     @ConfigItem
     public Optional<URI> endpointOverride;

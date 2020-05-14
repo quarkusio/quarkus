@@ -68,8 +68,8 @@ public class SyncHttpClientConfig {
         /**
          * Whether the idle connections in the connection pool should be closed asynchronously.
          * <p>
-         * When enabled, connections left idling for longer than `quarkus.dynamodb.sync-client.connection-max-idle-time` will be
-         * closed.
+         * When enabled, connections left idling for longer than `quarkus.<amazon-service>.sync-client.connection-max-idle-time`
+         * will be closed.
          * This will not close connections currently in use.
          */
         @ConfigItem(defaultValue = "true")

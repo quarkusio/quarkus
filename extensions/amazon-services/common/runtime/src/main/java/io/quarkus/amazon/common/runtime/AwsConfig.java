@@ -11,10 +11,10 @@ public class AwsConfig {
 
     // @formatter:off
     /**
-     * An Amazon Web Services region that hosts DynamoDB.
+     * An Amazon Web Services region that hosts the given service.
      *
      * It overrides region provider chain with static value of
-     * region with which the DynamoDB client should communicate.
+     * region with which the service client should communicate.
      *
      * If not set, region is retrieved via the default providers chain in the following order:
      *

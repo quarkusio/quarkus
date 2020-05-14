@@ -70,6 +70,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transport.wagon.WagonConfigurator;
 import org.eclipse.aether.transport.wagon.WagonProvider;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
@@ -560,6 +561,7 @@ public class BootstrapMavenContext {
         if (!isOffline()) {
             locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
             locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
+            locator.setServices(WagonConfigurator.class, new BootstrapWagonConfigurator());
             locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
         }
         locator.setServices(ModelBuilder.class, new MavenModelBuilder(workspace, getCliOptions(),

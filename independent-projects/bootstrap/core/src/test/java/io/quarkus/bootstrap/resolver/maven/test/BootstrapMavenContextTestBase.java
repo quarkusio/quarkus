@@ -55,8 +55,7 @@ public class BootstrapMavenContextTestBase {
 
     protected BootstrapMavenContext bootstrapMavenContextWithSettings(String configDirOnCp) throws Exception {
 
-        final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config()
-                .setWorkspaceDiscovery(false);
+        final BootstrapMavenContextConfig<?> config = initBootstrapMavenContextConfig();
 
         final Path projectLocation = getProjectLocation(configDirOnCp);
         final Path projectSettingsXml = projectLocation.resolve("settings.xml");
@@ -64,6 +63,10 @@ public class BootstrapMavenContextTestBase {
             config.setUserSettings(projectSettingsXml.toFile());
         }
         return new BootstrapMavenContext(config);
+    }
+
+    protected BootstrapMavenContextConfig<?> initBootstrapMavenContextConfig() throws Exception {
+        return BootstrapMavenContext.config().setWorkspaceDiscovery(false);
     }
 
     protected Path getProjectLocation(String projectOnCp) throws URISyntaxException {

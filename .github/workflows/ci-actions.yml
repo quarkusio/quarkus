@@ -470,6 +470,7 @@ jobs:
             timeout: 10
             test-modules: >
               smallrye-graphql
+              webjars-locator
           - category: Spring
             timeout: 40
             test-modules: >

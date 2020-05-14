@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -40,42 +39,42 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public PanacheQuery<Entity> page(@NotNull Page page) {
         delegate.page(page);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> page(int pageIndex, int pageSize) {
         delegate.page(pageIndex, pageSize);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> nextPage() {
         delegate.nextPage();
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> previousPage() {
         delegate.previousPage();
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> firstPage() {
         delegate.firstPage();
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> lastPage() {
         delegate.lastPage();
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @Override
@@ -103,28 +102,28 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public PanacheQuery<Entity> range(int startIndex, int lastIndex) {
         delegate.range(startIndex, lastIndex);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> withLock(@NotNull LockModeType lockModeType) {
         delegate.withLock(lockModeType);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> withHint(@NotNull String hintName, @NotNull Object value) {
         delegate.withHint(hintName, value);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> filter(@NotNull String filterName, @NotNull Parameters parameters) {
         delegate.filter(filterName, parameters.map());
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -132,14 +131,14 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public PanacheQuery<Entity> filter(@NotNull String filterName, @NotNull Map<String, ? extends Object> parameters) {
         delegate.filter(filterName, (Map) parameters);
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     @NotNull
     @Override
     public PanacheQuery<Entity> filter(@NotNull String filterName) {
         delegate.filter(filterName, Collections.emptyMap());
-        return (PanacheQuery<Entity>) this;
+        return this;
     }
 
     // Results
@@ -168,19 +167,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @NotNull
     @Override
-    public Optional<Entity> firstResultOptional() {
-        return delegate.firstResultOptional();
-    }
-
-    @NotNull
-    @Override
     public Entity singleResult() {
         return delegate.singleResult();
-    }
-
-    @NotNull
-    @Override
-    public Optional<Entity> singleResultOptional() {
-        return delegate.singleResultOptional();
     }
 }

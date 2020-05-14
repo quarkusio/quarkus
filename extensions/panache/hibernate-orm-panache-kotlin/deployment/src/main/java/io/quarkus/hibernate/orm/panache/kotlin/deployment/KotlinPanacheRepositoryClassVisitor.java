@@ -1,19 +1,21 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.CLASS_SIGNATURE;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.ID_TYPE_SIGNATURE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.JPA_OPERATIONS;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.OBJECT_SIGNATURE;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_ENTITY_SIGNATURE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE_DOTNAME;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE_SIGNATURE;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_SIGNATURE;
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.autobox;
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.sanitize;
+import static io.quarkus.panache.common.deployment.JandexUtil.getDescriptor;
 import static io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer.PanacheRepositoryClassVisitor.findEntityTypeArgumentsForPanacheRepository;
 import static org.jboss.jandex.DotName.createSimple;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Type.getArgumentTypes;
+import static org.objectweb.asm.Type.getMethodDescriptor;
+import static org.objectweb.asm.Type.getReturnType;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
@@ -39,17 +41,13 @@ class KotlinPanacheRepositoryClassVisitor extends ClassVisitor {
     private final IndexView indexView;
     private org.objectweb.asm.Type entityType;
     private String entitySignature;
+    protected Map<String, String> typeArguments = new HashMap<>();
+    private String idBinaryType;
+    private String idSignature;
 
     public KotlinPanacheRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor, IndexView indexView) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
         this.indexView = indexView;
-        indexView.getClassByName(createSimple(className))
-                .methods()
-                .forEach(method -> {
-                    if (method.hasAnnotation(JandexUtil.DOTNAME_GENERATE_BRIDGE)) {
-                        bridgeMethods.put(method.name() + JandexUtil.getDescriptor(method, m -> null), method);
-                    }
-                });
     }
 
     @Override
@@ -64,38 +62,80 @@ class KotlinPanacheRepositoryClassVisitor extends ClassVisitor {
         String entityBinaryType = foundTypeArguments[0];
         entitySignature = "L" + entityBinaryType + ";";
         entityType = Type.getType(entitySignature);
+        idBinaryType = foundTypeArguments[1];
+        idSignature = "L" + idBinaryType + ";";
+
+        typeArguments.put("Entity", entitySignature);
+        typeArguments.put("Id", idSignature);
+        indexView.getClassByName(createSimple(repositoryClassName))
+                .methods()
+                .forEach(method -> {
+                    if (method.hasAnnotation(JandexUtil.DOTNAME_GENERATE_BRIDGE)) {
+                        bridgeMethods.put(method.name() + getDescriptor(method, m -> typeArguments.get(m)), method);
+                    }
+                });
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
         if (bridgeMethods.get(name + descriptor) != null) {
+            final Type[] argumentTypes = getArgumentTypes(descriptor);
+            int primitive = -1;
+
+            for (int i = 0; i < argumentTypes.length; i++) {
+                if (argumentTypes[i].getInternalName().length() == 1) {
+                    primitive = i;
+                }
+            }
+
+            int finalPrimitive = primitive;
             mv = new MethodVisitor(ASM_API_VERSION, mv) {
+                /**
+                 * This method tracks the location of any primitive value (ID types) passed in. The javac-generated
+                 * bytecode is expecting an Object but with non-nullable "primitive" types in kotlin, those are
+                 * expressed as primitives and not the wrapper types (e.g., Long). This method will catch the cases
+                 * where the ID values passed in are loaded on to the stack prior to invoking the call to JpaOperations.
+                 * It will then inject an autoboxing-like call to ensure that any long values because Long values.
+                 */
                 @Override
                 public void visitVarInsn(int opcode, int var) {
                     if (opcode == ALOAD && var == 0) {
                         visitLdcInsn(entityType);
                     } else {
                         super.visitVarInsn(opcode, var);
+                        if (opcode == LLOAD && var == (finalPrimitive + 1)) {
+                            Type wrapper = autobox(argumentTypes[finalPrimitive]);
+                            super.visitMethodInsn(INVOKESTATIC, wrapper.getInternalName(), "valueOf",
+                                    getMethodDescriptor(wrapper, argumentTypes[finalPrimitive]), false);
+
+                        }
                     }
                 }
 
+                /**
+                 * This method redirects the kotlinc generated call to $DefaultImpls to JpaOperations. In case of IDs,
+                 * e.g., these parameters are represented using primitives by kotlinc since they can never be null.
+                 * JpaOperation expects an object reference so we need to update the descriptor for the method
+                 * invocation to reflect that rather than the primitive type.
+                 */
                 @Override
-                public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                        boolean isInterface) {
                     if (opcode == INVOKESTATIC && DEFAULT_IMPLS.matcher(owner).matches()) {
-                        String replace = descriptor
-                                .replace(PANACHE_REPOSITORY_BASE_SIGNATURE, CLASS_SIGNATURE)
-                                .replace(PANACHE_REPOSITORY_SIGNATURE, CLASS_SIGNATURE)
-                                .replace(PANACHE_ENTITY_SIGNATURE, OBJECT_SIGNATURE)
-                                .replace(ID_TYPE_SIGNATURE, OBJECT_SIGNATURE);
-                        super.visitMethodInsn(opcode, JPA_OPERATIONS, name, replace, isInterface);
-                    } else {
-                        super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+
+                        owner = JPA_OPERATIONS;
+                        Type[] arguments = getArgumentTypes(descriptor);
+                        sanitize(arguments);
+                        descriptor = getMethodDescriptor(getReturnType(descriptor), arguments);
                     }
+
+                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                 }
             };
 
         }
         return mv;
     }
+
 }

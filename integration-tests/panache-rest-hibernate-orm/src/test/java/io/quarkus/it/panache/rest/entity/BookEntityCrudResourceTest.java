@@ -8,6 +8,6 @@ class BookEntityCrudResourceTest extends AbstractBookCrudResourceTest {
 
     @Override
     protected String getResourceName() {
-        return "book-entities";
+        return "book-entity";
     }
 }

@@ -1,41 +1,31 @@
 package io.quarkus.panache.rest.common.deployment.methods;
 
+import org.jboss.jandex.IndexView;
+
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.rest.common.PanacheCrudResource;
-import io.quarkus.panache.rest.common.deployment.DataAccessImplementor;
-import io.quarkus.panache.rest.common.deployment.MethodImplementor;
-import io.quarkus.panache.rest.common.deployment.utils.ResourceAnnotator;
+import io.quarkus.panache.rest.common.deployment.PanacheCrudResourceInfo;
+import io.quarkus.panache.rest.common.deployment.properties.OperationPropertiesAccessor;
 import io.quarkus.panache.rest.common.deployment.utils.ResponseImplementor;
-import io.quarkus.panache.rest.common.deployment.utils.UrlImplementor;
 
-public final class GetMethodImplementor implements MethodImplementor {
+public final class GetMethodImplementor extends StandardMethodImplementor {
 
     public static final String NAME = "get";
 
-    private final DataAccessImplementor dataAccessImplementor;
-
-    private final String idClassName;
-
-    private final String entityClassName;
-
-    public GetMethodImplementor(DataAccessImplementor dataAccessImplementor, String idClassName, String entityClassName) {
-        this.dataAccessImplementor = dataAccessImplementor;
-        this.idClassName = idClassName;
-        this.entityClassName = entityClassName;
-    }
+    private static final String REL = "self";
 
     /**
      * Implements {@link PanacheCrudResource#get(Object)}.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
      *     &#64;Produces({"application/json"})
-     *     &#64;Path("entities/{id}")
+     *     &#64;Path("{id}")
      *     &#64;LinkResource(
      *         rel = "self",
      *         entityClassName = "com.example.Entity"
@@ -50,23 +40,30 @@ public final class GetMethodImplementor implements MethodImplementor {
      *     }
      * }
      * </pre>
-     *
-     * @param classCreator
      */
     @Override
-    public void implement(ClassCreator classCreator) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(NAME, entityClassName, idClassName);
-        ResourceAnnotator.addGet(methodCreator);
-        ResourceAnnotator.addProduces(methodCreator, ResourceAnnotator.APPLICATION_JSON);
-        ResourceAnnotator.addPath(methodCreator, UrlImplementor.getCollectionUrl(entityClassName) + "/{id}");
-        ResourceAnnotator.addPathParam(methodCreator.getParameterAnnotations(0), "id");
-        ResourceAnnotator.addLinks(methodCreator, entityClassName, "self");
+    protected void implementInternal(ClassCreator classCreator, IndexView index, OperationPropertiesAccessor propertiesAccessor,
+            PanacheCrudResourceInfo resourceInfo) {
+        MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
+        MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(), resourceInfo.getEntityClassName(),
+                methodMetadata.getParameterTypes());
+        addGetAnnotation(methodCreator);
+        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addPathAnnotation(methodCreator,
+                propertiesAccessor.getPath(resourceInfo.getResourceClassInfo(), methodMetadata, "{id}"));
+        addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
 
-        ResultHandle entity = dataAccessImplementor.findById(methodCreator, methodCreator.getMethodParam(0));
+        ResultHandle entity = resourceInfo.getDataAccessImplementor().findById(methodCreator, methodCreator.getMethodParam(0));
         BranchResult entityNotFound = methodCreator.ifNull(entity);
 
         entityNotFound.trueBranch().throwException(ResponseImplementor.notFoundException(entityNotFound.trueBranch()));
         entityNotFound.falseBranch().returnValue(entity);
         methodCreator.close();
+    }
+
+    @Override
+    protected MethodMetadata getMethodMetadata(PanacheCrudResourceInfo resourceInfo) {
+        return new MethodMetadata(NAME, resourceInfo.getIdClassName());
     }
 }

@@ -7,17 +7,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
-import io.quarkus.panache.rest.common.runtime.utils.StringUtil;
-
 public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCollectionWrapper> {
 
-    private final HalLinksExtractor linksExtractor;
+    private final HalLinksProvider linksExtractor;
 
     public HalCollectionWrapperJacksonSerializer() {
-        this.linksExtractor = new RestEasyHalLinksExtractor();
+        this.linksExtractor = new RestEasyHalLinksProvider();
     }
 
-    HalCollectionWrapperJacksonSerializer(HalLinksExtractor linksExtractor) {
+    HalCollectionWrapperJacksonSerializer(HalLinksProvider linksExtractor) {
         this.linksExtractor = linksExtractor;
     }
 
@@ -36,7 +34,7 @@ public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCol
 
         generator.writeFieldName("_embedded");
         generator.writeStartObject();
-        generator.writeFieldName(typeToFieldName(wrapper.getElementType().getSimpleName()));
+        generator.writeFieldName(wrapper.getCollectionName());
         generator.writeStartArray(wrapper.getCollection().size());
         for (Object entity : wrapper.getCollection()) {
             entitySerializer.serialize(new HalEntityWrapper(entity), generator, serializers);
@@ -49,11 +47,5 @@ public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCol
         Map<String, HalLink> links = linksExtractor.getLinks(wrapper.getElementType());
         generator.writeFieldName("_links");
         generator.writeObject(links);
-    }
-
-    private String typeToFieldName(String typeName) {
-        String[] pieces = StringUtil.camelToHyphenated(typeName).split("-");
-        pieces[pieces.length - 1] = StringUtil.toPlural(pieces[pieces.length - 1]);
-        return String.join("-", pieces);
     }
 }

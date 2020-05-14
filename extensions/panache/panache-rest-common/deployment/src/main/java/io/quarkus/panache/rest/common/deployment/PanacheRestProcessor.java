@@ -27,11 +27,11 @@ import io.quarkus.panache.rest.common.runtime.hal.HalLinkJsonbSerializer;
 public class PanacheRestProcessor {
 
     @BuildStep
-    void implementCrudResources(CombinedIndexBuildItem index, List<PanacheCrudResourceBuildItem> resources,
+    void implementCrudResources(CombinedIndexBuildItem index, List<PanacheCrudResourceInfo> resources,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer) {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
         CrudResourceImplementor implementor = new CrudResourceImplementor(index.getIndex());
-        for (PanacheCrudResourceBuildItem resource : resources) {
+        for (PanacheCrudResourceInfo resource : resources) {
             implementor.implement(classOutput, resource);
         }
     }

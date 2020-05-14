@@ -6,17 +6,15 @@ import javax.json.bind.serializer.JsonbSerializer;
 import javax.json.bind.serializer.SerializationContext;
 import javax.json.stream.JsonGenerator;
 
-import io.quarkus.panache.rest.common.runtime.utils.StringUtil;
-
 public class HalCollectionWrapperJsonbSerializer implements JsonbSerializer<HalCollectionWrapper> {
 
-    private final HalLinksExtractor linksExtractor;
+    private final HalLinksProvider linksExtractor;
 
     public HalCollectionWrapperJsonbSerializer() {
-        this.linksExtractor = new RestEasyHalLinksExtractor();
+        this.linksExtractor = new RestEasyHalLinksProvider();
     }
 
-    HalCollectionWrapperJsonbSerializer(HalLinksExtractor linksExtractor) {
+    HalCollectionWrapperJsonbSerializer(HalLinksProvider linksExtractor) {
         this.linksExtractor = linksExtractor;
     }
 
@@ -31,7 +29,7 @@ public class HalCollectionWrapperJsonbSerializer implements JsonbSerializer<HalC
     private void writeEmbedded(HalCollectionWrapper wrapper, JsonGenerator generator, SerializationContext context) {
         generator.writeKey("_embedded");
         generator.writeStartObject();
-        generator.writeKey(typeToFieldName(wrapper.getElementType().getSimpleName()));
+        generator.writeKey(wrapper.getCollectionName());
         generator.writeStartArray();
         for (Object entity : wrapper.getCollection()) {
             context.serialize(new HalEntityWrapper(entity), generator);
@@ -43,11 +41,5 @@ public class HalCollectionWrapperJsonbSerializer implements JsonbSerializer<HalC
     private void writeLinks(Class<?> type, JsonGenerator generator, SerializationContext context) {
         Map<String, HalLink> links = linksExtractor.getLinks(type);
         context.serialize("_links", links, generator);
-    }
-
-    private String typeToFieldName(String typeName) {
-        String[] pieces = StringUtil.camelToHyphenated(typeName).split("-");
-        pieces[pieces.length - 1] = StringUtil.toPlural(pieces[pieces.length - 1]);
-        return String.join("-", pieces);
     }
 }

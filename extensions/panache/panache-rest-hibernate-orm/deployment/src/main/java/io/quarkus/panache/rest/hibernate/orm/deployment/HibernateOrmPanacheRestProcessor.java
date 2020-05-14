@@ -16,7 +16,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.panache.rest.common.deployment.PanacheCrudResourceBuildItem;
+import io.quarkus.panache.rest.common.deployment.PanacheCrudResourceInfo;
 import io.quarkus.panache.rest.hibernate.orm.PanacheEntityCrudResource;
 import io.quarkus.panache.rest.hibernate.orm.PanacheRepositoryCrudResource;
 
@@ -36,13 +36,13 @@ class HibernateOrmPanacheRestProcessor {
     }
 
     @BuildStep
-    void findEntityCrudResources(CombinedIndexBuildItem index, BuildProducer<PanacheCrudResourceBuildItem> resourcesProducer) {
+    void findEntityCrudResources(CombinedIndexBuildItem index, BuildProducer<PanacheCrudResourceInfo> resourcesProducer) {
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_ENTITY_CRUD_RESOURCE_INTERFACE)) {
             validateCrudResource(index.getIndex(), classInfo);
             List<Type> generics = getGenericTypes(classInfo);
             String entityClassName = generics.get(0).toString();
             String idClassName = generics.get(1).toString();
-            PanacheCrudResourceBuildItem resource = new PanacheCrudResourceBuildItem(classInfo,
+            PanacheCrudResourceInfo resource = new PanacheCrudResourceInfo(classInfo,
                     new EntityDataAccessImplementor(entityClassName), new HibernateOrmIdFieldPredicate(), idClassName,
                     entityClassName);
             resourcesProducer.produce(resource);
@@ -51,7 +51,7 @@ class HibernateOrmPanacheRestProcessor {
 
     @BuildStep
     void findRepositoryCrudResources(CombinedIndexBuildItem index,
-            BuildProducer<PanacheCrudResourceBuildItem> resourcesProducer,
+            BuildProducer<PanacheCrudResourceInfo> resourcesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_REPOSITORY_CRUD_RESOURCE_INTERFACE)) {
             validateCrudResource(index.getIndex(), classInfo);
@@ -59,7 +59,7 @@ class HibernateOrmPanacheRestProcessor {
             String repositoryClassName = generics.get(0).toString();
             String entityClassName = generics.get(1).toString();
             String idClassName = generics.get(2).toString();
-            PanacheCrudResourceBuildItem resource = new PanacheCrudResourceBuildItem(classInfo,
+            PanacheCrudResourceInfo resource = new PanacheCrudResourceInfo(classInfo,
                     new RepositoryDataAccessImplementor(repositoryClassName), new HibernateOrmIdFieldPredicate(), idClassName,
                     entityClassName);
             resourcesProducer.produce(resource);

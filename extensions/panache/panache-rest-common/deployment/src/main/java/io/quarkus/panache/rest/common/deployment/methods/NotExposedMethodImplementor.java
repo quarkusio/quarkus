@@ -2,25 +2,28 @@ package io.quarkus.panache.rest.common.deployment.methods;
 
 import javax.ws.rs.core.Response;
 
+import org.jboss.jandex.IndexView;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.panache.rest.common.deployment.MethodImplementor;
+import io.quarkus.panache.rest.common.deployment.PanacheCrudResourceInfo;
+import io.quarkus.panache.rest.common.deployment.properties.OperationPropertiesAccessor;
 
-public final class NotExposedMethodImplementor implements MethodImplementor {
+final class NotExposedMethodImplementor implements MethodImplementor {
 
-    private final String name;
+    private final MethodMetadata methodMetadata;
 
-    private final String[] parameterTypes;
-
-    public NotExposedMethodImplementor(String name, String... parameterTypes) {
-        this.name = name;
-        this.parameterTypes = parameterTypes;
+    public NotExposedMethodImplementor(MethodMetadata methodMetadata) {
+        this.methodMetadata = methodMetadata;
     }
 
     @Override
-    public void implement(ClassCreator classCreator) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(name, Response.class.getName(), parameterTypes);
-        methodCreator.throwException(RuntimeException.class, String.format("'%s' method is not exposed", name));
+    public void implement(ClassCreator classCreator, IndexView index, OperationPropertiesAccessor accessor,
+            PanacheCrudResourceInfo resourceInfo) {
+        MethodCreator methodCreator = classCreator
+                .getMethodCreator(methodMetadata.getName(), Response.class.getName(), methodMetadata.getParameterTypes());
+        methodCreator
+                .throwException(RuntimeException.class, String.format("'%s' method is not exposed", methodMetadata.getName()));
         methodCreator.close();
     }
 }

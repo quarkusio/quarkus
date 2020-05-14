@@ -14,13 +14,13 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 
 public class HalEntityWrapperJacksonSerializer extends JsonSerializer<HalEntityWrapper> {
 
-    private final HalLinksExtractor linksExtractor;
+    private final HalLinksProvider linksExtractor;
 
     public HalEntityWrapperJacksonSerializer() {
-        this.linksExtractor = new RestEasyHalLinksExtractor();
+        this.linksExtractor = new RestEasyHalLinksProvider();
     }
 
-    HalEntityWrapperJacksonSerializer(HalLinksExtractor linksExtractor) {
+    HalEntityWrapperJacksonSerializer(HalLinksProvider linksExtractor) {
         this.linksExtractor = linksExtractor;
     }
 

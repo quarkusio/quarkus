@@ -2,35 +2,28 @@ package io.quarkus.panache.rest.common.deployment.methods;
 
 import java.util.List;
 
+import org.jboss.jandex.IndexView;
+
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.panache.rest.common.PanacheCrudResource;
-import io.quarkus.panache.rest.common.deployment.DataAccessImplementor;
-import io.quarkus.panache.rest.common.deployment.MethodImplementor;
-import io.quarkus.panache.rest.common.deployment.utils.ResourceAnnotator;
-import io.quarkus.panache.rest.common.deployment.utils.UrlImplementor;
+import io.quarkus.panache.rest.common.deployment.PanacheCrudResourceInfo;
+import io.quarkus.panache.rest.common.deployment.properties.OperationPropertiesAccessor;
 
-public final class ListMethodImplementor implements MethodImplementor {
+public final class ListMethodImplementor extends StandardMethodImplementor {
 
     public static final String NAME = "list";
 
-    private final DataAccessImplementor dataAccessImplementor;
-
-    private final String entityClassName;
-
-    public ListMethodImplementor(DataAccessImplementor dataAccessImplementor, String entityClassName) {
-        this.dataAccessImplementor = dataAccessImplementor;
-        this.entityClassName = entityClassName;
-    }
+    private static final String REL = "list";
 
     /**
      * Implements {@link PanacheCrudResource#list()}.
      * Generated code looks more or less like this:
-     * 
+     *
      * <pre>
      * {@code
      *     &#64;GET
-     *     &#64;Path("entities")
+     *     &#64;Path("")
      *     &#64;Produces({"application/json"})
      *     &#64;LinkResource(
      *         rel = "list",
@@ -41,18 +34,23 @@ public final class ListMethodImplementor implements MethodImplementor {
      *     }
      * }
      * </pre>
-     *
-     * @param classCreator
      */
     @Override
-    public void implement(ClassCreator classCreator) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(NAME, List.class);
-        ResourceAnnotator.addGet(methodCreator);
-        ResourceAnnotator.addPath(methodCreator, UrlImplementor.getCollectionUrl(entityClassName));
-        ResourceAnnotator.addProduces(methodCreator, ResourceAnnotator.APPLICATION_JSON);
-        ResourceAnnotator.addLinks(methodCreator, entityClassName, "list");
+    protected void implementInternal(ClassCreator classCreator, IndexView index, OperationPropertiesAccessor propertiesAccessor,
+            PanacheCrudResourceInfo resourceInfo) {
+        MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
+        MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(), List.class);
+        addGetAnnotation(methodCreator);
+        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getResourceClassInfo(), methodMetadata));
+        addProducesAnnotation(methodCreator, APPLICATION_JSON);
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
 
-        methodCreator.returnValue(dataAccessImplementor.listAll(methodCreator));
+        methodCreator.returnValue(resourceInfo.getDataAccessImplementor().listAll(methodCreator));
         methodCreator.close();
+    }
+
+    @Override
+    protected MethodMetadata getMethodMetadata(PanacheCrudResourceInfo resourceInfo) {
+        return new MethodMetadata(NAME);
     }
 }

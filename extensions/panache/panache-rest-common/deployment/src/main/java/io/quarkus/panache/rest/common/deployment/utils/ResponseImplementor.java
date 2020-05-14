@@ -9,8 +9,13 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.panache.rest.common.runtime.resource.ResourceLinksProvider;
 
 public final class ResponseImplementor {
+
+    public static ResultHandle created(BytecodeCreator creator, ResultHandle entity) {
+        return created(creator, entity, getEntityUrl(creator, entity));
+    }
 
     public static ResultHandle created(BytecodeCreator creator, ResultHandle entity, ResultHandle location) {
         ResultHandle builder = getResponseBuilder(creator, Response.Status.CREATED.getStatusCode());
@@ -23,6 +28,15 @@ public final class ResponseImplementor {
                 location);
 
         return creator.invokeVirtualMethod(MethodDescriptor.ofMethod(ResponseBuilder.class, "build", Response.class), builder);
+    }
+
+    public static ResultHandle getEntityUrl(BytecodeCreator creator, ResultHandle entity) {
+        ResultHandle linksProvider = creator.newInstance(MethodDescriptor.ofConstructor(ResourceLinksProvider.class));
+        ResultHandle link = creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ResourceLinksProvider.class, "getSelfLink", String.class, Object.class),
+                linksProvider, entity);
+        creator.ifNull(link).trueBranch().throwException(RuntimeException.class, "Could not extract a new entity URL");
+        return creator.invokeStaticMethod(MethodDescriptor.ofMethod(URI.class, "create", URI.class, String.class), link);
     }
 
     public static ResultHandle noContent(BytecodeCreator creator) {

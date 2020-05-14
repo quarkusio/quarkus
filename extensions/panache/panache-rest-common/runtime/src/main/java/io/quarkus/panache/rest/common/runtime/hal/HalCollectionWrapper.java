@@ -8,9 +8,12 @@ public class HalCollectionWrapper {
 
     private final Class<?> elementType;
 
-    public HalCollectionWrapper(Collection<Object> collection, Class<?> elementType) {
+    private final String collectionName;
+
+    public HalCollectionWrapper(Collection<Object> collection, Class<?> elementType, String collectionName) {
         this.collection = collection;
         this.elementType = elementType;
+        this.collectionName = collectionName;
     }
 
     public Collection<Object> getCollection() {
@@ -19,5 +22,9 @@ public class HalCollectionWrapper {
 
     public Class<?> getElementType() {
         return elementType;
+    }
+
+    public String getCollectionName() {
+        return collectionName;
     }
 }

@@ -8,6 +8,6 @@ class BookPojoRepositoryCrudResourceTest extends AbstractBookCrudResourceTest {
 
     @Override
     protected String getResourceName() {
-        return "book-pojos";
+        return "book-pojo";
     }
 }

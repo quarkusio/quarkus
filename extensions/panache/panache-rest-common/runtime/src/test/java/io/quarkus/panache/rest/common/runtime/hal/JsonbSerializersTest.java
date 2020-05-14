@@ -13,8 +13,8 @@ class JsonbSerializersTest extends AbstractSerializersTest {
     @BeforeEach
     void setup() {
         JsonbConfig config = new JsonbConfig();
-        config.withSerializers(new HalEntityWrapperJsonbSerializer(new BookHalLinksExtractor()));
-        config.withSerializers(new HalCollectionWrapperJsonbSerializer(new BookHalLinksExtractor()));
+        config.withSerializers(new HalEntityWrapperJsonbSerializer(new BookHalLinksProvider()));
+        config.withSerializers(new HalCollectionWrapperJsonbSerializer(new BookHalLinksProvider()));
         jsonb = JsonbBuilder.create(config);
     }
 

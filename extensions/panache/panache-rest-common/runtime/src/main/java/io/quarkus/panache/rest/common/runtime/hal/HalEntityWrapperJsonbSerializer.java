@@ -12,13 +12,13 @@ import org.eclipse.yasson.internal.model.PropertyModel;
 
 public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntityWrapper> {
 
-    private final HalLinksExtractor linksExtractor;
+    private final HalLinksProvider linksExtractor;
 
     public HalEntityWrapperJsonbSerializer() {
-        this.linksExtractor = new RestEasyHalLinksExtractor();
+        this.linksExtractor = new RestEasyHalLinksProvider();
     }
 
-    HalEntityWrapperJsonbSerializer(HalLinksExtractor linksExtractor) {
+    HalEntityWrapperJsonbSerializer(HalLinksProvider linksExtractor) {
         this.linksExtractor = linksExtractor;
     }
 

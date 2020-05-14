@@ -26,7 +26,7 @@ abstract class AbstractSerializersTest {
     @Test
     void shouldSerializeCollectionOfBooks() {
         Book book = new Book(1, "Black Swan");
-        HalCollectionWrapper wrapper = new HalCollectionWrapper(Collections.singleton(book), Book.class);
+        HalCollectionWrapper wrapper = new HalCollectionWrapper(Collections.singleton(book), Book.class, "books");
         JsonReader jsonReader = Json.createReader(new StringReader(toJson(wrapper)));
         JsonObject collectionJson = jsonReader.readObject();
 

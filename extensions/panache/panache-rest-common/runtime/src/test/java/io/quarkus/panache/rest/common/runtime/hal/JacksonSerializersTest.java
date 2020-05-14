@@ -14,9 +14,9 @@ class JacksonSerializersTest extends AbstractSerializersTest {
     void setup() {
         objectMapper = new ObjectMapper();
         SimpleModule module = new SimpleModule();
-        module.addSerializer(HalEntityWrapper.class, new HalEntityWrapperJacksonSerializer(new BookHalLinksExtractor()));
+        module.addSerializer(HalEntityWrapper.class, new HalEntityWrapperJacksonSerializer(new BookHalLinksProvider()));
         module.addSerializer(HalCollectionWrapper.class,
-                new HalCollectionWrapperJacksonSerializer(new BookHalLinksExtractor()));
+                new HalCollectionWrapperJacksonSerializer(new BookHalLinksProvider()));
         objectMapper.registerModule(module);
     }
 

@@ -56,13 +56,19 @@ public class RestClientBase {
 
     private void configureSsl(RestClientBuilder builder) {
         Optional<String> maybeTrustStore = getOptionalProperty(REST_TRUST_STORE, String.class);
-        maybeTrustStore.ifPresent(trustStore -> registerTrustStore(trustStore, builder));
+        if (maybeTrustStore.isPresent()) {
+            registerTrustStore(maybeTrustStore.get(), builder);
+        }
 
         Optional<String> maybeKeyStore = getOptionalProperty(REST_KEY_STORE, String.class);
-        maybeKeyStore.ifPresent(keyStore -> registerKeyStore(keyStore, builder));
+        if (maybeKeyStore.isPresent()) {
+            registerKeyStore(maybeKeyStore.get(), builder);
+        }
 
         Optional<String> maybeHostnameVerifier = getOptionalProperty(REST_HOSTNAME_VERIFIER, String.class);
-        maybeHostnameVerifier.ifPresent(verifier -> registerHostnameVerifier(verifier, builder));
+        if (maybeHostnameVerifier.isPresent()) {
+            registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
+        }
     }
 
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
@@ -86,8 +92,10 @@ public class RestClientBase {
 
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
-            String password = keyStorePassword
-                    .orElseThrow(() -> new IllegalArgumentException("No password provided for keystore"));
+            if (!keyStorePassword.isPresent()) {
+                throw new IllegalArgumentException("No password provided for keystore");
+            }
+            String password = keyStorePassword.get();
 
             try (InputStream input = locateStream(keyStorePath)) {
                 keyStore.load(input, password.toCharArray());
@@ -108,8 +116,10 @@ public class RestClientBase {
 
         try {
             KeyStore trustStore = KeyStore.getInstance(maybeTrustStoreType.orElse("JKS"));
-            String password = maybeTrustStorePassword
-                    .orElseThrow(() -> new IllegalArgumentException("No password provided for truststore"));
+            if (!maybeTrustStorePassword.isPresent()) {
+                throw new IllegalArgumentException("No password provided for truststore");
+            }
+            String password = maybeTrustStorePassword.get();
 
             try (InputStream input = locateStream(trustStorePath)) {
                 trustStore.load(input, password.toCharArray());
@@ -151,14 +161,15 @@ public class RestClientBase {
 
     private void configureProviders(RestClientBuilder builder) {
         Optional<String> maybeProviders = getOptionalProperty(REST_PROVIDERS, String.class);
-        maybeProviders.ifPresent(providers -> registerProviders(builder, providers));
+        if (maybeProviders.isPresent()) {
+            registerProviders(builder, maybeProviders.get());
+        }
     }
 
     private void registerProviders(RestClientBuilder builder, String providersAsString) {
-        Stream.of(providersAsString.split(","))
-                .map(String::trim)
-                .map(this::providerClassForName)
-                .forEach(builder::register);
+        for (String s : providersAsString.split(",")) {
+            builder.register(providerClassForName(s.trim()));
+        }
     }
 
     private Class<?> providerClassForName(String name) {
@@ -171,10 +182,14 @@ public class RestClientBase {
 
     private void configureTimeouts(RestClientBuilder builder) {
         Optional<Long> connectTimeout = getOptionalProperty(REST_CONNECT_TIMEOUT_FORMAT, Long.class);
-        connectTimeout.ifPresent(timeout -> builder.connectTimeout(timeout, TimeUnit.MILLISECONDS));
+        if (connectTimeout.isPresent()) {
+            builder.connectTimeout(connectTimeout.get(), TimeUnit.MILLISECONDS);
+        }
 
         Optional<Long> readTimeout = getOptionalProperty(REST_READ_TIMEOUT_FORMAT, Long.class);
-        readTimeout.ifPresent(timeout -> builder.readTimeout(timeout, TimeUnit.MILLISECONDS));
+        if (readTimeout.isPresent()) {
+            builder.readTimeout(readTimeout.get(), TimeUnit.MILLISECONDS);
+        }
     }
 
     private void configureBaseUrl(RestClientBuilder builder) {

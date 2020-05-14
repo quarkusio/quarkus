@@ -958,9 +958,25 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.groups-separator|' '|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
 |smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
 |smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
+|smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a kid property matching the current token's kid header. It will be ignored unless the mp.jwt.verify.publickey.location points to the HTTPS URL based JWK set.
 |smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain.
 |===
+
+== Create JsonWebToken with JWTParser
+
+If the JWT token can not be injected, for example, if it is embedded in the service request payload or the service endpoint acquires it out of band, then one can use `JWTParser`:
+```
+import io.smallrye.jwt.auth.principal.JWTParser;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+...
+@Inject JWTParser parser;
+
+String token = getTokenFromOidcServer();
+
+// Parse and verify the token
+JsonWebToken jwt = parser.parse(token);
+```
 
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT
@@ -979,8 +995,11 @@ The first step is to initialize a `JwtClaimsBuilder` using one of the options be
 [source, java]
 ----
 import java.util.Collections;
+import javax.json.Json;
+import javax.json.JsonObject;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 ...
 // Create an empty builder and add some claims
 JwtClaimsBuilder builder1 = Jwt.claims();
@@ -991,6 +1010,16 @@ JwtClaimsBuilder builder2 = Jwt.claims("/tokenClaims.json");
 
 // Builder created from a map of claims
 JwtClaimsBuilder builder3 = Jwt.claims(Collections.singletonMap("customClaim", "custom-value"));
+
+// Builder created from JsonObject
+JsonObject userName = Json.createObjectBuilder().add("username", "Alice").build();
+JsonObject userAddress = Json.createObjectBuilder().add("city", "someCity").add("street", "someStreet").build();
+JsonObject json = Json.createObjectBuilder(userName).add("address", userAddress).build();
+JwtClaimsBuilder builder4 = Jwt.claims(json);
+
+// Builder created from JsonWebToken
+@Inject JsonWebToken token;
+JwtClaimsBuilder builder5 = Jwt.claims(token);
 ----
 
 The API is fluent so the builder initialization can be done as part of the fluent API sequence. The builder will also set `iat` (issued at) to the current time, `exp` (expires at) to 5 minutes away from the current time and `jti` (unique token identifier) claims if they have not already been set, so one can skip setting them when possible.
@@ -1046,6 +1075,17 @@ import io.smallrye.jwt.build.Jwt;
 // Sign the claims and encrypt the nested token using the private and public keys loaded from the locations set with the 'smallrye.jwt.sign.key-location' and 'smallrye.jwt.encrypt.key-location' properties respectively.
 String jwt = Jwt.claims("/tokenClaims.json").innerSign().encrypt();
 ----
+
+=== SmallRye JWT Builder configuration
+
+Smallrye JWT supports the following properties which can be used to customize the way claims are signed and encrypted:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|smallrye.jwt.sign.key-location|`none`|Location of a private key which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
+|smallrye.jwt.encrypt.key-location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
+|===
 
 == References
 

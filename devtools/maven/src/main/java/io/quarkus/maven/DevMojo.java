@@ -241,6 +241,15 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${maven.compiler.target}")
     private String target;
 
+    /**
+     * Whether or not to enforce the quarkus-maven-plugin build goal to be configured.
+     * By default, a missing build goal is considered an inconsistency (although the build goal is not <i>required</i>
+     * technically).
+     * In this case a warning will be logged and the application will not be started.
+     */
+    @Parameter(defaultValue = "${quarkus.enforceBuildGoal}")
+    private boolean enforceBuildGoal = true;
+
     @Component
     private WorkspaceReader wsReader;
 
@@ -257,13 +266,15 @@ public class DevMojo extends AbstractMojo {
         //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
         handleAutoCompile();
 
-        Plugin pluginDef = MojoUtils.checkProjectForMavenBuildPlugin(project);
+        if (enforceBuildGoal) {
+            Plugin pluginDef = MojoUtils.checkProjectForMavenBuildPlugin(project);
 
-        if (pluginDef == null) {
-            getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
-                    "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
-                    " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
-            return;
+            if (pluginDef == null) {
+                getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
+                        "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
+                        " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
+                return;
+            }
         }
 
         // don't warn if running in a module of a multi-module project

@@ -9,6 +9,7 @@ import javax.inject.Singleton;
 public class MethodsCollector {
 
     private final List<String> methods = new CopyOnWriteArrayList<>();
+    private int requestBeanFromFilter;
 
     void collect(String method) {
         methods.add(method);
@@ -16,6 +17,14 @@ public class MethodsCollector {
 
     List<String> getMethods() {
         return methods;
+    }
+
+    public void setRequestBeanFromFilter(int uniqueNumber) {
+        this.requestBeanFromFilter = uniqueNumber;
+    }
+
+    public int getRequestBeanFromFilter() {
+        return requestBeanFromFilter;
     }
 
 }

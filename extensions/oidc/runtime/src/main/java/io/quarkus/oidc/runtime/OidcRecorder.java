@@ -73,6 +73,10 @@ public class OidcRecorder {
             return null;
         }
 
+        if (!oidcConfig.tenantId.isPresent()) {
+            oidcConfig.tenantId = Optional.of(tenantId);
+        }
+
         OAuth2ClientOptions options = new OAuth2ClientOptions();
 
         if (oidcConfig.getClientId().isPresent()) {

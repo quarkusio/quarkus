@@ -2,22 +2,21 @@ package io.quarkus.hibernate.orm.panache.kotlin
 
 import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
-import java.util.Optional
-import java.util.stream.Stream
-import javax.persistence.LockModeType
-import javax.persistence.NonUniqueResultException
 import org.hibernate.Session
 import org.hibernate.annotations.Filter
 import org.hibernate.annotations.FilterDef
+import java.util.stream.Stream
+import javax.persistence.LockModeType
+import javax.persistence.NonUniqueResultException
 
 /**
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
- * operating on [List] or [Stream].
+ * operating on [List] or java.util.Stream.
  *
  * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
  * modified, and instances of this interface can be reused to obtain multiple pages of results.
  *
- * @param <Entity> The entity type being queried
+ * @param Entity The entity type being queried
  */
 interface PanacheQuery<Entity: Any> {
     /**
@@ -26,15 +25,14 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
      */
-    fun <Entity : Any> project(type: Class<Entity>?): PanacheQuery<Entity>
+    fun <NewEntity: Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity>
 
     /**
      * Sets the current page.
      *
      * @param page the new page
      * @return this query, modified
-     * @see .page
-     * @see .page
+     * @see [PanacheQuery.page]
      */
     fun page(page: Page): PanacheQuery<Entity>
 
@@ -44,8 +42,7 @@ interface PanacheQuery<Entity: Any> {
      * @param pageIndex the page index
      * @param pageSize the page size
      * @return this query, modified
-     * @see .page
-     * @see .page
+     * @see [PanacheQuery.page]
      */
     fun page(pageIndex: Int, pageSize: Int): PanacheQuery<Entity>
 
@@ -54,7 +51,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .previousPage
+     * @see [PanacheQuery.previousPage]
      */
     fun nextPage(): PanacheQuery<Entity>
 
@@ -63,7 +60,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .nextPage
+     * @see [PanacheQuery.nextPage]
      */
     fun previousPage(): PanacheQuery<Entity>
 
@@ -72,7 +69,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .lastPage
+     * @see [PanacheQuery.lastPage]
      */
     fun firstPage(): PanacheQuery<Entity>
 
@@ -81,8 +78,8 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return this query, modified
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .firstPage
-     * @see .count
+     * @see [PanacheQuery.firstPage]
+     * @see [PanacheQuery.count]
      */
     fun lastPage(): PanacheQuery<Entity>
 
@@ -92,8 +89,8 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return true if there is another page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasPreviousPage
-     * @see .count
+     * @see [PanacheQuery.hasPreviousPage]
+     * @see [PanacheQuery.count]
      */
     fun hasNextPage(): Boolean
 
@@ -102,7 +99,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return true if there is a previous page to read
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .hasNextPage
+     * @see [PanacheQuery.hasNextPage]
      */
     fun hasPreviousPage(): Boolean
 
@@ -120,8 +117,7 @@ interface PanacheQuery<Entity: Any> {
      *
      * @return the current page
      * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
-     * @see .page
-     * @see .page
+     * @see [PanacheQuery.page]
      */
     fun page(): Page
 
@@ -161,7 +157,7 @@ interface PanacheQuery<Entity: Any> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
@@ -177,7 +173,7 @@ interface PanacheQuery<Entity: Any> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @param parameters The set of parameters for the filter, if the filter requires parameters
      * @return this query, modified
@@ -193,7 +189,7 @@ interface PanacheQuery<Entity: Any> {
      * will modify the session's filters for the duration of obtaining the results (not while building
      * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
      * preserve filters enabled on the session outside of this API.
-     * 
+     *
      * @param filterName The name of the filter to enable
      * @return this query, modified
      */
@@ -201,7 +197,7 @@ interface PanacheQuery<Entity: Any> {
 
     /**
      * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
+     * query with <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus
      * ordering.
      *
      * @return the total number of entities this query operates on, cached.
@@ -212,19 +208,17 @@ interface PanacheQuery<Entity: Any> {
      * Returns the current page of results as a [List].
      *
      * @return the current page of results as a [List].
-     * @see .stream
-     * @see .page
-     * @see .page
+     * @see [PanacheQuery.stream]
+     * @see [PanacheQuery.page]
      */
     fun list(): List<Entity>
 
     /**
-     * Returns the current page of results as a [Stream].
+     * Returns the current page of results as a Stream.
      *
-     * @return the current page of results as a [Stream].
-     * @see .list
-     * @see .page
-     * @see .page
+     * @return the current page of results as a Stream.
+     * @see [PanacheQuery.list]
+     * @see [PanacheQuery.page]
      */
     fun stream(): Stream<Entity>
 
@@ -233,18 +227,9 @@ interface PanacheQuery<Entity: Any> {
      * a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
-     * @see .singleResult
+     * @see [PanacheQuery.singleResult]
      */
     fun firstResult(): Entity?
-
-    /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
-     *
-     * @return if found, an optional containing the entity, else `Optional.empty()`.
-     * @see .singleResultOptional
-     */
-    fun firstResultOptional(): Optional<Entity>
 
     /**
      * Executes this query for the current page and return a single result.
@@ -252,16 +237,7 @@ interface PanacheQuery<Entity: Any> {
      * @return the single result (throws if there is not exactly one)
      * @throws NoResultException if there is no result
      * @throws NonUniqueResultException if there are more than one result
-     * @see .firstResult
+     * @see [PanacheQuery.firstResult]
      */
-    fun singleResult(): Entity
-
-    /**
-     * Executes this query for the current page and return a single result.
-     *
-     * @return if found, an optional containing the entity, else `Optional.empty()`.
-     * @throws NonUniqueResultException if there are more than one result
-     * @see .firstResultOptional
-     */
-    fun singleResultOptional(): Optional<Entity>
+    fun singleResult(): Entity?
 }

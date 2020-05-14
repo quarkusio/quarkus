@@ -71,6 +71,14 @@
         </dependency>
     </dependencies>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>jcenter</id>
+            <name>JCenter</name>
+            <url>https://jcenter.bintray.com/</url>
+        </pluginRepository>
+        </pluginRepositories>
+
     <build>
         <plugins>
             <plugin>
@@ -137,7 +145,9 @@
                     <execution>
                         <id>java-compile</id>
                         <phase>compile</phase>
-                        <goals> <goal>compile</goal> </goals>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
                     </execution>
                     <execution>
                         <id>java-test-compile</id>
@@ -145,6 +155,34 @@
                         <goals> <goal>testCompile</goal> </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jetbrains.dokka</groupId>
+                <artifactId>dokka-maven-plugin</artifactId>
+                <version>0.10.1</version>
+                <executions>
+                    <execution>
+                        <id>javadoc</id>
+                        <phase>pre-site</phase>
+                        <goals>
+                            <goal>dokka</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jdkVersion>8</jdkVersion>
+                    <outputFormat>html</outputFormat>
+                    <sourceDirectories>
+                        <sourceDirectory>src/main/kotlin</sourceDirectory>
+                    </sourceDirectories>
+                    <externalDocumentationLinks>
+                        <link>
+                            <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
+                            <url>https://docs.oracle.com/javase/8/docs/api/</url>
+                            <packageListUrl>https://docs.oracle.com/javase/8/docs/api/package-list</packageListUrl>
+                        </link>
+                    </externalDocumentationLinks>
+                </configuration>
             </plugin>
         </plugins>
     </build>

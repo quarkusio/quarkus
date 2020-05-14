@@ -20,5 +20,7 @@
         <module>s3</module>
         <module>sns</module>
         <module>sqs</module>
+        <module>ses</module>
+        <module>kms</module>
     </modules>
 </project>

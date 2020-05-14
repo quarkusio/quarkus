@@ -3,6 +3,7 @@ package io.quarkus.netty.deployment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -51,6 +52,20 @@ class NettyProcessor {
         //in native mode we limit the size of the epoll array
         //if the array overflows the selector just moves the overflow to a map
         return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", "1");
+    }
+
+    @BuildStep
+    public SystemPropertyBuildItem setNettyMachineId() {
+        // we set the io.netty.machineId system property so to prevent potential
+        // slowness when generating/inferring the default machine id in io.netty.channel.DefaultChannelId
+        // implementation, which iterates over the NetworkInterfaces to determine the "best" machine id
+
+        // borrowed from io.netty.util.internal.MacAddressUtil.EUI64_MAC_ADDRESS_LENGTH
+        final int EUI64_MAC_ADDRESS_LENGTH = 8;
+        final byte[] machineIdBytes = new byte[EUI64_MAC_ADDRESS_LENGTH];
+        new Random().nextBytes(machineIdBytes);
+        final String nettyMachineId = io.netty.util.internal.MacAddressUtil.formatAddress(machineIdBytes);
+        return new SystemPropertyBuildItem("io.netty.machineId", nettyMachineId);
     }
 
     @BuildStep

@@ -1,4 +1,4 @@
-package io.quarkus.webjar.locator.test;
+package io.quarkus.webjars.locator.test;
 
 import javax.annotation.PreDestroy;
 import javax.ws.rs.POST;

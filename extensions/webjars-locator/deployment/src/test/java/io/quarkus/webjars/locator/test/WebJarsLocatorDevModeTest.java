@@ -1,4 +1,4 @@
-package io.quarkus.webjar.locator.test;
+package io.quarkus.webjars.locator.test;
 
 import static org.hamcrest.core.Is.is;
 
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class WebJarLocatorDevModeTest {
+public class WebJarsLocatorDevModeTest {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension

@@ -435,10 +435,11 @@ jobs:
             test-modules: >
               kubernetes-client
           - category: Misc4
-            timeout: 20
+            timeout: 30
             test-modules: >
               smallrye-graphql
               picocli-native
+              webjars-locator
           - category: Spring
             timeout: 40
             test-modules: >

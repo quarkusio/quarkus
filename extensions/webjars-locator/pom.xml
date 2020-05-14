@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-webjars-locator-parent</artifactId>
-    <name>Quarkus - WebJar Locator</name>
+    <name>Quarkus - WebJars Locator</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

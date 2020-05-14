@@ -3,6 +3,7 @@ package io.quarkus.runtime;
 import java.math.BigDecimal;
 import java.util.logging.Handler;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.logging.InitialConfigurator;
@@ -81,10 +82,12 @@ public class Timing {
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
         String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
+        final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
         if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
-            logger.infof("Quarkus %s started in %ss. %s", quarkusVersion, secondsRepresentation, httpServerInfo);
+            logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
+                    httpServerInfo);
         } else {
-            logger.infof("%s %s (powered by Quarkus %s) started in %ss. %s", name, version, quarkusVersion,
+            logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, httpServerInfo);
         }
         logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");

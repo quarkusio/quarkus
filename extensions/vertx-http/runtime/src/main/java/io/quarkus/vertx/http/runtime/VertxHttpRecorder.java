@@ -6,19 +6,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import javax.enterprise.event.Event;
 
@@ -62,6 +68,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
@@ -318,12 +327,19 @@ public class VertxHttpRecorder {
             quarkusWrapperNeeded = true;
         }
 
+        BiConsumer<Cookie, HttpServerRequest> cookieFunction = null;
+        if (!httpConfiguration.sameSiteCookie.isEmpty()) {
+            cookieFunction = processSameSiteConfig(httpConfiguration.sameSiteCookie);
+            quarkusWrapperNeeded = true;
+        }
+        BiConsumer<Cookie, HttpServerRequest> cookieConsumer = cookieFunction;
+
         if (quarkusWrapperNeeded) {
             Handler<HttpServerRequest> old = root;
             root = new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest event) {
-                    old.handle(new QuarkusRequestWrapper(event));
+                    old.handle(new QuarkusRequestWrapper(event, cookieConsumer));
                 }
             };
         }
@@ -972,4 +988,56 @@ public class VertxHttpRecorder {
 
     private static final List<HttpMethod> CAN_HAVE_BODY = Arrays.asList(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH,
             HttpMethod.DELETE);
+
+    private BiConsumer<Cookie, HttpServerRequest> processSameSiteConfig(Map<String, SameSiteCookieConfig> httpConfiguration) {
+
+        List<BiFunction<Cookie, HttpServerRequest, Boolean>> functions = new ArrayList<>();
+        BiFunction<Cookie, HttpServerRequest, Boolean> last = null;
+
+        for (Map.Entry<String, SameSiteCookieConfig> entry : new TreeMap<>(httpConfiguration).entrySet()) {
+            Pattern p = Pattern.compile(entry.getKey(), entry.getValue().caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
+            BiFunction<Cookie, HttpServerRequest, Boolean> biFunction = new BiFunction<Cookie, HttpServerRequest, Boolean>() {
+                @Override
+                public Boolean apply(Cookie cookie, HttpServerRequest request) {
+                    if (p.matcher(cookie.getName()).matches()) {
+                        if (entry.getValue().value == CookieSameSite.NONE) {
+                            if (entry.getValue().enableClientChecker) {
+                                String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
+                                if (userAgent != null
+                                        && SameSiteNoneIncompatibleClientChecker.isSameSiteNoneIncompatible(userAgent)) {
+                                    return false;
+                                }
+                            }
+                            if (entry.getValue().addSecureForNone) {
+                                cookie.setSecure(true);
+                            }
+                        }
+                        cookie.setSameSite(entry.getValue().value);
+                        return true;
+                    }
+                    return false;
+                }
+            };
+            if (entry.getKey().equals(".*")) {
+                //bit of a hack to make sure the pattern .* is evaluated last
+                last = biFunction;
+            } else {
+                functions.add(biFunction);
+            }
+        }
+        if (last != null) {
+            functions.add(last);
+        }
+
+        return new BiConsumer<Cookie, HttpServerRequest>() {
+            @Override
+            public void accept(Cookie cookie, HttpServerRequest request) {
+                for (BiFunction<Cookie, HttpServerRequest, Boolean> i : functions) {
+                    if (i.apply(cookie, request)) {
+                        return;
+                    }
+                }
+            }
+        };
+    }
 }

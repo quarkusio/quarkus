@@ -224,12 +224,13 @@ Out of the box, the generated resources will be annotated with version control r
 
 ==== Custom Annotations
 
-Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar` just apply the following configuration:
+Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
 
 
 [source]
 ----
 quarkus.kubernetes.annotations.foo=bar
+quarkus."app.quarkus/id"=42
 ----
 
 ==== Environment variables

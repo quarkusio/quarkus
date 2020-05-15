@@ -1,12 +1,17 @@
 package io.quarkus.gradle.tasks;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
@@ -46,6 +51,19 @@ public class QuarkusBuild extends QuarkusTask {
             + "specify one or more entries that should be excluded from the final jar", option = "ignored-entry")
     public void setIgnoredEntries(List<String> ignoredEntries) {
         this.ignoredEntries.addAll(ignoredEntries);
+    }
+
+    @Classpath
+    public FileCollection getClasspath() {
+        SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(getProject(), SourceSet.MAIN_SOURCE_SET_NAME);
+        return mainSourceSet.getCompileClasspath().plus(mainSourceSet.getRuntimeClasspath())
+                .plus(mainSourceSet.getAnnotationProcessorPath())
+                .plus(mainSourceSet.getResources());
+    }
+
+    @OutputFile
+    public File getOutputDir() {
+        return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
     }
 
     @TaskAction

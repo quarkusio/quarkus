@@ -91,7 +91,7 @@ public class SmallRyeGraphQLProcessor {
     private static final String OWN_MEDIA_FOLDER = "META-INF/resources/";
     private static final String GRAPHQL_UI_FINAL_DESTINATION = "META-INF/graphql-ui-files";
     private static final String TEMP_DIR_PREFIX = "quarkus-graphql-ui_" + System.nanoTime();
-    private static final List<String> IGNORE_LIST = Arrays.asList(new String[] { "logo.png", "favicon.ico" });
+    private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico");
     private static final String FILE_TO_UPDATE = "render.js";
 
     SmallRyeGraphQLConfig quarkusConfig;

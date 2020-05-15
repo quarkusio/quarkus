@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class TestPojo {
     private String message;
-    private List<String> list = Arrays.asList(new String[] { "a", "b", "c" });
+    private List<String> list = Arrays.asList("a", "b", "c");
 
     public TestPojo() {
         super();

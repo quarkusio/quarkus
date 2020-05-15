@@ -74,13 +74,13 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Processor for Smallrye GraphQL.
+ * Processor for SmallRye GraphQL.
  * We scan all annotations and build the model during build.
  */
-public class SmallryeGraphqlProcessor {
-    private static final Logger log = Logger.getLogger(SmallryeGraphqlProcessor.class);
+public class SmallRyeGraphQLProcessor {
+    private static final Logger log = Logger.getLogger(SmallRyeGraphQLProcessor.class);
 
-    private static final Logger LOG = Logger.getLogger(SmallryeGraphqlProcessor.class.getName());
+    private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class.getName());
     private static final String SCHEMA_PATH = "/schema.graphql";
     private static final String SPI_PATH = "META-INF/services/";
 
@@ -381,10 +381,11 @@ public class SmallryeGraphqlProcessor {
                                         .getBytes(StandardCharsets.UTF_8);
                             }
                             if (IGNORE_LIST.contains(filename)) {
-                                ClassLoader classLoader = SmallryeGraphqlProcessor.class.getClassLoader();
-                                InputStream resourceAsStream = classLoader
-                                        .getResourceAsStream(OWN_MEDIA_FOLDER + filename);
-                                content = IoUtil.readBytes(resourceAsStream);
+                                ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
+                                try (InputStream resourceAsStream = classLoader
+                                        .getResourceAsStream(OWN_MEDIA_FOLDER + filename)) {
+                                    content = IoUtil.readBytes(resourceAsStream);
+                                }
                             }
 
                             String fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + filename;
@@ -408,7 +409,7 @@ public class SmallryeGraphqlProcessor {
     }
 
     private ResolvedArtifact getGraphQLUiArtifact() {
-        ClassPathArtifactResolver resolver = new ClassPathArtifactResolver(SmallryeGraphqlProcessor.class.getClassLoader());
+        ClassPathArtifactResolver resolver = new ClassPathArtifactResolver(SmallRyeGraphQLProcessor.class.getClassLoader());
         return resolver.getArtifact(GRAPHQL_UI_WEBJAR_GROUP_ID, GRAPHQL_UI_WEBJAR_ARTIFACT_ID, null);
     }
 
@@ -429,7 +430,7 @@ public class SmallryeGraphqlProcessor {
                 }
             }
             // Now add our own logo and favicon
-            ClassLoader classLoader = SmallryeGraphqlProcessor.class.getClassLoader();
+            ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
             for (String ownMedia : IGNORE_LIST) {
                 try (InputStream logo = classLoader.getResourceAsStream(OWN_MEDIA_FOLDER + ownMedia)) {
                     Files.copy(logo, resourceDir.resolve(ownMedia));

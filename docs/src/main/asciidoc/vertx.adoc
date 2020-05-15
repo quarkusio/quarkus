@@ -709,7 +709,7 @@ There are many other facets of Quarkus using Vert.x underneath:
 
 * The event bus is the connecting tissue of Vert.x applications.
 Quarkus integrates it so different beans can interact with asynchronous messages.
-This part is covered in the link:reactive-messaging[Async Message Passing documentation].
+This part is covered in the link:reactive-event-bus[event bus documentation].
 
 * Data streaming and Apache Kafka are a important parts of modern systems.
 Quarkus integrates data streaming using Reactive Messaging.

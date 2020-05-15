@@ -5,7 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Named;
 
-import io.quarkus.vault.CredentialsProvider;
+import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.VaultSystemBackendEngine;
 import io.quarkus.vault.VaultTOTPSecretEngine;

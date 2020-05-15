@@ -1,12 +1,12 @@
-package io.quarkus.vault;
+package io.quarkus.credentials;
 
-import java.util.Properties;
+import java.util.Map;
 
 public interface CredentialsProvider {
 
     String USER_PROPERTY_NAME = "user";
     String PASSWORD_PROPERTY_NAME = "password";
 
-    Properties getCredentials(String credentialsProviderName);
+    Map<String, String> getCredentials(String credentialsProviderName);
 
 }

@@ -1,7 +1,7 @@
 package io.quarkus.vault;
 
-import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.vault.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
-import java.util.Properties;
 
 import javax.inject.Inject;
 
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.runtime.Base64String;
@@ -106,11 +106,11 @@ public class VaultITCase {
 
     @Test
     public void credentialsProvider() {
-        Properties staticCredentials = credentialsProvider.getCredentials("static");
+        Map<String, String> staticCredentials = credentialsProvider.getCredentials("static");
         assertEquals("{" + PASSWORD_PROPERTY_NAME + "=" + DB_PASSWORD + "}", staticCredentials.toString());
 
-        Properties dynamicCredentials = credentialsProvider.getCredentials("dynamic");
-        String username = dynamicCredentials.getProperty(USER_PROPERTY_NAME);
+        Map<String, String> dynamicCredentials = credentialsProvider.getCredentials("dynamic");
+        String username = dynamicCredentials.get(USER_PROPERTY_NAME);
         assertTrue(username.startsWith("v-" + USERPASS.name().toLowerCase() + "-" + VAULT_DBROLE + "-"));
     }
 

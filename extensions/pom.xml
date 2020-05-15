@@ -162,6 +162,7 @@
 
         <!-- Vault -->
         <module>vault</module>
+        <module>credentials</module>
 
         <!-- GraphQL -->
         <module>vertx-graphql</module>

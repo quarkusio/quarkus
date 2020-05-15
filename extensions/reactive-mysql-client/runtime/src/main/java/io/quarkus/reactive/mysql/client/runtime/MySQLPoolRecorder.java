@@ -1,6 +1,13 @@
 package io.quarkus.reactive.mysql.client.runtime;
 
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+
+import java.util.Map;
+
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
@@ -17,7 +24,6 @@ import io.vertx.sqlclient.PoolOptions;
 @Recorder
 @SuppressWarnings("deprecation")
 public class MySQLPoolRecorder {
-
     public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx, BeanContainer container,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
@@ -88,6 +94,22 @@ public class MySQLPoolRecorder {
 
         if (dataSourceRuntimeConfig.password.isPresent()) {
             mysqlConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        }
+
+        // credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(type);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            String user = credentials.get(USER_PROPERTY_NAME);
+            String password = credentials.get(PASSWORD_PROPERTY_NAME);
+            if (user != null) {
+                mysqlConnectOptions.setUser(user);
+            }
+            if (password != null) {
+                mysqlConnectOptions.setPassword(user);
+            }
         }
 
         if (dataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {

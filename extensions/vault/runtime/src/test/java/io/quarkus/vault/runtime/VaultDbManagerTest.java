@@ -1,15 +1,15 @@
 package io.quarkus.vault.runtime;
 
-import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.vault.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static java.time.Instant.EPOCH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class VaultDbManagerTest {
         vaultRenewLease.leaseDurationSecs = 10;
         vaultRenewLease.renewable = true;
 
-        Properties properties = vaultDbManager.getDynamicDbCredentials(mydbrole);
+        Map<String, String> properties = vaultDbManager.getDynamicDbCredentials(mydbrole);
         assertEquals("bob", properties.get(USER_PROPERTY_NAME));
         assertEquals("sinclair1", properties.get(PASSWORD_PROPERTY_NAME));
 

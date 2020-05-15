@@ -60,7 +60,6 @@ public class VaultProcessor {
         return new AdditionalBeanBuildItem.Builder()
                 .setUnremovable()
                 .addBeanClass(VaultServiceProducer.class)
-                .addBeanClass(CredentialsProvider.class)
                 .addBeanClass(VaultKVSecretEngine.class)
                 .build();
     }

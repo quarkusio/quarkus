@@ -33,6 +33,8 @@ import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
@@ -41,7 +43,6 @@ import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.vault.CredentialsProvider;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -238,18 +239,10 @@ public class DataSources {
                     .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
         }
 
-        // Vault credentials provider
+        // credentials provider
         if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            ArcContainer container = Arc.container();
             String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
-            CredentialsProvider credentialsProvider = type != null
-                    ? (CredentialsProvider) container.instance(type).get()
-                    : container.instance(CredentialsProvider.class).get();
-
-            if (credentialsProvider == null) {
-                throw new RuntimeException("unable to find credentials provider of type " + (type == null ? "default" : type));
-            }
-
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(type);
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));

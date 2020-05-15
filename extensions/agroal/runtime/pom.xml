@@ -76,7 +76,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vault-spi</artifactId>
+            <artifactId>quarkus-credentials</artifactId>
         </dependency>
 
         <dependency>

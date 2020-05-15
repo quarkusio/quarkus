@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-Quarkus allows different beans to interact using asynchronous messages, enforcing loose-coupling.
+Quarkus allows different beans to interact using asynchronous events, thus promoting loose-coupling.
 The messages are sent to _virtual addresses_.
 It offers 3 types of delivery mechanism:
 
@@ -362,3 +362,46 @@ You can also compile it as a native executable with:
 ----
 ./mvnw clean package -Pnative
 ----
+
+== Using codecs
+
+The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses codecs to _serialize_ and _deserialize_ objects.
+Quarkus provides a default codec for local delivery.
+So you can exchange objects as follows:
+
+[source, java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+@Path("{name}")
+public Uni<String> greeting(@PathParam String name) {
+    return bus.<String>request("greeting", new MyName(name))
+        .onItem().apply(Message::body);
+}
+
+@ConsumeEvent(value = "greeting")
+Uni<String> greeting(MyName name) {
+    return Uni.createFrom().item(() -> "Hello " + name.getName());
+}
+----
+
+If you want to use a specific codec, you need to explicitly set it on both ends:
+
+[source, java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+@Path("{name}")
+public Uni<String> greeting(@PathParam String name) {
+    return bus.<String>request("greeting", name,
+        new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
+        .onItem().apply(Message::body);
+}
+
+@ConsumeEvent(value = "greeting", codec = MyNameCodec.class)            // <2>
+Uni<String> greeting(MyName name) {
+    return Uni.createFrom().item(() -> "Hello "+name.getName());
+}
+----
+1. Set the name of the codec to use to send the message
+2. Set the codec to use to receive the message

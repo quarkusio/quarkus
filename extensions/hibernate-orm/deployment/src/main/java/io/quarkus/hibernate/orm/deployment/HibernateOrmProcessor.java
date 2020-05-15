@@ -263,7 +263,7 @@ public final class HibernateOrmProcessor {
     public void pregenProxies(
             JpaEntitiesBuildItem domainObjects,
             JpaModelIndexBuildItem indexBuildItem,
-            TransformedClassesBuildItem dependOnIt, //We need to generate the proxies after bytecode transformation happened
+            TransformedClassesBuildItem transformedEntities, //We need to generate the proxies after bytecode transformation happened
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<ProxyDefinitionsBuildItem> producer) {
@@ -279,8 +279,8 @@ public final class HibernateOrmProcessor {
             entitiesToGenerateProxiesFor.addAll(unit.getManagedClassNames());
         }
 
-        PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, indexBuildItem.getIndex(),
-                generatedClassBuildItemBuildProducer);
+        PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, transformedEntities,
+                indexBuildItem.getIndex(), generatedClassBuildItemBuildProducer);
         producer.produce(new ProxyDefinitionsBuildItem(proxyDefinitions));
     }
 
@@ -351,7 +351,8 @@ public final class HibernateOrmProcessor {
                                 proxyDefinitions.getProxies())));
     }
 
-    private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
+    private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, TransformedClassesBuildItem transformedEntities,
+            IndexView combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
@@ -367,14 +368,16 @@ public final class HibernateOrmProcessor {
 
             final BytecodeProviderImpl bytecodeProvider = new BytecodeProviderImpl();
             final ByteBuddyProxyHelper byteBuddyProxyHelper = bytecodeProvider.getByteBuddyProxyHelper();
+            final EntitiesClassLoader classLoader = new EntitiesClassLoader(transformedEntities,
+                    Thread.currentThread().getContextClassLoader());
 
             for (String entity : entityClassNames) {
                 Set<Class<?>> proxyInterfaces = new HashSet<>();
                 proxyInterfaces.add(HibernateProxy.class); //always added
-                Class<?> mappedClass = Class.forName(entity, false, Thread.currentThread().getContextClassLoader());
+                Class<?> mappedClass = Class.forName(entity, false, classLoader);
                 String proxy = proxyAnnotations.get(entity);
                 if (proxy != null) {
-                    proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                    proxyInterfaces.add(Class.forName(proxy, false, classLoader));
                 } else if (!isProxiable(mappedClass)) {
                     //if there is no @Proxy we need to make sure the actual class is proxiable
                     continue;
@@ -387,7 +390,7 @@ public final class HibernateOrmProcessor {
                     }
                     proxy = proxyAnnotations.get(subclassName);
                     if (proxy != null) {
-                        proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                        proxyInterfaces.add(Class.forName(proxy, false, classLoader));
                     }
                 }
                 DynamicType.Unloaded<?> proxyDef = byteBuddyProxyHelper.buildUnloadedProxy(mappedClass,

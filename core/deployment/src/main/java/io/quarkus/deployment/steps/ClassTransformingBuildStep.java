@@ -101,7 +101,7 @@ public class ClassTransformingBuildStep {
                                 }
                                 cr.accept(visitor, 0);
                                 return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
-                                        classFileName);
+                                        classFileName, className);
                             } finally {
                                 Thread.currentThread().setContextClassLoader(old);
                             }

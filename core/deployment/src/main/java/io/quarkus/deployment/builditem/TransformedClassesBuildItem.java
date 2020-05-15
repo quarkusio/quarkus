@@ -16,13 +16,21 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
 
     private final Map<Path, Set<TransformedClass>> transformedClassesByJar;
     private final Map<Path, Set<String>> transformedFilesByJar;
+    private final Map<String, TransformedClass> transformedClassesByName;
 
     public TransformedClassesBuildItem(Map<Path, Set<TransformedClass>> transformedClassesByJar) {
         this.transformedClassesByJar = new HashMap<>(transformedClassesByJar);
         this.transformedFilesByJar = new HashMap<>();
+        this.transformedClassesByName = new HashMap<>();
         for (Map.Entry<Path, Set<TransformedClass>> e : transformedClassesByJar.entrySet()) {
             transformedFilesByJar.put(e.getKey(),
                     e.getValue().stream().map(TransformedClass::getFileName).collect(Collectors.toSet()));
+            for (TransformedClass t : e.getValue()) {
+                final TransformedClass existing = transformedClassesByName.put(t.className, t);
+                if (existing != null) {
+                    throw new IllegalStateException("Non unique Classname has been transformed! '" + t.className + '\'');
+                }
+            }
         }
     }
 
@@ -34,14 +42,20 @@ public final class TransformedClassesBuildItem extends SimpleBuildItem {
         return transformedFilesByJar;
     }
 
+    public TransformedClass getTransformedClassByName(String name) {
+        return transformedClassesByName.get(name);
+    }
+
     public static class TransformedClass {
 
         private final byte[] data;
         private final String fileName;
+        private final String className;
 
-        public TransformedClass(byte[] data, String fileName) {
+        public TransformedClass(byte[] data, String fileName, String className) {
             this.data = data;
             this.fileName = fileName;
+            this.className = className;
         }
 
         public byte[] getData() {

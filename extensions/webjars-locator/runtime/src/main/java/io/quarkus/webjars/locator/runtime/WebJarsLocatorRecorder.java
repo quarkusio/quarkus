@@ -1,5 +1,7 @@
 package io.quarkus.webjars.locator.runtime;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -35,7 +37,7 @@ public class WebJarsLocatorRecorder {
                             } else {
                                 String webjarVersion = Paths.get(versionList.get(0)).getFileName().toString();
                                 String resolvedPath = webjarsRootUrl + webjar.toString() + "/" +
-                                        webjarVersion + "/" + webjar.relativize(rest).toString();
+                                        webjarVersion + convertToRelativeUrl(webjar, rest);
                                 event.put(HANDLED_EVENT, true);
                                 event.reroute(resolvedPath);
                             }
@@ -45,7 +47,7 @@ public class WebJarsLocatorRecorder {
                     });
                 } else {
                     String resolvedPath = webjarsRootUrl + webjar.toString() + "/" +
-                            version + "/" + webjar.relativize(rest).toString();
+                            version + convertToRelativeUrl(webjar, rest);
                     event.put(HANDLED_EVENT, true);
                     event.reroute(resolvedPath);
                 }
@@ -54,6 +56,21 @@ public class WebJarsLocatorRecorder {
                 event.next();
             }
         };
+    }
+
+    private static String convertToRelativeUrl(Path root, Path rest) {
+        Path relativePath = root.relativize(rest);
+        StringBuilder url = new StringBuilder();
+        for (Path part : relativePath) {
+            url.append("/");
+            try {
+                url.append(URLEncoder.encode(part.toString(), "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                // Shouldn't happen, "UTF-8 should be available in all JVM's
+                throw new IllegalStateException(e);
+            }
+        }
+        return url.toString();
     }
 
 }

@@ -1,14 +1,14 @@
 package io.quarkus.webjars.locator.deployment;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,10 +38,15 @@ public class WebJarsLocatorProcessor {
         String rootPath = httpConfig.rootPath;
         String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
         feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBJARS_LOCATOR));
-        final Path webjarsFileSystemPath = Paths.get("META-INF", "resources", "webjars");
+        final String webjarsFileSystemPath = "META-INF/resources/webjars/";
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, String> versionMap = new HashMap<>();
-        List<ClassPathElement> resources = cl.getElementsWithResource(webjarsFileSystemPath.toString() + File.separator);
+        Set<ClassPathElement> resources = new HashSet<>();
+
+        // Changes path depending on Java 8 or Java 9+
+        resources.addAll(cl.getElementsWithResource(webjarsFileSystemPath));
+        resources.addAll(cl.getElementsWithResource("/" + webjarsFileSystemPath));
+
         for (ClassPathElement webJarsElement : resources) {
             Path root = webJarsElement.getRoot();
             if (root == null) {

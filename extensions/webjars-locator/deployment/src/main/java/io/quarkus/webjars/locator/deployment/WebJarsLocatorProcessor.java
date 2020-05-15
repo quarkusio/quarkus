@@ -1,9 +1,11 @@
 package io.quarkus.webjars.locator.deployment;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,10 @@ public class WebJarsLocatorProcessor {
         String rootPath = httpConfig.rootPath;
         String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
         feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBJARS_LOCATOR));
-        final String webjarsFileSystemPath = "META-INF/resources/webjars/";
+        final Path webjarsFileSystemPath = Paths.get("META-INF", "resources", "webjars");
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, String> versionMap = new HashMap<>();
-        List<ClassPathElement> resources = cl.getElementsWithResource(webjarsFileSystemPath);
+        List<ClassPathElement> resources = cl.getElementsWithResource(webjarsFileSystemPath.toString() + File.separator);
         for (ClassPathElement webJarsElement : resources) {
             Path root = webJarsElement.getRoot();
             if (root == null) {
@@ -48,7 +50,7 @@ public class WebJarsLocatorProcessor {
             //we only care about jars
             if (!Files.isDirectory(root)) {
                 try (FileSystem jar = ZipUtils.newFileSystem(root)) {
-                    Path web = jar.getPath(webjarsFileSystemPath);
+                    Path web = jar.getPath("META-INF", "resources", "webjars");
                     try (Stream<Path> implementations = Files.list(web)) {
                         implementations.forEach(new Consumer<Path>() {
                             @Override

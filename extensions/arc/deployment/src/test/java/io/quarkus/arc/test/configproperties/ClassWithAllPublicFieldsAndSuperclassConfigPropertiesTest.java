@@ -46,6 +46,10 @@ public class ClassWithAllPublicFieldsAndSuperclassConfigPropertiesTest {
         assertFalse(dummyBean.getOptionalStringList().isPresent());
         assertTrue(dummyBean.getOptionalIntList().isPresent());
         assertEquals(Arrays.asList(1, 2), dummyBean.getOptionalIntList().get());
+
+        assertEquals("s", DummyProperties.SOME_STRING);
+        assertEquals(1, DummyProperties.SOME_INT);
+        assertEquals("s2", SuperDuperDummyProperties.SOME_OTHER_STRING);
     }
 
     @Singleton
@@ -89,6 +93,9 @@ public class ClassWithAllPublicFieldsAndSuperclassConfigPropertiesTest {
     @ConfigProperties(prefix = "dummy")
     public static class DummyProperties extends SuperDummyProperties {
 
+        private static final String SOME_STRING = "s";
+        public static final int SOME_INT = 1;
+
         public String name;
         public String unset = "default";
         public List<Integer> numbers;
@@ -103,6 +110,9 @@ public class ClassWithAllPublicFieldsAndSuperclassConfigPropertiesTest {
     }
 
     public static class SuperDuperDummyProperties {
+
+        static final String SOME_OTHER_STRING = "s2";
+
         public Optional<List<Integer>> optionalIntList;
     }
 }

@@ -227,6 +227,9 @@ final class ClassConfigPropertiesUtil {
             // For each field of the class try to pull it out of MP Config and call the corresponding setter
             List<FieldInfo> fields = currentClassInHierarchy.fields();
             for (FieldInfo field : fields) {
+                if (Modifier.isStatic(field.flags())) { // nothing we need to do about static fields
+                    continue;
+                }
                 if (field.hasAnnotation(DotNames.CONFIG_PROPERTY)) {
                     LOGGER.warn(
                             "'@ConfigProperty' is ignored when added to a field of a class annotated with '@ConfigProperties'. Offending field is '"

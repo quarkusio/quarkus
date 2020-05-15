@@ -39,6 +39,7 @@ public class ConfigPropertiesBuildStep {
         IndexView index = combinedIndex.getIndex();
 
         Map<DotName, ConfigProperties.NamingStrategy> namingStrategies = new HashMap<>();
+        Map<DotName, Boolean> failOnMismatchingMembers = new HashMap<>();
 
         // handle @ConfigProperties
         for (AnnotationInstance instance : index.getAnnotations(DotNames.CONFIG_PROPERTIES)) {
@@ -47,8 +48,12 @@ public class ConfigPropertiesBuildStep {
             ConfigProperties.NamingStrategy namingStrategy = getNamingStrategy(arcConfig, instance.value("namingStrategy"));
             namingStrategies.put(classInfo.name(), namingStrategy);
 
+            boolean failOnMismatchingMember = isFailOnMissingMember(instance);
+            failOnMismatchingMembers.put(classInfo.name(), failOnMismatchingMember);
+
             configPropertiesMetadataProducer
-                    .produce(new ConfigPropertiesMetadataBuildItem(classInfo, getPrefix(instance), namingStrategy, false));
+                    .produce(new ConfigPropertiesMetadataBuildItem(classInfo, getPrefix(instance), namingStrategy,
+                            failOnMismatchingMember, false));
         }
 
         // handle @ConfigPrefix
@@ -70,8 +75,16 @@ public class ConfigPropertiesBuildStep {
 
             configPropertiesMetadataProducer
                     .produce(new ConfigPropertiesMetadataBuildItem(classInfo, instance.value().asString(),
-                            namingStrategy, true));
+                            namingStrategy, failOnMismatchingMembers.getOrDefault(classInfo.name(),
+                                    ConfigProperties.DEFAULT_FAIL_ON_MISMATCHING_MEMBER),
+                            true));
         }
+    }
+
+    private boolean isFailOnMissingMember(AnnotationInstance instance) {
+        AnnotationValue failOnMissingMemberValue = instance.value("failOnMismatchingMember");
+        return failOnMissingMemberValue != null ? failOnMissingMemberValue.asBoolean()
+                : ConfigProperties.DEFAULT_FAIL_ON_MISMATCHING_MEMBER;
     }
 
     private ConfigProperties.NamingStrategy getNamingStrategy(ArcConfig arcConfig, AnnotationValue namingStrategyValue) {
@@ -134,7 +147,7 @@ public class ConfigPropertiesBuildStep {
                 boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
                         Thread.currentThread().getContextClassLoader(), classInfo, producerClassCreator,
                         configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
-                        configPropertiesMetadata.isNeedsQualifier(),
+                        configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier(),
                         combinedIndex.getIndex(), configProperties);
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());

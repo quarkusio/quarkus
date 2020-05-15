@@ -91,7 +91,23 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             return Uni.createFrom().failure(new IllegalArgumentException(
                     "No IdentityProviders were registered to handle AuthenticationRequest " + request));
         }
+        if (providers.size() == 1) {
+            return handleSingleProvider(providers.get(0), request);
+        }
         return handleProvider(0, (List) providers, request, blockingRequestContext);
+    }
+
+    private Uni<SecurityIdentity> handleSingleProvider(IdentityProvider identityProvider, AuthenticationRequest request) {
+        if (augmenters.isEmpty()) {
+            return identityProvider.authenticate(request, blockingRequestContext);
+        }
+        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext);
+        return authenticated.flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+            @Override
+            public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                return handleIdentityFromProvider(0, securityIdentity, blockingRequestContext);
+            }
+        });
     }
 
     /**

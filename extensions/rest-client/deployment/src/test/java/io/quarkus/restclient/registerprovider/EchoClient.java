@@ -1,5 +1,7 @@
 package io.quarkus.restclient.registerprovider;
 
+import java.util.concurrent.CompletionStage;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -19,4 +21,20 @@ public interface EchoClient {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.TEXT_PLAIN)
     String echo(@QueryParam("message") String message);
+
+    @Path("call-client")
+    @GET
+    String callClient();
+
+    @Path("called-from-client")
+    @GET
+    String calledFromClient(@QueryParam("uniqueNumber") int uniqueNumber);
+
+    @Path("async/call-client")
+    @GET
+    CompletionStage<String> asyncCallClient();
+
+    @Path("async/called-from-client")
+    @GET
+    CompletionStage<String> asyncCalledFromClient(@QueryParam("uniqueNumber") int uniqueNumber);
 }

@@ -14,7 +14,11 @@ import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 
 public class RestClientBase {
 
@@ -49,6 +53,11 @@ public class RestClientBase {
         configureTimeouts(builder);
         configureProviders(builder);
         configureSsl(builder);
+        // If we have context propagation, then propagate context to the async client threads
+        InstanceHandle<ManagedExecutor> managedExecutor = Arc.container().instance(ManagedExecutor.class);
+        if (managedExecutor.isAvailable()) {
+            builder.executorService(managedExecutor.get());
+        }
 
         return builder.build(proxyType);
     }

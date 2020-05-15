@@ -2,6 +2,8 @@ package io.quarkus.restclient.registerprovider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.ExecutionException;
+
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -18,7 +20,8 @@ public class RegisterProviderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class)
+                    .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class,
+                            MyRequestBean.class)
                     .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
                             "application.properties"));
 
@@ -36,4 +39,9 @@ public class RegisterProviderTest {
         assertEquals("GET", collector.getMethods().get(0));
     }
 
+    @Test
+    public void testContextPropagation() throws InterruptedException, ExecutionException {
+        assertEquals("OK", client.callClient());
+        assertEquals("OK", client.asyncCallClient().toCompletableFuture().get());
+    }
 }

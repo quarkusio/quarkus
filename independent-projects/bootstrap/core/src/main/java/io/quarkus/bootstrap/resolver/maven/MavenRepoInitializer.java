@@ -53,6 +53,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transport.wagon.WagonConfigurator;
 import org.eclipse.aether.transport.wagon.WagonProvider;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
@@ -160,6 +161,7 @@ public class MavenRepoInitializer {
         if (!offline) {
             locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
             locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
+            locator.setServices(WagonConfigurator.class, new BootstrapWagonConfigurator());
             locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
         }
         locator.setServices(ModelBuilder.class, new MavenModelBuilder(wsModelResolver));

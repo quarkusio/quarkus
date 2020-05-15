@@ -3,12 +3,14 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Singleton;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
@@ -24,6 +26,7 @@ import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
+import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig.DataSourceJdbcOuterNamedBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
@@ -43,18 +46,17 @@ import io.quarkus.vault.CredentialsProvider;
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
  *
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and its {@code  createDataSource} method is called at runtime in order to produce
- * the actual {@code AgroalDataSource} objects.
- *
- * CDI scopes and qualifiers are setup at build-time, which is why this class is devoid of
- * any CDI annotations
- *
+ * It isn't a CDI producer in the literal sense, but it created a synthetic bean
+ * from {@code AgroalProcessor}
+ * The {@code createDataSource} method is called at runtime (see
+ * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)})
+ * in order to produce the actual {@code AgroalDataSource} objects.
  */
 @SuppressWarnings("deprecation")
-public class DataSourceProducer {
+@Singleton
+public class DataSources {
 
-    private static final Logger log = Logger.getLogger(DataSourceProducer.class.getName());
+    private static final Logger log = Logger.getLogger(DataSources.class.getName());
 
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
@@ -67,9 +69,9 @@ public class DataSourceProducer {
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
 
-    private final List<AgroalDataSource> dataSources = new ArrayList<>();
+    private final ConcurrentMap<String, AgroalDataSource> dataSources = new ConcurrentHashMap<>();
 
-    public DataSourceProducer(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+    public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
             LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
@@ -88,7 +90,32 @@ public class DataSourceProducer {
         this.dataSourceSupport = dataSourceSupport;
     }
 
-    public AgroalDataSource createDataSource(String dataSourceName) {
+    /**
+     * Meant to be used from recorders that create synthetic beans that need access to {@code Datasource}.
+     * In such using {@code Arc.container.instance(DataSource.class)} is not possible because
+     * {@code Datasource} is itself a synthetic bean.
+     *
+     * This method relies on the fact that {@code DataSources} should - given the same input -
+     * always return the same {@code AgroalDataSource} no matter how many times it is invoked
+     * (which makes sense because {@code DataSource} is a {@code Singleton} bean).
+     *
+     * This method is thread-safe
+     */
+    public static AgroalDataSource fromName(String dataSourceName) {
+        return Arc.container().instance(DataSources.class).get()
+                .getDataSource(dataSourceName);
+    }
+
+    public AgroalDataSource getDataSource(String dataSourceName) {
+        return dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
+            @Override
+            public AgroalDataSource apply(String s) {
+                return doCreateDataSource(s);
+            }
+        });
+    }
+
+    public AgroalDataSource doCreateDataSource(String dataSourceName) {
         if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
@@ -163,8 +190,6 @@ public class DataSourceProducer {
                 new AgroalEventLoggingListener(dataSourceName));
         log.debugv("Started datasource {0} connected to {1}", dataSourceName,
                 agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
-
-        this.dataSources.add(dataSource);
 
         return dataSource;
     }
@@ -472,7 +497,7 @@ public class DataSourceProducer {
 
     @PreDestroy
     public void stop() {
-        for (AgroalDataSource dataSource : dataSources) {
+        for (AgroalDataSource dataSource : dataSources.values()) {
             if (dataSource != null) {
                 dataSource.close();
             }

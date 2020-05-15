@@ -151,6 +151,9 @@
         <module>kubernetes-client</module>
         <module>kubernetes-config</module>
 
+        <!-- Consul -->
+        <module>consul-config</module>
+
         <!-- Database migrations -->
         <module>flyway</module>
         <module>liquibase</module>

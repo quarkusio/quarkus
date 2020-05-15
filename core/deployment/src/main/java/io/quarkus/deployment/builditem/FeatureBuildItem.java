@@ -20,6 +20,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String CACHE = "cache";
     public static final String CDI = "cdi";
     public static final String CONFIG_YAML = "config-yaml";
+    public static final String CONSUL_CONFIG = "consul-config";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
     public static final String GRPC_CLIENT = "grpc-client";

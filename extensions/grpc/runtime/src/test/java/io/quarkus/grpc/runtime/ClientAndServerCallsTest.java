@@ -10,6 +10,8 @@ import java.util.concurrent.CompletionException;
 
 import org.junit.jupiter.api.Test;
 
+import io.grpc.Status;
+import io.grpc.StatusException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -67,6 +69,46 @@ public class ClientAndServerCallsTest {
                 .await().atMost(TIMEOUT)).containsExactly("HELLO", "WORLD");
     }
 
+    @Test
+    public void testFailureReporting() {
+        FailingServiceClient client = new FailingServiceClient();
+        assertThatThrownBy(() -> client.propagateFailure("hello").await().atMost(TIMEOUT))
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(StatusException.class)
+                .getCause().satisfies(t -> {
+                    assertThat(t).isInstanceOf(StatusException.class);
+                    assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
+                    assertThat((t).getMessage()).contains("boom").contains("Exception");
+                });
+
+        assertThatThrownBy(() -> client.immediateFailure("hello").await().atMost(TIMEOUT))
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(StatusException.class)
+                .getCause().satisfies(t -> {
+                    assertThat(t).isInstanceOf(StatusException.class);
+                    assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
+                    assertThat((t).getMessage()).contains("runtime boom").contains("RuntimeException");
+                });
+
+        assertThatThrownBy(() -> client.illegalArgumentException("hello").await().atMost(TIMEOUT))
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(StatusException.class)
+                .getCause().satisfies(t -> {
+                    assertThat(t).isInstanceOf(StatusException.class);
+                    assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.INVALID_ARGUMENT.getCode());
+                    assertThat((t).getMessage()).contains("bad").contains("IllegalArgumentException");
+                });
+
+        assertThatThrownBy(() -> client.npe("hello").await().atMost(TIMEOUT))
+                .isInstanceOf(CompletionException.class)
+                .hasCauseInstanceOf(StatusException.class)
+                .getCause().satisfies(t -> {
+                    assertThat(t).isInstanceOf(StatusException.class);
+                    assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
+                    assertThat((t).getMessage()).contains("NullPointerException");
+                });
+    }
+
     static class FakeService {
 
         Uni<String> oneToOne(String s) {
@@ -105,6 +147,48 @@ public class ClientAndServerCallsTest {
 
         Multi<String> manyToMany(Multi<String> multi) {
             return ClientCalls.manyToMany(multi, o -> ServerCalls.manyToMany(o, service::manyToMany));
+        }
+
+    }
+
+    static class FailingService {
+
+        Uni<String> propagateFailure(String s) {
+            return Uni.createFrom().failure(new Exception("boom"));
+        }
+
+        Uni<String> immediateFailure(String s) {
+            throw new RuntimeException("runtime boom");
+        }
+
+        Uni<String> illegalArgumentException(String s) {
+            throw new IllegalArgumentException("bad");
+        }
+
+        Uni<String> npe(String s) {
+            throw new NullPointerException();
+        }
+
+    }
+
+    static class FailingServiceClient {
+
+        FailingService service = new FailingService();
+
+        Uni<String> propagateFailure(String s) {
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::propagateFailure));
+        }
+
+        Uni<String> immediateFailure(String s) {
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::immediateFailure));
+        }
+
+        Uni<String> illegalArgumentException(String s) {
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::illegalArgumentException));
+        }
+
+        Uni<String> npe(String s) {
+            return ClientCalls.oneToOne(s, (i, o) -> ServerCalls.oneToOne(i, o, service::npe));
         }
 
     }

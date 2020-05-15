@@ -253,8 +253,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLScalarType.class);
         classes.add(graphql.schema.GraphQLSchema.class);
         classes.add(graphql.schema.GraphQLTypeReference.class);
-        Class[] arrayOfClass = classes.toArray(new Class[] {});
-        return arrayOfClass;
+        return classes.toArray(new Class[] {});
     }
 
     private Set<String> getOperationClassNames(Set<Operation> operations) {
@@ -472,10 +471,7 @@ public class SmallRyeGraphQLProcessor {
 
         @Override
         public boolean test(DotName t) {
-            if (Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.net.")) {
-                return true;
-            }
-            return false;
+            return Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.net.");
         }
     }
 }

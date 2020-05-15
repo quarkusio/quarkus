@@ -19,7 +19,6 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
-import sun.nio.cs.UTF_8;
 
 /**
  * Handler that does the execution of GraphQL Requests

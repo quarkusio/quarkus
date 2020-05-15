@@ -76,14 +76,6 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/5885").then().body(is("OK"));
     }
 
-    @Test
-    public void testJaxbAnnotationTransfer() {
-        RestAssured.when()
-                .get("/test/testJaxbAnnotationTransfer")
-                .then()
-                .body(is("OK"));
-    }
-
     /**
      * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *peristent*
      * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.

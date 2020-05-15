@@ -140,7 +140,7 @@ public class NativeConfig {
     /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11")
+    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java11")
     public String builderImage;
 
     /**

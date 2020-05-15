@@ -44,7 +44,7 @@
         <asm.version>7.3.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
-        <graal-sdk.version>19.3.1</graal-sdk.version>
+        <graal-sdk.version>20.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
     </properties>
     <modules>

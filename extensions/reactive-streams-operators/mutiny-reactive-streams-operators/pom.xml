@@ -6,16 +6,17 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-reactive-streams-operators-parent</artifactId>
-    <name>Quarkus - Reactive Streams Operators</name>
+    <artifactId>quarkus-mutiny-reactive-streams-operators-parent</artifactId>
+    <name>Quarkus - SmallRye Mutiny Reactive Streams Operators</name>
     <packaging>pom</packaging>
+
     <modules>
-        <module>smallrye-reactive-streams-operators</module>
-        <module>smallrye-reactive-type-converters</module>
-        <module>mutiny-reactive-streams-operators</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
+
 </project>

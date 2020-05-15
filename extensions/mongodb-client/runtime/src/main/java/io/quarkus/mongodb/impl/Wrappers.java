@@ -6,7 +6,6 @@ import org.reactivestreams.Publisher;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -26,7 +25,6 @@ class Wrappers {
     }
 
     static <T> Multi<T> toMulti(Publisher<T> publisher) {
-        @Nullable
         Context context = Vertx.currentContext();
         if (context != null) {
             return Multi.createFrom().publisher(publisher).emitOn(command -> context.runOnContext(x -> command.run()));
@@ -36,7 +34,6 @@ class Wrappers {
     }
 
     static <T> Uni<List<T>> toUniOfList(Publisher<T> publisher) {
-        @Nullable
         Context context = Vertx.currentContext();
         Uni<List<T>> uni = Multi.createFrom().publisher(publisher)
                 .collectItems().asList();

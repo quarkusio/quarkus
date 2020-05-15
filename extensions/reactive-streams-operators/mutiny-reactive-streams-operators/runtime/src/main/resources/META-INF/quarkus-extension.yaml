@@ -1,11 +1,10 @@
 ---
-name: "SmallRye Reactive Streams Operators"
+name: "SmallRye Mutiny Reactive Streams Operators"
 metadata:
   keywords:
-  - "smallrye-reactive-streams-operators"
-  - "smallrye-reactive-streams"
   - "reactive-streams-operators"
   - "reactive"
   categories:
   - "reactive"
   status: "stable"
+  unlisted: true

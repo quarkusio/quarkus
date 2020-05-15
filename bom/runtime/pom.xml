@@ -42,7 +42,7 @@
         <smallrye-jwt.version>2.1.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.11</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.12</smallrye-reactive-streams-operators.version>
-        <smallrye-converter-api.version>1.0.10</smallrye-converter-api.version>
+        <smallrye-converter-api.version>1.0.12</smallrye-converter-api.version>
         <smallrye-reactive-messaging.version>2.0.2</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.25.0</swagger-ui.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
@@ -553,6 +553,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1189,6 +1194,11 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>mutiny</artifactId>
+                <version>${mutiny.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-reactive-streams-operators</artifactId>
                 <version>${mutiny.version}</version>
             </dependency>
             <dependency>
@@ -2818,6 +2828,11 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-api</artifactId>
+                <version>${smallrye-converter-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-converter-mutiny</artifactId>
                 <version>${smallrye-converter-api.version}</version>
             </dependency>
             <dependency>

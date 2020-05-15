@@ -37,10 +37,26 @@
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-axle-generator</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>smallrye-reactive-streams-operators</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.vertx</groupId>
+                    <artifactId>vertx-codegen</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-axle-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.reactive</groupId>
+                    <artifactId>smallrye-reactive-streams-operators</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>

@@ -2,30 +2,32 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mutiny-parent</artifactId>
+        <artifactId>quarkus-mutiny-reactive-streams-operators-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-mutiny</artifactId>
-    <name>Quarkus - Mutiny - Runtime</name>
-    <description>Write reactive applications with the modern Reactive Programming library Mutiny</description>
+    <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
+    <name>Quarkus - SmallRye Mutiny Reactive Streams Operators - Runtime</name>
+    <description>Operators to write Reactive Streams based applications based on Mutiny</description>
     <dependencies>
-
+        <dependency>
+            <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>
+            <artifactId>microprofile-reactive-streams-operators-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>
+            <artifactId>microprofile-reactive-streams-operators-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+            <artifactId>mutiny-reactive-streams-operators</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
@@ -33,19 +35,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
         </dependency>
     </dependencies>
 
@@ -69,6 +59,5 @@
             </plugin>
         </plugins>
     </build>
-
 
 </project>

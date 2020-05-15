@@ -31,4 +31,11 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem(defaultValue = "true")
     boolean enableUi;
+
+    /**
+     * Enable metrics
+     */
+    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    public boolean metricsEnabled;
+
 }

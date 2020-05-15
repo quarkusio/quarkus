@@ -44,7 +44,7 @@
         <asm.version>7.3.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
-        <graal-sdk.version>19.3.1</graal-sdk.version>
+        <graal-sdk.version>19.3.2</graal-sdk.version>
     </properties>
     <modules>
         <module>core</module>

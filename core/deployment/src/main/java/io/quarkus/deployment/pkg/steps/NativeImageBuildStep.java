@@ -381,7 +381,7 @@ public class NativeImageBuildStep {
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
         if (vmVersionIsObsolete) {
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version + "."
-                    + " Quarkus currently supports GraalVM 19.3.1 and 20.0.0. Please upgrade GraalVM to one of these versions.");
+                    + " Quarkus currently supports GraalVM 19.3.2 and 20.0.0. Please upgrade GraalVM to one of these versions.");
         }
     }
 

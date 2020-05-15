@@ -1,5 +1,19 @@
 package io.quarkus.webjars.locator.deployment;
 
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -22,10 +36,54 @@ public class WebJarsLocatorProcessor {
         String rootPath = httpConfig.rootPath;
         String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
         feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBJARS_LOCATOR));
+        final String webjarsFileSystemPath = "META-INF/resources/webjars/";
+        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+        Map<String, String> versionMap = new HashMap<>();
+        List<ClassPathElement> resources = cl.getElementsWithResource(webjarsFileSystemPath);
+        for (ClassPathElement webJarsElement : resources) {
+            Path root = webJarsElement.getRoot();
+            if (root == null) {
+                continue;
+            }
+            //we only care about jars
+            if (!Files.isDirectory(root)) {
+                try (FileSystem jar = ZipUtils.newFileSystem(root)) {
+                    Path web = jar.getPath(webjarsFileSystemPath);
+                    try (Stream<Path> implementations = Files.list(web)) {
+                        implementations.forEach(new Consumer<Path>() {
+                            @Override
+                            public void accept(Path implPath) {
+                                try (Stream<Path> version = Files.list(implPath)) {
+                                    List<Path> versionList = version.collect(Collectors.toList());
+                                    if (versionList.isEmpty()) {
+                                        return;
+                                    }
+                                    if (versionList.size() > 1) {
+                                        throw new RuntimeException("Found multiple versions of webjar " + implPath.getFileName()
+                                                + " versions " + versionList);
+                                    }
+                                    versionMap.put(stripSeperator(implPath.getFileName().toString()),
+                                            stripSeperator(versionList.get(0).getFileName().toString()));
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        });
+                    }
+                }
+
+            }
+        }
+
         routes.produce(
                 new RouteBuildItem(webjarRootPath + "*",
-                        recorder.getHandler(webjarRootPath),
+                        recorder.getHandler(webjarRootPath, versionMap),
                         false));
+    }
+
+    private String stripSeperator(String val) {
+        //some JDK versions will include the trailing path seperator in the name
+        return val.replaceAll("/", "").replaceAll("\\\\", "");
     }
 
 }

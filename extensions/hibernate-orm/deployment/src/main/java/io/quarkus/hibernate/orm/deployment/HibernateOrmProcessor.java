@@ -84,6 +84,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -262,6 +263,7 @@ public final class HibernateOrmProcessor {
     public void pregenProxies(
             JpaEntitiesBuildItem domainObjects,
             JpaModelIndexBuildItem indexBuildItem,
+            TransformedClassesBuildItem dependOnIt, //We need to generate the proxies after bytecode transformation happened
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<ProxyDefinitionsBuildItem> producer) {

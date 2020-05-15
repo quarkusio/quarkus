@@ -5,10 +5,8 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,12 +39,7 @@ public class WebJarsLocatorProcessor {
         final String webjarsFileSystemPath = "META-INF/resources/webjars/";
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, String> versionMap = new HashMap<>();
-        Set<ClassPathElement> resources = new HashSet<>();
-
-        // Changes path depending on Java 8 or Java 9+
-        resources.addAll(cl.getElementsWithResource(webjarsFileSystemPath));
-        resources.addAll(cl.getElementsWithResource("/" + webjarsFileSystemPath));
-
+        List<ClassPathElement> resources = cl.getElementsWithResource(webjarsFileSystemPath);
         for (ClassPathElement webJarsElement : resources) {
             Path root = webJarsElement.getRoot();
             if (root == null) {

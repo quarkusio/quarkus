@@ -2,6 +2,7 @@ package io.quarkus.webjars.locator.runtime;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.Recorder;
@@ -24,7 +25,24 @@ public class WebJarsLocatorRecorder {
                 Path webjar = rest.getName(0);
                 String version = versionMap.get(webjar.toString());
                 if (version == null) {
-                    event.fail(404);
+                    // Fall back for Java 8 and Windows
+                    event.vertx().fileSystem().readDir(webjarsFileSystemPath + webjar.toString(), readDir -> {
+                        if (readDir.succeeded()) {
+                            List<String> versionList = readDir.result();
+                            // There should be exactly one version (should be a build error)
+                            if (versionList.size() != 1) {
+                                event.fail(404);
+                            } else {
+                                String webjarVersion = Paths.get(versionList.get(0)).getFileName().toString();
+                                String resolvedPath = webjarsRootUrl + webjar.toString() + "/" +
+                                        webjarVersion + "/" + webjar.relativize(rest).toString();
+                                event.put(HANDLED_EVENT, true);
+                                event.reroute(resolvedPath);
+                            }
+                        } else {
+                            event.fail(404);
+                        }
+                    });
                 } else {
                     String resolvedPath = webjarsRootUrl + webjar.toString() + "/" +
                             version + "/" + webjar.relativize(rest).toString();

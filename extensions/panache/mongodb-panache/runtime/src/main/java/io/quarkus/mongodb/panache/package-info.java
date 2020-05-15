@@ -79,7 +79,7 @@
  * They will all generates the same query : {"field": "value"}.
  * </li>
  * <li>We support the following query operators: 'and', 'or' ( mixing 'and' and 'or' is not currently supported), '=',
- * '>', '>=', '<', '<=', '!=', 'is null', 'is not null', and 'like' that is mapped to the MongoDB `$regex` operator
+ * '>', '>=', '<', '<=', '!=', 'is null', 'is not null', 'in' and 'like' that is mapped to the MongoDB `$regex` operator
  * (both String and JavaScript patterns are supported).</li>
  * <li>field replacement is supported based on the value of the <code>@BsonProperty</code> annotations</li>
  * </ul>

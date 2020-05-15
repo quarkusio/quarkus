@@ -5,6 +5,7 @@ import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,6 +16,8 @@ import javax.persistence.LockModeType;
 import javax.persistence.NonUniqueResultException;
 import javax.persistence.Query;
 
+import org.hibernate.Filter;
+import org.hibernate.Session;
 import org.hibernate.engine.spi.RowSelection;
 
 import io.quarkus.panache.common.Page;
@@ -32,6 +35,17 @@ public class CommonPanacheQueryImpl<Entity> {
     static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*",
             Pattern.CASE_INSENSITIVE);
 
+    private interface NonThrowingCloseable extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    private static final NonThrowingCloseable NO_FILTERS = new NonThrowingCloseable() {
+        @Override
+        public void close() {
+        }
+    };
+
     private Object paramsArrayOrMap;
     private String query;
     protected String countQuery;
@@ -44,7 +58,9 @@ public class CommonPanacheQueryImpl<Entity> {
     private Range range;
 
     private LockModeType lockModeType;
-    private Map<String, Object> hints = new HashMap<>();
+    private Map<String, Object> hints;
+
+    private Map<String, Map<String, Object>> filters;
 
     public CommonPanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
         this.em = em;
@@ -64,6 +80,7 @@ public class CommonPanacheQueryImpl<Entity> {
         this.range = previousQuery.range;
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
+        this.filters = previousQuery.filters;
     }
 
     // Builder
@@ -97,6 +114,12 @@ public class CommonPanacheQueryImpl<Entity> {
         select.append(") ");
 
         return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+    }
+
+    public void filter(String filterName, Map<String, Object> parameters) {
+        if (filters == null)
+            filters = new HashMap<>();
+        filters.put(filterName, parameters);
     }
 
     public void page(Page page) {
@@ -173,6 +196,9 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     public void withHint(String hintName, Object value) {
+        if (hints == null) {
+            hints = new HashMap<>();
+        }
         hints.put(hintName, value);
     }
 
@@ -190,7 +216,9 @@ public class CommonPanacheQueryImpl<Entity> {
                 AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
                 AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
-            count = (Long) countQuery.getSingleResult();
+            try (NonThrowingCloseable c = applyFilters()) {
+                count = (Long) countQuery.getSingleResult();
+            }
         }
         return count;
     }
@@ -236,20 +264,26 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
         Query jpaQuery = createQuery();
-        return jpaQuery.getResultList();
+        try (NonThrowingCloseable c = applyFilters()) {
+            return jpaQuery.getResultList();
+        }
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Stream<T> stream() {
         Query jpaQuery = createQuery();
-        return jpaQuery.getResultStream();
+        try (NonThrowingCloseable c = applyFilters()) {
+            return jpaQuery.getResultStream();
+        }
     }
 
     public <T extends Entity> T firstResult() {
         Query jpaQuery = createQuery(1);
-        @SuppressWarnings("unchecked")
-        List<T> list = jpaQuery.getResultList();
-        return list.isEmpty() ? null : list.get(0);
+        try (NonThrowingCloseable c = applyFilters()) {
+            @SuppressWarnings("unchecked")
+            List<T> list = jpaQuery.getResultList();
+            return list.isEmpty() ? null : list.get(0);
+        }
     }
 
     public <T extends Entity> Optional<T> firstResultOptional() {
@@ -259,18 +293,22 @@ public class CommonPanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
         Query jpaQuery = createQuery();
-        return (T) jpaQuery.getSingleResult();
+        try (NonThrowingCloseable c = applyFilters()) {
+            return (T) jpaQuery.getSingleResult();
+        }
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Optional<T> singleResultOptional() {
         Query jpaQuery = createQuery(2);
-        List<T> list = jpaQuery.getResultList();
-        if (list.size() > 1) {
-            throw new NonUniqueResultException();
-        }
+        try (NonThrowingCloseable c = applyFilters()) {
+            List<T> list = jpaQuery.getResultList();
+            if (list.size() > 1) {
+                throw new NonUniqueResultException();
+            }
 
-        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        }
     }
 
     private Query createQuery() {
@@ -332,10 +370,32 @@ public class CommonPanacheQueryImpl<Entity> {
             jpaQuery.setLockMode(lockModeType);
         }
 
-        for (Map.Entry<String, Object> hint : hints.entrySet()) {
-            jpaQuery.setHint(hint.getKey(), hint.getValue());
+        if (hints != null) {
+            for (Map.Entry<String, Object> hint : hints.entrySet()) {
+                jpaQuery.setHint(hint.getKey(), hint.getValue());
+            }
         }
         return jpaQuery;
     }
 
+    private NonThrowingCloseable applyFilters() {
+        if (filters == null)
+            return NO_FILTERS;
+        Session session = em.unwrap(Session.class);
+        for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
+            Filter filter = session.enableFilter(entry.getKey());
+            for (Entry<String, Object> paramEntry : entry.getValue().entrySet()) {
+                filter.setParameter(paramEntry.getKey(), paramEntry.getValue());
+            }
+            filter.validate();
+        }
+        return new NonThrowingCloseable() {
+            @Override
+            public void close() {
+                for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
+                    session.disableFilter(entry.getKey());
+                }
+            }
+        };
+    }
 }

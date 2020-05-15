@@ -1,10 +1,14 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
 import io.quarkus.panache.common.Page
+import io.quarkus.panache.common.Parameters
 import java.util.Optional
 import java.util.stream.Stream
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
+import org.hibernate.Session
+import org.hibernate.annotations.Filter
+import org.hibernate.annotations.FilterDef
 
 /**
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
@@ -149,6 +153,53 @@ interface PanacheQuery<Entity: Any> {
     fun withHint(hintName: String, value: Any): PanacheQuery<Entity>
 
     /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @return this query, modified
+     */
+    fun filter(filterName: String, parameters: Parameters): PanacheQuery<Entity>
+
+    /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @return this query, modified
+     */
+    fun filter(filterName: String, parameters: Map<String, Any>): PanacheQuery<Entity>
+
+    /**
+     * <p>
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
+     * with [FilterDef] on your entity or package, and enabled with [Filter] on your entity.
+     * <p>
+     * WARNING: setting filters can only be done on the underlying Hibernate [Session] and so this
+     * will modify the session's filters for the duration of obtaining the results (not while building
+     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
+     * preserve filters enabled on the session outside of this API.
+     * 
+     * @param filterName The name of the filter to enable
+     * @return this query, modified
+     */
+    fun filter(filterName: String): PanacheQuery<Entity>
+
+    /**
      * Reads and caches the total number of entities this query operates on. This causes a database
      * query with `SELECT COUNT(*)` and a query equivalent to the current query, minus
      * ordering.
@@ -213,5 +264,4 @@ interface PanacheQuery<Entity: Any> {
      * @see .firstResultOptional
      */
     fun singleResultOptional(): Optional<Entity>
-
 }

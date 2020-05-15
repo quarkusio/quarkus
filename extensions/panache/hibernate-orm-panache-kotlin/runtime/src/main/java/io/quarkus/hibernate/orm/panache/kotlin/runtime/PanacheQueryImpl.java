@@ -1,6 +1,8 @@
 package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -12,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
@@ -114,6 +117,28 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public PanacheQuery<Entity> withHint(@NotNull String hintName, @NotNull Object value) {
         delegate.withHint(hintName, value);
+        return (PanacheQuery<Entity>) this;
+    }
+
+    @NotNull
+    @Override
+    public PanacheQuery<Entity> filter(@NotNull String filterName, @NotNull Parameters parameters) {
+        delegate.filter(filterName, parameters.map());
+        return (PanacheQuery<Entity>) this;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @NotNull
+    @Override
+    public PanacheQuery<Entity> filter(@NotNull String filterName, @NotNull Map<String, ? extends Object> parameters) {
+        delegate.filter(filterName, (Map) parameters);
+        return (PanacheQuery<Entity>) this;
+    }
+
+    @NotNull
+    @Override
+    public PanacheQuery<Entity> filter(@NotNull String filterName) {
+        delegate.filter(filterName, Collections.emptyMap());
         return (PanacheQuery<Entity>) this;
     }
 

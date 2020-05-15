@@ -22,13 +22,12 @@ public class LauncherMain {
         context.setCacheDir(Files.createTempDirectory("quarkus-cache").toFile());
         context.setSourceEncoding("UTF-8");
         File appClassesFile = appClasses.toFile();
-        context.getClassesRoots().add(appClassesFile);
 
         //TODO: huge hacks
         File src = new File(appClassesFile, "../../src/main/java");
         File res = new File(appClassesFile, "../../src/main/resources");
 
-        context.getModules().add(new DevModeContext.ModuleInfo("main", new File("").getAbsolutePath(),
+        context.setApplicationRoot(new DevModeContext.ModuleInfo("main", new File("").getAbsolutePath(),
                 Collections.singleton(src.getAbsolutePath()), appClassesFile.getAbsolutePath(), res.getAbsolutePath()));
         //the loading of this is super weird, and does its own class loader delegation for some reason
         ConfigProviderResolver.setInstance(new SmallRyeConfigProviderResolver());

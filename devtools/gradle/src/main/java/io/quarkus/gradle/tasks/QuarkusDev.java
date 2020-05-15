@@ -272,19 +272,16 @@ public class QuarkusDev extends QuarkusTask {
             }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            File wiringClassesDirectory = new File(getBuildDir(), "wiring-classes");
-            wiringClassesDirectory.mkdirs();
-            addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
             final Set<AppArtifactKey> projectDependencies = new HashSet<>();
-            addSelfWithLocalDeps(project, context, new HashSet<>(), projectDependencies);
+            addSelfWithLocalDeps(project, context, new HashSet<>(), projectDependencies, true);
 
             for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
                 final AppArtifact appArtifact = appDependency.getArtifact();
                 if (!projectDependencies.contains(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()))) {
                     appArtifact.getPaths().forEach(p -> {
                         if (Files.exists(p)) {
-                            addToClassPaths(classPathManifest, context, p.toFile());
+                            addToClassPaths(classPathManifest, p.toFile());
                         }
                     });
                 }
@@ -295,8 +292,6 @@ public class QuarkusDev extends QuarkusTask {
             //to the runner jar
             addGradlePluginDeps(classPathManifest, context);
 
-            appModel.getAppArtifact().getPaths().forEach(p -> context.getClassesRoots().add(p.toFile()));
-            context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 
             JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
@@ -372,7 +367,7 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     private void addSelfWithLocalDeps(Project project, DevModeContext context, Set<String> visited,
-            Set<AppArtifactKey> addedDeps) {
+            Set<AppArtifactKey> addedDeps, boolean root) {
         if (!visited.add(project.getPath())) {
             return;
         }
@@ -380,15 +375,15 @@ public class QuarkusDev extends QuarkusTask {
         if (compileCp != null) {
             compileCp.getIncoming().getDependencies().forEach(d -> {
                 if (d instanceof ProjectDependency) {
-                    addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), context, visited, addedDeps);
+                    addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), context, visited, addedDeps, false);
                 }
             });
         }
 
-        addLocalProject(project, context, addedDeps);
+        addLocalProject(project, context, addedDeps, root);
     }
 
-    private void addLocalProject(Project project, DevModeContext context, Set<AppArtifactKey> addeDeps) {
+    private void addLocalProject(Project project, DevModeContext context, Set<AppArtifactKey> addeDeps, boolean root) {
         final AppArtifactKey key = new AppArtifactKey(project.getGroup().toString(), project.getName());
         if (addeDeps.contains(key)) {
             return;
@@ -426,9 +421,11 @@ public class QuarkusDev extends QuarkusTask {
                 classesDir,
                 resourcesSrcDir.getAbsolutePath(),
                 resourcesOutputPath);
-
-        context.getModules().add(wsModuleInfo);
-
+        if (root) {
+            context.setApplicationRoot(wsModuleInfo);
+        } else {
+            context.getAdditionalModules().add(wsModuleInfo);
+        }
         addeDeps.add(key);
     }
 
@@ -457,7 +454,7 @@ public class QuarkusDev extends QuarkusTask {
                         if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
                             rd.getAllModuleArtifacts().stream()
                                     .map(ResolvedArtifact::getFile)
-                                    .forEach(f -> addToClassPaths(classPathManifest, context, f));
+                                    .forEach(f -> addToClassPaths(classPathManifest, f));
                             foundQuarkusPlugin = true;
                             break;
                         }
@@ -484,7 +481,7 @@ public class QuarkusDev extends QuarkusTask {
                     for (String cpElement : classpath.split(File.pathSeparator)) {
                         final File f = new File(cpElement);
                         if (f.exists()) {
-                            addToClassPaths(classPathManifest, context, f);
+                            addToClassPaths(classPathManifest, f);
                         }
                     }
                 }
@@ -494,12 +491,11 @@ public class QuarkusDev extends QuarkusTask {
         }
     }
 
-    private void addToClassPaths(StringBuilder classPathManifest, DevModeContext context, File file) {
+    private void addToClassPaths(StringBuilder classPathManifest, File file) {
         if (filesIncludedInClasspath.add(file)) {
             getProject().getLogger().info("Adding dependency {}", file);
 
             final URI uri = file.toPath().toAbsolutePath().toUri();
-            context.getClassPath().add(toUrl(uri));
             classPathManifest.append(uri).append(" ");
         }
     }

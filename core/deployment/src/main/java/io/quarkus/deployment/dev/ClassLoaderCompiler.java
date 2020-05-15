@@ -57,7 +57,6 @@ public class ClassLoaderCompiler implements Closeable {
                 urls.add(p.toUri().toURL());
             }
         }
-        urls.addAll(context.getClassPath());
 
         Set<String> parsedFiles = new HashSet<>();
         Deque<String> toParse = new ArrayDeque<>();
@@ -65,7 +64,7 @@ public class ClassLoaderCompiler implements Closeable {
             toParse.add(new File(URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8.name())).getAbsolutePath());
         }
         Set<File> classPathElements = new HashSet<>();
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
+        for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             if (i.getClassesPath() != null) {
                 classPathElements.add(new File(i.getClassesPath()));
             }
@@ -135,7 +134,7 @@ public class ClassLoaderCompiler implements Closeable {
                 }
             }
         }
-        for (DevModeContext.ModuleInfo i : context.getModules()) {
+        for (DevModeContext.ModuleInfo i : context.getAllModules()) {
             if (!i.getSourcePaths().isEmpty()) {
                 if (i.getClassesPath() == null) {
                     log.warn("No classes directory found for module '" + i.getName()

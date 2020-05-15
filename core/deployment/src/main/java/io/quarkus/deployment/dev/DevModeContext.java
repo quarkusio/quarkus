@@ -22,15 +22,13 @@ public class DevModeContext implements Serializable {
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
-    private final List<URL> classPath = new ArrayList<>();
-    private final List<ModuleInfo> modules = new ArrayList<>();
+    private ModuleInfo applicationRoot;
+    private final List<ModuleInfo> additionalModules = new ArrayList<>();
     private final Map<String, String> systemProperties = new HashMap<>();
     private final Map<String, String> buildSystemProperties = new HashMap<>();
     private String sourceEncoding;
 
-    private final List<File> classesRoots = new ArrayList<>();
     private final List<URL> additionalClassPathElements = new ArrayList<>();
-    private File frameworkClassesDir;
     private File cacheDir;
     private File projectDir;
     private boolean test;
@@ -57,12 +55,17 @@ public class DevModeContext implements Serializable {
         return this;
     }
 
-    public List<URL> getClassPath() {
-        return classPath;
+    public ModuleInfo getApplicationRoot() {
+        return applicationRoot;
     }
 
-    public List<ModuleInfo> getModules() {
-        return modules;
+    public DevModeContext setApplicationRoot(ModuleInfo applicationRoot) {
+        this.applicationRoot = applicationRoot;
+        return this;
+    }
+
+    public List<ModuleInfo> getAdditionalModules() {
+        return additionalModules;
     }
 
     public Map<String, String> getSystemProperties() {
@@ -81,20 +84,8 @@ public class DevModeContext implements Serializable {
         this.sourceEncoding = sourceEncoding;
     }
 
-    public List<File> getClassesRoots() {
-        return classesRoots;
-    }
-
     public List<URL> getAdditionalClassPathElements() {
         return additionalClassPathElements;
-    }
-
-    public File getFrameworkClassesDir() {
-        return frameworkClassesDir;
-    }
-
-    public void setFrameworkClassesDir(File frameworkClassesDir) {
-        this.frameworkClassesDir = frameworkClassesDir;
     }
 
     public File getCacheDir() {
@@ -184,6 +175,13 @@ public class DevModeContext implements Serializable {
 
     public void setArgs(String[] args) {
         this.args = args;
+    }
+
+    public List<ModuleInfo> getAllModules() {
+        List<ModuleInfo> ret = new ArrayList<>();
+        ret.add(applicationRoot);
+        ret.addAll(additionalModules);
+        return ret;
     }
 
     public static class ModuleInfo implements Serializable {

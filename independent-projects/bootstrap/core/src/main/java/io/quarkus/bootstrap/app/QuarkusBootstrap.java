@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -27,7 +29,7 @@ public class QuarkusBootstrap implements Serializable {
     /**
      * The root of the application, where the application classes live.
      */
-    private final Path applicationRoot;
+    private final PathsCollection applicationRoot;
 
     /**
      * The root of the project. This may be different to the application root for tests that
@@ -78,10 +80,6 @@ public class QuarkusBootstrap implements Serializable {
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
-        if (applicationRoot != null) {
-            // this path has to be added last to give a chance the test directories override the app properties, etc
-            additionalApplicationArchives.add(AdditionalDependency.test(applicationRoot));
-        }
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
         this.projectRoot = builder.projectRoot != null ? builder.projectRoot.normalize() : null;
         this.buildSystemProperties = builder.buildSystemProperties;
@@ -127,8 +125,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
                 .setForcedDependencies(forcedDependencies)
-                .setProjectRoot(getProjectRoot() != null ? getProjectRoot()
-                        : getApplicationRoot());
+                .setProjectRoot(getProjectRoot());
         if (mode == Mode.TEST || test) {
             appModelFactory.setTest(true);
             appModelFactory.setEnableClasspathCache(true);
@@ -144,7 +141,7 @@ public class QuarkusBootstrap implements Serializable {
         return appModelResolver;
     }
 
-    public Path getApplicationRoot() {
+    public PathsCollection getApplicationRoot() {
         return applicationRoot;
     }
 
@@ -178,7 +175,7 @@ public class QuarkusBootstrap implements Serializable {
 
     @Deprecated
     public static Builder builder(Path applicationRoot) {
-        return new Builder(applicationRoot);
+        return new Builder().setApplicationRoot(PathsCollection.of(applicationRoot));
     }
 
     public String getBaseName() {
@@ -198,7 +195,7 @@ public class QuarkusBootstrap implements Serializable {
     }
 
     public static class Builder {
-        Path applicationRoot;
+        PathsCollection applicationRoot;
         String baseName;
         Path projectRoot;
         ClassLoader baseClassLoader = ClassLoader.getSystemClassLoader();
@@ -224,12 +221,15 @@ public class QuarkusBootstrap implements Serializable {
         public Builder() {
         }
 
-        @Deprecated
-        public Builder(Path applicationRoot) {
-            setApplicationRoot(applicationRoot);
+        public Builder setApplicationRoot(Path applicationRoot) {
+            this.applicationRoot = PathsCollection.of(applicationRoot);
+            return this;
         }
 
-        public Builder setApplicationRoot(Path applicationRoot) {
+        public Builder setApplicationRoot(PathsCollection applicationRoot) {
+            if (appArtifact != null) {
+                throw new IllegalStateException("Cannot set both app artifact and application root");
+            }
             this.applicationRoot = applicationRoot;
             return this;
         }
@@ -249,6 +249,9 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        /**
+         * The project root, used only for project dependency discovery.
+         */
         public Builder setProjectRoot(Path projectRoot) {
             this.projectRoot = projectRoot;
             return this;
@@ -314,8 +317,19 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        /**
+         * The app artifact. Note that if you want to use this as the basis of the application
+         * you must also explicitly set the application root to this artifacts paths.
+         */
         public Builder setAppArtifact(AppArtifact appArtifact) {
+            if (applicationRoot != null) {
+                throw new IllegalStateException("Cannot set both application root and app artifact");
+            }
             this.appArtifact = appArtifact;
+            this.applicationRoot = appArtifact.getPaths();
+            if (appArtifact.getPaths().isSinglePath()) {
+                this.projectRoot = appArtifact.getPaths().getSinglePath();
+            }
             return this;
         }
 
@@ -355,6 +369,7 @@ public class QuarkusBootstrap implements Serializable {
         }
 
         public QuarkusBootstrap build() {
+            Objects.requireNonNull(applicationRoot, "Application root must not be null");
             return new QuarkusBootstrap(this);
         }
     }

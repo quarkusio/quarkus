@@ -85,6 +85,10 @@
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-runner</artifactId>
+        </dependency>
 
         <!--
           This is required to ensure that the extension processor is built.
@@ -112,6 +116,8 @@
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
                 <configuration>
                     <parentFirstArtifacts>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</parentFirstArtifact>
+                        <parentFirstArtifact>org.wildfly.common:wildfly-common</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>

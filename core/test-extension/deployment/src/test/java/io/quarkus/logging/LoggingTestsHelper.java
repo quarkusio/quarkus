@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 import org.jboss.logmanager.handlers.DelayedHandler;
 
-import io.quarkus.runtime.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 
 public class LoggingTestsHelper {
 

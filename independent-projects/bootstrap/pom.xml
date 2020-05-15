@@ -43,10 +43,13 @@
         <guava.version>27.0.1-jre</guava.version>
         <asm.version>7.3.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
+        <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
+        <graal-sdk.version>19.3.1</graal-sdk.version>
     </properties>
     <modules>
         <module>core</module>
         <module>maven-plugin</module>
+        <module>runner</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -279,6 +282,16 @@
                         <artifactId>plexus-classworlds</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager-embedded</artifactId>
+                <version>${jboss-logmanager-embedded.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>

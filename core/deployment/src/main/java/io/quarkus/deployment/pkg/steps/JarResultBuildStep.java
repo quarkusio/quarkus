@@ -48,6 +48,8 @@ import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.runner.QuarkusEntryPoint;
+import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -148,10 +150,16 @@ public class JarResultBuildStep {
             List<UberJarRequiredBuildItem> uberJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             MainClassBuildItem mainClassBuildItem) throws Exception {
-        if (!uberJarRequired.isEmpty() || packageConfig.uberJar) {
+        if (!uberJarRequired.isEmpty() || packageConfig.uberJar
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, closeablesBuildItem,
                     mainClassBuildItem);
+        } else if (packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.JAR)) {
+            return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+                    applicationArchivesBuildItem,
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
@@ -190,7 +198,7 @@ public class JarResultBuildStep {
             AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem,
+            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem.getClassName(),
                     applicationInfo);
 
             for (AppDependency appDep : appDeps) {
@@ -309,7 +317,7 @@ public class JarResultBuildStep {
                 });
     }
 
-    private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    private JarBuildItem buildLegacyThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -332,6 +340,148 @@ public class JarResultBuildStep {
 
             doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, applicationInfo,
                     packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem);
+        }
+        runnerJar.toFile().setReadable(true, false);
+
+        return new JarBuildItem(runnerJar, null, libDir);
+    }
+
+    private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
+
+        Path buildDir = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName());
+        IoUtils.recursiveDelete(buildDir);
+        Files.createDirectories(buildDir);
+
+        //unmodified 3rd party dependencies
+        Path libDir = buildDir.resolve("lib");
+        Files.createDirectories(libDir);
+        //parent first entries
+        Path baseLib = buildDir.resolve("boot-lib");
+        Files.createDirectories(baseLib);
+
+        Path appDir = buildDir.resolve("app");
+        Files.createDirectories(appDir);
+
+        Path quarkus = buildDir.resolve("quarkus");
+        Files.createDirectories(quarkus);
+
+        List<Path> jars = new ArrayList<>();
+        //we process in order of priority
+        //transformed classes first
+        if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
+            Path transformedZip = quarkus.resolve("transformed-bytecode.jar");
+            jars.add(transformedZip);
+            try (FileSystem out = ZipUtils.newZip(transformedZip)) {
+                for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
+                        .getTransformedClassesByJar().values()) {
+                    for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
+                        Path target = out.getPath(transformed.getFileName());
+                        Files.createDirectories(target.getParent());
+                        Files.write(target, transformed.getData());
+                    }
+                }
+            }
+        }
+        //now generated classes and resources
+        Path generatedZip = quarkus.resolve("generated-bytecode.jar");
+        jars.add(generatedZip);
+        try (FileSystem out = ZipUtils.newZip(generatedZip)) {
+            for (GeneratedClassBuildItem i : generatedClasses) {
+                String fileName = i.getName().replace(".", "/") + ".class";
+                Path target = out.getPath(fileName);
+                Files.createDirectories(target.getParent());
+                Files.write(target, i.getClassData());
+            }
+
+            for (GeneratedResourceBuildItem i : generatedResources) {
+                Path target = out.getPath(i.getName());
+                Files.createDirectories(target.getParent());
+                Files.write(target, i.getClassData());
+            }
+        }
+        //now the application classes
+        Path runnerJar = appDir
+                .resolve(outputTargetBuildItem.getBaseName() + ".jar");
+        jars.add(runnerJar);
+
+        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+            for (Path root : applicationArchivesBuildItem.getRootArchive().getRootDirs()) {
+                copyFiles(root, runnerZipFs, null);
+            }
+        }
+
+        StringBuilder classPath = new StringBuilder();
+        for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getUserDependencies()) {
+            final AppArtifact depArtifact = appDep.getArtifact();
+
+            // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
+            if (!isAppDepAJar(depArtifact)) {
+                continue;
+            }
+
+            for (Path resolvedDep : depArtifact.getPaths()) {
+                if (!Files.isDirectory(resolvedDep)) {
+                    if (curateOutcomeBuildItem.getEffectiveModel().getParentFirstArtifacts()
+                            .contains(depArtifact.getKey())) {
+                        final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
+                        final Path targetPath = baseLib.resolve(fileName);
+                        Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        classPath.append(" boot-lib/").append(fileName);
+                    } else {
+                        final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
+                        final Path targetPath = libDir.resolve(fileName);
+                        Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        jars.add(targetPath);
+                    }
+                } else {
+                    // This case can happen when we are building a jar from inside the Quarkus repository
+                    // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
+                    // the non-jar dependencies are the Quarkus dependencies picked up on the file system
+                    // these should never be parent first
+
+                    final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
+                    final Path targetPath = libDir.resolve(fileName);
+                    jars.add(targetPath);
+                    try (FileSystem runnerZipFs = ZipUtils.newZip(targetPath)) {
+                        Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                                new SimpleFileVisitor<Path>() {
+                                    @Override
+                                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                            throws IOException {
+                                        final Path relativePath = resolvedDep.relativize(file);
+                                        final Path targetPath = runnerZipFs.getPath(relativePath.toString());
+                                        Files.createDirectories(targetPath.getParent());
+                                        Files.copy(file, targetPath);
+                                        return FileVisitResult.CONTINUE;
+                                    }
+                                });
+                    }
+                }
+            }
+        }
+
+        Path initJar = buildDir.resolve("quarkus-run.jar");
+        try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
+            AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
+            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, QuarkusEntryPoint.class.getName(),
+                    applicationInfo);
+            Path appInfo = runnerZipFs.getPath(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
+            try (OutputStream out = wrapForJDK8232879(Files.newOutputStream(appInfo, DEFAULT_OPEN_OPTIONS))) {
+                ByteArrayOutputStream bs = new ByteArrayOutputStream();
+                SerializedApplication.write(bs, mainClassBuildItem.getClassName(), buildDir, jars);
+                out.write(bs.toByteArray());
+                out.flush();
+            }
+            runnerZipFs.close();
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -433,7 +583,8 @@ public class JarResultBuildStep {
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
         // see https://bugs.openjdk.java.net/browse/JDK-8031748
-        generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem, applicationInfo);
+        generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem.getClassName(),
+                applicationInfo);
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
                 generatedResources, seen);
     }
@@ -602,7 +753,7 @@ public class JarResultBuildStep {
      * Otherwise this manifest manipulation will be useless.
      */
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config, AppArtifact appArtifact,
-            MainClassBuildItem mainClassBuildItem,
+            String mainClassName,
             ApplicationInfoBuildItem applicationInfo)
             throws IOException {
         final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
@@ -625,11 +776,11 @@ public class JarResultBuildStep {
         attributes.put(Attributes.Name.CLASS_PATH, classPath);
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
-            if (!mainClassBuildItem.getClassName().equals(existingMainClass)) {
+            if (!mainClassName.equals(existingMainClass)) {
                 log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
             }
         }
-        attributes.put(Attributes.Name.MAIN_CLASS, mainClassBuildItem.getClassName());
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
         if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
             String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName()) ? appArtifact.getArtifactId()
                     : applicationInfo.getName();
@@ -682,7 +833,8 @@ public class JarResultBuildStep {
                         if (Files.isDirectory(path)) {
                             addDir(fs, relativePath);
                         } else {
-                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18
+                                    && services != null) {
                                 final byte[] content;
                                 try {
                                     content = Files.readAllBytes(path);
@@ -690,7 +842,10 @@ public class JarResultBuildStep {
                                     throw new RuntimeException(e);
                                 }
                                 services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
-                            } else {
+                            } else if (!relativePath.equals("META-INF/INDEX.LIST")) {
+                                //TODO: auto generate INDEX.LIST
+                                //this may have implications for Camel though, as they change the layout
+                                //also this is only really relevant for the thin jar layout
                                 Path target = fs.getPath(relativePath);
                                 if (!Files.exists(target)) {
                                     Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
@@ -764,7 +919,10 @@ public class JarResultBuildStep {
 
         @Override
         public boolean getAsBoolean() {
-            return packageConfig.type.equalsIgnoreCase(PackageConfig.JAR);
+            return packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY) ||
+                    packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
+                    packageConfig.type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+                    packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR);
         }
     }
 

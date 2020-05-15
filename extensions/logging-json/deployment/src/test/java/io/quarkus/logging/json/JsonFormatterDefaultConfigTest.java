@@ -18,7 +18,7 @@ import org.jboss.logmanager.handlers.DelayedHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.runtime.logging.InitialConfigurator;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class JsonFormatterDefaultConfigTest {

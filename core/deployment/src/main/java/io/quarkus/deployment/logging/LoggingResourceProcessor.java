@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -23,7 +24,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.runtime.logging.LogConfig;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 

@@ -201,7 +201,7 @@ public class ZipUtils {
         return new OutputStream() {
             @Override
             public void write(final byte[] b) throws IOException {
-                original.write(b);
+                original.write(b, 0, b.length);
             }
 
             @Override

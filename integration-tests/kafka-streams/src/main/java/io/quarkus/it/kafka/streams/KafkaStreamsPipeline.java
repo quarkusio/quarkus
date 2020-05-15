@@ -2,8 +2,11 @@ package io.quarkus.it.kafka.streams;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KafkaStreams.State;
+import org.apache.kafka.streams.KafkaStreams.StateListener;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -50,5 +53,20 @@ public class KafkaStreamsPipeline {
                 .to("streams-test-customers-processed", Produced.with(Serdes.Integer(), enrichedCustomerSerde));
 
         return builder.build();
+    }
+
+    @Produces
+    @Singleton
+    CurrentStateListener stateListener() {
+        return new CurrentStateListener();
+    }
+
+    class CurrentStateListener implements StateListener {
+        State currentState;
+
+        @Override
+        public void onChange(State newState, State oldState) {
+            this.currentState = newState;
+        }
     }
 }

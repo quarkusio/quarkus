@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import javax.inject.Inject;
+
 import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -18,10 +20,12 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
+import org.apache.kafka.streams.KafkaStreams.State;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.kafka.streams.KafkaStreamsPipeline.CurrentStateListener;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -31,6 +35,9 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaStreamsTest {
+
+    @Inject
+    CurrentStateListener stateListener;
 
     private static Producer<Integer, Customer> createCustomerProducer() {
         Properties props = new Properties();
@@ -112,6 +119,7 @@ public class KafkaStreamsTest {
         assertCategoryCount(2, 1);
 
         testKafkaStreamsAliveAndReady();
+        Assertions.assertEquals(State.RUNNING, stateListener.currentState);
 
         // explicitly stopping the pipeline *before* the broker is shut down, as it
         // otherwise will time out

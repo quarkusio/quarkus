@@ -15,12 +15,17 @@ import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 
+import io.quarkus.it.kafka.streams.KafkaStreamsPipeline.CurrentStateListener;
+
 @ApplicationScoped
 @Path("/kafkastreams")
 public class KafkaStreamsEndpoint {
 
     @Inject
     KafkaStreams streams;
+
+    @Inject
+    CurrentStateListener stateListener;
 
     private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
         while (true) {
@@ -44,5 +49,11 @@ public class KafkaStreamsEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Long getCategory(@PathParam("id") int id) {
         return getCountstore().get(id);
+    }
+
+    @GET
+    @Path("/state")
+    public String state() {
+        return stateListener.currentState.name();
     }
 }

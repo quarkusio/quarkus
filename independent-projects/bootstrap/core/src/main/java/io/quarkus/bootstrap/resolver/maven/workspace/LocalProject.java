@@ -301,7 +301,7 @@ public class LocalProject {
 
     private AppArtifactKey getKey(Dependency dep) {
         return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(),
-                dep.getArtifactId());
+                dep.getArtifactId(), dep.getClassifier());
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {

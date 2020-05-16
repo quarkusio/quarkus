@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class SmallryeJwtDisabledTest {
+public class SmallRyeJwtDisabledTest {
     private static Class<?>[] testClasses = {
             DefaultGroupsEndpoint.class
     };

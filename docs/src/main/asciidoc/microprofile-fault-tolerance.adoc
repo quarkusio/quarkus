@@ -56,7 +56,7 @@ cd microprofile-fault-tolerance-quickstart
 ----
 
 This command generates a Maven structure, importing the extensions for RESTEasy/JAX-RS
-and Smallrye Fault Tolerance, which is an implementation of the MicroProfile Fault Tolerance spec that Quarkus uses.
+and SmallRye Fault Tolerance, which is an implementation of the MicroProfile Fault Tolerance spec that Quarkus uses.
 
 == Preparing an Application: REST Endpoint and CDI Bean
 

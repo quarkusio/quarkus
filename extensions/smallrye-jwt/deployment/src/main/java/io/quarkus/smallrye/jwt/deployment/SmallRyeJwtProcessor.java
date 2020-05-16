@@ -53,7 +53,7 @@ class SmallRyeJwtProcessor {
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
     private static final DotName CLAIMS_NAME = DotName.createSimple(Claims.class.getName());
 
-    SmallryeJWTConfig config;
+    SmallRyeJWTConfig config;
 
     @BuildStep
     CapabilityBuildItem capability() {

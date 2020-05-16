@@ -139,7 +139,7 @@ final class ConfigPropertiesUtil {
                 throw new IllegalStateException("Result type " + resultTypeDotName + " is not handled");
             }
         } else if (!resultTypeDotName.equals(typeUsedToLoadValue) && DotNames.STRING.equals(typeUsedToLoadValue)) {
-            // in this case we just need to delegate to SmallryeConfig to convert the value for us
+            // in this case we just need to delegate to SmallRyeConfig to convert the value for us
             ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
 
             return bytecodeCreator.invokeVirtualMethod(

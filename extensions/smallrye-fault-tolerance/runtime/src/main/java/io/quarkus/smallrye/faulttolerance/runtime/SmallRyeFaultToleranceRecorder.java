@@ -17,7 +17,7 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 
 @Recorder
-public class SmallryeFaultToleranceRecorder {
+public class SmallRyeFaultToleranceRecorder {
 
     public void createFaultToleranceOperation(Set<String> beanNames) {
         List<Throwable> allExceptions = new ArrayList<>();
@@ -27,7 +27,7 @@ public class SmallryeFaultToleranceRecorder {
             try {
                 ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
                 if (classLoader == null) {
-                    classLoader = SmallryeFaultToleranceRecorder.class.getClassLoader();
+                    classLoader = SmallRyeFaultToleranceRecorder.class.getClassLoader();
                 }
                 Class<?> beanClass = Class.forName(beanName, true, classLoader);
 

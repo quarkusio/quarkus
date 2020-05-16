@@ -50,7 +50,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.NoopMetricRegistry;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
-import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
+import io.quarkus.smallrye.faulttolerance.runtime.SmallRyeFaultToleranceRecorder;
 import io.smallrye.faulttolerance.ExecutorFactory;
 import io.smallrye.faulttolerance.ExecutorProvider;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
@@ -188,7 +188,7 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
-    void validateFaultToleranceAnnotations(SmallryeFaultToleranceRecorder recorder,
+    void validateFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);

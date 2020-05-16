@@ -17,7 +17,7 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 
 ARG JAVA_PACKAGE=java-1.8.0-openjdk-headless
-ARG RUN_JAVA_VERSION=1.3.5
+ARG RUN_JAVA_VERSION=1.3.7
 
 # Install java and the run-java script
 # Also set up permissions for user `1001`

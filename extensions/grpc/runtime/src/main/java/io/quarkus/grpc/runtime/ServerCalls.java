@@ -147,7 +147,16 @@ public class ServerCalls {
         if (throwable instanceof StatusException || throwable instanceof StatusRuntimeException) {
             return throwable;
         } else {
-            return Status.fromThrowable(throwable).asException();
+            String desc = throwable.getClass().getName();
+            if (throwable.getMessage() != null) {
+                desc += " - " + throwable.getMessage();
+            }
+            if (throwable instanceof IllegalArgumentException) {
+                return Status.INVALID_ARGUMENT.withDescription(desc).asException();
+            }
+            return Status.fromThrowable(throwable)
+                    .withDescription(desc)
+                    .asException();
         }
     }
 }

@@ -297,7 +297,7 @@ public final class HibernateOrmProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
-        final boolean enableRX = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_RX);
+        final boolean enableRX = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
         if (!enableRX) {
             recorder.callHibernateFeatureInit(enableORM);
         }

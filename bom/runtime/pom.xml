@@ -469,12 +469,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-rest-common</artifactId>
+                <artifactId>quarkus-rest-data-panache</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-rest-hibernate-orm</artifactId>
+                <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

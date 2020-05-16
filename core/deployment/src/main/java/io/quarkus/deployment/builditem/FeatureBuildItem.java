@@ -28,6 +28,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
     public static final String HIBERNATE_ORM_PANACHE_KOTLIN = "hibernate-orm-panache-kotlin";
+    public static final String HIBERNATE_ORM_REST_DATA_PANACHE = "hibernate-orm-rest-data-panache";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
@@ -61,7 +62,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String OPTAPLANNER = "optaplanner";
     public static final String OPTAPLANNER_JACKSON = "optaplanner-jackson";
     public static final String OPTAPLANNER_JSONB = "optaplanner-jsonb";
-    public static final String PANACHE_REST_HIBERNATE_ORM = "panache-rest-hibernate-orm";
     public static final String PICOCLI = "picocli";
     public static final String QUTE = "qute";
     public static final String RESTEASY = "resteasy";

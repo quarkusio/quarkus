@@ -344,7 +344,7 @@ jobs:
               mongodb-client
               mongodb-panache
               neo4j
-              panache-rest-hibernate-orm
+              hibernate-orm-rest-data-panache
           - category: Data5
             timeout: 40
             test-modules: >

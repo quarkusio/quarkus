@@ -30,7 +30,7 @@ If you are creating a new project, set the `extensions` parameter are follows:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx"
+    -Dextensions="vertx,resteasy-mutiny"
 cd vertx-quickstart
 ----
 
@@ -39,7 +39,7 @@ the `add-extension` command:
 
 [source]
 ----
-./mvnw quarkus:add-extension -Dextensions="vertx"
+./mvnw quarkus:add-extension -Dextensions="vertx,resteasy-mutiny"
 ----
 
 Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:

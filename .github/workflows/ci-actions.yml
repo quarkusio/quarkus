@@ -262,40 +262,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
-    services:
-      postgres:
-        image: postgres:10.5
-        env:
-          POSTGRES_USER: hibernate_orm_test
-          POSTGRES_PASSWORD: hibernate_orm_test
-          POSTGRES_DB: hibernate_orm_test
-        ports:
-          - 5432:5432
-      neo4j:
-        image: neo4j/neo4j-experimental:4.0.0-rc01
-        env:
-          NEO4J_AUTH: neo4j/secret
-          NEO4J_dbms_memory_pagecache_size: 10M 
-          NEO4J_dbms_memory_heap_initial__size: 10M
-        ports:
-          - 7687:7687
-      amazonServices:
-        image: localstack/localstack:0.11.1
-        env:
-          SERVICES: s3,dynamodb,sns,sqs
-          START_WEB: 0
-        ports:
-          - 127.0.0.1:8000:4569
-          - 127.0.0.1:8008:4572
-          - 127.0.0.1:8009:4575
-          - 127.0.0.1:8010:4576
-
     steps:
-      - name: Start mysql
-        shell: bash
-        run: |
-          sudo service mysql stop || true
-          docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - uses: actions/checkout@v2
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh

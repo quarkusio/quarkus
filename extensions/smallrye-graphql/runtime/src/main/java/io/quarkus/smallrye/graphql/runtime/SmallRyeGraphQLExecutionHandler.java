@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.runtime;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import javax.json.Json;
@@ -75,7 +76,7 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
             List<String> queries = ctx.queryParam(QUERY);
             if (queries != null && !queries.isEmpty()) {
                 String graphqlGetRequest = queries.get(0);
-                String getResponse = doRequest(graphqlGetRequest.getBytes());
+                String getResponse = doRequest(graphqlGetRequest.getBytes(StandardCharsets.UTF_8));
                 response.setStatusCode(200)
                         .setStatusMessage(OK)
                         .end(Buffer.buffer(getResponse));

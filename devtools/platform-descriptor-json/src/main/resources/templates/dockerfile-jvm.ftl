@@ -24,7 +24,7 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 
 ARG JAVA_PACKAGE=java-11-openjdk-headless
-ARG RUN_JAVA_VERSION=1.3.5
+ARG RUN_JAVA_VERSION=1.3.7
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 

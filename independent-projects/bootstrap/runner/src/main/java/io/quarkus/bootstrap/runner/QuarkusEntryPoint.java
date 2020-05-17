@@ -1,8 +1,8 @@
 package io.quarkus.bootstrap.runner;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URLDecoder;
-import java.nio.file.Paths;
 
 public class QuarkusEntryPoint {
 
@@ -13,7 +13,7 @@ public class QuarkusEntryPoint {
         try (InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(QUARKUS_APPLICATION_DAT)) {
             String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
             String decodedPath = URLDecoder.decode(path, "UTF-8");
-            SerializedApplication app = SerializedApplication.read(in, Paths.get(decodedPath).getParent().getParent());
+            SerializedApplication app = SerializedApplication.read(in, new File(decodedPath).toPath().getParent().getParent());
             Thread.currentThread().setContextClassLoader(app.getRunnerClassLoader());
             Class<?> mainClass = app.getRunnerClassLoader().loadClass(app.getMainClass());
             mainClass.getMethod("main", String[].class).invoke(null, (Object) args);

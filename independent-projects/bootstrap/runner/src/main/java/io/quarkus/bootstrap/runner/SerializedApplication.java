@@ -52,7 +52,7 @@ public class SerializedApplication {
             data.writeUTF(mainClass);
             data.writeInt(classPath.size());
             for (Path jar : classPath) {
-                String relativePath = relativize(applicationRoot, jar);
+                String relativePath = relativize(applicationRoot, jar).replace("\\", "/");
                 data.writeUTF(relativePath);
                 writeJar(data, jar);
             }

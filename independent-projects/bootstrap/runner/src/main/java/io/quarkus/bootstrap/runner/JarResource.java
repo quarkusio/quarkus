@@ -72,7 +72,11 @@ public class JarResource implements ClassLoadingResource {
     public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
         URL url = null;
         try {
-            URI uri = new URI("jar:file", null, jarPath.toAbsolutePath().toString() + "!/", null);
+            String path = jarPath.toAbsolutePath().toString();
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+            URI uri = new URI("jar:file", null, path + "!/", null);
             url = uri.toURL();
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);

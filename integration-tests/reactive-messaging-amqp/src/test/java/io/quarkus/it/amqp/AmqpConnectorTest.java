@@ -5,6 +5,8 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.List;
 
+import org.awaitility.core.ConditionTimeoutException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -20,10 +22,28 @@ public class AmqpConnectorTest {
 
     protected static final TypeRef<List<Person>> TYPE_REF = new TypeRef<List<Person>>() {
     };
+    protected static final int RETRY_ATTEMPTS = 10;
 
     @Test
     public void test() {
-        await().until(() -> get("/amqp/people").as(TYPE_REF).size() >= 6);
+        for (int i = 0; i < RETRY_ATTEMPTS; i++) {
+            try {
+                await()
+                        .until(() -> get("/amqp/people").as(TYPE_REF).size() >= 6);
+                return;
+            } catch (ConditionTimeoutException e) {
+                // Sometimes the AMQP broker is just in a broken state, in this case, restart it.
+                restartBroker();
+            } catch (Exception e) {
+                Assertions.fail(e);
+                return;
+            }
+        }
+        Assertions.fail("Unable to run the AMQP test successfully, despite " + RETRY_ATTEMPTS + " restarts of the broker");
+    }
+
+    private void restartBroker() {
+        AmqpBroker.restartBroker();
     }
 
 }

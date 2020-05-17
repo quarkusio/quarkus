@@ -423,14 +423,17 @@ public class BootstrapMavenContext {
         }
         final Artifact projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
                 ModelUtils.getVersion(model));
+        final List<RemoteRepository> rawRepos;
         try {
-            return getRepositorySystem().readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
-                    .setArtifact(projectArtifact)
-                    .setRepositories(repos))
+            rawRepos = getRepositorySystem()
+                    .readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
+                            .setArtifact(projectArtifact)
+                            .setRepositories(repos))
                     .getRepositories();
         } catch (ArtifactDescriptorException e) {
             throw new AppModelResolverException("Failed to read artifact descriptor for " + projectArtifact, e);
         }
+        return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
     }
 
     public List<org.apache.maven.model.Profile> getActiveSettingsProfiles()

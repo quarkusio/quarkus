@@ -1,15 +1,11 @@
 package io.quarkus.kafka.streams.runtime.health;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
@@ -24,31 +20,16 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
-    @ConfigProperty(name = "quarkus.kafka-streams.topics")
-    public List<String> topics;
-
-    //    @ConfigProperty(name = "quarkus.kafka-streams.bootstrap-servers")
-    //    public List<String> bootstrapServers;
-
     @Inject
     private KafkaStreamsTopologyManager manager;
-
-    //    private String commaSeparatedBootstrapServersConfig;
-    private List<String> trimmedTopics;
-
-    @PostConstruct
-    public void init() {
-        //        commaSeparatedBootstrapServersConfig = String.join(",", bootstrapServers);
-        trimmedTopics = topics.stream().map(String::trim).collect(Collectors.toList());
-    }
 
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
 
         try {
-            Set<String> missingTopics = manager.getMissingTopics(trimmedTopics);
-            List<String> availableTopics = new ArrayList<>(trimmedTopics);
+            Set<String> missingTopics = manager.getMissingTopics();
+            Collection<String> availableTopics = manager.getTopicsToCheck();
             availableTopics.removeAll(missingTopics);
 
             if (!availableTopics.isEmpty()) {

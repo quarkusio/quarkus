@@ -124,7 +124,8 @@ public class KafkaStreamsTest {
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("DOWN"))
-                .body("checks[0].data.missing_topics", CoreMatchers.is("streams-test-customers,streams-test-categories"));
+                .body("checks[0].data.missing_topics",
+                        CoreMatchers.is("streams-test-customers,streams-test-categories,streams-test-customers-processed"));
 
         RestAssured.when().get("/health/live").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
@@ -141,7 +142,8 @@ public class KafkaStreamsTest {
                 .statusCode(HttpStatus.SC_OK)
                 .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
                 .body("checks[0].status", CoreMatchers.is("UP"))
-                .body("checks[0].data.available_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
+                .body("checks[0].data.available_topics",
+                        CoreMatchers.is("streams-test-customers,streams-test-categories,streams-test-customers-processed"));
 
         RestAssured.when().get("/health/live").then()
                 .statusCode(HttpStatus.SC_OK)

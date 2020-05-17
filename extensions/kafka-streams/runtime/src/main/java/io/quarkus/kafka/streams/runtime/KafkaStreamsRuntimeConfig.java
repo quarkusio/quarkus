@@ -1,6 +1,7 @@
 package io.quarkus.kafka.streams.runtime;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,8 +35,9 @@ public class KafkaStreamsRuntimeConfig {
      * A comma-separated list of topic names.
      * The pipeline will only be started once all these topics are present in the Kafka cluster.
      */
-    @ConfigItem
-    public List<String> topics;
+    @ConfigItem(defaultValueDocumentation = "All topics statically declared in the Topology, i.e. ignoring any topic " +
+            "resolved dynamically via source topicPattern or sink topicNameExtractor, or any internal topic")
+    public Optional<List<String>> topics;
 
     @Override
     public String toString() {
@@ -44,6 +46,6 @@ public class KafkaStreamsRuntimeConfig {
     }
 
     public List<String> getTrimmedTopics() {
-        return topics.stream().map(String::trim).collect(Collectors.toList());
+        return topics.orElse(Collections.emptyList()).stream().map(String::trim).collect(Collectors.toList());
     }
 }

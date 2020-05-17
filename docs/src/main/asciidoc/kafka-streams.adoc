@@ -423,7 +423,6 @@ Create the file `aggregator/src/main/resources/application.properties` with the 
 quarkus.kafka-streams.bootstrap-servers=localhost:9092
 quarkus.kafka-streams.application-id=temperature-aggregator
 quarkus.kafka-streams.application-server=${hostname}:8080
-quarkus.kafka-streams.topics=weather-stations,temperature-values
 
 # pass-through options
 kafka-streams.cache.max.bytes.buffering=10240
@@ -436,8 +435,6 @@ kafka-streams.metrics.recording.level=DEBUG
 The options with the `quarkus.kafka-streams` prefix can be changed dynamically at application startup,
 e.g. via environment variables or system properties.
 `bootstrap-servers`, `application-id` and `application-server` are mapped to the Kafka Streams properties `bootstrap.servers`, `application.id` and `application.server`, respectively.
-`topics` is specific to Quarkus: the application will wait for all the given topics to exist before launching the Kafka Streams engine.
-This is to done to gracefully await the creation of topics that don't yet exist at application startup time.
 
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
 Changing their values requires a rebuild of the application.
@@ -1115,7 +1112,8 @@ Now start Docker Compose as described above
 
 If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka-streams` will automatically add:
 
-* a readiness health check to validate that all topics declared in the `quarkus.kafka-streams.topics` property are created,
+* a readiness health check to validate that all topics statically declared in the Topology are created.
+This list of topics can be overridden via the `quarkus.kafka-streams.topics` property.
 * a liveness health check based on the Kafka Streams state.
 
 So when you access the `/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
@@ -1153,7 +1151,7 @@ content-length: 454
 <1> Liveness health check. Also available at `/health/live` endpoint.
 <2> Readiness health check. Also available at `/health/ready` endpoint.
 
-So as you can see, the status is `DOWN` as soon as one of the `quarkus.kafka-streams.topics` is missing or the Kafka Streams `state` is not `RUNNING`.
+So as you can see, the status is `DOWN` as soon as one of the topics is missing or the Kafka Streams `state` is not `RUNNING`.
 
 If no topics are available, the `available_topics` key will not be present in the `data` field of the `Kafka Streams topics health check`.
 As well as if no topics are missing, the `missing_topics` key will not be present in the `data` field of the `Kafka Streams topics health check`.

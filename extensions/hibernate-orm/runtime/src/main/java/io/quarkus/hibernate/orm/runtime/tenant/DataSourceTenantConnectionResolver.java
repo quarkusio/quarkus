@@ -89,8 +89,6 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
 
     private static class TenantConnectionProvider extends QuarkusConnectionProvider {
 
-        private static final long serialVersionUID = 1L;
-
         private final String tenantId;
 
         public TenantConnectionProvider(String tenantId, AgroalDataSource dataSource) {

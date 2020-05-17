@@ -16,7 +16,7 @@ import io.quarkus.arc.InstanceHandle;
  * @author Michael Schnell
  *
  */
-public class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider {
+public final class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantConnectionProvider {
 
     private static final Logger LOG = Logger.getLogger(HibernateMultiTenantConnectionProvider.class);
 
@@ -33,12 +33,14 @@ public class HibernateMultiTenantConnectionProvider extends AbstractMultiTenantC
     }
 
     @Override
-    protected ConnectionProvider selectConnectionProvider(String tenantIdentifier) {
+    protected ConnectionProvider selectConnectionProvider(final String tenantIdentifier) {
         LOG.debugv("selectConnectionProvider({0})", tenantIdentifier);
 
         ConnectionProvider provider = providerMap.get(tenantIdentifier);
         if (provider == null) {
-            return providerMap.computeIfAbsent(tenantIdentifier, tid -> resolveConnectionProvider(tid));
+            final ConnectionProvider connectionProvider = resolveConnectionProvider(tenantIdentifier);
+            providerMap.put(tenantIdentifier, connectionProvider);
+            return connectionProvider;
         }
         return provider;
 

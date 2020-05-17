@@ -144,7 +144,7 @@ jobs:
           MYSQL_USER: hibernate_orm_test
           MYSQL_PASSWORD: hibernate_orm_test
           MYSQL_DATABASE: hibernate_orm_test
-          MYSQL_RANDOM_ROOT_PASSWORD: true
+          MYSQL_ROOT_PASSWORD: secret
         ports:
           - 127.0.0.1:3308:3306
       mssql:
@@ -320,6 +320,7 @@ jobs:
               jpa-mssql
               jpa-derby
               jpa-without-entity
+              hibernate-tenancy
           - category: Data2
             mysql: "true"
             postgres: "true"
@@ -476,7 +477,7 @@ jobs:
       - name: Maria DB Service
         run: |
           docker run --rm --publish 3308:3306 --name build-mariadb \
-            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
+            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_ROOT_PASSWORD=secret \
             -d mariadb:10.4
         if: matrix.mariadb
       - name: MS-SQL Service

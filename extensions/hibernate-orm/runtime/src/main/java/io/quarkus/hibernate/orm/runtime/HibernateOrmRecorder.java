@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
@@ -40,11 +41,25 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
-    public BeanContainerListener initializeJpa(boolean jtaEnabled) {
+    /**
+     * Initializes the JPA configuration to be used at runtime.
+     * 
+     * @param jtaEnabled Should JTA be enabled?
+     * @param strategy Multitenancy strategy to use.
+     * @param multiTenancySchemaDataSource Data source to use in case of {@link MultiTenancyStrategy#SCHEMA} approach or
+     *        {@link null} in case the default data source.
+     * 
+     * @return
+     */
+    public BeanContainerListener initializeJpa(boolean jtaEnabled, MultiTenancyStrategy strategy,
+            String multiTenancySchemaDataSource) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                beanContainer.instance(JPAConfig.class).setJtaEnabled(jtaEnabled);
+                JPAConfig instance = beanContainer.instance(JPAConfig.class);
+                instance.setJtaEnabled(jtaEnabled);
+                instance.setMultiTenancyStrategy(strategy);
+                instance.setMultiTenancySchemaDataSource(multiTenancySchemaDataSource);
             }
         };
     }
@@ -70,12 +85,12 @@ public class HibernateOrmRecorder {
     public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             Collection<Class<? extends ServiceContributor>> additionalServiceContributors,
-            PreGeneratedProxies proxyDefinitions) {
+            PreGeneratedProxies proxyDefinitions, MultiTenancyStrategy strategy) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
                 PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
-                        additionalServiceContributors, proxyDefinitions);
+                        additionalServiceContributors, proxyDefinitions, strategy);
             }
         };
     }

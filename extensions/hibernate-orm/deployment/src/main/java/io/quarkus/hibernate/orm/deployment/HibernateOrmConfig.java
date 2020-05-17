@@ -102,6 +102,24 @@ public class HibernateOrmConfig {
     Optional<String> implicitNamingStrategy;
 
     /**
+     * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM JavaDoc].
+     * The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> multitenant;
+
+    /**
+     * Defines the name of the data source to use in case of SCHEMA approach. The default data source will be used if not set.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> multitenantSchemaDatasource;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -169,6 +187,8 @@ public class HibernateOrmConfig {
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
+                multitenant.isPresent() ||
+                multitenantSchemaDatasource.isPresent() ||
                 !cache.isEmpty();
     }
 

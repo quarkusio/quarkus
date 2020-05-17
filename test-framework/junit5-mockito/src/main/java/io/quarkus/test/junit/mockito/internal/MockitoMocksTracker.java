@@ -16,8 +16,7 @@ final class MockitoMocksTracker {
     }
 
     static void track(Object testInstance, Object mock, Object beanInstance) {
-        TEST_TO_USED_MOCKS.computeIfAbsent(testInstance, (k) -> new HashSet<>());
-        TEST_TO_USED_MOCKS.get(testInstance).add(new Mocked(mock, beanInstance));
+        TEST_TO_USED_MOCKS.computeIfAbsent(testInstance, k -> new HashSet<>()).add(new Mocked(mock, beanInstance));
     }
 
     static Set<Mocked> getMocks(Object testInstance) {

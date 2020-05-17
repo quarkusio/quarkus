@@ -507,7 +507,7 @@ public class QuarkusTestExtension
             for (Object arg : originalArguments) {
                 if (arg != null && arg.getClass().isEnum()) {
                     argumentsFromTccl.add(Enum.valueOf((Class<Enum>) Class.forName(arg.getClass().getName(), false,
-                            Thread.currentThread().getContextClassLoader()), arg.toString()));
+                            Thread.currentThread().getContextClassLoader()), ((Enum)arg).name()));
                 } else {
                     // we can't do anything but hope for the best...
                     argumentsFromTccl.add(arg);

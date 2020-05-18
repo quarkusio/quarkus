@@ -1,5 +1,7 @@
 package io.quarkus.it.amqp;
 
+import static org.awaitility.Awaitility.await;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -13,9 +15,11 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class AmqpBroker implements QuarkusTestResourceLifecycleManager {
 
-    private EmbeddedActiveMQ server;
+    static EmbeddedActiveMQ server;
+    static AmqpBroker instance;
 
     public Map<String, String> start() {
+        instance = this;
         try {
             server = new EmbeddedActiveMQ();
             server.setSecurityManager(new ActiveMQSecurityManager() {
@@ -34,6 +38,10 @@ public class AmqpBroker implements QuarkusTestResourceLifecycleManager {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        await().until(() -> server.getActiveMQServer() != null
+                && server.getActiveMQServer().isActive()
+                && server.getActiveMQServer().getConnectorsService().isStarted());
         return Collections.emptyMap();
     }
 
@@ -42,9 +50,17 @@ public class AmqpBroker implements QuarkusTestResourceLifecycleManager {
             if (server != null) {
                 server.stop();
             }
+            instance = null;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void restartBroker() {
+        if (instance != null) {
+            instance.stop();
+        }
+        new AmqpBroker().start();
     }
 
 }

@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.dekorate.Session;
+import io.dekorate.SessionReader;
 import io.dekorate.SessionWriter;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -74,6 +75,7 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
+import io.dekorate.processor.SimpleFileReader;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
@@ -248,11 +250,16 @@ class KubernetesProcessor {
 
         final Map<String, String> generatedResourcesMap;
         // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
         Project project = createProject(applicationInfo, artifactPath);
+        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
+        final SessionReader sessionReader = new SimpleFileReader(
+                project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
+                        .getEntriesSortedByPriority().stream()
+                        .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName).collect(Collectors.toSet()));
         sessionWriter.setProject(project);
         final Session session = Session.getSession(new io.dekorate.logger.NoopLogger());
         session.setWriter(sessionWriter);
+        session.setReader(sessionReader);
 
         session.feed(Maps.fromProperties(config));
 
@@ -348,7 +355,7 @@ class KubernetesProcessor {
 
     /**
      * Apply changes to the target resource group
-     * 
+     *
      * @param session The session to apply the changes
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
@@ -498,8 +505,15 @@ class KubernetesProcessor {
         configMap.put(KNATIVE, knativeConfig);
 
         //Replicas
-        session.resources().decorate(new KubernetesApplyReplicasDecorator(kubernetesName, kubernetesConfig.getReplicas()));
-        session.resources().decorate(new OpenshiftApplyReplicasDecorator(openshiftConfig.getReplicas()));
+        if (kubernetesConfig.getReplicas() != 1) {
+            session.resources().decorate(new io.dekorate.kubernetes.decorator.ApplyReplicasDecorator(kubernetesName,
+                    kubernetesConfig.getReplicas()));
+        }
+        if (openshiftConfig.getReplicas() != 1) {
+            session.resources()
+                    .decorate(new io.dekorate.openshift.decorator.ApplyReplicasDecorator(openshiftName,
+                            openshiftConfig.getReplicas()));
+        }
 
         kubernetesAnnotations.forEach(a -> {
             session.resources().decorate(a.getTarget(), new AddAnnotationDecorator(new Annotation(a.getKey(), a.getValue())));

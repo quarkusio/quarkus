@@ -245,6 +245,18 @@ public class PersonResourceTest {
     }
 
     @Test
+    void testFindByAddressStreetNumber() {
+        when().get("/person/addressStreetNumber/whatever").then()
+                .statusCode(200)
+                .body("size()", is(0));
+
+        when().get("/person/addressStreetNumber/10000").then()
+                .statusCode(200)
+                .body("size()", is(2))
+                .body(containsString("Bob"), containsString("DeMar"));
+    }
+
+    @Test
     void testNewPerson() {
         Person person = when().get("/person/new/user").then()
                 .statusCode(200)

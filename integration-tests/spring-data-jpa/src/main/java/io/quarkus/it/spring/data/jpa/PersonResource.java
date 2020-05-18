@@ -215,6 +215,13 @@ public class PersonResource {
         return personRepository.findByAddressId(id);
     }
 
+    @GET
+    @Path("/addressStreetNumber/{streetNumber}")
+    @Produces("application/json")
+    public List<Person> findByAddressStreetNumber(@PathParam("streetNumber") String streetNumber) {
+        return personRepository.findByAddressStreetNumber(streetNumber);
+    }
+
     private Date changeNow(LocalDate now, BiFunction<LocalDate, Long, LocalDate> function, long diff) {
         return Date.from(function.apply(now, diff).atStartOfDay()
                 .atZone(ZoneId.systemDefault())

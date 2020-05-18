@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
+import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalConnectionPoolConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -160,6 +161,11 @@ public class DataSources {
                 new JdbcDriverLiteral(resolvedDbKind));
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
+
+        // Set pool-less mode
+        if (!dataSourceJdbcRuntimeConfig.poolingEnabled) {
+            dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
+        }
 
         AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration

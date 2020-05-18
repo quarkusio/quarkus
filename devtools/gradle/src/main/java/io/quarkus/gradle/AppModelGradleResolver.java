@@ -139,13 +139,18 @@ public class AppModelGradleResolver implements AppModelResolver {
         Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
 
-        final String classpathConfigName = launchMode == LaunchMode.NORMAL ? JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME
-                : launchMode == LaunchMode.TEST ? JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME
-                        : JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME;
+        final String classpathConfigName = launchMode == LaunchMode.TEST ? JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME
+                : JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME;
 
         collectDependencies(project.getConfigurations().getByName(classpathConfigName),
                 appBuilder, directExtensionDeps, userDeps,
                 versionMap, userModules);
+
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            collectDependencies(project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+                    appBuilder, directExtensionDeps, userDeps,
+                    versionMap, userModules);
+        }
 
         final List<AppDependency> deploymentDeps = new ArrayList<>();
         final List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);

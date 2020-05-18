@@ -219,14 +219,19 @@ public class S2iProcessor {
         LOG.info("Performing s2i binary build with native image on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
 
-        GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
+        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                 .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
+                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                .findFirst();
 
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), nativeImage.getPath());
+        if (!openshiftYml.isPresent()) {
+            LOG.warn(
+                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+            return;
+        }
+
+        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
-        ;
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,

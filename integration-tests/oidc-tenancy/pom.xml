@@ -77,7 +77,6 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -120,7 +119,6 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -162,7 +160,6 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <id>native-image</id>

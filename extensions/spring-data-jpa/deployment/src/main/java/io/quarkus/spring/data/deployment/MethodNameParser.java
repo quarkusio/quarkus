@@ -228,7 +228,8 @@ public class MethodNameParser {
                     throw new IllegalStateException(
                             "Entity class " + fieldInfo.type().name() + " was not part of the Quarkus index");
                 }
-                FieldInfo associatedEntityClassField = associatedEntityClassInfo.field(associatedEntityFieldName);
+                FieldInfo associatedEntityClassField = getAssociatedEntityClassField(associatedEntityFieldName,
+                        associatedEntityClassInfo);
                 if (associatedEntityClassField == null) {
                     throw new UnableToParseMethodException(parsingExceptionMethod);
                 }
@@ -363,6 +364,26 @@ public class MethodNameParser {
         String whereQuery = where.toString().isEmpty() ? "" : " WHERE " + where.toString();
         return new Result(entityClass, "FROM " + getEntityName() + whereQuery, queryType, paramsCount, sort,
                 topCount);
+    }
+
+    /**
+     * Looks for the field in either the class itself or in a superclass that is annotated with @MappedSuperClass
+     */
+    private FieldInfo getAssociatedEntityClassField(String associatedEntityFieldName, ClassInfo associatedEntityClassInfo) {
+        FieldInfo fieldInfo = associatedEntityClassInfo.field(associatedEntityFieldName);
+        if (fieldInfo != null) {
+            return fieldInfo;
+        }
+        if (DotNames.OBJECT.equals(associatedEntityClassInfo.superName())) {
+            return null;
+        }
+
+        ClassInfo superClassInfo = indexView.getClassByName(associatedEntityClassInfo.superName());
+        if (superClassInfo.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) == null) {
+            return null;
+        }
+
+        return getAssociatedEntityClassField(associatedEntityFieldName, superClassInfo);
     }
 
     private void validateFieldWithOperation(String operation, FieldInfo fieldInfo, String methodName) {

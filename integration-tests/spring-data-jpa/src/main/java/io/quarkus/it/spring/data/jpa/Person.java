@@ -15,6 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
@@ -103,33 +104,14 @@ public class Person {
         this.address = address;
     }
 
-    @Entity
-    @Table(name = "address")
-    public static class Address {
-        @Id
-        @GeneratedValue
-        private Long id;
+    @MappedSuperclass
+    public static class StreetEntity {
 
         @Column(name = "street_name")
         private String streetName;
 
         @Column(name = "street_number")
         private String streetNumber;
-
-        @Column(name = "zip_code")
-        private String zipCode;
-
-        @JsonbTransient
-        @OneToMany(mappedBy = "address")
-        private List<Person> people;
-
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
 
         public String getStreetName() {
             return streetName;
@@ -145,6 +127,29 @@ public class Person {
 
         public void setStreetNumber(String streetNumber) {
             this.streetNumber = streetNumber;
+        }
+    }
+
+    @Entity
+    @Table(name = "address")
+    public static class Address extends StreetEntity {
+        @Id
+        @GeneratedValue
+        private Long id;
+
+        @Column(name = "zip_code")
+        private String zipCode;
+
+        @JsonbTransient
+        @OneToMany(mappedBy = "address")
+        private List<Person> people;
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
         }
 
         public String getZipCode() {

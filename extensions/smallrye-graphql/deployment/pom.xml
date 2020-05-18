@@ -65,6 +65,11 @@
             <artifactId>quarkus-smallrye-metrics</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-opentracing</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

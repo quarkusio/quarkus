@@ -223,6 +223,14 @@ public class SmallRyeGraphQLProcessor {
                 new RouteBuildItem(quarkusConfig.rootPath + SCHEMA_PATH, schemaHandler, HandlerType.BLOCKING));
     }
 
+    @BuildStep
+    void openTracingIntegration(Capabilities capabilities,
+            BuildProducer<SystemPropertyBuildItem> properties) {
+        if (capabilities.isCapabilityPresent(Capabilities.SMALLRYE_OPENTRACING)) {
+            properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
+        }
+    }
+
     private Set<String> getClassesToRegisterForReflection(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();

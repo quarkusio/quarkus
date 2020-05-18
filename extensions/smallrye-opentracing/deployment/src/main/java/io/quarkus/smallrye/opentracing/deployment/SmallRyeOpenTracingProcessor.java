@@ -11,6 +11,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -57,6 +58,11 @@ public class SmallRyeOpenTracingProcessor {
             providers.produce(
                     new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingStandaloneVertxDynamicFeature.class.getName()));
         }
+    }
+
+    @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.SMALLRYE_OPENTRACING);
     }
 
 }

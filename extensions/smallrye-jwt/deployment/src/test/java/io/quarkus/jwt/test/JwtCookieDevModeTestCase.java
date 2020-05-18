@@ -28,7 +28,7 @@ public class JwtCookieDevModeTestCase {
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
                     .addAsResource("TokenNoGroups.json")
-                    .addAsResource("applicationJwtCookie.properties", "application.properties"));
+                    .addAsResource("applicationJwtCookieDev.properties", "application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -42,9 +42,11 @@ public class JwtCookieDevModeTestCase {
      */
     @Test
     public void echoGroupsHotReplacement() throws Exception {
+        testBadResponse("cookie_a");
+        test.modifyResourceFile("application.properties", s -> s.replaceAll("#", ""));
         testOKResponse("cookie_a");
-        testBadResponse("cookie_b");
 
+        testBadResponse("cookie_b");
         test.modifyResourceFile("application.properties", s -> s.replace("cookie_a", "cookie_b"));
 
         testOKResponse("cookie_b");

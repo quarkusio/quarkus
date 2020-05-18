@@ -43,6 +43,7 @@
         <guava.version>27.0.1-jre</guava.version>
         <asm.version>7.3.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
+        <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
     </properties>
     <modules>
         <module>core</module>
@@ -141,10 +142,6 @@
                     <exclusion>
                         <groupId>javax.enterprise</groupId>
                         <artifactId>cdi-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.codehaus.plexus</groupId>
-                        <artifactId>plexus-classworlds</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.checkerframework</groupId>
@@ -267,16 +264,8 @@
                 <version>${sisu.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.codehaus.plexus</groupId>
-                        <artifactId>plexus-component-annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.codehaus.plexus</groupId>
-                        <artifactId>plexus-utils</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.codehaus.plexus</groupId>
-                        <artifactId>plexus-classworlds</artifactId>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -289,6 +278,17 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>commons-logging-jboss-logging</artifactId>
                 <version>${commons-logging-jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-classworlds</artifactId>
+                <version>${plexus-classworlds.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

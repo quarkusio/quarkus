@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -144,6 +145,9 @@ public class MavenArtifactResolver {
                 : new DefaultRepositorySystemSession(builder.repoSession);
         if (builder.offline != null) {
             newSession.setOffline(builder.offline);
+        }
+        if (newSession.getTransferListener() == null) {
+            newSession.setTransferListener(new ConsoleMavenTransferListener(System.out, true));
         }
         newSession.setSystemProperties(System.getProperties());
 

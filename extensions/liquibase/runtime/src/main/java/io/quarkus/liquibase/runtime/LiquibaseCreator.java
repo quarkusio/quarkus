@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
-import io.agroal.api.AgroalDataSource;
+import javax.sql.DataSource;
+
 import io.quarkus.liquibase.LiquibaseFactory;
 
 /**
@@ -34,7 +35,7 @@ class LiquibaseCreator {
      * @param dataSource the liquibase datasource
      * @return the corresponding quarkus liquibase instance.
      */
-    public LiquibaseFactory createLiquibase(AgroalDataSource dataSource) {
+    public LiquibaseFactory createLiquibase(DataSource dataSource) {
         LiquibaseConfig config = new LiquibaseConfig();
         config.changeLog = liquibaseBuildTimeConfig.changeLog;
         liquibaseRuntimeConfig.labels.ifPresent(c -> config.labels = c);

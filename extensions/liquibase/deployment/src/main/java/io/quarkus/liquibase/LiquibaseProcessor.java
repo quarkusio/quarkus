@@ -18,6 +18,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Default;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -28,8 +31,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -47,9 +50,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
-import io.quarkus.liquibase.runtime.LiquibaseProducer;
+import io.quarkus.liquibase.runtime.LiquibaseContainerProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
-import io.quarkus.liquibase.runtime.LiquibaseRuntimeConfig;
 import io.quarkus.liquibase.runtime.graal.LiquibaseServiceLoader;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.ChangeSet;
@@ -72,7 +74,7 @@ class LiquibaseProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseServiceLoader.class);
 
-    LiquibaseBuildTimeConfig liquibaseBuildConfig;
+    private static final String LIQUIBASE_BEAN_NAME_PREFIX = "liquibase_";
 
     private static final Map<String, String> KIND_TO_IMPL;
 
@@ -164,6 +166,7 @@ class LiquibaseProcessor {
     @Record(STATIC_INIT)
     void nativeImageConfiguration(
             LiquibaseRecorder recorder,
+            LiquibaseBuildTimeConfig liquibaseBuildConfig,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -221,7 +224,7 @@ class LiquibaseProcessor {
                 .collect(Collectors.toSet());
 
         resource.produce(
-                new NativeImageResourceBuildItem(getChangeLogs(dataSourceNames).toArray(new String[0])));
+                new NativeImageResourceBuildItem(getChangeLogs(dataSourceNames, liquibaseBuildConfig).toArray(new String[0])));
 
         // liquibase XSD
         resource.produce(new NativeImageResourceBuildItem(
@@ -239,38 +242,64 @@ class LiquibaseProcessor {
     }
 
     @BuildStep
-    void build(
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<GeneratedBeanBuildItem> generatedBean) {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.LIQUIBASE));
-
-        AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(LiquibaseProducer.class);
-        additionalBean.produce(unremovableProducer);
-
-        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
-                .map(i -> i.getName())
-                .collect(Collectors.toSet());
-        new LiquibaseDatasourceBeanGenerator(dataSourceNames, generatedBean).createLiquibaseProducerBean();
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.LIQUIBASE);
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    ServiceStartBuildItem configureRuntimeProperties(LiquibaseRecorder recorder,
-            LiquibaseRuntimeConfig liquibaseRuntimeConfig,
-            BeanContainerBuildItem beanContainer,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ServiceStartBuildItem createBeansAndStartActions(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> jdbcDataSourceSchemaReady) {
-        recorder.doStartActions(liquibaseRuntimeConfig, beanContainer.getValue());
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+
+        // make a LiquibaseContainerProducer bean
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(LiquibaseContainerProducer.class).setUnremovable()
+                        .setDefaultScope(DotNames.SINGLETON).build());
+        // add the @LiquibaseDataSource class otherwise it won't registered as a qualifier
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(LiquibaseDataSource.class).build());
+
+        Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
+
+        for (String dataSourceName : dataSourceNames) {
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                    .configure(LiquibaseFactory.class)
+                    .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
+                    .setRuntimeInit()
+                    .unremovable()
+                    .supplier(recorder.liquibaseSupplier(dataSourceName));
+
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                configurator.addQualifier(Default.class);
+            } else {
+                String beanName = LIQUIBASE_BEAN_NAME_PREFIX + dataSourceName;
+                configurator.name(beanName);
+
+                configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                configurator.addQualifier().annotation(LiquibaseDataSource.class).addValue("value", dataSourceName).done();
+            }
+
+            syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+        }
+
+        // will actually run the actions at runtime
+        recorder.doStartActions();
+
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
-                .map(i -> i.getName())
-                .collect(Collectors.toSet());
-        jdbcDataSourceSchemaReady.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
+
         return new ServiceStartBuildItem("liquibase");
+    }
+
+    private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {
+        Set<String> result = new HashSet<>(jdbcDataSourceBuildItems.size());
+        for (JdbcDataSourceBuildItem item : jdbcDataSourceBuildItems) {
+            result.add(item.getName());
+        }
+        return result;
     }
 
     /**
@@ -316,7 +345,7 @@ class LiquibaseProcessor {
      * <p>
      * A {@link LinkedHashSet} is used to avoid duplications.
      */
-    private List<String> getChangeLogs(Collection<String> dataSourceNames) {
+    private List<String> getChangeLogs(Collection<String> dataSourceNames, LiquibaseBuildTimeConfig liquibaseBuildConfig) {
         if (dataSourceNames.isEmpty()) {
             return Collections.emptyList();
         }

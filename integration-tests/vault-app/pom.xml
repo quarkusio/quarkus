@@ -104,12 +104,12 @@
                         <configuration>
                             <skip>false</skip>
                             <trimStackTrace>false</trimStackTrace>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <!-- see TLS availability in native mode https://github.com/quarkusio/quarkus/issues/3797 -->
                                 <!-- to activate tls, set vault-test-extension.use-tls=true and install /opt/graalvm -->
                                 <javax.net.ssl.trustStore>${project.basedir}/src/test/resources/vaultTrustStore</javax.net.ssl.trustStore>
                                 <vault-test-extension.use-tls>false</vault-test-extension.use-tls>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -142,7 +142,7 @@
                                 </goals>
                                 <configuration>
                                     <trimStackTrace>false</trimStackTrace>
-                                    <systemProperties>
+                                    <systemPropertyVariables>
                                         <native.image.path>
                                             ${project.build.directory}/${project.build.finalName}-runner
                                         </native.image.path>
@@ -152,7 +152,7 @@
                                             ${project.basedir}/src/test/resources/vaultTrustStore
                                         </javax.net.ssl.trustStore>
                                         <vault-test-extension.use-tls>false</vault-test-extension.use-tls>
-                                    </systemProperties>
+                                    </systemPropertyVariables>
                                 </configuration>
                             </execution>
                         </executions>

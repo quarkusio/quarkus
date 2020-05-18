@@ -85,9 +85,9 @@ must be set, as the default version does not support Junit 5:
     <artifactId>maven-surefire-plugin</artifactId>
     <version>${surefire-plugin.version}</version>
     <configuration>
-       <systemProperties>
+       <systemPropertyVariables>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-       </systemProperties>
+       </systemPropertyVariables>
     </configuration>
 </plugin>
 ----

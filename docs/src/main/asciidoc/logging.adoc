@@ -227,10 +227,10 @@ In particular, you need to set the appropriate `LogManager` using the `java.util
       <artifactId>maven-surefire-plugin</artifactId>
       <version>${surefire-plugin.version}</version>
       <configuration>
-        <systemProperties>
+        <systemPropertyVariables>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
           <quarkus.log.level>DEBUG</quarkus.log.level>  <2>
-        </systemProperties>
+        </systemPropertyVariables>
       </configuration>
     </plugin>
   </plugins>

@@ -96,9 +96,9 @@
 								<configuration>
 									<!-- force the locale as we want to explicitly test message interpolation -->
 									<argLine>-Duser.language=en</argLine>
-									<systemProperties>
+									<systemPropertyVariables>
 										<native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-									</systemProperties>
+									</systemPropertyVariables>
 								</configuration>
 							</execution>
 						</executions>

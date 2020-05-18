@@ -38,6 +38,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <!-- Avoid adding this to the BOM / Version has to be kept in sync with what optaplanner uses otherwise the enforcer complains -->
+            <version>1.4.11.1</version>
+        </dependency>
     </dependencies>
 
 </project>

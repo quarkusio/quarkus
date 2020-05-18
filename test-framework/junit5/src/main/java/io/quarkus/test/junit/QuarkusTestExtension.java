@@ -65,6 +65,8 @@ import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.internal.DeepClone;
+import io.quarkus.test.junit.internal.XStreamDeepClone;
 
 //todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
@@ -86,6 +88,8 @@ public class QuarkusTestExtension
     private static List<Object> beforeAllCallbacks = new ArrayList<>();
     private static List<Object> beforeEachCallbacks = new ArrayList<>();
     private static List<Object> afterEachCallbacks = new ArrayList<>();
+
+    private static DeepClone deepClone;
 
     private ExtensionState doJavaStart(ExtensionContext context) throws Throwable {
         Closeable testResourceManager = null;
@@ -137,6 +141,7 @@ public class QuarkusTestExtension
             AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(), props);
             StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+            populateDeepCloneField(startupAction);
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
@@ -196,6 +201,11 @@ public class QuarkusTestExtension
             }
             throw e;
         }
+    }
+
+    // keep it super simple for now, but we might need multiple strategies in the future
+    private void populateDeepCloneField(StartupAction startupAction) {
+        deepClone = new XStreamDeepClone(startupAction.getClassLoader());
     }
 
     private void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
@@ -499,19 +509,12 @@ public class QuarkusTestExtension
             }
             newMethod.setAccessible(true);
 
-            // the arguments were not loaded from TCCL so we need to try and "convert" if possible
-            // most of the time this won't be possible or necessary, but for the widely used enum case we need to do it
-            // this is a total hack, but...
+            // the arguments were not loaded from TCCL so we need to deep clone them into the TCCL
+            // because the test method runs from a class loaded from the TCCL
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();
             for (Object arg : originalArguments) {
-                if (arg != null && arg.getClass().isEnum()) {
-                    argumentsFromTccl.add(Enum.valueOf((Class<Enum>) Class.forName(arg.getClass().getName(), false,
-                            Thread.currentThread().getContextClassLoader()), arg.toString()));
-                } else {
-                    // we can't do anything but hope for the best...
-                    argumentsFromTccl.add(arg);
-                }
+                argumentsFromTccl.add(deepClone.clone(arg));
             }
 
             return newMethod.invoke(actualTestInstance, argumentsFromTccl.toArray(new Object[0]));

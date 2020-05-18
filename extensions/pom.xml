@@ -178,6 +178,9 @@
 
         <!-- Templating -->
         <module>qute</module>
+
+        <!-- Command line -->
+        <module>picocli</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

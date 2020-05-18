@@ -111,6 +111,8 @@
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>
+        <module>picocli</module>
+        <module>picocli-native</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

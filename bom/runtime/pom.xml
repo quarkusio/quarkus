@@ -195,6 +195,7 @@
         <scram-client.version>2.1</scram-client.version>
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
         <grpc.version>1.29.0</grpc.version>
+        <picocli.version>4.3.2</picocli.version>
     </properties>
 
     <dependencyManagement>
@@ -1056,6 +1057,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-qute</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-picocli</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -3309,6 +3315,18 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-stub</artifactId>
                 <version>${grpc.version}</version>
+            </dependency>
+
+            <!-- Picocli -->
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli-codegen</artifactId>
+                <version>${picocli.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

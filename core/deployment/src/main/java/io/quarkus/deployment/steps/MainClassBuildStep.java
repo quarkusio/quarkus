@@ -41,6 +41,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -270,6 +271,7 @@ class MainClassBuildStep {
     public MainClassBuildItem mainClassBuildStep(BuildProducer<GeneratedClassBuildItem> generatedClass,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
             PackageConfig packageConfig) {
         String mainClassName = MAIN_CLASS;
         Map<String, String> quarkusMainAnnotations = new HashMap<>();
@@ -300,17 +302,22 @@ class MainClassBuildStep {
             mainClassName = quarkusMainAnnotations.get("");
         }
         if (mainClassName.equals(MAIN_CLASS)) {
-            //generate a main that just runs the app, the user has not supplied a main class
-            ClassCreator file = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClass, true), MAIN_CLASS, null,
-                    Object.class.getName());
+            if (quarkusApplicationClass.isPresent()) {
+                //user has not supplied main class, but extension did.
+                generateMainForQuarkusApplication(quarkusApplicationClass.get().getClassName(), generatedClass);
+            } else {
+                //generate a main that just runs the app, the user has not supplied a main class
+                ClassCreator file = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClass, true), MAIN_CLASS, null,
+                        Object.class.getName());
 
-            MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
-            mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-            mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, String[].class),
-                    mv.getMethodParam(0));
-            mv.returnValue(null);
+                MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
+                mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+                mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, String[].class),
+                        mv.getMethodParam(0));
+                mv.returnValue(null);
 
-            file.close();
+                file.close();
+            }
         } else {
             Collection<ClassInfo> impls = combinedIndexBuildItem.getIndex()
                     .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()));
@@ -323,21 +330,26 @@ class MainClassBuildStep {
             }
             if (found) {
                 //this is QuarkusApplication, generate a real main to run it
-                ClassCreator file = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClass, true), MAIN_CLASS, null,
-                        Object.class.getName());
-
-                MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
-                mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-                mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, Class.class, String[].class),
-                        mv.loadClass(mainClassName),
-                        mv.getMethodParam(0));
-                mv.returnValue(null);
-                file.close();
+                generateMainForQuarkusApplication(mainClassName, generatedClass);
                 mainClassName = MAIN_CLASS;
             }
         }
 
         return new MainClassBuildItem(mainClassName);
+    }
+
+    private void generateMainForQuarkusApplication(String quarkusApplicationClassName,
+            BuildProducer<GeneratedClassBuildItem> generatedClass) {
+        ClassCreator file = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClass, true), MAIN_CLASS, null,
+                Object.class.getName());
+
+        MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
+        mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+        mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, Class.class, String[].class),
+                mv.loadClass(quarkusApplicationClassName),
+                mv.getMethodParam(0));
+        mv.returnValue(null);
+        file.close();
     }
 
     private void writeRecordedBytecode(BytecodeRecorderImpl recorder, String fallbackGeneratedStartupTaskClassName,

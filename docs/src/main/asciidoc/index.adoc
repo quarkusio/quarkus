@@ -62,6 +62,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:camel.html[Apache Camel]
 * link:command-mode-reference.html[Command Mode Applications]
 * link:grpc.html[Using gRPC]
+* link:picocli.html[Command Mode with Picocli]
 
 * link:faq.html[FAQs]
 

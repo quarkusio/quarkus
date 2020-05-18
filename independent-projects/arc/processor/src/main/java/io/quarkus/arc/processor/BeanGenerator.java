@@ -243,6 +243,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
         }
+        implementGetKind(beanCreator, InjectableBean.Kind.SYNTHETIC);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -425,6 +426,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
         }
+        implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_METHOD);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -508,6 +510,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
         }
+        implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_FIELD);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -1623,6 +1626,12 @@ public class BeanGenerator extends AbstractGenerator {
                     .setModifiers(ACC_PUBLIC);
             getName.returnValue(getName.load(bean.getName()));
         }
+    }
+
+    protected void implementGetKind(ClassCreator beanCreator, InjectableBean.Kind kind) {
+        MethodCreator getScope = beanCreator.getMethodCreator("getKind", InjectableBean.Kind.class).setModifiers(ACC_PUBLIC);
+        getScope.returnValue(getScope
+                .readStaticField(FieldDescriptor.of(InjectableBean.Kind.class, kind.toString(), InjectableBean.Kind.class)));
     }
 
     protected void implementSupplierGet(ClassCreator beanCreator) {

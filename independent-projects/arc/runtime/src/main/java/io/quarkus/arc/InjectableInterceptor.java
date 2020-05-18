@@ -13,4 +13,9 @@ import javax.enterprise.inject.spi.Prioritized;
  */
 public interface InjectableInterceptor<T> extends InjectableBean<T>, Interceptor<T>, Prioritized {
 
+    @Override
+    default Kind getKind() {
+        return Kind.INTERCEPTOR;
+    }
+
 }

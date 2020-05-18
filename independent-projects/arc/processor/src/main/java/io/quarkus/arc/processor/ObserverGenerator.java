@@ -180,6 +180,7 @@ public class ObserverGenerator extends AbstractGenerator {
         if (observer.isAsync()) {
             implementIsAsync(observerCreator);
         }
+        implementGetDeclaringBeanIdentifier(observerCreator, observer.getDeclaringBean());
 
         observerCreator.close();
         return classOutput.getResources();
@@ -231,6 +232,14 @@ public class ObserverGenerator extends AbstractGenerator {
     protected void implementIsAsync(ClassCreator observerCreator) {
         MethodCreator isAsync = observerCreator.getMethodCreator("isAsync", boolean.class).setModifiers(ACC_PUBLIC);
         isAsync.returnValue(isAsync.load(true));
+    }
+
+    protected void implementGetDeclaringBeanIdentifier(ClassCreator observerCreator, BeanInfo declaringBean) {
+        MethodCreator getDeclaringBeanIdentifier = observerCreator.getMethodCreator("getDeclaringBeanIdentifier", String.class)
+                .setModifiers(ACC_PUBLIC);
+        getDeclaringBeanIdentifier
+                .returnValue(declaringBean != null ? getDeclaringBeanIdentifier.load(declaringBean.getIdentifier())
+                        : getDeclaringBeanIdentifier.loadNull());
     }
 
     protected void implementNotify(ObserverInfo observer, ClassCreator observerCreator,

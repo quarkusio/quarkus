@@ -2,6 +2,7 @@ package io.quarkus.mongodb.reactive;
 
 import java.util.List;
 
+import com.mongodb.client.MongoCollection;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
@@ -1489,4 +1490,13 @@ public interface ReactiveMongoCollection<T> {
      * @return the codec registry
      */
     CodecRegistry getCodecRegistry();
+
+    /**
+     * Create a new ReactiveMongoCollection instance with a different default class to cast any documents returned from the database into..
+     *
+     * @param clazz the default class to cast any documents returned from the database into.
+     * @param <NewTDocument> The type that the new collection will encode documents from and decode documents to
+     * @return a new MongoCollection instance with the different default class
+     */
+    <NewTDocument> ReactiveMongoCollection<NewTDocument> withDocumentClass(Class<NewTDocument> clazz);
 }

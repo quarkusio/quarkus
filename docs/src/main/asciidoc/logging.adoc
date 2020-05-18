@@ -239,6 +239,8 @@ In particular, you need to set the appropriate `LogManager` using the `java.util
 <1> Make sure the `org.jboss.logmanager.LogManager` is used.
 <2> Enable debug logging for all logging categories.
 
+WARNING: Eclipse IDE will not automatically read Maven surefire configuration, see https://github.com/quarkusio/quarkus/issues/9339
+
 If you are using Gradle, add this to your `build.gradle`:
 
 [source, groovy]

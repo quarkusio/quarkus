@@ -38,8 +38,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         this.sort = sort;
     }
 
-    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Bson projections) {
-        this.collection = previousQuery.collection;
+    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Bson projections, Class<?> documentClass) {
+        this.collection = previousQuery.collection.withDocumentClass(documentClass);
         this.mongoQuery = previousQuery.mongoQuery;
         this.sort = previousQuery.sort;
         this.projections = projections;
@@ -62,7 +62,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             projections.append(fieldName, 1);
         }
 
-        return new PanacheQueryImpl(this, projections);
+        return new PanacheQueryImpl<>(this, projections, type);
     }
 
     @Override

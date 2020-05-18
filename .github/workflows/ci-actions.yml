@@ -392,7 +392,7 @@ jobs:
               vault-app
               vault-agroal
           - category: Cache
-            timeout: 35
+            timeout: 45
             test-modules: >
               infinispan-cache-jpa
               infinispan-client

@@ -73,7 +73,7 @@ public class SmallRyeReactiveMessagingProcessor {
     private static final Logger LOGGER = Logger
             .getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
-    static final String INVOKER_SUFFIX = "_SmallryeMessagingInvoker";
+    static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -381,7 +381,7 @@ public class SmallRyeReactiveMessagingProcessor {
                     .getFieldDescriptor();
 
             // generate a constructor that takes the bean instance as an argument
-            // the method type needs to be Object because that is what is used as the call site in Smallrye Reactive Messaging
+            // the method type needs to be Object because that is what is used as the call site in SmallRye Reactive Messaging
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());

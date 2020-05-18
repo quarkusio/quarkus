@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * deployment configuration
  */
 @ConfigRoot(name = "smallrye-jwt")
-public class SmallryeJWTConfig {
+public class SmallRyeJWTConfig {
 
     /**
      * The MP-JWT configuration object

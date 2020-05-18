@@ -30,7 +30,7 @@ public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOpe
     };
 
     /**
-     * Called by SmallryeFaultToleranceRecorder to init the operation cache.
+     * Called by SmallRyeFaultToleranceRecorder to init the operation cache.
      */
     void init(Map<CacheKey, FaultToleranceOperation> operationCache) {
         this.operationCache.putAll(operationCache);

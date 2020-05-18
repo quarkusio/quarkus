@@ -87,7 +87,7 @@ update_configs:
           dependency_name: "org.scala-lang:scala-compiler"
       - match:
           dependency_name: "net.alchim31.maven:scala-maven-plugin"
-      # Smallrye
+      # SmallRye
       - match:
           dependency_name: "io.smallrye:smallrye-jwt"
       - match:

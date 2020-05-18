@@ -482,7 +482,7 @@ public class DevMojo extends AbstractMojo {
                 projectDirectory,
                 sourcePaths,
                 classesPath,
-                resourcePath);
+                resourcePath, localProject.getKey());
         if (root) {
             devModeContext.setApplicationRoot(moduleInfo);
         } else {

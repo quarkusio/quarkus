@@ -44,6 +44,6 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         return new DevModeContext.ModuleInfo(project.getArtifactId(), project.getDir().toAbsolutePath().toString(),
                 Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()),
                 project.getClassesDir().toAbsolutePath().toString(),
-                project.getResourcesSourcesDir().toAbsolutePath().toString());
+                project.getResourcesSourcesDir().toAbsolutePath().toString(), project.getKey());
     }
 }

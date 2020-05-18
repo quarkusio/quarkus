@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 
 /**
@@ -94,11 +95,13 @@ public class DevModeMain implements Closeable {
             for (DevModeContext.ModuleInfo i : context.getAllModules()) {
                 if (i.getClassesPath() != null) {
                     Path classesPath = Paths.get(i.getClassesPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
+                    bootstrapBuilder.addAdditionalApplicationArchive(
+                            new AdditionalDependency(PathsCollection.of(classesPath), true, false, i.getAppArtifactKey()));
                 }
                 if (i.getResourcesOutputPath() != null && !i.getResourcesOutputPath().equals(i.getClassesPath())) {
                     Path resourceOutputPath = Paths.get(i.getResourcesOutputPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
+                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(
+                            PathsCollection.of(resourceOutputPath), true, false, i.getAppArtifactKey()));
                 }
             }
 

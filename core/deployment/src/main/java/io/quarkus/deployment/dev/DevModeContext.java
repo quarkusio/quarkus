@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
+
 /**
  * Object that is used to pass context data from the plugin doing the invocation
  * into the dev mode process using java serialization.
@@ -192,6 +194,7 @@ public class DevModeContext implements Serializable {
         private final String classesPath;
         private final String resourcePath;
         private final String resourcesOutputPath;
+        private final AppArtifactKey appArtifactKey;
 
         public ModuleInfo(
                 String name,
@@ -199,7 +202,16 @@ public class DevModeContext implements Serializable {
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath) {
-            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
+            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, (AppArtifactKey) null);
+        }
+
+        public ModuleInfo(
+                String name,
+                String projectDirectory,
+                Set<String> sourcePaths,
+                String classesPath,
+                String resourcePath, AppArtifactKey appArtifactKey) {
+            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath, appArtifactKey);
         }
 
         public ModuleInfo(
@@ -209,12 +221,27 @@ public class DevModeContext implements Serializable {
                 String classesPath,
                 String resourcePath,
                 String resourceOutputPath) {
+            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, resourceOutputPath, null);
+        }
+
+        public ModuleInfo(
+                String name,
+                String projectDirectory,
+                Set<String> sourcePaths,
+                String classesPath,
+                String resourcePath,
+                String resourceOutputPath, AppArtifactKey appArtifactKey) {
             this.name = name;
             this.projectDirectory = projectDirectory;
             this.sourcePaths = sourcePaths == null ? new LinkedHashSet<>() : new LinkedHashSet<>(sourcePaths);
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
             this.resourcesOutputPath = resourceOutputPath;
+            this.appArtifactKey = appArtifactKey;
+        }
+
+        public AppArtifactKey getAppArtifactKey() {
+            return appArtifactKey;
         }
 
         public String getName() {

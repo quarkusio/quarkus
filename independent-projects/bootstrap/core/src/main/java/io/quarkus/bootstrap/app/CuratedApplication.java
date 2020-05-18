@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.objectweb.asm.ClassVisitor;
 
 /**
@@ -212,16 +213,22 @@ public class CuratedApplication implements Serializable, Closeable {
                     builder.addElement(ClassPathElement.fromPath(root));
                 }
             }
+            Set<AppArtifactKey> userDepKeys = appModel.getUserDependencies().stream().map(s -> s.getArtifact().getKey())
+                    .collect(Collectors.toSet());
+
             //additional user class path elements first
             Set<Path> hotReloadPaths = new HashSet<>();
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
-                if (!i.isHotReloadable()) {
-                    for (Path root : i.getArchivePath()) {
-                        builder.addElement(ClassPathElement.fromPath(root));
-                    }
-                } else {
-                    for (Path root : i.getArchivePath()) {
-                        hotReloadPaths.add(root);
+                AppArtifactKey key = i.getAppArtifactKey();
+                if (key == null || userDepKeys.contains(key)) {
+                    if (!i.isHotReloadable()) {
+                        for (Path root : i.getArchivePath()) {
+                            builder.addElement(ClassPathElement.fromPath(root));
+                        }
+                    } else {
+                        for (Path root : i.getArchivePath()) {
+                            hotReloadPaths.add(root);
+                        }
                     }
                 }
             }
@@ -258,10 +265,14 @@ public class CuratedApplication implements Serializable, Closeable {
             builder.addElement(ClassPathElement.fromPath(root));
         }
 
+        Set<AppArtifactKey> userDepKeys = appModel.getUserDependencies().stream().map(s -> s.getArtifact().getKey())
+                .collect(Collectors.toSet());
         //additional user class path elements first
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
-            for (Path root : i.getArchivePath()) {
-                builder.addElement(ClassPathElement.fromPath(root));
+            if (i.getAppArtifactKey() == null || userDepKeys.contains(i.getAppArtifactKey())) {
+                for (Path root : i.getArchivePath()) {
+                    builder.addElement(ClassPathElement.fromPath(root));
+                }
             }
         }
         return builder.build();
@@ -282,10 +293,14 @@ public class CuratedApplication implements Serializable, Closeable {
         }
         builder.addElement(new MemoryClassPathElement(resources));
 
+        Set<AppArtifactKey> userDepKeys = appModel.getUserDependencies().stream().map(s -> s.getArtifact().getKey())
+                .collect(Collectors.toSet());
         for (AdditionalDependency i : getQuarkusBootstrap().getAdditionalApplicationArchives()) {
-            if (i.isHotReloadable()) {
-                for (Path root : i.getArchivePath()) {
-                    builder.addElement(ClassPathElement.fromPath(root));
+            if (i.getAppArtifactKey() == null || userDepKeys.contains(i.getAppArtifactKey())) {
+                if (i.isHotReloadable()) {
+                    for (Path root : i.getArchivePath()) {
+                        builder.addElement(ClassPathElement.fromPath(root));
+                    }
                 }
             }
         }

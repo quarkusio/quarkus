@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.app;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -31,14 +32,30 @@ public class AdditionalDependency implements Serializable {
      */
     private final boolean forceApplicationArchive;
 
+    /**
+     * Optional maven key.
+     *
+     * If this is set then the module will only actually be used if the corresponding artifact is present in the
+     * {@link io.quarkus.bootstrap.model.AppModel}.
+     *
+     * If this is null the module is always included.
+     */
+    private final AppArtifactKey appArtifactKey;
+
     public AdditionalDependency(Path archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
         this(PathsCollection.of(archivePath), hotReloadable, forceApplicationArchive);
     }
 
     public AdditionalDependency(PathsCollection archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
+        this(archivePath, hotReloadable, forceApplicationArchive, null);
+    }
+
+    public AdditionalDependency(PathsCollection archivePath, boolean hotReloadable, boolean forceApplicationArchive,
+            AppArtifactKey appArtifactKey) {
         this.archivePath = archivePath;
         this.hotReloadable = hotReloadable;
         this.forceApplicationArchive = forceApplicationArchive;
+        this.appArtifactKey = appArtifactKey;
     }
 
     public PathsCollection getArchivePath() {
@@ -51,5 +68,9 @@ public class AdditionalDependency implements Serializable {
 
     public boolean isForceApplicationArchive() {
         return forceApplicationArchive;
+    }
+
+    public AppArtifactKey getAppArtifactKey() {
+        return appArtifactKey;
     }
 }

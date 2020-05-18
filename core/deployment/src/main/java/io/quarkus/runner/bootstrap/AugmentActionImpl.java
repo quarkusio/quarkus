@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.builder.BuildChain;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildExecutionBuilder;
@@ -225,12 +226,16 @@ public class AugmentActionImpl implements AugmentAction {
             } else {
                 builder.setLiveReloadState(new LiveReloadBuildItem(true, changedResources, reloadContext));
             }
+            Set<AppArtifactKey> userDepKeys = curatedApplication.getAppModel().getUserDependencies().stream()
+                    .map(s -> s.getArtifact().getKey()).collect(Collectors.toSet());
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
                 //this gets added to the class path either way
                 //but we only need to add it to the additional app archives
                 //if it is forced as an app archive
-                if (i.isForceApplicationArchive()) {
-                    builder.addAdditionalApplicationArchive(i.getArchivePath());
+                if (i.getAppArtifactKey() == null || userDepKeys.contains(i.getAppArtifactKey())) {
+                    if (i.isForceApplicationArchive()) {
+                        builder.addAdditionalApplicationArchive(i.getArchivePath());
+                    }
                 }
             }
             builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());

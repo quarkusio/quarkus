@@ -831,12 +831,16 @@ public class DevMojo extends AbstractMojo {
 
         for (LocalProject project : localProject.getSelfWithLocalDeps()) {
             inProject.add(project.getKey());
-            if (project.getClassesDir() != null &&
-            //if this project also contains Quarkus extensions we do no want to include these in the discovery
-            //a bit of an edge case, but if you try and include a sample project with your extension you will
-            //run into problems without this
-                    (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
-                            Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list")))) {
+            final Artifact projectDep = this.project.getArtifactMap().get(project.getGroupId() + ':' + project.getArtifactId());
+            if (project.getClassesDir() != null
+                    && (
+                    // if it is not found among project.getArtifacts() it shouldn't be included (e.g. a local test dependency)
+                    (localProject != project && projectDep == null)
+                            //if this project also contains Quarkus extensions we do no want to include these in the discovery
+                            //a bit of an edge case, but if you try and include a sample project with your extension you will
+                            //run into problems without this
+                            || (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
+                                    Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list"))))) {
                 toRemove.add(project);
                 extensionsAndDeps.add(project.getKey());
             } else {

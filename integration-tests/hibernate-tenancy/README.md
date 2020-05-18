@@ -27,12 +27,20 @@ You can then run the tests as follows (either with `-Dnative` or not):
 mvn clean install -Dtest-mariadb
 ```
 
-If you have specific requirements, you can define a specific connection URL with `-Djdbc:mariadb://localhost:3306/hibernate_orm_test`.
+If you have specific requirements, you can define a specific connection URL with `-Dmariadb.base_url=jdbc:mariadb://...`.
+Note that this specific integration test module module requires permissions to create additional users and databases, hence the `mariadb.base_url` variable
+should not include the database name: check the `application.properties` to see how it's used.
 
 To run the MariaDB server "manually" via command line for testing, the following command line could be useful:
 
 ```
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test_mariadb -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=secret -p 3306:3306 mariadb:10.4
+```
+
+or if you prefer podman, this won't need root permissions:
+
+```
+podman run --rm=true --net=host --memory-swappiness=0 --tmpfs /var/lib/mysql:rw --tmpfs /var/log:rw --name mariadb_demo -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=secret -p 3306:3306 mariadb:10.4
 ```
 
 N.B. it takes a while for MariaDB to be actually booted and accepting connections.

@@ -364,7 +364,8 @@ public class AppModelGradleResolver implements AppModelResolver {
 
     public static AppArtifact toAppArtifact(ResolvedArtifact a) {
         final String[] split = a.getModuleVersion().toString().split(":");
-        final AppArtifact appArtifact = new AppArtifact(split[0], split[1], split.length > 2 ? split[2] : null);
+        final AppArtifact appArtifact = new AppArtifact(split[0], split[1], a.getClassifier(), a.getType(),
+                split.length > 2 ? split[2] : null);
         if (a.getFile().exists()) {
             appArtifact.setPath(a.getFile().toPath());
         }

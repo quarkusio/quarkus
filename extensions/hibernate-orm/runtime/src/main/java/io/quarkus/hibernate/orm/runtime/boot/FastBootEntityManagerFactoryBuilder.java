@@ -40,7 +40,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
-    private final MultiTenancyStrategy multiTenancyStrategy;
+    protected final MultiTenancyStrategy multiTenancyStrategy;
 
     public FastBootEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,

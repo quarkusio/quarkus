@@ -36,7 +36,6 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactoryInitiator;
@@ -46,6 +45,7 @@ import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.rx.runtime.customized.QuarkusDummyConnectionProviderInitiator;
 import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderInitiator;
 
 /**
@@ -105,14 +105,6 @@ public class PreconfiguredRxServiceRegistryBuilder {
 
         destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
         return destroyedRegistry;
-
-        //		return new StandardServiceRegistryImpl(
-        //				true,
-        //				bootstrapServiceRegistry,
-        //				initiators,
-        //				providedServices,
-        //				settingsCopy
-        //		);
     }
 
     private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {
@@ -179,7 +171,10 @@ public class PreconfiguredRxServiceRegistryBuilder {
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         // Custom one!
-        serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
+        // TODO: May check if a JDBC datasource is configured, and if it is then register
+        // the real connectionprovider instead of the dummy one
+        serviceInitiators.add(QuarkusDummyConnectionProviderInitiator.INSTANCE);
+        //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(QuarkusRxConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 

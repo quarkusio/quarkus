@@ -21,8 +21,8 @@ import io.quarkus.reactive.pg.client.runtime.DataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.LegacyDataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
-import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
 

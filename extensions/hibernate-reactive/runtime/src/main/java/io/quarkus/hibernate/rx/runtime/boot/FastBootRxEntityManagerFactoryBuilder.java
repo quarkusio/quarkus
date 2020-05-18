@@ -2,9 +2,9 @@ package io.quarkus.hibernate.rx.runtime.boot;
 
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.rx.boot.impl.RxSessionFactoryOptions;
 import org.hibernate.rx.engine.impl.RxSessionFactoryImpl;
 
@@ -17,17 +17,18 @@ public final class FastBootRxEntityManagerFactoryBuilder extends FastBootEntityM
     public FastBootRxEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager) {
-        super(metadata, persistenceUnitName, standardServiceRegistry, runtimeSettings, validatorFactory, cdiBeanManager);
+            Object cdiBeanManager, MultiTenancyStrategy strategy) {
+        super(metadata, persistenceUnitName, standardServiceRegistry, runtimeSettings, validatorFactory, cdiBeanManager,
+                strategy);
     }
 
     @Override
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(optionsBuilder, standardServiceRegistry);
+            populate(optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
             RxSessionFactoryOptions options = new RxSessionFactoryOptions(optionsBuilder.buildOptions());
-            return new RxSessionFactoryImpl(new SessionFactoryImpl(metadata.getOriginalMetadata(), options));
+            return new RxSessionFactoryImpl(metadata.getOriginalMetadata(), options);
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }

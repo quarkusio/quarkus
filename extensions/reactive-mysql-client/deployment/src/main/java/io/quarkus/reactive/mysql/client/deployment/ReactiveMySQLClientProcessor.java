@@ -20,8 +20,8 @@ import io.quarkus.reactive.mysql.client.runtime.DataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.LegacyDataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolProducer;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
-import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.mysqlclient.MySQLPool;
 

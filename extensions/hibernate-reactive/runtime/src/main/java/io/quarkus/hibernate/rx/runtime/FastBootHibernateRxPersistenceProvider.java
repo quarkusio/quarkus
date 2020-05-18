@@ -10,7 +10,6 @@ import javax.persistence.PersistenceException;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
-import javax.sql.DataSource;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
@@ -19,8 +18,10 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.rx.jpa.impl.DelegatorPersistenceUnitInfo;
 import org.hibernate.rx.jpa.impl.RxPersisterClassResolverInitiator;
+import org.hibernate.rx.service.RxGenerationTarget;
 import org.hibernate.rx.service.initiator.RxTransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
+import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -123,8 +124,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            // Inject the datasource
-            injectDataSource(persistenceUnitName, runtimeSettingsBuilder);
+            // Inject the reactive pool
             injectVertxPool(persistenceUnitName, runtimeSettingsBuilder);
 
             HibernateOrmIntegrations.contributeRuntimeProperties((k, v) -> runtimeSettingsBuilder.put(k, v));
@@ -142,7 +142,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
                     persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
-                    validatorFactory, cdiBeanManager);
+                    validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy());
         }
 
         log.debug("Found no matching persistence units");
@@ -155,8 +155,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         serviceRegistryBuilder.addInitiator(QuarkusRxConnectionProviderInitiator.INSTANCE);
         serviceRegistryBuilder.addInitiator(RxTransactionCoordinatorBuilderInitiator.INSTANCE);
         serviceRegistryBuilder.addInitiator(RxPersisterClassResolverInitiator.INSTANCE);
-        // @AGG somehow the RxIntegrator is getting registered somewhere else
-        //        serviceRegistryBuilder.addIntegrator(new RxIntegrator());
 
         runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
@@ -166,9 +164,11 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             serviceRegistryBuilder.addService(providedService);
         }
 
-        // TODO serviceRegistryBuilder.addInitiator( )
-
         StandardServiceRegistryImpl standardServiceRegistry = serviceRegistryBuilder.buildNewServiceRegistry();
+
+        standardServiceRegistry.getService(SchemaManagementTool.class)
+                .setCustomDatabaseGenerationTarget(new RxGenerationTarget(standardServiceRegistry));
+
         return standardServiceRegistry;
     }
 
@@ -194,27 +194,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
                 || IMPLEMENTATION_NAME.equals(requestedProviderName)
                 || FastBootHibernatePersistenceProvider.class.getName().equals(requestedProviderName)
                 || "org.hibernate.jpa.HibernatePersistenceProvider".equals(requestedProviderName);
-    }
-
-    private void injectDataSource(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
-        // Once HibernateRX supports schema gen, the need for a JDBC datasource will be eliminated
-        // and this method can be removed
-        if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
-                runtimeSettingsBuilder.isConfigured(AvailableSettings.DATASOURCE) ||
-                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_JTA_DATASOURCE) ||
-                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_NON_JTA_DATASOURCE)) {
-            // the datasource has been defined in the persistence unit, we can bail out
-            return;
-        }
-
-        // for now we only support one datasource but this will change
-        InstanceHandle<DataSource> dataSourceHandle = Arc.container().instance(DataSource.class);
-        if (!dataSourceHandle.isAvailable()) {
-            throw new IllegalStateException("No datasource has been defined for persistence unit " + persistenceUnitName);
-        }
-
-        DataSource ds = Arc.container().instance(DataSource.class).get();
-        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, ds);
     }
 
     private void injectVertxPool(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {

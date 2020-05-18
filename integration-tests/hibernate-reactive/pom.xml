@@ -37,12 +37,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny</artifactId>
         </dependency>
-		<!-- We need to pull in JDBC because currently HibernateRX does not support schema gen
-		     and relies on JDBC/ORM to do that part -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-postgresql</artifactId>
-        </dependency>
 
 		<!-- test dependencies -->
         <dependency>

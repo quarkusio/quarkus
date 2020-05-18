@@ -266,6 +266,15 @@
                 <type>pom</type>
             </dependency>
 
+            <!-- gRPC dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
             <!-- Quarkus core -->
 
             <dependency>
@@ -3300,21 +3309,11 @@
                 <version>${mvel2.version}</version>
             </dependency>
 
-            <!-- gRPC -->
+            <!-- gRPC additional dependencies (the rest is managed by the BOM) -->
             <dependency>
                 <groupId>com.salesforce.servicelibs</groupId>
                 <artifactId>jprotoc</artifactId>
                 <version>${grpc-jprotoc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-api</artifactId>
-                <version>${grpc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-stub</artifactId>
-                <version>${grpc.version}</version>
             </dependency>
 
             <!-- Picocli -->

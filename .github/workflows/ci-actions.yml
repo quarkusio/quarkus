@@ -448,7 +448,7 @@ jobs:
               spring-boot-properties
               spring-cloud-config-client
           - category: gRPC
-            timeout: 45
+            timeout: 50
             test-modules: >
               grpc-health
               grpc-interceptors

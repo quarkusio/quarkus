@@ -121,6 +121,10 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchBackendSettings.ANALYSIS_CONFIGURER,
                     elasticsearchBackendConfig.analysis.configurer,
                     Optional::isPresent, c -> c.get().getName());
+            addBackendConfig(propertyCollector, backendName,
+                    ElasticsearchBackendSettings.LAYOUT_STRATEGY,
+                    elasticsearchBackendConfig.layout.strategy,
+                    Optional::isPresent, c -> c.get().getName());
         }
 
         private void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,

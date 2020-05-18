@@ -140,6 +140,11 @@ class HibernateSearchElasticsearchProcessor {
                     new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.analysis.configurer.get()));
         }
 
+        if (buildTimeConfig.defaultBackend.layout.strategy.isPresent()) {
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.layout.strategy.get()));
+        }
+
         if (buildTimeConfig.backgroundFailureHandler.isPresent()) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, false, buildTimeConfig.backgroundFailureHandler.get()));

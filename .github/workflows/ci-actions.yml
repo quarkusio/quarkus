@@ -331,10 +331,11 @@ jobs:
               reactive-mysql-client
           - category: Data3
             postgres: "true"
-            timeout: 55
+            timeout: 60
             test-modules: >
               flyway
               hibernate-orm-panache
+              hibernate-orm-panache-kotlin
               reactive-pg-client
               liquibase
               panache-rest-hibernate-orm

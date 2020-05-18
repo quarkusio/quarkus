@@ -3,7 +3,6 @@ package io.quarkus.it.panache
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.it.panache.kotlin.Person
-import io.quarkus.it.panache.kotlin.PersonRepository
 import io.quarkus.test.junit.DisabledOnNativeImage
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured
@@ -11,16 +10,12 @@ import io.restassured.http.ContentType
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import javax.inject.Inject
-import javax.transaction.Transactional
 
 /**
  * Test various Panache operations running in Quarkus
  */
 @QuarkusTest
 open class KotlinPanacheFunctionalityTest {
-    @Inject
-    lateinit var personDao: PersonRepository
 
     @Test
     fun testPanacheFunctionality() {
@@ -42,14 +37,6 @@ open class KotlinPanacheFunctionalityTest {
                 .`when`()["/test/ignored-properties"]
                 .then().body(Matchers.`is`(
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"))
-    }
-
-    @Test
-    @Transactional
-    @DisabledOnNativeImage
-    open fun testPanacheInTest() {
-        Assertions.assertTrue(personDao.findAll().list().isEmpty())
-        Assertions.assertTrue(Person.findAll().list().isEmpty())
     }
 
     /**

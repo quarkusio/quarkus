@@ -593,7 +593,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
-@@RequestScoped
+@RequestScoped
 @Unremovable
 public class CustomTenantResolver implements TenantResolver {
 

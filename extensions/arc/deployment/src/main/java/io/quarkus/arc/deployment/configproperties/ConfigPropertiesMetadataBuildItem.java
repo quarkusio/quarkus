@@ -16,13 +16,15 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     private final ClassInfo classInfo;
     private final String prefix;
     private final ConfigProperties.NamingStrategy namingStrategy;
+    private final boolean failOnMismatchingMember;
     private final boolean needsQualifier;
 
     public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
-            ConfigProperties.NamingStrategy namingStrategy, boolean needsQualifier) {
+            ConfigProperties.NamingStrategy namingStrategy, boolean failOnMismatchingMember, boolean needsQualifier) {
         this.classInfo = classInfo;
         this.prefix = sanitisePrefix(prefix);
         this.namingStrategy = namingStrategy;
+        this.failOnMismatchingMember = failOnMismatchingMember;
         this.needsQualifier = needsQualifier;
     }
 
@@ -36,6 +38,10 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
 
     public ConfigProperties.NamingStrategy getNamingStrategy() {
         return namingStrategy;
+    }
+
+    public boolean isFailOnMismatchingMember() {
+        return failOnMismatchingMember;
     }
 
     public boolean isNeedsQualifier() {

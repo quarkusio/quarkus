@@ -17,14 +17,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ClassWithoutGettersConfigPropertiesTest {
+public class ClassWithAllowedMissingSetterConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.my-enum=OPTIONAL\ndummy.numbers=1,2,3,4\ndummy.unused=whatever"),
+                            "dummy.name=quarkus\ndummy.nested.numbers2=1,2\ndummy.unused=whatever"),
                             "application.properties"));
 
     @Inject
@@ -32,10 +32,8 @@ public class ClassWithoutGettersConfigPropertiesTest {
 
     @Test
     public void testConfiguredValues() {
-        DummyProperties dummyProperties = dummyBean.dummyProperties;
-        assertEquals("quarkus", dummyProperties.name);
-        assertEquals(Arrays.asList(1, 2, 3, 4), dummyProperties.numbers);
-        assertEquals(MyEnum.OPTIONAL, dummyProperties.myEnum);
+        assertEquals("quarkus", dummyBean.dummyProperties.name);
+        assertEquals(Arrays.asList(1, 2), dummyBean.dummyProperties.nested.numbers2);
     }
 
     @Singleton
@@ -44,25 +42,32 @@ public class ClassWithoutGettersConfigPropertiesTest {
         DummyProperties dummyProperties;
     }
 
-    @ConfigProperties(prefix = "dummy")
+    @ConfigProperties(prefix = "dummy", failOnMismatchingMember = false)
     public static class DummyProperties {
 
-        public String name;
-        public List<Integer> numbers;
-        public MyEnum myEnum;
+        private String name;
+        private List<Integer> numbers;
+        private NestedDummyProperties nested;
 
         public void setName(String name) {
             this.name = name;
         }
 
-        public void setNumbers(List<Integer> numbers) {
-            this.numbers = numbers;
+        public void setNested(NestedDummyProperties nested) {
+            this.nested = nested;
         }
     }
 
-    public enum MyEnum {
-        OPTIONAL,
-        ENUM_ONE,
-        Enum_Two
+    public static class NestedDummyProperties extends ParentOfNestedDummyProperties {
+        private String name2;
+        private List<Integer> numbers2;
+
+        public void setNumbers2(List<Integer> numbers2) {
+            this.numbers2 = numbers2;
+        }
+    }
+
+    public static class ParentOfNestedDummyProperties {
+        private String whatever;
     }
 }

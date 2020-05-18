@@ -1,8 +1,9 @@
 package io.quarkus.arc.test.configproperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -17,25 +18,24 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ClassWithoutGettersConfigPropertiesTest {
+public class ClassWithNotAllowedMissingSetterConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.my-enum=OPTIONAL\ndummy.numbers=1,2,3,4\ndummy.unused=whatever"),
-                            "application.properties"));
-
-    @Inject
-    DummyBean dummyBean;
+                            "dummy.name=quarkus\ndummy.unused=whatever"),
+                            "application.properties"))
+            .assertException(e -> {
+                assertEquals(IllegalArgumentException.class, e.getClass());
+                assertTrue(e.getMessage().contains("numbers"));
+            });
 
     @Test
-    public void testConfiguredValues() {
-        DummyProperties dummyProperties = dummyBean.dummyProperties;
-        assertEquals("quarkus", dummyProperties.name);
-        assertEquals(Arrays.asList(1, 2, 3, 4), dummyProperties.numbers);
-        assertEquals(MyEnum.OPTIONAL, dummyProperties.myEnum);
+    public void shouldNotBeInvoked() {
+        // This method should not be invoked
+        fail();
     }
 
     @Singleton
@@ -47,22 +47,11 @@ public class ClassWithoutGettersConfigPropertiesTest {
     @ConfigProperties(prefix = "dummy")
     public static class DummyProperties {
 
-        public String name;
-        public List<Integer> numbers;
-        public MyEnum myEnum;
+        private String name;
+        private List<Integer> numbers;
 
         public void setName(String name) {
             this.name = name;
         }
-
-        public void setNumbers(List<Integer> numbers) {
-            this.numbers = numbers;
-        }
-    }
-
-    public enum MyEnum {
-        OPTIONAL,
-        ENUM_ONE,
-        Enum_Two
     }
 }

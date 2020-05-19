@@ -52,10 +52,10 @@ Then, we'll add the following dependency to support `multipart/form-data` reques
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>org.jboss.resteasy</groupId>
-        <artifactId>resteasy-multipart-provider</artifactId>
-    </dependency>
+<dependency>
+    <groupId>org.jboss.resteasy</groupId>
+    <artifactId>resteasy-multipart-provider</artifactId>
+</dependency>
 ----
 
 == Setting up the model

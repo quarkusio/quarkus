@@ -45,6 +45,16 @@ If you already have an existing project, add the `mailer` extension:
 ./mvnw quarkus:add-extensions -Dextensions="mailer"
 ----
 
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mailer</artifactId>
+</dependency>
+----
+
 == Configuring the mailer
 
 The Quarkus mailer is using SMTP. In the `src/main/resources/application.properties` file, you need to configure the host, port, username, password as well as the other configuration aspect.

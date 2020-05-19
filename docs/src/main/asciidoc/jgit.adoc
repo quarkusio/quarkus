@@ -21,14 +21,14 @@ to your project by running the following command in your project base directory.
 ./mvnw quarkus:add-extension -Dextensions="jgit"
 ----
 
-This will add the following to your pom.xml:
+This will add the following to your `pom.xml`:
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jgit</artifactId>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jgit</artifactId>
+</dependency>
 ----
 
 == Usage

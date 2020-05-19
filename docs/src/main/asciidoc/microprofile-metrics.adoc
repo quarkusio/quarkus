@@ -53,11 +53,29 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-metrics-quickstart \
-    -Dextensions="metrics"
+    -Dextensions="smallrye-metrics"
 cd microprofile-metrics-quickstart
 ----
 
 This command generates a Maven project, importing the `smallrye-metrics` extension which is an implementation of the MicroProfile Metrics specification used in Quarkus.
+
+If you already have your Quarkus project configured, you can add the `smallrye-metrics` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-metrics"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-metrics</artifactId>
+</dependency>
+----
 
 == Writing the application
 
@@ -136,13 +154,19 @@ To run the microservice in dev mode, use `./mvnw clean compile quarkus:dev`
 === Generate some values for the metrics
 First, ask the endpoint whether some numbers are prime numbers.
 
- curl localhost:8080/350
+[source,shell]
+----
+curl localhost:8080/350
+----
 
 The application will respond that 350 is not a prime number because it can be divided by 2.
 
 Now for some large prime number so that the test takes a bit more time:
 
- curl localhost:8080/629521085409773
+[source,shell]
+----
+curl localhost:8080/629521085409773
+----
 
 The application will respond that 629521085409773 is a prime number.
 If you want, try some more calls with numbers of your choice.

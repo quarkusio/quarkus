@@ -77,6 +77,28 @@ cd security-keycloak-authorization-quickstart
 
 This command generates a Maven project, importing the `keycloak-authorization` extension which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
 
+If you already have your Quarkus project configured, you can add the `oidc` and `keycloak-authorization` extensions
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="oidc,keycloak-authorization"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-keycloak-authorization</artifactId>
+</dependency>
+----
+
 Let's start by implementing the `/api/users/me` endpoint.
 As you can see from the source code below it is just a regular JAX-RS resource:
 

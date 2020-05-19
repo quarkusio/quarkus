@@ -30,7 +30,7 @@ the `quarkus-smallrye-context-propagation` extension to enable context propagati
 In other words, add the following dependencies to your `pom.xml`:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Mutiny and RestEasy support extensions if not already included -->
     <dependency>
@@ -47,7 +47,7 @@ In other words, add the following dependencies to your `pom.xml`:
         <artifactId>quarkus-smallrye-context-propagation</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 With this, you will get context propagation for ArC, RESTEasy and transactions, if you are using them.
 
@@ -64,7 +64,7 @@ link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transact
 them to the client, you can do it like this:
 
 [source,java]
---
+----
     // Get the prices stream
     @Inject
     @Channel("prices") Publisher<Double> prices;
@@ -89,7 +89,7 @@ them to the client, you can do it like this:
                     // the transaction is committed once the stream completes
                 });
     }
---
+----
 
 Notice that thanks to Mutiny support for context propagation, this works out of the box.
 The 3 items are persisted using the same transaction and this transaction is committed when the stream completes.
@@ -104,7 +104,7 @@ link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transact
 them to the client as JSON using link:rest-json[JSON-B or Jackson]:
 
 [source,java]
---
+----
     @Inject ThreadContext threadContext;
     @Inject ManagedExecutor managedExecutor;
     @Inject Vertx vertx;
@@ -136,7 +136,7 @@ them to the client as JSON using link:rest-json[JSON-B or Jackson]:
                     return persons;
                 }, managedExecutor);
     }
---
+----
 
 Using `ThreadContext` or `ManagedExecutor` you can wrap most useful functional types and `CompletionStage`
 in order to get context propagated.
@@ -153,7 +153,7 @@ you get support for link:https://github.com/ReactiveX/RxJava[RxJava2] context pr
 may want to include the following modules to get RxJava2 support:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Automatic context propagation for RxJava2 -->
     <dependency>
@@ -174,4 +174,4 @@ may want to include the following modules to get RxJava2 support:
         <artifactId>resteasy-rxjava2</artifactId>
     </dependency>
 </dependencies>
---
+----

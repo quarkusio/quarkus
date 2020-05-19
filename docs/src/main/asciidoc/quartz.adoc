@@ -64,6 +64,24 @@ It generates:
 
 The Maven project also imports the Quarkus Quartz extension.
 
+If you already have your Quarkus project configured, you can add the `quartz` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="quartz"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-quartz</artifactId>
+</dependency>
+----
+
 == Creating the Task Entity
 
 In the `org.acme.quartz` package, create the `Task` class, with the following content:

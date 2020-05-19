@@ -54,6 +54,24 @@ cd kafka-quickstart
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
+If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kafka"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+</dependency>
+----
+
 == Starting Kafka
 
 Then, we need a Kafka cluster.

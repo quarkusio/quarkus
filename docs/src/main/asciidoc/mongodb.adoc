@@ -58,6 +58,23 @@ cd mongodb-quickstart
 This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B, Mutiny, Context Propagation and MongoDB Client extensions.
 After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
 
+If you already have your Quarkus project configured, you can add the `mongodb-client` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="mongodb-client"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-client</artifactId>
+</dependency>
+----
 
 == Creating your first JSON REST service
 

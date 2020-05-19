@@ -53,6 +53,24 @@ cd opentracing-quickstart
 This command generates the Maven project with a REST endpoint and imports the `smallrye-opentracing` extension, which
 includes the OpenTracing support and the default https://www.jaegertracing.io/[Jaeger] tracer.
 
+If you already have your Quarkus project configured, you can add the `smallrye-opentracing` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-opentracing"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-opentracing</artifactId>
+</dependency>
+----
+
 === Examine the JAX-RS resource
 
 Open the `src/main/java/org/acme/opentracing/TracedResource.java` file and see the following content:

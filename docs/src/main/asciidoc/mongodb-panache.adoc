@@ -80,16 +80,14 @@ cd mongodb-panache-quickstart
 This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB with Panache extensions.
 After this, the `quarkus-mongodb-panache` extension has been added to your `pom.xml`.
 
-If you don't want to generate a new project you can add the dependency in your `pom.xml`:
+If you don't want to generate a new project, add the dependency in your `pom.xml`:
 
 [source,xml]
 ----
-<dependencies>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mongodb-panache</artifactId>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-panache</artifactId>
+</dependency>
 ----
 
 == Setting up and configuring MongoDB with Panache

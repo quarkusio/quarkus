@@ -1,5 +1,9 @@
 package io.quarkus.webjars.locator.deployment;
 
+import java.util.Map;
+
+import org.webjars.WebJarAssetLocator;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -18,14 +22,21 @@ public class WebJarsLocatorProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<RouteBuildItem> routes,
             WebJarsLocatorRecorder recorder) throws Exception {
-        // The context path + the resources path
-        String rootPath = httpConfig.rootPath;
-        String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBJARS_LOCATOR));
-        routes.produce(
-                new RouteBuildItem(webjarRootPath + "*",
-                        recorder.getHandler(webjarRootPath),
-                        false));
+
+        WebJarAssetLocator webJarLocator = new WebJarAssetLocator();
+        Map<String, String> webjarNameToVersionMap = webJarLocator.getWebJars();
+
+        if (!webjarNameToVersionMap.isEmpty()) {
+            // The context path + the resources path
+            String rootPath = httpConfig.rootPath;
+            String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
+            feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBJARS_LOCATOR));
+            routes.produce(
+                    new RouteBuildItem(webjarRootPath + "*",
+                            recorder.getHandler(webjarRootPath, webjarNameToVersionMap),
+                            false));
+        }
+
     }
 
 }

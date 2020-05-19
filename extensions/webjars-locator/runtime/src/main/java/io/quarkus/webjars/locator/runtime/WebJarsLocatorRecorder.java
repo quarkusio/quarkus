@@ -1,8 +1,6 @@
 package io.quarkus.webjars.locator.runtime;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
+import java.util.Map;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -11,35 +9,33 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class WebJarsLocatorRecorder {
 
-    public Handler<RoutingContext> getHandler(String webjarsRootUrl) {
-        final Path webjarsRootUrlPath = Paths.get(webjarsRootUrl);
-        final String webjarsFileSystemPath = "META-INF/resources/webjars/";
-        final String HANDLED_EVENT = "quarkus-webjar-locator-location-handled";
+    public Handler<RoutingContext> getHandler(String webjarsRootUrl, Map<String, String> webjarNameToVersionMap) {
         return (event) -> {
-            Path path = Paths.get(event.normalisedPath());
-            if (event.get(HANDLED_EVENT) != null) {
-                event.next();
-            } else if (path.startsWith(webjarsRootUrlPath)) {
-                Path rest = webjarsRootUrlPath.relativize(path);
-                Path webjar = rest.getName(0);
-                event.vertx().fileSystem().readDir(webjarsFileSystemPath + webjar.toString(), readDir -> {
-                    if (readDir.succeeded()) {
-                        List<String> versionList = readDir.result();
-                        // There should be exactly one version (should be a build error)
-                        if (versionList.size() != 1) {
-                            event.fail(404);
-                        } else {
-                            String version = Paths.get(versionList.get(0)).getFileName().toString();
-                            String resolvedPath = webjarsRootUrl + webjar.toString() + "/" +
-                                    version + "/" + webjar.relativize(rest).toString();
-                            event.put(HANDLED_EVENT, true);
-                            event.reroute(resolvedPath);
-                        }
-                    } else {
-                        event.fail(404);
+            String path = event.normalisedPath();
+            if (path.startsWith(webjarsRootUrl)) {
+                String rest = path.substring(webjarsRootUrl.length());
+                String webjar = rest.substring(0, rest.indexOf('/'));
+                if (webjarNameToVersionMap.containsKey(webjar)) {
+                    // Check this is not the actual path (ex: /webjars/jquery/${jquery.version}/...
+                    int endOfVersion = rest.indexOf('/', rest.indexOf('/') + 1);
+                    if (endOfVersion == -1) {
+                        endOfVersion = rest.length();
                     }
-                });
+                    String nextPathEntry = rest.substring(rest.indexOf('/') + 1, endOfVersion);
+                    if (nextPathEntry.equals(webjarNameToVersionMap.get(webjar))) {
+                        // go to the next handler (which should be the static resource handler, if one exists)
+                        event.next();
+                    } else {
+                        // reroute to the real resource
+                        event.reroute(webjarsRootUrl + webjar + "/"
+                                + webjarNameToVersionMap.get(webjar) + rest.substring(rest.indexOf('/')));
+                    }
+                } else {
+                    // this is not a webjar that we know about
+                    event.fail(404);
+                }
             } else {
+                // should not happen if route is set up correctly
                 event.next();
             }
         };

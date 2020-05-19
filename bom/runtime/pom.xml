@@ -193,8 +193,10 @@
         <jib-core.version>0.13.1</jib-core.version>
         <google-http-client.version>1.34.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
+        <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.29.0</grpc.version>
+        <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
+
         <picocli.version>4.3.2</picocli.version>
     </properties>
 
@@ -262,6 +264,15 @@
                 <groupId>org.optaplanner</groupId>
                 <artifactId>optaplanner-bom</artifactId>
                 <version>${optaplanner.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- gRPC dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -3300,21 +3311,11 @@
                 <version>${mvel2.version}</version>
             </dependency>
 
-            <!-- gRPC -->
+            <!-- gRPC additional dependencies (the rest is managed by the BOM) -->
             <dependency>
                 <groupId>com.salesforce.servicelibs</groupId>
                 <artifactId>jprotoc</artifactId>
                 <version>${grpc-jprotoc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-api</artifactId>
-                <version>${grpc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-stub</artifactId>
-                <version>${grpc.version}</version>
             </dependency>
 
             <!-- Picocli -->

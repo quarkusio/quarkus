@@ -470,6 +470,37 @@ Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutori
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
 
+[[multi-module-maven]]
+=== Working with multi-module projects
+
+By default, Quarkus will not discover CDI beans inside another module.
+
+The best way to enable CDI bean discovery for a module in a multi-module project would be to include the `jandex-maven-plugin`,
+unless it is the main application module already configured with the quarkus-maven-plugin, in which case it will indexed automatically.
+
+[source,xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.jboss.jandex</groupId>
+      <artifactId>jandex-maven-plugin</artifactId>
+      <version>1.0.7</version>
+      <executions>
+        <execution>
+          <id>make-index</id>
+          <goals>
+            <goal>jandex</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+----
+
+More information on this topic can be found on the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide.
+
 [[configuration-reference]]
 == Configuring the Project Output
 

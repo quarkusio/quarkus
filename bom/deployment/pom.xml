@@ -15,6 +15,7 @@
 
     <properties>
         <commons-compress.version>1.20</commons-compress.version>
+        <webjars-locator.version>0.39</webjars-locator.version>
     </properties>
 
     <dependencyManagement>
@@ -826,6 +827,13 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-webjars-locator-deployment</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Quarkus extension dependencies -->
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>webjars-locator</artifactId>
+                <version>${webjars-locator.version}</version>
             </dependency>
 
             <!-- Quarkus test dependencies -->

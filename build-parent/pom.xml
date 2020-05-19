@@ -96,8 +96,6 @@
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <protoc.version>3.11.4</protoc.version>
         <grpc.version>1.29.0</grpc.version>
-        <webjars.jquery.version>3.4.1</webjars.jquery.version>
-        <webjars.momentjs.version>2.24.0</webjars.momentjs.version>
     </properties>
 
     <dependencyManagement>
@@ -207,16 +205,6 @@
                         <artifactId>jsr305</artifactId>
                    </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>jquery</artifactId>
-                <version>${webjars.jquery.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>momentjs</artifactId>
-                <version>${webjars.momentjs.version}</version>
             </dependency>
 
         </dependencies>

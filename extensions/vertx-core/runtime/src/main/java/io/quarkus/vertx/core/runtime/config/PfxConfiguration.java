@@ -9,7 +9,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class PfxConfiguration {
 
     /**
-     * Path to the key file (PFX format)
+     * PFX config is disabled by default.
+     */
+    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
+    public boolean enabled;
+
+    /**
+     * Path to the key file (PFX format).
      */
     @ConfigItem
     public Optional<String> path;

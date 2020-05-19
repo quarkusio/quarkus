@@ -9,6 +9,12 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class PemTrustCertConfiguration {
 
     /**
+     * PEM Trust config is disabled by default.
+     */
+    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
+    public boolean enabled;
+
+    /**
      * Comma-separated list of the trust certificate files (Pem format).
      */
     @ConfigItem

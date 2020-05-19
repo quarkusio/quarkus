@@ -9,6 +9,12 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class JksConfiguration {
 
     /**
+     * JKS config is disabled by default.
+     */
+    @ConfigItem(name = ConfigItem.PARENT, defaultValue = "false")
+    public boolean enabled;
+
+    /**
      * Path of the key file (JKS format).
      */
     @ConfigItem

@@ -14,6 +14,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -138,6 +139,7 @@ public class CodeFlowTest {
     }
 
     @Test
+    @Disabled
     public void testRPInitiatedLogout() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant-logout");
@@ -413,6 +415,7 @@ public class CodeFlowTest {
     }
 
     @Test
+    @Disabled
     public void testAccessTokenInjection() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");

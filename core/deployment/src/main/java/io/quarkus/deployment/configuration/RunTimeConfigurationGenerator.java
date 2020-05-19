@@ -616,10 +616,7 @@ public final class RunTimeConfigurationGenerator {
                     clinit.invokeStaticMethod(initGroup, clinitConfig, clinitNameBuilder, instance);
                     clinit.invokeVirtualMethod(SB_SET_LENGTH, clinitNameBuilder, clInitOldLen);
                     if (devMode) {
-                        //we don't regenerate this class in dev mode, but we do allow config to be reloaded
-                        instance = readConfig.invokeStaticMethod(ctor);
-                        // assign instance to field
-                        readConfig.writeStaticField(rootFieldDescriptor, instance);
+                        instance = readConfig.readStaticField(rootFieldDescriptor);
                         if (!rootName.isEmpty()) {
                             readConfig.invokeVirtualMethod(SB_APPEND_CHAR, readConfigNameBuilder, readConfig.load('.'));
                             readConfig.invokeVirtualMethod(SB_APPEND_STRING, readConfigNameBuilder,
@@ -668,58 +665,14 @@ public final class RunTimeConfigurationGenerator {
                 }
             }
 
-            ResultHandle nameSet;
-            ResultHandle iterator;
-
             // generate sweep for clinit
-            nameSet = clinit.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, clinitConfig);
-            iterator = clinit.invokeInterfaceMethod(ITRA_ITERATOR, nameSet);
+            configSweepLoop(siParserBody, clinit, clinitConfig);
 
-            try (BytecodeCreator sweepLoop = clinit.createScope()) {
-                try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
-                        .trueBranch()) {
-
-                    final ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
-                    // NameIterator keyIter = new NameIterator(key);
-                    final ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
-                    // if (! keyIter.hasNext()) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
-                    // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus")))
-                            .falseBranch().continueScope(sweepLoop);
-                    // keyIter.next(); // skip "quarkus"
-                    hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
-                    // parse(config, keyIter);
-                    hasNext.invokeStaticMethod(siParserBody, clinitConfig, keyIter);
-                    // continue sweepLoop;
-                    hasNext.continueScope(sweepLoop);
-                }
+            if (devMode) {
+                configSweepLoop(siParserBody, readConfig, runTimeConfig);
             }
-
             // generate sweep for run time
-            nameSet = readConfig.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, runTimeConfig);
-            iterator = readConfig.invokeInterfaceMethod(ITRA_ITERATOR, nameSet);
-
-            try (BytecodeCreator sweepLoop = readConfig.createScope()) {
-                try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
-                        .trueBranch()) {
-
-                    final ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
-                    // NameIterator keyIter = new NameIterator(key);
-                    final ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
-                    // if (! keyIter.hasNext()) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
-                    // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus")))
-                            .falseBranch().continueScope(sweepLoop);
-                    // keyIter.next(); // skip "quarkus"
-                    hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
-                    // parse(config, keyIter);
-                    hasNext.invokeStaticMethod(rtParserBody, runTimeConfig, keyIter);
-                    // continue sweepLoop;
-                    hasNext.continueScope(sweepLoop);
-                }
-            }
+            configSweepLoop(rtParserBody, readConfig, runTimeConfig);
 
             // generate ensure-initialized method
             // the point of this method is simply to initialize the Config class
@@ -781,6 +734,34 @@ public final class RunTimeConfigurationGenerator {
 
             // generate build time run time visible default values config source class
             generateDefaultValuesConfigSourceClass(buildTimeRunTimePatternMap, BTRTDVCS_CLASS_NAME);
+        }
+
+        private static void configSweepLoop(MethodDescriptor parserBody, MethodCreator method, ResultHandle config) {
+            ResultHandle nameSet;
+            ResultHandle iterator;
+            nameSet = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
+            iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, nameSet);
+
+            try (BytecodeCreator sweepLoop = method.createScope()) {
+                try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
+                        .trueBranch()) {
+
+                    final ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
+                    // NameIterator keyIter = new NameIterator(key);
+                    final ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
+                    // if (! keyIter.hasNext()) continue sweepLoop;
+                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
+                    // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
+                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus")))
+                            .falseBranch().continueScope(sweepLoop);
+                    // keyIter.next(); // skip "quarkus"
+                    hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
+                    // parse(config, keyIter);
+                    hasNext.invokeStaticMethod(parserBody, config, keyIter);
+                    // continue sweepLoop;
+                    hasNext.continueScope(sweepLoop);
+                }
+            }
         }
 
         private void installConfiguration(ResultHandle config, MethodCreator methodCreator) {

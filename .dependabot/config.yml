@@ -110,6 +110,9 @@ update_configs:
           dependency_name: "io.smallrye.reactive:smallrye-reactive-messaging"
       - match:
           dependency_name: "io.smallrye.reactive:smallrye-reactive-streams-operators"
+      # Swagger-UI
+      - match:
+          dependency_name: "org.webjars:swagger-ui"
       # Tika
       - match:
           dependency_name: "org.apache.tika:tika-parsers"

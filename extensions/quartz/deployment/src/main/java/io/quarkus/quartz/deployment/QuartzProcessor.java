@@ -43,7 +43,6 @@ import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzScheduler;
 import io.quarkus.quartz.runtime.QuartzSupport;
-import io.quarkus.quartz.runtime.StoreType;
 
 /**
  * @author Martin Kouba
@@ -61,7 +60,7 @@ public class QuartzProcessor {
 
     @BuildStep
     NativeImageProxyDefinitionBuildItem connectionProxy(QuartzBuildTimeConfig config) {
-        if (config.storeType.equals(StoreType.DB)) {
+        if (config.storeType.isDbStore()) {
             return new NativeImageProxyDefinitionBuildItem(Connection.class.getName());
         }
         return null;
@@ -70,7 +69,7 @@ public class QuartzProcessor {
     @BuildStep
     QuartzJDBCDriverDialectBuildItem driver(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             QuartzBuildTimeConfig config) {
-        if (config.storeType == StoreType.RAM) {
+        if (!config.storeType.isDbStore()) {
             if (config.clustered) {
                 throw new ConfigurationError("Clustered jobs configured with unsupported job store option");
             }
@@ -117,14 +116,13 @@ public class QuartzProcessor {
     List<ReflectiveClassBuildItem> reflectiveClasses(QuartzBuildTimeConfig config,
             QuartzJDBCDriverDialectBuildItem driverDialect) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
-        StoreType storeType = config.storeType;
 
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleThreadPool.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleInstanceIdGenerator.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, storeType.clazz));
+        reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, config.storeType.clazz));
 
-        if (storeType.equals(StoreType.DB)) {
+        if (config.storeType.isDbStore()) {
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, JobStoreSupport.class.getName()));
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, Connection.class.getName()));
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, AbstractTrigger.class.getName()));
@@ -141,7 +139,6 @@ public class QuartzProcessor {
 
     @BuildStep
     public List<LogCleanupFilterBuildItem> logCleanup(QuartzBuildTimeConfig config) {
-        StoreType storeType = config.storeType;
         List<LogCleanupFilterBuildItem> logCleanUps = new ArrayList<>();
         logCleanUps.add(new LogCleanupFilterBuildItem(StdSchedulerFactory.class.getName(),
                 "Quartz scheduler version:",
@@ -154,8 +151,9 @@ public class QuartzProcessor {
                 "Scheduler meta-data:",
                 "Scheduler QuarkusQuartzScheduler"));
 
-        logCleanUps.add(new LogCleanupFilterBuildItem(storeType.clazz, storeType.name + " initialized.", "Handling",
-                "Using db table-based data access locking", "JDBCJobStore threads will inherit ContextClassLoader of thread",
+        logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType.clazz, config.storeType.simpleName
+                + " initialized.", "Handling", "Using db table-based data access locking",
+                "JDBCJobStore threads will inherit ContextClassLoader of thread",
                 "Couldn't rollback jdbc connection", "Database connection shutdown unsuccessful"));
         logCleanUps.add(new LogCleanupFilterBuildItem(SchedulerSignalerImpl.class.getName(),
                 "Initialized Scheduler Signaller of type"));

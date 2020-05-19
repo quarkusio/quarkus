@@ -83,6 +83,7 @@ public class AppModel implements Serializable {
                 ", deploymentDeps=" + deploymentDeps +
                 ", fullDeploymentDeps=" + fullDeploymentDeps +
                 ", runtimeDeps=" + runtimeDeps +
+                ", parentFirstArtifacts=" + parentFirstArtifacts +
                 '}';
     }
 
@@ -183,7 +184,10 @@ public class AppModel implements Serializable {
                     .collect(Collectors.toList());
             List<AppDependency> fullDeploymentDeps = this.fullDeploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());
-            return new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps, parentFirstArtifacts);
+            AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
+                    parentFirstArtifacts);
+            log.debugf("Created AppMode %s", appModel);
+            return appModel;
 
         }
     }

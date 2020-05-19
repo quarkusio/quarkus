@@ -203,10 +203,21 @@ public abstract class AbstractMethodsAdder {
 
             methodCreator.returnValue(sliceResult);
 
+        } else if (isIntLongOrBoolean(returnType)) {
+            ResultHandle singleResult = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(PanacheQuery.class, "singleResult", Object.class),
+                    panacheQuery);
+            methodCreator.returnValue(singleResult);
         } else {
             throw new IllegalArgumentException(
                     "Return type of method " + methodName + " of Repository " + repositoryClassInfo
                             + " does not match find query type");
         }
+    }
+
+    protected boolean isIntLongOrBoolean(DotName dotName) {
+        return DotNames.BOOLEAN.equals(dotName) || DotNames.PRIMITIVE_BOOLEAN.equals(dotName)
+                || DotNames.INTEGER.equals(dotName) || DotNames.PRIMITIVE_INTEGER.equals(dotName)
+                || DotNames.LONG.equals(dotName) || DotNames.PRIMITIVE_LONG.equals(dotName);
     }
 }

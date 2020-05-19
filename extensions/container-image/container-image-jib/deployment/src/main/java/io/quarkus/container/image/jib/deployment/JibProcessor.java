@@ -184,10 +184,24 @@ public class JibProcessor {
 
     private ImageReference getImageReference(ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo) {
-        return ImageReference.of(containerImageConfig.registry.orElse(null),
-                (containerImageConfig.group.map(s -> s + "/").orElse(""))
-                        + containerImageConfig.name.orElse(applicationInfo.getName()),
-                containerImageConfig.tag.orElse(applicationInfo.getVersion()));
+
+        String registry = containerImageConfig.registry.orElse(null);
+        if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
+            throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
+        }
+
+        String repository = (containerImageConfig.group.map(s -> s + "/").orElse(""))
+                + containerImageConfig.name.orElse(applicationInfo.getName());
+        if (!ImageReference.isValidRepository(repository)) {
+            throw new IllegalArgumentException("The supplied container-image repository '" + repository + "' is invalid");
+        }
+
+        String tag = containerImageConfig.tag.orElse(applicationInfo.getVersion());
+        if (tag != null && !ImageReference.isValidTag(tag)) {
+            throw new IllegalArgumentException("The supplied container-image tag '" + tag + "' is invalid");
+        }
+
+        return ImageReference.of(registry, repository, tag);
     }
 
     private JibContainerBuilder createContainerBuilderFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,

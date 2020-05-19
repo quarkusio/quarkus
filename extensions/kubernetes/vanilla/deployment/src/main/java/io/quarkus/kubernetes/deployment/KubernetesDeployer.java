@@ -34,6 +34,7 @@ import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
@@ -48,13 +49,19 @@ public class KubernetesDeployer {
     private static final String CONTAINER_IMAGE_EXTENSIONS_STR = Arrays.stream(CONTAINER_IMAGE_EXTENSIONS)
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
-    @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
+    @BuildStep(onlyIf = IsNormal.class)
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImageInfo,
             List<ContainerImageResultBuildItem> containerImageResults,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets,
             OutputTargetBuildItem outputTarget,
-            BuildProducer<DeploymentResultBuildItem> deploymentResult) {
+            BuildProducer<DeploymentResultBuildItem> deploymentResult,
+            // needed to ensure that this step runs after the container image has been built
+            @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
+
+        if (!KubernetesDeploy.INSTANCE.check()) {
+            return;
+        }
 
         if (containerImageResults.isEmpty()) {
             throw new RuntimeException(

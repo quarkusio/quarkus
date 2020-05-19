@@ -39,6 +39,8 @@ update_configs:
           dependency_name: "com.cronutils:cron-utils"
       - match:
           dependency_name: "org.eclipse:yasson"
+      - match:
+          dependency_name: "org.yaml:snakeyaml"
       # Quarkus
       - match:
           dependency_name: "io.quarkus.gizmo:gizmo"

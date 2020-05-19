@@ -155,11 +155,22 @@ jobs:
           sudo service mysql stop || true
           docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - uses: actions/checkout@v2
+
       - name: Set up JDK ${{ matrix.java-version }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        if: matrix.java-version != '8'
         with:
           java-version: ${{ matrix.java-version }}
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        if: matrix.java-version == '8'
+        with:
+          java-version: ${{ matrix.java-version }}
+          release: jdk8u242-b08
+
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -362,7 +373,7 @@ jobs:
               elytron-security-jdbc
               elytron-undertow 
           - category: Security2
-            timeout: 50
+            timeout: 60
             keycloak: "true"
             test-modules: >
               elytron-resteasy

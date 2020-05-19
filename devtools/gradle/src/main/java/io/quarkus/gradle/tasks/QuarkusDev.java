@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
@@ -189,7 +190,24 @@ public class QuarkusDev extends QuarkusTask {
                     "this should not happen as build should have been executed first. " +
                     "Does the project have any source files?");
         }
+
         DevModeContext context = new DevModeContext();
+        context.setProjectDir(project.getProjectDir());
+        for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
+            context.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
+        }
+        for (Map.Entry<String, ?> e : project.getProperties().entrySet()) {
+            if (e.getValue() instanceof String) {
+                context.getBuildSystemProperties().put(e.getKey(), e.getValue().toString());
+            }
+        }
+
+        //  this is a minor hack to allow ApplicationConfig to be populated with defaults
+        context.getBuildSystemProperties().putIfAbsent("quarkus.application.name", project.getName());
+        if (project.getVersion() != null) {
+            context.getBuildSystemProperties().putIfAbsent("quarkus.application.version", project.getVersion().toString());
+        }
+
         context.setSourceEncoding(getSourceEncoding());
         try {
             List<String> args = new ArrayList<>();

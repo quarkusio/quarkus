@@ -57,6 +57,21 @@ Default region name [None]: us-east-1
 Default output format [None]:
 ----
 
+=== Create a SNS topic
+
+Create a SNS topic using AWS CLI and store in `TOPIC_ARN` environment variable
+
+[source,shell,subs="verbatim,attributes"]
+----
+TOPIC_ARN=`aws sns create-topic --name=QuarksCollider --profile localstack --endpoint-url=http://localhost:8009`
+----
+
+If you want to run the demo using SNS on your AWS account, you can create a topic using AWS default profile
+[source,shell,subs="verbatim,attributes"]
+----
+TOPIC_ARN=`aws sns create-topic --name=QuarksCollider`
+----
+
 == Solution
 The application built here allows to shoot elementary particles (quarks) into a `QuarksCollider` topic of the AWS SNS.
 Additionally, we create a resource that allows to subscribe to the `QuarksCollider` topic in order to receive published quarks.
@@ -634,7 +649,7 @@ quarkus.sns.aws.credentials.type=default
 === Packaging
 
 Packaging your application is as simple as `./mvnw clean package`.
-It can be run with `java -jar target/amazon-sns-quickstart-1.0-SNAPSHOT-runner.jar`.
+It can be run with `java -Dtopic.arn=$TOPIC_ARN -jar target/amazon-sns-quickstart-1.0-SNAPSHOT-runner.jar`.
 
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.

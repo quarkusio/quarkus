@@ -425,6 +425,21 @@ URL testUrl;
 The test port can be controlled via the `quarkus.http.test-port` config property. Quarkus also creates a system
 property called `test.url` that is set to the base test URL for situations where you cannot use injection.
 
+== Working with multi-module project or external modules
+
+Quarkus heavily utilizes https://github.com/wildfly/jandex[Jandex] at build time, to discover various classes or annotations. One immediately recongizable application of this, is CDI bean discovery.
+As a result, most of the Quarkus extensions will not work properly if this build time discovery isn't properly setup.
+
+This index is created by default on the project on which Quarkus is configured for, thanks to our Maven and Gradle plugins.
+
+However, when working with a multi-module project, be sure to read the `Working with multi-module projects` section of the
+link:maven-tooling#multi-module-maven[Maven] or link:gradle-tooling#multi-module-maven[Gradle] guides.
+
+If you plan to use external modules (for example, an external library for all your domain objects),
+you will need to make these modules known to the indexing process either by adding the Jandex plugin (if you can modify them)
+or via the `quarkus.index-dependency` property inside your `application.properties` (useful in cases where you can't modify the module).
+
+Be sure to read the link:cdi-reference#bean_discovery[Bean Discovery] section of the CDI guide for more information.
 
 == Packaging and run the application
 

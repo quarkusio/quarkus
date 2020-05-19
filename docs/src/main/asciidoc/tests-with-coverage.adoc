@@ -211,9 +211,9 @@ We're now able to distinguish unit tests and integration tests. Now, let's bind 
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <excludedGroups>integration</excludedGroups>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -531,10 +531,10 @@ It also requires a small change in the Surefire configuration. Note below that w
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <excludedGroups>integration</excludedGroups>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <jacoco-agent.destfile>${project.build.directory}/jacoco-ut.exec</jacoco-agent.destfile>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -546,9 +546,9 @@ It also requires a small change in the Surefire configuration. Note below that w
                         <configuration>
                             <excludedGroups>!integration</excludedGroups>
                             <groups>integration</groups>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <jacoco-agent.destfile>${project.build.directory}/jacoco-it.exec</jacoco-agent.destfile>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                 </executions>
@@ -577,10 +577,10 @@ You should end up with something like this (note the addition of the `merge-resu
                 <version>${surefire-plugin.version}</version>
                 <configuration>
                     <excludedGroups>integration</excludedGroups>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <jacoco-agent.destfile>${project.build.directory}/jacoco-ut.exec</jacoco-agent.destfile>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -592,9 +592,9 @@ You should end up with something like this (note the addition of the `merge-resu
                         <configuration>
                             <excludedGroups>!integration</excludedGroups>
                             <groups>integration</groups>
-                            <systemProperties>
+                            <systemPropertyVariables>
                                 <jacoco-agent.destfile>${project.build.directory}/jacoco-it.exec</jacoco-agent.destfile>
-                            </systemProperties>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                 </executions>

@@ -564,9 +564,9 @@ Let's add the testing dependencies into the  `./quarkus-greeting/deployment/pom.
                 <artifactId>maven-surefire-plugin</artifactId> <!--3-->
                 <version>${maven.surefire.version}</version>
                 <configuration>
-                    <systemProperties>
+                    <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

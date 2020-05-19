@@ -1,4 +1,4 @@
-package io.quarkus.webjars.locator.runtime;
+package io.quarkus.webjar.locator.runtime;
 
 import java.util.Map;
 
@@ -7,7 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
-public class WebJarsLocatorRecorder {
+public class WebJarLocatorRecorder {
 
     public Handler<RoutingContext> getHandler(String webjarsRootUrl, Map<String, String> webjarNameToVersionMap) {
         return (event) -> {

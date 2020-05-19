@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-webjars-locator-deployment</artifactId>
-    <name>Quarkus - WebJars Locator - Deployment</name>
+    <name>Quarkus - WebJar Locator - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -30,7 +30,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-webjars-locator</artifactId>
         </dependency>
-
+        
         <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,24 +42,25 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-
+        
+        <!-- Using setForcedDependencies only works if the dependency is in the pom's test scope. -->
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>jquery</artifactId>
-            <version>3.4.1</version>
-            <scope>test</scope>
+          <groupId>org.webjars</groupId>
+          <artifactId>jquery</artifactId>
+          <version>3.4.1</version>
+          <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.webjars</groupId>
-            <artifactId>momentjs</artifactId>
-            <version>2.24.0</version>
-            <scope>test</scope>
+          <groupId>org.webjars</groupId>
+          <artifactId>momentjs</artifactId>
+          <version>2.24.0</version>
+          <scope>test</scope>
         </dependency>
-
+        
+        <!-- DevMode has no setForcedDependencies, so need to add resteasy extension here -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
-            <scope>test</scope>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-resteasy</artifactId>
         </dependency>
     </dependencies>
 

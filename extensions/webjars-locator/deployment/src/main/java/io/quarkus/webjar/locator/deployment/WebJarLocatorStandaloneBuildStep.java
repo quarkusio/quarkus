@@ -1,4 +1,4 @@
-package io.quarkus.webjars.locator.deployment;
+package io.quarkus.webjar.locator.deployment;
 
 import java.util.Map;
 
@@ -11,9 +11,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.webjars.locator.runtime.WebJarsLocatorRecorder;
+import io.quarkus.webjar.locator.runtime.WebJarLocatorRecorder;
 
-public class WebJarsLocatorProcessor {
+public class WebJarLocatorStandaloneBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -21,7 +21,7 @@ public class WebJarsLocatorProcessor {
             HttpBuildTimeConfig httpConfig,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<RouteBuildItem> routes,
-            WebJarsLocatorRecorder recorder) throws Exception {
+            WebJarLocatorRecorder recorder) throws Exception {
 
         WebJarAssetLocator webJarLocator = new WebJarAssetLocator();
         Map<String, String> webjarNameToVersionMap = webJarLocator.getWebJars();

@@ -1,6 +1,8 @@
-package io.quarkus.webjars.locator.test;
+package io.quarkus.webjar.locator.test;
 
 import static org.hamcrest.core.Is.is;
+
+import java.util.Arrays;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -8,17 +10,22 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class WebJarsLocatorTest {
+public class WebJarLocatorTest {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
-                    .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"));
+                    .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
+            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", "3.4.1"),
+                    new AppArtifact("org.webjars", "momentjs", "2.24.0"),
+                    // We require another extension to provide basic web server capabilities
+                    new AppArtifact("io.quarkus", "quarkus-resteasy", "999-SNAPSHOT")));
 
     @Test
     public void test() {

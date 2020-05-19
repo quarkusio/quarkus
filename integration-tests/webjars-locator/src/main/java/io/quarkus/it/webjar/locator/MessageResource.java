@@ -1,4 +1,4 @@
-package io.quarkus.it.webjars.locator;
+package io.quarkus.it.webjar.locator;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

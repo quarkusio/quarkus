@@ -1,10 +1,11 @@
 ---
-name: "WebJars Locator"
+name: "WebJar Locator"
 metadata:
   short-name: "webjars-locator"
   keywords:
   - "web"
   - "webjar"
+  guide: ""
   categories:
   - "web"
   status: "stable"

@@ -1,4 +1,4 @@
-package io.quarkus.it.webjars.locator;
+package io.quarkus.it.webjar.locator;
 
 import java.time.LocalDate;
 

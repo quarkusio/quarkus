@@ -15,7 +15,6 @@
 
     <properties>
         <commons-compress.version>1.20</commons-compress.version>
-        <webjars-locator.version>0.39</webjars-locator.version>
     </properties>
 
     <dependencyManagement>
@@ -833,7 +832,7 @@
             <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>webjars-locator</artifactId>
-                <version>${webjars-locator.version}</version>
+                <version>0.39</version>
             </dependency>
 
             <!-- Quarkus test dependencies -->

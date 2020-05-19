@@ -47,15 +47,12 @@ This command generates the Maven project with a REST endpoint and imports the `e
 
 If you don't want to use the Maven plugin, you can just include the dependency in your pom.xml:
 [source,xml]
---
-<dependencies>
-    <!-- Elytron Security OAuth2 extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-elytron-security-oauth2</artifactId>
-    </dependency>
-</dependencies>
---
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-oauth2</artifactId>
+</dependency>
+----
 
 
 === Examine the JAX-RS resource

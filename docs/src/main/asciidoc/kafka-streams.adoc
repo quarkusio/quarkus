@@ -84,15 +84,32 @@ Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mkdir producer && cd producer && \
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-producer \
     -Dextensions="kafka" \
-    && cd ..
+    && mv kafka-streams-quickstart-producer producer
 ----
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
+
+If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kafka"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+</dependency>
+----
 
 === The Temperature Value Producer
 
@@ -226,15 +243,32 @@ Create another project like so:
 
 [source, subs=attributes+]
 ----
-mkdir aggregator && cd aggregator && \
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-aggregator \
     -Dextensions="kafka-streams,resteasy-jsonb" \
-    && cd ..
+    && mv kafka-streams-quickstart-aggregator aggregator
 ----
 
 This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for JSON-B.
+
+If you already have your Quarkus project configured, you can add the `kafka-streams` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kafka-streams"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kafka-streams</artifactId>
+</dependency>
+----
 
 === The Pipeline Implementation
 

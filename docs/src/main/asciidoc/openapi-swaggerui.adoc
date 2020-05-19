@@ -188,6 +188,16 @@ You just need to add the `openapi` extension to your Quarkus application:
 ./mvnw quarkus:add-extension -Dextensions="openapi"
 ----
 
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-openapi</artifactId>
+</dependency>
+----
+
 Now, we are ready to run our application:
 
 [source, shell]

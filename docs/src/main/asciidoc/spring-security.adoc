@@ -51,6 +51,32 @@ cd spring-security-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
 
+If you already have your Quarkus project configured, you can add the `spring-web`, `spring-security` and `security-properties-file` extensions
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-web, spring-security, quarkus-elytron-security-properties-file"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-web</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-security</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-properties-file</artifactId>
+</dependency>
+----
+
 For more information about `security-properties-file`, you can check out the guide of the link:security-properties[quarkus-elytron-security-properties-file] extension.
 
 == GreetingController

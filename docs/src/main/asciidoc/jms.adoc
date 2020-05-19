@@ -71,8 +71,8 @@ This command generates a Maven project, with its pom.xml importing the quarkus-q
 [source]
 ----
 <dependency>
-  <groupId>org.amqphub.quarkus</groupId>
-  <artifactId>quarkus-qpid-jms</artifactId>
+    <groupId>org.amqphub.quarkus</groupId>
+    <artifactId>quarkus-qpid-jms</artifactId>
 </dependency>
 ----
 

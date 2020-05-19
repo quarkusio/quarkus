@@ -19,17 +19,18 @@ Once you have your Quarkus project configured you can add the `infinispan-client
 to your project by running the following from the command line in your project base directory.
 
 [source]
+----
 ./mvnw quarkus:add-extension -Dextensions="infinispan-client"
+----
 
 This will add the following to your pom.xml
 
 [source,xml]
 ----
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-infinispan-client</artifactId>
-        <scope>provided</scope>
-    </dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-infinispan-client</artifactId>
+</dependency>
 ----
 
 The Infinispan client is configurable in the `application.properties` file that can be

@@ -50,6 +50,24 @@ cd spring-web-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-web` extension.
 
+If you already have your Quarkus project configured, you can add the `spring-web` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-web"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-web</artifactId>
+</dependency>
+----
+
 == GreetingController
 
 The Quarkus maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the JAX-RS ones used by default)

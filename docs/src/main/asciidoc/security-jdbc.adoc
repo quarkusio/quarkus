@@ -61,6 +61,24 @@ Don't forget to add the database connector library of choice. Here we are using 
 This command generates a Maven project, importing the `elytron-security-jdbc` extension
 which is an https://docs.wildfly.org/17/WildFly_Elytron_Security.html#jdbc-security-realm[`wildfly-elytron-realm-jdbc`] adapter for Quarkus applications.
 
+If you already have your Quarkus project configured, you can add the `elytron-security-jdbc` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="elytron-security-jdbc"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elytron-security-jdbc</artifactId>
+</dependency>
+----
+
 == Writing the application
 
 Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:

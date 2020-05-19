@@ -50,6 +50,24 @@ cd spring-di-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-di` extension.
 
+If you already have your Quarkus project configured, you can add the `spring-di` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-di"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-di</artifactId>
+</dependency>
+----
+
 == Add beans using Spring annotations
 
 Let's proceed to create some beans using various Spring annotations.

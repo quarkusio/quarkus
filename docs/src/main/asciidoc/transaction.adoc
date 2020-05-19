@@ -21,15 +21,12 @@ You might need to add it as a dependency explicitly if you are using transaction
 Add the following to your `pom.xml`:
 
 [source,xml]
---
-<dependencies>
-    <!-- Transaction Manager extension -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-narayana-jta</artifactId>
-    </dependency>
-</dependencies>
---
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-narayana-jta</artifactId>
+</dependency>
+----
 
 == Starting and stopping transactions: defining your boundaries
 
@@ -40,7 +37,7 @@ You can define your transaction boundaries the easy way, or the less easy way :)
 The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
@@ -59,7 +56,7 @@ public class SantaClausService {
         }
     }
 }
---
+----
 
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
 <2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
@@ -88,7 +85,7 @@ You can also programmatically ask for a transaction to be marked for rollback.
 Inject a `TransactionManager` for this.
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
@@ -108,7 +105,7 @@ public class SantaClausService {
         }
     }
 }
---
+----
 
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
@@ -150,7 +147,7 @@ link:context-propagation[Context Propagation guide].
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 
 [source,java]
---
+----
 @ApplicationScoped
 public class SantaClausService {
 
@@ -172,7 +169,7 @@ public class SantaClausService {
         }
     }
 }
---
+----
 
 [NOTE]
 ====

@@ -89,7 +89,7 @@ include::./status-include.adoc[]
 To use the extension include it as a dependency in your application pom:
 
 [source,xml]
---
+----
 <dependencies>
     <!-- STM extension -->
     <dependency>
@@ -98,7 +98,7 @@ To use the extension include it as a dependency in your application pom:
       <version>${quarkus.version}</version>
     </dependency>
 </dependencies>
---
+----
 
 == Defining STM-aware classes
 
@@ -113,13 +113,13 @@ The specific annotation that STM-aware application interfaces must use is `org.j
 For example:
 
 [source,java]
---
+----
 @Transactional
 public interface FlightService {
     int getNumberOfBookings();
     void makeBooking(String details);
 }
---
+----
 
 Classes which implement this interface are able to use additional annotations from Narayana to tell the STM
 subsystem about things such as whether a method will modify the state of the object, or what state variables
@@ -128,7 +128,7 @@ if a transaction aborts. As mentioned earlier, if those annotations are not pres
 guarantee safety, such as assuming all methods will modify state.
 
 [source,java]
---
+----
 public class FlightServiceImpl implements FlightService {
     @ReadLock
     public int getNumberOfBookings() { ... }
@@ -137,7 +137,7 @@ public class FlightServiceImpl implements FlightService {
     @NotState
     private int timesCalled;
 }
---
+----
 
 For example, by using the `@ReadLock` annotation on the `getNumberOfBookings` method, we are able to tell the
 STM subsystem that no state modifications will occur in this object when it is used in the transactional
@@ -165,7 +165,7 @@ the object through the original reference will not allow the STM subsystem to tr
 concurrency control.
 
 [source,java]
---
+----
     import org.jboss.stm.Container;
 
     ...
@@ -173,7 +173,7 @@ concurrency control.
     Container<FlightService> container = new Container<>(); <1>
     FlightServiceImpl instance = new FlightServiceImpl(); <2>
     FlightService flightServiceProxy = container.create(instance); <3>
---
+----
 
 <1> You need to tell each Container about the type of objects for which it will be responsible. In this example
     it will be instances that implement the FlightService interface.
@@ -203,7 +203,7 @@ transaction acts as the parent of this newly created transaction.
 The application can programmatically start a transaction before accessing the methods of STM objects:
 
 [source,java]
---
+----
 AtomicAction aa = new AtomicAction(); <1>
 
 aa.begin(); <2>
@@ -218,7 +218,7 @@ aa.begin(); <2>
         aa.abort(); <6>
     }
 }
---
+----
 
 <1> An object for manually controlling transaction boundaries (AtomicAction and many other useful
     classes are included in the extension).

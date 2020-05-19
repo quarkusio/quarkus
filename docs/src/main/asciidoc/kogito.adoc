@@ -93,6 +93,24 @@ This command generates a Maven project, importing the `kogito` extension
 that comes with all needed dependencies and configuration to equip your application
 with business automation.
 
+If you already have your Quarkus project configured, you can add the `kogito` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="kogito"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus</artifactId>
+</dependency>
+----
+
 == Writing the application
 
 Let's start by implementing the simple data object `Person`. As you can see from the source code below it is just a POJO:

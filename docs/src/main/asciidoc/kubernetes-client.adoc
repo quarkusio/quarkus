@@ -26,7 +26,7 @@ to your project by running the following command in your project base directory.
 ./mvnw quarkus:add-extension -Dextensions="kubernetes-client"
 ----
 
-This will add the following to your pom.xml:
+This will add the following to your `pom.xml`:
 
 [source,xml]
 ----
@@ -79,7 +79,6 @@ Let's assume we have a REST endpoint defined like so:
 
 [source%nowrap,java]
 ----
-
 @Path("/pod")
 public class Pods {
 

@@ -52,7 +52,16 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd rest-json-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS and http://json-b.net/[JSON-B] extensions,
+and in particular adds the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jsonb</artifactId>
+</dependency>
+----
 
 Quarkus also supports https://github.com/FasterXML/jackson[Jackson] so, if you prefer Jackson over JSON-B, you can create a project relying on the RESTEasy Jackson extension instead:
 
@@ -65,6 +74,17 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jackson"
 cd rest-json-quickstart
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS and https://github.com/FasterXML/jackson[Jackson] extensions,
+and in particular adds the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
 ----
 
 To improve user experience, Quarkus registers the three Jackson https://github.com/FasterXML/jackson-modules-java8[Java 8 modules] so you don't need to do it manually.

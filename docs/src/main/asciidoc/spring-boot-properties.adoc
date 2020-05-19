@@ -48,6 +48,24 @@ cd spring-boot-properties-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-boot-properties` extension.
 
+If you already have your Quarkus project configured, you can add the `spring-boot-properties` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-boot-properties"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-boot-properties</artifactId>
+</dependency>
+----
+
 == GreetingController
 
 The Quarkus Maven plugin automatically generated a `GreetingResource` JAX-RS resource in the

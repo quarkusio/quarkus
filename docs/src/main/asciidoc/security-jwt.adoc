@@ -39,6 +39,24 @@ cd security-jwt-quickstart
 
 This command generates the Maven project with a REST endpoint and imports the `smallrye-jwt` extension, which includes the {mp-jwt} support.
 
+If you already have your Quarkus project configured, you can add the `smallrye-jwt` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="smallrye-jwt"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-jwt</artifactId>
+</dependency>
+----
+
 === Examine the JAX-RS resource
 
 Open the `src/main/java/org/acme/security/jwt/TokenSecuredResource.java` file and see the following content:

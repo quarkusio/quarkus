@@ -62,6 +62,24 @@ Don't forget to add the database connector library of choice. Here we are using 
 This command generates a Maven project, importing the `security-jpa` extension
 which allows you to map your security source to JPA entities.
 
+If you already have your Quarkus project configured, you can add the `security-jpa` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="security-jpa"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security-jpa</artifactId>
+</dependency>
+----
+
 == Writing the application
 
 Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:

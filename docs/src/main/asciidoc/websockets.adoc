@@ -51,6 +51,24 @@ cd websockets-quickstart
 
 This command generates the Maven project (without any classes) and import the `undertow-websockets` extension.
 
+If you already have your Quarkus project configured, you can add the `undertow-websockets` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="undertow-websockets"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-undertow-websockets</artifactId>
+</dependency>
+----
+
 == Handling web sockets
 
 Our application contains a single class that handles the web sockets.

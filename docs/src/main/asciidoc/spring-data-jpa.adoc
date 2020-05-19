@@ -48,6 +48,24 @@ cd spring-data-jpa-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-data-jpa` extension.
 
+If you already have your Quarkus project configured, you can add the `spring-data-jpa` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="spring-data-jpa"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-data-jpa</artifactId>
+</dependency>
+----
+
 == Define the Entity
 
 Throughout the course of this guide, the following JPA Entity will be used:

@@ -23,10 +23,6 @@ public class RequestLineAttribute implements ExchangeAttribute {
                 .append(exchange.request().method())
                 .append(' ')
                 .append(exchange.request().uri());
-        if (exchange.request().query() != null) {
-            sb.append('?');
-            sb.append(exchange.request().query());
-        }
         sb.append(' ')
                 .append(exchange.request().version());
         return sb.toString();

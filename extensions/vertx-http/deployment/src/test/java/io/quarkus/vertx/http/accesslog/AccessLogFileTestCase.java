@@ -90,7 +90,7 @@ public class AccessLogFileTestCase {
 
     @Test
     public void testSingleLogMessageToFile() throws IOException, InterruptedException {
-        RestAssured.get("/does-not-exist");
+        RestAssured.get("/does-not-exist?foo=bar");
 
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
@@ -105,6 +105,10 @@ public class AccessLogFileTestCase {
                         String data = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
                         Assertions.assertTrue(data.contains("404"));
                         Assertions.assertTrue(data.contains("/does-not-exist"));
+                        Assertions.assertTrue(data.contains("?foo=bar"),
+                                "access log is missing query params");
+                        Assertions.assertFalse(data.contains("?foo=bar?foo=bar"),
+                                "access log contains duplicated query params");
                     }
                 });
     }

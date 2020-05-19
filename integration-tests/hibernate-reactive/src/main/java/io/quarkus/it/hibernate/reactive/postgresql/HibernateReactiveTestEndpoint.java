@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.rx.postgresql;
+package io.quarkus.it.hibernate.reactive.postgresql;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -6,9 +6,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.hibernate.rx.RxSession;
-import org.hibernate.rx.RxSessionFactory;
-import org.hibernate.rx.mutiny.Mutiny;
+import org.hibernate.reactive.mutiny.Mutiny;
+import org.hibernate.reactive.stage.Stage;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -20,18 +19,18 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveTestEndpoint {
 
     @Inject
-    RxSessionFactory rxSessionFactory;
+    Stage.SessionFactory reactiveSessionFactory;
 
     @Inject
     PgPool pgPool;
 
     @Inject
-    RxSession session;
+    Stage.Session session;
 
     @GET
-    @Path("/reactiveFindRx")
+    @Path("/reactiveFind")
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<GuineaPig> reactiveFindRx() {
+    public Uni<GuineaPig> reactiveFind() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB()
                 .onItem().produceCompletionStage(junk -> session.find(GuineaPig.class, expectedPig.getId()));

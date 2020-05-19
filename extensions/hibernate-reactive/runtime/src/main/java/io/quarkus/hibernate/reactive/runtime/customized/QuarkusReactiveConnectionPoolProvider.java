@@ -1,11 +1,11 @@
-package io.quarkus.hibernate.rx.runtime.customized;
+package io.quarkus.hibernate.reactive.runtime.customized;
 
 import java.util.Map;
 
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.rx.impl.PoolConnection;
-import org.hibernate.rx.service.RxConnection;
-import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
+import org.hibernate.reactive.impl.PoolConnection;
+import org.hibernate.reactive.service.ReactiveConnection;
+import org.hibernate.reactive.service.initiator.ReactiveConnectionPoolProvider;
 import org.hibernate.service.spi.Configurable;
 
 import io.vertx.sqlclient.Pool;
@@ -16,12 +16,12 @@ import io.vertx.sqlclient.Pool;
  * Vert.x {@link PgPool} or {@link MySQLPool}.
  */
 @SuppressWarnings("serial")
-public class QuarkusRxConnectionPoolProvider implements RxConnectionPoolProvider, Configurable {
+public class QuarkusReactiveConnectionPoolProvider implements ReactiveConnectionPoolProvider, Configurable {
 
     private final Pool pool;
     private boolean showSQL;
 
-    public QuarkusRxConnectionPoolProvider(Pool pool) {
+    public QuarkusReactiveConnectionPoolProvider(Pool pool) {
         this.pool = pool;
     }
 
@@ -31,7 +31,7 @@ public class QuarkusRxConnectionPoolProvider implements RxConnectionPoolProvider
     }
 
     @Override
-    public RxConnection getConnection() {
+    public ReactiveConnection getConnection() {
         return new PoolConnection(pool, showSQL);
     }
 

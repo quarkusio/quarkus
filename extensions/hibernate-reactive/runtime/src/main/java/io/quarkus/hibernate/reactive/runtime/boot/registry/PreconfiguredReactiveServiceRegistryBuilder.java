@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.rx.runtime.boot.registry;
+package io.quarkus.hibernate.reactive.runtime.boot.registry;
 
 import static org.hibernate.internal.HEMLogging.messageLogger;
 
@@ -25,10 +25,10 @@ import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
+import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
-import org.hibernate.rx.jpa.impl.RxPersisterClassResolverInitiator;
-import org.hibernate.rx.service.initiator.RxTransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
@@ -45,8 +45,8 @@ import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
-import io.quarkus.hibernate.rx.runtime.customized.QuarkusDummyConnectionProviderInitiator;
-import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderInitiator;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusDummyConnectionProviderInitiator;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionProviderInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -57,9 +57,9 @@ import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderIni
  * has been created via the traditional methods, so this builder expects much
  * more explicit input.
  */
-public class PreconfiguredRxServiceRegistryBuilder {
+public class PreconfiguredReactiveServiceRegistryBuilder {
 
-    private static final EntityManagerMessageLogger LOG = messageLogger(PreconfiguredRxServiceRegistryBuilder.class);
+    private static final EntityManagerMessageLogger LOG = messageLogger(PreconfiguredReactiveServiceRegistryBuilder.class);
 
     private final Map configurationValues = new HashMap();
     private final List<StandardServiceInitiator> initiators;
@@ -67,7 +67,7 @@ public class PreconfiguredRxServiceRegistryBuilder {
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
-    public PreconfiguredRxServiceRegistryBuilder(RecordedState rs) {
+    public PreconfiguredReactiveServiceRegistryBuilder(RecordedState rs) {
         this.initiators = buildQuarkusServiceInitiatorList(rs);
         this.integrators = rs.getIntegrators();
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getOriginalMetadata()
@@ -75,17 +75,17 @@ public class PreconfiguredRxServiceRegistryBuilder {
                 .getServiceRegistry();
     }
 
-    public PreconfiguredRxServiceRegistryBuilder applySetting(String settingName, Object value) {
+    public PreconfiguredReactiveServiceRegistryBuilder applySetting(String settingName, Object value) {
         configurationValues.put(settingName, value);
         return this;
     }
 
-    public PreconfiguredRxServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
+    public PreconfiguredReactiveServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
         initiators.add(initiator);
         return this;
     }
 
-    public PreconfiguredRxServiceRegistryBuilder addService(ProvidedService providedService) {
+    public PreconfiguredReactiveServiceRegistryBuilder addService(ProvidedService providedService) {
         providedServices.add(providedService);
         return this;
     }
@@ -167,7 +167,7 @@ public class PreconfiguredRxServiceRegistryBuilder {
         serviceInitiators.add(DisabledJMXInitiator.INSTANCE);
 
         serviceInitiators.add(PersisterClassResolverInitiator.INSTANCE);
-        serviceInitiators.add(RxPersisterClassResolverInitiator.INSTANCE);
+        serviceInitiators.add(ReactivePersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         // Custom one!
@@ -175,7 +175,7 @@ public class PreconfiguredRxServiceRegistryBuilder {
         // the real connectionprovider instead of the dummy one
         serviceInitiators.add(QuarkusDummyConnectionProviderInitiator.INSTANCE);
         //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
-        serviceInitiators.add(QuarkusRxConnectionProviderInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusReactiveConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 
         // Disabled: Dialect is injected explicitly
@@ -201,7 +201,7 @@ public class PreconfiguredRxServiceRegistryBuilder {
         serviceInitiators.add(QuarkusRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
-        serviceInitiators.add(RxTransactionCoordinatorBuilderInitiator.INSTANCE);
+        serviceInitiators.add(ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE);
 
         serviceInitiators.add(ManagedBeanRegistryInitiator.INSTANCE);
 

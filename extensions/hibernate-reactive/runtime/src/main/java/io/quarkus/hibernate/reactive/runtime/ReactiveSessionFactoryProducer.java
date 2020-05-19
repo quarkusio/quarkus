@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.rx.runtime;
+package io.quarkus.hibernate.reactive.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -8,12 +8,12 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 
-import org.hibernate.rx.RxSessionFactory;
+import org.hibernate.reactive.stage.Stage;
 
 import io.quarkus.arc.DefaultBean;
 
 @ApplicationScoped
-public class RxSessionFactoryProducer {
+public class ReactiveSessionFactoryProducer {
 
     @Inject
     @PersistenceUnit
@@ -22,9 +22,9 @@ public class RxSessionFactoryProducer {
     @Produces
     @Singleton
     @DefaultBean
-    @Typed(RxSessionFactory.class)
-    public RxSessionFactory rxSessionFactory() {
-        return emf.unwrap(RxSessionFactory.class);
+    @Typed(Stage.SessionFactory.class)
+    public Stage.SessionFactory reactiveSessionFactory() {
+        return emf.unwrap(Stage.SessionFactory.class);
     }
 
 }

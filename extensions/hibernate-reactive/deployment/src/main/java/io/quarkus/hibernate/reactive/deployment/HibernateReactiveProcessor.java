@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.rx.deployment;
+package io.quarkus.hibernate.reactive.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
@@ -16,14 +16,14 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.JpaEntitiesBuildItem;
 import io.quarkus.hibernate.orm.deployment.NonJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.rx.runtime.HibernateRxRecorder;
-import io.quarkus.hibernate.rx.runtime.RxSessionFactoryProducer;
-import io.quarkus.hibernate.rx.runtime.RxSessionProducer;
+import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
+import io.quarkus.hibernate.reactive.runtime.ReactiveSessionFactoryProducer;
+import io.quarkus.hibernate.reactive.runtime.ReactiveSessionProducer;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 
-public final class HibernateRxProcessor {
+public final class HibernateReactiveProcessor {
 
-    private static final String HIBERNATE_RX = "Hibernate Reactive";
+    private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -38,15 +38,15 @@ public final class HibernateRxProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(RxSessionFactoryProducer.class)
-                .addBeanClass(RxSessionProducer.class)
+                .addBeanClass(ReactiveSessionFactoryProducer.class)
+                .addBeanClass(ReactiveSessionProducer.class)
                 .build());
     }
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] classes = {
-                "org.hibernate.rx.persister.entity.impl.RxSingleTableEntityPersister"
+                "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister"
         };
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, classes));
     }
@@ -54,11 +54,11 @@ public final class HibernateRxProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorderContext,
-            HibernateRxRecorder recorder,
+            HibernateReactiveRecorder recorder,
             JpaEntitiesBuildItem jpaEntities,
             List<NonJpaModelBuildItem> nonJpaModels) {
         final boolean enableRx = hasEntities(jpaEntities, nonJpaModels);
-        recorder.callHibernateRxFeatureInit(enableRx);
+        recorder.callHibernateReactiveFeatureInit(enableRx);
     }
 
     @BuildStep
@@ -67,7 +67,7 @@ public final class HibernateRxProcessor {
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
         // when HibernateORM starts its persistence units
-        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_RX));
+        runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE));
     }
 
     private boolean hasEntities(JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {

@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.rx.postgresql;
+package io.quarkus.it.hibernate.reactive.postgresql;
 
 import java.util.Objects;
 

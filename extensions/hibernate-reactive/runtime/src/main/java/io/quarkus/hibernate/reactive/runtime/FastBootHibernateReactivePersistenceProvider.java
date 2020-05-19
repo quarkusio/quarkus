@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.rx.runtime;
+package io.quarkus.hibernate.reactive.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,10 +16,11 @@ import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.rx.jpa.impl.DelegatorPersistenceUnitInfo;
-import org.hibernate.rx.jpa.impl.RxPersisterClassResolverInitiator;
-import org.hibernate.rx.service.RxGenerationTarget;
-import org.hibernate.rx.service.initiator.RxTransactionCoordinatorBuilderInitiator;
+import org.hibernate.reactive.cfg.ReactiveSettings;
+import org.hibernate.reactive.jpa.impl.DelegatorPersistenceUnitInfo;
+import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
+import org.hibernate.reactive.service.ReactiveGenerationTarget;
+import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
@@ -35,21 +36,20 @@ import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegist
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import io.quarkus.hibernate.rx.runtime.boot.FastBootRxEntityManagerFactoryBuilder;
-import io.quarkus.hibernate.rx.runtime.customized.AvailableRxSettings;
-import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderInitiator;
+import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerFactoryBuilder;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionProviderInitiator;
 import io.vertx.sqlclient.Pool;
 
 /**
- * This can not inherit from RxPersistenceProvider because it references HibernatePersistenceProvider
+ * This can not inherit from ReactivePersistenceProvider because it references HibernatePersistenceProvider
  * and that would trigger the native-image tool to include all code which could be triggered from using
  * that: we need to be able to fully exclude HibernatePersistenceProvider from the native image.
  */
-final class FastBootHibernateRxPersistenceProvider implements PersistenceProvider {
+final class FastBootHibernateReactivePersistenceProvider implements PersistenceProvider {
 
-    private static final Logger log = Logger.getLogger(FastBootHibernateRxPersistenceProvider.class);
+    private static final Logger log = Logger.getLogger(FastBootHibernateReactivePersistenceProvider.class);
 
-    private static final String IMPLEMENTATION_NAME = "org.hibernate.rx.jpa.impl.RxPersistenceProvider";
+    private static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.jpa.impl.ReactivePersistenceProvider";
 
     private final FastBootHibernatePersistenceProvider delegate = new FastBootHibernatePersistenceProvider();
 
@@ -137,7 +137,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
 
-            return new FastBootRxEntityManagerFactoryBuilder(
+            return new FastBootReactiveEntityManagerFactoryBuilder(
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
@@ -152,9 +152,9 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,
             RecordedState rs) {
         PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder(rs);
-        serviceRegistryBuilder.addInitiator(QuarkusRxConnectionProviderInitiator.INSTANCE);
-        serviceRegistryBuilder.addInitiator(RxTransactionCoordinatorBuilderInitiator.INSTANCE);
-        serviceRegistryBuilder.addInitiator(RxPersisterClassResolverInitiator.INSTANCE);
+        serviceRegistryBuilder.addInitiator(QuarkusReactiveConnectionProviderInitiator.INSTANCE);
+        serviceRegistryBuilder.addInitiator(ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE);
+        serviceRegistryBuilder.addInitiator(ReactivePersisterClassResolverInitiator.INSTANCE);
 
         runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
@@ -167,7 +167,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         StandardServiceRegistryImpl standardServiceRegistry = serviceRegistryBuilder.buildNewServiceRegistry();
 
         standardServiceRegistry.getService(SchemaManagementTool.class)
-                .setCustomDatabaseGenerationTarget(new RxGenerationTarget(standardServiceRegistry));
+                .setCustomDatabaseGenerationTarget(new ReactiveGenerationTarget(standardServiceRegistry));
 
         return standardServiceRegistry;
     }
@@ -190,7 +190,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             // explicitly asks for a different one.
             return true;
         }
-        return FastBootHibernateRxPersistenceProvider.class.getName().equals(requestedProviderName)
+        return FastBootHibernateReactivePersistenceProvider.class.getName().equals(requestedProviderName)
                 || IMPLEMENTATION_NAME.equals(requestedProviderName)
                 || FastBootHibernatePersistenceProvider.class.getName().equals(requestedProviderName)
                 || "org.hibernate.jpa.HibernatePersistenceProvider".equals(requestedProviderName);
@@ -198,7 +198,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
 
     private void injectVertxPool(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
-                runtimeSettingsBuilder.isConfigured(AvailableRxSettings.VERTX_POOL)) {
+                runtimeSettingsBuilder.isConfigured(ReactiveSettings.VERTX_POOL)) {
             // the pool has been defined in the persistence unit, we can bail out
             return;
         }
@@ -209,7 +209,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
         }
 
-        runtimeSettingsBuilder.put(AvailableRxSettings.VERTX_POOL, poolHandle.get());
+        runtimeSettingsBuilder.put(ReactiveSettings.VERTX_POOL, poolHandle.get());
     }
 
     @Override

@@ -1,9 +1,12 @@
 ---
-name: "Hibernate RX"
+name: "Hibernate Reactive"
 metadata:
-  short-name: "HibernateRX"
   keywords:
-  - "hibernate-rx"
+  - "hibernate-reactive"
+  - "hibernate"
+  - "reactive"
+  - "database"
   categories:
   - "data"
+  - "reactive"
   status: "stable"

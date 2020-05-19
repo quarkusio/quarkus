@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.rx.postgresql;
+package io.quarkus.it.hibernate.reactive.postgresql;
 
 import static org.hamcrest.Matchers.is;
 
@@ -14,9 +14,9 @@ import io.restassured.RestAssured;
 public class HibernateReactiveTest {
 
     @Test
-    public void reactiveFindRx() {
+    public void reactiveFind() {
         RestAssured.when()
-                .get("/tests/reactiveFindRx")
+                .get("/tests/reactiveFind")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }

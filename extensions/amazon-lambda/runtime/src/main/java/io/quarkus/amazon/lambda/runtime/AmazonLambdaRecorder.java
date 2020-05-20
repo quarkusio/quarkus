@@ -140,7 +140,7 @@ public class AmazonLambdaRecorder {
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
-                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.cognitoIdReader) {
+                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader) {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {

@@ -1,0 +1,6 @@
+---
+metadata: {}
+group-id: "org.acme"
+artifact-id: "acme-ext"
+version: "1.0-SNAPSHOT"
+name: "Acme Ext - Runtime"

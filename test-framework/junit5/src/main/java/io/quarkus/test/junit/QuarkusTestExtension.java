@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -106,12 +105,9 @@ public class QuarkusTestExtension
                 rootBuilder.add(testClassLocation);
                 // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
                 // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
-                if (Files.isDirectory(testClassLocation)) {
-                    final Path testResourcesLocation = testClassLocation.getParent().getParent().getParent()
-                            .resolve("resources").resolve("test");
-                    if (Files.exists(testResourcesLocation)) {
-                        rootBuilder.add(testResourcesLocation);
-                    }
+                final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation, "test");
+                if (testResourcesLocation != null) {
+                    rootBuilder.add(testResourcesLocation);
                 }
             }
             originalCl = Thread.currentThread().getContextClassLoader();
@@ -123,6 +119,11 @@ public class QuarkusTestExtension
             runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
 
             rootBuilder.add(appClassLocation);
+            final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
+            if (appResourcesLocation != null) {
+                rootBuilder.add(appResourcesLocation);
+            }
+
             runnerBuilder.setApplicationRoot(rootBuilder.build());
 
             CuratedApplication curatedApplication = runnerBuilder

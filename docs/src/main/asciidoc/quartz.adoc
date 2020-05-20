@@ -286,7 +286,7 @@ public class TaskResourceTest {
 
 == Creating Quartz Tables
 
-Add a SQL migration file named `src/main/resources/db/migration/V2.0.0__QuarkusQuartzTasks.sql` with the content copied from
+Add a SQL migration file named `src/main/resources/db/migration/V2.0.0\__QuarkusQuartzTasks.sql` with the content copied from
 file with the content from link:{quickstarts-blob-url}/quartz-quickstart/src/main/resources/db/migration/V2.0.0__QuarkusQuartzTasks.sql[V2.0.0__QuarkusQuartzTasks.sql].
 
 == Configuring the load balancer

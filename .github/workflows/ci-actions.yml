@@ -82,7 +82,7 @@ jobs:
           restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: |
-          mvn -e -B  -DskipTests=true -Dno-format -DskipDocs clean install
+          mvn -e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install
       - name: Tar Maven Repo
         shell: bash
         run: tar -czvf maven-repo.tgz -C ~ .m2/repository

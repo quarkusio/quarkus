@@ -3,6 +3,7 @@ package io.quarkus.maven.it;
 import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -252,6 +253,16 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
+    }
+
+    @Test
+    public void testTestScopedLocalProjectDependency() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/test-module-dependency");
+        final String projectVersion = System.getProperty("project.version");
+        run(true, "-Dquarkus.platform.version=" + projectVersion,
+                "-Dquarkus-plugin.version=" + projectVersion);
+
+        assertEquals("class not found", DevModeTestUtils.getHttpResponse("/hello"));
     }
 
     @Test

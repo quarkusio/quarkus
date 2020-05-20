@@ -47,10 +47,9 @@ public class QuarkusErrorServlet extends HttpServlet {
             resp.getWriter().write(jsonPayload.toString());
         } else {
             //We default to HTML representation
-            String escapedDetails = escapeHtml(details);
             resp.setContentType("text/html");
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", escapedDetails, details);
+            final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);
             if (showStack && exception != null) {
                 htmlBuilder.stack(exception);
             }
@@ -77,17 +76,6 @@ public class QuarkusErrorServlet extends HttpServlet {
 
         String[] lines = message.split("\\r?\\n");
         return lines[0].trim();
-    }
-
-    private static String escapeHtml(final String bodyText) {
-        if (bodyText == null) {
-            return "null";
-        }
-
-        return bodyText
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
     }
 
     private static String escapeJsonString(final String text) {

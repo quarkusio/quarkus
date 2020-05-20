@@ -270,14 +270,9 @@ final class ClassConfigPropertiesUtil {
                 ResultHandle mpConfig = methodCreator.getMethodParam(0);
                 if (fieldTypeClassInfo != null) {
                     if (DotNames.ENUM.equals(fieldTypeClassInfo.superName())) {
-                        // just read the value from MP Config normally
-                        ResultHandle value = methodCreator.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(Config.class, "getValue", Object.class, String.class, Class.class),
-                                mpConfig,
-                                methodCreator.load(getFullConfigName(prefixStr, namingStrategy, field)),
-                                methodCreator.loadClass(fieldTypeDotName.toString()));
-
-                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, value);
+                        populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, mpConfig,
+                                getFullConfigName(prefixStr, namingStrategy, field));
                     } else {
                         if (!fieldTypeClassInfo.hasNoArgsConstructor()) {
                             throw new IllegalArgumentException(
@@ -328,37 +323,9 @@ final class ClassConfigPropertiesUtil {
                                             MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class)));
                         }
                     } else {
-                        /*
-                         * We want to support cases where the Config class defines a default value for fields
-                         * by simply specifying the default value in its constructor
-                         * For such cases the strategy we follow is that when a requested property does not exist
-                         * we check the value from the corresponding getter (or read the field value if possible)
-                         * and if the value is not null we don't fail
-                         */
-                        if (shouldCheckForDefaultValue(currentClassInHierarchy, field)) {
-                            String getterName = JavaBeanUtil.getGetterName(field.name(), fieldTypeDotName.toString());
-
-                            ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(
-                                    fullConfigName,
-                                    fieldType, field.declaringClass().name(), methodCreator, mpConfig);
-
-                            // call the setter if the optional contained data
-                            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
-                                    useFieldAccess,
-                                    readOptionalResponse.getValue());
-                        } else {
-                            /*
-                             * In this case we want a missing property to cause an exception that we don't handle
-                             * So we call config.getValue making sure to handle collection values
-                             */
-                            ResultHandle setterValue = createReadMandatoryValueAndConvertIfNeeded(
-                                    fullConfigName, fieldType,
-                                    field.declaringClass().name(), methodCreator, mpConfig);
-                            createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
-
-                        }
-                        configPropertyBuildItemCandidates
-                                .add(new ConfigPropertyBuildItemCandidate(field.name(), fullConfigName, fieldType));
+                        populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, mpConfig,
+                                fullConfigName);
                     }
                 }
             }
@@ -391,6 +358,42 @@ final class ClassConfigPropertiesUtil {
         }
 
         return configObject;
+    }
+
+    // creates the bytecode needed to populate anything other than a nested config object or an optional
+    private static void populateTypicalProperty(MethodCreator methodCreator, ResultHandle configObject,
+            List<ConfigPropertyBuildItemCandidate> configPropertyBuildItemCandidates, ClassInfo currentClassInHierarchy,
+            FieldInfo field, boolean useFieldAccess, Type fieldType, MethodInfo setter,
+            ResultHandle mpConfig, String fullConfigName) {
+        /*
+         * We want to support cases where the Config class defines a default value for fields
+         * by simply specifying the default value in its constructor
+         * For such cases the strategy we follow is that when a requested property does not exist
+         * we check the value from the corresponding getter (or read the field value if possible)
+         * and if the value is not null we don't fail
+         */
+        if (shouldCheckForDefaultValue(currentClassInHierarchy, field)) {
+            ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(
+                    fullConfigName,
+                    fieldType, field.declaringClass().name(), methodCreator, mpConfig);
+
+            // call the setter if the optional contained data
+            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
+                    useFieldAccess,
+                    readOptionalResponse.getValue());
+        } else {
+            /*
+             * In this case we want a missing property to cause an exception that we don't handle
+             * So we call config.getValue making sure to handle collection values
+             */
+            ResultHandle setterValue = createReadMandatoryValueAndConvertIfNeeded(
+                    fullConfigName, fieldType,
+                    field.declaringClass().name(), methodCreator, mpConfig);
+            createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+
+        }
+        configPropertyBuildItemCandidates
+                .add(new ConfigPropertyBuildItemCandidate(field.name(), fullConfigName, fieldType));
     }
 
     private static String getFullConfigName(String prefixStr, ConfigProperties.NamingStrategy namingStrategy, FieldInfo field) {

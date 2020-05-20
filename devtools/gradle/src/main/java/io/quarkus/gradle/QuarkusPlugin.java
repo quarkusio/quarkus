@@ -114,9 +114,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     project.afterEvaluate(this::afterEvaluate);
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
-                    quarkusDev.dependsOn(classesTask);
-                    quarkusRemoteDev.dependsOn(classesTask);
-                    quarkusBuild.dependsOn(classesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
+                    Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+                    quarkusDev.dependsOn(classesTask, resourcesTask);
+                    quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
+                    quarkusBuild.dependsOn(classesTask, resourcesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
 
                     SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
                             .getSourceSets();
@@ -194,11 +195,19 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
         project.getLogger().debug("Configuring {} task dependencies on {} tasks", project, dep);
 
-        final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
-        if (jarTask != null) {
-            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
-            if (quarkusBuild != null) {
+        final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
+        if (quarkusBuild != null) {
+            final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
+            if (jarTask != null) {
                 quarkusBuild.dependsOn(jarTask);
+            }
+        }
+
+        final Task quarkusDev = project.getTasks().findByName(QUARKUS_DEV_TASK_NAME);
+        if (quarkusDev != null) {
+            final Task resourcesTask = dep.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+            if (resourcesTask != null) {
+                quarkusDev.dependsOn(resourcesTask);
             }
         }
 

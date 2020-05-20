@@ -215,10 +215,16 @@ public class AppModelGradleResolver implements AppModelResolver {
                     mainSourceSet.getOutput().filter(s -> s.exists()).forEach(f -> {
                         paths.add(f.toPath());
                     });
+                    for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
+                        if (resourcesDir.exists()) {
+                            paths.add(resourcesDir.toPath());
+                        }
+                    }
                     appArtifact.setPaths(paths.build());
                 }
             }
         }
+
         appBuilder.addRuntimeDeps(userDeps)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addDeploymentDeps(deploymentDeps)
@@ -251,8 +257,12 @@ public class AppModelGradleResolver implements AppModelResolver {
                 final JavaPluginConvention javaConvention = depProject.getConvention().findPlugin(JavaPluginConvention.class);
                 if (javaConvention != null) {
                     SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                    final PathsCollection.Builder paths = PathsCollection.builder()
-                            .add(Paths.get(QuarkusGradleUtils.getClassesDir(mainSourceSet, depProject.getBuildDir(), false)));
+                    final PathsCollection.Builder paths = PathsCollection.builder();
+                    final Path classesDir = Paths
+                            .get(QuarkusGradleUtils.getClassesDir(mainSourceSet, depProject.getBuildDir(), false));
+                    if (Files.exists(classesDir)) {
+                        paths.add(classesDir);
+                    }
                     for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
                         if (resourcesDir.exists()) {
                             paths.add(resourcesDir.toPath());

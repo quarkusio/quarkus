@@ -427,10 +427,19 @@ public class QuarkusDev extends QuarkusTask {
             return;
         }
 
-        final String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir());
-        final String resourcesOutputPath = resourcesSrcDir.exists()
-                ? mainSourceSet.getOutput().getResourcesDir().getAbsolutePath()
-                : classesDir;
+        String classesDir = QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir());
+
+        final String resourcesOutputPath;
+        if (resourcesSrcDir.exists()) {
+            resourcesOutputPath = mainSourceSet.getOutput().getResourcesDir().getAbsolutePath();
+            if (!Files.exists(Paths.get(classesDir))) {
+                // currently classesDir can't be null and is expected to exist
+                classesDir = resourcesOutputPath;
+            }
+        } else {
+            // currently resources dir should exist
+            resourcesOutputPath = classesDir;
+        }
 
         DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
                 project.getName(),

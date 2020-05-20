@@ -1,0 +1,28 @@
+buildscript {
+
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+}
+
+apply plugin: 'java'
+
+allprojects {
+    group 'org.acme'
+    version '1.0-SNAPSHOT'
+}
+
+subprojects {
+
+    apply plugin: 'java'
+
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+    }
+}

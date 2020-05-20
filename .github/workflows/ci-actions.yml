@@ -346,6 +346,7 @@ jobs:
               neo4j
               panache-rest-hibernate-orm
           - category: Data5
+            postgres: "true"
             timeout: 40
             test-modules: >
               hibernate-search-elasticsearch

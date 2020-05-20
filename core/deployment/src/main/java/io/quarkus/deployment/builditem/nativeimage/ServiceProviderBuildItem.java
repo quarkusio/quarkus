@@ -1,8 +1,15 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -17,6 +24,41 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     public static final String SPI_ROOT = "META-INF/services/";
     private final String serviceInterface;
     private final List<String> providers;
+
+    /**
+     * Creates and returns a {@link ServiceProviderBuildItem} for the {@code serviceInterfaceClassName} by including
+     * all the providers that are listed in the service interface descriptor file.
+     *
+     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     * @param serviceInterfaceDescriptorFile the path to the service interface descriptor file
+     * @return
+     * @throws IOException
+     */
+    public static ServiceProviderBuildItem allProviders(final String serviceInterfaceClassName,
+            final Path serviceInterfaceDescriptorFile)
+            throws IOException {
+        if (serviceInterfaceClassName == null || serviceInterfaceClassName.trim().isEmpty()) {
+            throw new IllegalArgumentException("service interface name cannot be null or blank");
+        }
+        if (serviceInterfaceDescriptorFile == null) {
+            throw new IllegalArgumentException("service interface descriptor file path cannot be null");
+        }
+        final Set<String> classNames = new LinkedHashSet<>();
+        final List<String> lines = Files.readAllLines(serviceInterfaceDescriptorFile, StandardCharsets.UTF_8);
+        // parse each line and add each listed provider
+        for (String line : lines) {
+            final int commentIndex = line.indexOf('#');
+            if (commentIndex >= 0) {
+                // strip off anything after the # (including the #)
+                line = line.substring(0, commentIndex);
+            }
+            line = line.trim();
+            if (line.length() != 0) {
+                classNames.add(line);
+            }
+        }
+        return new ServiceProviderBuildItem(serviceInterfaceClassName, new ArrayList<>(classNames));
+    }
 
     /**
      * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)

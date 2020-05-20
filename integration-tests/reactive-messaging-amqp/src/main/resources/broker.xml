@@ -103,5 +103,10 @@
             </address>
 
         </addresses>
+        <queues>
+            <queue name="people">
+                <durable>true</durable>
+            </queue>
+        </queues>
     </core>
 </configuration>

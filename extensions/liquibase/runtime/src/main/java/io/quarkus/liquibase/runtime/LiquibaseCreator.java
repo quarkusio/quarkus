@@ -38,10 +38,18 @@ class LiquibaseCreator {
     public LiquibaseFactory createLiquibase(DataSource dataSource) {
         LiquibaseConfig config = new LiquibaseConfig();
         config.changeLog = liquibaseBuildTimeConfig.changeLog;
-        liquibaseRuntimeConfig.labels.ifPresent(c -> config.labels = c);
-        liquibaseRuntimeConfig.contexts.ifPresent(c -> config.contexts = c);
-        liquibaseRuntimeConfig.databaseChangeLogLockTableName.ifPresent(c -> config.databaseChangeLogLockTableName = c);
-        liquibaseRuntimeConfig.databaseChangeLogTableName.ifPresent(c -> config.databaseChangeLogTableName = c);
+        if (liquibaseRuntimeConfig.labels.isPresent()) {
+            config.labels = liquibaseRuntimeConfig.labels.get();
+        }
+        if (liquibaseRuntimeConfig.contexts.isPresent()) {
+            config.contexts = liquibaseRuntimeConfig.contexts.get();
+        }
+        if (liquibaseRuntimeConfig.databaseChangeLogLockTableName.isPresent()) {
+            config.databaseChangeLogLockTableName = liquibaseRuntimeConfig.databaseChangeLogLockTableName.get();
+        }
+        if (liquibaseRuntimeConfig.databaseChangeLogTableName.isPresent()) {
+            config.databaseChangeLogTableName = liquibaseRuntimeConfig.databaseChangeLogTableName.get();
+        }
         config.defaultSchemaName = liquibaseRuntimeConfig.defaultSchemaName;
         config.defaultCatalogName = liquibaseRuntimeConfig.defaultCatalogName;
         config.liquibaseTablespaceName = liquibaseRuntimeConfig.liquibaseTablespaceName;

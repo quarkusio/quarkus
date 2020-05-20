@@ -15,4 +15,12 @@ public class GreetingResource {
     public Greeting hello() {
         return new Greeting("hello", LocalDate.of(2019, 01, 01));
     }
+
+    @GET
+    @Path("/yaml")
+    @Produces("application/yaml")
+    public Greeting helloYaml() {
+        return new Greeting("hello", null);
+    }
+
 }

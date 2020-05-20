@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -160,7 +161,14 @@ public class ResteasyCommonProcessor {
         MediaTypeMap<String> categorizedContextResolvers = new MediaTypeMap<>();
         Set<String> otherProviders = new HashSet<>();
 
-        categorizeProviders(availableProviders, categorizedReaders, categorizedWriters, categorizedContextResolvers,
+        Set<String> allProviders = new LinkedHashSet<>();
+        allProviders.addAll(availableProviders);
+        allProviders.addAll(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + MessageBodyReader.class.getName()));
+        allProviders.addAll(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + MessageBodyWriter.class.getName()));
+
+        categorizeProviders(allProviders, categorizedReaders, categorizedWriters, categorizedContextResolvers,
                 otherProviders);
 
         // add the other providers detected

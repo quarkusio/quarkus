@@ -20,4 +20,14 @@ class GreetingResourceTest {
                 .body(containsString("[2019,1,1]"));
     }
 
+    @Test
+    void testYAMLEndpoint() {
+        given()
+                .when().get("/greeting/yaml")
+                .then()
+                .statusCode(200)
+                .contentType("application/yaml")
+                .body(containsString("message: \"hello\""));
+    }
+
 }

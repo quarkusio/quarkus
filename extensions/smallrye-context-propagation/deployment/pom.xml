@@ -77,7 +77,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
+            <artifactId>quarkus-mutiny-reactive-streams-operators-deployment</artifactId>
             <scope>test</scope>
         </dependency>
 

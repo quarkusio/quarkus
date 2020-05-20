@@ -33,41 +33,53 @@ public class DataSourceReactivePostgreSQLConfig {
      * See <a href="https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-PROTECTION">Protection Provided in
      * Different Modes</a>.
      */
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "disable")
     public Optional<SslMode> sslMode;
 
     /**
      * Trust configuration in the PEM format.
+     * <p>
+     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePfx} must be disabled.
      */
     @ConfigItem
     public PemTrustCertConfiguration trustCertificatePem;
 
     /**
      * Trust configuration in the JKS format.
+     * <p>
+     * When enabled, {@link #trustCertificatePem} and {@link #trustCertificatePfx} must be disabled.
      */
     @ConfigItem
     public JksConfiguration trustCertificateJks;
 
     /**
      * Trust configuration in the PFX format.
+     * <p>
+     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePem} must be disabled.
      */
     @ConfigItem
     public PfxConfiguration trustCertificatePfx;
 
     /**
      * Key/cert configuration in the PEM format.
+     * <p>
+     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePfx} must be disabled.
      */
     @ConfigItem
     public PemKeyCertConfiguration keyCertificatePem;
 
     /**
      * Key/cert configuration in the JKS format.
+     * <p>
+     * When enabled, {@link #keyCertificatePem} and {@link #keyCertificatePfx} must be disabled.
      */
     @ConfigItem
     public JksConfiguration keyCertificateJks;
 
     /**
      * Key/cert configuration in the PFX format.
+     * <p>
+     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePem} must be disabled.
      */
     @ConfigItem
     public PfxConfiguration keyCertificatePfx;

@@ -28,6 +28,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.ApplicationArchive;
@@ -124,7 +126,7 @@ public class ApplicationArchiveBuildStep {
 
         //get paths that are included via index-dependencies
         addIndexDependencyPaths(indexDependencyBuildItem, classLoader, root, indexedPaths, appArchives, buildCloseables,
-                indexCache);
+                indexCache, curateOutcomeBuildItem);
 
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             for (Path apPath : i.getPaths()) {
@@ -139,22 +141,34 @@ public class ApplicationArchiveBuildStep {
 
     public void addIndexDependencyPaths(List<IndexDependencyBuildItem> indexDependencyBuildItems,
             ClassLoader classLoader, ArchiveRootBuildItem root, Set<Path> indexedDeps, List<ApplicationArchive> appArchives,
-            QuarkusBuildCloseablesBuildItem buildCloseables, IndexCache indexCache) {
+            QuarkusBuildCloseablesBuildItem buildCloseables, IndexCache indexCache,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (indexDependencyBuildItems.isEmpty()) {
             return;
         }
-        ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
+        final List<AppDependency> userDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
+        final Map<AppArtifactKey, AppArtifact> userMap = new HashMap<>(userDeps.size());
+        for (AppDependency dep : userDeps) {
+            userMap.put(dep.getArtifact().getKey(), dep.getArtifact());
+        }
         try {
             for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
-                String classifier = indexDependencyBuildItem.getClassifier();
-                final Path path = artifactIndex.getPath(indexDependencyBuildItem.getGroupId(),
+                final AppArtifactKey key = new AppArtifactKey(indexDependencyBuildItem.getGroupId(),
                         indexDependencyBuildItem.getArtifactId(),
-                        classifier == null || classifier.isEmpty() ? null : classifier);
-                if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
-                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path));
+                        indexDependencyBuildItem.getClassifier(),
+                        "jar");
+                final AppArtifact artifact = userMap.get(key);
+                if (artifact == null) {
+                    throw new RuntimeException(
+                            "Could not resolve artifact " + key + " among the runtime dependencies of the application");
+                }
+                for (Path path : artifact.getPaths()) {
+                    if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
+                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path));
+                    }
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -28,7 +28,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
- * 
+ *
  * @author Martin Kouba
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
@@ -184,6 +184,14 @@ final class Methods {
             if (superClassInfo != null) {
                 finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
+            }
+        }
+        for (DotName i : classInfo.interfaceNames()) {
+            ClassInfo interfaceInfo = getClassByName(beanDeployment.getIndex(), i);
+            if (interfaceInfo != null) {
+                //interfaces can't have final methods
+                addInterceptedMethodCandidates(beanDeployment, interfaceInfo, candidates,
+                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses);
             }
         }
         return finalMethodsFoundAndNotChanged;

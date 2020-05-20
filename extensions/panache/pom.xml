@@ -21,8 +21,8 @@
         <module>hibernate-orm-panache-kotlin</module>
         <module>mongodb-panache</module>
         <module>panacheql</module>
-        <module>panache-rest-common</module>
-        <module>panache-rest-hibernate-orm</module>
+        <module>rest-data-panache</module>
+        <module>hibernate-orm-rest-data-panache</module>
     </modules>
 
 

@@ -28,14 +28,14 @@ public interface RouteHandler extends Handler<RoutingContext> {
         //todo: how should we handle non-proactive authentication here?
         if (requestContext.isActive()) {
             if (user != null) {
-                Arc.container().beanManager().fireEvent(user.getSecurityIdentity());
+                RouteHandlers.fireSecurityIdentity(user.getSecurityIdentity());
             }
             invoke(context);
         } else {
             try {
                 requestContext.activate();
                 if (user != null) {
-                    Arc.container().beanManager().fireEvent(user.getSecurityIdentity());
+                    RouteHandlers.fireSecurityIdentity(user.getSecurityIdentity());
                 }
                 invoke(context);
             } finally {

@@ -23,10 +23,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
         </dependency>
         <dependency>

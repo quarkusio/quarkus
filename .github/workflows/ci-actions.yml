@@ -354,7 +354,7 @@ jobs:
               reactive-pg-client
           - category: Amazon
             amazonServices: "true"
-            timeout: 20
+            timeout: 25
             test-modules: >
               amazon-services
               amazon-lambda

@@ -12,7 +12,7 @@ import io.quarkus.arc.InstanceHandle;
  * @author Michael Schnell
  *
  */
-public class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver {
+public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver {
 
     private static final Logger LOG = Logger.getLogger(HibernateCurrentTenantIdentifierResolver.class);
 

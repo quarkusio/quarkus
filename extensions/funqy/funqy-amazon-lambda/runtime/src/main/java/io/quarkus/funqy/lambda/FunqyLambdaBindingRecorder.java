@@ -21,6 +21,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
+import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.runtime.ShutdownContext;
@@ -38,17 +39,43 @@ public class FunqyLambdaBindingRecorder {
     private static ObjectReader reader;
     private static ObjectWriter writer;
 
-    public void init(BeanContainer bc, String function) {
+    public void init(BeanContainer bc) {
         beanContainer = bc;
+        FunctionConstructor.CONTAINER = bc;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
-        invoker = FunctionRecorder.registry.matchInvoker(function);
+        for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
+            if (invoker.hasInput()) {
+                ObjectReader reader = objectMapper.readerFor(invoker.getInputType());
+                invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
+            }
+            if (invoker.hasOutput()) {
+                ObjectWriter writer = objectMapper.writerFor(invoker.getOutputType());
+                invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
+            }
+        }
+    }
+
+    public void chooseInvoker(FunqyConfig config) {
+        // this is done at Runtime so that we can change it with an environment variable.
+        if (config.export.isPresent()) {
+            invoker = FunctionRecorder.registry.matchInvoker(config.export.get());
+            if (invoker == null) {
+                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export.get());
+            }
+        } else if (FunctionRecorder.registry.invokers().size() == 0) {
+            throw new RuntimeException("There are no functions to process lambda");
+
+        } else if (FunctionRecorder.registry.invokers().size() > 1) {
+            throw new RuntimeException("Too many functions.  You need to set quarkus.funqy.export");
+        } else {
+            invoker = FunctionRecorder.registry.invokers().iterator().next();
+        }
         if (invoker.hasInput()) {
-            reader = objectMapper.readerFor(invoker.getInputType());
+            reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
         }
         if (invoker.hasOutput()) {
-            writer = objectMapper.writerFor(invoker.getOutputType());
+            writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
         }
-        FunctionConstructor.CONTAINER = bc;
 
     }
 

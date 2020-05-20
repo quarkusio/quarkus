@@ -22,6 +22,15 @@ public class PrimitiveFunctions {
     }
 
     @Funq
+    public String get() {
+        return "get";
+    }
+
+    @Funq
+    public void noop() {
+    }
+
+    @Funq
     public CompletableFuture<Integer> doubleItAsync(int val) {
         return CompletableFuture.completedFuture(val * 2);
     }

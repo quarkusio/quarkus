@@ -26,11 +26,9 @@ import io.vertx.ext.web.RoutingContext;
  */
 @Recorder
 public class FunqyHttpBindingRecorder {
-    private static String contextPath;
     private static ObjectMapper objectMapper;
 
-    public void init(String rootPath) {
-        contextPath = rootPath;
+    public void init() {
         objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
@@ -54,7 +52,8 @@ public class FunqyHttpBindingRecorder {
         return new ObjectMapper();
     }
 
-    public Handler<RoutingContext> start(Supplier<Vertx> vertx,
+    public Handler<RoutingContext> start(String contextPath,
+            Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             Executor executor) {

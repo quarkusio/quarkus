@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -32,6 +33,22 @@ public class SimpleTest {
                 .then().statusCode(200).body(equalTo("4"));
     }
 
+    @Test
+    public void testNoop() {
+        RestAssured.given().get("/noop")
+                .then().statusCode(204);
+        RestAssured.given().post("/noop")
+                .then().statusCode(204);
+    }
+
+    @Test
+    public void testGetOrPost() {
+        RestAssured.given().get("/get")
+                .then().statusCode(200).body(equalTo("\"get\""));
+        RestAssured.given().post("/get")
+                .then().statusCode(200).body(equalTo("\"get\""));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = { "/greet", "/greetAsync" })
     public void testObject(String path) {
@@ -39,7 +56,7 @@ public class SimpleTest {
         RestAssured.given().contentType("application/json")
                 .body("{\"greeting\":\"Hello\",\"punctuation\":\"!\"}")
                 .post("/template")
-                .then().statusCode(200);
+                .then().statusCode(204);
 
         RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")
@@ -50,7 +67,7 @@ public class SimpleTest {
         RestAssured.given().contentType("application/json")
                 .body("{\"greeting\":\"Guten tag\",\"punctuation\":\".\"}")
                 .post("/template")
-                .then().statusCode(200);
+                .then().statusCode(204);
 
         RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")

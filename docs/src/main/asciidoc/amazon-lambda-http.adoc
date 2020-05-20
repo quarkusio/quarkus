@@ -9,7 +9,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 The `quarkus-amazon-lambda-http` extension allows you to write microservices with RESTEasy (JAX-RS),
-Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
+Undertow (servlet), Vert.x Web, or link:funqy-http[Funqy HTTP] and make these microservices deployable as an Amazon Lambda
 using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller

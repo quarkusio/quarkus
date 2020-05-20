@@ -1,0 +1,140 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Funqy
+
+include::./attributes.adoc[]
+:extension-status: preview
+
+Quarkus Funqy is part of Quarkus's serverless strategy and aims to provide a portable Java API to write functions
+deployable to various FaaS environments like AWS Lambda, Azure Functions, Knative, and Knative events.  It is also
+usable outside of FaaS in more traditional environments.
+
+Another goal of Funqy is to create a remoting, RPC framework that is as small and optimized as possible for the
+Quarkus runtime.  This means sacrificing on flexibility to provide a runtime that has little to no overhead.  Funqy
+should never become more complicated than you see in this initial doc.
+
+== Funqy Basics
+
+The Funqy API is simple.  Annotate a method with `@Funq`.  This method may only have one optional input parameter
+and may or may not return a response.
+
+[source, java]
+----
+import io.quarkus.funqy.Funq;
+
+public class GreetingFunction {
+    @Funq
+    public String greet(String name) {
+       return "Hello " + name;
+    }
+}
+----
+
+Java classes can also be used as input and output and must follow the Java bean convention and have
+a default constructor.
+
+[source, java]
+----
+public class GreetingFunction {
+    public static class Friend {
+        String name;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+    }
+
+    public static class Greeting {
+        String msg;
+
+        public Greeting() {}
+        public Greeting(String msg) { this.msg = msg }
+
+        public String getMessage() { return msg; }
+        public void setMessage(String msg) { this.msg = msg; }
+    }
+
+    @Funq
+    public Greeting greet(Friend friend) {
+       return new Greeting("Hello " + friend.getName());
+    }
+}
+----
+
+== Function Names
+
+The function name defaults to the method name and is case sensitive.  If you want your function referenced by a different name,
+parameterize the `@Funq` annotation as follows:
+
+[source, java]
+----
+import io.quarkus.funqy.Funq;
+
+public class GreetingFunction {
+
+    @Funq("HelloWorld")
+    public String greet(String name) {
+       return "Hello " + name;
+    }
+}
+----
+
+== Funqy DI
+
+Each Funqy Java class is a Quarkus Arc component and supports dependency injection through
+CDI or Spring DI.  Spring DI requires including the `quarkus-spring-di` dependency in your build.
+
+The default object lifecycle for a Funqy class is `@Dependent`.
+
+[source, java]
+----
+import io.quarkus.funqy.Funq;
+
+import javax.inject.Inject;
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingFunction {
+
+    @Inject
+    GreetingService service;
+
+    @Funq
+    public Greeting greet(Friend friend) {
+        Greeting greeting = new Greeting();
+        greeting.setMessage(service.greet(friend.getName()));
+        return greeting;
+    }
+}
+----
+
+== Context injection
+
+You can inject contextual information that is specific to the Funqy runtime (lambda, azure, etc.)
+you are deploying.
+
+NOTE: We do not recommend injecting contextual information specific to a runtime.  Keep your functions portable.
+
+Contextual information is injected via the `@Context` annotation which can be used on a function parameter
+or a class field.
+
+[source, java]
+----
+import io.quarkus.funqy.Funq;
+import io.quarkus.funqy.Context;
+
+public class GreetingFunction {
+
+    @Funq
+    public Greeting greet(Friend friend, @Context AwsContext ctx) {
+        Greeting greeting = new Greeting();
+        greeting.setMessage(service.greet(friend.getName()));
+        return greeting;
+    }
+}
+----
+
+
+

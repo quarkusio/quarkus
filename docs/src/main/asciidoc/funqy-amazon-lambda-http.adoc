@@ -1,0 +1,48 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Funqy HTTP with Amazon Lambda 
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+If you like link:funqy-http[Funqy HTTP], you can use it on AWS Lambda.  Quarkus allows you to expose multiple
+Funqy functions through HTTP deployed as one AWS Lambda.
+
+include::./status-include.adoc[]
+
+Follow the link:amazon-lambda-http[Amazon Lambda Http Guide].  It walks through using a variety of HTTP
+frameworks on Amazon Lambda, including Funqy.
+
+== An additional Quickstart
+
+Beyond generating an AWS project that is covered in the link:amazon-lambda-http[Amazon Lambda Http Guide],
+there's also a quickstart for running Funqy HTTP on AWS Lambda.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `funqy-amazon-lambda-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-amazon-lambda-http-quickstart[directory].
+
+== The Code
+
+There is nothing special about the code and more importantly nothing AWS specific.  Funqy functions can be deployed to many different
+environments and AWS Lambda is one of them.  The Java code is actually the same exact code as the {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[funqy-http-quickstart].
+
+== Getting Started
+
+The steps to get this quickstart running are exactly the same as defined in the link:amazon-lambda-http[Amazon Lambda HTTP Guide].
+This differences are that you are running from a quickstart and the maven dependencies are slightly different.
+
+[source, xml]
+----
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-funqy-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-lambda-http</artifactId>
+        </dependency>
+----

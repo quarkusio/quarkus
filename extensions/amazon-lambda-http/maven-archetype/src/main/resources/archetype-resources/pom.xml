@@ -43,6 +43,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-web</artifactId>
         </dependency>
+        <!-- remove if not using funqy -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-funqy-http</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda-http</artifactId>

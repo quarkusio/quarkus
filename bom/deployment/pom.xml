@@ -530,7 +530,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-funqy-knative-deployment</artifactId>
+                <artifactId>quarkus-funqy-knative-events-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -336,22 +336,22 @@ jobs:
               flyway
               hibernate-orm-panache
               hibernate-orm-panache-kotlin
-              reactive-pg-client
               liquibase
-              panache-rest-hibernate-orm
           - category: Data4
             neo4j: "true"
-            timeout: 30
+            timeout: 40
             test-modules: >
               mongodb-client
               mongodb-panache
               neo4j
+              panache-rest-hibernate-orm
           - category: Data5
-            timeout: 30
+            timeout: 40
             test-modules: >
               hibernate-search-elasticsearch
               narayana-stm
               narayana-jta
+              reactive-pg-client
           - category: Amazon
             amazonServices: "true"
             timeout: 20

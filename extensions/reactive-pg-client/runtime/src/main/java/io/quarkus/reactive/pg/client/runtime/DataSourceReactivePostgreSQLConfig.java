@@ -40,35 +40,35 @@ public class DataSourceReactivePostgreSQLConfig {
      * Trust configuration in the PEM format.
      */
     @ConfigItem
-    public PemTrustCertConfiguration trustPem;
+    public PemTrustCertConfiguration trustCertificatePem;
 
     /**
      * Trust configuration in the JKS format.
      */
     @ConfigItem
-    public JksConfiguration trustJks;
+    public JksConfiguration trustCertificateJks;
 
     /**
      * Trust configuration in the PFX format.
      */
     @ConfigItem
-    public PfxConfiguration trustPfx;
+    public PfxConfiguration trustCertificatePfx;
 
     /**
      * Key/cert configuration in the PEM format.
      */
     @ConfigItem
-    public PemKeyCertConfiguration keyCertPem;
+    public PemKeyCertConfiguration keyCertificatePem;
 
     /**
      * Key/cert configuration in the JKS format.
      */
     @ConfigItem
-    public JksConfiguration keyCertJks;
+    public JksConfiguration keyCertificateJks;
 
     /**
      * Key/cert configuration in the PFX format.
      */
     @ConfigItem
-    public PfxConfiguration keyCertPfx;
+    public PfxConfiguration keyCertificatePfx;
 }

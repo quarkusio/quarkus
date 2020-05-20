@@ -17,7 +17,7 @@
       <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-bom</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>@project.version@</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

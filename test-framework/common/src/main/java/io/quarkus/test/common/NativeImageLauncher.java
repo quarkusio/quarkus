@@ -13,6 +13,7 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -31,6 +32,8 @@ public class NativeImageLauncher implements Closeable {
     private static final int DEFAULT_PORT = 8081;
     private static final int DEFAULT_HTTPS_PORT = 8444;
     private static final long DEFAULT_IMAGE_WAIT_TIME = 60;
+
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     private final Class<?> testClass;
     private final String profile;
@@ -150,7 +153,7 @@ public class NativeImageLauncher implements Closeable {
             //we have the maven test classes dir
             File testClasses = new File(url.getPath());
             for (File file : testClasses.getParentFile().listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -159,7 +162,7 @@ public class NativeImageLauncher implements Closeable {
             //we have the gradle test classes dir, build/classes/java/test
             File testClasses = new File(url.getPath());
             for (File file : testClasses.getParentFile().getParentFile().getParentFile().listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -170,7 +173,7 @@ public class NativeImageLauncher implements Closeable {
             int index = path.lastIndexOf("/target/");
             File targetDir = new File(path.substring(0, index) + "/target/");
             for (File file : targetDir.listFiles()) {
-                if (file.getName().endsWith("-runner")) {
+                if (isNativeExecutable(file)) {
                     logGuessedPath(file.getAbsolutePath());
                     return file.getAbsolutePath();
                 }
@@ -178,6 +181,14 @@ public class NativeImageLauncher implements Closeable {
 
         }
         return null;
+    }
+
+    private static boolean isNativeExecutable(File file) {
+        if (IS_WINDOWS) {
+            return file.getName().endsWith("-runner.exe");
+        } else {
+            return file.getName().endsWith("-runner");
+        }
     }
 
     private static void logGuessedPath(String guessedPath) {

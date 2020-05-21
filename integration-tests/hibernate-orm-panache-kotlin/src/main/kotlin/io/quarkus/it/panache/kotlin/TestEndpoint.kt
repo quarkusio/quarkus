@@ -137,7 +137,7 @@ class TestEndpoint {
         Assertions.assertEquals(person, Person.find("name", "stef").firstResult())
         Assertions.assertEquals(person, Person.find("name", "stef").singleResult())
 
-        var byId: Person = Person.findById(person.id!!)
+        var byId: Person? = person.id?.let { Person.findById(it) }
         Assertions.assertEquals(person, byId)
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
 
@@ -145,7 +145,7 @@ class TestEndpoint {
 //        Assertions.assertEquals(person, byId)
 //        Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
 
-        byId = Person.findById(person.id!!, LockModeType.PESSIMISTIC_READ)
+        byId = person.id?.let { Person.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
 
@@ -481,11 +481,7 @@ class TestEndpoint {
         } catch (x: NoResultException) {
         }
 
-        Assertions.assertFalse(personRepository.findAll().singleResultOptional().isPresent())
-
         Assertions.assertNull(personRepository.findAll().firstResult())
-
-        Assertions.assertFalse(personRepository.findAll().firstResultOptional().isPresent())
 
         var person: Person = makeSavedPersonDao()
         Assertions.assertNotNull(person.id)
@@ -515,7 +511,6 @@ class TestEndpoint {
 
         Assertions.assertEquals(person, personRepository.findAll().firstResult())
         Assertions.assertEquals(person, personRepository.findAll().singleResult())
-//        Assertions.assertEquals(person, personDao.findAll().singleResultOptional().get())
 
         persons = personRepository.find("name = ?1", "stef").list()
         Assertions.assertEquals(1, persons.size)
@@ -566,19 +561,12 @@ class TestEndpoint {
 
         Assertions.assertEquals(person, personRepository.find("name", "stef").firstResult())
         Assertions.assertEquals(person, personRepository.find("name", "stef").singleResult())
-//        Assertions.assertEquals(person, personDao.find("name", "stef").singleResultOptional().get())
 
-        var byId = personRepository.findById(person.id)
+        var byId = person.id?.let { personRepository.findById(it) }
         Assertions.assertEquals(person, byId)
 
-//        byId = personDao.findByIdOptional(person.id).get()
-//        Assertions.assertEquals(person, byId)
-
-        byId = personRepository.findById(person.id, LockModeType.PESSIMISTIC_READ)
+        byId = person.id?.let { personRepository.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
-
-//        byId = personDao.findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get()
-//        Assertions.assertEquals(person, byId)
 
         personRepository.delete(person)
         Assertions.assertEquals(0, personRepository.count())

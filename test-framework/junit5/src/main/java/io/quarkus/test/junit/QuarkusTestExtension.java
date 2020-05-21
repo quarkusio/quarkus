@@ -200,6 +200,10 @@ public class QuarkusTestExtension
                 e.addSuppressed(ex);
             }
             throw e;
+        } finally {
+            if (originalCl != null) {
+                Thread.currentThread().setContextClassLoader(originalCl);
+            }
         }
     }
 
@@ -237,10 +241,15 @@ public class QuarkusTestExtension
                 afterEachCallback.getClass().getMethod("afterEach", Object.class).invoke(afterEachCallback, actualTestInstance);
             }
             boolean nativeImageTest = isNativeTest(context);
-            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                    .getDeclaredMethod("clearURL").invoke(null);
-            runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                    .getDeclaredMethod("tearDown", boolean.class).invoke(null, nativeImageTest);
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+            try {
+                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                        .getDeclaredMethod("clearURL").invoke(null);
+                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                        .getDeclaredMethod("tearDown", boolean.class).invoke(null, nativeImageTest);
+            } finally {
+                setCCL(original);
+            }
         }
     }
 
@@ -254,17 +263,22 @@ public class QuarkusTestExtension
             return;
         }
         if (!failedBoot) {
-            pushMockContext();
-            for (Object beforeEachCallback : beforeEachCallbacks) {
-                beforeEachCallback.getClass().getMethod("beforeEach", Object.class).invoke(beforeEachCallback,
-                        actualTestInstance);
-            }
-            boolean nativeImageTest = isNativeTest(context);
-            if (runningQuarkusApplication != null) {
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                        .getDeclaredMethod("setURL", boolean.class).invoke(null, false);
-                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                        .getDeclaredMethod("setup", boolean.class).invoke(null, nativeImageTest);
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+            try {
+                pushMockContext();
+                for (Object beforeEachCallback : beforeEachCallbacks) {
+                    beforeEachCallback.getClass().getMethod("beforeEach", Object.class).invoke(beforeEachCallback,
+                            actualTestInstance);
+                }
+                boolean nativeImageTest = isNativeTest(context);
+                if (runningQuarkusApplication != null) {
+                    runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                            .getDeclaredMethod("setURL", boolean.class).invoke(null, false);
+                    runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                            .getDeclaredMethod("setup", boolean.class).invoke(null, nativeImageTest);
+                }
+            } finally {
+                setCCL(original);
             }
         } else {
             if (firstException != null) {
@@ -310,7 +324,6 @@ public class QuarkusTestExtension
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
             pushMockContext();
-            setCCL(runningQuarkusApplication.getClassLoader());
         }
     }
 
@@ -380,11 +393,15 @@ public class QuarkusTestExtension
         // We do this here as well, because when @TestInstance(Lifecycle.PER_CLASS) is used on a class,
         // interceptTestClassConstructor is called before beforeAll, meaning that the TCCL will not be set correctly
         // (for any test other than the first) unless this is done
+        old = null;
         if (runningQuarkusApplication != null) {
-            setCCL(runningQuarkusApplication.getClassLoader());
+            old = setCCL(runningQuarkusApplication.getClassLoader());
         }
 
         initTestState(extensionContext, state);
+        if (old != null) {
+            setCCL(old);
+        }
         return result;
     }
 
@@ -477,10 +494,10 @@ public class QuarkusTestExtension
             throws Throwable {
         Method newMethod = null;
 
+        ClassLoader old = setCCL(runningQuarkusApplication.getClassLoader());
         try {
             Class<?> c = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
-            ;
             while (c != Object.class) {
                 if (c.getName().equals(invocationContext.getExecutable().getDeclaringClass().getName())) {
                     try {
@@ -522,6 +539,8 @@ public class QuarkusTestExtension
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
+        } finally {
+            setCCL(old);
         }
     }
 

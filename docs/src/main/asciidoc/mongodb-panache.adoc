@@ -649,7 +649,12 @@ quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 
 == Transactions
 
-WARNING: MongoDB offers ACID transactions since version 4.0. MongoDB with Panache doesn't provide support for them.
+MongoDB offers ACID transactions since version 4.0.
+
+To use them with MongoDB with Panache you need to annotate the method that starts the transaction
+with the `@MongoTransactional` (or `@ReactiveMongoTransactional` if you use reactive entity or repository) annotation.
+
+WARNING: Transaction support inside MongoDB with Panache is still experimental.
 
 == Custom IDs
 
@@ -787,6 +792,8 @@ public class ReactivePerson extends ReactivePanacheMongoEntity {
 
 You will have access to the same functionalities of the _imperative_ variant inside the reactive one: bson annotations, custom ID, PanacheQL, ...
 But the methods on your entities or repositories will all return reactive types.
+
+TIP: If you want to use transaction, use the `@ReactiveMongoTransactional` annotation instead of the default `@MongoTransactional`.
 
 See the equivalent methods from the imperative example with the reactive variant:
 

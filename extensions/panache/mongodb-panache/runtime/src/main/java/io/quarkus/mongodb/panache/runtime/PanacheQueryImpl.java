@@ -6,9 +6,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -161,7 +163,13 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
-            count = collection.countDocuments(mongoQuery);
+            ClientSession session = MongoOperations.getSession();
+            Bson query = getQuery();
+            if (session == null) {
+                count = collection.countDocuments(query);
+            } else {
+                count = collection.countDocuments(session, query);
+            }
         }
         return count;
     }
@@ -174,7 +182,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @SuppressWarnings("unchecked")
     private <T extends Entity> List<T> list(Integer limit) {
         List<T> list = new ArrayList<>();
-        FindIterable find = mongoQuery == null ? collection.find() : collection.find(mongoQuery);
+        ClientSession session = MongoOperations.getSession();
+        Bson query = getQuery();
+        FindIterable find = session == null ? collection.find(query) : collection.find(session, query);
         if (this.projections != null) {
             find.projection(projections);
         }
@@ -248,5 +258,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         if (limit != null) {
             find.limit(limit);
         }
+    }
+
+    private Bson getQuery() {
+        return mongoQuery == null ? new BsonDocument() : mongoQuery;
     }
 }

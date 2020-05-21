@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.model.Collation;
+import com.mongodb.reactivestreams.client.ClientSession;
 
 import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
@@ -161,8 +163,12 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
-        if (count == null) {
-            count = collection.countDocuments(mongoQuery);
+        ClientSession session = ReactiveMongoOperations.getSession();
+        Bson query = getQuery();
+        if (session == null) {
+            count = collection.countDocuments(query);
+        } else {
+            count = collection.countDocuments(session, query);
         }
         return count;
     }
@@ -178,7 +184,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @SuppressWarnings("unchecked")
     public <T extends Entity> Multi<T> stream() {
         FindOptions options = buildOptions();
-        return mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        return executeQuery(options);
     }
 
     @Override
@@ -190,7 +196,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
         FindOptions options = buildOptions(1);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = executeQuery(options);
         return results.collectItems().first().map(o -> Optional.ofNullable(o));
     }
 
@@ -198,7 +204,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
         FindOptions options = buildOptions(2);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = executeQuery(options);
         return results.collectItems().asList().map(list -> {
             if (list.size() != 1) {
                 throw new PanacheQueryException("There should be only one result");
@@ -211,7 +217,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     public <T extends Entity> Uni<Optional<T>> singleResultOptional() {
         FindOptions options = buildOptions(2);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = executeQuery(options);
         return results.collectItems().asList().map(list -> {
             if (list.size() == 2) {
                 throw new PanacheQueryException("There should be no more than one result");
@@ -254,5 +260,15 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
             options.collation(collation);
         }
         return options.limit(maxResults);
+    }
+
+    private Bson getQuery() {
+        return mongoQuery == null ? new BsonDocument() : mongoQuery;
+    }
+
+    private <T extends Entity> Multi<T> executeQuery(FindOptions options) {
+        Bson query = getQuery();
+        ClientSession session = ReactiveMongoOperations.getSession();
+        return session == null ? collection.find(query, options) : collection.find(session, query, options);
     }
 }

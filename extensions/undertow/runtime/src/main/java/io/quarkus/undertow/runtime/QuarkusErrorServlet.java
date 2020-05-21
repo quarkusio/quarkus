@@ -40,9 +40,10 @@ public class QuarkusErrorServlet extends HttpServlet {
         if (accept != null && accept.contains("application/json")) {
             resp.setContentType("application/json");
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            String escapedStack = stack.replace(System.lineSeparator(), "\\n").replace("\"", "\\\"");
-            StringBuilder jsonPayload = new StringBuilder("{\"details\":\"").append(details).append("\",\"stack\":\"")
-                    .append(escapedStack).append("\"}");
+            String escapedDetails = escapeJsonString(details);
+            String escapedStack = escapeJsonString(stack);
+            StringBuilder jsonPayload = new StringBuilder("{\"details\":\"").append(escapedDetails)
+                    .append("\",\"stack\":\"").append(escapedStack).append("\"}");
             resp.getWriter().write(jsonPayload.toString());
         } else {
             //We default to HTML representation
@@ -60,12 +61,12 @@ public class QuarkusErrorServlet extends HttpServlet {
         StringWriter stringWriter = new StringWriter();
         exception.printStackTrace(new PrintWriter(stringWriter));
 
-        return escapeHtml(stringWriter.toString().trim());
+        return stringWriter.toString().trim();
     }
 
     private static String generateHeaderMessage(final Throwable exception, String uuid) {
-        return escapeHtml(String.format("Error handling %s, %s: %s", uuid, exception.getClass().getName(),
-                extractFirstLine(exception.getMessage())));
+        return String.format("Error handling %s, %s: %s", uuid, exception.getClass().getName(),
+                extractFirstLine(exception.getMessage()));
     }
 
     private static String extractFirstLine(final String message) {
@@ -77,14 +78,36 @@ public class QuarkusErrorServlet extends HttpServlet {
         return lines[0].trim();
     }
 
-    private static String escapeHtml(final String bodyText) {
-        if (bodyText == null) {
-            return "null";
+    private static String escapeJsonString(final String text) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            switch (ch) {
+                case '"':
+                    sb.append("\\\"");
+                    break;
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                case '\b':
+                    sb.append("\\b");
+                    break;
+                case '\f':
+                    sb.append("\\f");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                default:
+                    sb.append(ch);
+            }
         }
-
-        return bodyText
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
+        return sb.toString();
     }
 }

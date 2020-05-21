@@ -26,7 +26,7 @@ public class TimeoutTestServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        readRequestData(req);
+        ReadTimeoutTestCase.READ_DATA = readRequestData(req);
         try {
             read = true;
             mimicProcessing(req);

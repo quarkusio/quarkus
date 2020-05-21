@@ -649,7 +649,14 @@ quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
 
 == Transactions
 
-WARNING: MongoDB offers ACID transactions since version 4.0. MongoDB with Panache doesn't provide support for them.
+MongoDB offers ACID transactions since version 4.0.
+
+To use them with MongoDB with Panache you need to annotate the method that starts the transaction with the `@Transactional` annotation.
+
+Transactions can be configured via the `@MongoTransactionConfiguration` that allows to specify the read preference, read concern,
+ and write concern used during the lifespan of the transaction.
+
+WARNING: Transaction support inside MongoDB with Panache is still experimental.
 
 == Custom IDs
 

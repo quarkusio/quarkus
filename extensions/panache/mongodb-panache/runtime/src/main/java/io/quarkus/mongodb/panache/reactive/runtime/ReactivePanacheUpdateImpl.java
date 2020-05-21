@@ -5,6 +5,9 @@ import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.conversions.Bson;
 
+import com.mongodb.client.result.UpdateResult;
+import com.mongodb.reactivestreams.client.ClientSession;
+
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Parameters;
@@ -25,14 +28,14 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
     public Uni<Long> where(String query, Object... params) {
         String bindQuery = ReactiveMongoOperations.bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
-        return collection.updateMany(docQuery, update).map(result -> result.getModifiedCount());
+        return executeUpdate(docQuery, update);
     }
 
     @Override
     public Uni<Long> where(String query, Map<String, Object> params) {
         String bindQuery = ReactiveMongoOperations.bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
-        return collection.updateMany(docQuery, update).map(result -> result.getModifiedCount());
+        return executeUpdate(docQuery, update);
     }
 
     @Override
@@ -42,6 +45,13 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
 
     @Override
     public Uni<Long> all() {
-        return collection.updateMany(new BsonDocument(), update).map(result -> result.getModifiedCount());
+        return executeUpdate(new BsonDocument(), update);
+    }
+
+    private Uni<Long> executeUpdate(BsonDocument filter, Bson update) {
+        ClientSession session = ReactiveMongoOperations.getSession();
+        Uni<UpdateResult> result = session == null ? collection.updateMany(filter, update)
+                : collection.updateMany(session, filter, update);
+        return result.map(updateResult -> updateResult.getModifiedCount());
     }
 }

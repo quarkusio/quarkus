@@ -72,7 +72,7 @@ public final class FieldAccessImplementor {
     }
 
     private MethodInfo getGetter(ClassInfo entityClass, FieldInfo field) {
-        MethodInfo getter = entityClass.method(JavaBeanUtil.getGetterName(field.name(), field.type().name().toString()));
+        MethodInfo getter = entityClass.method(JavaBeanUtil.getGetterName(field.name(), field.type().name()));
         if (getter != null) {
             return getter;
         }

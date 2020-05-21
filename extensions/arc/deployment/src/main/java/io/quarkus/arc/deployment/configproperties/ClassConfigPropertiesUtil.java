@@ -422,10 +422,7 @@ final class ClassConfigPropertiesUtil {
     }
 
     private static boolean shouldCheckForDefaultValue(ClassInfo configPropertiesClassInfo, FieldInfo field) {
-        if (field.type().kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        String getterName = JavaBeanUtil.getGetterName(field.name(), field.type().name().toString());
+        String getterName = JavaBeanUtil.getGetterName(field.name(), field.type().name());
         MethodInfo getterMethod = configPropertiesClassInfo.method(getterName);
         if (getterMethod != null) {
             return Modifier.isPublic(getterMethod.flags());

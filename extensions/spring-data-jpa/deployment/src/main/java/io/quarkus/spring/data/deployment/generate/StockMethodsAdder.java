@@ -178,7 +178,7 @@ public class StockMethodsAdder {
                 return methodCreator.readInstanceField(FieldDescriptor.of(fieldInfo), entity);
             }
 
-            String getterMethodName = JavaBeanUtil.getGetterName(fieldInfo.name(), fieldInfo.type().toString());
+            String getterMethodName = JavaBeanUtil.getGetterName(fieldInfo.name(), fieldInfo.type().name());
             return methodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(entityDotName.toString(), getterMethodName, fieldInfo.type().name().toString()),
                     entity);

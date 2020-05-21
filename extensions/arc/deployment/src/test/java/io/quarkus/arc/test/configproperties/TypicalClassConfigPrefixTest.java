@@ -27,7 +27,7 @@ public class TypicalClassConfigPrefixTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100"),
+                            "dummy.name=quarkus\ndummy.int-with-default=999\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100"),
                             "application.properties"));
 
     @Inject
@@ -40,6 +40,10 @@ public class TypicalClassConfigPrefixTest {
         assertEquals(Arrays.asList(1, 2, 3, 4), dummyProperties.getNumbers());
         assertEquals("default", dummyProperties.getUnset());
         assertTrue(dummyProperties.isBoolWithDefault());
+        assertTrue(dummyProperties.isUnsetBoolWithDefault());
+        assertFalse(dummyProperties.getUnsetBoolClassWithDefault());
+        assertEquals(999, dummyProperties.getIntWithDefault());
+        assertEquals(100, dummyProperties.getUnsetInt());
         assertTrue(dummyProperties.getOptionalInt().isPresent());
         assertEquals(100, dummyProperties.getOptionalInt().get());
         assertFalse(dummyProperties.getOptionalString().isPresent());
@@ -56,6 +60,10 @@ public class TypicalClassConfigPrefixTest {
         private String name;
         private String unset = "default";
         private boolean boolWithDefault = false;
+        private boolean unsetBoolWithDefault = true;
+        private Boolean unsetBoolClassWithDefault = false;
+        private int intWithDefault = 0;
+        private int unsetInt = 100;
         private List<Integer> numbers;
         private Optional<Integer> optionalInt;
         private Optional<String> optionalString;
@@ -82,6 +90,38 @@ public class TypicalClassConfigPrefixTest {
 
         public void setBoolWithDefault(boolean boolWithDefault) {
             this.boolWithDefault = boolWithDefault;
+        }
+
+        public boolean isUnsetBoolWithDefault() {
+            return unsetBoolWithDefault;
+        }
+
+        public void setUnsetBoolWithDefault(boolean unsetBoolWithDefault) {
+            this.unsetBoolWithDefault = unsetBoolWithDefault;
+        }
+
+        public Boolean getUnsetBoolClassWithDefault() {
+            return unsetBoolClassWithDefault;
+        }
+
+        public void setUnsetBoolClassWithDefault(Boolean unsetBoolClassWithDefault) {
+            this.unsetBoolClassWithDefault = unsetBoolClassWithDefault;
+        }
+
+        public int getIntWithDefault() {
+            return intWithDefault;
+        }
+
+        public void setIntWithDefault(int intWithDefault) {
+            this.intWithDefault = intWithDefault;
+        }
+
+        public int getUnsetInt() {
+            return unsetInt;
+        }
+
+        public void setUnsetInt(int unsetInt) {
+            this.unsetInt = unsetInt;
         }
 
         public List<Integer> getNumbers() {

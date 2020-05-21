@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -54,7 +55,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String SESSION_COOKIE_NAME = "q_session";
     private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
-    private static final String COOKIE_DELIM = "___";
+    private static final String COOKIE_DELIM = "|";
+    private static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
 
     private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
             String accessToken,
@@ -86,13 +88,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // if session already established, try to re-authenticate
         if (sessionCookie != null) {
-            String[] tokens = sessionCookie.getValue().split(COOKIE_DELIM);
+            String[] tokens = COOKIE_PATTERN.split(sessionCookie.getValue());
             String idToken = tokens[0];
             String accessToken = tokens[1];
             String refreshToken = tokens[2];
 
             TenantConfigContext configContext = resolver.resolve(context, true);
-            return authenticate(identityProviderManager, new IdTokenCredential(tokens[0], context))
+            return authenticate(identityProviderManager, new IdTokenCredential(idToken, context))
                     .map(new Function<SecurityIdentity, SecurityIdentity>() {
                         @Override
                         public SecurityIdentity apply(SecurityIdentity identity) {
@@ -111,23 +113,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                             Throwable cause = throwable.getCause();
 
-                            // we should have proper exception hierarchy to represent token expiration errors
-                            if (cause != null && !cause.getMessage().equalsIgnoreCase("expired token")) {
-                                throw new AuthenticationCompletionException(throwable);
+                            if (cause != null && !"expired token".equalsIgnoreCase(cause.getMessage())) {
+                                LOG.debugf("Authentication failure: %s", cause);
+                                throw new AuthenticationCompletionException(cause);
                             }
-
-                            // try silent refresh if required
-                            SecurityIdentity identity = null;
-
-                            if (configContext.oidcConfig.token.refreshExpired) {
-                                identity = trySilentRefresh(configContext, idToken, refreshToken, context,
-                                        identityProviderManager);
+                            if (!configContext.oidcConfig.token.refreshExpired) {
+                                LOG.debug("Token has expired, token refresh is not allowed");
+                                throw new AuthenticationCompletionException(cause);
                             }
-
+                            LOG.debug("Token has expired, trying to refresh it");
+                            SecurityIdentity identity = trySilentRefresh(configContext, idToken, refreshToken, context,
+                                    identityProviderManager);
                             if (identity == null) {
-                                throw new AuthenticationFailedException(throwable);
+                                LOG.debug("SecurityIdentity is null after a token refresh");
+                                throw new AuthenticationCompletionException();
                             }
-
                             return identity;
                         }
                     });
@@ -196,7 +196,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             } else if (context.queryParam("pathChecked").isEmpty()) {
                 // This is an original redirect from IDP, check if the request path needs to be updated
-                String[] pair = stateCookie.getValue().split(COOKIE_DELIM);
+                String[] pair = COOKIE_PATTERN.split(stateCookie.getValue());
                 if (pair.length == 2) {
                     // The extra path that needs to be added to the current request path
                     String extraPath = pair[1];

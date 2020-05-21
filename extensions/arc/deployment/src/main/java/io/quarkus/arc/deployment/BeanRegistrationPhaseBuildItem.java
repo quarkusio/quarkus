@@ -36,7 +36,7 @@ public final class BeanRegistrationPhaseBuildItem extends SimpleBuildItem {
         return context;
     }
 
-    BeanProcessor getBeanProcessor() {
+    public BeanProcessor getBeanProcessor() {
         return beanProcessor;
     }
 

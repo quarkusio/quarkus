@@ -352,6 +352,10 @@ public class BeanDeployment {
         return Collections.unmodifiableCollection(qualifiers.values());
     }
 
+    public Collection<ClassInfo> getInterceptorBindings() {
+        return Collections.unmodifiableCollection(interceptorBindings.values());
+    }
+
     public Collection<ObserverInfo> getObservers() {
         return observers;
     }
@@ -368,7 +372,7 @@ public class BeanDeployment {
         return beanResolver;
     }
 
-    InterceptorResolver getInterceptorResolver() {
+    public InterceptorResolver getInterceptorResolver() {
         return interceptorResolver;
     }
 

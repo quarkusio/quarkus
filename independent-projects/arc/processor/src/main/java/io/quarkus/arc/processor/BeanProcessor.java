@@ -52,7 +52,7 @@ public class BeanProcessor {
 
     private final String name;
     private final ResourceOutput output;
-    private final boolean sharedAnnotationLiterals;
+    private final AnnotationLiteralProcessor annotationLiterals;
     private final ReflectionRegistration reflectionRegistration;
     private final List<BeanRegistrar> beanRegistrars;
     private final List<ContextRegistrar> contextRegistrars;
@@ -95,7 +95,7 @@ public class BeanProcessor {
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
         this.output = output;
-        this.sharedAnnotationLiterals = sharedAnnotationLiterals;
+        this.annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals, applicationClassPredicate);
         this.generateSources = generateSources;
         this.allowMocking = allowMocking;
 
@@ -168,8 +168,6 @@ public class BeanProcessor {
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
-        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
-                applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
                 generateSources, reflectionRegistration, existingClasses, beanToGeneratedName,
                 injectionPointAnnotationsPredicate);
@@ -243,6 +241,10 @@ public class BeanProcessor {
 
     public BeanDeployment getBeanDeployment() {
         return beanDeployment;
+    }
+
+    public AnnotationLiteralProcessor getAnnotationLiteralProcessor() {
+        return annotationLiterals;
     }
 
     public BeanDeployment process() throws IOException {

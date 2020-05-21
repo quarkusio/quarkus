@@ -9,7 +9,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  * getters/setters generated for public fields, even if they're not visible in the index.
  */
 public final class PanacheEntityClassesBuildItem extends MultiBuildItem {
-    private Set<String> entityClasses;
+
+    private final Set<String> entityClasses;
 
     public PanacheEntityClassesBuildItem(Set<String> entityClasses) {
         this.entityClasses = entityClasses;

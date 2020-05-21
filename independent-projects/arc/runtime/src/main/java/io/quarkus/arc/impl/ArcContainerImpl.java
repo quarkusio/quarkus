@@ -359,6 +359,7 @@ public class ArcContainerImpl implements ArcContainer {
             resolved.clear();
             observers.clear();
             running.set(false);
+            InterceptedStaticMethods.clear();
 
             LOGGER.debugf("ArC DI container shut down");
         }
@@ -480,6 +481,11 @@ public class ArcContainerImpl implements ArcContainer {
         for (InjectableBean<?> bean : beans) {
             if (bean.getIdentifier().equals(identifier)) {
                 return bean;
+            }
+        }
+        for (InjectableInterceptor<?> interceptorBean : interceptors) {
+            if (interceptorBean.getIdentifier().equals(identifier)) {
+                return interceptorBean;
             }
         }
         return null;

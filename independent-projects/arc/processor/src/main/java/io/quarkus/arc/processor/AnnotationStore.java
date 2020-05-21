@@ -20,7 +20,7 @@ import org.jboss.jandex.DotName;
  * @author Martin Kouba
  * @see AnnotationsTransformer
  */
-public class AnnotationStore {
+public final class AnnotationStore {
 
     private final ConcurrentMap<AnnotationTarget, Collection<AnnotationInstance>> transformed;
 

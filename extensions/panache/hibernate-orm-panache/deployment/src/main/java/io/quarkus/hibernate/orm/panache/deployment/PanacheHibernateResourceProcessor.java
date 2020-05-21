@@ -44,8 +44,8 @@ public final class PanacheHibernateResourceProcessor {
 
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheRepository.class.getName());
+    static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
-    private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
 
     private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
 
@@ -76,14 +76,37 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
+    void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheEntityClassBuildItem> entityClasses) {
+        // NOTE: we don't skip abstract/generic entities because they still need accessors
+        for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
+            // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
+            if (!panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_ENTITY)) {
+                entityClasses.produce(new PanacheEntityClassBuildItem(panacheEntityBaseSubclass));
+            }
+        }
+    }
+
+    @BuildStep
+    PanacheEntityClassesBuildItem findEntityClasses(List<PanacheEntityClassBuildItem> entityClasses) {
+        if (!entityClasses.isEmpty()) {
+            Set<String> ret = new HashSet<>();
+            for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+                ret.add(entityClass.get().name().toString());
+            }
+            return new PanacheEntityClassesBuildItem(ret);
+        }
+        return null;
+    }
+
+    @BuildStep
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            List<PanacheEntityClassBuildItem> entityClasses,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
-                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
+                .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -106,27 +129,13 @@ public final class PanacheHibernateResourceProcessor {
 
         PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
-        // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        // of PanacheEntity if we ask for subtypes of PanacheEntityBase
-        // NOTE: we don't skip abstract/generic entities because they still need accessors
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
-            // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
-            if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
-                continue;
-            if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
-        }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY)) {
-            if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
-        }
         Set<String> modelClassNamesInternal = new HashSet<>();
-        for (String modelClass : modelClasses) {
-            modelClassNamesInternal.add(modelClass.replace(".", "/"));
-            transformers.produce(new BytecodeTransformerBuildItem(true, modelClass, modelEnhancer));
-        }
-        if (!modelClasses.isEmpty()) {
-            entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
+        for (PanacheEntityClassBuildItem entityClass : entityClasses) {
+            String entityClassName = entityClass.get().name().toString();
+            modelClasses.add(entityClassName);
+            modelEnhancer.collectFields(entityClass.get());
+            modelClassNamesInternal.add(entityClassName.replace(".", "/"));
+            transformers.produce(new BytecodeTransformerBuildItem(true, entityClassName, modelEnhancer));
         }
 
         MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();

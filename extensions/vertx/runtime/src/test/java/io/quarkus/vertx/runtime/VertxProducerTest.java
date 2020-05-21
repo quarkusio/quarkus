@@ -36,15 +36,15 @@ public class VertxProducerTest {
 
         assertThat(producer.axle()).isNotNull();
         assertFalse(producer.axle().isClustered());
-        assertThat(producer.axleEventBus()).isNotNull();
+        assertThat(producer.axleEventBus(producer.axle())).isNotNull();
 
         assertThat(producer.rx()).isNotNull();
         assertFalse(producer.rx().isClustered());
-        assertThat(producer.rxEventBus()).isNotNull();
+        assertThat(producer.rxEventBus(producer.rx())).isNotNull();
 
         assertThat(producer.mutiny()).isNotNull();
         assertFalse(producer.mutiny().isClustered());
-        assertThat(producer.mutinyEventBus()).isNotNull();
+        assertThat(producer.mutinyEventBus(producer.mutiny())).isNotNull();
 
     }
 }

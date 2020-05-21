@@ -26,12 +26,14 @@ import io.restassured.RestAssured;
 public class ReadTimeoutTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withConfigurationResource("application-timeout.properties")
+            .overrideConfigKey("quarkus.http.read-timeout", "0.5S")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TimeoutTestServlet.class));
 
     private String host;
     private SocketChannel client;
+
+    public static volatile String READ_DATA;
 
     @BeforeEach
     public void init() throws IOException {
@@ -49,7 +51,7 @@ public class ReadTimeoutTestCase {
 
     @Test
     public void shouldNotProcessRequestWrittenTooSlowly() throws IOException, InterruptedException {
-        requestWithDelay(1000L);
+        requestWithDelay(2000L);
 
         ByteBuffer buffer = ByteBuffer.allocate(100000);
         try {
@@ -58,7 +60,7 @@ public class ReadTimeoutTestCase {
 
         }
 
-        assertFalse(TimeoutTestServlet.read);
+        assertFalse(TimeoutTestServlet.read, "Did not expect data to be read, content was: " + READ_DATA);
         assertNotNull(TimeoutTestServlet.error);
     }
 

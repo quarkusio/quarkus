@@ -15,9 +15,9 @@ import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestExtension;
 
-@QuarkusTest
+@ExtendWith(value = { QuarkusTestExtension.class, EnabledIfTest.EnabledIfCondition.class })
 public class EnabledIfTest {
 
     @Test

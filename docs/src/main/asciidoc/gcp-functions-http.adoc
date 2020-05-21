@@ -1,0 +1,214 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
+Undertow (servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
+
+One Google Cloud Functions deployment can represent any number of JAX-RS, servlet, or Vert.x Web endpoints.
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* JDK 11 (Google Cloud Functions requires JDK 11)
+* Apache Maven {maven-version}
+* https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
+* https://cloud.google.com/sdk[Cloud SDK CLI Installed]
+
+== Solution
+
+This guide walks you through running a Maven Archetype to generate a sample project then creating three http endpoints
+written with JAX-RS APIs, Servlet APIs or Vert.x Web APIs.  After building, you will then be able to deploy
+to Google Cloud.
+
+== Creating the Maven Deployment Project
+
+Create an application with the `quarkus-google-cloud-functions-http` extension.
+You can use the following Maven command to create it:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=google-cloud-functions-http \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="google-cloud-functions-http,resteasy-json,undertow,vertx-web"
+----
+
+== Login to Google Cloud
+
+If you don't login to Google Cloud you won't be able to deploy.
+
+[source, subs=attributes+]
+----
+gcloud auth login
+----
+
+At the time writing this guide, Cloud Functions are still in beta so make sure to install the `beta` command group.
+
+[source, subs=attributes+]
+----
+gcloud components install beta
+----
+
+== Creating the endpoints
+
+For this example project, we will create three endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet)
+and one for Vert.x Web (reactive routes).
+
+If you don't want endpoints to all these technologies, you can remove the unnecessary extensions from your `pom.xml`.
+
+=== The JAX-RS endpoint
+
+[source,java]
+----
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+=== The Servlet endpoint
+
+[source,java]
+----
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet(name = "ServletGreeting", urlPatterns = "/servlet/hello")
+public class GreetingServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setStatus(200);
+        resp.addHeader("Content-Type", "text/plain");
+        resp.getWriter().write("hello");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String name = req.getReader().readLine();
+        resp.setStatus(200);
+        resp.addHeader("Content-Type", "text/plain");
+        resp.getWriter().write("hello " + name);
+    }
+}
+----
+
+=== The Vert.x Web endpoint
+
+[source,java]
+----
+import static io.vertx.core.http.HttpMethod.GET;
+
+import io.quarkus.vertx.web.Route;
+import io.vertx.ext.web.RoutingContext;
+
+public class GreetingRoutes {
+    @Route(path = "/vertx/hello", methods = GET)
+    void hello(RoutingContext context) {
+        context.response().headers().set("Content-Type", "text/plain");
+        context.response().setStatusCode(200).end("hello");
+    }
+}
+----
+
+== Build and Deploy to Google Cloud
+
+To build your application, you first need to define a packaging of type `uber-jar` via your `application.properties`.
+
+[source]
+----
+quarkus.package.uber-jar=true
+----
+
+Then you can package your application via `mvn clean package`.
+You will have a single JAR inside the target repository that contains your classes and all your dependencies in it.
+
+To deploy your JAR to Google Cloud, you need to pass a directory with only this JAR inside it, to the `gcloud` utility.
+
+So first, create a `deployment` directory and copy the generated artifact inside it.
+
+[source]
+----
+mkdir deployment
+cp target/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar deployment/
+----
+
+Then you will be able to use `gcloud` to deploy your function to Google Cloud.
+
+[source]
+----
+gcloud beta functions deploy quarkus-example-http \
+  --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
+  --runtime=java11 --trigger-http --source=deployment
+----
+
+[WARNING]
+----
+The first time you launch this command, you can have the following error message:
+```
+ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
+```
+This means that Cloud Build is not activated yet, please go to the mentionned URL to activate it, wait a few minutes and retry the command.
+----
+
+The entry point always needs to be `io.quarkus.gcp.functions.http.QuarkusHttpFunction` as it will be this class
+that bootstraps Quarkus.
+
+This command will give you as output a `httpsTrigger.url` that point to your function.
+
+You can then call your endpoints via:
+
+- For JAX-RS: {httpsTrigger.url}/hello
+- For servlet: {httpsTrigger.url}/servlet/hello
+- For Vert.x Web: {httpsTrigger.url}/vertx/hello
+
+== Testing locally
+
+The easiest way to locally test your function is using the Cloud Function invoker JAR.
+
+You can download it via Maven using the following command:
+
+[source]
+----
+mvn dependency:copy \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.0-beta1' \
+  -DoutputDirectory=.
+----
+
+Then you can use it to launch your function locally.
+
+[source]
+----
+java -jar java-function-invoker-1.0.0-beta1.jar \
+  --classpath target/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar \
+  --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
+----
+
+Your endpoints will be available on http://localhost:8080.

@@ -848,6 +848,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-functions-http-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Quarkus extension dependencies -->
             <dependency>
                 <groupId>org.webjars</groupId>

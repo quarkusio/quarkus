@@ -200,6 +200,7 @@
 
         <picocli.version>4.3.2</picocli.version>
         <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
+        <google-cloud-functions.version>1.0.1</google-cloud-functions.version>
     </properties>
 
     <dependencyManagement>
@@ -1040,6 +1041,11 @@
                 <artifactId>quarkus-cache</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-functions-http</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
             <dependency>
@@ -1192,6 +1198,11 @@
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.google.cloud.functions</groupId>
+                <artifactId>functions-framework-api</artifactId>
+                <version>${google-cloud-functions.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>

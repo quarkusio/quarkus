@@ -31,7 +31,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.assertj:assertj-core:3.16.1'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
-    testImplementation 'org.awaitility:awaitility:4.0.2'
+    testImplementation 'org.awaitility:awaitility:4.0.3'
     testImplementation 'org.jprocesses:jProcesses:1.6.5'
     testImplementation "io.quarkus:quarkus-devmode-test-utils:${version}"
     testImplementation gradleTestKit()

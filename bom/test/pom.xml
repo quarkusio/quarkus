@@ -16,7 +16,7 @@
     <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
     <properties>
-        <testcontainers.version>1.14.1</testcontainers.version>
+        <testcontainers.version>1.14.2</testcontainers.version>
     </properties>
 
     <dependencyManagement>

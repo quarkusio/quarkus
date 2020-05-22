@@ -95,7 +95,7 @@ public class GrpcClientProcessor {
 
         items.values().forEach(item -> {
             services.produce(item);
-            LOGGER.infof("Detected GrpcService associated with the '%s' configuration prefix", item.name);
+            LOGGER.debugf("Detected GrpcService associated with the '%s' configuration prefix", item.name);
         });
     }
 

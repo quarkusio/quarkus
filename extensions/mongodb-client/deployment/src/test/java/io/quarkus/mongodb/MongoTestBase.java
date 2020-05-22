@@ -48,7 +48,18 @@ public class MongoTestBase {
                     .net(new Net(port, Network.localhostIsIPv6()))
                     .build();
             MONGO = MongodStarter.getDefaultInstance().prepare(config);
-            MONGO.start();
+            try {
+                MONGO.start();
+            } catch (Exception e) {
+                //every so often mongo fails to start on CI runs
+                //see if this helps
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignore) {
+
+                }
+                MONGO.start();
+            }
         } else {
             LOGGER.infof("Using existing Mongo %s", uri);
         }

@@ -21,12 +21,14 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
+import org.gradle.api.attributes.Category;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
@@ -135,6 +137,20 @@ public class AppModelGradleResolver implements AppModelResolver {
             return appModel;
         }
         final List<Dependency> directExtensionDeps = new ArrayList<>();
+
+        // collect enforced platforms
+        final Configuration impl = project.getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        for (Dependency d : impl.getAllDependencies()) {
+            if (!(d instanceof ModuleDependency)) {
+                continue;
+            }
+            final ModuleDependency module = (ModuleDependency) d;
+            final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+            if (category != null && Category.ENFORCED_PLATFORM.equals(category.getName())) {
+                directExtensionDeps.add(d);
+            }
+        }
+
         final List<AppDependency> userDeps = new ArrayList<>();
         Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();

@@ -3,8 +3,6 @@ package io.quarkus.funqy.lambda;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 
 import org.jboss.logging.Logger;
 
@@ -94,7 +92,7 @@ public class FunqyLambdaBindingRecorder {
         }
         FunqyServerResponse response = dispatch(input);
 
-        Object value = awaitCompletionStage(response.getOutput());
+        Object value = response.getOutput().await().indefinitely();
         if (value != null) {
             writer.writeValue(outputStream, value);
         }
@@ -109,7 +107,7 @@ public class FunqyLambdaBindingRecorder {
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 FunqyServerResponse response = dispatch(input);
-                return awaitCompletionStage(response.getOutput());
+                return response.getOutput().await().indefinitely();
             }
 
             @Override
@@ -135,23 +133,6 @@ public class FunqyLambdaBindingRecorder {
         };
         loop.startPollLoop(context);
 
-    }
-
-    private static <T> T awaitCompletionStage(CompletionStage<T> output) {
-        T val;
-        try {
-            val = output.toCompletableFuture().get();
-        } catch (ExecutionException ex) {
-            Throwable inner = ex.getCause();
-            if (inner instanceof RuntimeException) {
-                throw (RuntimeException) inner;
-            } else {
-                throw new RuntimeException(inner);
-            }
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
-        return val;
     }
 
     private static FunqyServerResponse dispatch(Object input) {

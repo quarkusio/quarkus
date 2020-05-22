@@ -3,12 +3,11 @@ package io.quarkus.funqy.test;
 import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class GreetingFunctions {
     @Inject
@@ -27,27 +26,26 @@ public class GreetingFunctions {
     }
 
     @Funq
-    public CompletionStage<Greeting> greetAsync(Identity name) {
-        CompletableFuture<Greeting> result = new CompletableFuture<>();
-        if (name == null) {
-            result.completeExceptionally(new IllegalArgumentException("Identity cannot be null."));
-            return result;
-        }
+    public Uni<Greeting> greetAsync(Identity name) {
 
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                String message = service.hello(name.getName());
-                Greeting greeting = new Greeting();
-                greeting.setMessage(message);
-                greeting.setName(name.getName());
-                result.complete(greeting);
-                timer.cancel();
+        return Uni.createFrom().emitter(uniEmitter -> {
+            if (name == null) {
+                uniEmitter.fail(new IllegalArgumentException("Identity cannot be null."));
             }
-        }, Duration.ofMillis(1).toMillis());
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    String message = service.hello(name.getName());
+                    Greeting greeting = new Greeting();
+                    greeting.setMessage(message);
+                    greeting.setName(name.getName());
+                    uniEmitter.complete(greeting);
+                    timer.cancel();
+                }
+            }, Duration.ofMillis(1).toMillis());
+        });
 
-        return result;
     }
 
 }

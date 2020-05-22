@@ -4,9 +4,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.smallrye.mutiny.Uni;
 
 public class FunctionInvoker {
     protected String name;
@@ -40,7 +40,7 @@ public class FunctionInvoker {
         constructor = new FunctionConstructor(targetClass);
         Class<?> returnType = method.getReturnType();
         if (returnType != null) {
-            if (CompletionStage.class.isAssignableFrom(returnType)) {
+            if (Uni.class.isAssignableFrom(returnType)) {
                 outputType = null;
                 isAsync = true;
                 Type genericReturnType = method.getGenericReturnType();
@@ -52,7 +52,7 @@ public class FunctionInvoker {
                 }
                 if (outputType == null) {
                     throw new IllegalArgumentException(
-                            "CompletionStage must be used with type parameter (e.g. CompletionStage<String>).");
+                            "Uni must be used with type parameter (e.g. Uni<String>).");
                 }
             } else {
                 outputType = returnType;
@@ -91,7 +91,7 @@ public class FunctionInvoker {
     }
 
     public boolean hasOutput() {
-        return outputType != null && !outputType.equals(Void.TYPE);
+        return outputType != null && !outputType.equals(Void.TYPE) && !outputType.equals(Void.class);
     }
 
     public String getName() {
@@ -119,36 +119,23 @@ public class FunctionInvoker {
         try {
             Object result = method.invoke(target, args);
             if (isAsync()) {
-                CompletableFuture<Object> withWrappedException = new CompletableFuture<>();
-                ((CompletionStage<?>) result).whenCompleteAsync((o, t) -> {
-                    if (t != null) {
-                        withWrappedException.completeExceptionally(new ApplicationException(t));
-                    } else {
-                        withWrappedException.complete(o);
-                    }
-                });
-                response.setOutput(withWrappedException);
+                response.setOutput(((Uni<?>) result).onFailure().apply(t -> new ApplicationException(t)));
             } else {
-                response.setOutput(CompletableFuture.completedFuture(result));
+                response.setOutput(Uni.createFrom().item(result));
             }
         } catch (IllegalAccessException e) {
             InternalError ex = new InternalError("Failed to invoke function", e);
-            response.setOutput(exceptionalCompletionStage(ex));
+            response.setOutput(Uni.createFrom().failure(ex));
             throw ex;
         } catch (InvocationTargetException e) {
             ApplicationException ex = new ApplicationException(e.getCause());
-            response.setOutput(exceptionalCompletionStage(ex));
+            response.setOutput(Uni.createFrom().failure(ex));
             throw ex;
         } catch (Throwable t) {
             InternalError ex = new InternalError(t);
-            response.setOutput(exceptionalCompletionStage(ex));
+            response.setOutput(Uni.createFrom().failure(ex));
             throw ex;
         }
     }
 
-    private static CompletionStage<?> exceptionalCompletionStage(Throwable t) {
-        CompletableFuture<?> fut = new CompletableFuture<>();
-        fut.completeExceptionally(t);
-        return fut;
-    }
 }

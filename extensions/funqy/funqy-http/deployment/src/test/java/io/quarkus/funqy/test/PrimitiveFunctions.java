@@ -1,19 +1,20 @@
 package io.quarkus.funqy.test;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class PrimitiveFunctions {
+
+    public static final String TEST_EXCEPTION_MSG = "TEST_EXCEPTION_MSG";
+
     @Funq
     public String toLowerCase(String val) {
         return val.toLowerCase();
     }
 
     @Funq
-    public CompletionStage<String> toLowerCaseAsync(String val) {
-        return CompletableFuture.completedFuture(val.toLowerCase());
+    public Uni<String> toLowerCaseAsync(String val) {
+        return Uni.createFrom().item(() -> val.toLowerCase());
     }
 
     @Funq
@@ -31,8 +32,18 @@ public class PrimitiveFunctions {
     }
 
     @Funq
-    public CompletableFuture<Integer> doubleItAsync(int val) {
-        return CompletableFuture.completedFuture(val * 2);
+    public Uni<Void> noopAsync() {
+        return Uni.createFrom().item(() -> (Void) null);
+    }
+
+    @Funq
+    public Uni<Integer> doubleItAsync(int val) {
+        return Uni.createFrom().item(() -> val * 2);
+    }
+
+    @Funq
+    public Uni<Void> voidFunThrowError() {
+        return Uni.createFrom().failure(new RuntimeException(TEST_EXCEPTION_MSG));
     }
 
 }

@@ -1,11 +1,9 @@
 package io.quarkus.funqy.test;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import javax.inject.Inject;
 
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class GreetingFunctions {
     @Inject
@@ -27,12 +25,12 @@ public class GreetingFunctions {
     }
 
     @Funq
-    public CompletionStage<Greeting> greetAsync(String name) {
+    public Uni<Greeting> greetAsync(String name) {
         String message = service.hello(name);
         Greeting greeting = new Greeting();
         greeting.setMessage(message);
         greeting.setName(name);
-        return CompletableFuture.completedFuture(greeting);
+        return Uni.createFrom().item(() -> greeting);
     }
 
 }

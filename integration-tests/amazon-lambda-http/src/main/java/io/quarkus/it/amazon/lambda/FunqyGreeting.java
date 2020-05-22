@@ -1,9 +1,7 @@
 package io.quarkus.it.amazon.lambda;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class FunqyGreeting {
 
@@ -13,7 +11,7 @@ public class FunqyGreeting {
     }
 
     @Funq
-    public CompletionStage<String> funqyAsync(String name) {
-        return CompletableFuture.completedFuture("Make it funqy " + name);
+    public Uni<String> funqyAsync(String name) {
+        return Uni.createFrom().item(() -> "Make it funqy " + name);
     }
 }

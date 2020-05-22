@@ -1,7 +1,6 @@
 package io.quarkus.funqy.runtime.bindings.http;
 
 import java.io.InputStream;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -134,27 +133,26 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             FunqyRequestImpl funqyRequest = new FunqyRequestImpl(new RequestContextImpl(), input);
             FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
             invoker.invoke(funqyRequest, funqyResponse);
-            if (invoker.hasOutput()) {
-                routingContext.response().setStatusCode(200);
-                routingContext.response().putHeader("Content-Type", "application/json");
-                ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                CompletionStage<?> output = funqyResponse.getOutput();
-                output.whenCompleteAsync((o, t) -> {
-                    if (t != null) {
-                        routingContext.fail(t);
-                        return;
-                    }
-                    try {
-                        routingContext.response().end(writer.writeValueAsString(o));
-                    } catch (JsonProcessingException e) {
-                        log.error("Failed to marshal", e);
-                        routingContext.fail(400);
-                    }
-                }, executor);
-            } else {
-                routingContext.response().setStatusCode(204);
-                routingContext.response().end();
-            }
+
+            funqyResponse.getOutput().emitOn(executor).subscribe().with(
+                    o -> {
+                        if (invoker.hasOutput()) {
+                            routingContext.response().setStatusCode(200);
+                            routingContext.response().putHeader("Content-Type", "application/json");
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            try {
+                                routingContext.response().end(writer.writeValueAsString(o));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                            }
+                        } else {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                        }
+                    },
+                    t -> routingContext.fail(t));
+
         } catch (Exception e) {
             routingContext.fail(e);
         } finally {

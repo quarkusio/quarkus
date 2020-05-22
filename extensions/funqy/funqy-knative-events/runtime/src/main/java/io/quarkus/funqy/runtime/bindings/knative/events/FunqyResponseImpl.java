@@ -1,19 +1,18 @@
 package io.quarkus.funqy.runtime.bindings.knative.events;
 
-import java.util.concurrent.CompletionStage;
-
 import io.quarkus.funqy.runtime.FunqyServerResponse;
+import io.smallrye.mutiny.Uni;
 
 public class FunqyResponseImpl implements FunqyServerResponse {
-    protected CompletionStage<?> output;
+    protected Uni<?> output;
 
     @Override
-    public CompletionStage<?> getOutput() {
+    public Uni<?> getOutput() {
         return output;
     }
 
     @Override
-    public void setOutput(CompletionStage<?> output) {
+    public void setOutput(Uni<?> output) {
         this.output = output;
     }
 }

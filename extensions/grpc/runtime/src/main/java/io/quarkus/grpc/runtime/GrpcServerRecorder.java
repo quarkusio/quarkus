@@ -110,7 +110,7 @@ public class GrpcServerRecorder {
                     builder.intercept(serverInterceptor);
                 }
 
-                LOGGER.infof("Starting gRPC Server on %s:%d  [SSL enabled: %s]...",
+                LOGGER.debugf("Starting gRPC Server on %s:%d  [SSL enabled: %s]...",
                         configuration.host, configuration.port, !usePlainText.get());
 
                 CountDownLatch started = new CountDownLatch(1);
@@ -118,7 +118,7 @@ public class GrpcServerRecorder {
                 GrpcServerHolder.server = server.start(new Handler<AsyncResult<Void>>() { // NOSONAR
                     @Override
                     public void handle(AsyncResult<Void> ar) {
-                        onServerStarted(ar, configuration, !configuration.plainText, grpcContainer, started);
+                        onServerStarted(ar, configuration, configuration.plainText, grpcContainer, started);
                     }
                 });
 
@@ -231,7 +231,7 @@ public class GrpcServerRecorder {
             @Override
             public void accept(BindableService bindable) {
                 ServerServiceDefinition definition = bindable.bindService();
-                LOGGER.infof("Registered gRPC service '%s'", definition.getServiceDescriptor().getName());
+                LOGGER.debugf("Registered gRPC service '%s'", definition.getServiceDescriptor().getName());
                 definitions.add(definition);
             }
         });

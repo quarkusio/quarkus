@@ -30,7 +30,14 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
                     .net(new Net(port, Network.localhostIsIPv6()))
                     .build();
             MONGO = MongodStarter.getDefaultInstance().prepare(config);
-            MONGO.start();
+            try {
+                MONGO.start();
+            } catch (Exception e) {
+                //every so often mongo fails to start on CI runs
+                //see if this helps
+                Thread.sleep(1000);
+                MONGO.start();
+            }
             return Collections.emptyMap();
         } catch (Exception e) {
             throw new RuntimeException(e);

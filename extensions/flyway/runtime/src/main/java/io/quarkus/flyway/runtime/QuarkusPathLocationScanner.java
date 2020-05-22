@@ -1,4 +1,4 @@
-package io.quarkus.flyway.runtime.graal;
+package io.quarkus.flyway.runtime;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,6 +12,11 @@ import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
 import org.jboss.logging.Logger;
 
+/**
+ * This class is used in order to prevent Flyway from doing classpath scanning which is both slow
+ * and won't work in native mode
+ */
+@SuppressWarnings("rawtypes")
 public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
     private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
     private static final String LOCATION_SEPARATOR = "/";
@@ -20,6 +25,8 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private final Collection<LoadableResource> scannedResources;
 
     public QuarkusPathLocationScanner(Collection<Location> locations) {
+        LOGGER.debugv("Locations: {0}", locations);
+
         this.scannedResources = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
@@ -50,6 +57,9 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
 
             if (migrationFile.startsWith(locationPath)) {
                 return true;
+            } else {
+                LOGGER.debugf("Migration file '%s' will be ignored because it does not start with '%s'", migrationFile,
+                        locationPath);
             }
         }
 

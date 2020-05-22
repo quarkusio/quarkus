@@ -7,18 +7,21 @@ import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.arc.Arc;
-import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class FlywayRecorder {
 
+    private static final Logger log = Logger.getLogger(FlywayRecorder.class);
+
     private final List<FlywayContainer> flywayContainers = new ArrayList<>(2);
 
     public void setApplicationMigrationFiles(List<String> migrationFiles) {
+        log.debugv("Setting the following application migration files: {0}", migrationFiles);
         QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
     }
 

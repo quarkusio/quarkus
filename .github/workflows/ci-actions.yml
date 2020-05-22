@@ -313,7 +313,7 @@ jobs:
           - category: Data1
             mariadb: "true"
             mssql: "true"
-            timeout: 50
+            timeout: 55
             test-modules: >
               jpa-h2
               jpa-mariadb

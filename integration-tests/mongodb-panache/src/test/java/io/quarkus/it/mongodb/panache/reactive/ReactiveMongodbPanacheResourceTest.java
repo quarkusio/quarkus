@@ -279,7 +279,7 @@ class ReactiveMongodbPanacheResourceTest {
 
         //with project
         list = get(endpoint + "/search/Doe").as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
+        Assertions.assertEquals(1, list.size());
         Assertions.assertNotNull(list.get(0).lastname);
         //expected the firstname field to be null as we project on lastname only
         Assertions.assertNull(list.get(0).firstname);
@@ -292,7 +292,7 @@ class ReactiveMongodbPanacheResourceTest {
                 .when().post(endpoint + "/rename")
                 .then().statusCode(200);
         list = get(endpoint + "/search/Dupont").as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
+        Assertions.assertEquals(1, list.size());
 
         //count
         Long count = get(endpoint + "/count").as(Long.class);

@@ -820,4 +820,9 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     public CodecRegistry getCodecRegistry() {
         return collection.getCodecRegistry();
     }
+
+    @Override
+    public <NewTDocument> ReactiveMongoCollection<NewTDocument> withDocumentClass(Class<NewTDocument> clazz) {
+        return new ReactiveMongoCollectionImpl<>(this.collection.withDocumentClass(clazz));
+    }
 }

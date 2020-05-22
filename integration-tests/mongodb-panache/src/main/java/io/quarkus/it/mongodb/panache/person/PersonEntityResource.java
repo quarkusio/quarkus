@@ -1,7 +1,9 @@
 package io.quarkus.it.mongodb.panache.person;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -23,8 +25,11 @@ public class PersonEntityResource {
 
     @GET
     @Path("/search/{name}")
-    public List<PersonName> searchPersons(@PathParam("name") String name) {
-        return PersonEntity.find("lastname", name).project(PersonName.class).list();
+    public Set<PersonName> searchPersons(@PathParam("name") String name) {
+        Set<PersonName> uniqueNames = new HashSet<>();
+        List<PersonName> lastnames = PersonEntity.find("lastname", name).project(PersonName.class).list();
+        lastnames.forEach(p -> uniqueNames.add(p));// this will throw if it's not the right type
+        return uniqueNames;
     }
 
     @POST

@@ -76,6 +76,7 @@ public class QuarkusBootstrap implements Serializable {
     private final MavenArtifactResolver mavenArtifactResolver;
     private final AppArtifact managingProject;
     private final List<AppDependency> forcedDependencies;
+    private final boolean disableClasspathCache;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -100,6 +101,7 @@ public class QuarkusBootstrap implements Serializable {
         this.mavenArtifactResolver = builder.mavenArtifactResolver;
         this.managingProject = builder.managingProject;
         this.forcedDependencies = new ArrayList<>(builder.forcedDependencies);
+        this.disableClasspathCache = builder.disableClasspathCache;
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -128,11 +130,15 @@ public class QuarkusBootstrap implements Serializable {
                 .setProjectRoot(getProjectRoot());
         if (mode == Mode.TEST || test) {
             appModelFactory.setTest(true);
-            appModelFactory.setEnableClasspathCache(true);
+            if (!disableClasspathCache) {
+                appModelFactory.setEnableClasspathCache(true);
+            }
         }
         if (mode == Mode.DEV) {
             appModelFactory.setDevMode(true);
-            appModelFactory.setEnableClasspathCache(true);
+            if (!disableClasspathCache) {
+                appModelFactory.setEnableClasspathCache(true);
+            }
         }
         return new CuratedApplication(this, appModelFactory.resolveAppModel());
     }
@@ -217,6 +223,7 @@ public class QuarkusBootstrap implements Serializable {
         MavenArtifactResolver mavenArtifactResolver;
         AppArtifact managingProject;
         List<AppDependency> forcedDependencies = new ArrayList<>();
+        boolean disableClasspathCache;
 
         public Builder() {
         }
@@ -314,6 +321,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setDependenciesOrigin(DependenciesOrigin dependenciesOrigin) {
             this.dependenciesOrigin = dependenciesOrigin;
+            return this;
+        }
+
+        public Builder setDisableClasspathCache(boolean disableClasspathCache) {
+            this.disableClasspathCache = disableClasspathCache;
             return this;
         }
 

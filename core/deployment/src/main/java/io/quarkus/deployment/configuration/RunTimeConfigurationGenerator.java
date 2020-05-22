@@ -231,6 +231,11 @@ public final class RunTimeConfigurationGenerator {
     // todo: more space-efficient sorted map impl
     static final MethodDescriptor TM_NEW = MethodDescriptor.ofConstructor(TreeMap.class);
 
+    static final MethodDescriptor EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "emptyParseKey", void.class,
+            SmallRyeConfig.class, NameIterator.class);
+    static final MethodDescriptor RT_EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "rtEmptyParseKey", void.class,
+            SmallRyeConfig.class, NameIterator.class);
+
     private RunTimeConfigurationGenerator() {
     }
 
@@ -297,6 +302,7 @@ public final class RunTimeConfigurationGenerator {
             runTimeDefaults = Assert.checkNotNullParam("runTimeDefaults", builder.getRunTimeDefaults());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
+            generateEmptyParsers(cc);
             // not instantiable
             try (MethodCreator mc = cc.getMethodCreator(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME))) {
                 mc.setModifiers(Opcodes.ACC_PRIVATE);
@@ -977,16 +983,65 @@ public final class RunTimeConfigurationGenerator {
             }
         }
 
+        private void generateEmptyParsers(ClassCreator cc) {
+            MethodCreator body = cc.getMethodCreator(RT_EMPTY_PARSER);
+            body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
+            ResultHandle keyIter = body.getMethodParam(1);
+            try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
+                    .falseBranch()) {
+                // return;
+                matchedBody.returnValue(null);
+            }
+            body.invokeStaticMethod(CD_UNKNOWN_RT, keyIter);
+            body.returnValue(null);
+
+            body = cc.getMethodCreator(EMPTY_PARSER);
+            body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
+            keyIter = body.getMethodParam(1);
+            try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
+                    .falseBranch()) {
+                // return;
+                matchedBody.returnValue(null);
+            }
+            body.invokeStaticMethod(CD_UNKNOWN, keyIter);
+            body.returnValue(null);
+        }
+
         private MethodDescriptor generateParserBody(final ConfigPatternMap<Container> keyMap,
                 final ConfigPatternMap<?> ignoredMap, final StringBuilder methodName, final boolean dynamic,
                 final boolean isRunTime) {
+            final Container matched = keyMap == null ? null : keyMap.getMatched();
+            final Object ignoreMatched = ignoredMap == null ? null : ignoredMap.getMatched();
+
+            if (matched == null && ignoreMatched != null) {
+                //if this method is an ignored leaf node then we can avoid generating a method
+                //this reduces the number of generated methods by close too 50%
+                if (keyMap == null || !keyMap.childNames().iterator().hasNext()) {
+                    final Iterable<String> names = ignoredMap.childNames();
+                    boolean needsCode = false;
+                    for (String name : names) {
+                        if (name.equals(ConfigPatternMap.WILD_CARD)) {
+                            needsCode = true;
+                            break;
+                        } else {
+                            final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null : keyMap.getChild(name);
+                            if (keyChildMap == null) {
+                                needsCode = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!needsCode) {
+                        return isRunTime ? RT_EMPTY_PARSER : EMPTY_PARSER;
+                    }
+                }
+            }
+
             try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class,
                     SmallRyeConfig.class, NameIterator.class)) {
                 body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
                 final ResultHandle config = body.getMethodParam(0);
                 final ResultHandle keyIter = body.getMethodParam(1);
-                final Container matched = keyMap == null ? null : keyMap.getMatched();
-                final Object ignoreMatched = ignoredMap == null ? null : ignoredMap.getMatched();
                 // if (! keyIter.hasNext()) {
                 try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
                         .falseBranch()) {

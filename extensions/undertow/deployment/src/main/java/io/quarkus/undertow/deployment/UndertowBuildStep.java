@@ -491,6 +491,11 @@ public class UndertowBuildStep {
             for (Map.Entry<String, String> entry : servlet.getInitParams().entrySet()) {
                 recorder.addServletInitParam(s, entry.getKey(), entry.getValue());
             }
+            if (servlet.getMultipartConfig() != null) {
+                recorder.setMultipartConfig(s, servlet.getMultipartConfig().getLocation(),
+                        servlet.getMultipartConfig().getMaxFileSize(), servlet.getMultipartConfig().getMaxRequestSize(),
+                        servlet.getMultipartConfig().getFileSizeThreshold());
+            }
         }
 
         for (FilterBuildItem filter : filters) {

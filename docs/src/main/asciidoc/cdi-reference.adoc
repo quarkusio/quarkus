@@ -893,6 +893,21 @@ Here is a summary of which extensions can access which metadata:
 * `BeanDeploymentValidator`
 ** Has access to all build metadata
 
+[[dev-mode]]
+== Development Mode
+
+In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
+
+* HTTP GET `/arc/beans` - returns the list of all beans
+** You can use query params to filter the output:
+*** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/arc/beans?scope=ApplicationScoped`
+*** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/arc/beans?beanClass=org.acme.Foo`
+*** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/arc/beans?kind=PRODUCER_METHOD`
+* HTTP GET `/arc/observers` - returns the list of all observer methods
+
+NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
+
+
 [[arc-configuration-reference]]
 == ArC Configuration Reference
 

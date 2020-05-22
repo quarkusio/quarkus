@@ -349,6 +349,18 @@ public class ArcContainerImpl implements ArcContainer {
         }
     }
 
+    public List<InjectableBean<?>> getBeans() {
+        return new ArrayList<>(beans);
+    }
+
+    public List<InjectableInterceptor<?>> getInterceptors() {
+        return new ArrayList<>(interceptors);
+    }
+
+    public List<InjectableObserverMethod<?>> getObservers() {
+        return new ArrayList<>(observers);
+    }
+
     InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {
         for (ResourceReferenceProvider resourceProvider : resourceProviders) {
             InstanceHandle<Object> ret = resourceProvider.get(type, annotations);
@@ -664,7 +676,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
     }
 
-    static ArcContainerImpl instance() {
+    public static ArcContainerImpl instance() {
         return unwrap(Arc.container());
     }
 

@@ -28,6 +28,7 @@
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <version.surefire.plugin>2.22.1</version.surefire.plugin>
+        <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
@@ -220,6 +221,15 @@
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
                         <argLine>${jacoco.agent.argLine}</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${failsafe-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
                 <plugin>

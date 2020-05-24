@@ -130,9 +130,6 @@
         </resources>
         <plugins>
             <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
             <!-- Skip enforcer plugin as we want to use jboss marshalling for test class -->

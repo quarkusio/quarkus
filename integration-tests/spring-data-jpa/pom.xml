@@ -87,10 +87,6 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <systemPropertyVariables>
-                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                            </systemPropertyVariables>
-                            <argLine>${jacoco.agent.argLine}</argLine>
                             <includes>**/*PMT.java</includes>
                         </configuration>
                     </execution>

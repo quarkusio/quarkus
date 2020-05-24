@@ -2,6 +2,7 @@ package io.quarkus.flyway;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -197,6 +198,7 @@ class FlywayProcessor {
         try (final Stream<Path> pathStream = Files.walk(Paths.get(path.toURI()))) {
             return pathStream.filter(Files::isRegularFile)
                     .map(it -> Paths.get(location, it.getFileName().toString()).toString())
+                    .map(it -> it.replace(File.separatorChar, '/'))
                     .peek(it -> LOGGER.debug("Discovered: " + it))
                     .collect(Collectors.toSet());
         }

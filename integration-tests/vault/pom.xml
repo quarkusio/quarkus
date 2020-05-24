@@ -69,9 +69,6 @@
                                 <configuration>
                                     <skip>false</skip>
                                     <trimStackTrace>false</trimStackTrace>
-                                    <systemPropertyVariables>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                    </systemPropertyVariables>
                                 </configuration>
                             </execution>
                         </executions>

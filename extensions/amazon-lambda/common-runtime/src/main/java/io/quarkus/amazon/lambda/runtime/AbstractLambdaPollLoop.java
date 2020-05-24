@@ -54,17 +54,20 @@ public abstract class AbstractLambdaPollLoop {
                                 URL url = AmazonLambdaApi.invocationResponse(requestId);
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);
-                                    processRequest(requestConnection.getInputStream(), responseConnection.getOutputStream(),
-                                            createContext(requestConnection));
-                                    while (responseConnection.getInputStream().read() != -1) {
-                                        // Read data
+                                    if (running.get()) {
+                                        processRequest(requestConnection.getInputStream(), responseConnection.getOutputStream(),
+                                                createContext(requestConnection));
+                                        while (responseConnection.getInputStream().read() != -1) {
+                                            // Read data
+                                        }
                                     }
                                 } else {
                                     Object input = null;
-                                    if (getInputReader() != null)
+                                    if (running.get() && getInputReader() != null) {
                                         input = getInputReader().readValue(requestConnection.getInputStream());
-                                    Object output = processRequest(input, createContext(requestConnection));
-                                    postResponse(url, output);
+                                        Object output = processRequest(input, createContext(requestConnection));
+                                        postResponse(url, output);
+                                    }
                                 }
                             } catch (Exception e) {
                                 log.error("Failed to run lambda", e);
@@ -82,7 +85,10 @@ public abstract class AbstractLambdaPollLoop {
                             }
                             return;
                         } finally {
-                            requestConnection.getInputStream().close();
+                            try {
+                                requestConnection.getInputStream().close();
+                            } catch (IOException e) {
+                            }
                         }
 
                     }

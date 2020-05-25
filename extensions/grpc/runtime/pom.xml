@@ -9,10 +9,6 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <properties>
-        <vertx.version>3.9.0</vertx.version>
-    </properties>
-
     <artifactId>quarkus-grpc</artifactId>
     <name>Quarkus - gRPC - Runtime</name>
     <description>Serve and consume gRPC services</description>

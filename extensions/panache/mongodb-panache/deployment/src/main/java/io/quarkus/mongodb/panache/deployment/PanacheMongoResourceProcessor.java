@@ -320,15 +320,15 @@ public class PanacheMongoResourceProcessor {
             CombinedIndexBuildItem index) throws BuildException {
         // we verify that no ID fields are defined (via @BsonId) when extending PanacheMongoEntity or ReactivePanacheMongoEntity
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_BSON_ID)) {
-            ClassInfo info = io.quarkus.panache.common.deployment.JandexUtil.getEnclosingClass(annotationInstance);
-            if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info,
+            ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
+            if (JandexUtil.isSubclassOf(index.getIndex(), info,
                     DOTNAME_PANACHE_ENTITY)) {
                 BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
                         "' but one is already provided by PanacheMongoEntity, " +
                         "your class should extend PanacheMongoEntityBase instead, or use the id provided by PanacheMongoEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
-            } else if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info,
+            } else if (JandexUtil.isSubclassOf(index.getIndex(), info,
                     DOTNAME_MUTINY_PANACHE_ENTITY)) {
                 BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
                         "' but one is already provided by ReactivePanacheMongoEntity, " +
@@ -384,7 +384,7 @@ public class PanacheMongoResourceProcessor {
         }
 
         // climb up the hierarchy of types
-        if (!target.superClassType().name().equals(io.quarkus.panache.common.deployment.JandexUtil.DOTNAME_OBJECT)) {
+        if (!target.superClassType().name().equals(JandexUtil.DOTNAME_OBJECT)) {
             Type superType = target.superClassType();
             ClassInfo superClass = index.getIndex().getClassByName(superType.name());
             extractMappings(classPropertyMapping, superClass, index);

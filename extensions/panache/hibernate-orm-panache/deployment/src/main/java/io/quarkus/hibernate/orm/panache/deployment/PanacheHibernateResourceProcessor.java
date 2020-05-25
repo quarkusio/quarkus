@@ -24,6 +24,7 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
@@ -152,8 +153,8 @@ public final class PanacheHibernateResourceProcessor {
             CombinedIndexBuildItem index) throws BuildException {
         // we verify that no ID fields are defined (via @Id) when extending PanacheEntity
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
-            ClassInfo info = io.quarkus.panache.common.deployment.JandexUtil.getEnclosingClass(annotationInstance);
-            if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
+            ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
+            if (JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
                 BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
                         "' but one is already provided by PanacheEntity, " +
                         "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",

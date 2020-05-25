@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.JpaEntitiesBuildItem;
 import io.quarkus.hibernate.orm.panache.common.runtime.PanacheHibernateRecorder;
 
@@ -77,7 +78,7 @@ public final class PanacheJpaCommonResourceProcessor {
         }
 
         // climb up the hierarchy of types
-        if (!classInfo.superClassType().name().equals(io.quarkus.panache.common.deployment.JandexUtil.DOTNAME_OBJECT)) {
+        if (!classInfo.superClassType().name().equals(JandexUtil.DOTNAME_OBJECT)) {
             Type superType = classInfo.superClassType();
             ClassInfo superClass = index.getIndex().getClassByName(superType.name());
             if (superClass != null) {

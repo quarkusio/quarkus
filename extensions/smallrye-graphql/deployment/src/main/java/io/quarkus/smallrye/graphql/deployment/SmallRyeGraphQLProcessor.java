@@ -26,6 +26,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -44,8 +46,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.deployment.index.ClassPathArtifactResolver;
-import io.quarkus.deployment.index.ResolvedArtifact;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -313,7 +314,8 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLRecorder recorder,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReload,
-            HttpRootPathBuildItem httpRootPath) throws Exception {
+            HttpRootPathBuildItem httpRootPath,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
         if (!quarkusConfig.enableUi) {
             return;
@@ -344,7 +346,7 @@ public class SmallRyeGraphQLProcessor {
                     Runtime.getRuntime().addShutdownHook(new Thread(cached, "GraphQL UI Shutdown Hook"));
                 }
                 try {
-                    ResolvedArtifact artifact = getGraphQLUiArtifact();
+                    AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
                     Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
                     extractGraphQLUi(artifact, tempDir);
                     updateApiUrl(tempDir.resolve(FILE_TO_UPDATE), graphQLPath);
@@ -361,40 +363,42 @@ public class SmallRyeGraphQLProcessor {
             notFoundPageDisplayableEndpointProducer
                     .produce(new NotFoundPageDisplayableEndpointBuildItem(quarkusConfig.rootPathUi + "/"));
         } else if (quarkusConfig.alwaysIncludeUi) {
-            ResolvedArtifact artifact = getGraphQLUiArtifact();
+            AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
             //we are including in a production artifact
             //just stick the files in the generated output
             //we could do this for dev mode as well but then we need to extract them every time
-            File artifactFile = artifact.getArtifactPath().toFile();
-            try (JarFile jarFile = new JarFile(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
+            for (Path p : artifact.getPaths()) {
+                File artifactFile = p.toFile();
+                try (JarFile jarFile = new JarFile(artifactFile)) {
+                    Enumeration<JarEntry> entries = jarFile.entries();
 
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
-                            byte[] content = FileUtil.readFileContents(inputStream);
-                            if (entry.getName().endsWith(FILE_TO_UPDATE)) {
-                                content = updateApiUrl(new String(content, StandardCharsets.UTF_8), graphQLPath)
-                                        .getBytes(StandardCharsets.UTF_8);
-                            }
-                            if (IGNORE_LIST.contains(filename)) {
-                                ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
-                                try (InputStream resourceAsStream = classLoader
-                                        .getResourceAsStream(OWN_MEDIA_FOLDER + filename)) {
-                                    content = IoUtil.readBytes(resourceAsStream);
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
+                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                                String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
+                                byte[] content = FileUtil.readFileContents(inputStream);
+                                if (entry.getName().endsWith(FILE_TO_UPDATE)) {
+                                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), graphQLPath)
+                                            .getBytes(StandardCharsets.UTF_8);
                                 }
+                                if (IGNORE_LIST.contains(filename)) {
+                                    ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
+                                    try (InputStream resourceAsStream = classLoader
+                                            .getResourceAsStream(OWN_MEDIA_FOLDER + filename)) {
+                                        content = IoUtil.readBytes(resourceAsStream);
+                                    }
+                                }
+
+                                String fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + filename;
+
+                                generatedResourceProducer
+                                        .produce(new GeneratedResourceBuildItem(fileName, content));
+
+                                nativeImageResourceProducer
+                                        .produce(new NativeImageResourceBuildItem(fileName));
+
                             }
-
-                            String fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + filename;
-
-                            generatedResourceProducer
-                                    .produce(new GeneratedResourceBuildItem(fileName, content));
-
-                            nativeImageResourceProducer
-                                    .produce(new NativeImageResourceBuildItem(fileName));
-
                         }
                     }
                 }
@@ -407,32 +411,40 @@ public class SmallRyeGraphQLProcessor {
         }
     }
 
-    private ResolvedArtifact getGraphQLUiArtifact() {
-        ClassPathArtifactResolver resolver = new ClassPathArtifactResolver(SmallRyeGraphQLProcessor.class.getClassLoader());
-        return resolver.getArtifact(GRAPHQL_UI_WEBJAR_GROUP_ID, GRAPHQL_UI_WEBJAR_ARTIFACT_ID, null);
+    private AppArtifact getGraphQLUiArtifact(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
+            if (dep.getArtifact().getArtifactId().equals(GRAPHQL_UI_WEBJAR_ARTIFACT_ID)
+                    && dep.getArtifact().getGroupId().equals(GRAPHQL_UI_WEBJAR_GROUP_ID)) {
+                return dep.getArtifact();
+            }
+        }
+        throw new RuntimeException("Could not find artifact " + GRAPHQL_UI_WEBJAR_GROUP_ID + ":" + GRAPHQL_UI_WEBJAR_ARTIFACT_ID
+                + " among the application dependencies");
     }
 
-    private void extractGraphQLUi(ResolvedArtifact artifact, Path resourceDir) throws IOException {
-        File artifactFile = artifact.getArtifactPath().toFile();
-        try (JarFile jarFile = new JarFile(artifactFile)) {
-            Enumeration<JarEntry> entries = jarFile.entries();
+    private void extractGraphQLUi(AppArtifact artifact, Path resourceDir) throws IOException {
+        for (Path p : artifact.getPaths()) {
+            File artifactFile = p.toFile();
+            try (JarFile jarFile = new JarFile(artifactFile)) {
+                Enumeration<JarEntry> entries = jarFile.entries();
 
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
-                    try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                        String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
-                        if (!IGNORE_LIST.contains(filename)) {
-                            Files.copy(inputStream, resourceDir.resolve(filename));
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith(GRAPHQL_UI_WEBJAR_PREFIX) && !entry.isDirectory()) {
+                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                            String filename = entry.getName().replace(GRAPHQL_UI_WEBJAR_PREFIX + "/", "");
+                            if (!IGNORE_LIST.contains(filename)) {
+                                Files.copy(inputStream, resourceDir.resolve(filename));
+                            }
                         }
                     }
                 }
-            }
-            // Now add our own logo and favicon
-            ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
-            for (String ownMedia : IGNORE_LIST) {
-                try (InputStream logo = classLoader.getResourceAsStream(OWN_MEDIA_FOLDER + ownMedia)) {
-                    Files.copy(logo, resourceDir.resolve(ownMedia));
+                // Now add our own logo and favicon
+                ClassLoader classLoader = SmallRyeGraphQLProcessor.class.getClassLoader();
+                for (String ownMedia : IGNORE_LIST) {
+                    try (InputStream logo = classLoader.getResourceAsStream(OWN_MEDIA_FOLDER + ownMedia)) {
+                        Files.copy(logo, resourceDir.resolve(ownMedia));
+                    }
                 }
             }
         }

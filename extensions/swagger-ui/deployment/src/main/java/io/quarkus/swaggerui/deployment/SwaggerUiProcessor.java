@@ -20,6 +20,8 @@ import javax.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -30,8 +32,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.deployment.index.ClassPathArtifactResolver;
-import io.quarkus.deployment.index.ResolvedArtifact;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -81,7 +82,8 @@ public class SwaggerUiProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
             HttpRootPathBuildItem httpRootPathBuildItem,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) throws Exception {
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
         if ("/".equals(swaggerUiConfig.path)) {
             throw new ConfigurationError(
@@ -112,7 +114,7 @@ public class SwaggerUiProcessor {
                     Runtime.getRuntime().addShutdownHook(new Thread(cached, "Swagger UI Shutdown Hook"));
                 }
                 try {
-                    ResolvedArtifact artifact = getSwaggerUiArtifact();
+                    AppArtifact artifact = getSwaggerUiArtifact(curateOutcomeBuildItem);
                     Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX).toRealPath();
                     extractSwaggerUi(artifact, tempDir);
                     updateApiUrl(tempDir.resolve("index.html"), openApiPath);
@@ -128,30 +130,31 @@ public class SwaggerUiProcessor {
             routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*", handler));
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
         } else if (swaggerUiConfig.alwaysInclude) {
-            ResolvedArtifact artifact = getSwaggerUiArtifact();
+            AppArtifact artifact = getSwaggerUiArtifact(curateOutcomeBuildItem);
             //we are including in a production artifact
             //just stick the files in the generated output
             //we could do this for dev mode as well but then we need to extract them every time
-            File artifactFile = artifact.getArtifactPath().toFile();
-            try (JarFile jarFile = new JarFile(artifactFile)) {
-                Enumeration<JarEntry> entries = jarFile.entries();
-                String versionedSwaggerUiWebjarPrefix = format("%s/%s/", SWAGGER_UI_WEBJAR_PREFIX, artifact.getVersion());
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
-                            byte[] content = FileUtil.readFileContents(inputStream);
-                            if (entry.getName().endsWith("index.html")) {
-                                content = updateApiUrl(new String(content, StandardCharsets.UTF_8), openApiPath)
-                                        .getBytes(StandardCharsets.UTF_8);
+            final String versionedSwaggerUiWebjarPrefix = format("%s/%s/", SWAGGER_UI_WEBJAR_PREFIX, artifact.getVersion());
+            for (Path p : artifact.getPaths()) {
+                File artifactFile = p.toFile();
+                try (JarFile jarFile = new JarFile(artifactFile)) {
+                    Enumeration<JarEntry> entries = jarFile.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
+                            try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                                String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
+                                byte[] content = FileUtil.readFileContents(inputStream);
+                                if (entry.getName().endsWith("index.html")) {
+                                    content = updateApiUrl(new String(content, StandardCharsets.UTF_8), openApiPath)
+                                            .getBytes(StandardCharsets.UTF_8);
+                                }
+                                String fileName = SWAGGER_UI_FINAL_DESTINATION + "/" + filename;
+                                generatedResources
+                                        .produce(new GeneratedResourceBuildItem(fileName,
+                                                content));
+                                nativeImageResourceBuildItemBuildProducer.produce(new NativeImageResourceBuildItem(fileName));
                             }
-                            String fileName = SWAGGER_UI_FINAL_DESTINATION + "/" + filename;
-                            generatedResources
-                                    .produce(new GeneratedResourceBuildItem(fileName,
-                                            content));
-                            nativeImageResourceBuildItemBuildProducer.produce(new NativeImageResourceBuildItem(fileName));
-
                         }
                     }
                 }
@@ -164,22 +167,30 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private ResolvedArtifact getSwaggerUiArtifact() {
-        ClassPathArtifactResolver resolver = new ClassPathArtifactResolver(SwaggerUiProcessor.class.getClassLoader());
-        return resolver.getArtifact(SWAGGER_UI_WEBJAR_GROUP_ID, SWAGGER_UI_WEBJAR_ARTIFACT_ID, null);
+    private AppArtifact getSwaggerUiArtifact(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        for (AppDependency dep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
+            if (dep.getArtifact().getArtifactId().equals(SWAGGER_UI_WEBJAR_ARTIFACT_ID)
+                    && dep.getArtifact().getGroupId().equals(SWAGGER_UI_WEBJAR_GROUP_ID)) {
+                return dep.getArtifact();
+            }
+        }
+        throw new RuntimeException("Could not find artifact " + SWAGGER_UI_WEBJAR_GROUP_ID + ":" + SWAGGER_UI_WEBJAR_ARTIFACT_ID
+                + " among the application dependencies");
     }
 
-    private void extractSwaggerUi(ResolvedArtifact artifact, Path resourceDir) throws IOException {
-        File artifactFile = artifact.getArtifactPath().toFile();
-        try (JarFile jarFile = new JarFile(artifactFile)) {
-            Enumeration<JarEntry> entries = jarFile.entries();
-            String versionedSwaggerUiWebjarPrefix = format("%s/%s/", SWAGGER_UI_WEBJAR_PREFIX, artifact.getVersion());
-            while (entries.hasMoreElements()) {
-                JarEntry entry = entries.nextElement();
-                if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
-                    try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                        String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
-                        Files.copy(inputStream, resourceDir.resolve(filename));
+    private void extractSwaggerUi(AppArtifact artifact, Path resourceDir) throws IOException {
+        final String versionedSwaggerUiWebjarPrefix = format("%s/%s/", SWAGGER_UI_WEBJAR_PREFIX, artifact.getVersion());
+        for (Path p : artifact.getPaths()) {
+            File artifactFile = p.toFile();
+            try (JarFile jarFile = new JarFile(artifactFile)) {
+                Enumeration<JarEntry> entries = jarFile.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
+                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                            String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
+                            Files.copy(inputStream, resourceDir.resolve(filename));
+                        }
                     }
                 }
             }

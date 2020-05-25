@@ -4,15 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-test-framework</artifactId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-junit5-internal-test</artifactId>
-    <name>Quarkus - Test Framework - JUnit 5 Internal Test Framework - Tests</name>
-    <description>quarkus-junit5-internal tests in a project with no sources</description>
+    <artifactId>quarkus-integration-test-devmode</artifactId>
+    <name>Quarkus - Integration Tests - Dev Mode</name>
 
     <dependencies>
 

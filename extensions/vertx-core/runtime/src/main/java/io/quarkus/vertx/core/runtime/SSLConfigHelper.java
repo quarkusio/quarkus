@@ -1,16 +1,17 @@
 package io.quarkus.vertx.core.runtime;
 
-import java.util.regex.Pattern;
-
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
-import io.vertx.core.net.*;
+import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.net.PfxOptions;
+import io.vertx.core.net.TCPSSLOptions;
 
 public class SSLConfigHelper {
-
-    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     public static void configurePemTrustOptions(TCPSSLOptions options, PemTrustCertConfiguration configuration) {
         if (configuration.enabled) {
@@ -22,8 +23,8 @@ public class SSLConfigHelper {
     private static PemTrustOptions toPemTrustOptions(PemTrustCertConfiguration configuration) {
         PemTrustOptions pemTrustOptions = new PemTrustOptions();
         if (configuration.certs.isPresent()) {
-            for (String cert : COMMA_PATTERN.split(configuration.certs.get())) {
-                pemTrustOptions.addCertPath(cert.trim());
+            for (String cert : configuration.certs.get()) {
+                pemTrustOptions.addCertPath(cert);
             }
         }
         return pemTrustOptions;
@@ -81,13 +82,13 @@ public class SSLConfigHelper {
     private static KeyCertOptions toPemKeyCertOptions(PemKeyCertConfiguration configuration) {
         PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
         if (configuration.certs.isPresent()) {
-            for (String cert : COMMA_PATTERN.split(configuration.certs.get())) {
-                pemKeyCertOptions.addCertPath(cert.trim());
+            for (String cert : configuration.certs.get()) {
+                pemKeyCertOptions.addCertPath(cert);
             }
         }
         if (configuration.keys.isPresent()) {
-            for (String cert : COMMA_PATTERN.split(configuration.keys.get())) {
-                pemKeyCertOptions.addKeyPath(cert.trim());
+            for (String cert : configuration.keys.get()) {
+                pemKeyCertOptions.addKeyPath(cert);
             }
         }
         return pemKeyCertOptions;

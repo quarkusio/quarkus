@@ -1,5 +1,6 @@
 package io.quarkus.vertx.core.runtime.config;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -18,12 +19,12 @@ public class PemKeyCertConfiguration {
      * Comma-separated list of the path to the key files (Pem format).
      */
     @ConfigItem
-    public Optional<String> keys;
+    public Optional<List<String>> keys;
 
     /**
      * Comma-separated list of the path to the certificate files (Pem format).
      */
     @ConfigItem
-    public Optional<String> certs;
+    public Optional<List<String>> certs;
 
 }

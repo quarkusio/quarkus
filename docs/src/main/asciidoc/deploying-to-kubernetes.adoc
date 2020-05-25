@@ -393,7 +393,7 @@ If more roles are required, they will have to be added manually.
 The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.
 Here are some examples:
 
-== Configuration options
+=== Configuration options
 
 The table below describe all the available configuration options.
 
@@ -445,7 +445,7 @@ In this example `initial-delay` and `period` are fields of the type `Probe`.
 Below you will find tables describing all available types.
 
 
-=== Basic Types
+==== Basic Types
 
 .ServiceType
 Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
@@ -495,7 +495,7 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 
 
-=== Mounts and Volumes
+==== Mounts and Volumes
 
 .Mount
 |====
@@ -566,7 +566,7 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 
 [#openshift]
-== OpenShift
+=== OpenShift
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
@@ -641,7 +641,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 |====
 
 [#knative]
-== Knative
+=== Knative
     
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
 
@@ -818,7 +818,7 @@ The name of the resource is determined by the application name and may be overri
 For example, in the `kubernetes-quickstart` application, we can add a `kubernetes.yml` file in the `src/main/kubernetes` that looks like:
 
 [source,yaml]
----
+----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -843,12 +843,12 @@ spec:
         env:
         - name: FOO
           value: BAR
----
+----
 
 The generated `kubernetes.yml` will look like:
 
 [source,yaml]
----
+----
 apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
@@ -882,7 +882,7 @@ spec:
           name: "http"
           protocol: "TCP"
       serviceAccount: "kubernetes-quickstart"
----
+----
 
 The provided replicas <1>, labels <2> and environment variables <3>  were retained. However, the image <4> and container port <5> were modified. Moreover, the default annotations have been added.
 

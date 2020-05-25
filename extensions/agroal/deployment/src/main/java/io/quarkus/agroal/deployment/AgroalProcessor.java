@@ -20,7 +20,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
-import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
@@ -196,9 +195,6 @@ class AgroalProcessor {
                 .setDefaultScope(DotNames.SINGLETON).build());
         // add the @DataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
-
-        // add implementations of AgroalPoolInterceptor
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AgroalPoolInterceptor.class));
 
         // create the DataSourceSupport bean that DataSourceProducer uses as a dependency
         DataSourceSupport dataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems, sslNativeConfig,

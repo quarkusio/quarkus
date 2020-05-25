@@ -26,7 +26,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     public DirectoryClassPathElement(Path root) {
         assert root != null : "root is null";
-        this.root = root;
+        this.root = root.normalize();
     }
 
     @Override

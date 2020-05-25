@@ -73,6 +73,15 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
         instances.clear();
     }
 
+    @Override
+    public void destroy(ContextState state) {
+        if (state == this) {
+            destroy();
+        } else {
+            throw new IllegalArgumentException("Invalid state: " + state.getClass().getName());
+        }
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static ContextInstanceHandle createInstanceHandle(Key key) {
         InjectableBean<?> bean = (InjectableBean<?>) key.contextual;

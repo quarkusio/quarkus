@@ -1,5 +1,6 @@
 package io.quarkus.arc;
 
+import io.quarkus.arc.InjectableContext.ContextState;
 import java.util.Map;
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.AlterableContext;
@@ -21,6 +22,24 @@ public interface InjectableContext extends AlterableContext {
      * @return the current state
      */
     ContextState getState();
+
+    /**
+     * Destroy all contextual instances from the given state.
+     * <p>
+     * The default implementation is not optimized and does not guarantee proper sychronization. Implementations of this
+     * interface are encouraged to provide an optimized implementation of this method.
+     * 
+     * @param state
+     */
+    default void destroy(ContextState state) {
+        for (InjectableBean<?> bean : state.getContextualInstances().keySet()) {
+            try {
+                destroy(bean);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to destroy contextual instance of " + bean, e);
+            }
+        }
+    }
 
     /**
      * 

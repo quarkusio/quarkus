@@ -346,6 +346,12 @@ In the default configuration, Keycloak is responsible for managing the roles and
 
 To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] guide. For more details, check the link:security[Security guide].
 
+== Configuration Reference
+
+The configuration is based on the official https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter[Keycloak Policy Enforcer Configuration]. If you are looking for more details about the different configuration options, please take a look at this documentation,
+
+include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config.adoc[opts=optional]
+
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]

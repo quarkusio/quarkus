@@ -1,4 +1,5 @@
 io.quarkus.runtime.configuration.InetSocketAddressConverter
+io.quarkus.runtime.configuration.CharsetConverter
 io.quarkus.runtime.configuration.CidrAddressConverter
 io.quarkus.runtime.configuration.InetAddressConverter
 io.quarkus.runtime.configuration.RegexConverter

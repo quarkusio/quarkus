@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.Scanner;
@@ -22,14 +22,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateOrmRecorder {
 
-    private List<String> entities = new ArrayList<>();
-
-    public void addEntity(String entityClass) {
-        entities.add(entityClass);
-    }
-
-    public void enlistPersistenceUnit() {
-        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entities);
+    public void enlistPersistenceUnit(Set<String> entityClasses) {
+        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entityClasses);
     }
 
     /**

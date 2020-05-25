@@ -299,10 +299,7 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        for (String className : domainObjects.getEntityClassNames()) {
-            recorder.addEntity(className);
-        }
-        recorder.enlistPersistenceUnit();
+        recorder.enlistPersistenceUnit(domainObjects.getEntityClassNames());
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the recorder

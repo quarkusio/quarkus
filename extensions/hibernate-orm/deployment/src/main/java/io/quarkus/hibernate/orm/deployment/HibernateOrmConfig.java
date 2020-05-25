@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -219,6 +220,8 @@ public class HibernateOrmConfig {
     @ConfigGroup
     public static class HibernateOrmConfigDatabase {
 
+        private static final String DEFAULT_CHARSET = "UTF-8";
+
         /**
          * Select whether the database schema is generated or not.
          *
@@ -249,9 +252,11 @@ public class HibernateOrmConfig {
 
         /**
          * The charset of the database.
+         * <p>
+         * Used for DDL generation and also for the SQL import scripts.
          */
-        @ConfigItem
-        public Optional<String> charset;
+        @ConfigItem(defaultValue = "UTF-8")
+        public Charset charset;
 
         /**
          * Whether Hibernate should quote all identifiers.
@@ -262,7 +267,7 @@ public class HibernateOrmConfig {
         public boolean isAnyPropertySet() {
             return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
                     || generationHaltOnError
-                    || charset.isPresent()
+                    || !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
         }
     }

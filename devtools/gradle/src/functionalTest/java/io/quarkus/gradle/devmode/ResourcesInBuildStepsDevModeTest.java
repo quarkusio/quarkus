@@ -21,7 +21,7 @@ public class ResourcesInBuildStepsDevModeTest extends QuarkusDevGradleTestBase {
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse()).isEqualTo("homepage");
+        assertThat(getHttpResponse()).contains("homepage");
 
         assertThat(getHttpResponse("/hello")).contains("hello");
 

@@ -20,7 +20,6 @@
         <module>derby</module>
         <module>kubernetes-client</module>
         <module>junit5-internal</module>
-        <module>junit5-internal-test</module>
         <module>junit5</module>
         <module>junit5-mockito</module>
         <module>amazon-lambda</module>

@@ -19,6 +19,10 @@ test {
     forkEvery 1
 }
 
+quarkusDev {
+    dependsOn 'publishAcmeExt'
+}
+
 task publishAcmeExt {
     dependsOn ':runtime:publishToMavenLocal'
     dependsOn ':deployment:publishToMavenLocal'

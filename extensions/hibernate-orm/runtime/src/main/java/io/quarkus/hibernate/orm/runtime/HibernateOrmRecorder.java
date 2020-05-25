@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.Scanner;
@@ -13,6 +14,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.hibernate.orm.HibernateMetadata;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -22,8 +24,16 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateOrmRecorder {
 
-    public void enlistPersistenceUnit(Set<String> entityClasses) {
-        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entityClasses);
+    // TODO: this needs to be updated when multiple PU as supported
+    public Supplier<HibernateMetadata> enlistPersistenceUnit(final Set<String> defaultPersistentUnitEntities) {
+        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s",
+                defaultPersistentUnitEntities);
+        return new Supplier<HibernateMetadata>() {
+            @Override
+            public HibernateMetadata get() {
+                return new DefaultHibernateMetadata(defaultPersistentUnitEntities);
+            }
+        };
     }
 
     /**

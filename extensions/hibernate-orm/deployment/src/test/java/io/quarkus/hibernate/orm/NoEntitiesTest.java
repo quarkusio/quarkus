@@ -1,5 +1,10 @@
 package io.quarkus.hibernate.orm;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -13,9 +18,12 @@ public class NoEntitiesTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
+    @Inject
+    Instance<HibernateMetadata> hibernateMetadata;
+
     @Test
-    public void testNoEntities() {
-        // When having no entities, we should still be able to start the application.
+    public void testNotHibernateEntitiesBean() {
+        assertTrue(hibernateMetadata.isUnsatisfied());
     }
 
 }

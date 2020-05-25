@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.HibernateMetadata.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
@@ -25,9 +26,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.SharedCacheMode;
@@ -68,6 +71,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -91,10 +95,12 @@ import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.hibernate.orm.HibernateMetadata;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
+import io.quarkus.hibernate.orm.runtime.DefaultHibernateMetadata;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
@@ -287,7 +293,8 @@ public final class HibernateOrmProcessor {
             List<HibernateOrmIntegrationBuildItem> integrations,
             ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
@@ -299,7 +306,13 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        recorder.enlistPersistenceUnit(domainObjects.getEntityClassNames());
+        Supplier<HibernateMetadata> hibernateEntitiesSupplier = recorder
+                .enlistPersistenceUnit(domainObjects.getEntityClassNames());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(DefaultHibernateMetadata.class)
+                .types(HibernateMetadata.class)
+                .supplier(hibernateEntitiesSupplier)
+                .scope(Singleton.class)
+                .done());
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the recorder
@@ -754,7 +767,7 @@ public final class HibernateOrmProcessor {
             dialect.ifPresent(s -> {
                 // we found one
                 ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
-                desc.setName("default");
+                desc.setName(DEFAULT_PERSISTENCE_UNIT_NAME);
                 desc.setTransactionType(PersistenceUnitTransactionType.JTA);
                 desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
 

@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -138,11 +139,6 @@ public class BuildTimeEnabledProcessor {
 
         // the transformer just tries to match targets and then enables or disables the bean accordingly
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-            @Override
-            public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == AnnotationTarget.Kind.METHOD || kind == AnnotationTarget.Kind.CLASS
-                        || kind == AnnotationTarget.Kind.FIELD;
-            }
 
             @Override
             public void transform(TransformationContext ctx) {
@@ -150,18 +146,18 @@ public class BuildTimeEnabledProcessor {
                 if (ctx.isClass()) {
                     DotName classDotName = target.asClass().name();
                     if (classTargets.containsKey(classDotName)) {
-                        transformBean(ctx.transform(), classTargets.get(classDotName));
+                        transformBean(target, ctx.transform(), classTargets.get(classDotName));
                     }
                 } else if (ctx.isMethod()) {
                     MethodInfo method = target.asMethod();
                     if (methodTargets.containsKey(method)) {
-                        transformBean(ctx.transform(), methodTargets.get(method));
+                        transformBean(target, ctx.transform(), methodTargets.get(method));
                     }
                 } else if (ctx.isField()) {
                     FieldInfo field = target.asField();
                     String uniqueFieldName = toUniqueString(field);
                     if (fieldTargets.containsKey(uniqueFieldName)) {
-                        transformBean(ctx.transform(), fieldTargets.get(uniqueFieldName));
+                        transformBean(target, ctx.transform(), fieldTargets.get(uniqueFieldName));
                     }
                 }
             }
@@ -172,11 +168,11 @@ public class BuildTimeEnabledProcessor {
         return field.declaringClass().name().toString() + "." + field.name();
     }
 
-    private void transformBean(Transformation transform, boolean enable) {
+    private void transformBean(AnnotationTarget target, Transformation transform, boolean enable) {
         if (enable) {
             enableBean(transform);
         } else {
-            disableBean(transform);
+            disableBean(target, transform);
         }
         transform.done();
     }
@@ -191,7 +187,13 @@ public class BuildTimeEnabledProcessor {
         return AnnotationValue.createIntegerValue("value", Integer.MAX_VALUE - 1);
     }
 
-    private void disableBean(Transformation transform) {
-        transform.add(DotNames.ALTERNATIVE);
+    private void disableBean(AnnotationTarget target, Transformation transform) {
+        if (target.kind() == Kind.CLASS) {
+            // Veto the class
+            transform.add(DotNames.VETOED);
+        } else {
+            // Add @Alternative to the producer
+            transform.add(DotNames.ALTERNATIVE);
+        }
     }
 }

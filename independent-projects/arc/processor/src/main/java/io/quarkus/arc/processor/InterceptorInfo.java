@@ -11,12 +11,15 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.logging.Logger;
 
 /**
  *
  * @author Martin Kouba
  */
-class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
+public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
+
+    private static final Logger LOGGER = Logger.getLogger(InterceptorInfo.class);
 
     private final Set<AnnotationInstance> bindings;
 
@@ -77,13 +80,16 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
         this.aroundConstruct = aroundConstruct;
         this.postConstruct = postConstruct;
         this.preDestroy = preDestroy;
+        if (aroundConstruct == null && aroundInvoke == null && preDestroy == null && postConstruct == null) {
+            LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
+        }
     }
 
-    Set<AnnotationInstance> getBindings() {
+    public Set<AnnotationInstance> getBindings() {
         return bindings;
     }
 
-    int getPriority() {
+    public int getPriority() {
         return priority;
     }
 
@@ -103,7 +109,7 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
         return preDestroy;
     }
 
-    boolean intercepts(InterceptionType interceptionType) {
+    public boolean intercepts(InterceptionType interceptionType) {
         switch (interceptionType) {
             case AROUND_INVOKE:
                 return aroundInvoke != null;

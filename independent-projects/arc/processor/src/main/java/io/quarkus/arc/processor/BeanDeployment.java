@@ -996,6 +996,10 @@ public class BeanDeployment {
         }
         List<InterceptorInfo> interceptors = new ArrayList<>();
         for (ClassInfo interceptorClass : interceptorClasses) {
+            if (annotationStore.hasAnnotation(interceptorClass, DotNames.VETOED)) {
+                // Skip vetoed interceptors
+                continue;
+            }
             interceptors
                     .add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer, annotationStore));
         }

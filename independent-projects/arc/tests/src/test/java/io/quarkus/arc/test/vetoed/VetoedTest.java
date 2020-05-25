@@ -8,15 +8,20 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.util.AbstractList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
+import javax.interceptor.AroundInvoke;
+import javax.interceptor.Interceptor;
+import javax.interceptor.InvocationContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class VetoedTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class);
+    public ArcTestContainer container = new ArcTestContainer(Seven.class, One.class, VetoedInterceptor.class, Logging.class);
 
     @Test
     public void testVetoed() {
@@ -24,9 +29,13 @@ public class VetoedTest {
         assertTrue(arc.instance(Seven.class).isAvailable());
         // One is vetoed
         assertFalse(arc.instance(One.class).isAvailable());
+        assertFalse(VetoedInterceptor.INTERCEPTED.get());
         assertEquals(Integer.valueOf(7), Integer.valueOf(arc.instance(Seven.class).get().size()));
+        // Interceptor is vetoed
+        assertFalse(VetoedInterceptor.INTERCEPTED.get());
     }
 
+    @Logging
     @Dependent
     static class Seven extends AbstractList<Integer> {
 
@@ -54,6 +63,22 @@ public class VetoedTest {
         @Override
         public int size() {
             return 1;
+        }
+
+    }
+
+    @Vetoed
+    @Priority(1)
+    @Interceptor
+    @Logging
+    static class VetoedInterceptor {
+
+        static final AtomicBoolean INTERCEPTED = new AtomicBoolean(false);
+
+        @AroundInvoke
+        public Object aroundInvoke(InvocationContext ctx) throws Exception {
+            INTERCEPTED.set(true);
+            return ctx.proceed();
         }
 
     }

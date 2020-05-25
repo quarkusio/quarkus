@@ -1,20 +1,18 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.stream.*;
 
-import org.hibernate.MultiTenancyStrategy;
+import org.hibernate.*;
 import org.hibernate.boot.archive.scan.spi.Scanner;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.service.spi.ServiceContributor;
-import org.jboss.logging.Logger;
+import org.hibernate.integrator.spi.*;
+import org.hibernate.jpa.boot.internal.*;
+import org.hibernate.service.spi.*;
+import org.jboss.logging.*;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
-import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.arc.runtime.*;
+import io.quarkus.hibernate.orm.runtime.proxies.*;
+import io.quarkus.runtime.annotations.*;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -29,7 +27,8 @@ public class HibernateOrmRecorder {
     }
 
     public void enlistPersistenceUnit() {
-        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entities);
+        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s",
+                entities);
     }
 
     /**
@@ -43,13 +42,11 @@ public class HibernateOrmRecorder {
 
     /**
      * Initializes the JPA configuration to be used at runtime.
-     * 
+     *
      * @param jtaEnabled Should JTA be enabled?
      * @param strategy Multitenancy strategy to use.
      * @param multiTenancySchemaDataSource Data source to use in case of {@link MultiTenancyStrategy#SCHEMA} approach or
      *        {@link null} in case the default data source.
-     * 
-     * @return
      */
     public BeanContainerListener initializeJpa(boolean jtaEnabled, MultiTenancyStrategy strategy,
             String multiTenancySchemaDataSource) {
@@ -97,5 +94,25 @@ public class HibernateOrmRecorder {
 
     public void startAllPersistenceUnits(BeanContainer beanContainer) {
         beanContainer.instance(JPAConfig.class).startAll();
+    }
+
+    public void bootHibernateMetadata(Collection<String> entityClassNames, Collection<String> allClassNames) {
+        List<Class<?>> entityClasses = entityClassNames.stream()
+                .map(this::classForName)
+                .collect(Collectors.toList());
+
+        List<Class<?>> allClasses = allClassNames.stream()
+                .map(this::classForName)
+                .collect(Collectors.toList());
+
+        QuarkusHibernateMetadata.boot(entityClasses, allClasses);
+    }
+
+    private Class<?> classForName(String className) {
+        try {
+            return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Could not load class: " + className, e);
+        }
     }
 }

@@ -1,115 +1,60 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
-import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
-import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
-import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
-
-import java.io.IOException;
-import java.lang.reflect.Modifier;
+import java.io.*;
+import java.lang.reflect.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.nio.charset.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.Map.*;
+import java.util.stream.*;
 
-import javax.enterprise.inject.Produces;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceUnit;
-import javax.persistence.SharedCacheMode;
-import javax.persistence.spi.PersistenceUnitTransactionType;
+import javax.enterprise.inject.*;
+import javax.persistence.*;
+import javax.persistence.spi.*;
 
-import org.eclipse.microprofile.metrics.Metadata;
-import org.eclipse.microprofile.metrics.MetricType;
-import org.hibernate.MultiTenancyStrategy;
+import io.quarkus.agroal.deployment.*;
+import io.quarkus.arc.deployment.*;
+import io.quarkus.datasource.common.runtime.*;
+import io.quarkus.deployment.*;
+import io.quarkus.deployment.annotations.*;
+import io.quarkus.deployment.builditem.*;
+import io.quarkus.deployment.builditem.nativeimage.*;
+import io.quarkus.deployment.configuration.*;
+import io.quarkus.deployment.index.*;
+import io.quarkus.deployment.recording.*;
+import io.quarkus.deployment.util.*;
+import io.quarkus.hibernate.orm.deployment.integration.*;
+import io.quarkus.hibernate.orm.runtime.*;
+import io.quarkus.hibernate.orm.runtime.boot.scan.*;
+import io.quarkus.hibernate.orm.runtime.dialect.*;
+import io.quarkus.hibernate.orm.runtime.metrics.*;
+import io.quarkus.hibernate.orm.runtime.proxies.*;
+import io.quarkus.hibernate.orm.runtime.tenant.*;
+import io.quarkus.runtime.*;
+import io.quarkus.smallrye.metrics.deployment.spi.*;
+import net.bytebuddy.description.type.*;
+import net.bytebuddy.dynamic.*;
+import org.eclipse.microprofile.metrics.*;
+import org.hibernate.*;
 import org.hibernate.annotations.Proxy;
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.DerbyTenSevenDialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.MySQL8Dialect;
-import org.hibernate.dialect.SQLServer2012Dialect;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.loader.BatchFetchStyle;
-import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
-import org.hibernate.service.spi.ServiceContributor;
-import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
-import org.jboss.logmanager.Level;
+import org.hibernate.boot.archive.scan.spi.*;
+import org.hibernate.bytecode.internal.bytebuddy.*;
+import org.hibernate.cfg.*;
+import org.hibernate.dialect.*;
+import org.hibernate.integrator.spi.*;
+import org.hibernate.internal.util.collections.*;
+import org.hibernate.jpa.boot.internal.*;
+import org.hibernate.loader.*;
+import org.hibernate.proxy.*;
+import org.hibernate.proxy.pojo.bytebuddy.*;
+import org.hibernate.service.spi.*;
+import org.hibernate.tool.hbm2ddl.*;
+import org.jboss.jandex.*;
+import org.jboss.logmanager.*;
 
-import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
-import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
-import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LogCategoryBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.deployment.util.IoUtil;
-import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
-import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
-import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
-import io.quarkus.hibernate.orm.runtime.JPAConfig;
-import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
-import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
-import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
-import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
-import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
-import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
-import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
-import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.dynamic.DynamicType;
+import static io.quarkus.deployment.annotations.ExecutionTime.*;
+import static org.hibernate.cfg.AvailableSettings.*;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -303,6 +248,7 @@ public final class HibernateOrmProcessor {
             recorder.addEntity(className);
         }
         recorder.enlistPersistenceUnit();
+        recorder.bootHibernateMetadata(domainObjects.getEntityClassNames(), domainObjects.getAllModelClassNames());
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the recorder
@@ -392,7 +338,8 @@ public final class HibernateOrmProcessor {
                     }
                     proxy = proxyAnnotations.get(subclassName);
                     if (proxy != null) {
-                        proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                        proxyInterfaces.add(Class.forName(proxy, false,
+                                Thread.currentThread().getContextClassLoader()));
                     }
                 }
                 DynamicType.Unloaded<?> proxyDef = byteBuddyProxyHelper.buildUnloadedProxy(mappedClass,
@@ -486,6 +433,10 @@ public final class HibernateOrmProcessor {
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
+                .build());
+
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(QuarkusHibernateMetadata.class)
                 .build());
 
         if (descriptors.size() == 1) {
@@ -801,11 +752,13 @@ public final class HibernateOrmProcessor {
                 if (hibernateConfig.batchFetchSize > 0) {
                     desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
                             Integer.toString(hibernateConfig.batchFetchSize));
-                    desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+                    desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE,
+                            BatchFetchStyle.PADDED.toString());
                 }
 
                 hibernateConfig.query.queryPlanCacheMaxSize.ifPresent(
-                        maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+                        maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE,
+                                maxSize));
 
                 hibernateConfig.query.defaultNullOrdering.ifPresent(
                         defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,

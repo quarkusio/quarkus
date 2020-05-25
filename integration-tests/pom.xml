@@ -114,6 +114,7 @@
         <module>consul-config</module>
         <module>picocli</module>
         <module>picocli-native</module>
+        <module>jpa-metadata</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

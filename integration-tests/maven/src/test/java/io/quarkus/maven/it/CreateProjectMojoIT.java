@@ -61,7 +61,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("projectVersion", "1.0-SNAPSHOT");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
@@ -113,7 +115,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         testDir = initProject("projects/simple-pom-it", "projects/project-generation-from-empty-pom");
         assertThat(testDir).isDirectory();
         invoker = initInvoker(testDir);
-        setup(new Properties());
+        InvocationResult result = setup(new Properties());
+
+        assertThat(result.getExitCode()).isZero();
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
@@ -153,7 +157,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
@@ -189,7 +195,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("className", "org.acme.MyResource.java");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         check(new File(testDir, "pom.xml"), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME);
 
@@ -209,7 +217,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "resteasy,smallrye-metrics,missing");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero(); // due to 'missing' extension
 
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
@@ -250,7 +260,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "kotlin,jackson");
         properties.put("buildTool", "gradle");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
@@ -275,7 +287,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
@@ -310,7 +324,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
         check(new File(testDir, "pom.xml"), "commons-io");
     }
@@ -326,7 +342,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "my-quarkus-project");
         check(new File(testDir, "src/main/java/org/acme/quarkus/sample/MyGreatResource.java"),
@@ -374,7 +392,9 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.HelloResource");
-        setup(properties);
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
 
         // Run
         // As the directory is not empty (log) navigate to the artifactID directory

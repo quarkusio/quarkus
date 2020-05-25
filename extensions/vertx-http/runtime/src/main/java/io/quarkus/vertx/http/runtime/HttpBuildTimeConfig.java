@@ -21,4 +21,10 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem
     public boolean virtual;
+
+    /**
+     * The HTTP console path. Various debug/development endpoints are deployed under this path.
+     */
+    @ConfigItem(defaultValue = "/quarkus")
+    public String consolePath;
 }

@@ -7,10 +7,10 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can utilize the **MicroProfile
+This guide demonstrates how your Quarkus application can utilize the **Eclipse MicroProfile
 GraphQL** specification through the SmallRye GraphQL extension.
 
-As the https://www.graphql.org/[GraphQL] specification website states
+As the https://www.graphql.org/[GraphQL] specification website states:
 
 [quote,]
 GraphQL is a query language for APIs and a runtime for fulfilling those queries with your existing data.
@@ -77,9 +77,27 @@ cd microprofile-graphql-quickstart
 
 This command generates a Maven project, importing the `smallrye-graphql` extension which is an implementation of the MicroProfile GraphQL specification used in Quarkus.
 
+If you already have your Quarkus project configured, you can add the `smallrye-graphql` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="graphql"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-graphql</artifactId>
+</dependency>
+----
+
 == Preparing an Application: GraphQL API
 
-In this section we will start creating the GraphQL API
+In this section we will start creating the GraphQL API.
 
 First, create a the following entities representing a film from a galaxy far far away:
 
@@ -200,10 +218,10 @@ enum LightSaber {
 }
 ----
 
-The classes we have just created describes the GraphQL schema which is a
+The classes we have just created describe the GraphQL schema which is a
 set of possible data (objects, fields, relationships) that a client can access.
 
-Let's continue with an example CDI bean, that would work as a repository.
+Let's continue with an example CDI bean, that would work as a repository:
 
 [source,java]
 ----
@@ -301,9 +319,9 @@ public class GalaxyService {
 }
 ----
 
-Now, lets create our first *GraphQL* API:
+Now, let's create our first GraphQL API.
 
-Edit the `org.acme.microprofile.graphql.FilmResource` class as the following:
+Edit the `org.acme.microprofile.graphql.FilmResource` class as following:
 
 [source,java]
 ----
@@ -326,7 +344,7 @@ public class FilmResource {
 <3> Documentation of the queryable method
 
 TIP:  The value of the `@Query` annotation is optional and would implicitly
-be defaulted to the method name if excluded.
+be defaulted to the method name if absent.
 
 This way we have created our first queryable API which we will later expand.
 
@@ -340,13 +358,14 @@ Launch the quarkus app:
 
 == Introspect
 
-The full schema of the `GraphQL` API can be retrieved by calling the following:
+The full schema of the GraphQL API can be retrieved by calling the following:
 
+[source]
 ----
 curl http://localhost:8080/graphql/schema.graphql
 ----
 
-The server will return the complete schema of the `GraphQL` API.
+The server will return the complete schema of the GraphQL API.
 
 ==  GraphiQL UI
 
@@ -355,16 +374,13 @@ GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 The Quarkus `smallrye-graphql` extension comes with `GraphiQL` that by
 default is started in `dev` and `test` modes and by configuration in `production`.
 
-*GraphiQL can be accessed from*
-----
-http://localhost:8080/graphql-ui/
-----
+GraphiQL can be accessed from http://localhost:8080/graphql-ui/ .
 
 == Query the GraphQL API
 
-Now visit the `GraphiQL` page that has been deployed in `dev` mode.
+Now visit the GraphiQL page that has been deployed in `dev` mode.
 
-Enter the following query to `GraphiQL` and press the `play` button.
+Enter the following query to GraphiQL and press the `play` button:
 
 [source, graphql]
 ----
@@ -380,15 +396,16 @@ query allFilms {
 
 Since our query contains all the fields in the `Film` class
 we will retrieve all the fields in our response. Since GraphQL API
-responses are client determined. The client can choose which fields
+responses are client determined, the client can choose which fields
 it will require.
 
-Lets assume that our client only requires title and releaseDate
+Let's assume that our client only requires `title` and `releaseDate`
 making the previous call to the API `Over-fetching` of unnecessary
 data.
 
-Enter the following into `GraphiQL` and hit the `play` button.
+Enter the following query into GraphiQL and hit the `play` button:
 
+[source, graphql]
 ----
 query allFilms {
   allFilms {
@@ -398,12 +415,13 @@ query allFilms {
 }
 ----
 
-Notice in the response we have only retrieved the required fields in
-the response. Therefore, we have prevented `Over-fetching`.
+Notice in the response we have only retrieved the required fields.
+Therefore, we have prevented `Over-fetching`.
 
-Lets continue to expand our GraphQL API by adding the following to the
+Let's continue to expand our GraphQL API by adding the following to the
 `FilmResource` class.
 
+[source,java]
 ----
     @Query
     @Description("Get a Films from a galaxy far far away")
@@ -420,6 +438,7 @@ This query will enable the client to retrieve the film by id.
 
 Enter the following into `GraphiQL` and make a request.
 
+[source, graphql]
 ----
 query getFilm {
   film(filmId: 1) {
@@ -439,10 +458,11 @@ However, say our client requires both films with filmId `0` and `1`.
 In a REST API the client would have to make two calls to the API.
 Therefore, the client would be `Under-fetching`.
 
-In GraphQL it is possible make multiple queries at once.
+In GraphQL it is possible to make multiple queries at once.
 
-Enter the following to into `GraphiQL` to retrieve two films.
+Enter the following into GraphiQL to retrieve two films:
 
+[source, graphql]
 ----
 query getFilms {
   film0: film(filmId: 0) {
@@ -467,8 +487,9 @@ This enabled the client to fetch the required data in a single request.
 Until now we have created a GraphQL API to retrieve film data.
 We now want to enable the clients to retrieve the `Hero` data of the `Film`.
 
-Add the following to our `FilmResource` class.
+Add the following to our `FilmResource` class:
 
+[source,java]
 ----
     public List<Hero> heroes(@Source Film film) { // <1>
         return service.getHeroesByFilm(film);
@@ -477,12 +498,13 @@ Add the following to our `FilmResource` class.
 
 <1> Enable `List<Hero>` data to be added to queries that respond with `Film`
 
-By adding this method we have effectively changing the schema of the GraphQL API.
+By adding this method we have effectively changed the schema of the GraphQL API.
 Although the schema has changed the previous queries will still work.
 Since we only expanded the API to be able to retrieve the `Hero` data of the `Film`.
 
-Enter the following into `GraphiQL` to retrieve the film and hero data.
+Enter the following into GraphiQL to retrieve the film and hero data.
 
+[source,graphql]
 ----
 query getFilmHeroes {
   film(filmId: 1) {
@@ -505,12 +527,13 @@ The response now includes the heroes of the film.
 
 == Mutations
 
-Mutations are used when data is create, updated or deleted.
+Mutations are used when data is created, updated or deleted.
 
-Lets now add the ability to add and delete heroes to our GraphQL API.
+Let's now add the ability to add and delete heroes to our GraphQL API.
 
 Add the following to our `FilmResource` class:
 
+[source,java]
 ----
     @Mutation
     public Hero createHero(Hero hero) {
@@ -524,8 +547,9 @@ Add the following to our `FilmResource` class:
     }
 ----
 
-Enter the following into `GraphiQL` to insert a `Hero`.
+Enter the following into `GraphiQL` to insert a `Hero`:
 
+[source,graphql]
 ----
 mutation addHero {
   createHero(hero: {
@@ -544,14 +568,14 @@ mutation addHero {
 }
 ----
 
-By using this mutation we have created a hero entity in our service.
+By using this mutation we have created a `Hero` entity in our service.
 
 Notice how in the response we have retrieved the `name` and `surname`
 of the created Hero. This is because we selected to retrieve
 these fields in the response within the `{ }` in the mutation query.
 This can easily be a server side generated field that the client may require.
 
-Lets now try deleting an entry
+Let's now try deleting an entry:
 
 ----
 mutation DeleteHero {
@@ -567,11 +591,12 @@ Similar to the `createHero` mutation method we also retrieve the `name` and
 
 == Creating Queries by fields
 
-Queries can also be done on individual fields. For example, lets
-create a method to query heroes by there last name.
+Queries can also be done on individual fields. For example, let's
+create a method to query heroes by their last name.
 
 Add the following to our `FilmResource` class:
 
+[source,java]
 ----
     @Query
     public List<Hero> getHeroesWithSurname(@DefaultValue("Skywalker") String surname) {
@@ -582,8 +607,9 @@ Add the following to our `FilmResource` class:
 By using the `@DefaultValue` annotation we have determined that the surname value
 will be `Skywalker` when the parameter is not given.
 
-Test the following queries with `GraphiQL`
+Test the following queries with GraphiQL:
 
+[source,graphql]
 ----
 query heroWithDefaultSurname {
   heroesWithSurname{
@@ -603,24 +629,13 @@ query heroWithSurnames {
 
 == Conclusion
 
-Microprofile GraphQL enables clients to retrieve the exact data that is
+MicroProfile GraphQL enables clients to retrieve the exact data that is
 required preventing `Over-fetching` and `Under-fetching`.
 
-GraphQL API can be expanded without breaking previous queries enabling easy
+The GraphQL API can be expanded without breaking previous queries enabling easy
 API `evolution`.
 
-* adding the `smallrye-graphql` Quarkus extension to your project using the
-`quarkus-maven-plugin`: +
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-graphql"
-----
+[[configuration-reference]]
+== Configuration Reference
 
-* or simply adding the following Maven dependency: +
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-graphql</artifactId>
-</dependency>
-----
+include::{generated-dir}/config/quarkus-smallrye-graphql.adoc[leveloffset=+1, opts=optional]

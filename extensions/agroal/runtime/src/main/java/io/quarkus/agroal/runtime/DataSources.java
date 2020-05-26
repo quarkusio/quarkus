@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,11 +208,14 @@ public class DataSources {
                 agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
 
         // Set pool interceptors for this datasource
-        dataSource.setPoolInterceptors(agroalPoolInterceptors
+        Collection<AgroalPoolInterceptor> interceptorList = agroalPoolInterceptors
                 .select(dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)
                         ? Default.Literal.INSTANCE
                         : new DataSource.DataSourceLiteral(dataSourceName))
-                .stream().collect(Collectors.toList()));
+                .stream().collect(Collectors.toList());
+        if (!interceptorList.isEmpty()) {
+            dataSource.setPoolInterceptors(interceptorList);
+        }
 
         return dataSource;
     }

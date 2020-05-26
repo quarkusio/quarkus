@@ -19,14 +19,14 @@ import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProvi
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
-import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
-import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.reactive.boot.service.NoJdbcConnectionProviderInitiator;
+import org.hibernate.reactive.boot.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
@@ -43,10 +43,8 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
-import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
-import io.quarkus.hibernate.reactive.runtime.customized.QuarkusDummyConnectionProviderInitiator;
-import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionProviderInitiator;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironmentInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -158,7 +156,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
-        serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
+        //serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
+        serviceInitiators.add(new QuarkusNoJdbcEnvironmentInitiator(rs.getDialect()));
 
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
@@ -166,16 +165,15 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Custom one!
         serviceInitiators.add(DisabledJMXInitiator.INSTANCE);
 
-        serviceInitiators.add(PersisterClassResolverInitiator.INSTANCE);
+        //serviceInitiators.add(PersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(ReactivePersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         // Custom one!
         // TODO: May check if a JDBC datasource is configured, and if it is then register
         // the real connectionprovider instead of the dummy one
-        serviceInitiators.add(QuarkusDummyConnectionProviderInitiator.INSTANCE);
+        serviceInitiators.add(NoJdbcConnectionProviderInitiator.INSTANCE);
         //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
-        serviceInitiators.add(QuarkusReactiveConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
 
         // Disabled: Dialect is injected explicitly
@@ -188,7 +186,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
-        serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
+        //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
+        serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 
         // Disabled: IdentifierGenerators are no longer initiated after Metadata was generated.
         // serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
@@ -201,11 +200,12 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(QuarkusRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
-        serviceInitiators.add(ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE);
 
         serviceInitiators.add(ManagedBeanRegistryInitiator.INSTANCE);
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
+
+        serviceInitiators.add(ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

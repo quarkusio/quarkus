@@ -16,11 +16,8 @@ import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.cfg.ReactiveSettings;
+import org.hibernate.reactive.boot.service.ReactiveGenerationTarget;
 import org.hibernate.reactive.jpa.impl.DelegatorPersistenceUnitInfo;
-import org.hibernate.reactive.jpa.impl.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.service.ReactiveGenerationTarget;
-import org.hibernate.reactive.service.initiator.ReactiveTransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
@@ -32,12 +29,12 @@ import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
-import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerFactoryBuilder;
-import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionProviderInitiator;
+import io.quarkus.hibernate.reactive.runtime.boot.registry.PreconfiguredReactiveServiceRegistryBuilder;
+import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionPoolInitiator;
 import io.vertx.sqlclient.Pool;
 
 /**
@@ -124,15 +121,12 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            // Inject the reactive pool
-            injectVertxPool(persistenceUnitName, runtimeSettingsBuilder);
-
             HibernateOrmIntegrations.contributeRuntimeProperties((k, v) -> runtimeSettingsBuilder.put(k, v));
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    runtimeSettings, recordedState);
+                    runtimeSettings, recordedState, persistenceUnitName);
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -150,11 +144,12 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,
-            RecordedState rs) {
-        PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder(rs);
-        serviceRegistryBuilder.addInitiator(QuarkusReactiveConnectionProviderInitiator.INSTANCE);
-        serviceRegistryBuilder.addInitiator(ReactiveTransactionCoordinatorBuilderInitiator.INSTANCE);
-        serviceRegistryBuilder.addInitiator(ReactivePersisterClassResolverInitiator.INSTANCE);
+            RecordedState rs,
+            String persistenceUnitName) {
+        PreconfiguredReactiveServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredReactiveServiceRegistryBuilder(
+                rs);
+
+        registerVertxPool(persistenceUnitName, runtimeSettings, serviceRegistryBuilder);
 
         runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
@@ -196,9 +191,10 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
                 || "org.hibernate.jpa.HibernatePersistenceProvider".equals(requestedProviderName);
     }
 
-    private void injectVertxPool(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
-        if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
-                runtimeSettingsBuilder.isConfigured(ReactiveSettings.VERTX_POOL)) {
+    private void registerVertxPool(String persistenceUnitName,
+            RuntimeSettings runtimeSettings,
+            PreconfiguredReactiveServiceRegistryBuilder serviceRegistry) {
+        if (runtimeSettings.isConfigured(AvailableSettings.URL)) {
             // the pool has been defined in the persistence unit, we can bail out
             return;
         }
@@ -209,7 +205,7 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
         }
 
-        runtimeSettingsBuilder.put(ReactiveSettings.VERTX_POOL, poolHandle.get());
+        serviceRegistry.addInitiator(new QuarkusReactiveConnectionPoolInitiator(poolHandle.get()));
     }
 
     @Override

@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 
 /**
@@ -79,8 +80,22 @@ public class DevModeMain implements Closeable {
                     }
                 }
             }
+            final PathsCollection.Builder appRoots = PathsCollection.builder();
+            Path p = Paths.get(context.getApplicationRoot().getClassesPath());
+            if (Files.exists(p)) {
+                appRoots.add(p);
+            }
+            if (context.getApplicationRoot().getResourcesOutputPath() != null
+                    && !context.getApplicationRoot().getResourcesOutputPath()
+                            .equals(context.getApplicationRoot().getClassesPath())) {
+                p = Paths.get(context.getApplicationRoot().getResourcesOutputPath());
+                if (Files.exists(p)) {
+                    appRoots.add(p);
+                }
+            }
+
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(Paths.get(context.getApplicationRoot().getClassesPath()))
+                    .setApplicationRoot(appRoots.build())
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)

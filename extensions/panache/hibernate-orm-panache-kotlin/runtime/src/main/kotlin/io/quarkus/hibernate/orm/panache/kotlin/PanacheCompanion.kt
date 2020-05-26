@@ -11,9 +11,8 @@ import javax.persistence.LockModeType
  * Defines methods to be used via the companion objects of entities.
  *
  * @param Entity the entity type
- * @param Id the ID type
  */
-interface PanacheCompanion<Entity : PanacheEntity, Id: Any> {
+interface PanacheCompanion<Entity : PanacheEntity> {
 
     /**
      * Find an entity of this type by ID.
@@ -22,7 +21,7 @@ interface PanacheCompanion<Entity : PanacheEntity, Id: Any> {
      * @return the entity found, or `null` if not found.
      */
     @GenerateBridge(targetReturnTypeErased = true)
-    fun findById(id: Id): Entity? = injectionMissing()
+    fun findById(id: Any): Entity? = injectionMissing()
 
     /**
      * Find an entity of this type by ID and lock it.
@@ -32,7 +31,7 @@ interface PanacheCompanion<Entity : PanacheEntity, Id: Any> {
      * @return the entity found, or `null` if not found.
      */
     @GenerateBridge(targetReturnTypeErased = true)
-    fun findById(id: Id, lockModeType: LockModeType): Entity? = injectionMissing()
+    fun findById(id: Any, lockModeType: LockModeType): Entity? = injectionMissing()
 
     /**
      * Find entities using a query, with optional indexed parameters.
@@ -472,7 +471,7 @@ interface PanacheCompanion<Entity : PanacheEntity, Id: Any> {
      * @return false if the entity was not deleted (not found).
      */
     @GenerateBridge
-    fun deleteById(id: Id): Boolean = throw JpaOperations.implementationInjectionMissing()
+    fun deleteById(id: Any): Boolean = throw JpaOperations.implementationInjectionMissing()
 
     /**
      * Persist all given entities.

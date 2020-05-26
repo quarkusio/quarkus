@@ -6,7 +6,7 @@ import javax.persistence.Entity
 
 @Entity
 open class Address : PanacheEntity, Comparable<Address> {
-    companion object : PanacheCompanion<Address, Long> {
+    companion object : PanacheCompanion<Address> {
         override fun count(query: String, params: Map<String, Any>): Long {
             AddressDao.shouldBeOverridden()
         }

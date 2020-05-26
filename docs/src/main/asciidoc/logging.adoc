@@ -273,7 +273,7 @@ The `settings.json` placed in the root of your project directory or in the works
 
 === IntelliJ JUnit template
 
-In the same screen where you edit your run configuration you can edit the JUnit template to add the workaround Java VM argument `-Djava.util.logging.manager=org.jboss.logmanager.LogManager`.
+Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.
 
 [[loggingConfigurationReference]]
 == Logging configuration reference

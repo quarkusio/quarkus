@@ -198,6 +198,7 @@
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
 
         <picocli.version>4.3.2</picocli.version>
+        <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
     </properties>
 
     <dependencyManagement>
@@ -2873,6 +2874,11 @@
                 <version>${smallrye-converter-api.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.eclipse.sisu</groupId>
+                <artifactId>org.eclipse.sisu.inject</artifactId>
+                <version>${org.eclipse.sisu.inject.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-compiler</artifactId>

@@ -40,7 +40,7 @@ public class KeycloakPolicyEnforcerConfig {
         /**
          * Specifies how policies are enforced.
          */
-        @ConfigItem(defaultValue = "ENFORCING")
+        @ConfigItem(defaultValue = "enforcing")
         public PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
         /**

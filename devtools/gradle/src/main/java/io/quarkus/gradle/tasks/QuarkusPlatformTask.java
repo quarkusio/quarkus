@@ -66,8 +66,13 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     @Internal
     protected GradleBuildFile getGradleBuildFile() {
         return getProject().getParent() == null
-                ? new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()))
-                : new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()),
+                ? new GradleBuildFile(getWriter())
+                : new GradleBuildFile(getWriter(),
                         new FileProjectWriter(getProject().getRootProject().getProjectDir()));
+    }
+
+    @Internal
+    protected FileProjectWriter getWriter() {
+        return new FileProjectWriter(getProject().getProjectDir());
     }
 }

@@ -12,6 +12,7 @@ import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
 import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -42,11 +43,12 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
 
         if (path != null) {
             try {
-                boolean status = new CreateProject(new FileProjectWriter(new File(path.getAbsolutePath())))
-                        .groupId(groupid)
-                        .artifactId(artifactid)
-                        .version(this.version)
-                        .doCreateProject(new HashMap<>());
+                boolean status = new CreateProject(new FileProjectWriter(new File(path.getAbsolutePath())),
+                        QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
+                                .groupId(groupid)
+                                .artifactId(artifactid)
+                                .version(this.version)
+                                .doCreateProject(new HashMap<>());
                 if (status) {
                     commandInvocation.println("Project " + artifactid + " created successfully.");
                 } else {

@@ -1,5 +1,6 @@
 package io.quarkus.cli.commands;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
 import static io.quarkus.generators.ProjectGenerator.JAVA_TARGET;
@@ -13,9 +14,9 @@ import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -32,54 +33,36 @@ public class CreateProject {
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
-    public static SourceType determineSourceType(Set<String> extensions) {
-        Optional<SourceType> sourceType = extensions.stream()
-                .map(SourceType::parse)
-                .filter(Optional::isPresent)
-                .map(e -> e.orElse(SourceType.JAVA))
-                .findAny();
-        return sourceType.orElse(SourceType.JAVA);
-    }
-
-    private static boolean isSpringStyle(Collection<String> extensions) {
-        return extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"));
-    }
-
-    private QuarkusCommandInvocation invocation;
-
+    private final ProjectWriter writer;
+    private final QuarkusPlatformDescriptor platformDescr;
     private String javaTarget;
+    private BuildFile buildFile;
+    private BuildTool buildTool = BuildTool.MAVEN;
 
-    /**
-     * @deprecated since 1.3.0.CR1
-     *             Please use {@link #CreateProject(ProjectWriter, QuarkusPlatformDescriptor)} instead.
-     */
-    @Deprecated
-    public CreateProject(ProjectWriter writer) {
-        this(writer, QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor());
-    }
+    private Map<String, Object> values = new HashMap<>();
 
     public CreateProject(final ProjectWriter writer, QuarkusPlatformDescriptor platformDescr) {
-        invocation = new QuarkusCommandInvocation(platformDescr);
-        invocation.setProjectWriter(writer);
+        this.writer = checkNotNull(writer, "writer is required");
+        this.platformDescr = checkNotNull(platformDescr, "platformDescr is required");
     }
 
     public CreateProject groupId(String groupId) {
-        setProperty(PROJECT_GROUP_ID, groupId);
+        setValue(PROJECT_GROUP_ID, groupId);
         return this;
     }
 
     public CreateProject artifactId(String artifactId) {
-        setProperty(PROJECT_ARTIFACT_ID, artifactId);
+        setValue(PROJECT_ARTIFACT_ID, artifactId);
         return this;
     }
 
     public CreateProject version(String version) {
-        setProperty(PROJECT_VERSION, version);
+        setValue(PROJECT_VERSION, version);
         return this;
     }
 
     public CreateProject sourceType(SourceType sourceType) {
-        invocation.setValue(SOURCE_TYPE, sourceType);
+        setValue(SOURCE_TYPE, sourceType);
         return this;
     }
 
@@ -95,7 +78,13 @@ public class CreateProject {
         if (!(SourceVersion.isName(className) && !SourceVersion.isKeyword(className))) {
             throw new IllegalArgumentException(className + " is not a valid class name");
         }
-        setProperty(CLASS_NAME, className);
+        setValue(CLASS_NAME, className);
+        return this;
+    }
+
+    public CreateProject buildFile(BuildFile buildFile) {
+        this.buildFile = buildFile;
+        this.buildTool(buildFile.getBuildTool());
         return this;
     }
 
@@ -105,28 +94,18 @@ public class CreateProject {
     @Deprecated
     public CreateProject extensions(Set<String> extensions) {
         if (isSpringStyle(extensions)) {
-            invocation.setValue(IS_SPRING, true);
+            setValue(IS_SPRING, true);
         }
         return this;
     }
 
-    public CreateProject setProperty(String name, String value) {
-        invocation.setProperty(name, value);
-        return this;
-    }
-
     public CreateProject setValue(String name, Object value) {
-        invocation.setValue(name, value);
-        return this;
-    }
-
-    public CreateProject buildFile(BuildFile buildFile) {
-        invocation.setBuildFile(buildFile);
+        values.put(name, value);
         return this;
     }
 
     public CreateProject buildTool(BuildTool buildTool) {
-        invocation.setBuildTool(buildTool);
+        this.buildTool = checkNotNull(buildTool, "buildTool is required");
         return this;
     }
 
@@ -134,7 +113,7 @@ public class CreateProject {
         if (context != null && !context.isEmpty()) {
             for (Map.Entry<String, Object> entry : context.entrySet()) {
                 if (entry.getValue() != null) {
-                    invocation.setProperty(entry.getKey(), entry.getValue().toString());
+                    setValue(entry.getKey(), entry.getValue());
                 }
             }
         }
@@ -151,11 +130,41 @@ public class CreateProject {
         Matcher matcher = JAVA_VERSION_PATTERN
                 .matcher(this.javaTarget != null ? this.javaTarget : System.getProperty("java.version", ""));
         if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 11) {
-            invocation.setProperty(JAVA_TARGET, "8");
+            setValue(JAVA_TARGET, "8");
         } else {
-            invocation.setProperty(JAVA_TARGET, "11");
+            setValue(JAVA_TARGET, "11");
         }
 
+        final BuildFile computeBuildFile = computeBuildFile();
+        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(values, platformDescr, writer,
+                computeBuildFile);
         return new CreateProjectCommandHandler().execute(invocation);
+    }
+
+    private BuildFile computeBuildFile() throws QuarkusCommandException {
+        if (buildFile != null) {
+            return buildFile;
+        }
+        if (buildTool != null) {
+            try {
+                return buildTool.createBuildFile(writer);
+            } catch (final IOException e) {
+                throw new QuarkusCommandException("Failed to create project", e);
+            }
+        }
+        throw new QuarkusCommandException("Either BuildTool or BuildFile must be defined");
+    }
+
+    public static SourceType determineSourceType(Set<String> extensions) {
+        Optional<SourceType> sourceType = extensions.stream()
+                .map(SourceType::parse)
+                .filter(Optional::isPresent)
+                .map(e -> e.orElse(SourceType.JAVA))
+                .findAny();
+        return sourceType.orElse(SourceType.JAVA);
+    }
+
+    private static boolean isSpringStyle(Collection<String> extensions) {
+        return extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"));
     }
 }

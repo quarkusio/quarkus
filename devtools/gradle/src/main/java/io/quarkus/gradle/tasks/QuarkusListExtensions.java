@@ -7,7 +7,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.gradle.GradleBuildFileFromConnector;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
@@ -57,7 +56,7 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(getProject().getProjectDir())),
+            new ListExtensions(getWriter(), new GradleBuildFileFromConnector(getWriter()),
                     platformDescriptor())
                             .all(isAll())
                             .format(getFormat())

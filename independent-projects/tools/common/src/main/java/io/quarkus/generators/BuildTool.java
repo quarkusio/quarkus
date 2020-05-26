@@ -1,5 +1,7 @@
 package io.quarkus.generators;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
@@ -53,6 +55,7 @@ public enum BuildTool {
     }
 
     public BuildFile createBuildFile(final ProjectWriter writer) throws IOException {
+        checkNotNull(writer, "writer is required");
         switch (this) {
             case GRADLE:
                 return new GradleBuildFile(writer);

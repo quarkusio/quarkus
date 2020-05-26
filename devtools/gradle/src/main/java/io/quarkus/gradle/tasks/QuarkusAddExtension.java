@@ -40,7 +40,7 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
                 .collect(toSet());
 
         try {
-            new AddExtensions(getGradleBuildFile(), platformDescriptor())
+            new AddExtensions(getWriter(), getGradleBuildFile(), platformDescriptor())
                     .extensions(extensionsSet)
                     .execute();
         } catch (Exception e) {

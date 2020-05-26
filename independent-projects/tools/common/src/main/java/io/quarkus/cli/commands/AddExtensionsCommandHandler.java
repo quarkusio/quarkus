@@ -72,7 +72,7 @@ public class AddExtensionsCommandHandler implements QuarkusCommand {
             throw new QuarkusCommandException("Failed to add extensions", e);
         }
 
-        if (updated) {
+        if (buildFile != null && updated) {
             try {
                 buildFile.close();
             } catch (IOException e) {

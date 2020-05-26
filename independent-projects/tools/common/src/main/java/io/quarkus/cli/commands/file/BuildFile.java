@@ -1,5 +1,6 @@
 package io.quarkus.cli.commands.file;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.quarkus.maven.utilities.MojoUtils.credentials;
 import static java.util.stream.Collectors.toList;
 
@@ -28,8 +29,8 @@ public abstract class BuildFile implements Closeable {
     private final BuildTool buildTool;
 
     public BuildFile(final ProjectWriter writer, BuildTool buildTool) {
-        this.writer = writer;
-        this.buildTool = buildTool;
+        this.writer = checkNotNull(writer, "writer is required");
+        this.buildTool = checkNotNull(buildTool, "buildTool is required");
     }
 
     protected void write(String fileName, String content) throws IOException {

@@ -4,7 +4,6 @@ import static io.quarkus.generators.ProjectGenerator.JAVA_TARGET;
 import static java.lang.String.format;
 
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
-import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
@@ -61,11 +60,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
         @SuppressWarnings("unchecked")
         private <T> T get(final String key, final T defaultValue) {
-            Object value = invocation.getValue(key);
-            if (value == null) {
-                value = invocation.getProperty(key);
-            }
-            return value == null ? defaultValue : (T) value;
+            return invocation.getValue(key, defaultValue);
         }
 
         private boolean initProject() throws IOException {
@@ -88,11 +83,11 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
         private boolean initBuildTool() throws IOException {
             BuildTool buildTool = getBuildTool();
-            if (!invocation.hasProperty(ADDITIONAL_GITIGNORE_ENTRIES)) {
-                invocation.setProperty(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
+            if (!invocation.hasValue(ADDITIONAL_GITIGNORE_ENTRIES)) {
+                invocation.setValue(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
             }
-            if (!invocation.hasProperty(BUILD_DIRECTORY)) {
-                invocation.setProperty(BUILD_DIRECTORY, buildTool.getBuildDirectory());
+            if (!invocation.hasValue(BUILD_DIRECTORY)) {
+                invocation.setValue(BUILD_DIRECTORY, buildTool.getBuildDirectory());
             }
 
             boolean newProject = !writer.exists(buildTool.getDependenciesFile());
@@ -118,18 +113,17 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                     }
                 }
                 if (gav[0] != null) {
-                    invocation.setProperty(PROJECT_GROUP_ID, gav[0]);
+                    invocation.setValue(PROJECT_GROUP_ID, gav[0]);
                 }
                 if (gav[1] != null) {
-                    invocation.setProperty(PROJECT_ARTIFACT_ID, gav[1]);
+                    invocation.setValue(PROJECT_ARTIFACT_ID, gav[1]);
                 }
             }
             return newProject;
         }
 
         private BuildTool getBuildTool() {
-            BuildFile buildFileManager = get(BUILD_FILE, null);
-            return buildFileManager == null ? BuildTool.MAVEN : buildFileManager.getBuildTool();
+            return invocation.getBuildFile().getBuildTool();
         }
 
         private void generate(final String templateName, QuarkusCommandInvocation invocation, final String outputFilePath,
@@ -140,15 +134,15 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 if (template == null) {
                     throw new IOException("Template resource is missing: " + templateName);
                 }
-                for (Entry<Object, Object> e : invocation.getProperties().entrySet()) {
-                    if (e.getValue() != null) { // Exclude null values (classname and path can be null)
-                        template = template.replace(format("${%s}", e.getKey().toString()), e.getValue().toString());
+                for (Entry<String, Object> e : invocation.getValues().entrySet()) {
+                    if (e.getValue() instanceof String) { // Exclude null values (classname and path can be null)
+                        template = template.replace(format("${%s}", e.getKey()), (String) e.getValue());
                     }
                 }
 
                 // do some nasty replacements for Java target if we want to generate Java 11 projects
-                if ("11".equals(invocation.getProperty(JAVA_TARGET))) {
-                    if (BuildTool.GRADLE.equals(invocation.getBuildTool())) {
+                if ("11".equals(invocation.getValue(JAVA_TARGET))) {
+                    if (BuildTool.GRADLE.equals(invocation.getBuildFile().getBuildTool())) {
                         template = template.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_11");
                     } else {
                         template = template.replace("<maven.compiler.source>1.8</maven.compiler.source>",
@@ -219,8 +213,8 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         }
 
         private void setupContext() throws IOException {
-            if (invocation.getProperty(CLASS_NAME) != null) {
-                String packageName = invocation.getProperty(PACKAGE_NAME);
+            if (invocation.getValue(CLASS_NAME) != null) {
+                String packageName = invocation.getStringValue(PACKAGE_NAME);
 
                 if (packageName != null) {
                     String packageDir = srcMainPath + '/' + packageName.replace('.', '/');
@@ -243,7 +237,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         }
 
         private void createClasses() throws IOException {
-            Object className = invocation.getProperty(CLASS_NAME);
+            Object className = invocation.getValue(CLASS_NAME);
             // If className is null we disable the generation of the JAX-RS resource.
             if (className != null) {
                 String extension = type.getExtension();

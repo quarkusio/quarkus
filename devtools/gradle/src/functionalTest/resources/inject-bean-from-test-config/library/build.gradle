@@ -9,8 +9,7 @@ repositories {
 
 dependencies {
     api enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-    api 'io.quarkus:quarkus-kubernetes-client'
-    api 'io.quarkus:quarkus-smallrye-health'
+    api 'io.quarkus:quarkus-resteasy'
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
@@ -20,3 +19,15 @@ compileJava {
     options.compilerArgs << '-parameters'
 }
 
+configurations {
+    tests.extendsFrom testRuntime
+}
+
+task testJar (type: Jar) {
+    classifier = 'test'
+    from sourceSets.test.output
+}
+
+artifacts {
+    tests testJar
+}

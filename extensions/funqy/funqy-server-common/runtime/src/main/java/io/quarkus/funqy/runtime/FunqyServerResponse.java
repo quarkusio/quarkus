@@ -1,11 +1,11 @@
 package io.quarkus.funqy.runtime;
 
-import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
 
 public interface FunqyServerResponse {
 
-    CompletionStage<?> getOutput();
+    Uni<?> getOutput();
 
-    void setOutput(CompletionStage<?> out);
+    void setOutput(Uni<?> out);
 
 }

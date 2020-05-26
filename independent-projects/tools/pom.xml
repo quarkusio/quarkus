@@ -49,7 +49,7 @@
         <mockito.version>3.3.3</mockito.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <quarkus-http.version>3.0.8.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.9.Final</quarkus-http.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>

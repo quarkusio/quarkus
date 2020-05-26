@@ -35,7 +35,6 @@ import io.dekorate.deps.openshift.api.model.Build;
 import io.dekorate.deps.openshift.api.model.BuildConfig;
 import io.dekorate.deps.openshift.api.model.ImageStream;
 import io.dekorate.deps.openshift.client.OpenShiftClient;
-import io.dekorate.s2i.util.S2iUtils;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
@@ -302,7 +301,7 @@ public class S2iProcessor {
                 client.resource(i).createOrReplace();
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
             }
-            S2iUtils.waitForImageStreamTags(buildResources, 2, TimeUnit.MINUTES);
+            S2iUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
 
         } catch (KubernetesClientException e) {
             KubernetesClientErrorHanlder.handle(e);

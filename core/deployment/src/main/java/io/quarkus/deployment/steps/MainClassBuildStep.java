@@ -229,7 +229,6 @@ class MainClassBuildStep {
                 featuresHandle,
                 activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
-
         cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Logger.class, "error", void.class, Object.class, Throwable.class),
                 cb.readStaticField(logField.getFieldDescriptor()), cb.load("Failed to start application"),

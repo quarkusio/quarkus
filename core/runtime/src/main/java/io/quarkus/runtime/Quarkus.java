@@ -9,7 +9,7 @@ import io.quarkus.launcher.QuarkusLauncher;
 
 /**
  * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
- * 
+ *
  * If this application has already been generated then it will be run directly, otherwise it will be launched
  * in dev mode and augmentation will be done automatically.
  *
@@ -17,7 +17,7 @@ import io.quarkus.launcher.QuarkusLauncher;
  * will block until shutdown is initiated, either from an external signal or by a call to one of the exit methods.
  *
  * If no main class is specified then one is generated automatically that will simply wait to exit after Quarkus is booted.
- * 
+ *
  */
 public class Quarkus {
 
@@ -26,11 +26,11 @@ public class Quarkus {
 
     /**
      * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
-     * 
+     *
      * Note that if this is run from the IDE the application will run in a different class loader to the
      * calling class. It is recommended that the calling class do no logic, and instead this logic should
      * go into the QuarkusApplication.
-     * 
+     *
      * @param quarkusApplication The application to run, or null
      * @param args The command line parameters
      */
@@ -40,7 +40,7 @@ public class Quarkus {
 
     /**
      * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
-     * 
+     *
      * Note that if this is run from the IDE the application will run in a different class loader to the
      * calling class. It is recommended that the calling class do no logic, and instead this logic should
      * go into the QuarkusApplication.
@@ -99,7 +99,7 @@ public class Quarkus {
      * or one of the exit methods is called.
      *
      * This method does not return, as System.exit() is called after the application is finished.
-     * 
+     *
      * @param args The command line parameters
      */
     public static void run(String... args) {
@@ -118,7 +118,7 @@ public class Quarkus {
      * thread that the application is done so that shutdown can run when the main thread returns).
      *
      * The error code supplied here will override the value returned from the main application.
-     * 
+     *
      * @param code The exit code. This may be overridden if an exception occurs on shutdown
      */
     public static void asyncExit(int code) {

@@ -17,8 +17,13 @@ final class ApplicationNameAndVersionTestUtil {
 
     // we don't use REST Assured because its bundled Groovy version clashes with Maven Invoker's (which is also used in this module)
     static void assertApplicationPropertiesSetCorrectly() {
+        assertApplicationPropertiesSetCorrectly("");
+    }
+
+    // we don't use REST Assured because its bundled Groovy version clashes with Maven Invoker's (which is also used in this module)
+    static void assertApplicationPropertiesSetCorrectly(String prefix) {
         try {
-            URL url = new URL("http://localhost:8080/app/hello/nameAndVersion");
+            URL url = new URL("http://localhost:8080" + prefix + "/app/hello/nameAndVersion");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
             connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");

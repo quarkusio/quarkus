@@ -26,6 +26,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.runner.ReAugmentEntryPoint;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -49,14 +50,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
-        commands.add("-jar");
-        commands.add(jar.toString());
-        ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
-        processBuilder.redirectOutput(output);
-        processBuilder.redirectError(output);
-        Process process = processBuilder.start();
+        Process process = doLaunch(jar, output);
         try {
             // Wait until server up
             await()
@@ -69,6 +63,7 @@ public class JarRunnerIT extends MojoTestBase {
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
+            assertResourceReadingFromClassPathWorksCorrectly("");
         } finally {
             process.destroy();
         }
@@ -97,14 +92,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
-        commands.add("-jar");
-        commands.add(jar.toString());
-        ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
-        processBuilder.redirectOutput(output);
-        processBuilder.redirectError(output);
-        Process process = processBuilder.start();
+        Process process = doLaunch(jar, output);
         try {
             // Wait until server up
             await()
@@ -117,17 +105,99 @@ public class JarRunnerIT extends MojoTestBase {
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
-
-            assertResourceReadingFromClassPathWorksCorrectly();
+            assertResourceReadingFromClassPathWorksCorrectly("");
         } finally {
             process.destroy();
         }
 
     }
 
-    static void assertResourceReadingFromClassPathWorksCorrectly() {
+    @Test
+    public void testThatMutableFastJarWorks() throws MavenInvocationException, IOException, InterruptedException {
+        File testDir = initProject("projects/classic", "projects/project-classic-console-output-mutable-fast-jar");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=fast-jar",
+                        "-Dquarkus.package.mutable-application=true"), Collections.emptyMap());
+
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        Path jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+        Assertions.assertFalse(Files.exists(jar));
+
+        jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT/quarkus-run.jar"));
+        Assertions.assertTrue(Files.exists(jar));
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(jar, output);
         try {
-            URL url = new URL("http://localhost:8080/app/classpathResources");
+            // Wait until server up
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly();
+        } finally {
+            process.destroy();
+        }
+
+        //now reaugment
+        List<String> commands = new ArrayList<>();
+        commands.add(JavaBinFinder.findBin());
+        commands.add("-Dquarkus.http.root-path=/moved");
+        commands.add("-cp");
+        commands.add(jar.toString());
+        commands.add(ReAugmentEntryPoint.class.getName());
+        ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
+        processBuilder.redirectOutput(output);
+        processBuilder.redirectError(output);
+        Assertions.assertEquals(0, processBuilder.start().waitFor());
+
+        process = doLaunch(jar, output);
+        try {
+            // Wait until server up
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/moved/app/hello/package", 200));
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly("/moved");
+
+            assertResourceReadingFromClassPathWorksCorrectly("/moved");
+        } finally {
+            process.destroy();
+        }
+    }
+
+    private Process doLaunch(Path jar, File output) throws IOException {
+        List<String> commands = new ArrayList<>();
+        commands.add(JavaBinFinder.findBin());
+        commands.add("-jar");
+        commands.add(jar.toString());
+        ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
+        processBuilder.redirectOutput(output);
+        processBuilder.redirectError(output);
+        return processBuilder.start();
+    }
+
+    static void assertResourceReadingFromClassPathWorksCorrectly(String path) {
+        try {
+            URL url = new URL("http://localhost:8080" + path + "/app/classpathResources");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
             connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");

@@ -220,6 +220,7 @@ public class AugmentActionImpl implements AugmentAction {
             }
 
             builder.setLaunchMode(launchMode);
+            builder.setRebuild(quarkusBootstrap.isRebuild());
             if (firstRun) {
                 builder.setLiveReloadState(new LiveReloadBuildItem(false, Collections.emptySet(), reloadContext));
             } else {

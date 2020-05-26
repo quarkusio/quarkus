@@ -218,10 +218,10 @@ public class ApplicationLifecycleManager {
     /**
      * Sets the default exit code handler for application run through the run method
      * that does not take an exit handler.
-     * 
+     *
      * By default this will just call System.exit, however this is not always
      * what is wanted.
-     * 
+     *
      * @param defaultExitCodeHandler
      */
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {

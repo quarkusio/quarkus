@@ -32,13 +32,17 @@ public class QuarkusGradleUtils {
         return serializedModel;
     }
 
-    public static PathsCollection getOutputPaths(Project project) {
+    public static SourceSet getSourceSet(Project project, String sourceSetName) {
         final Convention convention = project.getConvention();
         JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
         if (javaConvention == null) {
             throw new IllegalArgumentException("The project does not include the Java plugin");
         }
-        final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        return javaConvention.getSourceSets().getByName(sourceSetName);
+    }
+
+    public static PathsCollection getOutputPaths(Project project) {
+        final SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         final PathsCollection.Builder builder = PathsCollection.builder();
         mainSourceSet.getOutput().getClassesDirs().filter(f -> f.exists()).forEach(f -> builder.add(f.toPath()));
         final File resourcesDir = mainSourceSet.getOutput().getResourcesDir();

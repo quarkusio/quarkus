@@ -98,8 +98,8 @@ public class MySQLPoolRecorder {
 
         // credentials provider
         if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
-            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(type);
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
             Map<String, String> credentials = credentialsProvider.getCredentials(name);
             String user = credentials.get(USER_PROPERTY_NAME);

@@ -27,7 +27,7 @@ public class DataSourceRuntimeConfig {
     public Optional<String> credentialsProvider = Optional.empty();
 
     /**
-     * The credentials provider type.
+     * The credentials provider bean name.
      * <p>
      * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
      * CredentialsProvider beans are available.
@@ -35,5 +35,5 @@ public class DataSourceRuntimeConfig {
      * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
      */
     @ConfigItem
-    public Optional<String> credentialsProviderType = Optional.empty();
+    public Optional<String> credentialsProviderName = Optional.empty();
 }

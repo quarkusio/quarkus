@@ -38,7 +38,6 @@ import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig.DataSourceJdbcOu
 import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
@@ -53,7 +52,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
- *
+ * <p>
  * It isn't a CDI producer in the literal sense, but it created a synthetic bean
  * from {@code AgroalProcessor}
  * The {@code createDataSource} method is called at runtime (see
@@ -105,11 +104,11 @@ public class DataSources {
      * Meant to be used from recorders that create synthetic beans that need access to {@code Datasource}.
      * In such using {@code Arc.container.instance(DataSource.class)} is not possible because
      * {@code Datasource} is itself a synthetic bean.
-     *
+     * <p>
      * This method relies on the fact that {@code DataSources} should - given the same input -
      * always return the same {@code AgroalDataSource} no matter how many times it is invoked
      * (which makes sense because {@code DataSource} is a {@code Singleton} bean).
-     *
+     * <p>
      * This method is thread-safe
      */
     public static AgroalDataSource fromName(String dataSourceName) {
@@ -266,8 +265,8 @@ public class DataSources {
 
         // credentials provider
         if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
-            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(type);
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
@@ -361,17 +360,10 @@ public class DataSources {
                     .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
         }
 
-        // Vault credentials provider
+        // credentials provider
         if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            ArcContainer container = Arc.container();
-            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
-            CredentialsProvider credentialsProvider = type != null
-                    ? (CredentialsProvider) container.instance(type).get()
-                    : container.instance(CredentialsProvider.class).get();
-
-            if (credentialsProvider == null) {
-                throw new RuntimeException("unable to find credentials provider of type " + (type == null ? "default" : type));
-            }
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
 
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
             connectionFactoryConfiguration

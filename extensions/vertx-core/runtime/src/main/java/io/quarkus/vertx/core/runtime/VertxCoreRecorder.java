@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.EventExecutor;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -32,6 +33,7 @@ import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBusOptions;
@@ -46,6 +48,8 @@ public class VertxCoreRecorder {
     private static final Logger LOGGER = Logger.getLogger(VertxCoreRecorder.class.getName());
 
     static volatile VertxSupplier vertx;
+
+    static volatile int blockingThreadPoolSize;
 
     public Supplier<Vertx> configureVertx(VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers) {
@@ -86,6 +90,36 @@ public class VertxCoreRecorder {
             });
         }
         return vertx;
+    }
+
+    private void tryCleanTccl(Vertx devModeVertx) {
+        //this is a best effort attempt to clean out the old TCCL from
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        for (int i = 0; i < blockingThreadPoolSize; ++i) {
+            devModeVertx.executeBlocking(new Handler<Promise<Object>>() {
+                @Override
+                public void handle(Promise<Object> event) {
+                    Thread.currentThread().setContextClassLoader(cl);
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+
+                    }
+                }
+            }, null);
+        }
+        EventLoopGroup group = ((VertxImpl) devModeVertx).getEventLoopGroup();
+        for (EventExecutor i : group) {
+            i.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    Thread.currentThread().setContextClassLoader(cl);
+                }
+
+            });
+        }
+
     }
 
     public IOThreadDetector detector() {
@@ -174,6 +208,7 @@ public class VertxCoreRecorder {
                 .setClassPathResolvingEnabled(conf.classpathResolving));
         options.setWorkerPoolSize(conf.workerPoolSize);
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
+        blockingThreadPoolSize = conf.internalBlockingPoolSize;
 
         options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());
         if (conf.eventLoopsPoolSize.isPresent()) {

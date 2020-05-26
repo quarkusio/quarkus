@@ -19,6 +19,8 @@
         <s3.url>http://localhost:8008</s3.url>
         <sns.url>http://localhost:8009</sns.url>
         <sqs.url>http://localhost:8010</sqs.url>
+        <kms.url>http://localhost:8011</kms.url>
+        <ses.url>http://localhost:8012</ses.url>
     </properties>
 
     <dependencies>
@@ -49,6 +51,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-sqs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-ses</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-kms</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -204,7 +214,7 @@
                                     <alias>aws-local-stack</alias>
                                     <run>
                                         <env>
-                                            <SERVICES>s3,dynamodb,sns,sqs</SERVICES>
+                                            <SERVICES>s3,dynamodb,sns,sqs,kms,ses</SERVICES>
                                             <START_WEB>0</START_WEB>
                                         </env>
                                         <ports>
@@ -212,6 +222,8 @@
                                             <port>8008:4572</port> <!-- S3 -->
                                             <port>8009:4575</port> <!-- SNS -->
                                             <port>8010:4576</port> <!-- SQS -->
+                                            <port>8011:4599</port> <!-- KMS -->
+                                            <port>8012:4566</port> <!-- SES -->
                                         </ports>
                                         <log/>
                                         <wait>

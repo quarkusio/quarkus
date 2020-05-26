@@ -866,6 +866,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-ses</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-kms</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-alexa</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2998,6 +3008,16 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>sqs</artifactId>
+                <version>${awssdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>ses</artifactId>
+                <version>${awssdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>kms</artifactId>
                 <version>${awssdk.version}</version>
             </dependency>
             <dependency>

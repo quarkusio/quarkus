@@ -165,13 +165,15 @@ jobs:
       amazonServices:
         image: localstack/localstack:0.11.1
         env:
-          SERVICES: s3,dynamodb,sns,sqs
+          SERVICES: s3,dynamodb,sns,sqs,kms,ses
           START_WEB: 0
         ports:
           - 127.0.0.1:8000:4569
           - 127.0.0.1:8008:4572
           - 127.0.0.1:8009:4575
           - 127.0.0.1:8010:4576
+          - 127.0.0.1:8011:4599
+          - 127.0.0.1:8012:4566
 
     steps:
       - name: Start mysql
@@ -356,7 +358,7 @@ jobs:
               reactive-pg-client
           - category: Amazon
             amazonServices: "true"
-            timeout: 25
+            timeout: 35
             test-modules: >
               amazon-services
               amazon-lambda
@@ -488,7 +490,7 @@ jobs:
         if: matrix.mssql
       - name: Amazon Services
         run: |
-          docker run --rm --publish 8000:4569 --publish 8008:4572 --publish 8009:4575 --publish 8010:4576 --name build-amazon-service-clients -e SERVICES=s3,dynamodb,sns,sqs -e START_WEB=0 \
+          docker run --rm --publish 8000:4569 --publish 8008:4572 --publish 8009:4575 --publish 8010:4576 --publish 8011:4599 --publish 8012:4566 --name build-amazon-service-clients -e SERVICES=s3,dynamodb,sns,sqs,kms,ses -e START_WEB=0 \
             -d localstack/localstack:0.11.1
         if: matrix.amazonServices
       - name: Neo4j Service

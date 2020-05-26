@@ -3,8 +3,6 @@ package io.quarkus.deployment.pkg;
 import java.util.List;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -36,7 +34,7 @@ public class PackageConfig {
      * TODO: should this just be a different package type: 'mutable-jar'
      *
      */
-    @ConfigProperty(defaultValue = "false")
+    @ConfigItem(defaultValue = "false")
     public boolean mutableApplication;
 
     /**

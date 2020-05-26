@@ -116,6 +116,38 @@ public final class PathTestHelper {
                 .orElseThrow(() -> new IllegalStateException("Unable to translate path for " + testClassLocation));
     }
 
+    /**
+     * Returns the resources directory that compliments the classes directory.
+     * This is relevant in for Gradle where classes and resources have different output locations.
+     * The method will return null if classesDir is not a directory.
+     *
+     * @param classesDir classes directory
+     * @param name 'test' for test resources or 'main' for the main resources
+     * @return resources directory if found or null otherwise
+     */
+    public static Path getResourcesForClassesDirOrNull(Path classesDir, String name) {
+        if (!Files.isDirectory(classesDir)) {
+            return null;
+        }
+        Path p = classesDir.getParent();
+        if (p == null) {
+            return null;
+        }
+        p = p.getParent();
+        if (p == null) {
+            return null;
+        }
+        p = p.getParent();
+        if (p == null) {
+            return null;
+        }
+        p = p.resolve("resources").resolve(name);
+        if (Files.exists(p)) {
+            return p;
+        }
+        return null;
+    }
+
     public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
         String classFileName = className.replace('.', File.separatorChar) + ".class";
         URL resource = classLoader.getResource(classFileName);

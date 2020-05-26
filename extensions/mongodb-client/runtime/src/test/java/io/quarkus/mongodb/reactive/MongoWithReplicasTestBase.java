@@ -45,10 +45,21 @@ public class MongoWithReplicasTestBase {
                 configs.add(buildMongodConfiguration("localhost", port, true));
             }
             configs.forEach(config -> {
-                MongodExecutable exec = MongodStarter.getDefaultInstance().prepare(config);
+                MongodExecutable exec = getMongodExecutable(config);
                 MONGOS.add(exec);
                 try {
-                    exec.start();
+                    try {
+                        exec.start();
+                    } catch (Exception e) {
+                        //every so often mongo fails to start on CI runs
+                        //see if this helps
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException ignore) {
+
+                        }
+                        exec.start();
+                    }
                 } catch (IOException e) {
                     LOGGER.error("Unable to start the mongo instance", e);
                 }
@@ -57,6 +68,24 @@ public class MongoWithReplicasTestBase {
         } else {
             LOGGER.infof("Using existing Mongo %s", uri);
         }
+    }
+
+    private static MongodExecutable getMongodExecutable(IMongodConfig config) {
+        try {
+            return doGetExecutable(config);
+        } catch (Exception e) {
+            // sometimes the download process can timeout so just sleep and try again
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+
+            }
+            return doGetExecutable(config);
+        }
+    }
+
+    private static MongodExecutable doGetExecutable(IMongodConfig config) {
+        return MongodStarter.getDefaultInstance().prepare(config);
     }
 
     @AfterAll

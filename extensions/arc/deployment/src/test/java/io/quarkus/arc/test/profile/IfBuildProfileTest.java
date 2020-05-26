@@ -1,14 +1,21 @@
 package io.quarkus.arc.test.profile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.interceptor.AroundInvoke;
+import javax.interceptor.Interceptor;
+import javax.interceptor.InvocationContext;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -25,7 +32,8 @@ public class IfBuildProfileTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(Producer.class, OtherProducer.class, AnotherProducer.class,
-                            GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class));
+                            GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class,
+                            TestInterceptor.class, ProdInterceptor.class, Logging.class));
 
     @Inject
     Hello hello;
@@ -35,11 +43,15 @@ public class IfBuildProfileTest {
 
     @Test
     public void testInjection() {
+        assertFalse(TestInterceptor.INTERCEPTED.get());
+        assertFalse(ProdInterceptor.INTERCEPTED.get());
         assertEquals("hello from test. Foo is: foo from test", hello.hello());
         assertEquals("ping", hello.ping());
         assertEquals("pong", hello.pong());
         assertEquals("foo from test", hello.foo());
         assertTrue(barBean.isUnsatisfied());
+        assertTrue(TestInterceptor.INTERCEPTED.get());
+        assertFalse(ProdInterceptor.INTERCEPTED.get());
     }
 
     @Test
@@ -47,6 +59,7 @@ public class IfBuildProfileTest {
         assertEquals("hello from test. Foo is: foo from test", CDI.current().select(GreetingBean.class).get().greet());
     }
 
+    @Logging
     @ApplicationScoped
     static class Hello {
 
@@ -198,5 +211,37 @@ public class IfBuildProfileTest {
                 }
             };
         }
+    }
+
+    @IfBuildProfile("test")
+    @Priority(1)
+    @Interceptor
+    @Logging
+    static class TestInterceptor {
+
+        static final AtomicBoolean INTERCEPTED = new AtomicBoolean(false);
+
+        @AroundInvoke
+        public Object aroundInvoke(InvocationContext ctx) throws Exception {
+            INTERCEPTED.set(true);
+            return ctx.proceed();
+        }
+
+    }
+
+    @IfBuildProfile("prod")
+    @Priority(10)
+    @Interceptor
+    @Logging
+    static class ProdInterceptor {
+
+        static final AtomicBoolean INTERCEPTED = new AtomicBoolean(false);
+
+        @AroundInvoke
+        public Object aroundInvoke(InvocationContext ctx) throws Exception {
+            INTERCEPTED.set(true);
+            return ctx.proceed();
+        }
+
     }
 }

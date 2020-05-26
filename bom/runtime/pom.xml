@@ -81,7 +81,7 @@
         <jackson.version>2.10.4</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
-        <commons-codec.version>1.13</commons-codec.version>
+        <commons-codec.version>1.14</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
         <hibernate-orm.version>5.4.16.Final</hibernate-orm.version>
         <hibernate-validator.version>6.1.5.Final</hibernate-validator.version>
@@ -122,7 +122,7 @@
         <json-smart.version>2.3</json-smart.version>
         <infinispan.version>10.1.5.Final</infinispan.version>
         <infinispan.protostream.version>4.3.2.Final</infinispan.protostream.version>
-        <caffeine.version>2.8.0</caffeine.version>
+        <caffeine.version>2.8.4</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
@@ -179,7 +179,7 @@
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mvel2.version>2.4.7.Final</mvel2.version>
-        <htmlunit.version>2.36.0</htmlunit.version>
+        <htmlunit.version>2.40.0</htmlunit.version>
         <mockito.version>3.3.3</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.7.2</antlr.version>
@@ -198,6 +198,7 @@
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
 
         <picocli.version>4.3.2</picocli.version>
+        <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
     </properties>
 
     <dependencyManagement>
@@ -861,6 +862,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-sqs</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-ses</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-kms</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1769,6 +1780,11 @@
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-streams</artifactId>
+                <version>${kafka2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-streams-test-utils</artifactId>
                 <version>${kafka2.version}</version>
             </dependency>
             <dependency>
@@ -2864,6 +2880,11 @@
             </dependency>
 
             <dependency>
+                <groupId>org.eclipse.sisu</groupId>
+                <artifactId>org.eclipse.sisu.inject</artifactId>
+                <version>${org.eclipse.sisu.inject.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-compiler</artifactId>
                 <version>${kotlin.version}</version>
@@ -2982,6 +3003,16 @@
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>sqs</artifactId>
+                <version>${awssdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>ses</artifactId>
+                <version>${awssdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>kms</artifactId>
                 <version>${awssdk.version}</version>
             </dependency>
             <dependency>

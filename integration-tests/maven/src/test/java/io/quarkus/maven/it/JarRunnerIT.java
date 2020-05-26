@@ -2,10 +2,16 @@ package io.quarkus.maven.it;
 
 import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -111,9 +117,34 @@ public class JarRunnerIT extends MojoTestBase {
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
+
+            assertResourceReadingFromClassPathWorksCorrectly();
         } finally {
             process.destroy();
         }
 
+    }
+
+    static void assertResourceReadingFromClassPathWorksCorrectly() {
+        try {
+            URL url = new URL("http://localhost:8080/app/classpathResources");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                failResourcesFromTheClasspath();
+            }
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String output = br.readLine();
+                assertThat(output).isEqualTo("success");
+            }
+        } catch (IOException e) {
+            failResourcesFromTheClasspath();
+        }
+    }
+
+    private static void failResourcesFromTheClasspath() {
+        fail("Failed to assert that the application properly reads resources from the classpath");
     }
 }

@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -63,6 +64,13 @@ class FlywayProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capabilities.FLYWAY);
+    }
+
+    @BuildStep
+    void scannerTransformer(BuildProducer<BytecodeTransformerBuildItem> transformers) {
+        transformers
+                .produce(new BytecodeTransformerBuildItem(true, ScannerTransformer.FLYWAY_SCANNER_CLASS_NAME,
+                        new ScannerTransformer()));
     }
 
     @Record(STATIC_INIT)
@@ -197,7 +205,9 @@ class FlywayProcessor {
         try (final Stream<Path> pathStream = Files.walk(Paths.get(path.toURI()))) {
             return pathStream.filter(Files::isRegularFile)
                     .map(it -> Paths.get(location, it.getFileName().toString()).toString())
-                    .peek(it -> LOGGER.debug("Discovered: " + it))
+                    // we don't want windows paths here since the paths are going to be used as classpath paths anyway
+                    .map(it -> it.replace('\\', '/'))
+                    .peek(it -> LOGGER.debugf("Discovered path: %s", it))
                     .collect(Collectors.toSet());
         }
     }

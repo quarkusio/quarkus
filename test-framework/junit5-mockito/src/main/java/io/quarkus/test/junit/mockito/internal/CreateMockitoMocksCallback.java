@@ -23,7 +23,7 @@ public class CreateMockitoMocksCallback implements QuarkusTestBeforeAllCallback 
             for (Field field : current.getDeclaredFields()) {
                 InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectMockAnnotation != null) {
-                    Object beanInstance = getBeanInstance(testInstance, field);
+                    Object beanInstance = getBeanInstance(testInstance, field, InjectMock.class);
                     Object mock = createMockAndSetTestField(testInstance, field, beanInstance);
                     MockitoMocksTracker.track(testInstance, mock, beanInstance);
                 }
@@ -43,18 +43,19 @@ public class CreateMockitoMocksCallback implements QuarkusTestBeforeAllCallback 
         return mock;
     }
 
-    private Object getBeanInstance(Object testInstance, Field field) {
+    static Object getBeanInstance(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
         Class<?> fieldClass = field.getType();
         InstanceHandle<?> instance = Arc.container().instance(fieldClass, getQualifiers(field));
         if (!instance.isAvailable()) {
-            throw new IllegalStateException("Invalid use of @InjectMock - could not determine bean of type: "
-                    + fieldClass + ". Offending field is " + field.getName() + " of test class "
-                    + testInstance.getClass());
+            throw new IllegalStateException(
+                    "Invalid use of " + annotationType.getTypeName() + " - could not determine bean of type: "
+                            + fieldClass + ". Offending field is " + field.getName() + " of test class "
+                            + testInstance.getClass());
         }
         return instance.get();
     }
 
-    private Annotation[] getQualifiers(Field fieldToMock) {
+    static Annotation[] getQualifiers(Field fieldToMock) {
         List<Annotation> qualifiers = new ArrayList<>();
         Annotation[] fieldAnnotations = fieldToMock.getDeclaredAnnotations();
         for (Annotation fieldAnnotation : fieldAnnotations) {

@@ -68,16 +68,9 @@ public class RunnerClassLoader extends ClassLoader {
     @Override
     protected URL findResource(String name) {
         name = sanitizeName(name);
-        String dirName = getDirNameFromResourceName(name);
-        ClassLoadingResource[] resources;
-        if (dirName == null) {
-            resources = resourceDirectoryMap.get("");
-        } else {
-            resources = resourceDirectoryMap.get(dirName);
-        }
-        if (resources == null) {
+        ClassLoadingResource[] resources = getClassLoadingResources(name);
+        if (resources == null)
             return null;
-        }
         for (ClassLoadingResource resource : resources) {
             URL data = resource.getResourceURL(name);
             if (data != null) {
@@ -94,9 +87,7 @@ public class RunnerClassLoader extends ClassLoader {
         return name;
     }
 
-    @Override
-    protected Enumeration<URL> findResources(String name) throws IOException {
-        name = sanitizeName(name);
+    private ClassLoadingResource[] getClassLoadingResources(String name) {
         String dirName = getDirNameFromResourceName(name);
         ClassLoadingResource[] resources;
         if (dirName == null) {
@@ -105,8 +96,18 @@ public class RunnerClassLoader extends ClassLoader {
             resources = resourceDirectoryMap.get(dirName);
         }
         if (resources == null) {
-            return null;
+            // the resource could itself be a directory
+            resources = resourceDirectoryMap.get(name);
         }
+        return resources;
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        name = sanitizeName(name);
+        ClassLoadingResource[] resources = getClassLoadingResources(name);
+        if (resources == null)
+            return null;
         List<URL> urls = new ArrayList<>();
         for (ClassLoadingResource resource : resources) {
             URL data = resource.getResourceURL(name);

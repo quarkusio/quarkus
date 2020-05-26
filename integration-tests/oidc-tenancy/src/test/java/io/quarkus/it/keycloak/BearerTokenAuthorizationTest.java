@@ -153,7 +153,7 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
-        String[] parts = getStateCookie(webClient, tenantId).getValue().split("___");
+        String[] parts = getStateCookie(webClient, tenantId).getValue().split("\\|");
         return parts.length == 2 ? parts[1] : null;
     }
 }

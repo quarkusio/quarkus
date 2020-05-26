@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
+import static java.util.Arrays.asList;
 import static org.jboss.jandex.DotName.createSimple;
 
 import java.util.Collections;
@@ -62,6 +63,45 @@ public final class KotlinPanacheResourceProcessor {
     static final String ID_TYPE_SIGNATURE = toBinarySignature(Long.class);
     static final String OBJECT_SIGNATURE = toBinarySignature(Object.class);
     static final String CLASS_SIGNATURE = toBinarySignature(Class.class);
+
+    static final org.objectweb.asm.Type CLASS_TYPE = org.objectweb.asm.Type.getType(Class.class);
+    static final org.objectweb.asm.Type OBJECT_TYPE = org.objectweb.asm.Type.getType(Object.class);
+    static final List<org.objectweb.asm.Type> REPOSITORY_TYPES = asList(
+            org.objectweb.asm.Type.getType(PanacheRepositoryBase.class),
+            org.objectweb.asm.Type.getType(PanacheRepository.class));
+    static final List<org.objectweb.asm.Type> ENTITY_TYPES = asList(
+            org.objectweb.asm.Type.getType(PanacheEntityBase.class),
+            org.objectweb.asm.Type.getType(PanacheEntity.class),
+            org.objectweb.asm.Type.getType(PanacheCompanion.class));
+    public static final List<org.objectweb.asm.Type> PRIMITIVE_TYPES = asList(
+            org.objectweb.asm.Type.getType(Void.class),
+            org.objectweb.asm.Type.getType(Boolean.class),
+            org.objectweb.asm.Type.getType(Character.class),
+            org.objectweb.asm.Type.getType(Byte.class),
+            org.objectweb.asm.Type.getType(Short.class),
+            org.objectweb.asm.Type.getType(Integer.class),
+            org.objectweb.asm.Type.getType(Float.class),
+            org.objectweb.asm.Type.getType(Long.class));
+
+    static org.objectweb.asm.Type sanitize(org.objectweb.asm.Type[] argumentTypes) {
+        org.objectweb.asm.Type primitiveReplaced = null;
+
+        for (int i = 0; i < argumentTypes.length; i++) {
+            if (REPOSITORY_TYPES.contains(argumentTypes[i])) {
+                argumentTypes[i] = CLASS_TYPE;
+            } else if (ENTITY_TYPES.contains(argumentTypes[i])) {
+                argumentTypes[i] = OBJECT_TYPE;
+            } else if (argumentTypes[i].getInternalName().length() == 1) {
+                primitiveReplaced = argumentTypes[i];
+                argumentTypes[i] = OBJECT_TYPE;
+            }
+        }
+        return primitiveReplaced;
+    }
+
+    static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
+        return PRIMITIVE_TYPES.get(primitive.getSort());
+    }
 
     @NotNull
     static String toBinarySignature(Class<?> type) {

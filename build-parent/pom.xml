@@ -28,6 +28,7 @@
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <version.surefire.plugin>2.22.1</version.surefire.plugin>
+        <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
@@ -60,7 +61,7 @@
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.2</microprofile-health-api.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
-        <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
+        <microprofile-metrics-api.version>2.3.2</microprofile-metrics-api.version>
         <microprofile-fault-tolerance-api.version>2.1</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>1.4.1</microprofile-rest-client-api.version>
@@ -220,6 +221,15 @@
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
                         <argLine>${jacoco.agent.argLine}</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${failsafe-plugin.version}</version>
+                    <configuration>
+                        <systemPropertyVariables>
+                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
                 <plugin>

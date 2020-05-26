@@ -233,10 +233,16 @@ public class JaxRSTestCase {
             sb.append("q");
         }
 
-        RestAssured.given()
-                .body(sb.toString())
-                .post("/test/max-body-size")
-                .then().statusCode(413);
+        try {
+            RestAssured.given()
+                    .body(sb.toString())
+                    .post("/test/max-body-size")
+                    .then().statusCode(413);
+        } catch (Exception ignore) {
+            //because the connection is force closed after sending the 413
+            //sometimes the client can return an IOException if it is still
+            //trying to send the body
+        }
 
         // while sending a payload within the limit should return 200
         RestAssured.given()

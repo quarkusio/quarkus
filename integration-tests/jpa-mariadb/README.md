@@ -35,6 +35,12 @@ To run the MariaDB server "manually" via command line for testing, the following
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test_mariadb -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -p 3306:3306 mariadb:10.4
 ```
 
+or if you prefer podman, this won't need root permissions:
+
+```
+podman run --rm=true --net=host --memory-swappiness=0 --tmpfs /var/lib/mysql:rw --tmpfs /var/log:rw --name mariadb_demo -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=secret -p 3306:3306 mariadb:10.4
+```
+
 N.B. it takes a while for MariaDB to be actually booted and accepting connections.
 
 After it's fully booted, you can run all integration tests via

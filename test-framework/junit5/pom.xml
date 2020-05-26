@@ -26,6 +26,13 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.sisu</groupId>
+            <artifactId>org.eclipse.sisu.inject</artifactId>
+            <!-- We don't want the annotation processor to run
+             as it leaves junk files in the project-->
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-common</artifactId>
         </dependency>

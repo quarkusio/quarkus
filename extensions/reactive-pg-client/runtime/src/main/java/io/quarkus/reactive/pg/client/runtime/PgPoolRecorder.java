@@ -131,13 +131,15 @@ public class PgPoolRecorder {
             pgConnectOptions.setSslMode(dataSourceReactivePostgreSQLConfig.sslMode.get());
         }
 
-        configurePemTrustOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.trustCertificatePem);
-        configureJksTrustOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.trustCertificateJks);
-        configurePfxTrustOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.trustCertificatePfx);
+        pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
 
-        configurePemKeyCertOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.keyCertificatePem);
-        configureJksKeyCertOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.keyCertificateJks);
-        configurePfxKeyCertOptions(pgConnectOptions, dataSourceReactivePostgreSQLConfig.keyCertificatePfx);
+        configurePemTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
+        configureJksTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
+        configurePfxTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+
+        configurePemKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
+        configureJksKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
+        configurePfxKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
 
         return pgConnectOptions;
     }

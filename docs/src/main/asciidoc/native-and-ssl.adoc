@@ -79,7 +79,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the OAuth2 extension (`quarkus-elytron-security-oauth2`),
  * the REST client extension (`quarkus-rest-client`),
  * the Reactive client for PostgreSQL extension (`quarkus-reactive-pg-client`).
-
+ * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`).
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 

@@ -6,10 +6,6 @@ import java.util.OptionalInt;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.vertx.core.runtime.config.JksConfiguration;
-import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
-import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
-import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
 import io.vertx.pgclient.SslMode;
 
 @ConfigRoot(name = "datasource.reactive.postgresql", phase = ConfigPhase.RUN_TIME)
@@ -35,52 +31,4 @@ public class DataSourceReactivePostgreSQLConfig {
      */
     @ConfigItem(defaultValueDocumentation = "disable")
     public Optional<SslMode> sslMode;
-
-    /**
-     * Trust configuration in the PEM format.
-     * <p>
-     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePfx} must be disabled.
-     */
-    @ConfigItem
-    public PemTrustCertConfiguration trustCertificatePem;
-
-    /**
-     * Trust configuration in the JKS format.
-     * <p>
-     * When enabled, {@link #trustCertificatePem} and {@link #trustCertificatePfx} must be disabled.
-     */
-    @ConfigItem
-    public JksConfiguration trustCertificateJks;
-
-    /**
-     * Trust configuration in the PFX format.
-     * <p>
-     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePem} must be disabled.
-     */
-    @ConfigItem
-    public PfxConfiguration trustCertificatePfx;
-
-    /**
-     * Key/cert configuration in the PEM format.
-     * <p>
-     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePfx} must be disabled.
-     */
-    @ConfigItem
-    public PemKeyCertConfiguration keyCertificatePem;
-
-    /**
-     * Key/cert configuration in the JKS format.
-     * <p>
-     * When enabled, {@link #keyCertificatePem} and {@link #keyCertificatePfx} must be disabled.
-     */
-    @ConfigItem
-    public JksConfiguration keyCertificateJks;
-
-    /**
-     * Key/cert configuration in the PFX format.
-     * <p>
-     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePem} must be disabled.
-     */
-    @ConfigItem
-    public PfxConfiguration keyCertificatePfx;
 }

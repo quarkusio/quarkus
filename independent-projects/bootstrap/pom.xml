@@ -448,7 +448,7 @@
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
-                </plugins>
+            </plugins>
         </pluginManagement>
     </build>
 

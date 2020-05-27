@@ -31,6 +31,7 @@ import javax.enterprise.inject.Produces;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.SharedCacheMode;
+import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.microprofile.metrics.Metadata;
@@ -88,6 +89,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -128,6 +130,7 @@ public final class HibernateOrmProcessor {
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
+    private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
     private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE = "META-INF/services/org.hibernate.service.spi.ServiceContributor";
@@ -902,6 +905,20 @@ public final class HibernateOrmProcessor {
     public void produceLoggingCategories(BuildProducer<LogCategoryBuildItem> categories) {
         if (hibernateConfig.log.bindParam) {
             categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
+        }
+    }
+
+    @BuildStep(onlyIf = NativeBuild.class)
+    public void test(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
+        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(STATIC_METAMODEL);
+        if (!annotationInstances.isEmpty()) {
+
+            String[] metamodel = annotationInstances.stream()
+                    .map(a -> a.target().asClass().name().toString())
+                    .toArray(String[]::new);
+
+            reflective.produce(new ReflectiveClassBuildItem(false, false, true, metamodel));
         }
     }
 

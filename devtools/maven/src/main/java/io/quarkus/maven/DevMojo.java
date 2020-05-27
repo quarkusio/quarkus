@@ -501,7 +501,7 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(resourcesSourcesDir)) {
             resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
         }
-        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
+        DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(localProject.getKey(),
                 localProject.getArtifactId(),
                 projectDirectory,
                 sourcePaths,
@@ -634,11 +634,15 @@ public class DevMojo extends AbstractMojo {
                 localProject = LocalProject.load(outputDirectory.toPath());
                 addProject(devModeContext, localProject, true);
                 pomFiles.add(localProject.getDir().resolve("pom.xml"));
+                devModeContext.getLocalArtifacts()
+                        .add(new AppArtifactKey(localProject.getGroupId(), localProject.getArtifactId(), null, "jar"));
             } else {
                 localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                 for (LocalProject project : filterExtensionDependencies(localProject)) {
                     addProject(devModeContext, project, project == localProject);
                     pomFiles.add(project.getDir().resolve("pom.xml"));
+                    devModeContext.getLocalArtifacts()
+                            .add(new AppArtifactKey(project.getGroupId(), project.getArtifactId(), null, "jar"));
                 }
             }
 
@@ -662,10 +666,14 @@ public class DevMojo extends AbstractMojo {
             }
             getLog().debug("Executable jar: " + tempFile.getAbsolutePath());
 
+            devModeContext.setBaseName(project.getBuild().getFinalName());
             devModeContext.setCacheDir(new File(buildDir, "transformer-cache").getAbsoluteFile());
 
             // this is the jar file we will use to launch the dev mode main class
             devModeContext.setDevModeRunnerJarFile(tempFile);
+
+            modifyDevModeContext(devModeContext);
+
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
@@ -844,6 +852,10 @@ public class DevMojo extends AbstractMojo {
             process.destroy();
             process.waitFor();
         }
+
+    }
+
+    protected void modifyDevModeContext(DevModeContext devModeContext) {
 
     }
 

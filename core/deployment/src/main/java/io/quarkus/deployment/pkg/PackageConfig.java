@@ -16,6 +16,7 @@ public class PackageConfig {
      * be referred to as 'jar'.
      */
     public static final String FAST_JAR = "fast-jar";
+    public static final String MUTABLE_JAR = "mutable-jar";
     public static final String LEGACY = "legacy";
     public static final String NATIVE = "native";
 
@@ -27,16 +28,6 @@ public class PackageConfig {
      */
     @ConfigItem(defaultValue = JAR)
     public String type;
-
-    /**
-     * Experimental property that allows for the creation of a 'mutable' application that
-     * can be re-augmented after creation.
-     *
-     * TODO: should this just be a different package type: 'mutable-jar'
-     *
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean mutableApplication;
 
     /**
      * If the java runner should be packed as an uberjar

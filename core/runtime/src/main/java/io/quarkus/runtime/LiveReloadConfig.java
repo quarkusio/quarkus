@@ -1,8 +1,9 @@
-package io.quarkus.deployment;
+package io.quarkus.runtime;
 
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
@@ -11,18 +12,18 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  *
  * TODO refactor code to actually use these values
  */
-@ConfigRoot
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class LiveReloadConfig {
 
     /**
      * Password used to use to connect to the remote dev-mode application
      */
     @ConfigItem
-    Optional<String> password;
+    public Optional<String> password;
 
     /**
      * URL used to use to connect to the remote dev-mode application
      */
     @ConfigItem
-    Optional<String> url;
+    public Optional<String> url;
 }

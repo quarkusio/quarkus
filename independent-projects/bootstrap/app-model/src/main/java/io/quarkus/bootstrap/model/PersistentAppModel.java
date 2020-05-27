@@ -24,6 +24,7 @@ public class PersistentAppModel implements Serializable {
     private final List<SerializedDep> runtimeDeps = new ArrayList<>();
     private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
     private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
+    private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
 
     public PersistentAppModel(String baseName, Map<AppArtifactKey, List<String>> paths, AppModel appModel,
             String appArchivePath) {
@@ -39,6 +40,7 @@ public class PersistentAppModel implements Serializable {
         for (AppDependency i : appModel.getUserDependencies()) {
             runtimeDeps.add(new SerializedDep(i, paths));
         }
+        localProjectArtifacts.addAll(appModel.getLocalProjectArtifacts());
         parentFirstArtifacts.addAll(appModel.getParentFirstArtifacts());
         lesserPriorityArtifacts.addAll(appModel.getLesserPriorityArtifacts());
     }
@@ -61,6 +63,9 @@ public class PersistentAppModel implements Serializable {
         }
         for (AppArtifactKey i : lesserPriorityArtifacts) {
             model.addLesserPriorityArtifact(i);
+        }
+        for (AppArtifactKey i : localProjectArtifacts) {
+            model.addLocalProjectArtifact(i);
         }
         return model.build();
     }

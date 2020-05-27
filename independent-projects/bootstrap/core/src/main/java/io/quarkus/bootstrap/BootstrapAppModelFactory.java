@@ -3,6 +3,7 @@ package io.quarkus.bootstrap;
 import io.quarkus.bootstrap.app.CurationResult;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.jboss.logging.Logger;
@@ -81,6 +83,7 @@ public class BootstrapAppModelFactory {
     private MavenArtifactResolver mavenArtifactResolver;
 
     private BootstrapMavenContext mvnContext;
+    Set<AppArtifactKey> localArtifacts = Collections.emptySet();
 
     private List<AppDependency> forcedDependencies = Collections.emptyList();
 
@@ -94,6 +97,15 @@ public class BootstrapAppModelFactory {
 
     public BootstrapAppModelFactory setDevMode(boolean devMode) {
         this.devMode = devMode;
+        return this;
+    }
+
+    public Set<AppArtifactKey> getLocalArtifacts() {
+        return localArtifacts;
+    }
+
+    public BootstrapAppModelFactory setLocalArtifacts(Set<AppArtifactKey> localArtifacts) {
+        this.localArtifacts = localArtifacts;
         return this;
     }
 
@@ -284,7 +296,7 @@ public class BootstrapAppModelFactory {
                 }
             }
             CurationResult curationResult = new CurationResult(getAppModelResolver()
-                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject));
+                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject, localArtifacts));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(cachedCpPath))) {
@@ -368,7 +380,8 @@ public class BootstrapAppModelFactory {
                     initialDepsList = modelResolver.resolveModel(appArtifact);
                 }
             } else {
-                initialDepsList = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject);
+                initialDepsList = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject,
+                        localArtifacts);
             }
         } catch (AppModelResolverException | IOException e) {
             throw new RuntimeException("Failed to resolve initial application dependencies", e);
@@ -432,7 +445,8 @@ public class BootstrapAppModelFactory {
 
         if (availableUpdates != null) {
             try {
-                return new CurationResult(modelResolver.resolveManagedModel(appArtifact, availableUpdates, managingProject),
+                return new CurationResult(
+                        modelResolver.resolveManagedModel(appArtifact, availableUpdates, managingProject, localArtifacts),
                         availableUpdates,
                         loadedFromState, appArtifact, stateArtifact);
             } catch (AppModelResolverException e) {

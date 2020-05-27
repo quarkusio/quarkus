@@ -7,11 +7,13 @@ public final class JarResult {
     private final Path path;
     private final Path originalArtifact;
     private final Path libraryDir;
+    private final String type;
 
-    public JarResult(Path path, Path originalArtifact, Path libraryDir) {
+    public JarResult(Path path, Path originalArtifact, Path libraryDir, String type) {
         this.path = path;
         this.originalArtifact = originalArtifact;
         this.libraryDir = libraryDir;
+        this.type = type;
     }
 
     public boolean isUberJar() {
@@ -29,4 +31,9 @@ public final class JarResult {
     public Path getOriginalArtifact() {
         return originalArtifact;
     }
+
+    public String getType() {
+        return type;
+    }
+
 }

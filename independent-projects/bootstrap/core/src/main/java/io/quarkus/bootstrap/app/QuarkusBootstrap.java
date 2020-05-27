@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.app;
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.model.PathsCollection;
@@ -15,9 +16,11 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * The entry point for starting/building a Quarkus application. This class sets up the base class loading
@@ -80,6 +83,7 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean disableClasspathCache;
     private final AppModel existingModel;
     private final boolean rebuild;
+    private final Set<AppArtifactKey> localArtifacts;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -107,6 +111,7 @@ public class QuarkusBootstrap implements Serializable {
         this.disableClasspathCache = builder.disableClasspathCache;
         this.existingModel = builder.existingModel;
         this.rebuild = builder.rebuild;
+        this.localArtifacts = new HashSet<>(builder.localArtifacts);
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -135,6 +140,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
                 .setForcedDependencies(forcedDependencies)
+                .setLocalArtifacts(localArtifacts)
                 .setProjectRoot(getProjectRoot());
         if (mode == Mode.TEST || test) {
             appModelFactory.setTest(true);
@@ -238,6 +244,7 @@ public class QuarkusBootstrap implements Serializable {
         List<AppDependency> forcedDependencies = new ArrayList<>();
         boolean disableClasspathCache;
         AppModel existingModel;
+        final Set<AppArtifactKey> localArtifacts = new HashSet<>();
 
         public Builder() {
         }
@@ -403,8 +410,16 @@ public class QuarkusBootstrap implements Serializable {
             return this;
         }
 
+        public Builder addLocalArtifact(AppArtifactKey key) {
+            localArtifacts.add(key);
+            return this;
+        }
+
         public QuarkusBootstrap build() {
             Objects.requireNonNull(applicationRoot, "Application root must not be null");
+            if (appArtifact != null) {
+                localArtifacts.add(appArtifact.getKey());
+            }
             return new QuarkusBootstrap(this);
         }
 

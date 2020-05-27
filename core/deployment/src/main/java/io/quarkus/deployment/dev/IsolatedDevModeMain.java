@@ -6,6 +6,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,13 +42,13 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
 public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
     private static final Logger log = Logger.getLogger(DevModeMain.class);
+    public static final String APP_ROOT = "app-root";
 
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     private static volatile RunningQuarkusApplication runner;
     static volatile Throwable deploymentProblem;
-    static volatile Throwable compileProblem;
     static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     private static volatile CuratedApplication curatedApplication;
     private static volatile AugmentAction augmentAction;
@@ -148,7 +149,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
-    private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, CuratedApplication application)
+    private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, Path appRoot)
             throws Exception {
         if (!context.getAllModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
@@ -165,7 +166,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
-            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(context, compiler, this);
+            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(appRoot, context, compiler,
+                    this::restartApp, null);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getBaseRuntimeClassLoader())) {
@@ -286,7 +288,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
                     }));
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, o);
+            runtimeUpdatesProcessor = setupRuntimeCompilation(context, (Path) o2.get(APP_ROOT));
             if (runtimeUpdatesProcessor != null) {
                 runtimeUpdatesProcessor.checkForFileChange();
                 runtimeUpdatesProcessor.checkForChangedClasses();
@@ -294,9 +296,10 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             firstStart();
 
             //        doStart(false, Collections.emptySet());
-            if (deploymentProblem != null || compileProblem != null) {
+            if (deploymentProblem != null || runtimeUpdatesProcessor.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
-                    throw new RuntimeException(deploymentProblem == null ? compileProblem : deploymentProblem);
+                    throw new RuntimeException(
+                            deploymentProblem == null ? runtimeUpdatesProcessor.getCompileProblem() : deploymentProblem);
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

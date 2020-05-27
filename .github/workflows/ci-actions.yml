@@ -280,7 +280,7 @@ jobs:
     name: Windows JDK 11 JVM Tests
     needs: build-jdk11
     runs-on: windows-latest
-    timeout-minutes: 130
+    timeout-minutes: 150
     env:
       MAVEN_OPTS: -Xmx1408m
    

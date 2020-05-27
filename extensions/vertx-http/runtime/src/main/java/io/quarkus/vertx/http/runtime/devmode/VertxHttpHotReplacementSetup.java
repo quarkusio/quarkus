@@ -21,7 +21,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         this.hotReplacementContext = context;
-        VertxHttpRecorder.setHotReplacement(this::handleHotReplacementRequest);
+        VertxHttpRecorder.setHotReplacement(this::handleHotReplacementRequest, hotReplacementContext);
     }
 
     @Override

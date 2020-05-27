@@ -94,7 +94,8 @@ public class JibProcessor {
                 || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
-        } else if (packageType.equalsIgnoreCase(PackageConfig.FAST_JAR)) {
+        } else if (packageType.equalsIgnoreCase(PackageConfig.FAST_JAR)
+                || packageType.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
             jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, sourceJar, containerImageLabels);
         } else {
             throw new IllegalArgumentException(

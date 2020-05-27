@@ -15,6 +15,7 @@ import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
@@ -44,19 +45,19 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
         } else {
             try {
                 BuildFile buildFile = null;
+                ProjectWriter writer = null;
                 if (path != null) {
                     File projectDirectory = new File(path.getAbsolutePath());
-                    try (FileProjectWriter writer = new FileProjectWriter(projectDirectory)) {
-                        if (new File(projectDirectory, "build.gradle").exists()
-                                || new File(projectDirectory, "build.gradle.kts").exists()) {
-                            buildFile = new GradleBuildFile(writer);
-                        } else {
-                            buildFile = new MavenBuildFile(writer);
-                        }
+                    writer = new FileProjectWriter(projectDirectory);
+                    if (new File(projectDirectory, "build.gradle").exists()
+                            || new File(projectDirectory, "build.gradle.kts").exists()) {
+                        buildFile = new GradleBuildFile(writer);
+                    } else {
+                        buildFile = new MavenBuildFile(writer);
                     }
                 }
-                new ListExtensions(buildFile, QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
-                        .listExtensions(all, format, searchPattern);
+                new ListExtensions(writer, buildFile, QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
+                        .all(all).format(format).search(searchPattern);
             } catch (IOException e) {
                 throw new CommandException("Unable to list extensions", e);
             }

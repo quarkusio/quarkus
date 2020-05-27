@@ -37,6 +37,17 @@ public class ValueMap<V extends ValueMap<V>> {
         return (T) value;
     }
 
+    public String getStringValue(String name) {
+        final Object value = getValue(name, null);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String) {
+            return ((String) value);
+        }
+        throw new IllegalStateException("value for '" + name + "' must be a String");
+    }
+
     public boolean getValue(String name, boolean defaultValue) {
         final Object value = getValue(name, null);
         if (value == null) {
@@ -46,6 +57,10 @@ public class ValueMap<V extends ValueMap<V>> {
             return ((Boolean) value).booleanValue();
         }
         return Boolean.parseBoolean(value.toString());
+    }
+
+    public Map<String, Object> getValues() {
+        return values;
     }
 
     public boolean valueIs(String name, Object o) {

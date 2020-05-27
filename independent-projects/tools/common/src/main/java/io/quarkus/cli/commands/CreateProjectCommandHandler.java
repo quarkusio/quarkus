@@ -1,16 +1,6 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.generators.ProjectGenerator.BOM_ARTIFACT_ID;
-import static io.quarkus.generators.ProjectGenerator.BOM_GROUP_ID;
-import static io.quarkus.generators.ProjectGenerator.BOM_VERSION;
-import static io.quarkus.generators.ProjectGenerator.BUILD_FILE;
-import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
-import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
-import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
-import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
-import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
-import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
+import static io.quarkus.generators.ProjectGenerator.*;
 
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
@@ -39,36 +29,34 @@ public class CreateProjectCommandHandler implements QuarkusCommand {
         }
 
         final QuarkusPlatformDescriptor platformDescr = invocation.getPlatformDescriptor();
-        invocation.setProperty(BOM_GROUP_ID, platformDescr.getBomGroupId());
-        invocation.setProperty(BOM_ARTIFACT_ID, platformDescr.getBomArtifactId());
-        invocation.setProperty(QUARKUS_VERSION, platformDescr.getQuarkusVersion());
-        invocation.setProperty(BOM_VERSION, platformDescr.getBomVersion());
+        invocation.setValue(BOM_GROUP_ID, platformDescr.getBomGroupId());
+        invocation.setValue(BOM_ARTIFACT_ID, platformDescr.getBomArtifactId());
+        invocation.setValue(QUARKUS_VERSION, platformDescr.getQuarkusVersion());
+        invocation.setValue(BOM_VERSION, platformDescr.getBomVersion());
 
         final Properties quarkusProps = ToolsUtils.readQuarkusProperties(platformDescr);
-        quarkusProps.forEach((k, v) -> invocation.setProperty(k.toString().replace("-", "_"), v.toString()));
+        quarkusProps.forEach((k, v) -> invocation.setValue(k.toString().replace("-", "_"), v.toString()));
 
         try (BuildFile buildFile = invocation.getBuildFile()) {
-            invocation.setValue(BUILD_FILE, buildFile);
-
-            String className = invocation.getProperty(CLASS_NAME);
+            String className = invocation.getStringValue(CLASS_NAME);
             if (className != null) {
                 className = invocation.getValue(SOURCE_TYPE, SourceType.JAVA).stripExtensionFrom(className);
                 int idx = className.lastIndexOf('.');
                 if (idx >= 0) {
-                    String pkgName = invocation.getProperty(PACKAGE_NAME);
+                    String pkgName = invocation.getStringValue(PACKAGE_NAME);
                     if (pkgName == null) {
-                        invocation.setProperty(PACKAGE_NAME, className.substring(0, idx));
+                        invocation.setValue(PACKAGE_NAME, className.substring(0, idx));
                     }
                     className = className.substring(idx + 1);
                 }
-                invocation.setProperty(CLASS_NAME, className);
+                invocation.setValue(CLASS_NAME, className);
             }
             ProjectGeneratorRegistry.get(BasicRestProjectGenerator.NAME).generate(projectWriter, invocation);
 
             // call close at the end to save file
-            buildFile.completeFile(invocation.getProperty(PROJECT_GROUP_ID),
-                    invocation.getProperty(PROJECT_ARTIFACT_ID),
-                    invocation.getProperty(PROJECT_VERSION),
+            buildFile.completeFile(invocation.getStringValue(PROJECT_GROUP_ID),
+                    invocation.getStringValue(PROJECT_ARTIFACT_ID),
+                    invocation.getStringValue(PROJECT_VERSION),
                     platformDescr, quarkusProps);
         } catch (IOException e) {
             throw new QuarkusCommandException("Failed to create project", e);

@@ -4,7 +4,6 @@ import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.dependencies.Extension;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,12 +101,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommand {
     }
 
     Map<String, Dependency> findInstalled(QuarkusCommandInvocation invocation) throws IOException {
-        final BuildFile buildFile = invocation.getBuildFile(false);
-        if (buildFile != null) {
-            return buildFile.findInstalled();
-        } else {
-            return Collections.emptyMap();
-        }
+        return invocation.getBuildFile().findInstalled();
     }
 
     private boolean filterUnlisted(Extension e) {

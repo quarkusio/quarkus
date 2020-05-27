@@ -23,6 +23,7 @@ import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
@@ -118,7 +119,7 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
                 platformDescr = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, getLog());
             }
 
-            doExecute(buildFile, platformDescr, log);
+            doExecute(fileProjectWriter, buildFile, platformDescr, log);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to initialize project reading tools", e);
         } finally {
@@ -168,7 +169,8 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
     protected void validateParameters() throws MojoExecutionException {
     }
 
-    protected abstract void doExecute(BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
+    protected abstract void doExecute(ProjectWriter writer, BuildFile buildFile, QuarkusPlatformDescriptor platformDescr,
+            MessageWriter log)
             throws MojoExecutionException;
 
     private String resolveValue(String expr, BuildFile buildFile) throws IOException {

@@ -1,10 +1,10 @@
 package io.quarkus.cli.commands;
 
 import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.maven.model.Dependency;
@@ -22,20 +22,9 @@ public class ListExtensions {
     private final QuarkusCommandInvocation invocation;
     private final ListExtensionsCommandHandler handler = new ListExtensionsCommandHandler();
 
-    /**
-     * @deprecated since 1.3.0.CR1
-     *             Please use {@link #ListExtensions(BuildFile, QuarkusPlatformDescriptor)} instead.
-     */
-    @Deprecated
-    public ListExtensions(final BuildFile buildFile) throws IOException {
-        this(buildFile, QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor());
-    }
-
-    public ListExtensions(final BuildFile buildFile, QuarkusPlatformDescriptor platformDescr) throws IOException {
-        this.invocation = new QuarkusCommandInvocation(platformDescr);
-        if (buildFile != null) {
-            invocation.setBuildFile(buildFile);
-        }
+    public ListExtensions(final ProjectWriter writer, final BuildFile buildFile, QuarkusPlatformDescriptor platformDescr)
+            throws IOException {
+        this.invocation = new QuarkusCommandInvocation(platformDescr, writer, buildFile);
     }
 
     public ListExtensions all(boolean all) {

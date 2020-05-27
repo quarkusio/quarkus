@@ -7,12 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.maven.model.Dependency;
@@ -27,7 +29,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final FileProjectWriter writer = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(writer, "commons-io:commons-io:2.5", "Agroal");
 
-        final ListExtensions listExtensions = new ListExtensions(new MavenBuildFile(writer), getPlatformDescriptor());
+        final ListExtensions listExtensions = new ListExtensions(writer, new MavenBuildFile(writer), getPlatformDescriptor());
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
@@ -45,7 +47,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final FileProjectWriter writer = createNewProject(new File("target/list-extensions-test", "pom.xml"));
         addExtensions(writer, "resteasy", " hibernate-validator ");
 
-        final ListExtensions listExtensions = new ListExtensions(new MavenBuildFile(writer), getPlatformDescriptor());
+        final ListExtensions listExtensions = new ListExtensions(writer, new MavenBuildFile(writer), getPlatformDescriptor());
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
@@ -75,7 +77,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(new MavenBuildFile(writer), getPlatformDescriptor())
+            new ListExtensions(writer, new MavenBuildFile(writer), getPlatformDescriptor())
                     .all(true)
                     .format("full")
                     .execute();
@@ -123,7 +125,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(new MavenBuildFile(writer), getPlatformDescriptor())
+            new ListExtensions(writer, new MavenBuildFile(writer), getPlatformDescriptor())
                     .all(true)
                     .format("full")
                     .search("unexpectedSearch")
@@ -145,7 +147,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
-            new ListExtensions(new MavenBuildFile(writer), getPlatformDescriptor())
+            new ListExtensions(writer, new MavenBuildFile(writer), getPlatformDescriptor())
                     .all(true)
                     .format("full")
                     .search("Rest")
@@ -159,7 +161,9 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
     @Test
     void testListExtensionsWithoutAPomFile() throws IOException {
-        ListExtensions listExtensions = new ListExtensions(null, getPlatformDescriptor());
+        final FileProjectWriter writer = new FileProjectWriter(Files.createTempDirectory("proj").toFile());
+        ListExtensions listExtensions = new ListExtensions(writer,
+                BuildTool.MAVEN.createBuildFile(writer), getPlatformDescriptor());
         assertThat(listExtensions.findInstalled()).isEmpty();
     }
 

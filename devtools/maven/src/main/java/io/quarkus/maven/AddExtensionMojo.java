@@ -14,7 +14,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.QuarkusCommandOutcome;
 import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.MessageWriter;
@@ -49,12 +49,11 @@ public class AddExtensionMojo extends BuildFileMojoBase {
     }
 
     @Override
-    public void doExecute(BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
+    public void doExecute(ProjectWriter writer, BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
             throws MojoExecutionException {
-
         if (buildFile == null) {
             try {
-                buildFile = BuildTool.MAVEN.createBuildFile(new FileProjectWriter(project.getBasedir()));
+                buildFile = BuildTool.MAVEN.createBuildFile(writer);
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to initialize the project's build descriptor", e);
             }
@@ -69,7 +68,7 @@ public class AddExtensionMojo extends BuildFileMojoBase {
         }
 
         try {
-            final QuarkusCommandOutcome outcome = new AddExtensions(buildFile, platformDescr)
+            final QuarkusCommandOutcome outcome = new AddExtensions(writer, buildFile, platformDescr)
                     .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
                     .execute();
             if (!outcome.isSuccess()) {

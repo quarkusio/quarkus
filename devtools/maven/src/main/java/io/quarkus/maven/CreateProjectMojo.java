@@ -210,7 +210,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .className(className)
                     .extensions(extensions);
             if (path != null) {
-                createProject.setProperty("path", path);
+                createProject.setValue("path", path);
             }
 
             success = createProject.execute().isSuccess();

@@ -16,16 +16,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.cli.commands.PlatformAwareTestBase;
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -38,15 +43,16 @@ import org.junit.jupiter.api.Timeout;
 
 class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
-    private final QuarkusCommandInvocation BASIC_PROJECT_CONTEXT = new QuarkusCommandInvocation(getPlatformDescriptor())
-            .setProperty(PROJECT_GROUP_ID, "org.example")
-            .setProperty(PROJECT_ARTIFACT_ID, "quarkus-app")
-            .setProperty(PROJECT_VERSION, "0.0.1-SNAPSHOT")
-            .setProperty(BOM_VERSION, getBomVersion())
-            .setProperty(PACKAGE_NAME, "org.example")
-            .setProperty(CLASS_NAME, "ExampleResource")
-            .setProperty("path", "/hello")
-            .setValue(SOURCE_TYPE, SourceType.JAVA);
+    private final Map<String, Object> BASIC_PROJECT_CONTEXT = Maps.newHashMap(ImmutableMap.<String, Object> builder()
+            .put(PROJECT_GROUP_ID, "org.example")
+            .put(PROJECT_ARTIFACT_ID, "quarkus-app")
+            .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
+            .put(BOM_VERSION, getBomVersion())
+            .put(PACKAGE_NAME, "org.example")
+            .put(CLASS_NAME, "ExampleResource")
+            .put("path", "/hello")
+            .put(SOURCE_TYPE, SourceType.JAVA)
+            .build());
 
     @Test
     @Timeout(2)
@@ -58,7 +64,8 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
             final File file = Files.createTempDirectory("test").toFile();
             try (FileProjectWriter writer = new FileProjectWriter(file)) {
-                basicRestProjectGenerator.generate(writer, BASIC_PROJECT_CONTEXT);
+                basicRestProjectGenerator.generate(writer,
+                        createQuarkusCommandInvocation(writer));
             } finally {
                 IoUtils.recursiveDelete(file.toPath());
             }
@@ -77,7 +84,8 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
         when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
 
-        basicRestProjectGenerator.generate(mockWriter, BASIC_PROJECT_CONTEXT);
+        basicRestProjectGenerator.generate(mockWriter,
+                createQuarkusCommandInvocation(mockWriter));
 
         verify(mockWriter, times(10)).mkdirs(anyString());
         verify(mockWriter, times(3)).mkdirs("");
@@ -116,7 +124,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
         when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
 
-        QuarkusCommandInvocation springContext = new QuarkusCommandInvocation(BASIC_PROJECT_CONTEXT);
+        QuarkusCommandInvocation springContext = createQuarkusCommandInvocation(mockWriter);
         springContext.setValue(IS_SPRING, Boolean.TRUE);
         basicRestProjectGenerator.generate(mockWriter, springContext);
 
@@ -125,6 +133,11 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
                 argThat(argument -> argument.contains("@RestController")));
 
+    }
+
+    private QuarkusCommandInvocation createQuarkusCommandInvocation(ProjectWriter writer) throws IOException {
+        return new QuarkusCommandInvocation(BASIC_PROJECT_CONTEXT, getPlatformDescriptor(),
+                writer, BuildTool.MAVEN.createBuildFile(writer));
     }
 
 }

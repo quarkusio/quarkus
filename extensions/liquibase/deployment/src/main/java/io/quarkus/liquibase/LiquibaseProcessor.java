@@ -174,8 +174,6 @@ class LiquibaseProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
-        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.util.StringUtils"));
-        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.servicelocator.ServiceLocator"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.diff.compare.CompareControl"));
 
         reflective.produce(new ReflectiveClassBuildItem(false, true, false,
@@ -212,7 +210,11 @@ class LiquibaseProcessor {
                 liquibase.datatype.LiquibaseDataType.class,
                 liquibase.executor.Executor.class,
                 liquibase.lockservice.LockService.class,
-                liquibase.sqlgenerator.SqlGenerator.class)
+                liquibase.sqlgenerator.SqlGenerator.class,
+                liquibase.command.LiquibaseCommand.class,
+                liquibase.structure.DatabaseObject.class,
+                liquibase.diff.output.changelog.ChangeGenerator.class,
+                liquibase.diff.DiffGenerator.class)
                 .forEach(t -> addService(reflective, t, true, serviceClassesImplementationRegistry));
 
         addService(reflective, liquibase.license.LicenseService.class, false, serviceClassesImplementationRegistry);

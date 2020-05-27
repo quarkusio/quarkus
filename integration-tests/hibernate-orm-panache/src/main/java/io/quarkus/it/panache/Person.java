@@ -23,6 +23,9 @@ import org.hibernate.annotations.ParamDef;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 
 @XmlRootElement
 @Entity(name = "Person2")
@@ -54,6 +57,11 @@ public class Person extends PanacheEntity {
 
     public static List<Person> findOrdered() {
         return find("ORDER BY name").list();
+    }
+
+    // For https://github.com/quarkusio/quarkus/issues/9635
+    public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Object... params) {
+        return (PanacheQuery<T>) JpaOperations.find(Person.class, query, params);
     }
 
     // For JAXB: both getter and setter are required

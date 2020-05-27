@@ -65,7 +65,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommand {
                     currentFormatter = this::conciseFormatter;
             }
 
-            final BuildFile buildFile = getBuildFileSafe(invocation);
+            final BuildFile buildFile = invocation.getBuildFile();
             loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter, buildFile));
 
             if (buildFile != null) {
@@ -89,15 +89,6 @@ public class ListExtensionsCommandHandler implements QuarkusCommand {
         }
 
         return QuarkusCommandOutcome.success();
-    }
-
-    private BuildFile getBuildFileSafe(QuarkusCommandInvocation invocation) {
-        try {
-            return invocation.getBuildFile();
-        } catch (Exception e) {
-            invocation.log.debug("Unable to get build file. Error is %s ", e.getMessage());
-            return null;
-        }
     }
 
     Map<String, Dependency> findInstalled(QuarkusCommandInvocation invocation) throws IOException {

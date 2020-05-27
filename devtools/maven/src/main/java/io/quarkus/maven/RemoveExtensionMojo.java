@@ -1,6 +1,5 @@
 package io.quarkus.maven;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,10 +12,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.cli.commands.QuarkusCommandOutcome;
 import io.quarkus.cli.commands.RemoveExtensions;
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.cli.commands.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
 /**
@@ -49,16 +45,8 @@ public class RemoveExtensionMojo extends BuildFileMojoBase {
     }
 
     @Override
-    public void doExecute(ProjectWriter writer, BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
-            throws MojoExecutionException {
+    public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log) throws MojoExecutionException {
 
-        if (buildFile == null) {
-            try {
-                buildFile = BuildTool.MAVEN.createBuildFile(writer);
-            } catch (IOException e) {
-                throw new MojoExecutionException("Failed to initialize the project's build descriptor", e);
-            }
-        }
         Set<String> ext = new HashSet<>();
         if (extensions != null && !extensions.isEmpty()) {
             ext.addAll(extensions);
@@ -69,7 +57,7 @@ public class RemoveExtensionMojo extends BuildFileMojoBase {
         }
 
         try {
-            final QuarkusCommandOutcome outcome = new RemoveExtensions(writer, buildFile, platformDescr)
+            final QuarkusCommandOutcome outcome = new RemoveExtensions(quarkusProject)
                     .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
                     .execute();
             if (!outcome.isSuccess()) {

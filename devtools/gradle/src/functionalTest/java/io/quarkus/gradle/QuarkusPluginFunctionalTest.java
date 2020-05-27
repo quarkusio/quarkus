@@ -6,18 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -27,10 +19,13 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import com.google.common.collect.ImmutableMap;
+
 import io.quarkus.cli.commands.CreateProject;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.cli.commands.project.BuildTool;
 import io.quarkus.generators.SourceType;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
 
@@ -155,7 +150,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
     private void createProject(SourceType sourceType) throws IOException {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");
-        assertThat(new CreateProject(new FileProjectWriter(projectRoot),
+        assertThat(new CreateProject(projectRoot.toPath(),
                                      QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
                 .groupId("com.acme.foo")
                 .artifactId("foo")

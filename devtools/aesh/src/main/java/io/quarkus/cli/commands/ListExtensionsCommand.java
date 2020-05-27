@@ -1,21 +1,17 @@
 package io.quarkus.cli.commands;
 
-import java.io.File;
-import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
 import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.file.MavenBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.cli.commands.project.QuarkusProject;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
@@ -36,7 +32,7 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
     @Option(shortName = 's', hasValue = true, description = "Search filter on extension list. The format is based on Java Pattern.")
     private String searchPattern;
 
-    @Option(shortName = 'p', description = "path to the project")
+    @Argument(description = "path to the project", required = true)
     private Resource path;
 
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
@@ -44,21 +40,10 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
             commandInvocation.println(commandInvocation.getHelpInfo("quarkus list-extensions"));
         } else {
             try {
-                BuildFile buildFile = null;
-                ProjectWriter writer = null;
-                if (path != null) {
-                    File projectDirectory = new File(path.getAbsolutePath());
-                    writer = new FileProjectWriter(projectDirectory);
-                    if (new File(projectDirectory, "build.gradle").exists()
-                            || new File(projectDirectory, "build.gradle.kts").exists()) {
-                        buildFile = new GradleBuildFile(writer);
-                    } else {
-                        buildFile = new MavenBuildFile(writer);
-                    }
-                }
-                new ListExtensions(writer, buildFile, QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
-                        .all(all).format(format).search(searchPattern);
-            } catch (IOException e) {
+                new ListExtensions(QuarkusProject.resolveExistingProject(Paths.get(path.getAbsolutePath()),
+                        QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor()))
+                                .all(all).format(format).search(searchPattern);
+            } catch (Exception e) {
                 throw new CommandException("Unable to list extensions", e);
             }
         }

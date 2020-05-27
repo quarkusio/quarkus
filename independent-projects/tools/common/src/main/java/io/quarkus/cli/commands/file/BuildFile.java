@@ -5,9 +5,9 @@ import static io.quarkus.maven.utilities.MojoUtils.credentials;
 import static java.util.stream.Collectors.toList;
 
 import io.quarkus.cli.commands.Printer;
+import io.quarkus.cli.commands.project.BuildTool;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;

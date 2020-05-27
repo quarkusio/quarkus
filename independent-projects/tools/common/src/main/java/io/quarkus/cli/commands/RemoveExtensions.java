@@ -1,12 +1,8 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.cli.commands.project.QuarkusProject;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
-import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -20,18 +16,8 @@ public class RemoveExtensions {
 
     private final QuarkusCommandInvocation invocation;
 
-    public RemoveExtensions(final ProjectWriter writer, QuarkusPlatformDescriptor platformDescr) throws IOException {
-        this(writer, BuildTool.MAVEN, platformDescr);
-    }
-
-    public RemoveExtensions(final ProjectWriter writer, final BuildTool buildTool, QuarkusPlatformDescriptor platformDescr)
-            throws IOException {
-        this(writer, buildTool.createBuildFile(writer), platformDescr);
-    }
-
-    public RemoveExtensions(final ProjectWriter writer, final BuildFile buildFile, QuarkusPlatformDescriptor platformDescr)
-            throws IOException {
-        invocation = new QuarkusCommandInvocation(platformDescr, writer, buildFile);
+    public RemoveExtensions(final QuarkusProject quarkusProject) {
+        invocation = new QuarkusCommandInvocation(quarkusProject);
     }
 
     public RemoveExtensions extensions(Set<String> extensions) {

@@ -1,6 +1,7 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.project.BuildTool;
+import io.quarkus.cli.commands.project.QuarkusProject;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,8 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
     protected Model createProject() throws IOException, QuarkusCommandException {
         final File pom = getProjectPath().resolve("pom.xml").toFile();
         CreateProjectTest.delete(getProjectPath().toFile());
-        new CreateProject(new FileProjectWriter(getProjectPath().toFile()), getPlatformDescriptor())
+        new CreateProject(getProjectPath(), getPlatformDescriptor())
+                .buildTool(BuildTool.MAVEN)
                 .groupId("org.acme")
                 .artifactId("add-maven-extension-test")
                 .version("0.0.1-SNAPSHOT")
@@ -30,7 +32,7 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
 
     @Override
     protected QuarkusCommandOutcome addExtensions(List<String> extensions) throws IOException, QuarkusCommandException {
-        return new AddExtensions(new FileProjectWriter(getProjectPath().toFile()), getPlatformDescriptor())
+        return new AddExtensions(getQuarkusProject())
                 .extensions(new HashSet<>(extensions))
                 .execute();
     }
@@ -41,5 +43,9 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
         return project.getDependencies().stream().filter(d -> d.getGroupId().equals(groupId) &&
                 d.getArtifactId().equals(artifactId) &&
                 Objects.equals(d.getVersion(), version)).count();
+    }
+
+    private QuarkusProject getQuarkusProject() {
+        return QuarkusProject.of(getProjectPath(), getPlatformDescriptor(), BuildTool.MAVEN);
     }
 }

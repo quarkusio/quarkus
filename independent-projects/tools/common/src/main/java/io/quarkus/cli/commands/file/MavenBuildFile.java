@@ -3,9 +3,9 @@ package io.quarkus.cli.commands.file;
 import static io.quarkus.maven.utilities.MojoUtils.configuration;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
 
+import io.quarkus.cli.commands.project.BuildTool;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.MojoUtils.Element;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -33,7 +33,7 @@ public class MavenBuildFile extends BuildFile {
 
     private Model model;
 
-    public MavenBuildFile(ProjectWriter writer) throws IOException {
+    public MavenBuildFile(ProjectWriter writer) {
         super(writer, BuildTool.MAVEN);
     }
 

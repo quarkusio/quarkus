@@ -1,11 +1,10 @@
 package io.quarkus.generators.rest;
 
-import static io.quarkus.generators.ProjectGenerator.JAVA_TARGET;
 import static java.lang.String.format;
 
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
+import io.quarkus.cli.commands.project.BuildTool;
 import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;

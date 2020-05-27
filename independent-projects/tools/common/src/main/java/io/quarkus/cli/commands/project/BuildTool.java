@@ -1,4 +1,4 @@
-package io.quarkus.generators;
+package io.quarkus.cli.commands.project;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -6,7 +6,6 @@ import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
-import java.io.IOException;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -54,7 +53,7 @@ public enum BuildTool {
         return buildDirectory;
     }
 
-    public BuildFile createBuildFile(final ProjectWriter writer) throws IOException {
+    public BuildFile createBuildFile(final ProjectWriter writer) {
         checkNotNull(writer, "writer is required");
         switch (this) {
             case GRADLE:

@@ -3,6 +3,7 @@ package io.quarkus.cli.commands;
 import static io.quarkus.generators.ProjectGenerator.*;
 
 import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.ProjectGeneratorRegistry;
 import io.quarkus.generators.SourceType;
@@ -20,10 +21,8 @@ public class CreateProjectCommandHandler implements QuarkusCommand {
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
-        final ProjectWriter projectWriter = invocation.getProjectWriter();
-        if (projectWriter == null) {
-            throw new IllegalStateException("Project writer has not been provided");
-        }
+        final ProjectWriter projectWriter = new FileProjectWriter(
+                invocation.getQuarkusProject().getProjectFolderPath().toFile());
         if (!projectWriter.init()) {
             return QuarkusCommandOutcome.failure();
         }

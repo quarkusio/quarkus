@@ -21,14 +21,14 @@ import com.google.common.collect.Maps;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.cli.commands.PlatformAwareTestBase;
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
+import io.quarkus.cli.commands.project.BuildTool;
+import io.quarkus.cli.commands.project.QuarkusProject;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -62,12 +62,12 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         final CountDownLatch latch = new CountDownLatch(20);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
-            final File file = Files.createTempDirectory("test").toFile();
-            try (FileProjectWriter writer = new FileProjectWriter(file)) {
+            final Path path = Files.createTempDirectory("test");
+            try (FileProjectWriter writer = new FileProjectWriter(path.toFile())) {
                 basicRestProjectGenerator.generate(writer,
-                        createQuarkusCommandInvocation(writer));
+                        createQuarkusCommandInvocation(path));
             } finally {
-                IoUtils.recursiveDelete(file.toPath());
+                IoUtils.recursiveDelete(path);
             }
             latch.countDown();
             return null;
@@ -80,12 +80,13 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
     @DisplayName("Should generate project files with basic context")
     void generateFilesWithJaxRsResource() throws Exception {
         final ProjectWriter mockWriter = mock(ProjectWriter.class);
+        final Path mockProjectPath = mock(Path.class);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
 
         when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
 
         basicRestProjectGenerator.generate(mockWriter,
-                createQuarkusCommandInvocation(mockWriter));
+                createQuarkusCommandInvocation(mockProjectPath));
 
         verify(mockWriter, times(10)).mkdirs(anyString());
         verify(mockWriter, times(3)).mkdirs("");
@@ -120,11 +121,12 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
     @DisplayName("Should generate project files with basic spring web context")
     void generateFilesWithSpringControllerResource() throws Exception {
         final ProjectWriter mockWriter = mock(ProjectWriter.class);
+        final Path mockProjectPath = mock(Path.class);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
 
         when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
 
-        QuarkusCommandInvocation springContext = createQuarkusCommandInvocation(mockWriter);
+        QuarkusCommandInvocation springContext = createQuarkusCommandInvocation(mockProjectPath);
         springContext.setValue(IS_SPRING, Boolean.TRUE);
         basicRestProjectGenerator.generate(mockWriter, springContext);
 
@@ -135,9 +137,9 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
     }
 
-    private QuarkusCommandInvocation createQuarkusCommandInvocation(ProjectWriter writer) throws IOException {
-        return new QuarkusCommandInvocation(BASIC_PROJECT_CONTEXT, getPlatformDescriptor(),
-                writer, BuildTool.MAVEN.createBuildFile(writer));
+    private QuarkusCommandInvocation createQuarkusCommandInvocation(Path projectPath) {
+        return new QuarkusCommandInvocation(QuarkusProject.of(projectPath, getPlatformDescriptor(), BuildTool.MAVEN),
+                BASIC_PROJECT_CONTEXT);
     }
 
 }

@@ -38,7 +38,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Trust configuration in the PEM format.
      * <p>
-     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePfx} must be disabled.
+     * When enabled, {@code #trust-certificate-jks} and {@code #trust-certificate-pfx} must be disabled.
      */
     @ConfigItem
     public PemTrustCertConfiguration trustCertificatePem;
@@ -46,7 +46,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Trust configuration in the JKS format.
      * <p>
-     * When enabled, {@link #trustCertificatePem} and {@link #trustCertificatePfx} must be disabled.
+     * When enabled, {@code #trust-certificate-pem} and {@code #trust-certificate-pfx} must be disabled.
      */
     @ConfigItem
     public JksConfiguration trustCertificateJks;
@@ -54,7 +54,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Trust configuration in the PFX format.
      * <p>
-     * When enabled, {@link #trustCertificateJks} and {@link #trustCertificatePem} must be disabled.
+     * When enabled, {@code #trust-certificate-jks} and {@code #trust-certificate-pem} must be disabled.
      */
     @ConfigItem
     public PfxConfiguration trustCertificatePfx;
@@ -62,7 +62,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Key/cert configuration in the PEM format.
      * <p>
-     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePfx} must be disabled.
+     * When enabled, {@code key-certificate-jks} and {@code #key-certificate-pfx} must be disabled.
      */
     @ConfigItem
     public PemKeyCertConfiguration keyCertificatePem;
@@ -70,7 +70,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Key/cert configuration in the JKS format.
      * <p>
-     * When enabled, {@link #keyCertificatePem} and {@link #keyCertificatePfx} must be disabled.
+     * When enabled, {@code #key-certificate-pem} and {@code #key-certificate-pfx} must be disabled.
      */
     @ConfigItem
     public JksConfiguration keyCertificateJks;
@@ -78,7 +78,7 @@ public class DataSourceReactiveRuntimeConfig {
     /**
      * Key/cert configuration in the PFX format.
      * <p>
-     * When enabled, {@link #keyCertificateJks} and {@link #keyCertificatePem} must be disabled.
+     * When enabled, {@code key-certificate-jks} and {@code #key-certificate-pem} must be disabled.
      */
     @ConfigItem
     public PfxConfiguration keyCertificatePfx;

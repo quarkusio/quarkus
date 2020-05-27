@@ -11,21 +11,21 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LegacyDataSourceReactiveMySQLConfig {
 
     /**
-     * @deprecated use quarkus.datasource.reactive.mysql.cache-prepared-statements instead.
+     * @deprecated use {@code quarkus.datasource.reactive.cache-prepared-statements} instead.
      */
     @ConfigItem
     @Deprecated
     public Optional<Boolean> cachePreparedStatements;
 
     /**
-     * @deprecated use quarkus.datasource.reactive.mysql.charset instead.
+     * @deprecated use {@code quarkus.datasource.reactive.mysql.charset} instead.
      */
     @ConfigItem
     @Deprecated
     public Optional<String> charset;
 
     /**
-     * @deprecated use quarkus.datasource.reactive.mysql.collation instead.
+     * @deprecated use {@code quarkus.datasource.reactive.mysql.collation} instead.
      */
     @ConfigItem
     @Deprecated

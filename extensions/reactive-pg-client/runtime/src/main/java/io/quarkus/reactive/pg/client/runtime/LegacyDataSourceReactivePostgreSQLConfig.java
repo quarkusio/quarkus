@@ -12,14 +12,14 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class LegacyDataSourceReactivePostgreSQLConfig {
 
     /**
-     * @deprecated use quarkus.datasource.reactive.postgresql.cache-prepared-statements instead.
+     * @deprecated use {@code quarkus.datasource.reactive.cache-prepared-statements} instead.
      */
     @ConfigItem
     @Deprecated
     public Optional<Boolean> cachePreparedStatements;
 
     /**
-     * @deprecated use quarkus.datasource.reactive.postgresql.pipelining-limit instead.
+     * @deprecated use {@code quarkus.datasource.reactive.postgresql.pipelining-limit} instead.
      */
     @ConfigItem
     @Deprecated

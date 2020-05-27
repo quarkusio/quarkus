@@ -13,8 +13,11 @@ public class DataSourceReactivePostgreSQLConfig {
 
     /**
      * Whether prepared statements should be cached on the client side.
+     * 
+     * @deprecated use {@code datasource.reactive.cache-prepared-statements} instead.
      */
     @ConfigItem
+    @Deprecated
     public Optional<Boolean> cachePreparedStatements;
 
     /**

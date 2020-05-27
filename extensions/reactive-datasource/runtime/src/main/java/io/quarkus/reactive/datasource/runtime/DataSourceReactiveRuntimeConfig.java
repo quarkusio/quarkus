@@ -18,6 +18,12 @@ import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
 public class DataSourceReactiveRuntimeConfig {
 
     /**
+     * Whether prepared statements should be cached on the client side.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean cachePreparedStatements;
+
+    /**
      * The datasource URL.
      */
     @ConfigItem

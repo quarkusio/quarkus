@@ -19,6 +19,5 @@ public class DisabledTest {
     @Test
     public void shouldUseDefaultConfig() {
         RestAssured.when().get("/graphql-ui").then().statusCode(404);
-        RestAssured.when().get("/graphql-ui/index.html").then().statusCode(404);
     }
 }

@@ -1,7 +1,7 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.project.BuildTool;
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.IOException;

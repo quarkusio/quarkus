@@ -2,9 +2,9 @@ package io.quarkus.cli.commands;
 
 import static io.quarkus.generators.ProjectGenerator.*;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.writer.FileProjectWriter;
+import io.quarkus.devtools.writer.ProjectWriter;
 import io.quarkus.generators.ProjectGeneratorRegistry;
 import io.quarkus.generators.SourceType;
 import io.quarkus.generators.rest.BasicRestProjectGenerator;

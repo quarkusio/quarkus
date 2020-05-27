@@ -1,9 +1,9 @@
-package io.quarkus.cli.commands.project;
+package io.quarkus.devtools.project;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.nio.file.Path;
 

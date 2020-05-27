@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.cli.commands.project.BuildTool;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;

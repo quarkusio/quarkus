@@ -5,7 +5,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
 /**

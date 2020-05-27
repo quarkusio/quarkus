@@ -7,8 +7,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.cli.commands.project.QuarkusProject;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.gradle.GradleBuildFileFromConnector;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {

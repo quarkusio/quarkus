@@ -9,8 +9,8 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 
-import io.quarkus.cli.commands.project.BuildTool;
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.generators.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;

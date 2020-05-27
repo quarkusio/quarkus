@@ -1,8 +1,8 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.buildfile.GradleBuildFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

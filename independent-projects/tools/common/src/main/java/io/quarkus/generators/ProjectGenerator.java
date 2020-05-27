@@ -1,7 +1,7 @@
 package io.quarkus.generators;
 
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.devtools.writer.ProjectWriter;
 import java.io.IOException;
 
 public interface ProjectGenerator {

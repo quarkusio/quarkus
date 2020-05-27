@@ -10,10 +10,10 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.Internal;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.project.QuarkusProject;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.devtools.buildfile.GradleBuildFile;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.writer.FileProjectWriter;
+import io.quarkus.devtools.writer.ProjectWriter;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;

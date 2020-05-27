@@ -12,7 +12,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.cli.commands.QuarkusCommandOutcome;
 import io.quarkus.cli.commands.RemoveExtensions;
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
 /**

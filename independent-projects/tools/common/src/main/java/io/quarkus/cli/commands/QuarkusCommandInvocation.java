@@ -2,8 +2,8 @@ package io.quarkus.cli.commands;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;

@@ -1,6 +1,6 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.util.Set;

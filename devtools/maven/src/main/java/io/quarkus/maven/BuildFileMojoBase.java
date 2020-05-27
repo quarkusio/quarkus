@@ -19,11 +19,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.MavenBuildFile;
-import io.quarkus.cli.commands.project.BuildTool;
-import io.quarkus.cli.commands.project.QuarkusProject;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.buildfile.MavenBuildFile;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;

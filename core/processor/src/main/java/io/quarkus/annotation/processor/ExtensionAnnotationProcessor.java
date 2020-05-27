@@ -495,7 +495,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
         classDef.constructor(JMod.PRIVATE); // no construction
         final JAssignableExpr instanceName = JExprs.name(Constants.INSTANCE_SYM);
+        boolean isEnclosingClassPublic = clazz.getModifiers().contains(Modifier.PUBLIC);
         // iterate fields
+        boolean generationNeeded = false;
         for (VariableElement field : fieldsIn(clazz.getEnclosedElements())) {
             final Set<Modifier> mods = field.getModifiers();
             if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC)) {
@@ -503,6 +505,24 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 continue;
             }
             final TypeMirror fieldType = field.asType();
+            if (mods.contains(Modifier.PUBLIC) && isEnclosingClassPublic) {
+                // we don't need to generate a method accessor when the following conditions are met:
+                // 1) the field is public
+                // 2) the enclosing class is public
+                // 3) the class type of the field is public
+                if (fieldType instanceof DeclaredType) {
+                    final DeclaredType declaredType = (DeclaredType) fieldType;
+                    final TypeElement typeElement = (TypeElement) declaredType.asElement();
+                    if (typeElement.getModifiers().contains(Modifier.PUBLIC)) {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+            }
+            generationNeeded = true;
+
             final JType realType = JTypes.typeOf(fieldType);
             final JType publicType = fieldType instanceof PrimitiveType ? realType : JType.OBJECT;
 
@@ -519,35 +539,43 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             setter.body().assign(instanceName.cast(clazzType).field(fieldName),
                     (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
         }
-        // iterate constructors
-        for (ExecutableElement ctor : constructorsIn(clazz.getEnclosedElements())) {
-            if (ctor.getModifiers().contains(Modifier.PRIVATE)) {
-                // skip it
-                continue;
+
+        // we need to generate an accessor if the class isn't public
+        if (!isEnclosingClassPublic) {
+            for (ExecutableElement ctor : constructorsIn(clazz.getEnclosedElements())) {
+                if (ctor.getModifiers().contains(Modifier.PRIVATE)) {
+                    // skip it
+                    continue;
+                }
+                generationNeeded = true;
+                StringBuilder b = new StringBuilder();
+                for (VariableElement parameter : ctor.getParameters()) {
+                    b.append('_');
+                    b.append(parameter.asType().toString().replace('.', '_'));
+                }
+                String codedName = b.toString();
+                final JMethodDef ctorMethod = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.OBJECT, "construct" + codedName);
+                final JCall ctorCall = clazzType._new();
+                for (VariableElement parameter : ctor.getParameters()) {
+                    final TypeMirror paramType = parameter.asType();
+                    final JType realType = JTypes.typeOf(paramType);
+                    final JType publicType = paramType instanceof PrimitiveType ? realType : JType.OBJECT;
+                    final String name = parameter.getSimpleName().toString();
+                    ctorMethod.param(publicType, name);
+                    final JAssignableExpr nameExpr = JExprs.name(name);
+                    ctorCall.arg(publicType.equals(realType) ? nameExpr : nameExpr.cast(realType));
+                }
+                ctorMethod.body()._return(ctorCall);
             }
-            StringBuilder b = new StringBuilder();
-            for (VariableElement parameter : ctor.getParameters()) {
-                b.append('_');
-                b.append(parameter.asType().toString().replace('.', '_'));
-            }
-            String codedName = b.toString();
-            final JMethodDef ctorMethod = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.OBJECT, "construct" + codedName);
-            final JCall ctorCall = clazzType._new();
-            for (VariableElement parameter : ctor.getParameters()) {
-                final TypeMirror paramType = parameter.asType();
-                final JType realType = JTypes.typeOf(paramType);
-                final JType publicType = paramType instanceof PrimitiveType ? realType : JType.OBJECT;
-                final String name = parameter.getSimpleName().toString();
-                ctorMethod.param(publicType, name);
-                final JAssignableExpr nameExpr = JExprs.name(name);
-                ctorCall.arg(publicType.equals(realType) ? nameExpr : nameExpr.cast(realType));
-            }
-            ctorMethod.body()._return(ctorCall);
         }
-        try {
-            sources.writeSources();
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e, clazz);
+
+        // if no constructor or field access is needed, don't generate anything
+        if (generationNeeded) {
+            try {
+                sources.writeSources();
+            } catch (IOException e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e, clazz);
+            }
         }
     }
 

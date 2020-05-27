@@ -3,6 +3,7 @@ package io.quarkus.deployment.configuration;
 import static io.quarkus.deployment.util.ReflectUtil.reportError;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -599,8 +600,11 @@ public final class RunTimeConfigurationGenerator {
                     initGroup = generateInitGroup(root);
                 }
 
-                final MethodDescriptor ctor = accessorFinder
-                        .getConstructorFor(MethodDescriptor.ofConstructor(configurationClass));
+                MethodDescriptor accessorCtor = null;
+                if (!Modifier.isPublic(configurationClass.getModifiers())) {
+                    accessorCtor = accessorFinder
+                            .getConstructorFor(MethodDescriptor.ofConstructor(configurationClass));
+                }
 
                 // specific actions based on config phase
                 String rootName = root.getRootName();
@@ -609,8 +613,15 @@ public final class RunTimeConfigurationGenerator {
                     cc.getFieldCreator(rootFieldDescriptor)
                             .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
                                     | (devMode ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
+
                     // construct instance in <clinit>
-                    ResultHandle instance = clinit.invokeStaticMethod(ctor);
+                    ResultHandle instance;
+                    if (accessorCtor == null) {
+                        instance = clinit.newInstance(MethodDescriptor.ofConstructor(configurationClass));
+                    } else {
+                        instance = clinit.invokeStaticMethod(accessorCtor);
+                    }
+
                     // assign instance to field
                     clinit.writeStaticField(rootFieldDescriptor, instance);
                     instanceCache.put(rootFieldDescriptor, instance);
@@ -636,8 +647,15 @@ public final class RunTimeConfigurationGenerator {
                         // config root field is volatile; we initialize and read config from the readBootstrapConfig method
                         cc.getFieldCreator(rootFieldDescriptor)
                                 .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
+
                         // construct instance in readBootstrapConfig
-                        final ResultHandle instance = readBootstrapConfig.invokeStaticMethod(ctor);
+                        final ResultHandle instance;
+                        if (accessorCtor == null) {
+                            instance = readBootstrapConfig.newInstance(MethodDescriptor.ofConstructor(configurationClass));
+                        } else {
+                            instance = readBootstrapConfig.invokeStaticMethod(accessorCtor);
+                        }
+
                         // assign instance to field
                         readBootstrapConfig.writeStaticField(rootFieldDescriptor, instance);
                         if (!rootName.isEmpty()) {
@@ -654,8 +672,15 @@ public final class RunTimeConfigurationGenerator {
                     // config root field is volatile; we initialize and read config from the readConfig method
                     cc.getFieldCreator(rootFieldDescriptor)
                             .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
+
                     // construct instance in readConfig
-                    final ResultHandle instance = readConfig.invokeStaticMethod(ctor);
+                    final ResultHandle instance;
+                    if (accessorCtor == null) {
+                        instance = readConfig.newInstance(MethodDescriptor.ofConstructor(configurationClass));
+                    } else {
+                        instance = readConfig.invokeStaticMethod(accessorCtor);
+                    }
+
                     // assign instance to field
                     readConfig.writeStaticField(rootFieldDescriptor, instance);
                     if (!rootName.isEmpty()) {
@@ -829,7 +854,10 @@ public final class RunTimeConfigurationGenerator {
             for (ClassDefinition.ClassMember member : definition.getMembers()) {
                 // common setup
                 final String propertyName = member.getPropertyName();
-                final MethodDescriptor setter = accessorFinder.getSetterFor(member.getDescriptor());
+                MethodDescriptor setter = null; // we won't need a setter if the field is public
+                if (!isFieldEligibleForDirectAccess(member)) {
+                    setter = accessorFinder.getSetterFor(member.getDescriptor());
+                }
                 if (!propertyName.isEmpty()) {
                     // append the property name
                     bc.invokeVirtualMethod(SB_APPEND_CHAR, nameBuilder, bc.load('.'));
@@ -842,7 +870,11 @@ public final class RunTimeConfigurationGenerator {
                     final ResultHandle converter = bc.readStaticField(convField);
                     try (TryBlock tryBlock = bc.tryBlock()) {
                         final ResultHandle val = tryBlock.invokeVirtualMethod(SRC_GET_VALUE, config, name, converter);
-                        tryBlock.invokeStaticMethod(setter, instance, val);
+                        if (setter == null) {
+                            tryBlock.writeInstanceField(member.getDescriptor(), instance, val);
+                        } else {
+                            tryBlock.invokeStaticMethod(setter, instance, val);
+                        }
                         try (CatchBlockCreator catchBadValue = tryBlock.addCatch(IllegalArgumentException.class)) {
                             catchBadValue.invokeStaticMethod(CD_INVALID_VALUE, name, catchBadValue.getCaughtException());
                         }
@@ -853,20 +885,41 @@ public final class RunTimeConfigurationGenerator {
                 } else if (member instanceof ClassDefinition.GroupMember) {
                     ClassDefinition.GroupMember groupMember = (ClassDefinition.GroupMember) member;
                     if (groupMember.isOptional()) {
-                        bc.invokeStaticMethod(setter, instance, bc.invokeStaticMethod(OPT_EMPTY));
+                        final ResultHandle val = bc.invokeStaticMethod(OPT_EMPTY);
+                        if (setter == null) {
+                            bc.writeInstanceField(member.getDescriptor(), instance, val);
+                        } else {
+                            bc.invokeStaticMethod(setter, instance, val);
+                        }
                     } else {
                         final GroupDefinition groupDefinition = groupMember.getGroupDefinition();
                         final MethodDescriptor nested = generateInitGroup(groupDefinition);
-                        final MethodDescriptor ctor = accessorFinder
-                                .getConstructorFor(MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
-                        final ResultHandle nestedInstance = bc.invokeStaticMethod(ctor);
+
+                        final ResultHandle nestedInstance;
+                        if (Modifier.isPublic(groupDefinition.getConfigurationClass().getModifiers())) {
+                            nestedInstance = bc
+                                    .newInstance(MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
+                        } else {
+                            final MethodDescriptor ctor = accessorFinder
+                                    .getConstructorFor(MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
+                            nestedInstance = bc.invokeStaticMethod(ctor);
+                        }
+
                         bc.invokeStaticMethod(nested, config, nameBuilder, nestedInstance);
-                        bc.invokeStaticMethod(setter, instance, nestedInstance);
+                        if (setter == null) {
+                            bc.writeInstanceField(member.getDescriptor(), instance, nestedInstance);
+                        } else {
+                            bc.invokeStaticMethod(setter, instance, nestedInstance);
+                        }
                     }
                 } else {
                     assert member instanceof ClassDefinition.MapMember;
                     final ResultHandle map = bc.newInstance(TM_NEW);
-                    bc.invokeStaticMethod(setter, instance, map);
+                    if (setter == null) {
+                        bc.writeInstanceField(member.getDescriptor(), instance, map);
+                    } else {
+                        bc.invokeStaticMethod(setter, instance, map);
+                    }
                 }
                 if (!propertyName.isEmpty()) {
                     // restore length
@@ -1209,8 +1262,15 @@ public final class RunTimeConfigurationGenerator {
                     }
                     final ResultHandle enclosing = mc.invokeStaticMethod(generateGetEnclosing(fieldContainer, isRunTime),
                             keyIter, config);
-                    final MethodDescriptor getter = accessorFinder.getGetterFor(classMember.getDescriptor());
-                    final ResultHandle fieldVal = mc.invokeStaticMethod(getter, enclosing);
+
+                    final ResultHandle fieldVal;
+                    if (isFieldEligibleForDirectAccess(classMember)) {
+                        fieldVal = mc.readInstanceField(classMember.getDescriptor(), enclosing);
+                    } else {
+                        final MethodDescriptor getter = accessorFinder.getGetterFor(classMember.getDescriptor());
+                        fieldVal = mc.invokeStaticMethod(getter, enclosing);
+                    }
+
                     final AssignableResultHandle group = mc.createVariable(Object.class);
                     if (classMember instanceof ClassDefinition.GroupMember
                             && ((ClassDefinition.GroupMember) classMember).isOptional()) {
@@ -1219,17 +1279,30 @@ public final class RunTimeConfigurationGenerator {
                         final BytecodeCreator falseBranch = isPresent.falseBranch();
                         // it already exists
                         trueBranch.assign(group, trueBranch.invokeVirtualMethod(OPT_GET, fieldVal));
+
                         // it doesn't exist, recreate it
-                        final MethodDescriptor ctor = accessorFinder.getConstructorFor(
-                                MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
-                        final ResultHandle instance = falseBranch.invokeStaticMethod(ctor);
+                        final ResultHandle instance;
+                        if (Modifier.isPublic(member.getEnclosingDefinition().getConfigurationClass().getModifiers())) {
+                            instance = falseBranch.newInstance(
+                                    MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                        } else {
+                            final MethodDescriptor ctor = accessorFinder.getConstructorFor(
+                                    MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                            instance = falseBranch.invokeStaticMethod(ctor);
+                        }
+
                         final ResultHandle precedingKey = falseBranch.invokeVirtualMethod(NI_GET_ALL_PREVIOUS_SEGMENTS,
                                 keyIter);
                         final ResultHandle nameBuilder = falseBranch.newInstance(SB_NEW_STR, precedingKey);
                         falseBranch.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config, nameBuilder,
                                 instance);
-                        final MethodDescriptor setter = accessorFinder.getSetterFor(classMember.getDescriptor());
-                        falseBranch.invokeStaticMethod(setter, fieldVal, falseBranch.invokeStaticMethod(OPT_OF, instance));
+                        final ResultHandle val = falseBranch.invokeStaticMethod(OPT_OF, instance);
+                        if (isFieldEligibleForDirectAccess(member)) {
+                            falseBranch.writeInstanceField(member.getDescriptor(), instance, val);
+                        } else {
+                            final MethodDescriptor setter = accessorFinder.getSetterFor(classMember.getDescriptor());
+                            falseBranch.invokeStaticMethod(setter, fieldVal, val);
+                        }
                         falseBranch.assign(group, instance);
                     } else {
                         mc.assign(group, fieldVal);
@@ -1252,10 +1325,18 @@ public final class RunTimeConfigurationGenerator {
                     mc.invokeVirtualMethod(NI_NEXT, keyIter);
                     final ResultHandle existing = mc.invokeInterfaceMethod(MAP_GET, map, key);
                     mc.ifNull(existing).falseBranch().returnValue(existing);
+
                     // add the map key and initialize the enclosed item
-                    final MethodDescriptor ctor = accessorFinder.getConstructorFor(
-                            MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
-                    final ResultHandle instance = mc.invokeStaticMethod(ctor);
+                    final ResultHandle instance;
+                    if (Modifier.isPublic(member.getEnclosingDefinition().getConfigurationClass().getModifiers())) {
+                        instance = mc.newInstance(
+                                MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                    } else {
+                        final MethodDescriptor ctor = accessorFinder.getConstructorFor(
+                                MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                        instance = mc.invokeStaticMethod(ctor);
+                    }
+
                     final ResultHandle precedingKey = mc.invokeVirtualMethod(NI_GET_ALL_PREVIOUS_SEGMENTS, keyIter);
                     final ResultHandle nameBuilder = mc.newInstance(SB_NEW_STR, precedingKey);
                     mc.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config, nameBuilder, instance);
@@ -1294,9 +1375,16 @@ public final class RunTimeConfigurationGenerator {
                         // restore
                         mc.invokeVirtualMethod(NI_NEXT, keyIter);
                     }
-                    final MethodDescriptor getter = accessorFinder
-                            .getGetterFor(fieldContainer.getClassMember().getDescriptor());
-                    mc.returnValue(mc.invokeStaticMethod(getter, enclosing));
+
+                    final ResultHandle result;
+                    if (isFieldEligibleForDirectAccess(fieldContainer.getClassMember())) {
+                        result = mc.readInstanceField(fieldContainer.getClassMember().getDescriptor(), enclosing);
+                    } else {
+                        final MethodDescriptor getter = accessorFinder
+                                .getGetterFor(fieldContainer.getClassMember().getDescriptor());
+                        result = mc.invokeStaticMethod(getter, enclosing);
+                    }
+                    mc.returnValue(result);
                 } else {
                     assert parent instanceof MapContainer;
                     // the map might or might not contain this map
@@ -1512,5 +1600,17 @@ public final class RunTimeConfigurationGenerator {
                 return new GenerateOperation(this);
             }
         }
+    }
+
+    /**
+     * A field is eligible for direct access if the following conditions are met
+     * 1) the field is public
+     * 2) the enclosing class is public
+     * 3) the class type of the field is public
+     */
+    private static boolean isFieldEligibleForDirectAccess(ClassDefinition.ClassMember classMember) {
+        return Modifier.isPublic(classMember.getField().getModifiers())
+                && Modifier.isPublic(classMember.getEnclosingDefinition().getConfigurationClass().getModifiers())
+                && Modifier.isPublic(classMember.getField().getType().getModifiers());
     }
 }

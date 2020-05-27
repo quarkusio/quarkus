@@ -175,6 +175,9 @@ update_configs:
           dependency_name: "info.picocli:picocli"
       - match:
           dependency_name: "info.picocli:picocli-codegen"
+      # Caffeine
+      - match:
+          dependency_name: "com.github.ben-manes.caffeine:caffeine"
   - package_manager: "java:gradle"
     directory: "/devtools/gradle"
     update_schedule: "daily"

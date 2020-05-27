@@ -2,9 +2,13 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +37,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     // value of the resolved version in case the raw version contains a property like ${revision} (see "Maven CI Friendly Versions")
     private String resolvedVersion;
+
+    // added specifically to check whether empty JAR artifacts are available in the local repository
+    // before creating an empty dir to represent them on the filesystem
+    private BootstrapMavenContext mvnCtx;
+    private LocalProject currentProject;
 
     protected void addProject(LocalProject project, long lastModified) {
         projects.put(project.getKey(), project);
@@ -107,17 +116,37 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         }
         final String type = artifact.getExtension();
         if (type.equals(AppArtifactCoords.TYPE_JAR)) {
-            Path path = lp.getClassesDir();
-            if (Files.exists(path)) {
-                return path.toFile();
+            final Path classesDir = lp.getClassesDir();
+            if (Files.exists(classesDir)) {
+                return classesDir.toFile();
             }
 
             // it could be a project with no sources/resources, in which case Maven will create an empty JAR
             // if it has previously been packaged we can return it
-            path = lp.getOutputDir().resolve(lp.getArtifactId() + "-" + lp.getVersion() + ".jar");
+            final Path path = lp.getOutputDir().resolve(getFileName(artifact));
             if (Files.exists(path)) {
                 return path.toFile();
             }
+
+            // If the project has neither sources nor resources directories then it is an empty JAR.
+            // If this method returns null then the Maven resolver will attempt to resolve the artifact from a repository
+            // which may fail if the artifact hasn't been installed yet.
+            // Here we are checking whether the artifact exists in the local repo first (Quarkus CI creates a Maven repo cache
+            // first and then runs tests using '-pl' in the clean project). If the artifact exists in the local repo we return null,
+            // so the Maven resolver will succeed resolving it from the repo.
+            // If the artifact does not exist in the local repo, we are creating an empty classes directory in the target directory.
+            if (!Files.exists(lp.getSourcesSourcesDir())
+                    && !Files.exists(lp.getResourcesSourcesDir())
+                    && !isFoundInLocalRepo(artifact)) {
+                try {
+                    Files.createDirectories(classesDir);
+                    return classesDir.toFile();
+                } catch (IOException e) {
+                    // ignore and return null
+                }
+            }
+
+            // otherwise, this project hasn't been built yet
         } else if (type.equals(AppArtifactCoords.TYPE_POM)) {
             final Path path = lp.getDir().resolve("pom.xml");
             if (Files.exists(path)) {
@@ -125,6 +154,41 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             }
         }
         return null;
+    }
+
+    private boolean isFoundInLocalRepo(Artifact artifact) {
+        final String localRepo = getLocalRepo();
+        if (localRepo == null) {
+            return false;
+        }
+        Path p = Paths.get(localRepo);
+        for (String s : artifact.getGroupId().split("\\.")) {
+            p = p.resolve(s);
+        }
+        p = p.resolve(artifact.getArtifactId());
+        p = p.resolve(artifact.getVersion());
+        p = p.resolve(getFileName(artifact));
+        return Files.exists(p);
+    }
+
+    private static String getFileName(Artifact artifact) {
+        final StringBuilder fileName = new StringBuilder();
+        fileName.append(artifact.getArtifactId()).append('-').append(artifact.getVersion());
+        if (!artifact.getClassifier().isEmpty()) {
+            fileName.append('-').append(artifact.getClassifier());
+        }
+        fileName.append('.').append(artifact.getExtension());
+        return fileName.toString();
+    }
+
+    private String getLocalRepo() {
+        try {
+            return (mvnCtx == null
+                    ? mvnCtx = new BootstrapMavenContext(BootstrapMavenContext.config().setCurrentProject(currentProject))
+                    : mvnCtx).getLocalRepo();
+        } catch (AppModelResolverException e) {
+            return null;
+        }
     }
 
     @Override
@@ -149,5 +213,13 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     void setResolvedVersion(String resolvedVersion) {
         this.resolvedVersion = resolvedVersion;
+    }
+
+    void setCurrentProject(LocalProject currentProject) {
+        this.currentProject = currentProject;
+    }
+
+    void setBootstrapMavenContext(BootstrapMavenContext mvnCtx) {
+        this.mvnCtx = mvnCtx;
     }
 }

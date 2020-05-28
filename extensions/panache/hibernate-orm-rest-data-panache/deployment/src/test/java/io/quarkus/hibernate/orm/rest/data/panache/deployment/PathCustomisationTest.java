@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -72,7 +71,7 @@ class PathCustomisationTest {
     public interface CustomPathCollectionsController extends PanacheEntityResource<Collection, String> {
 
         @MethodProperties(path = "api")
-        List<Collection> list();
+        javax.ws.rs.core.Response list();
 
         @MethodProperties(path = "api")
         Collection get(String name);

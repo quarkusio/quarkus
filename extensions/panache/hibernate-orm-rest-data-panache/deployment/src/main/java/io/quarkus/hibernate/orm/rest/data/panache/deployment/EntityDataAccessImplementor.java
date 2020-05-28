@@ -9,7 +9,9 @@ import javax.persistence.EntityManager;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.panache.common.Page;
 import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class EntityDataAccessImplementor implements DataAccessImplementor {
@@ -31,6 +33,13 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+    }
+
+    @Override
     public ResultHandle persist(BytecodeCreator creator, ResultHandle entity) {
         creator.invokeVirtualMethod(ofMethod(entityClassName, "persist", void.class), entity);
         return entity;
@@ -47,5 +56,12 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle deleteById(BytecodeCreator creator, ResultHandle id) {
         return creator.invokeStaticMethod(ofMethod(entityClassName, "deleteById", boolean.class, Object.class), id);
+    }
+
+    @Override
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
     }
 }

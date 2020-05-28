@@ -12,8 +12,10 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.panache.common.Page;
 import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class RepositoryDataAccessImplementor implements DataAccessImplementor {
@@ -37,6 +39,14 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
+                getRepositoryInstance(creator));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+    }
+
+    @Override
     public ResultHandle persist(BytecodeCreator creator, ResultHandle entity) {
         creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "persist", void.class, Object.class),
                 getRepositoryInstance(creator), entity);
@@ -55,6 +65,14 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle deleteById(BytecodeCreator creator, ResultHandle id) {
         return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "deleteById", boolean.class, Object.class),
                 getRepositoryInstance(creator), id);
+    }
+
+    @Override
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
+        ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
+                getRepositoryInstance(creator));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
     }
 
     private ResultHandle getRepositoryInstance(BytecodeCreator creator) {

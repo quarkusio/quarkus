@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.bootstrap.app.AugmentAction;

@@ -1,8 +1,6 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
@@ -22,9 +20,8 @@ public class ListExtensions {
     private final QuarkusCommandInvocation invocation;
     private final ListExtensionsCommandHandler handler = new ListExtensionsCommandHandler();
 
-    public ListExtensions(final ProjectWriter writer, final BuildFile buildFile, QuarkusPlatformDescriptor platformDescr)
-            throws IOException {
-        this.invocation = new QuarkusCommandInvocation(platformDescr, writer, buildFile);
+    public ListExtensions(final QuarkusProject quarkusProject) {
+        this.invocation = new QuarkusCommandInvocation(quarkusProject);
     }
 
     public ListExtensions all(boolean all) {

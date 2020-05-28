@@ -20,7 +20,7 @@ import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.devtools.writer.FileProjectWriter;
 
 class GradleBuildFileTest {
 

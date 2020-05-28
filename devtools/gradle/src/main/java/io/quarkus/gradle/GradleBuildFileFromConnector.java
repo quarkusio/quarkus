@@ -13,8 +13,8 @@ import org.gradle.tooling.ProjectConnection;
 import org.gradle.tooling.model.eclipse.EclipseExternalDependency;
 import org.gradle.tooling.model.eclipse.EclipseProject;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.devtools.buildfile.GradleBuildFile;
+import io.quarkus.devtools.writer.ProjectWriter;
 
 public class GradleBuildFileFromConnector extends GradleBuildFile {
 

@@ -1,8 +1,7 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
@@ -19,9 +18,8 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
         CreateProjectTest.delete(getProjectPath().toFile());
-        final FileProjectWriter writer = new FileProjectWriter(getProjectPath().toFile());
-        new CreateProject(writer, getPlatformDescriptor())
-                .buildFile(new GradleBuildFile(writer))
+        new CreateProject(getProjectPath(), getPlatformDescriptor())
+                .buildTool(BuildTool.GRADLE)
                 .groupId("org.acme")
                 .artifactId("add-gradle-extension-test")
                 .version("0.0.1-SNAPSHOT")
@@ -36,7 +34,7 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
 
     @Override
     protected QuarkusCommandOutcome addExtensions(final List<String> extensions) throws IOException, QuarkusCommandException {
-        return new AddExtensions(new FileProjectWriter(getProjectPath().toFile()), BuildTool.GRADLE, getPlatformDescriptor())
+        return new AddExtensions(getQuarkusProject())
                 .extensions(new HashSet<>(extensions))
                 .execute();
     }
@@ -44,7 +42,7 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
     @Override
     protected QuarkusCommandOutcome removeExtensions(final List<String> extensions)
             throws IOException, QuarkusCommandException {
-        return new RemoveExtensions(new FileProjectWriter(getProjectPath().toFile()), BuildTool.GRADLE, getPlatformDescriptor())
+        return new RemoveExtensions(getQuarkusProject())
                 .extensions(new HashSet<>(extensions))
                 .execute();
     }
@@ -55,6 +53,10 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
         return buildFile.stream()
                 .filter(d -> d.equals(getBuildFileDependencyString(groupId, artifactId, version)))
                 .count();
+    }
+
+    private QuarkusProject getQuarkusProject() {
+        return QuarkusProject.of(getProjectPath(), getPlatformDescriptor(), BuildTool.GRADLE);
     }
 
     private static String getBuildFileDependencyString(final String groupId, final String artifactId, final String version) {

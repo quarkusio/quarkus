@@ -1,13 +1,13 @@
-package io.quarkus.cli.commands.file;
+package io.quarkus.devtools.buildfile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.quarkus.maven.utilities.MojoUtils.credentials;
 import static java.util.stream.Collectors.toList;
 
 import io.quarkus.cli.commands.Printer;
-import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.writer.ProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;

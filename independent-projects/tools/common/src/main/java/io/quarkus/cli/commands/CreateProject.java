@@ -9,12 +9,12 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.generators.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,16 +33,15 @@ public class CreateProject {
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
-    private final ProjectWriter writer;
+    private final Path projectFolderPath;
     private final QuarkusPlatformDescriptor platformDescr;
     private String javaTarget;
-    private BuildFile buildFile;
     private BuildTool buildTool = BuildTool.MAVEN;
 
     private Map<String, Object> values = new HashMap<>();
 
-    public CreateProject(final ProjectWriter writer, QuarkusPlatformDescriptor platformDescr) {
-        this.writer = checkNotNull(writer, "writer is required");
+    public CreateProject(final Path projectFolderPath, QuarkusPlatformDescriptor platformDescr) {
+        this.projectFolderPath = checkNotNull(projectFolderPath, "writer is required");
         this.platformDescr = checkNotNull(platformDescr, "platformDescr is required");
     }
 
@@ -79,12 +78,6 @@ public class CreateProject {
             throw new IllegalArgumentException(className + " is not a valid class name");
         }
         setValue(CLASS_NAME, className);
-        return this;
-    }
-
-    public CreateProject buildFile(BuildFile buildFile) {
-        this.buildFile = buildFile;
-        this.buildTool(buildFile.getBuildTool());
         return this;
     }
 
@@ -135,24 +128,9 @@ public class CreateProject {
             setValue(JAVA_TARGET, "11");
         }
 
-        final BuildFile computeBuildFile = computeBuildFile();
-        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(values, platformDescr, writer,
-                computeBuildFile);
+        final QuarkusProject quarkusProject = QuarkusProject.of(projectFolderPath, platformDescr, buildTool);
+        final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);
         return new CreateProjectCommandHandler().execute(invocation);
-    }
-
-    private BuildFile computeBuildFile() throws QuarkusCommandException {
-        if (buildFile != null) {
-            return buildFile;
-        }
-        if (buildTool != null) {
-            try {
-                return buildTool.createBuildFile(writer);
-            } catch (final IOException e) {
-                throw new QuarkusCommandException("Failed to create project", e);
-            }
-        }
-        throw new QuarkusCommandException("Either BuildTool or BuildFile must be defined");
     }
 
     public static SourceType determineSourceType(Set<String> extensions) {

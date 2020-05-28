@@ -19,11 +19,11 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.file.MavenBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.devtools.buildfile.BuildFile;
+import io.quarkus.devtools.buildfile.MavenBuildFile;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
@@ -72,12 +72,14 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
         final MessageWriter log = new MojoMessageWriter(getLog());
 
         QuarkusPlatformDescriptor platformDescr = null;
+        BuildTool buildTool = null;
         BuildFile buildFile = null;
         try (FileProjectWriter fileProjectWriter = new FileProjectWriter(project.getBasedir())) {
             if (project.getFile() != null) {
                 // Maven project
                 final MavenBuildFile mvnBuild = new MavenBuildFile(fileProjectWriter);
-                buildFile = mvnBuild;
+                buildTool = BuildTool.MAVEN;
+                buildFile = new MavenBuildFile(fileProjectWriter);
 
                 final List<Artifact> descrArtifactList = new ArrayList<>(2);
                 for (Dependency dep : mvnBuild.getManagedDependencies()) {
@@ -112,24 +114,16 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
             } else if (new File(project.getBasedir(), "build.gradle").exists()
                     || new File(project.getBasedir(), "build.gradle.kts").exists()) {
                 // Gradle project
-                buildFile = new GradleBuildFile(fileProjectWriter);
+                buildTool = BuildTool.GRADLE;
             }
 
             if (platformDescr == null) {
                 platformDescr = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, getLog());
             }
 
-            doExecute(fileProjectWriter, buildFile, platformDescr, log);
+            doExecute(QuarkusProject.of(project.getBasedir().toPath(), platformDescr, buildTool), log);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to initialize project reading tools", e);
-        } finally {
-            if (buildFile != null) {
-                try {
-                    buildFile.close();
-                } catch (IOException e) {
-                    log.debug("Failed to close %s", buildFile, e);
-                }
-            }
         }
     }
 
@@ -169,8 +163,7 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
     protected void validateParameters() throws MojoExecutionException {
     }
 
-    protected abstract void doExecute(ProjectWriter writer, BuildFile buildFile, QuarkusPlatformDescriptor platformDescr,
-            MessageWriter log)
+    protected abstract void doExecute(QuarkusProject quarkusProject, MessageWriter log)
             throws MojoExecutionException;
 
     private String resolveValue(String expr, BuildFile buildFile) throws IOException {

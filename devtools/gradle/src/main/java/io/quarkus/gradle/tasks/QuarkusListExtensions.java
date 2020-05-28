@@ -7,6 +7,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.ListExtensions;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.gradle.GradleBuildFileFromConnector;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
@@ -56,12 +58,15 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            new ListExtensions(getWriter(), new GradleBuildFileFromConnector(getWriter()),
-                    platformDescriptor())
-                            .all(isAll())
-                            .format(getFormat())
-                            .search(getSearchPattern())
-                            .execute();
+            final GradleBuildFileFromConnector buildFileFromConnector = new GradleBuildFileFromConnector(
+                    new FileProjectWriter(getProject().getProjectDir()));
+            QuarkusProject quarkusProject = QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor(),
+                    buildFileFromConnector);
+            new ListExtensions(quarkusProject)
+                    .all(isAll())
+                    .format(getFormat())
+                    .search(getSearchPattern())
+                    .execute();
         } catch (Exception e) {
             throw new GradleException("Unable to list extensions", e);
         }

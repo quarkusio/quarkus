@@ -1,7 +1,7 @@
 package io.quarkus.cli.commands;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 import org.aesh.command.Command;
@@ -11,7 +11,6 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
@@ -43,7 +42,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
 
         if (path != null) {
             try {
-                boolean status = new CreateProject(new FileProjectWriter(new File(path.getAbsolutePath())),
+                boolean status = new CreateProject(Paths.get(path.getAbsolutePath()),
                         QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
                                 .groupId(groupid)
                                 .artifactId(artifactid)

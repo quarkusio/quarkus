@@ -48,9 +48,8 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
@@ -186,6 +185,7 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         boolean success;
+        final Path projectFolderPath = projectRoot.toPath();
         try {
             sanitizeExtensions();
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
@@ -199,9 +199,7 @@ public class CreateProjectMojo extends AbstractMojo {
                         Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
                 throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
             }
-
-            final FileProjectWriter projectWriter = new FileProjectWriter(projectRoot);
-            final CreateProject createProject = new CreateProject(projectWriter, platform)
+            final CreateProject createProject = new CreateProject(projectFolderPath, platform)
                     .buildTool(buildToolEnum)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
@@ -217,13 +215,14 @@ public class CreateProjectMojo extends AbstractMojo {
 
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
             if (success) {
-                success = new AddExtensions(projectWriter, buildToolEnum, platform).extensions(extensions).execute()
+                success = new AddExtensions(QuarkusProject.of(projectFolderPath, platform, buildToolEnum))
+                        .extensions(extensions).execute()
                         .isSuccess();
             }
             if (BuildTool.MAVEN.equals(buildToolEnum)) {
                 createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
             } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(platform, projectWriter);
+                createGradleWrapper(platform, projectFolderPath);
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);
@@ -236,10 +235,9 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-    private void createGradleWrapper(QuarkusPlatformDescriptor platform,
-            ProjectWriter writer) {
+    private void createGradleWrapper(QuarkusPlatformDescriptor platform, Path projectFolderPath) {
         try {
-            writer.mkdirs("gradle/wrapper");
+            Files.createDirectories(projectFolderPath.resolve("gradle/wrapper"));
 
             for (String filename : CreateUtils.GRADLE_WRAPPER_FILES) {
                 byte[] fileContent = platform.loadResource(Paths.get(CreateUtils.GRADLE_WRAPPER_PATH, filename).toString(),
@@ -248,12 +246,12 @@ public class CreateProjectMojo extends AbstractMojo {
                             is.read(buffer);
                             return buffer;
                         });
-                final Path destination = writer.getProjectFolder().toPath().resolve(filename);
+                final Path destination = projectFolderPath.resolve(filename);
                 Files.write(destination, fileContent);
             }
 
-            new File(writer.getProjectFolder(), "gradlew").setExecutable(true);
-            new File(writer.getProjectFolder(), "gradlew.bat").setExecutable(true);
+            projectFolderPath.resolve("gradlew").toFile().setExecutable(true);
+            projectFolderPath.resolve("gradlew.bat").toFile().setExecutable(true);
         } catch (IOException e) {
             getLog().error("Unable to copy Gradle wrapper from platform descriptor", e);
         }

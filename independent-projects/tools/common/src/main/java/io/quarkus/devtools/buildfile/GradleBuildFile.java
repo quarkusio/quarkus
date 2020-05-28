@@ -1,8 +1,8 @@
-package io.quarkus.cli.commands.file;
+package io.quarkus.devtools.buildfile;
 
-import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.writer.ProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;

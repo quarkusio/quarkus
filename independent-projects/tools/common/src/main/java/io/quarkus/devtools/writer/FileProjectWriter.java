@@ -1,7 +1,7 @@
 /**
  *
  */
-package io.quarkus.cli.commands.writer;
+package io.quarkus.devtools.writer;
 
 import java.io.File;
 import java.io.IOException;

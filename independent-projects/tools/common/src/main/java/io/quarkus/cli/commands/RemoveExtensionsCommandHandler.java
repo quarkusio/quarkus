@@ -1,7 +1,7 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.buildfile.BuildFile;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

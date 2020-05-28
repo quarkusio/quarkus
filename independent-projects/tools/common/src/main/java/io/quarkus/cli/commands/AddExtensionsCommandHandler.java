@@ -1,7 +1,7 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.buildfile.BuildFile;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -35,7 +35,6 @@ public class AddExtensionsCommandHandler implements QuarkusCommand {
         final BuildFile buildFile = invocation.getBuildFile();
         try {
             for (String query : extensions) {
-
                 if (query.contains(":")) {
                     // GAV case.
                     updated = buildFile.addExtensionAsGAV(query) || updated;

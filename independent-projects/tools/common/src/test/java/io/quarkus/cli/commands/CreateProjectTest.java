@@ -4,14 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ZipProjectWriter;
-import io.quarkus.generators.BuildTool;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.writer.FileProjectWriter;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,9 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -155,7 +149,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
 
-        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+        final QuarkusCommandOutcome result = new CreateProject(testDir.toPath(), getPlatformDescriptor())
                 .groupId("something.is")
                 .artifactId("wrong")
                 .version("1.0.0-SNAPSHOT")
@@ -199,7 +193,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
 
-        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+        final QuarkusCommandOutcome result = new CreateProject(testDir.toPath(), getPlatformDescriptor())
                 .groupId("something.is")
                 .artifactId("wrong")
                 .version("1.0.0-SNAPSHOT")
@@ -236,7 +230,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         delete(testDir);
         testDir.mkdirs();
 
-        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+        final QuarkusCommandOutcome result = new CreateProject(testDir.toPath(), getPlatformDescriptor())
                 .groupId("org.acme")
                 .artifactId("acme")
                 .version("1.0.0-SNAPSHOT")
@@ -272,7 +266,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
             File tempDir = Files.createTempDirectory("test").toFile();
             FileProjectWriter write = new FileProjectWriter(tempDir);
-            final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(tempDir), getPlatformDescriptor())
+            final QuarkusCommandOutcome result = new CreateProject(tempDir.toPath(), getPlatformDescriptor())
                     .groupId("org.acme")
                     .artifactId("acme")
                     .version("1.0.0-SNAPSHOT")
@@ -302,76 +296,19 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 Files.exists(file.toPath()), "Directory still exists");
     }
 
-    @Test
-    public void createZip() throws Exception {
-        final File file = new File("target/zip");
-        delete(file);
-        file.mkdirs();
-        File zipFile = new File(file, "project.zip");
-        try (FileOutputStream fos = new FileOutputStream(zipFile);
-                ZipOutputStream zos = new ZipOutputStream(fos);
-                ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
-            final QuarkusCommandOutcome result = new CreateProject(zipWriter, getPlatformDescriptor())
-                    .groupId("org.acme")
-                    .artifactId("basic-rest")
-                    .version("1.0.0-SNAPSHOT")
-                    .execute();
-            assertTrue(result.isSuccess());
-        }
-        assertTrue(zipFile.exists());
-        File unzipProject = new File(file, "unzipProject");
-        try (FileInputStream fis = new FileInputStream(zipFile); ZipInputStream zis = new ZipInputStream(fis)) {
-            ZipEntry zipEntry = zis.getNextEntry();
-            byte[] buffer = new byte[1024];
-            while (zipEntry != null) {
-                File newFile = newFile(unzipProject, zipEntry);
-                if (zipEntry.isDirectory()) {
-                    newFile.mkdirs();
-                } else {
-                    new File(newFile.getParent()).mkdirs();
-                    FileOutputStream fos = new FileOutputStream(newFile);
-                    int len;
-                    while ((len = zis.read(buffer)) > 0) {
-                        fos.write(buffer, 0, len);
-                    }
-                    fos.close();
-                }
-                zipEntry = zis.getNextEntry();
-            }
-            zis.closeEntry();
-        }
-        final File gitignore = new File(unzipProject, ".gitignore");
-        assertTrue(gitignore.exists());
-        final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
-        assertTrue(gitignoreContent.contains("\ntarget/\n"));
-    }
-
     private void createProject(final File file, String groupId, String artifactId, String version)
-            throws IOException, QuarkusCommandException {
+            throws QuarkusCommandException {
         createProject(BuildTool.MAVEN, file, groupId, artifactId, version);
     }
 
     private void createProject(BuildTool buildTool, File file, String groupId, String artifactId, String version)
-            throws IOException, QuarkusCommandException {
-        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(file), getPlatformDescriptor())
+            throws QuarkusCommandException {
+        final QuarkusCommandOutcome result = new CreateProject(file.toPath(), getPlatformDescriptor())
                 .buildTool(buildTool)
                 .groupId(groupId)
                 .artifactId(artifactId)
                 .version(version)
                 .execute();
         assertTrue(result.isSuccess());
-    }
-
-    private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
-        File destFile = new File(destinationDir, zipEntry.getName());
-
-        String destDirPath = destinationDir.getCanonicalPath();
-        String destFilePath = destFile.getCanonicalPath();
-
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
-        }
-
-        return destFile;
     }
 }

@@ -213,6 +213,7 @@ We're now able to distinguish unit tests and integration tests. Now, let's bind 
                     <excludedGroups>integration</excludedGroups>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -534,6 +535,7 @@ It also requires a small change in the Surefire configuration. Note below that w
                     <systemPropertyVariables>
                         <jacoco-agent.destfile>${project.build.directory}/jacoco-ut.exec</jacoco-agent.destfile>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -580,6 +582,7 @@ You should end up with something like this (note the addition of the `merge-resu
                     <systemPropertyVariables>
                         <jacoco-agent.destfile>${project.build.directory}/jacoco-ut.exec</jacoco-agent.destfile>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>

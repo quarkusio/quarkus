@@ -87,12 +87,14 @@ must be set, as the default version does not support Junit 5:
     <configuration>
        <systemPropertyVariables>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          <maven.home>${maven.home}</maven.home>
        </systemPropertyVariables>
     </configuration>
 </plugin>
 ----
 
-We also set the `java.util.logging` system property to make sure tests will use the correct logmanager.
+We also set the `java.util.logging` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
+from `${maven.home}/conf/settings.xml` is applied (if any).
 
 The project should also contain a simple test:
 
@@ -668,3 +670,40 @@ guide except injecting into tests (and the native executable runs in a separate 
 
 
 This is covered in the link:building-native-image[Native Executable Guide].
+
+== [[test-from-ide]]Running `@QuarkusTest` from an IDE
+
+Most IDEs offer the possibility to run a selected class as JUnit test directly. For this you should set a few properties in the settings of your chosen IDE:
+
+* `java.util.logging.manager` (see link:logging[Logging Guide])
+
+* `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.mxl`, see link:maven-tooling[Maven Guide])
+
+=== Eclipse separate JRE definition
+
+Copy your current "Installed JRE" definition into a new one, where you will add the properties as a new VM arguments:
+
+* `-Djava.util.logging.manager=org.jboss.logmanager.LogManager`
+
+* `-Dmaven.home=<path-to-your-maven-installation>`
+
+Use this JRE definition as your Quarkus project targeted runtime and the workaround will be applied to any "Run as JUnit" configuration.
+
+=== VSCode "run with" configuration
+
+The `settings.json` placed in the root of your project directory or in the workspace will need the workaround in your test configuration:
+[source, json]
+----
+"java.test.config": [
+    {
+        "name": "quarkusConfiguration",
+        "vmargs": [ "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dmaven.home=<path-to-your-maven-installation> ..." ],
+        ...
+    },
+  ...
+]
+----
+
+=== IntelliJ JUnit template
+
+Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.

@@ -20,10 +20,11 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.Gizmo;
 
 public abstract class PanacheRepositoryEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
-    private static final DotName OBJECT_DOT_NAME = DotName.createSimple(Object.class.getName());
 
     protected final ClassInfo panacheRepositoryBaseClassInfo;
     protected final IndexView indexView;
@@ -110,11 +111,11 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
 
         public static String[] recursivelyFindEntityTypeArgumentsFromClass(IndexView indexView, DotName clazz,
                 DotName repositoryDotName) {
-            if (clazz.equals(OBJECT_DOT_NAME)) {
+            if (clazz.equals(JandexUtil.DOTNAME_OBJECT)) {
                 return null;
             }
 
-            List<org.jboss.jandex.Type> typeParameters = io.quarkus.deployment.util.JandexUtil
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
                     .resolveTypeParameters(clazz, repositoryDotName, indexView);
             if (typeParameters.isEmpty())
                 throw new IllegalStateException(
@@ -131,9 +132,9 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         public void visitEnd() {
             for (MethodInfo method : panacheRepositoryBaseClassInfo.methods()) {
                 // Do not generate a method that already exists
-                String descriptor = JandexUtil.getDescriptor(method, name -> typeArguments.get(name));
+                String descriptor = AsmUtil.getDescriptor(method, name -> typeArguments.get(name));
                 if (!userMethods.contains(method.name() + "/" + descriptor)) {
-                    AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
+                    AnnotationInstance bridge = method.annotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE);
                     if (bridge != null) {
                         generateModelBridge(method, bridge.value("targetReturnTypeErased"));
                         if (needsJvmBridge(method)) {
@@ -165,7 +166,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
 
         private void generateJvmBridge(MethodInfo method) {
             // get a bounds-erased descriptor
-            String descriptor = JandexUtil.getDescriptor(method, name -> null);
+            String descriptor = AsmUtil.getDescriptor(method, name -> null);
             // make sure we need a bridge
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
                 MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
@@ -200,13 +201,13 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
                     }
                 }
 
-                String targetDescriptor = JandexUtil.getDescriptor(method, name -> typeArguments.get(name));
+                String targetDescriptor = AsmUtil.getDescriptor(method, name -> typeArguments.get(name));
                 mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
                         daoBinaryName,
                         method.name(),
                         targetDescriptor, false);
                 String targetReturnTypeDescriptor = targetDescriptor.substring(targetDescriptor.indexOf(')') + 1);
-                mv.visitInsn(JandexUtil.getReturnInstruction(targetReturnTypeDescriptor));
+                mv.visitInsn(AsmUtil.getReturnInstruction(targetReturnTypeDescriptor));
                 mv.visitMaxs(0, 0);
                 mv.visitEnd();
             }
@@ -214,11 +215,11 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         }
 
         private void generateModelBridge(MethodInfo method, AnnotationValue targetReturnTypeErased) {
-            String descriptor = JandexUtil.getDescriptor(method, name -> typeArguments.get(name));
+            String descriptor = AsmUtil.getDescriptor(method, name -> typeArguments.get(name));
             // JpaOperations erases the Id type to Object
-            String descriptorForJpaOperations = JandexUtil.getDescriptor(method,
+            String descriptorForJpaOperations = AsmUtil.getDescriptor(method,
                     name -> name.equals("Entity") ? entitySignature : null);
-            String signature = JandexUtil.getSignature(method, name -> typeArguments.get(name));
+            String signature = AsmUtil.getSignature(method, name -> typeArguments.get(name));
             List<org.jboss.jandex.Type> parameters = method.parameters();
 
             String castTo = null;
@@ -260,7 +261,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
             if (castTo != null)
                 mv.visitTypeInsn(Opcodes.CHECKCAST, castTo);
             String returnTypeDescriptor = descriptor.substring(descriptor.lastIndexOf(")") + 1);
-            mv.visitInsn(JandexUtil.getReturnInstruction(returnTypeDescriptor));
+            mv.visitInsn(AsmUtil.getReturnInstruction(returnTypeDescriptor));
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }

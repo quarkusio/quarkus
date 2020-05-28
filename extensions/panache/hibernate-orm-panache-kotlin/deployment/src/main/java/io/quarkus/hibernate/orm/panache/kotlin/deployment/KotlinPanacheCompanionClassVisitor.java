@@ -18,7 +18,8 @@ import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import io.quarkus.panache.common.deployment.JandexUtil;
+import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 
 /**
  * kotlinc compiles default methods in to the implementing classes so we don't need to generate whole method bodies.
@@ -39,8 +40,8 @@ class KotlinPanacheCompanionClassVisitor extends ClassVisitor {
         entityInfo
                 .methods()
                 .forEach(method -> {
-                    if (method.hasAnnotation(JandexUtil.DOTNAME_GENERATE_BRIDGE)) {
-                        bridgeMethods.put(method.name() + JandexUtil.getDescriptor(method, m -> null), method);
+                    if (method.hasAnnotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE)) {
+                        bridgeMethods.put(method.name() + AsmUtil.getDescriptor(method, m -> null), method);
                     }
                 });
     }

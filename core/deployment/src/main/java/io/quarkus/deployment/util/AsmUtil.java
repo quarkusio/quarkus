@@ -1,15 +1,11 @@
-package io.quarkus.panache.common.deployment;
+package io.quarkus.deployment.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ArrayType;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType.Primitive;
@@ -19,13 +15,30 @@ import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.builder.BuildException;
-import io.quarkus.panache.common.impl.GenerateBridge;
+/**
+ * A collection of ASM and Jandex utilities.
+ */
+public class AsmUtil {
 
-public class JandexUtil {
-    public static final DotName DOTNAME_GENERATE_BRIDGE = DotName.createSimple(GenerateBridge.class.getName());
-    public static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
-
+    /**
+     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
+     * For example, given this method:
+     * 
+     * <pre>
+     * {@code
+     * public class Foo<T> {
+     *  public <R> List<R> method(int a, T t){...} 
+     * }
+     * }
+     * </pre>
+     * 
+     * This will return <tt>&lt;R:Ljava/lang/Object;>(ILjava/lang/Integer;)Ljava/util/List&lt;TR;>;</tt> if
+     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
+     * 
+     * @param method the method you want the signature for.
+     * @param typeArgMapper a mapping between type argument names and their bytecode signature.
+     * @return a bytecode signature for that method.
+     */
     public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
         List<Type> parameters = method.parameters();
 
@@ -50,6 +63,25 @@ public class JandexUtil {
         return signature.toString();
     }
 
+    /**
+     * Returns the Java bytecode descriptor of a given Jandex MethodInfo using the given type argument mappings.
+     * For example, given this method:
+     * 
+     * <pre>
+     * {@code
+     * public class Foo<T> {
+     *  public <R> List<R> method(int a, T t){...} 
+     * }
+     * }
+     * </pre>
+     * 
+     * This will return <tt>(ILjava/lang/Integer;)Ljava/util/List;</tt> if
+     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
+     * 
+     * @param method the method you want the descriptor for.
+     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
+     * @return a bytecode descriptor for that method.
+     */
     public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
         List<Type> parameters = method.parameters();
 
@@ -62,13 +94,22 @@ public class JandexUtil {
         return descriptor.toString();
     }
 
+    /**
+     * Returns the Java bytecode descriptor of a given Jandex Type using the given type argument mappings.
+     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List;</tt> if
+     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
+     * 
+     * @param method the type you want the descriptor for.
+     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
+     * @return a bytecode descriptor for that type.
+     */
     public static String getDescriptor(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, true);
         return sb.toString();
     }
 
-    static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper, boolean erased) {
+    private static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper, boolean erased) {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
@@ -153,6 +194,14 @@ public class JandexUtil {
         }
     }
 
+    /**
+     * Returns a return bytecode instruction suitable for the given return type descriptor. This will return
+     * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
+     * and <tt>ARETURN</tt> otherwise;
+     * 
+     * @param typeDescriptor the return type descriptor.
+     * @return the correct bytecode return instruction for that return type descriptor.
+     */
     public static int getReturnInstruction(String typeDescriptor) {
         switch (typeDescriptor) {
             case "Z":
@@ -174,6 +223,14 @@ public class JandexUtil {
         }
     }
 
+    /**
+     * Returns a return bytecode instruction suitable for the given return Jandex Type. This will return
+     * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
+     * and <tt>ARETURN</tt> otherwise;
+     * 
+     * @param typeDescriptor the return Jandex Type.
+     * @return the correct bytecode return instruction for that return type descriptor.
+     */
     public static int getReturnInstruction(Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
             switch (jandexType.asPrimitiveType().primitive()) {
@@ -198,6 +255,14 @@ public class JandexUtil {
         return Opcodes.ARETURN;
     }
 
+    /**
+     * Invokes the proper LDC Class Constant instructions for the given Jandex Type. This will properly create LDC instructions
+     * for array types, class/parameterized classes, and primitive types by loading their equivalent <tt>TYPE</tt>
+     * constants in their box types, as well as type variables (using the first bound or Object) and Void.
+     * 
+     * @param mv The MethodVisitor on which to visit the LDC instructions
+     * @param jandexType the Jandex Type whose Class Constant to load.
+     */
     public static void visitLdc(MethodVisitor mv, Type jandexType) {
         switch (jandexType.kind()) {
             case ARRAY:
@@ -258,6 +323,12 @@ public class JandexUtil {
         }
     }
 
+    /**
+     * Calls the right boxing method for the given Jandex Type if it is a primitive.
+     * 
+     * @param mv The MethodVisitor on which to visit the boxing instructions
+     * @param jandexType The Jandex Type to box if it is a primitive.
+     */
     public static void boxIfRequired(MethodVisitor mv, Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
             switch (jandexType.asPrimitiveType().primitive()) {
@@ -292,6 +363,13 @@ public class JandexUtil {
         }
     }
 
+    /**
+     * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised
+     * bytecodes <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
+     * 
+     * @param jandexType The Jandex Type whose load instruction to return.
+     * @return The bytecode instruction to load the given Jandex Type.
+     */
     public static int getLoadOpcode(Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
             switch (jandexType.asPrimitiveType().primitive()) {
@@ -314,42 +392,12 @@ public class JandexUtil {
         return Opcodes.ALOAD;
     }
 
-    public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
-        switch (annotationInstance.target().kind()) {
-            case FIELD:
-                return annotationInstance.target().asField().declaringClass();
-            case METHOD:
-                return annotationInstance.target().asMethod().declaringClass();
-            case METHOD_PARAMETER:
-                return annotationInstance.target().asMethodParameter().method().declaringClass();
-            case CLASS:
-                return annotationInstance.target().asClass();
-            case TYPE:
-                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
-            default:
-                throw new RuntimeException(); // this should not occur
-        }
-    }
-
-    public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) throws BuildException {
-        if (info.superName().equals(DOTNAME_OBJECT)) {
-            return false;
-        }
-        if (info.superName().equals(parentName)) {
-            return true;
-        }
-
-        // climb up the hierarchy of classes
-        Type superType = info.superClassType();
-        ClassInfo superClass = index.getClassByName(superType.name());
-        if (superClass == null) {
-            // this can happens if the parent is not inside the Jandex index
-            throw new BuildException("The class " + superType.name() + " is not inside the Jandex index",
-                    Collections.emptyList());
-        }
-        return isSubclassOf(index, superClass, parentName);
-    }
-
+    /**
+     * Calls the right unboxing method for the given Jandex Type if it is a primitive.
+     * 
+     * @param mv The MethodVisitor on which to visit the unboxing instructions
+     * @param jandexType The Jandex Type to unbox if it is a primitive.
+     */
     public static void unboxIfRequired(MethodVisitor mv, Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
             switch (jandexType.asPrimitiveType().primitive()) {
@@ -388,6 +436,12 @@ public class JandexUtil {
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, methodName, "()" + returnTypeSignature, false);
     }
 
+    /**
+     * Returns the Jandex Types of the parameters of the given method descriptor.
+     * 
+     * @param methodDescriptor a method descriptor
+     * @return the list of Jandex Type objects representing the parameters of the given method descriptor.
+     */
     public static Type[] getParameterTypes(String methodDescriptor) {
         String argsSignature = methodDescriptor.substring(methodDescriptor.indexOf('(') + 1, methodDescriptor.lastIndexOf(')'));
         List<Type> args = new ArrayList<>();
@@ -470,6 +524,13 @@ public class JandexUtil {
         return args.toArray(new Type[0]);
     }
 
+    /**
+     * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type.
+     * This will be 2 for doubles and longs, 1 otherwise.
+     * 
+     * @param paramType the Jandex parameter Type
+     * @return the number of underlying bytecode parameters required.
+     */
     public static int getParameterSize(Type paramType) {
         if (paramType.kind() == Kind.PRIMITIVE) {
             switch (paramType.asPrimitiveType().primitive()) {
@@ -480,4 +541,5 @@ public class JandexUtil {
         }
         return 1;
     }
+
 }

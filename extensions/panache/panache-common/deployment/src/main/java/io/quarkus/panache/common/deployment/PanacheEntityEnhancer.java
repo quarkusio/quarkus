@@ -21,13 +21,17 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
+import io.quarkus.panache.common.impl.GenerateBridge;
 
 public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<?>>
         implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+    public final static DotName DOTNAME_GENERATE_BRIDGE = DotName.createSimple(GenerateBridge.class.getName());
 
     public final static String SORT_NAME = Sort.class.getName();
     public final static String SORT_BINARY_NAME = SORT_NAME.replace('.', '/');
@@ -132,7 +136,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     && Modifier.isPublic(access)
                     && (access & Opcodes.ACC_SYNTHETIC) == 0
                     && !methodCustomizers.isEmpty()) {
-                org.jboss.jandex.Type[] argTypes = JandexUtil.getParameterTypes(descriptor);
+                org.jboss.jandex.Type[] argTypes = AsmUtil.getParameterTypes(descriptor);
                 MethodInfo method = this.entityInfo.method(methodName, argTypes);
                 if (method == null) {
                     throw new IllegalStateException(
@@ -151,9 +155,9 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
             for (MethodInfo method : panacheEntityBaseClassInfo.methods()) {
                 // Do not generate a method that already exists
-                String descriptor = JandexUtil.getDescriptor(method, name -> null);
+                String descriptor = AsmUtil.getDescriptor(method, name -> null);
                 if (!userMethods.contains(method.name() + "/" + descriptor)) {
-                    AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
+                    AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
                     if (bridge != null) {
                         generateMethod(method, bridge.value("targetReturnTypeErased"));
                     }
@@ -166,8 +170,8 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
         }
 
         private void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased) {
-            String descriptor = JandexUtil.getDescriptor(method, name -> null);
-            String signature = JandexUtil.getSignature(method, name -> null);
+            String descriptor = AsmUtil.getDescriptor(method, name -> null);
+            String signature = AsmUtil.getSignature(method, name -> null);
             List<org.jboss.jandex.Type> parameters = method.parameters();
             String castTo = null;
             if (targetReturnTypeErased != null && targetReturnTypeErased.asBoolean()) {
@@ -205,7 +209,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
             if (castTo != null)
                 mv.visitTypeInsn(Opcodes.CHECKCAST, castTo);
             String returnTypeDescriptor = descriptor.substring(descriptor.lastIndexOf(")") + 1);
-            mv.visitInsn(JandexUtil.getReturnInstruction(returnTypeDescriptor));
+            mv.visitInsn(AsmUtil.getReturnInstruction(returnTypeDescriptor));
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
@@ -229,7 +233,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);
                     generateAccessorGetField(mv, field);
-                    int returnCode = JandexUtil.getReturnInstruction(field.descriptor);
+                    int returnCode = AsmUtil.getReturnInstruction(field.descriptor);
                     mv.visitInsn(returnCode);
                     mv.visitMaxs(0, 0);
                     // Apply JAX-B annotations that are being transferred from the field

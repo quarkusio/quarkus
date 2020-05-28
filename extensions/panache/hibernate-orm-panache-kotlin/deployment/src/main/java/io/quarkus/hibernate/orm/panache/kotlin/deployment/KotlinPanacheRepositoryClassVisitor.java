@@ -5,7 +5,6 @@ import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheRe
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE_DOTNAME;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.autobox;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.sanitize;
-import static io.quarkus.panache.common.deployment.JandexUtil.getDescriptor;
 import static io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer.PanacheRepositoryClassVisitor.findEntityTypeArgumentsForPanacheRepository;
 import static org.jboss.jandex.DotName.createSimple;
 import static org.objectweb.asm.Opcodes.ALOAD;
@@ -26,8 +25,9 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
-import io.quarkus.panache.common.deployment.JandexUtil;
+import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 
 /**
  * kotlinc compiles default methods in to the implementing classes so we don't need to generate whole method bodies.
@@ -70,8 +70,8 @@ class KotlinPanacheRepositoryClassVisitor extends ClassVisitor {
         indexView.getClassByName(createSimple(repositoryClassName))
                 .methods()
                 .forEach(method -> {
-                    if (method.hasAnnotation(JandexUtil.DOTNAME_GENERATE_BRIDGE)) {
-                        bridgeMethods.put(method.name() + getDescriptor(method, m -> typeArguments.get(m)), method);
+                    if (method.hasAnnotation(PanacheEntityEnhancer.DOTNAME_GENERATE_BRIDGE)) {
+                        bridgeMethods.put(method.name() + AsmUtil.getDescriptor(method, m -> typeArguments.get(m)), method);
                     }
                 });
     }

@@ -7,7 +7,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import io.quarkus.panache.common.deployment.JandexUtil;
+import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.mock.PanacheMock;
 
@@ -87,7 +87,7 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
         for (org.jboss.jandex.Type paramType : method.parameters()) {
             mv.visitInsn(Opcodes.DUP);
             mv.visitLdcInsn(i);
-            JandexUtil.visitLdc(mv, paramType);
+            AsmUtil.visitLdc(mv, paramType);
             mv.visitInsn(Opcodes.AASTORE);
             i++;
         }
@@ -100,21 +100,21 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
         for (org.jboss.jandex.Type paramType : method.parameters()) {
             mv.visitInsn(Opcodes.DUP);
             mv.visitLdcInsn(i);
-            mv.visitVarInsn(JandexUtil.getLoadOpcode(paramType), paramSlot);
-            JandexUtil.boxIfRequired(mv, paramType);
+            mv.visitVarInsn(AsmUtil.getLoadOpcode(paramType), paramSlot);
+            AsmUtil.boxIfRequired(mv, paramType);
             mv.visitInsn(Opcodes.AASTORE);
             i++;
-            paramSlot += JandexUtil.getParameterSize(paramType);
+            paramSlot += AsmUtil.getParameterSize(paramType);
         }
 
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, PANACHE_MOCK_BINARY_NAME, "mockMethod",
                 "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;", false);
-        JandexUtil.unboxIfRequired(mv, method.returnType());
+        AsmUtil.unboxIfRequired(mv, method.returnType());
         if (method.returnType().kind() != Kind.PRIMITIVE) {
             mv.visitTypeInsn(Opcodes.CHECKCAST, method.returnType().name().toString('/'));
         }
 
-        mv.visitInsn(JandexUtil.getReturnInstruction(method.returnType()));
+        mv.visitInsn(AsmUtil.getReturnInstruction(method.returnType()));
 
         mv.visitLabel(tryHandler);
         mv.visitInsn(Opcodes.POP);

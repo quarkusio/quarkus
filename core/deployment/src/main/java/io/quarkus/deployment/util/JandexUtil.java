@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -19,9 +20,14 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 
+import io.quarkus.builder.BuildException;
+
+/**
+ * A collection of Jandex utility methods.
+ */
 public final class JandexUtil {
 
-    private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+    public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
 
     private JandexUtil() {
     }
@@ -100,7 +106,7 @@ public final class JandexUtil {
         }
 
         // always end at Object
-        if (OBJECT.equals(name)) {
+        if (DOTNAME_OBJECT.equals(name)) {
             return null;
         }
 
@@ -171,7 +177,7 @@ public final class JandexUtil {
                 if (!typeVariable.bounds().isEmpty()) {
                     appliedArguments.add(typeVariable.bounds().get(0));
                 } else {
-                    appliedArguments.add(ClassType.create(OBJECT, Kind.CLASS));
+                    appliedArguments.add(ClassType.create(DOTNAME_OBJECT, Kind.CLASS));
                 }
             }
         }
@@ -259,4 +265,57 @@ public final class JandexUtil {
         return classInfo;
     }
 
+    /**
+     * Returns the enclosing class of the given annotation instance. For field or method annotations this
+     * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
+     * method. For classes it will return the class itself.
+     * 
+     * @param annotationInstance the annotation whose enclosing class to look up.
+     * @return the enclosing class.
+     */
+    public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
+        switch (annotationInstance.target().kind()) {
+            case FIELD:
+                return annotationInstance.target().asField().declaringClass();
+            case METHOD:
+                return annotationInstance.target().asMethod().declaringClass();
+            case METHOD_PARAMETER:
+                return annotationInstance.target().asMethodParameter().method().declaringClass();
+            case CLASS:
+                return annotationInstance.target().asClass();
+            case TYPE:
+                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
+            default:
+                throw new RuntimeException(); // this should not occur
+        }
+    }
+
+    /**
+     * Returns true if the given Jandex ClassInfo is a subclass of the given <tt>parentName</tt>. Note that this will
+     * not check interfaces.
+     * 
+     * @param index the index to use to look up super classes.
+     * @param info the ClassInfo we want to check.
+     * @param parentName the name of the superclass we want to find.
+     * @return true if the given ClassInfo has <tt>parentName</tt> as a superclass.
+     * @throws BuildException if one of the superclasses is not indexed.
+     */
+    public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) throws BuildException {
+        if (info.superName().equals(DOTNAME_OBJECT)) {
+            return false;
+        }
+        if (info.superName().equals(parentName)) {
+            return true;
+        }
+
+        // climb up the hierarchy of classes
+        Type superType = info.superClassType();
+        ClassInfo superClass = index.getClassByName(superType.name());
+        if (superClass == null) {
+            // this can happens if the parent is not inside the Jandex index
+            throw new BuildException("The class " + superType.name() + " is not inside the Jandex index",
+                    Collections.emptyList());
+        }
+        return isSubclassOf(index, superClass, parentName);
+    }
 }

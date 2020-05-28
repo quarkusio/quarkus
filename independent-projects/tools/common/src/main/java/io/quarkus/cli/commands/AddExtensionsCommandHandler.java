@@ -35,7 +35,6 @@ public class AddExtensionsCommandHandler implements QuarkusCommand {
         final BuildFile buildFile = invocation.getBuildFile();
         try {
             for (String query : extensions) {
-
                 if (query.contains(":")) {
                     // GAV case.
                     updated = buildFile.addExtensionAsGAV(query) || updated;

@@ -124,14 +124,6 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
             doExecute(QuarkusProject.of(project.getBasedir().toPath(), platformDescr, buildTool), log);
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to initialize project reading tools", e);
-        } finally {
-            if (buildFile != null) {
-                try {
-                    buildFile.close();
-                } catch (IOException e) {
-                    log.debug("Failed to close %s", buildFile, e);
-                }
-            }
         }
     }
 

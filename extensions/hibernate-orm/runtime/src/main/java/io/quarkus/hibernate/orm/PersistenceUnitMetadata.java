@@ -12,4 +12,11 @@ import java.util.Set;
 public interface PersistenceUnitMetadata {
 
     Set<String> getEntityClassNames();
+
+    /**
+     * Convenience: load classes provided by {@link #getEntityClassNames()} using
+     * {@code Thread.currentThread().getContextClassLoader()}.
+     */
+    Set<Class<?>> resolveEntityClasses();
+
 }

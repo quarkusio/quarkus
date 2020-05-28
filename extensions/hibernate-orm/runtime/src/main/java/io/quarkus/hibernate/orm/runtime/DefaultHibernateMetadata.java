@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -10,15 +10,10 @@ import io.quarkus.hibernate.orm.PersistenceUnitMetadata;
 
 public class DefaultHibernateMetadata implements HibernateMetadata {
 
-    private final Map<String, PersistenceUnitMetadata> map;
+    private final Map<String, PersistenceUnitMetadata> map = new HashMap<>();
 
-    public DefaultHibernateMetadata(final Set<String> defaultPersistentUnitEntities) {
-        this.map = Collections.singletonMap(DEFAULT_PERSISTENCE_UNIT_NAME, new PersistenceUnitMetadata() {
-            @Override
-            public Set<String> getEntityClassNames() {
-                return defaultPersistentUnitEntities;
-            }
-        });
+    public DefaultHibernateMetadata(final Set<String> defaultPersistentUnitEntityNames) {
+        this.map.put(DEFAULT_PERSISTENCE_UNIT_NAME, new DefaultPersistenceUnitMetadata(defaultPersistentUnitEntityNames));
     }
 
     @Override
@@ -26,4 +21,5 @@ public class DefaultHibernateMetadata implements HibernateMetadata {
         PersistenceUnitMetadata persistenceUnitMetadata = map.get(name);
         return persistenceUnitMetadata != null ? Optional.of(persistenceUnitMetadata) : Optional.empty();
     }
+
 }

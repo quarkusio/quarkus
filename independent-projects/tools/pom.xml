@@ -44,6 +44,7 @@
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <junit.version>5.6.1</junit.version>
+        <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <maven-core.version>3.6.3</maven-core.version>
         <mockito.version>3.3.3</mockito.version>
@@ -59,6 +60,11 @@
     </modules>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.eclipsesource.minimal-json</groupId>
                 <artifactId>minimal-json</artifactId>

@@ -139,19 +139,11 @@ class TestEndpoint {
 
         var byId: Person? = person.id?.let { Person.findById(it) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
-
-//        byId = Person.findByIdOptional(person.id).get()
-//        Assertions.assertEquals(person, byId)
-//        Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
+        Assertions.assertEquals("Person(name=${person.name}, status=${person.status})", byId.toString())
 
         byId = person.id?.let { Person.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
-
-//        byId = Person.findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get()
-//        Assertions.assertEquals(person, byId)
-//        Assertions.assertEquals("Person<" + person.id + ">", byId.toString())
+        Assertions.assertEquals("Person(name=${person.name}, status=${person.status})", byId.toString())
 
         person.delete()
         Assertions.assertEquals(0, Person.count())
@@ -373,7 +365,7 @@ class TestEndpoint {
         person3.persist()
 
         val sort1 = Sort.by("name", "status")
-        val order1: List<Person> = listOf(person3, person1, person2)
+        val order1: List<Person> = listOf(person3, person2, person1)
 
         var list: List<Person?> = Person.findAll(sort1).list()
         Assertions.assertEquals(order1, list)
@@ -385,7 +377,7 @@ class TestEndpoint {
         Assertions.assertEquals(order1, list)
 
         val sort2 = Sort.descending("name", "status")
-        val order2: List<Person> = listOf(person2, person1)
+        val order2: List<Person> = listOf(person1, person2)
 
         list = Person.find("name", sort2, "stef").list()
         Assertions.assertEquals(order2, list)
@@ -650,7 +642,7 @@ class TestEndpoint {
         personRepository.persist(person3)
 
         val sort1 = Sort.by("name", "status")
-        val order1: List<Person> = listOf(person3, person1, person2)
+        val order1: List<Person> = listOf(person3, person2, person1 )
 
         var list = personRepository.findAll(sort1).list()
         Assertions.assertEquals(order1, list)
@@ -662,7 +654,7 @@ class TestEndpoint {
         Assertions.assertEquals(order1, list)
 
         val sort2 = Sort.descending("name", "status")
-        val order2: List<Person> = listOf(person2, person1)
+        val order2: List<Person> = listOf(person1, person2)
 
         list = personRepository.find("name", sort2, "stef").list()
         Assertions.assertEquals(order2, list)
@@ -1012,39 +1004,41 @@ class TestEndpoint {
     @Path("9036")
     @Transactional
     fun testBug9036(): String {
-        Person.deleteAll();
-        
-        val emptyPerson = Person();
-        emptyPerson.persist();
-        
-        val deadPerson = Person();
-        deadPerson.name = "Stef";
-        deadPerson.status = Status.DECEASED;
-        deadPerson.persist();
-        
-        val livePerson = Person();
-        livePerson.name = "Stef";
-        livePerson.status = Status.LIVING;
-        livePerson.persist();
-        
-        Assertions.assertEquals(3, Person.count());
-        Assertions.assertEquals(3, Person.listAll().size);
-        
-        // should be filtered
-        val query = Person.findAll(Sort.by("id")).filter("Person.isAlive").filter("Person.hasName", Parameters.with("name", "Stef"));
-        Assertions.assertEquals(1, query.count());
-        Assertions.assertEquals(1, query.list().size);
-        Assertions.assertEquals(livePerson, query.list().get(0));
-        Assertions.assertEquals(1, query.stream().count());
-        Assertions.assertEquals(livePerson, query.firstResult());
-        Assertions.assertEquals(livePerson, query.singleResult());
-        
-        // these should be unaffected
-        Assertions.assertEquals(3, Person.count());
-        Assertions.assertEquals(3, Person.listAll().size);
+        Person.deleteAll()
 
-        Person.deleteAll();
-        
-        return "OK";
+        val emptyPerson = Person()
+        emptyPerson.persist()
+
+        val deadPerson = Person()
+        deadPerson.name = "Stef"
+        deadPerson.status = Status.DECEASED
+        deadPerson.persist()
+
+        val livePerson = Person()
+        livePerson.name = "Stef"
+        livePerson.status = Status.LIVING
+        livePerson.persist()
+
+        Assertions.assertEquals(3, Person.count())
+        Assertions.assertEquals(3, Person.listAll().size)
+
+        // should be filtered
+        val query = Person.findAll(Sort.by("id"))
+                .filter("Person.isAlive")
+                .filter("Person.hasName", Parameters.with("name", "Stef"))
+        Assertions.assertEquals(1, query.count())
+        Assertions.assertEquals(1, query.list().size)
+        Assertions.assertEquals(livePerson, query.list()[0])
+        Assertions.assertEquals(1, query.stream().count())
+        Assertions.assertEquals(livePerson, query.firstResult())
+        Assertions.assertEquals(livePerson, query.singleResult())
+
+        // these should be unaffected
+        Assertions.assertEquals(3, Person.count())
+        Assertions.assertEquals(3, Person.listAll().size)
+
+        Person.deleteAll()
+
+        return "OK"
     }
 }

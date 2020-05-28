@@ -17,12 +17,13 @@ import org.hibernate.annotations.FilterDef
 import org.hibernate.annotations.ParamDef
 import org.hibernate.annotations.FilterDefs
 import org.hibernate.annotations.Filters
+import javax.persistence.EnumType
 
 @XmlRootElement
 @Entity(name = "Person2")
 @FilterDefs(
     FilterDef(name = "Person.hasName", defaultCondition = "name = :name", parameters = [ParamDef(name = "name", type = "string")]),
-    FilterDef(name = "Person.isAlive", defaultCondition = "status = 0")
+    FilterDef(name = "Person.isAlive", defaultCondition = "status = 'LIVING'")
 )
 @Filters( 
     Filter(name = "Person.isAlive"),
@@ -53,4 +54,10 @@ open class Person : PanacheEntity() {
         set(value) {
             field = value
         }
+
+    override fun toString(): String {
+        return "Person(name=$name, status=$status)"
+    }
+
+
 }

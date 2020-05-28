@@ -33,13 +33,11 @@ public final class QuarkusProject {
 
     public static QuarkusProject resolveExistingProject(final Path projectFolderPath,
             final QuarkusPlatformDescriptor descriptor) {
-        if (projectFolderPath.resolve("pom.xml").toFile().exists()) {
-            return of(projectFolderPath, descriptor, BuildTool.MAVEN);
-        } else if (projectFolderPath.resolve("build.gradle").toFile().exists()
-                || projectFolderPath.resolve("build.gradle.kts").toFile().exists()) {
-            return of(projectFolderPath, descriptor, BuildTool.GRADLE);
+        final BuildTool buildTool = resolveExistingProjectBuildTool(projectFolderPath);
+        if (buildTool == null) {
+            throw new IllegalStateException("This is neither a Maven or Gradle project");
         }
-        throw new IllegalStateException("This is neither a Maven or Gradle project");
+        return of(projectFolderPath, descriptor, buildTool);
     }
 
     public Path getProjectFolderPath() {
@@ -56,5 +54,15 @@ public final class QuarkusProject {
 
     public QuarkusPlatformDescriptor getDescriptor() {
         return descriptor;
+    }
+
+    private static BuildTool resolveExistingProjectBuildTool(Path projectFolderPath) {
+        if (projectFolderPath.resolve("pom.xml").toFile().exists()) {
+            return BuildTool.MAVEN;
+        } else if (projectFolderPath.resolve("build.gradle").toFile().exists()
+                || projectFolderPath.resolve("build.gradle.kts").toFile().exists()) {
+            return BuildTool.GRADLE;
+        }
+        return null;
     }
 }

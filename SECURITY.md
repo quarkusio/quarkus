@@ -37,4 +37,4 @@ We may fix the vulnerability to older versions depending on the severity of the 
 
 ## Handling security issues
 
-If you represent a Quarkus extension or a Quarkus platform, you are welcome to subscribe to the security at quarkus.io mailing list. Your subscription will only be approved if you can demonstrate that you will handle issues in confidence and properly credit reporters for discovering issues.
+If you represent a Quarkus extension or a Quarkus platform, you are welcome to subscribe to the security at quarkus.io mailing list. Your subscription will only be approved if you can demonstrate that you will handle issues in confidence and properly credit reporters for discovering issues (e.g. experience with embargoe process).

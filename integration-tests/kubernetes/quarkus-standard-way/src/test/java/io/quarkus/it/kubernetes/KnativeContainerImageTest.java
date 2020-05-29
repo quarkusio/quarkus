@@ -54,7 +54,7 @@ public class KnativeContainerImageTest {
                 Files.readAllLines(kubernetesDir.resolve("knative.yml"), StandardCharsets.UTF_8).toArray(new String[0]));
 
         for (String yamlFile : yamlFiles) {
-            if (yamlFile.contains("\"Service\"")) {
+            if (yamlFile.contains("Service") && !yamlFile.contains("ServiceAccount")) {
                 return DeserializationUtil.MAPPER.readValue(yamlFile, Service.class);
             }
         }

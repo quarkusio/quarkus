@@ -370,16 +370,21 @@ class KubernetesProcessor {
         }
 
         ScmInfo scm = project.getScmInfo();
-        String vcsUrl = scm != null ? scm.getUrl() : Annotations.UNKNOWN;
-        String commitId = scm != null ? scm.getCommit() : Annotations.UNKNOWN;
+        String vcsUrl = scm != null ? scm.getUrl() : null;
+        String commitId = scm != null ? scm.getCommit() : null;
 
         //Dekorate uses its own annotations. Let's replace them with the quarkus ones.
         session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.VCS_URL));
         session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID));
         //Add quarkus vcs annotations
-        session.resources().decorate(target,
-                new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId)));
-        session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl)));
+        if (commitId != null) {
+            session.resources().decorate(target,
+                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId)));
+        }
+        if (vcsUrl != null) {
+            session.resources().decorate(target,
+                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl)));
+        }
 
         if (config.isAddBuildTimestamp()) {
             session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
@@ -737,8 +742,8 @@ class KubernetesProcessor {
         Project project = FileProjectFactory.create(artifactPath.toFile());
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
                 "jar", project.getBuildInfo().getBuildTool(),
+                artifactPath.toAbsolutePath().toString(),
                 artifactPath,
-                project.getBuildInfo().getClassOutputDir(),
                 project.getBuildInfo().getResourceDir());
 
         return new Project(project.getRoot(), buildInfo, project.getScmInfo());

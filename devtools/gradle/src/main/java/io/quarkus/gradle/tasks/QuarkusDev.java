@@ -111,18 +111,17 @@ public class QuarkusDev extends QuarkusTask {
         this.sourceDir = sourceDir;
     }
 
-    @Option(description = "Set working directory", option = "working-dir")
-    @Deprecated
     @Input
     // @InputDirectory this breaks kotlin projects, the working dir at this stage will be evaluated to 'classes/java/main' instead of 'classes/kotlin/main'
-    public String getWorkingDir() {
+    public File getWorkingDir() {
         if (workingDir == null) {
-            return extension().workingDir().toString();
+            return extension().workingDir();
         } else {
-            return workingDir;
+            return new File(workingDir);
         }
     }
 
+    @Option(description = "Set working directory", option = "working-dir")
     public void setWorkingDir(String workingDir) {
         this.workingDir = workingDir;
     }
@@ -374,7 +373,7 @@ public class QuarkusDev extends QuarkusTask {
             }
 
             project.exec(action -> {
-                action.commandLine(args).workingDir(extension().workingDir());
+                action.commandLine(args).workingDir(getWorkingDir());
                 action.setStandardInput(System.in)
                         .setErrorOutput(System.out)
                         .setStandardOutput(System.out);

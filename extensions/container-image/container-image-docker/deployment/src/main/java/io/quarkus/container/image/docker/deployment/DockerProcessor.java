@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class DockerProcessor {
     private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
+    public static final String DOCKER_BINARY_NAME = "docker";
 
     private final DockerWorking dockerWorking = new DockerWorking();
 
@@ -123,11 +125,12 @@ public class DockerProcessor {
             OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested) {
 
         DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, out);
-        String[] buildArgs = { "build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString(), "-t", image,
-                dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString() };
-        boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, "docker", buildArgs);
+        String[] dockerArgs = getDockerArgs(image, dockerfilePaths, dockerConfig.buildArgs);
+        log.infof("Executing the following command to build docker image: '%s %s'", DOCKER_BINARY_NAME,
+                String.join(" ", dockerArgs));
+        boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, DOCKER_BINARY_NAME, dockerArgs);
         if (!buildSuccessful) {
-            throw dockerException(buildArgs);
+            throw dockerException(dockerArgs);
         }
 
         log.infof("Built container image %s (%s)\n", image, reader.getImageId());
@@ -158,6 +161,17 @@ public class DockerProcessor {
                 pushImage(imageToPush);
             }
         }
+    }
+
+    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, Map<String, String> buildArgs) {
+        List<String> dockerArgs = new ArrayList<>(6 + buildArgs.size());
+        dockerArgs.addAll(Arrays.asList("build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString()));
+        for (Map.Entry<String, String> entry : buildArgs.entrySet()) {
+            dockerArgs.addAll(Arrays.asList("--build-arg", entry.getKey() + "=" + entry.getValue()));
+        }
+        dockerArgs.addAll(Arrays.asList("-t", image));
+        dockerArgs.add(dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());
+        return dockerArgs.toArray(new String[0]);
     }
 
     private void createAdditionalTags(String image, List<String> additionalImageTags) {

@@ -1,5 +1,6 @@
 package io.quarkus.container.image.docker.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -26,4 +27,10 @@ public class DockerConfig {
      */
     @ConfigItem
     public Optional<String> dockerfileNativePath;
+
+    /**
+     * Build args passed to docker via {@code --build-arg}
+     */
+    @ConfigItem
+    public Map<String, String> buildArgs;
 }

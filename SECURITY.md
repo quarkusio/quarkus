@@ -1,3 +1,5 @@
+<!-- content also visible in quarkusio/security
+     copy changes there too -->
 # Security policy
 
 The Quarkus team and community take all security bugs very seriously.

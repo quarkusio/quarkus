@@ -8,107 +8,76 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :config-file: application.properties
 
+
+As a Java developer, you can use Hibernate ORM with Panache to simplify persistence with your Quarkus applications.
+
 .Prerequisites
-You have a Quarkus Maven project that uses a JDBC datasource.
+You have a Quarkus Maven project that uses a Java database connectivy (JDBC) datasource.
 
-Hibernate ORM is the de facto JPA implementation. It offers you the full breadth of an object relational mapper (ORM).
-It makes complex mappings possible, but it does not make simple and common mappings trivial.
-Hibernate ORM with Panache focuses on making your entities trivial and fun to write in Quarkus.
+* For information about creating a Quarkus Maven project, see <<XREF>>.
+* For information about configuring your Quarkus Maven project with a JDBC datasource, see <<XREF>>.
 
-== An example
+== Hibernate ORM
 
-In Panache, you can write your Hibernate ORM entities as shown in the following example:
+//adapted from https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html. Module will be reused in Hibernate ORM story.
 
+Coupling Java object-oriented software projects with relational databases for data persistence can be cumbersome and time-consuming. Development costs are significantly higher due to a paradigm mismatch between how data is represented in objects versus relational databases. Hibernate is an Object/Relational Mapping (ORM) solution for Java environments that facilitates mapping data to and from an object model representation to a relational data model representation.
+
+Hibernate not only takes care of the mapping from Java classes to database tables and from Java data types to SQL data types, but also provides data query and retrieval facilities. It can significantly reduce development time otherwise spent with manual data handling in SQL and Java database connectivy (JDBC). Hibernate’s design goal is to relieve you of most common data persistence-related programming tasks by eliminating the need for manual, hand-crafted data processing using SQL and JDBC.
+
+Hibernate ORM is an implementation of the Java Persistence API (JPA).  It makes complex mappings possible.
+
+
+== Using Hibernate ORM with the Quarkus Panache JPA extension
+
+Hibernate ORM is the most widely used JPA implementation. It provides all of the features of an ORM and makes complex data mappings possible. However, for simple and common mappings you can use the much more concise structure provided by the Quarkus Panache JPA extension. Hibernate ORM with the Quarkus Panache JPA extension eliminates the following issues:
+
+* Duplicate ID logic: most entities require an ID however most developers do not care how that ID is set.
+//Not sure how this is relevant.
+* Useless `getter` and `setter` functions: because Java does not support properties, you must create fields and
+then generate `getter` and `setter` functions for those fields, even if they only read and write
+the fields.
+* Entity definitions split from operations: traditional Java EE patterns advise you to split the entity definition (the model) from the operations you can perform on them, but doing that requires an unnatural split between the state and its operations even though you would never do something like that for regular objects in the object oriented architecture, where state and methods are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository
+where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're
+writing to set up an injection point before coming back to use it.
+* Overly verbose Hibernate queries: such queries are very powerful, but overly verbose for common operations and require you to write queries even
+when you do not need all of the parts.
+
+The Quarkus Panache JPA extension simplifies entity creation:
+
+* You create entities that extend the `PanacheEntity` class which has an ID field that is auto-generated. If you require
+a custom ID strategy, you can extend the `PanacheEntityBase` class.
+* You use public fields instead of useless getter` and `setter` functions. Panache provides `getter` and `setter` functions and rewrites access to the public fields to use the accessor methods. This way you can still write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
+* If you use the active record pattern, you put all of your entity logic in static methods in your entity class and you do not create Data Access Object patterns. The `PanacheEntity`  superclass comes with several useful static methods. You can also add your own methods in your entity class. For examnple, users can use your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.
+//Not sure what exactly happens here.
+* You do not write parts of the query that you do not need.
+
+.Prerequisites
+You have a Quarkus Maven project that uses a Java database connectivy (JDBC) datasource.
+
+* For information about creating a Quarkus Maven project, see <<XREF>>.
+* For information about configuring your Quarkus Maven project with a JDBC datasource, see <<XREF>>.
+
+.Procedure.
+
+
+. Add the Panache JPA extension dependency to your Quarkus project `pom.xml` file:
++
 [source,java]
 ----
-@Entity
-public class Person extends PanacheEntity {
-    public String name;
-    public LocalDate birth;
-    public Status status;
-
-    public static Person findByName(String name){
-        return find("name", name).firstResult();
-    }
-
-    public static List<Person> findAlive(){
-        return list("status", Status.Alive);
-    }
-
-    public static void deleteStefs(){
-        delete("name", "Stef");
-    }
-}
-----
-
-Notice how much more compact and readable the code is.
-
-NOTE: The `list()` method takes fragments of HQL (JP-QL) queries and contextualizes the rest which provides concise and readable code. What was described above is essentially the active record pattern, sometimes just called the entity pattern. Hibernate with Panache also allows for the use of the more classical repository pattern via PanacheRepository
-
-== Setting up and configuring Hibernate ORM with Panache
-
-NOTE: To see the completed example, clone the https://github.com/quarkusio/quarkus-quickstarts.git[Quarkus Quickstarts] Git repository or download the https://github.com/quarkusio/quarkus-quickstarts/archive/master.zip[Quarkus Quickstarts] archive. The solution is located in the `hibernate-orm-panache-quickstart` directory.
-
-.Prerequisites
-Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
-
-
-.Procedure
-. Add your settings in `{config-file}`.
-//What specifically do I need to add?
-. Annotate your entities with `@Entity` and make them extend `PanacheEntity`.
-//Can we have an example?
-. Place your entity logic in static methods in your entities.
-//Can we have an example?
-
-
-. In your `pom.xml` file, add the Panache JPA extension and your JDBC driver extension dependency. Quarkus support the following JDBC driver extensions:
-+
-* `quarkus-jdbc-postgresql`
-* `quarkus-jdbc-h2`
-* `quarkus-jdbc-mariadb`
-* `quarkus-jdbc-mysql`
-* `quarkus-jdbc-mssql`
-* `quarkus-jdbc-derby`
-+
-The following example shows how to add the Panache JPA extension and the PostgreSQL JDBC driver:
-+
-[source,xml]
-----
 <dependencies>
-    <!-- Hibernate ORM specific dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm-panache</artifactId>
     </dependency>
-
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-</dependencies>
 ----
 
-. Add the relevant configuration properties to the `{config-file}` file.
+. Use one of the following methods to define an entity:
 +
-[source,properties]
-----
-# configure your datasource
-quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
-quarkus.datasource.driver = org.postgresql.Driver
-quarkus.datasource.username = sarah
-quarkus.datasource.password = connor
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation = drop-and-create
-----
-
-== Using the active record pattern
-=== Defining your entity
-
-To define a Panache entity, extend `PanacheEntity`, annotate it with `@Entity` and add your
-columns as public fields:
+* Use the active record pattern to define an entity:
++
+.. Create a class that extends the `PanacheEntity` class, annotate it with `@Entity`, and add your
+columns as public fields. The following example extends and annotates the `Person` class:
 +
 [source,java]
 ----
@@ -120,165 +89,52 @@ public class Person extends PanacheEntity {
 }
 ----
 +
-. Put all of your JPA column annotations on the public fields. If you need a field to not be persisted, use the
-`@Transient` annotation on it. If you need to write accessors, you can:
-
+.. Optional: To specify a field to not persist, use the `@Transient` annotation. The following example annotates the `Status` field with `@Transient`.
++
 [source,java]
 ----
 @Entity
 public class Person extends PanacheEntity {
     public String name;
     public LocalDate birth;
-    public Status status;
 
-    // return name as uppercase in the model
+    @Transient
+    public Status status;
+}
+----
+.. Add any additional accessors. The following example adds two accessors:
++
+[source,java]
+----
+@Entity
+public class Person extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+
+    @Transient
+    public Status status;
+}
+
+    // Accessor that returns Name as uppercase in the model
     public String getName(){
         return name.toUpperCase();
     }
 
-    // store all names in lowercase in the DB
+    // Accessor that stores all names in lowercase in the DB
     public void setName(String name){
         this.name = name.toLowerCase();
     }
 }
 ----
-
-Because of field access rewrite, when  users read `person.name` they will actually call your `getName()` accessor,
-and similarly for field writes and the setter.
-This enables proper encapsulation at runtime because all fields calls will be replaced by the corresponding getter/setter calls.
-
-== Most useful operations
-
-After you have written your entity, here are the most common operations you will be able to do:
-
-[source,java]
-----
-// creating a person
-Person person = new Person();
-person.name = "Stef";
-person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
-person.status = Status.Alive;
-
-// persist it
-person.persist();
-
-// note that once persisted, you don't need to explicitly save your entity: all
-// modifications are automatically persisted on transaction commit.
-
-// check if it's persistent
-if(person.isPersistent()){
-    // delete it
-    person.delete();
-}
-
-// getting a list of all Person entities
-List<Person> allPersons = Person.listAll();
-
-// finding a specific person by ID
-person = Person.findById(personId);
-
-// finding a specific person by ID via an Optional
-Optional<Person> optional = Person.findByIdOptional(personId);
-person = optional.orElseThrow(() -> new NotFoundException());
-
-// finding all living persons
-List<Person> livingPersons = Person.list("status", Status.Alive);
-
-// counting all persons
-long countAll = Person.count();
-
-// counting all living persons
-long countAlive = Person.count("status", Status.Alive);
-
-// delete all living persons
-Person.delete("status", Status.Alive);
-
-// delete all persons
-Person.deleteAll();
-
-// update all living persons
-Person.update("name = 'Moral' where status = ?1", Status.Alive);
-
-----
-
-All `list` methods have equivalent `stream` versions.
-
-[source,java]
-----
-Stream<Person> persons = Person.streamAll();
-List<String> namesButEmmanuels = persons
-    .map(p -> p.name.toLowerCase() )
-    .filter( n -> ! "emmanuel".equals(n) )
-    .collect(Collectors.toList());
-----
-
-NOTE: The `stream` methods require a transaction to work.
++
+Notice how compact and readable this code is. In this example, when users read `person.name` they call the `getName()` accessor,
+and similarly for field writes and the setter. This enables correct encapsulation at runtime because all field calls assertEquals replaced with  the corresponding `getter` and `setter` calls.
+//When users read.. what does this mean?
++
 
 
-== Paging
-
-You should only use `list` and `stream` methods if your table contains small enough data sets. For larger data
-sets you can use the `find` method equivalents, which return a `PanacheQuery` on which you can do paging:
-
-[source,java]
-----
-// create a query for all living persons
-PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
-
-// make it use pages of 25 entries at a time
-livingPersons.page(Page.ofSize(25));
-
-// get the first page
-List<Person> firstPage = livingPersons.list();
-
-// get the second page
-List<Person> secondPage = livingPersons.nextPage().list();
-
-// get page 7
-List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
-
-// get the number of pages
-int numberOfPages = livingPersons.pageCount();
-
-// get the total number of entities returned by this query without paging
-int count = livingPersons.count();
-
-// and you can chain methods of course
-return Person.find("status", Status.Alive)
-    .page(Page.ofSize(25))
-    .nextPage()
-    .stream()
-----
-
-The `PanacheQuery` type has many other methods to deal with paging and returning streams.
-
-== Sorting
-
-All methods accepting a query string also accept the following simplified query form:
-
-[source,java]
-----
-List<Person> persons = Person.list("order by name,birth");
-----
-
-But these methods also accept an optional `Sort` parameter, which allows your to abstract your sorting:
-
-[source,java]
-----
-List<Person> persons = Person.list(Sort.by("name").and("birth"));
-
-// and with more restrictions
-List<Person> persons = Person.list("status", Sort.by("name").and("birth"), Status.Alive);
-----
-
-The `Sort` class has plenty of methods for adding columns and specifying sort direction.
-
-== Adding entity methods
-
-In general, we recommend not adding custom queries for your entities outside of the entities themselves,
-to keep all model queries close to the models they operate on. So we recommend adding them as static methods
-in your entity class:
-
+.. Add custom queries to your entities as static methods inside the entities themselves so queries are co-located with the object they operate on. IN the following example add three custom queries, `findByName`, `findAlive`, and `deleteStefs`.
++
 [source,java]
 ----
 @Entity
@@ -301,35 +157,349 @@ public class Person extends PanacheEntity {
 }
 ----
 
-== Simplified queries
 
-Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
-at the end.
+* Use a repository pattern to define an entity:
+.. Define entities as JPA entities. The following example defines the `Person` class as a JPA entity.
++
+[source,java]
+----
+@Entity
+public class Person {
+    @Id @GeneratedValue private Long id;
+    private String name;
+    private LocalDate birth;
+    private Status status;
 
-If your select query does not start with `from`, we support the following additional forms:
+    public Long getId(){
+        return id;
+    }
+    public void setId(Long id){
+        this.id = id;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    public LocalDate getBirth() {
+        return birth;
+    }
+    public void setBirth(LocalDate birth) {
+        this.birth = birth;
+    }
+    public Status getStatus() {
+        return status;
+    }
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+}
+----
+.. Define your repository and add instance methods. The following example defines the `PersonRepository` :
++
+[source,java]
+----
+@ApplicationScoped
+public class PersonRepository implements PanacheRepository<Person> {
 
-- `order by ...` which will expand to `from EntityName order by ...`
-- `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
-- `<query>` will expand to `from EntityName where <query>`
+   // put your custom logic here as instance methods
 
-If your update query does not start with `update`, we support the following additional forms:
+   public Person findByName(String name){
+       return find("name", name).firstResult();
+   }
 
-- `from EntityName ...` which will expand to `update from EntityName ...`
-- `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
-- `set? <update-query>` will expand to `update from EntityName set <update-query>`
+   public List<Person> findAlive(){
+       return list("status", Status.Alive);
+   }
 
-NOTE: You can also write your queries in plain
-link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
+   public void deleteStefs(){
+       delete("name", "Stef");
+  }
+}
+----
+
++
+. Add the following code to the endpoint where you want to use entity operations so that the operations that are defined in `PanacheEntityBase` are available:
++
+//COMMENT: can we have a completed example?
++
+[source,java]
+----
+@Inject
+PersonRepository personRepository;
+
+@GET
+public long count(){
+    return personRepository.count();
+}
+----
+
+== Hibernate ORM with Panache queries
+
+Hibernate Query Language (HQL) is a query language similar to Structured Query Language (SQL). However, HQL works with persistent objects and properties instead of tables and columns. For more information about HQL, see the "HQL and JPQL" section of the xref:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html[_Hibernate ORM User Guide_].
+
+=== PanacheQuery entity
+
+The `PanacheQuery` entity  abstracts the use of paging, getting the number of results, and operating on `List` or `Stream` methods. You can use the `PanacheQuery` entity  for paging and range-based queries.
+
+
+Only use `List` and `Stream` methods if your table contains small data sets. For large data
+sets, use the `Find` method equivalents, which return a `PanacheQuery` on which you can perform paging.
+
+[WARNING]
+====
+You cannot mix ranges and pages. If your query uses a range, any methods that depend on having a current page throw an `UnsupportedOperationException` exception. To switch back to paging, use `page(Page)` or `page(int, int)`.
+====
+
+.Additional resources
+* For a complete list of  `PanacheQuery` methods, see the https://javadoc.io/doc/io.quarkus/quarkus-hibernate-orm-panache/latest/io/quarkus/hibernate/orm/panache/PanacheQuery.html[_PanacheQuery Class_] page.
+
+==== Examples of queries that use paging
+These examples show how you can use paging in your Panache queries. The active record pattern examples use a `Person` entity created from the `PanacheEntity' class. The repository pattern examples use a regular JPA `Person` entity and the `PersonRepository` created from the
+`PanacheRepository` class.
+
+
+
+* Create a query for all living persons:
+** Active record pattern:
++
+[source,java]
+----
+PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
+----
+** Repository pattern:
++
+[source,java]
+----
+PanacheQuery<PersonRepository> livingPersons = Person.find("status", Status.Alive);
+----
+
+
+* Make pages have 25 entries per page:
++
+[source,java]
+----
+livingPersons.page(Page.ofSize(25));
+----
+
+
+* Retrieve the first page:
+** Active record pattern:
++
+[source,java]
+----
+List<Person> firstPage = livingPersons.list();
+----
+** Repository pattern:
++
+[source,java]
+----
+List<Person.Repository> firstPage = livingPersons.list();
+----
+
+* Retrieve the second page:
+** Active record pattern:
++
+[source,java]
+----
+List<Person> secondPage = livingPersons.nextPage().list();
+----
+** Repository pattern:
++
+[source,java]
+----
+List<PersonRepository> secondPage = livingPersons.nextPage().list();
+----
+
+* Retrieve page 7:
+** Active record pattern:
++
+[source,java]
+----
+List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
+----
+** Repository pattern:
++
+[source,java]
+----
+List<PersonRepository> page7 = livingPersons.page(Page.of(7, 25)).list();
+----
+
+* Retrieve the number of pages:
+[source,java]
+----
+int numberOfPages = livingPersons.pageCount();
+----
+
+* Retrieve the total number of entities returned by this query without paging:
+[source,java]
+----
+int count = livingPersons.count();
+----
+
+* Chain methods together:
+** Active record pattern:
++
+[source,java]
+----
+return Person.find("status", Status.Alive)
+   .page(Page.ofSize(25))
+   .nextPage()
+   .stream()
+----
+** Repository pattern:
++
+[source,java]
+----
+return PersonRepository.find("status", Status.Alive)
+   .page(Page.ofSize(25))
+   .nextPage()
+   .stream()
+----
+
+==== Examples of queries that use a range of values
+These examples show how you can use a range of values in your Panache queries. The active record pattern examples use a `Person` entity created from the `PanacheEntity` class. The repository pattern examples use a regular JPA `Person` entity and the `PersonRepository` created from the
+`PanacheRepository` class.
+
+
+* Create a query for all living persons:
+** Active record pattern:
++
+[source,java]
+----
+PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
+----
+** Repository pattern:
++
+[source,java]
+----
+PanacheQuery<PersonRepository> livingPersons = Person.find("status", Status.Alive);
+----
+
+* Specify a range from index 0 to index 24 (inclusive):
++
+[source,java]
+----
+livingPersons.range(0, 24);
+----
+
+* Specify a range called `firstRange` with the range index 0 to index 24 (inclusive):
+** Active record pattern:
+[source,java]
+----
+List<Person> firstRange = livingPersons.list();
+----
+** Repository pattern:
+[source,java]
+----
+List<PersonRepository> firstRange = livingPersons.list();
+----
+
+* Specify a new range called `secondRange` with the range index 25 to index 49 (inclusive):
+** Active record pattern:
++
+[source,java]
+----
+List<Person> secondRange = livingPersons.range(25, 49).list();
+----
+
+** Repository pattern:
++
+[source,java]
+----
+List<PersonRepository> secondRange = livingPersons.range(25, 49).list();
+----
+
+
+=== Simplified Hibernate ORM with Panache queries
+You can use HQL to write queries for Hibernate ORM with Panache entities, as shown in the following example:
 
 [source,java]
 ----
 Order.find("select distinct o from Order o left join fetch o.lineItems");
-Order.update("update from Person set name = 'Moral' where status = ?", Status.Alive);
+Order.update("update from Person set name = 'Mortal' where status = ?", Status.Alive);
 ----
 
-== Query parameters
+However, Hibernate ORM with Panache provides several HQL short cuts.
 
-You can pass query parameters by index (1-based) as shown below:
+.FROM
+In most cases, HQL `SELECT` statements are immediately followed by the `FROM` clause, for example `SELECT name FROM _ENTITY_NAME_`, where `_ENTITY_NAME_` is the name of a Java entity. However, if you do not include `FROM` in your HQL `SELECT` statement, Panache adds `FROM` in the following cases:
+
+[cols="30%,70%" options="header"]
+
+|===
+h|User entry
+h|Expanded entry
+
+|`ORDER BY`
+|`FROM _ENTITY_NAME_ ORDER BY`
+
+| A single column name and a single parameter `_SINGLE_COLUMN_NAME_`
+|`FROM _ENTITY_NAME_ WHERE  _SINGLE_COLUMN_NAME_  =?`
+
+
+| A query string (_QUERY_STRING_)
+| `FROM _ENTITY_NAME_ WHERE  _QUERY_STRING_`
+
+
+|===
+
+
+.UPDATE
+
+If you do not include `UPDATE` in your HQL `SELECT` statement, Panache adds `UPDATE` in the following cases:
+
+[cols="30%,70%" options="header"]
+
+|===
+h|User entry
+h|Expanded entry
+
+|`FROM _ENTITY_NAME_`
+|`UPDATE FROM _ENTITY_NAME_`
+
+| `set? _SINGLE_COLUMN_NAME_`, where  `_SINGLE_COLUMN_NAME_` is a single column name and a single parameter
+| `UPDATE FROM _ENTITY_NAME_ set _SINGLE_COLUMN_NAME_ =?`
+
+
+| `set? _QUERY_STRING_`, where  `_QUERY_STRING_`is a query string
+| `UPDATE FROM _ENTITY_NAME_ set _QUERY_STRING_`
+
+|===
+
+== Named queries
+
+A named query is a statically defined query with an unchangeable query string annoated with `@NamedQuery`. For a named query to work within the context of Panache, it must be defined inside of a `PanacheEntity` class or a `PanacheRepository` entity class or a super class of one of these classes.
+
+.Prerequisites
+* A `PanacheEntity` entity or a `PanacheRepository` entity class exists.
+
+.Procedure
+
+. To create a named query, add the `@NamedQuery` annotation to a Panache entity. The following example adds ``@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")` to the Person entity.` The name of the query is `Person.getByName`.
++
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+public class Person extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Status status;
+
+    public static Person findByName(String name){
+        return find("#Person.getByName", name).firstResult();
+    }
+}
+----
+
+. To use a named query, prefix the query name with `#`.
+//Need example.
+
+=== Query parameters
+
+You can pass query parameters by using 1-based indexing, by creating a map, or by creating an instance of the `Parameter` class. Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
 
 [source,java]
 ----
@@ -359,66 +529,44 @@ Person.find("name = :name and status = :status",
          Parameters.with("name", "stef").and("status", Status.Alive));
 ----
 
-Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
 
-== The DAO/Repository option
 
-Repository is a very popular pattern and can be very accurate for some use case, depending on
-the complexity of your needs.
 
-Whether you want to use the Entity based approach presented above or a more traditional Repository approach, it is up to you,
-Panache and Quarkus have you covered either way.
+=== Sorting
 
-If you lean towards using Repositories, you can get the exact same convenient methods injected in your Repository by making it
-implement `PanacheRepository`:
+All methods that accept a query string also accept the following simplified query form:
 
 [source,java]
 ----
-@ApplicationScoped
-public class PersonRepository implements PanacheRepository<Person> {
-
-   // put your custom logic here as instance methods
-
-   public Person findByName(String name){
-       return find("name", name).firstResult();
-   }
-
-   public List<Person> findAlive(){
-       return list("status", Status.Alive);
-   }
-
-   public void deleteStefs(){
-       delete("name", "Stef");
-  }
-}
+List<Person> persons = Person.list("order by name,birth");
 ----
 
-Absolutely all the operations that are defined on `PanacheEntityBase` are available on your DAO, so using it
-is exactly the same except you need to inject it:
+These methods also accept an optional `Sort` parameter, which enables you to abstract your sorting, as shown in the following example:
 
 [source,java]
 ----
-@Inject
-PersonRepository personRepository;
-
-@GET
-public long count(){
-    return personRepository.count();
-}
+List<Person> persons = Person.list(Sort.by("name").and("birth"));
 ----
 
-So if Repositories are your thing, you can keep doing them. Even with repositories, you can keep your entities as
-subclasses of `PanacheEntity` in order to get the ID and public fields working, but you can even skip that and
-go back to specifying your ID and using getters and setters if that's your thing. Use what works for you.
+You can further refine your sorting, as demonstrated in the following example.
+[source,java]
+----
+List<Person> persons = Person.list("status", Sort.by("name").and("birth"), Status.Alive);
+----
+
+The `Sort` class has many methods for adding columns and specifying sort direction.
+
+
+
 
 == Transactions
 
-Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a
-CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
-so at your application entry point boundaries like your REST endpoint controllers.
+Make sure to wrap methods that modify your database, for example `entity.persist()), within a transaction. Marking a
+CDI bean method with the `@Transactional` annotation will do that for you and make that method a transaction boundary. We recommend doing
+so at your application entry point boundaries such as your REST endpoint controllers.
 
 JPA batches changes you make to your entities and sends changes (it's called flush) at the end of the transaction or before a query.
-This is usually a good thing as it's more efficient.
+This is usually a good thing because it is more efficient.
 But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
 Remember, this is less efficient so don't abuse it.
 And your transaction still has to be committed.
@@ -440,13 +588,11 @@ public void create(Parameter parameter){
 }
 ----
 
-== Lock management
+== Panache lock management
 
-Panache provides direct support for database locking with your entity/repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`.
+Panache provides direct support for database locking with your entity or repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`. The following examples use  the active record pattern and the `Person` class. You can apply the same method with repositories.
 
-The following examples are for the entity pattern but the same can be used with repositories.
-
-== First: Locking using findById().
+.Locking using the `findById()` method
 
 [source,java]
 ----
@@ -463,7 +609,7 @@ public class PersonEndpoint {
 }
 ----
 
-== Second: Locking in a find().
+.Locking in a `find()` method
 
 [source,java]
 ----
@@ -480,16 +626,18 @@ public class PersonEndpoint {
 }
 ----
 
-Be careful that locks are released when the transaction ends, so the method that invokes the lock query must be annotated with the `@Transactional` annotation.
+NOTE: Locks are released when the transaction ends, so the method that invokes the lock query must be annotated with the `@Transactional` annotation.
 
 == Custom IDs
 
-IDs are often a touchy subject, and not everyone's up for letting them handled by the framework, once again we
-have you covered.
+To better control IDs, you can specify your own ID strategy by extending the `PanacheEntityBase` or `PanacheEntityRepositoryBase` class, depending on the entity method you are using.
 
-You can specify your own ID strategy by extending `PanacheEntityBase` instead of `PanacheEntity`. Then
-you just declare whatever ID you want as a public field:
 
+.Procedure
+
+. Create a class that extends `PanacheEntityBase`.
+. Declare the ID you want as a public field. The following example extends the  `PanacheEntityBase` by creating the `Person` class.
++
 [source,java]
 ----
 @Entity
@@ -508,7 +656,7 @@ public class Person extends PanacheEntityBase {
 }
 ----
 
-If you're using repositories, then you will want to extend `PanacheRepositoryBase` instead of `PanacheRepository`
+NOTE: If you are using repositories, extend the `PanacheRepositoryBase` class instead of the `PanacheRepository` class
 and specify your ID type as an extra type parameter:
 
 [source,java]
@@ -519,47 +667,356 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 }
 ----
 
-== How and why we simplify Hibernate ORM mappings
+//how does this relate to the previous code. Can we give a complete example?
 
-When it comes to writing Hibernate ORM entities, there are a number of annoying things that users have grown used to
-reluctantly deal with, such as:
 
-- Duplicating ID logic: most entities need an ID, most people don't care how it's set, because it's not really
-relevant to your model.
-- Dumb getters and setters: since Java lacks support for properties in the language, we have to create fields,
-then generate getters and setters for those fields, even if they don't actually do anything more than read/write
-the fields.
-- Traditional EE patterns advise to split entity definition (the model) from the operations you can do on them
-(DAOs, Repositories), but really that requires an unnatural split between the state and its operations even though
-we would never do something like that for regular objects in the Object Oriented architecture, where state and methods
-are in the same class. Moreover, this requires two classes per entity, and requires injection of the DAO or Repository
-where you need to do entity operations, which breaks your edit flow and requires you to get out of the code you're
-writing to set up an injection point before coming back to use it.
-- Hibernate queries are super powerful, but overly verbose for common operations, requiring you to write queries even
-when you don't need all the parts.
-- Hibernate is very general-purpose, but does not make it trivial to do trivial operations that make up 90% of our
-model usage.
+== Defining entities in external projects or JAR files
+//Added content from https://quarkus.io/guides/cdi-reference#how-to-generate-a-jandex-index. This module could be shared.
 
-With Panache, we took an opinionated approach to tackle all these problems:
+Hibernate ORM with Panache relies on Java `bytecode` enhancements that are added to your entities at compile time. If you define your entities in the project where you build your Quarkus application, the  `bytecode` enhancements are added correctly. If the entities come from external projects or JAR files, use Jandex to index your JAR file to ensure that it is treated like a Quarkus application library. Doing this enables Quarkus to index and enhance your entities as if they were inside the current project.
 
-- Make your entities extend `PanacheEntity`: it has an ID field that is auto-generated. If you require
-a custom ID strategy, you can extend `PanacheEntityBase` instead and handle the ID yourself.
-- Use public fields. Get rid of dumb getter and setters. Under the hood, we will generate all getters and setters
-that are missing, and rewrite every access to these fields to use the accessor methods. This way you can still
-write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
-- Don't use DAOs or Repositories: put all your entity logic in static methods in your entity class. Your entity superclass
-comes with lots of super useful static methods and you can add your own in your entity class. Users can just start using
-your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.
-- Don't write parts of the query that you don't need: write `Person.find("order by name")` or
-`Person.find("name = ?1 and status = ?2", "stef", Status.Alive)` or even better
-`Person.find("name", "stef")`.
+.Prerequisites
+* A Quarkus Maven project that uses the Hibernate ORM with Panache extension is available.
 
-That's all there is to it: with Panache, Hibernate ORM has never looked so trim and neat.
+.Procedure
+To generate the Jandex index, use one of the following methods:
 
-== Defining entities in external projects or jars
+* Add the following dependency to your project's `pom.xml` file:
++
+[source,xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.jboss.jandex</groupId>
+      <artifactId>jandex-maven-plugin</artifactId>
+      <version>1.0.7</version>
+      <executions>
+        <execution>
+          <id>make-index</id>
+          <goals>
+            <goal>jandex</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+----
 
-Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
-If you define your entities in the same project where you build your Quarkus application, everything will work fine.
-If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
-by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
-This will allow Quarkus to index and enhance your entities as if they were inside the current project.
+* Add `quarkus.index-dependency` entries to your `application.properties` file, where `_NAME_` is the name of the dependency,`_GROUP_ID_` is the group ID for that dependency, `_ARTIFACT_ID` is the artifact ID for that dependency, and `_CLASSIFIER_` is the dependency classifier:
++
+[source,properties]
+----
+quarkus.index-dependency._NAME_.group-id=_GROUP_ID_
+quarkus.index-dependency._NAME_.artifact-id=<_ARTIFACT-ID_
+quarkus.index-dependency._NAME_.classifier=_CLASSIFIER_
+----
++
+NOTE: The `quarkus.index-dependency._NAME_.classifier=_CLASSIFIER_` line is optional.
++
+For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
++
+[source,properties]
+----
+quarkus.index-dependency.acme.group-id=org.acme
+quarkus.index-dependency.acme.artifact-id=acme-api
+----
+
+
+
+
+=== Useful operations
+This section list common operations that you can use with your entity or entity repository. The active record pattern examples use a `Person` entity created from the `PanacheEntity' class. The repository pattern examples use a regular JPA `Person` entity and the `PersonRepository` created from the
+`PanacheRepository` class.
+
+* Create a record (active record pattern and repository pattern):
++
+[source,java]
+----
+Person person = new Person();
+person.name = "Stef";
+person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
+person.status = Status.Alive;
+----
+
+* Persist an entity:
+** Active record pattern:
++
+[source,java]
+----
+person.persist(person);
+----
+
+** Repository pattern:
++
+[source,java]
+----
+personRepository.persist(person);
+----
++
+NOTE: After an entity is persisted, you do not need to explicitly save your entity. All changes are automatically persisted on transaction commit.
+
+* Verify that an entity is persisted:
+** Active record pattern:
++
+[source,java]
+----
+if(person.isPersistent(person))
+----
+** Repository pattern:
++
+[source,java]
+----
+if(personRepository.isPersistent(person))
+----
+
+* Delete an entity:
+** Active record pattern:
++
+[source,java]
+----
+person.delete(person);
+----
+
+** Repository pattern:
++
+[source,java]
+----
+personRepository.delete(person);
+----
+
+* Retrieve a list of all `Person` entities:
+** Active record pattern:
++
+[source,java]
+----
+List<Person> allPersons = person.listAll();
+----
+** Repository pattern:
++
+[source,java]
+----
+List<Person> allPersons = personRepository.listAll();
+----
+* Find a specific person by ID:
+** Active record pattern:
++
+[source,java]
+----
+person = person.findById(personId);
+----
+** Repository pattern:
++
+[source,java]
+----
+person = personRepository.findById(personId);
+----
+
+* Find a specific person by ID using the `Optional` class:
+** Active record pattern:
++
+[source,java]
+----
+Optional<Person> optional = person.findByIdOptional(personId);
+person = optional.orElseThrow(() -> new NotFoundException());
+----
+
+** Repository pattern:
++
+[source,java]
+----
+Optional<Person> optional = personRepository.findByIdOptional(personId);
+person = optional.orElseThrow(() -> new NotFoundException());
+----
+
+* Find all living persons:
+** Active record pattern:
++
+[source,java]
+----
+List<Person> livingPersons = person.list("status", Status.Alive);
+----
+** Repsository pattern:
++
+[source,java]
+----
+List<Person> livingPersons = personRepository.list("status", Status.Alive);
+----
+
+* Count all persons:
+** Active record pattern:
++
+[source,java]
+----
+long countAll = person.count();
+----
+** Repository pattern:
++
+[source,java]
+----
+long countAll = personRepository.count();
+----
+
+* Count all living persons:
+** Active record pattern:
++
+[source,java]
+----
+long countAlive = person.count("status", Status.Alive);
+----
+** Repository pattern:
++
+[source,java]
+----
+long countAlive = personRepository.count("status", Status.Alive);
+----
+
+* Delete all living persons:
+** Active record pattern:
++
+[source,java]
+----
+person.delete("status", Status.Alive);
+----
+** Repository pattern:
++
+[source,java]
+----
+personRepository.delete("status", Status.Alive);
+----
+
+
+* Delete all persons:
+** Active record pattern:
++
+[source,java]
+----
+person.deleteAll();
+----
+** Repository pattern:
++
+[source,java]
+----
+personRepository.deleteAll();
+----
+
+* Delete by ID:
+** Active record pattern:
++
+[source,java]
+----
+boolean deleted = person.deleteById(personId);
+----
+** repository pattern:
++
+[source,java]
+----
+boolean deleted = personRepository.deleteById(personId);
+----
+
+* Set the name of all living persons to Mortal:
+** Active record pattern:
++
+[source,java]
+----
+person.update("name = 'Mortal' where status = ?1", Status.Alive);
+----
+** Repository pattern:
++
+[source,java]
+----
+personRepository.update("name = 'Mortal' where status = ?1", Status.Alive);
+----
+
+
+All `List` methods have equivalent `stream` method, which requires a transaction to work:
+
+[source,java]
+----
+Stream<Person> persons = personRepository.streamAll();
+List<String> namesButEmmanuels = persons
+    .map(p -> p.name.toLowerCase() )
+    .filter( n -> ! "emmanuel".equals(n) )
+    .collect(Collectors.toList());
+----
+// COMMENT: Need to clarify
+
+
+
+
+
+
+
+--------------------------------------------------
+
+== Setting up and configuring Hibernate ORM
+//Added and adapted from Hibernate ORM guide
+
+NOTE: To see the completed example, clone the https://github.com/quarkusio/quarkus-quickstarts.git[Quarkus Quickstarts] Git repository or download the https://github.com/quarkusio/quarkus-quickstarts/archive/master.zip[Quarkus Quickstarts] archive. The solution is located in the `hibernate-orm-panache-quickstart` directory.
+
+//When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` resource to configure it. Using such a classic configuration file is an option, but unnecessary unless you have specific advanced needs;
+so we'll see first how Hibernate ORM can be configured without a `persistence.xml` resource.
+
+In Quarkus, you just need to:
+
+//* add your configuration settings in `{config-file}`
+//* annotate your entities with `@Entity` and any other mapping annotation as usual
+
+//Other configuration needs have been automated: Quarkus will make some opinionated choices and educated guesses.
+
+Add the following dependencies to your project:
+
+* The Panache JPA extension: `io.quarkus:quarkus-hibernate-orm-panache`
+* Your Java database connectivity (JDBC) driver extension. Quarkus support the following JDBC driver extensions:
++
+* `quarkus-jdbc-derby` for link:https://db.apache.org/derby/[Apache Derby]
+* `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
+* `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
+* `quarkus-jdbc-mssql` for link:https://www.microsoft.com/en-gb/sql-server/[Microsoft SQL Server]
+* `quarkus-jdbc-mysql` for link:https://www.mysql.com/[MySQL]
+* `quarkus-jdbc-postgresql` for link:https://www.postgresql.org/[PostgreSQL]
+
+
+  The following example shows how to add the Panache JPA extension and the PostgreSQL JDBC driver:
+  +
+  [source,xml]
+  ----
+  <dependencies>
+      <!-- Hibernate ORM specific dependencies -->
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-hibernate-orm-panache</artifactId>
+      </dependency>
+
+      <!-- JDBC driver dependencies -->
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-jdbc-postgresql</artifactId>
+      </dependency>
+  </dependencies>
+  ----
+
+.Add the relevant configuration properties to the `application.properties` file.
++
+[source,properties]
+--
+# datasource configuration
+quarkus.datasource.url = jdbc:postgresql://localhost:5432/hibernate_db
+quarkus.datasource.driver = org.postgresql.Driver
+quarkus.datasource.username = hibernate
+quarkus.datasource.password = hibernate
+
+# drop and create the database at startup (use `update` to only update the schema)
+quarkus.hibernate-orm.database.generation=drop-and-create
+--
+
+NOTE: These configuration properties are different from a Hibernate ORM configuration file: these drive Quarkus configuration properties,
+which often will map to Hibernate configuration properties but could have different names and don't necessarily map 1:1 to each other.
+
+
+See the  <<hibernate-configuration-properties, Hibernate ORM configuration properties>> section for the list of properties you can set in `{config-file}`.
+
+An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
+
+The dialect will be selected based on the JDBC driver - unless you set one explicitly.

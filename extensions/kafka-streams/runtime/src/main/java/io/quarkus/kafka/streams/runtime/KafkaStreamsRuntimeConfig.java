@@ -14,8 +14,9 @@ public class KafkaStreamsRuntimeConfig {
 
     /**
      * A unique identifier for this Kafka Streams application.
+     * If not set, defaults to quarkus.application.name.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.application.name}")
     public String applicationId;
 
     /**

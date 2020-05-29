@@ -656,8 +656,13 @@ public class BeanGenerator extends AbstractGenerator {
         // Bean types
         ResultHandle typesHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (org.jboss.jandex.Type type : bean.getTypes()) {
-            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle,
-                    Types.getTypeHandle(constructor, type, tccl));
+            ResultHandle typeHandle;
+            try {
+                typeHandle = Types.getTypeHandle(constructor, type, tccl);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalStateException("Unable to construct the type handle for " + bean + ": " + e.getMessage());
+            }
+            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, typesHandle, typeHandle);
         }
         ResultHandle unmodifiableTypesHandle = constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_UNMODIFIABLE_SET,
                 typesHandle);

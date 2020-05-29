@@ -39,9 +39,11 @@ public class MojoTestBase {
     public static File initEmptyProject(String name) {
         File tc = new File("target/test-classes/" + name);
         if (tc.isDirectory()) {
-            boolean delete = tc.delete();
-            Logger.getLogger(MojoTestBase.class.getName())
-                    .log(Level.FINE, "test-classes deleted? %s", delete);
+            try {
+                FileUtils.deleteDirectory(tc);
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot delete directory: " + tc, e);
+            }
         }
         boolean mkdirs = tc.mkdirs();
         Logger.getLogger(MojoTestBase.class.getName())

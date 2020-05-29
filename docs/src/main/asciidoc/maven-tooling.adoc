@@ -415,18 +415,29 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                 </execution>
             </executions>
         </plugin>
+        <plugin> <3>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <configuration>
+                <systemPropertyVariables>
+                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                    <maven.home>${maven.home}</maven.home>
+                </systemPropertyVariables>
+            </configuration>
+        </plugin>
     </plugins>
 </build>
 
 <profiles>
-    <profile> <3>
+    <profile> <4>
         <id>native</id>
-        <properties> <4>
+        <properties> <5>
             <quarkus.package.type>native</quarkus.package.type>
         </properties>
         <build>
             <plugins>
-                <plugin> <5>
+                <plugin> <6>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${surefire-plugin.version}</version>
@@ -439,6 +450,8 @@ If you have not used <<project-creation,project scaffolding>>, add the following
                             <configuration>
                                 <systemPropertyVariables>
                                     <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                    <maven.home>${maven.home}</maven.home>
                                 </systemPropertyVariables>
                             </configuration>
                         </execution>
@@ -452,9 +465,11 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
 <2> Use the Quarkus Maven plugin that will hook into the build process.
-<3> Use a specific `native` profile for native executable building.
-<4> Enable the `native` package type. The build will therefore produce a native executable.
-<5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
+<3> Add system properties to `maven-surefire-plugin`. +
+`maven.home` is only required if you have custom configuration in `${maven.home}/conf/settings.xml`.
+<4> Use a specific `native` profile for native executable building.
+<5> Enable the `native` package type. The build will therefore produce a native executable.
+<6> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
 [[uber-jar-maven]]
 === Uber-Jar Creation

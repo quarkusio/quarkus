@@ -348,12 +348,14 @@ be set, as the default version does not support Junit 5:
     <configuration>
        <systemPropertyVariables>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+          <maven.home>${maven.home}</maven.home>
        </systemPropertyVariables>
     </configuration>
 </plugin>
 ----
 
-We also set the `java.util.logging` system property to make sure tests will use the correct logmanager.
+We also set the `java.util.logging` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
+from `${maven.home}/conf/settings.xml` is applied (if any).
 
 The generated project contains a simple test.
 Edit the `src/test/java/org/acme/getting/started/GreetingResourceTest.java` to match the following content:

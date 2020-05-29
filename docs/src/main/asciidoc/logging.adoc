@@ -230,6 +230,7 @@ In particular, you need to set the appropriate `LogManager` using the `java.util
         <systemPropertyVariables>
           <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
           <quarkus.log.level>DEBUG</quarkus.log.level>  <2>
+          <maven.home>${maven.home}</maven.home>
         </systemPropertyVariables>
       </configuration>
     </plugin>
@@ -247,33 +248,8 @@ test {
 	systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }
 ----
-== Running `@QuarkusTest` from an IDE
 
-Most IDEs offer the possibility to run a selected class as JUnit test directly, in which case the above workaround will not be applied. You will need to apply it in the settings of your chosen IDE.
-
-=== Eclipse separate JRE definition
-
-Copy your current "Installed JRE" definition into a new one, where you will add the workaround as a new VM argument 
-`-Djava.util.logging.manager=org.jboss.logmanager.LogManager`. Use this JRE definition as your Quarkus project targeted runtime and the workaround will be applied to any "Run as JUnit" configuration.
-
-=== VSCode "run with" configuration
-
-The `settings.json` placed in the root of your project directory or in the workspace will need the workaround in your test configuration:
-[source, json]
-----
-"java.test.config": [
-    {
-        "name": "quarkusConfiguration",
-        "vmargs": [ "-Djava.util.logging.manager=org.jboss.logmanager.LogManager ..." ],
-        ...
-    },
-  ...
-]
-----
-
-=== IntelliJ JUnit template
-
-Nothing needed in IntelliJ because the IDE will pick the `systemPropertyVariables` from the surefire plugin configuration in `pom.xml`.
+See also: <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` from an IDE>>
 
 [[loggingConfigurationReference]]
 == Logging configuration reference

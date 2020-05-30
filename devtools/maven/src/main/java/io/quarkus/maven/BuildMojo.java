@@ -161,6 +161,7 @@ public class BuildMojo extends AbstractMojo {
             realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
 
             MavenArtifactResolver resolver = MavenArtifactResolver.builder()
+                    .setWorkspaceDiscovery(false)
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
@@ -177,7 +178,6 @@ public class BuildMojo extends AbstractMojo {
                     .setMavenArtifactResolver(resolver)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())
                     .setBuildSystemProperties(realProperties)
-                    .setLocalProjectDiscovery(false)
                     .setBaseName(finalName)
                     .setTargetDirectory(buildDir.toPath())
                     .build().bootstrap();

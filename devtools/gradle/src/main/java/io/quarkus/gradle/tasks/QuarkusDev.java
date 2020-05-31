@@ -113,11 +113,11 @@ public class QuarkusDev extends QuarkusTask {
 
     @Input
     // @InputDirectory this breaks kotlin projects, the working dir at this stage will be evaluated to 'classes/java/main' instead of 'classes/kotlin/main'
-    public File getWorkingDir() {
+    public String getWorkingDir() {
         if (workingDir == null) {
-            return extension().workingDir();
+            return extension().workingDir().toString();
         } else {
-            return new File(workingDir);
+            return workingDir;
         }
     }
 

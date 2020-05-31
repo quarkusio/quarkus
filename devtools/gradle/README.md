@@ -11,7 +11,7 @@ Functional Tests
 To run the functional tests, run the following command:
 
 ```bash
-./gradlew functionalTests
+./gradlew functionalTest
 ```
 
 Local development

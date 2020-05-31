@@ -44,10 +44,15 @@ public abstract class AbstractLambdaPollLoop {
                     checkQuarkusBootstrapped();
                     URL requestUrl = AmazonLambdaApi.invocationNext();
                     while (running.get()) {
-
+                        String requestId = null;
                         HttpURLConnection requestConnection = (HttpURLConnection) requestUrl.openConnection();
                         try {
-                            String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            if (running.get()) {
+                                requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            } else {
+                                break;
+                            }
+
                             try {
                                 String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
                                 TraceId.setTraceId(traceId);
@@ -72,9 +77,14 @@ public abstract class AbstractLambdaPollLoop {
                             } catch (Exception e) {
                                 log.error("Failed to run lambda", e);
 
-                                postError(AmazonLambdaApi.invocationError(requestId),
-                                        new FunctionError(e.getClass().getName(), e.getMessage()));
-                                continue;
+                                try {
+                                    postError(AmazonLambdaApi.invocationError(requestId),
+                                            new FunctionError(e.getClass().getName(), e.getMessage()));
+                                    continue;
+                                } catch (IOException ioException) {
+                                    break;
+                                }
+
                             }
 
                         } catch (Exception e) {

@@ -30,6 +30,18 @@ under the License.
       <directory>src/test/java</directory>
     </fileSet>
     <fileSet>
+      <directory>src/main/resources</directory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <directory>src/test/resources</directory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
       <directory>src/assembly</directory>
       <includes>
         <include>*</include>

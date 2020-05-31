@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;

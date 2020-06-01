@@ -3,9 +3,11 @@ package io.quarkus.azure.functions.resteasy.runtime;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 
 import org.jboss.logging.Logger;
 
@@ -15,6 +17,7 @@ import com.microsoft.azure.functions.HttpStatus;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
@@ -24,6 +27,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
+import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.runtime.Application;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
@@ -56,20 +60,16 @@ public class BaseFunction {
     }
 
     protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<byte[]>> request) {
-        VirtualClientConnection connection = VirtualClientConnection.connect(VertxHttpRecorder.VIRTUAL_HTTP);
         try {
-            return nettyDispatch(connection, request);
+            return nettyDispatch(request);
         } catch (Exception e) {
             e.printStackTrace();
             return request
                     .createResponseBuilder(HttpStatus.valueOf(500)).build();
-        } finally {
-            connection.close();
         }
     }
 
-    protected HttpResponseMessage nettyDispatch(VirtualClientConnection connection,
-            HttpRequestMessage<Optional<byte[]>> request)
+    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<byte[]>> request)
             throws Exception {
         String path = request.getUri().getRawPath();
         String query = request.getUri().getRawQuery();
@@ -92,51 +92,83 @@ public class BaseFunction {
             requestContent = new DefaultLastHttpContent(body);
         }
 
+        ResponseHandler handler = new ResponseHandler(request);
+        VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
-        HttpResponseMessage.Builder responseBuilder = null;
-        ByteArrayOutputStream baos = null;
         try {
-            for (;;) {
-                // todo should we timeout? have a timeout config?
-                //log.info("waiting for message");
-                Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
-                try {
-                    if (msg == null)
-                        continue;
-                    //log.info("Got message: " + msg.getClass().getName());
-
-                    if (msg instanceof HttpResponse) {
-                        HttpResponse res = (HttpResponse) msg;
-                        responseBuilder = request.createResponseBuilder(HttpStatus.valueOf(res.status().code()));
-                        for (Map.Entry<String, String> entry : res.headers()) {
-                            responseBuilder.header(entry.getKey(), entry.getValue());
-                        }
-                    }
-                    if (msg instanceof HttpContent) {
-                        HttpContent content = (HttpContent) msg;
-                        if (baos == null) {
-                            // todo what is right size?
-                            baos = new ByteArrayOutputStream(500);
-                        }
-                        int readable = content.content().readableBytes();
-                        for (int i = 0; i < readable; i++) {
-                            baos.write(content.content().readByte());
-                        }
-                    }
-                    if (msg instanceof LastHttpContent) {
-                        responseBuilder.body(baos.toByteArray());
-                        return responseBuilder.build();
-                    }
-                } finally {
-                    if (msg != null)
-                        ReferenceCountUtil.release(msg);
-                }
-            }
+            return handler.future.get();
         } finally {
-            if (baos != null) {
-                baos.close();
+            connection.close();
+        }
+    }
+
+    private ByteArrayOutputStream createByteStream() {
+        ByteArrayOutputStream baos;
+        baos = new ByteArrayOutputStream(500);
+        return baos;
+    }
+
+    private class ResponseHandler implements VirtualResponseHandler {
+        HttpResponseMessage.Builder responseBuilder;
+        ByteArrayOutputStream baos;
+        WritableByteChannel byteChannel;
+        CompletableFuture<HttpResponseMessage> future = new CompletableFuture<>();
+        final HttpRequestMessage<Optional<byte[]>> request;
+
+        public ResponseHandler(HttpRequestMessage<Optional<byte[]>> request) {
+            this.request = request;
+        }
+
+        @Override
+        public void handleMessage(Object msg) {
+            try {
+                //log.info("Got message: " + msg.getClass().getName());
+
+                if (msg instanceof HttpResponse) {
+                    HttpResponse res = (HttpResponse) msg;
+                    responseBuilder = request.createResponseBuilder(HttpStatus.valueOf(res.status().code()));
+                    for (Map.Entry<String, String> entry : res.headers()) {
+                        responseBuilder.header(entry.getKey(), entry.getValue());
+                    }
+                }
+                if (msg instanceof HttpContent) {
+                    HttpContent content = (HttpContent) msg;
+                    if (baos == null) {
+                        // todo what is right size?
+                        baos = createByteStream();
+                    }
+                    int readable = content.content().readableBytes();
+                    for (int i = 0; i < readable; i++) {
+                        baos.write(content.content().readByte());
+                    }
+                }
+                if (msg instanceof FileRegion) {
+                    FileRegion file = (FileRegion) msg;
+                    if (file.count() > 0 && file.transferred() < file.count()) {
+                        if (baos == null)
+                            baos = createByteStream();
+                        if (byteChannel == null)
+                            byteChannel = Channels.newChannel(baos);
+                        file.transferTo(byteChannel, file.transferred());
+                    }
+                }
+                if (msg instanceof LastHttpContent) {
+                    responseBuilder.body(baos.toByteArray());
+                    future.complete(responseBuilder.build());
+                }
+            } catch (Throwable ex) {
+                future.completeExceptionally(ex);
+            } finally {
+                ReferenceCountUtil.release(msg);
             }
+        }
+
+        @Override
+        public void close() {
+            if (!future.isDone())
+                future.completeExceptionally(new RuntimeException("Connection closed"));
         }
     }
 }

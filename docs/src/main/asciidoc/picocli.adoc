@@ -77,6 +77,24 @@ class GreetingService {
 <1> If there is only one class annotated with `picocli.CommandLine.Command` it will be used as entry point to Picocli CommandLine.
 <2> All classes annotated with `picocli.CommandLine.Command` are registered as CDI beans.
 
+IMPORTANT: Beans with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScope`)
+because Picocli will not be able set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
+using `@Depended` scope. If you need to use proxied scope, then annotate setter and not field, for example:
+[source,java]
+----
+@CommandLine.Command
+@ApplicationScoped
+public class EntryCommand {
+    private String name;
+
+    @CommandLine.Option(names = "-n")
+    public void setName(String name) {
+        this.name = name;
+    }
+
+}
+----
+
 == Command line application with multiple Commands
 
 When multiple classes have the `picocli.CommandLine.Command` annotation, then one of them needs to be also annotated with `io.quarkus.picocli.runtime.annotations.TopCommand`.
@@ -177,6 +195,46 @@ public class Config {
 }
 ----
 <1> You can return instance of `java.lang.Class` here. In such case `CommandLine` will try to instantiate this class using `CommandLine.IFactory`.
+
+== Configure CDI Beans with parsed arguments
+
+You can use `Event<CommandLine.ParseResult>` or just `CommandLine.ParseResult` to configure CDI beans based on arguments parsed by Picocli.
+This event will be generated in `QuarkusApplication` class created by this extension. If you are providing your own `@QuarkusMain` this event will not be raised.
+`CommandLine.ParseResult` is created from default `CommandLine` bean.
+
+[source,java]
+----
+@CommandLine.Command
+public class EntryCommand implements Runnable {
+@CommandLine.Option(names = "-c", description = "JDBC connection string")
+String connectionString;
+
+    @Inject
+    DataSource dataSource;
+
+    @Override
+    public void run() {
+        try (Connection c = dataSource.getConnection()) {
+            // Do something
+        } catch (SQLException throwables) {
+            // Handle error
+        }
+    }
+}
+
+@ApplicationScoped
+class DatasourceConfiguration {
+
+    @Produces
+    @ApplicationScoped // <1>
+    DataSource dataSource(CommandLine.ParseResult parseResult) {
+        PGSimpleDataSource ds = new PGSimpleDataSource();
+        ds.setURL(parseResult.matchedOption("c").getValue().toString());
+        return ds;
+    }
+}
+----
+<1> `@ApplicationScoped` used for lazy initialization
 
 == Providing own QuarkusMain
 

@@ -397,6 +397,13 @@ class KubernetesProcessor {
         config.getContainers().entrySet().forEach(e -> {
             session.resources().decorate(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)));
         });
+
+        // The presence of optional is causing issues in OCP 3.11, so we better remove them.
+        // The following 4 decorator will set the optional property to null, so that it won't make it into the file.
+        session.resources().decorate(target, new RemoveOptionalFromSecretEnvSourceDecorator());
+        session.resources().decorate(target, new RemoveOptionalFromConfigMapEnvSourceDecorator());
+        session.resources().decorate(target, new RemoveOptionalFromSecretKeySelectorDecorator());
+        session.resources().decorate(target, new RemoveOptionalFromConfigMapKeySelectorDecorator());
     }
 
     /**

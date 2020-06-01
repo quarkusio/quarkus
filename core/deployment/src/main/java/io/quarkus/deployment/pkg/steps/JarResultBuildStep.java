@@ -30,6 +30,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -134,6 +135,8 @@ public class JarResultBuildStep {
     public static final String APP = "app";
     public static final String QUARKUS = "quarkus";
 
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
         String name = packageConfig.outputName.isPresent() ? packageConfig.outputName.get() : bst.getBaseName();
@@ -197,6 +200,40 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
         Files.deleteIfExists(runnerJar);
 
+        buildUberJar0(curateOutcomeBuildItem,
+                transformedClasses,
+                applicationArchivesBuildItem,
+                packageConfig,
+                applicationInfo,
+                generatedClasses,
+                generatedResources,
+                mainClassBuildItem,
+                runnerJar);
+
+        //for uberjars we move the original jar, so there is only a single jar in the output directory
+        final Path standardJar = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + ".jar");
+
+        final Path originalJar;
+        if (Files.exists(standardJar)) {
+            originalJar = outputTargetBuildItem.getOutputDirectory()
+                    .resolve(outputTargetBuildItem.getBaseName() + ".jar.original");
+        } else {
+            originalJar = null;
+        }
+
+        return new JarBuildItem(runnerJar, originalJar, null);
+    }
+
+    private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            Path runnerJar) throws Exception {
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
             log.info("Building fat jar: " + runnerJar);
@@ -254,20 +291,6 @@ public class JarResultBuildStep {
         }
 
         runnerJar.toFile().setReadable(true, false);
-
-        //for uberjars we move the original jar, so there is only a single jar in the output directory
-        final Path standardJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + ".jar");
-
-        final Path originalJar;
-        if (Files.exists(standardJar)) {
-            originalJar = outputTargetBuildItem.getOutputDirectory()
-                    .resolve(outputTargetBuildItem.getBaseName() + ".jar.original");
-        } else {
-            originalJar = null;
-        }
-
-        return new JarBuildItem(runnerJar, originalJar, null);
     }
 
     private boolean isAppDepAJar(AppArtifact artifact) {
@@ -593,22 +616,50 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
-        Path thinJarDirectory = outputTargetBuildItem.getOutputDirectory()
+            MainClassBuildItem mainClassBuildItem,
+            List<UberJarRequiredBuildItem> uberJarRequired) throws Exception {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        IoUtils.recursiveDelete(thinJarDirectory);
-        Files.createDirectories(thinJarDirectory);
-        copyJsonConfigFiles(applicationArchivesBuildItem, thinJarDirectory);
-
-        Path runnerJar = thinJarDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
-        Path libDir = thinJarDirectory.resolve(LIB);
-        Files.createDirectories(libDir);
+        IoUtils.recursiveDelete(targetDirectory);
+        Files.createDirectories(targetDirectory);
 
         List<GeneratedClassBuildItem> allClasses = new ArrayList<>(generatedClasses);
         allClasses.addAll(nativeImageResources.stream()
                 .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
                 .collect(Collectors.toList()));
+
+        if (IS_WINDOWS) {
+            log.warn("Uber JAR strategy is used for native image source JAR generation on Windows. This is done " +
+                    "for the time being to work around a current GraalVM limitation on Windows concerning the " +
+                    "maximum command length (see https://github.com/oracle/graal/issues/2387).");
+            // Native image source jar generation with the uber jar strategy is provided as a workaround for Windows and
+            // will be removed once https://github.com/oracle/graal/issues/2387 is fixed.
+            return buildNativeImageUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+                    applicationArchivesBuildItem,
+                    packageConfig, applicationInfo, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
+        } else {
+            return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+                    applicationArchivesBuildItem,
+                    applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
+        }
+    }
+
+    private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ApplicationInfoBuildItem applicationInfo,
+            PackageConfig packageConfig,
+            List<GeneratedClassBuildItem> allClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            Path targetDirectory) throws Exception {
+        copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
+
+        Path runnerJar = targetDirectory
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+        Path libDir = targetDirectory.resolve(LIB);
+        Files.createDirectories(libDir);
 
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
@@ -619,6 +670,33 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
+    }
+
+    private NativeImageSourceJarBuildItem buildNativeImageUberJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            TransformedClassesBuildItem transformedClasses,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            PackageConfig packageConfig,
+            ApplicationInfoBuildItem applicationInfo,
+            List<GeneratedClassBuildItem> generatedClasses,
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem,
+            Path targetDirectory) throws Exception {
+        //we use the -runner jar name, unless we are building both types
+        Path runnerJar = targetDirectory
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
+
+        buildUberJar0(curateOutcomeBuildItem,
+                transformedClasses,
+                applicationArchivesBuildItem,
+                packageConfig,
+                applicationInfo,
+                generatedClasses,
+                generatedResources,
+                mainClassBuildItem,
+                runnerJar);
+
+        return new NativeImageSourceJarBuildItem(runnerJar, null);
     }
 
     /**

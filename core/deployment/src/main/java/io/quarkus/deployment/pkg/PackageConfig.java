@@ -79,4 +79,31 @@ public class PackageConfig {
      */
     @ConfigItem
     public Optional<String> outputName;
+
+    /**
+     * Whether to automate the creation of AppCDS. This has not effect when a native binary is needed and will be ignored in
+     * that case.
+     * Furthermore, this option only works for Java 11+ and is considered experimental for the time being.
+     * Finally, care must be taken to use the same exact JVM version when building and running the application.
+     */
+    @ConfigItem
+    public boolean createAppcds;
+
+    public boolean isAnyJarType() {
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
+                type.equalsIgnoreCase(PackageConfig.JAR) ||
+                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
+                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+    }
+
+    public boolean isFastJar() {
+        return type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+    }
+
+    public boolean isLegacyJar() {
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
+                type.equalsIgnoreCase(PackageConfig.JAR));
+    }
 }

@@ -46,6 +46,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-utilities</artifactId>
+        </dependency>
+        <dependency>
             <!-- We don't want the annotation processor to run
              as it leaves junk files in the project-->
             <groupId>org.eclipse.sisu</groupId>

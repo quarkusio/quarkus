@@ -47,12 +47,17 @@ cd rest-client-quickstart
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy-jsonb` extensions.
 
-If you already have your Quarkus project configured, you can add the `rest-client` extension
+[NOTE]
+====
+If your application does not expose any JAX-RS endpoints (eg. a link:command-mode-reference[command mode application]), use the `rest-client-jsonb` or the `rest-client-jackson` extension instead.
+====
+
+If you already have your Quarkus project configured, you can add the `rest-client` and the `rest-client-jsonb` extensions
 to your project by running the following command in your project base directory:
 
 [source,bash]
 ----
-./mvnw quarkus:add-extension -Dextensions="rest-client"
+./mvnw quarkus:add-extension -Dextensions="rest-client,resteasy-jsonb"
 ----
 
 This will add the following to your `pom.xml`:
@@ -62,6 +67,10 @@ This will add the following to your `pom.xml`:
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jsonb</artifactId>
 </dependency>
 ----
 

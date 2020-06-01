@@ -51,6 +51,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class JibProcessor {
@@ -260,11 +261,13 @@ public class JibProcessor {
         try {
             return Jib.from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
                     jibConfig.baseRegistryPassword))
-                    .addLayer(Collections.singletonList(componentsPath.resolve("lib")), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve("boot-lib")), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve("quarkus-run.jar")), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve("quarkus")), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve("app")), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.BOOT_LIB)),
+                            workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)),
+                            workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(jibConfig.environmentVariables)

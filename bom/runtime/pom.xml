@@ -716,6 +716,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-db2-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-pg-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2593,6 +2598,13 @@
                 <artifactId>smallrye-axle-mysql-client</artifactId>
                 <version>${axle-client.version}</version>
             </dependency>
+            <!-- TODO: Add DB2 Mutiny client once available
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
+                <version>${mutiny-client.version}</version>
+            </dependency>
+            -->
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>

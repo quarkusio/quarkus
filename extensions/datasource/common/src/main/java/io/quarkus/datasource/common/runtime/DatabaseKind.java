@@ -13,6 +13,7 @@ import java.util.Set;
  */
 public final class DatabaseKind {
 
+    public static final String DB2 = "db2";
     public static final String DERBY = "derby";
     public static final String H2 = "h2";
     public static final String MARIADB = "mariadb";
@@ -48,6 +49,10 @@ public final class DatabaseKind {
             return supportedValue;
         }
         return lowerCaseValue;
+    }
+
+    public static boolean isDB2(String value) {
+        return is(value, DB2);
     }
 
     public static boolean isDerby(String value) {
@@ -88,6 +93,7 @@ public final class DatabaseKind {
     }
 
     private enum SupportedDatabaseKind {
+        DB2(DatabaseKind.DB2),
         DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),
         MARIADB(DatabaseKind.MARIADB),

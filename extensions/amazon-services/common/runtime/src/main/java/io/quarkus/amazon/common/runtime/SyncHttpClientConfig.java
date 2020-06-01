@@ -25,6 +25,12 @@ public class SyncHttpClientConfig {
     public Duration socketTimeout;
 
     /**
+     * TLS Managers provider configuration
+     */
+    @ConfigItem
+    public TlsManagersProviderConfig tlsManagersProvider;
+
+    /**
      * Apache HTTP client specific configurations
      */
     @ConfigItem
@@ -80,12 +86,6 @@ public class SyncHttpClientConfig {
          */
         @ConfigItem
         public HttpClientProxyConfiguration proxy;
-
-        /**
-         * TLS Managers provider configuration
-         */
-        @ConfigItem
-        public TlsManagersProviderConfig tlsManagersProvider;
 
         @ConfigGroup
         public static class HttpClientProxyConfiguration {

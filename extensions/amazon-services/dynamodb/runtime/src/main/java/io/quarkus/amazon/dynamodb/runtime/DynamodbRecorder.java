@@ -37,9 +37,8 @@ public class DynamodbRecorder {
     public RuntimeValue<AwsClientBuilder> createSyncBuilder(DynamodbConfig config,
             RuntimeValue<SdkHttpClient.Builder> transport) {
         DynamoDbClientBuilder builder = DynamoDbClient.builder();
-        if (config.enableEndpointDiscovery) {
-            builder.enableEndpointDiscovery();
-        }
+        builder.endpointDiscoveryEnabled(config.enableEndpointDiscovery);
+
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
         }
@@ -50,9 +49,8 @@ public class DynamodbRecorder {
             RuntimeValue<SdkAsyncHttpClient.Builder> transport) {
 
         DynamoDbAsyncClientBuilder builder = DynamoDbAsyncClient.builder();
-        if (config.enableEndpointDiscovery) {
-            builder.enableEndpointDiscovery();
-        }
+        builder.endpointDiscoveryEnabled(config.enableEndpointDiscovery);
+
         if (transport != null) {
             builder.httpClientBuilder(transport.getValue());
         }

@@ -49,6 +49,8 @@ public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
 
+    private static final int ANNOTATION = 0x00002000;
+
     static final EnumSet<Type.Kind> CLASS_TYPES = EnumSet.of(Type.Kind.CLASS, Type.Kind.PARAMETERIZED_TYPE);
 
     private final BuildContextImpl buildContext;
@@ -635,8 +637,11 @@ public class BeanDeployment {
 
         for (ClassInfo beanClass : index.getKnownClasses()) {
 
-            if (Modifier.isInterface(beanClass.flags()) || DotNames.ENUM.equals(beanClass.superName())) {
-                // Skip interfaces, annotations and enums
+            if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
+            // Replace with ClassInfo#isAnnotation() and ClassInfo#isEnum() when using Jandex 2.1.4+
+                    || (beanClass.flags() & ANNOTATION) != 0
+                    || DotNames.ENUM.equals(beanClass.superName())) {
+                // Skip interfaces, abstract classes, annotations and enums
                 continue;
             }
 

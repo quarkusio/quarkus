@@ -103,11 +103,10 @@ class VertxHttpProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             CoreVertxBuildItem vertx,
-            List<RouteBuildItem> routes, LaunchModeBuildItem launchModeBuildItem,
+            List<RouteBuildItem> routes,
             ShutdownContextBuildItem shutdown) {
 
-        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), launchModeBuildItem.getLaunchMode(),
-                shutdown);
+        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
         for (RouteBuildItem route : routes) {
             recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
         }

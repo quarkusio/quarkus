@@ -16,7 +16,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class VirtualClientConnection {
     protected SocketAddress clientAddress;
-    protected BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
+    protected BlockingQueue<VirtualMessage> queue = new LinkedBlockingQueue<>();
     protected boolean connected = true;
     protected VirtualChannel peer;
 
@@ -33,7 +33,7 @@ public class VirtualClientConnection {
      *
      * @return
      */
-    public BlockingQueue<Object> queue() {
+    public BlockingQueue<VirtualMessage> queue() {
         return queue;
     }
 

@@ -313,7 +313,15 @@ public class VirtualChannel extends AbstractChannel {
                     // It is possible the peer could have closed while we are writing, and in this case we should
                     // simulate real socket behavior and ensure the sendMessage operation is failed.
                     if (peer.isConnected()) {
-                        peer.queue().add(ReferenceCountUtil.retain(msg));
+                        VirtualMessage virtualMessage = new VirtualMessage(msg);
+                        ReferenceCountUtil.retain(msg);
+                        peer.queue().add(virtualMessage);
+                        // need to wait until client is finished with message
+                        // Things like FileRegion get closed when they are removed from outbound buffer
+                        // It sucks we have to synchronize the threads here with every message,
+                        // but the buffer class isn't flexible enough to handle this scenario.
+                        // Might not be a big deal. :)
+                        virtualMessage.awaitComplete();
                         in.remove();
                     } else {
                         if (exception == null) {

@@ -3,6 +3,8 @@ package io.quarkus.azure.functions.resteasy.runtime;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +17,7 @@ import com.microsoft.azure.functions.HttpStatus;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.FileRegion;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpContent;
@@ -24,6 +27,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
+import io.quarkus.netty.runtime.virtual.VirtualMessage;
 import io.quarkus.runtime.Application;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
@@ -96,14 +100,15 @@ public class BaseFunction {
         connection.sendMessage(requestContent);
         HttpResponseMessage.Builder responseBuilder = null;
         ByteArrayOutputStream baos = null;
+        WritableByteChannel byteChannel = null;
         try {
             for (;;) {
                 // todo should we timeout? have a timeout config?
                 //log.info("waiting for message");
-                Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
+                VirtualMessage virtualMessage = connection.queue().poll(100, TimeUnit.MILLISECONDS);
+                if (virtualMessage == null) continue;
+                Object msg = virtualMessage.getMessage();
                 try {
-                    if (msg == null)
-                        continue;
                     //log.info("Got message: " + msg.getClass().getName());
 
                     if (msg instanceof HttpResponse) {
@@ -117,11 +122,21 @@ public class BaseFunction {
                         HttpContent content = (HttpContent) msg;
                         if (baos == null) {
                             // todo what is right size?
-                            baos = new ByteArrayOutputStream(500);
+                            baos = createByteStream();
                         }
                         int readable = content.content().readableBytes();
                         for (int i = 0; i < readable; i++) {
                             baos.write(content.content().readByte());
+                        }
+                    }
+                    if (msg instanceof FileRegion) {
+                        FileRegion file = (FileRegion) msg;
+                        if (file.count() > 0) {
+                            if (baos == null)
+                                baos = createByteStream();
+                            if (byteChannel == null)
+                                byteChannel = Channels.newChannel(baos);
+                            file.transferTo(byteChannel, 0);
                         }
                     }
                     if (msg instanceof LastHttpContent) {
@@ -129,8 +144,10 @@ public class BaseFunction {
                         return responseBuilder.build();
                     }
                 } finally {
-                    if (msg != null)
+                    if (msg != null) {
+                        virtualMessage.completed();
                         ReferenceCountUtil.release(msg);
+                    }
                 }
             }
         } finally {
@@ -138,5 +155,11 @@ public class BaseFunction {
                 baos.close();
             }
         }
+    }
+
+    private ByteArrayOutputStream createByteStream() {
+        ByteArrayOutputStream baos;
+        baos = new ByteArrayOutputStream(500);
+        return baos;
     }
 }

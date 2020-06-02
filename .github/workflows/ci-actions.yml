@@ -34,8 +34,8 @@ on:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java11 -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-amazon-services -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dnative-image.xmx=5g -Dnative -Dformat.skip install"
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dformat.skip"
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11 -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-amazon-services -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dnative-image.xmx=5g -Dnative -Dformat.skip install"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -182,6 +182,14 @@ jobs:
           netstat -ln
           sudo service mysql stop || true
           docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
+      - name: Start DB2
+        # Cannot run as service becuase the service schema does not support --privileged mode
+        shell: bash
+        run: |
+          docker run --rm --publish 50000:50000 --name build-db2 --privileged=true \
+            -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -e DBNAME=hreact -e LICENSE=accept -e AUTOCONFIG=false -e ARCHIVE_LOGS=false \
+            -d ibmcom/db2:11.5.0.0a
+
       - uses: actions/checkout@v2
 
       - name: apt clean
@@ -324,14 +332,16 @@ jobs:
               jpa-without-entity
               hibernate-tenancy
           - category: Data2
+            db2: "true"
             mysql: "true"
             postgres: "true"
-            timeout: 35
+            timeout: 45
             test-modules: >
               jpa
               jpa-postgresql
               jpa-mysql
               reactive-mysql-client
+              reactive-db2-client
           - category: Data3
             postgres: "true"
             timeout: 60
@@ -476,6 +486,12 @@ jobs:
             -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
             -d mysql:5 --skip-ssl
         if: matrix.mysql
+      - name: DB2 Service
+        run: |
+          docker run --rm --publish 50000:50000 --name build-db2 --privileged=true \
+            -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -e DBNAME=hreact -e LICENSE=accept -e AUTOCONFIG=false -e ARCHIVE_LOGS=false \
+            -d ibmcom/db2:11.5.0.0a
+        if: matrix.db2
       - name: Maria DB Service
         run: |
           docker run --rm --publish 3308:3306 --name build-mariadb \

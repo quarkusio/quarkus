@@ -54,7 +54,7 @@ jobs:
         run: mvn -B install -DskipTests -DskipITs -Dformat.skip
 
       - name: Run integration tests in native
-        run: mvn -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Ddocker -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java${{ matrix.java }} -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-kafka -Dtest-mssql -Dtest-mariadb -Dmariadb.url="jdbc:mariadb://localhost:3308/hibernate_orm_test"
+        run: mvn -B --settings .github/mvn-settings.xml verify -f integration-tests/pom.xml --fail-at-end -Dno-format -Ddocker -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.1.0-java${{ matrix.java }} -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-db2 -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-kafka -Dtest-mssql -Dtest-mariadb -Dmariadb.url="jdbc:mariadb://localhost:3308/hibernate_orm_test"
 
       - name: Report
         if: always()

@@ -37,6 +37,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -107,6 +108,7 @@ public class DevMojo extends AbstractMojo {
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
+    private static final String MAVEN_RESOURCES_PLUGIN = "maven-resources-plugin";
 
     private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
     private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
@@ -383,6 +385,8 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void triggerCompile() throws MojoExecutionException {
+        handleResources();
+
         // compile the Kotlin sources if needed
         final String kotlinMavenPluginKey = ORG_JETBRAINS_KOTLIN + ":" + KOTLIN_MAVEN_PLUGIN;
         final Plugin kotlinMavenPlugin = project.getPlugin(kotlinMavenPluginKey);
@@ -395,6 +399,28 @@ public class DevMojo extends AbstractMojo {
         final Plugin compilerPlugin = project.getPlugin(compilerPluginKey);
         if (compilerPlugin != null) {
             executeCompileGoal(compilerPlugin, ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN);
+        }
+    }
+
+    /**
+     * Execute the resources:resources goal if resources have been configured on the project
+     */
+    private void handleResources() throws MojoExecutionException {
+        List<Resource> resources = project.getResources();
+        if (!resources.isEmpty()) {
+            Plugin resourcesPlugin = project.getPlugin(ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_RESOURCES_PLUGIN);
+            MojoExecutor.executeMojo(
+                    MojoExecutor.plugin(
+                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
+                            MojoExecutor.artifactId(MAVEN_RESOURCES_PLUGIN),
+                            MojoExecutor.version(resourcesPlugin.getVersion()),
+                            resourcesPlugin.getDependencies()),
+                    MojoExecutor.goal("resources"),
+                    MojoExecutor.configuration(),
+                    MojoExecutor.executionEnvironment(
+                            project,
+                            session,
+                            pluginManager));
         }
     }
 

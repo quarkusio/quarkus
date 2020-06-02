@@ -1336,7 +1336,7 @@ Following is an example from the Agroal extension that provides a `DataSourceHea
 @BuildStep
 HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
     return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
-            agroalBuildTimeConfig.healthEnabled, "datasource");
+            agroalBuildTimeConfig.healthEnabled);
 }
 ----
 

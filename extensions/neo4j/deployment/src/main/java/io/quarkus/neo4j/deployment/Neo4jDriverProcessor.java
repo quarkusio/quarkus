@@ -42,6 +42,6 @@ class Neo4jDriverProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(Neo4jBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.neo4j.runtime.health.Neo4jHealthCheck",
-                buildTimeConfig.healthEnabled, "neo4j");
+                buildTimeConfig.healthEnabled);
     }
 }

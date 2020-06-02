@@ -142,7 +142,7 @@ public class GrpcServerProcessor {
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcHealthStorage.class));
             }
             return new HealthBuildItem("io.quarkus.grpc.runtime.health.GrpcHealthCheck",
-                    config.mpHealthEnabled, GRPC_SERVER);
+                    config.mpHealthEnabled);
         } else {
             return null;
         }

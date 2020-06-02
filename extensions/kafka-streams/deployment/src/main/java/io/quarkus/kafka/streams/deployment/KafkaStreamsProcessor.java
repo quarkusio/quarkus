@@ -206,10 +206,10 @@ class KafkaStreamsProcessor {
         healthChecks.produce(
                 new HealthBuildItem(
                         "io.quarkus.kafka.streams.runtime.health.KafkaStreamsTopicsHealthCheck",
-                        buildTimeConfig.healthEnabled, "kafka-streams"));
+                        buildTimeConfig.healthEnabled));
         healthChecks.produce(
                 new HealthBuildItem(
                         "io.quarkus.kafka.streams.runtime.health.KafkaStreamsStateHealthCheck",
-                        buildTimeConfig.healthEnabled, "kafka-streams"));
+                        buildTimeConfig.healthEnabled));
     }
 }

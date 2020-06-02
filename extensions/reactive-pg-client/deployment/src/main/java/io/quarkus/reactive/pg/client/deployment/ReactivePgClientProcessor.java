@@ -74,6 +74,6 @@ class ReactivePgClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
+                dataSourcesBuildTimeConfig.healthEnabled);
     }
 }

@@ -3,7 +3,9 @@ package io.quarkus.kubernetes.client.runtime.graal;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "io.fabric8.kubernetes.internal.KubernetesDeserializer")
+import io.fabric8.kubernetes.api.model.KubernetesResource;
+
+@TargetClass(className = "io.fabric8.kubernetes.internal.KubernetesDeserializer", innerClass = "Mapping")
 public final class KubernetesDeserializerSubstitutions {
 
     /**
@@ -17,10 +19,14 @@ public final class KubernetesDeserializerSubstitutions {
      * and ultimately returns what we need in this case, which is the Class
      */
     @Substitute
-    private static Class loadClassIfExists(String className) {
+    private Class<? extends KubernetesResource> loadClassIfExists(String className) {
         try {
-            return Class.forName(className);
-        } catch (Throwable t) {
+            Class<?> clazz = Class.forName(className);
+            if (!KubernetesResource.class.isAssignableFrom(clazz)) {
+                return null;
+            }
+            return (Class<? extends KubernetesResource>) clazz;
+        } catch (Exception t) {
             return null;
         }
     }

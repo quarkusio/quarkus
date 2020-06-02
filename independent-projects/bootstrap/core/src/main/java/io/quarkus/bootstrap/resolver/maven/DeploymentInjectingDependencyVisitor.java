@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -115,11 +116,13 @@ public class DeploymentInjectingDependencyVisitor {
             return;
         }
         final String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-        appBuilder.handleExtensionProperties(rtProps, node.getArtifact().toString());
+        Artifact deploymentArtifact = toArtifact(value);
+        appBuilder.handleExtensionProperties(rtProps, node.getArtifact().toString(),
+                new AppArtifactKey(deploymentArtifact.getGroupId(), deploymentArtifact.getArtifactId(),
+                        deploymentArtifact.getClassifier(), deploymentArtifact.getExtension()));
         if (value == null) {
             return;
         }
-        Artifact deploymentArtifact = toArtifact(value);
         if (deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
             deploymentArtifact = deploymentArtifact.setVersion(node.getArtifact().getVersion());
         }

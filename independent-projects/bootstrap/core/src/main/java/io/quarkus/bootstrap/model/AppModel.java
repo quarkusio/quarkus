@@ -3,8 +3,10 @@ package io.quarkus.bootstrap.model;
 import io.quarkus.bootstrap.BootstrapConstants;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -105,6 +107,13 @@ public class AppModel implements Serializable {
         private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
+        /**
+         * This is only used to detect problems if a -deployment module has been included on the runtime
+         * classpath.
+         *
+         *
+         */
+        private final Map<AppArtifactKey, String> extensionArtifacts = new HashMap<>();
 
         public Builder setAppArtifact(AppArtifact appArtifact) {
             this.appArtifact = appArtifact;
@@ -176,7 +185,9 @@ public class AppModel implements Serializable {
          *
          * @param props The quarkus-extension.properties file
          */
-        public void handleExtensionProperties(Properties props, String extension) {
+        public void handleExtensionProperties(Properties props, String extension, AppArtifactKey deploymentArtifact) {
+            extensionArtifacts.put(deploymentArtifact, extension);
+
             String parentFirst = props.getProperty(BootstrapConstants.PARENT_FIRST_ARTIFACTS);
             if (parentFirst != null) {
                 String[] artifacts = parentFirst.split(",");
@@ -211,6 +222,25 @@ public class AppModel implements Serializable {
                 }
                 return !excludedArtifacts.contains(s.getArtifact().getKey());
             };
+            Map<AppArtifactKey, String> problems = new HashMap<>();
+            if (!extensionArtifacts.containsKey(appArtifact.getKey())) {
+                //if the app artifact is a -deployment artifact then that means
+                //we are just running unit tests, and -deployment dependencies are fine
+                for (AppDependency i : runtimeDeps) {
+                    if (i.getScope() != null && i.getScope().equals("test")) {
+                        continue;
+                    }
+                    String problem = extensionArtifacts.get(i.getArtifact().getKey());
+                    if (problem != null) {
+                        problems.put(i.getArtifact().getKey(), problem);
+                    }
+                }
+            }
+            if (!problems.isEmpty()) {
+                throw new RuntimeException(
+                        "Quarkus deployment artifacts were found on the runtime classpath. This should never happen. The problematic artifacts are "
+                                + problems);
+            }
             List<AppDependency> runtimeDeps = this.runtimeDeps.stream().filter(includePredicate).collect(Collectors.toList());
             List<AppDependency> deploymentDeps = this.deploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());

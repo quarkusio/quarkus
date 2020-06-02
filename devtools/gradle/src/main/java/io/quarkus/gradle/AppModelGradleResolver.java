@@ -394,9 +394,9 @@ public class AppModelGradleResolver implements AppModelResolver {
         if (extProps == null) {
             return null;
         }
-        appBuilder.handleExtensionProperties(extProps, a.toString());
         String value = extProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         final String[] split = value.split(":");
+        appBuilder.handleExtensionProperties(extProps, a.toString(), new AppArtifactKey(split[0], split[1], null, "jar"));
 
         return new DefaultExternalModuleDependency(split[0], split[1], split[2], null);
     }

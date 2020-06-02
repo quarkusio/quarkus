@@ -37,6 +37,30 @@ public final class LogConfig {
     public Level minLevel;
 
     /**
+     * Console logging.
+     * <p>
+     * Console logging is enabled by default.
+     */
+    @ConfigDocSection
+    public ConsoleConfig console;
+
+    /**
+     * File logging.
+     * <p>
+     * Logging to a file is also supported but not enabled by default.
+     */
+    @ConfigDocSection
+    public FileConfig file;
+
+    /**
+     * Syslog logging.
+     * <p>
+     * Logging to a syslog is also supported but not enabled by default.
+     */
+    @ConfigDocSection
+    public SyslogConfig syslog;
+
+    /**
      * Logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be independently configured.
@@ -73,30 +97,6 @@ public final class LogConfig {
     @ConfigItem(name = "handler.syslog")
     @ConfigDocSection
     public Map<String, SyslogConfig> syslogHandlers;
-
-    /**
-     * Console logging.
-     * <p>
-     * Console logging is enabled by default.
-     */
-    @ConfigDocSection
-    public ConsoleConfig console;
-
-    /**
-     * File logging.
-     * <p>
-     * Logging to a file is also supported but not enabled by default.
-     */
-    @ConfigDocSection
-    public FileConfig file;
-
-    /**
-     * Syslog logging.
-     * <p>
-     * Logging to a syslog is also supported but not enabled by default.
-     */
-    @ConfigDocSection
-    public SyslogConfig syslog;
 
     /**
      * Log cleanup filters - internal use.

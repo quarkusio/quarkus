@@ -10,8 +10,7 @@ import io.vertx.db2client.DB2Pool;
 public class DB2PoolProducer {
 
     private volatile DB2Pool db2Pool;
-    // TODO: Enable once DB2 mutiny is available
-    //    private io.vertx.mutiny.db2client.DB2Pool mutinyDB2Pool;
+    private io.vertx.mutiny.db2client.DB2Pool mutinyDB2Pool;
 
     void initialize(DB2Pool db2Pool) {
         this.db2Pool = db2Pool;
@@ -26,16 +25,15 @@ public class DB2PoolProducer {
         return db2Pool;
     }
 
-    // TODO: Enable once DB2 mutiny is available
-    //    /**
-    //     * @return the <em>mutiny</em> PostGreSQL Pool instance. The instance is created lazily.
-    //     */
-    //    @Singleton
-    //    @Produces
-    //    public synchronized io.vertx.mutiny.db2client.DB2Pool mutinyDB2Pool() {
-    //        if (mutinyDB2Pool == null) {
-    //        	mutinyDB2Pool = io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
-    //        }
-    //        return mutinyDB2Pool;
-    //    }
+    /**
+     * @return the <em>mutiny</em> DB2 Pool instance. The instance is created lazily.
+     */
+    @Singleton
+    @Produces
+    public synchronized io.vertx.mutiny.db2client.DB2Pool mutinyDB2Pool() {
+        if (mutinyDB2Pool == null) {
+            mutinyDB2Pool = io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
+        }
+        return mutinyDB2Pool;
+    }
 }

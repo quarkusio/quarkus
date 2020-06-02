@@ -28,12 +28,10 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-db2-client</artifactId>
         </dependency>
-		<!-- TODO: Enable once DB2 mutiny is available 
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
         </dependency>
-		-->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-credentials</artifactId>

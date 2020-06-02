@@ -213,7 +213,7 @@ public class OidcRecorder {
                 }
             }
         }
-
+        auth.missingKeyHandler(new JwkSetRefreshHandler(auth, oidcConfig.token.forcedJwkRefreshInterval));
         return new TenantConfigContext(auth, oidcConfig);
     }
 

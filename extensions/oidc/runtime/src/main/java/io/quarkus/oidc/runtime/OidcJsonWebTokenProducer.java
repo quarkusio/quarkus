@@ -61,6 +61,9 @@ public class OidcJsonWebTokenProducer {
         }
         TokenCredential credential = identity.getCredential(type);
         if (credential != null) {
+            if (credential instanceof AccessTokenCredential && ((AccessTokenCredential) credential).isOpaque()) {
+                throw new OIDCException("Opaque access token can not be converted to JsonWebToken");
+            }
             JwtClaims jwtClaims;
             try {
                 jwtClaims = new JwtConsumerBuilder()

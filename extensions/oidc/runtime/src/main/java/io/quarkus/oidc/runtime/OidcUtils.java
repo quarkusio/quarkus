@@ -1,7 +1,9 @@
 package io.quarkus.oidc.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,9 +29,23 @@ public final class OidcUtils {
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
+    private static final Pattern JWT_PARTS_PATTERN = Pattern.compile("\\.");
 
     private OidcUtils() {
 
+    }
+
+    public static boolean isOpaqueToken(String token) {
+        return JWT_PARTS_PATTERN.split(token).length != 3;
+    }
+
+    public static JsonObject decodeJwtContent(String jwt) {
+        String[] parts = JWT_PARTS_PATTERN.split(jwt);
+        if (parts.length != 3) {
+            return null;
+        } else {
+            return new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8));
+        }
     }
 
     public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {

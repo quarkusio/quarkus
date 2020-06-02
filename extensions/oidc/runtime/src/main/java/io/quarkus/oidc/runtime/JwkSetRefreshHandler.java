@@ -1,0 +1,33 @@
+package io.quarkus.oidc.runtime;
+
+import org.jboss.logging.Logger;
+
+import io.vertx.core.Handler;
+import io.vertx.ext.auth.oauth2.OAuth2Auth;
+
+public class JwkSetRefreshHandler implements Handler<String> {
+    private static final Logger LOG = Logger.getLogger(JwkSetRefreshHandler.class);
+    private OAuth2Auth auth;
+    private volatile long lastForcedRefreshTime;
+    private long forcedJwksRefreshIntervalMilliSecs;
+
+    public JwkSetRefreshHandler(OAuth2Auth auth, long forcedJwksRefreshInterval) {
+        this.auth = auth;
+        this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval * 60 * 1000;
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void handle(String kid) {
+        final long now = System.currentTimeMillis();
+        if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
+            lastForcedRefreshTime = now;
+            LOG.debugf("No JWK with %s key id is available, trying to refresh the JWK set", kid);
+            auth.loadJWK(res -> {
+                if (res.failed()) {
+                    LOG.debugf("Failed to refresh the JWK set: %s", res.cause());
+                }
+            });
+        }
+    }
+}

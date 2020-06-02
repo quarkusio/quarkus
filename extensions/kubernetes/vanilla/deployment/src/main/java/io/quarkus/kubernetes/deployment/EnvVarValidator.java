@@ -1,11 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -19,7 +14,19 @@ public class EnvVarValidator {
     private static final Logger log = Logger.getLogger(EnvVarValidator.class);
     private final Map<ItemKey, KubernetesEnvBuildItem> items = new HashMap<>();
     private final Set<String> knownNames = new HashSet<>();
-    private final Map<String, Set<KubernetesEnvBuildItem>> errors = new HashMap<>();
+    private final Map<String, Set<KubernetesEnvBuildItem>> conflicting = new HashMap<>();
+    private final Set<String> errors = new HashSet<>();
+
+    void process(String name, Optional<String> value, Optional<String> secret, Optional<String> configmap,
+            Optional<String> field, String target, boolean... oldStyle) {
+        try {
+            final KubernetesEnvBuildItem kebi = KubernetesEnvBuildItem.create(name, value.orElse(null),
+                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, oldStyle);
+            process(kebi);
+        } catch (IllegalArgumentException e) {
+            errors.add(e.getMessage());
+        }
+    }
 
     /**
      * Processes the specified {@link KubernetesEnvBuildItem} to check whether it's valid with respect to the set of already
@@ -29,12 +36,12 @@ public class EnvVarValidator {
      */
     void process(KubernetesEnvBuildItem item) {
         final String name = item.getName();
-        final KEBIWrapper wrapper = new KEBIWrapper(item);
+        final ShouldAddHolder wrapper = new ShouldAddHolder();
         // check if we already have defined a build item with the same name
         if (knownNames.contains(name)) {
             final KubernetesEnvBuildItem.EnvType type = item.getType();
             // as the item might not get added, reset the wrapper's state
-            wrapper.setNeedingAdding(false);
+            wrapper.setShouldAdd(false);
             // then go through already added items to check if the item needs to be added, warning logged or error added
             items.values().stream().filter(kebi -> name.equals(kebi.getName())).forEach(existing -> {
                 final KubernetesEnvBuildItem.EnvType existingType = existing.getType();
@@ -49,35 +56,35 @@ public class EnvVarValidator {
                             // only keep definition using new style and output warning
                             log.warn("Duplicate definition of '" + name
                                     + "' environment variable. ONLY the quarkus.kubernetes.env prefixed version will be kept: "
-                                    + (currentIsNew ? describe(item) : describe(existing)));
+                                    + (currentIsNew ? item : existing));
                             if (currentIsNew) {
                                 // replace existing, old-style value by current, new-style one
-                                wrapper.setNeedingAdding(true);
+                                wrapper.setShouldAdd(true);
                             }
                         } else {
                             addError(item, existing);
                         }
                     } else {
                         // we're not dealing with a potentially conflicting var so add the new item
-                        wrapper.setNeedingAdding(true);
+                        wrapper.setShouldAdd(true);
                     }
                 } else {
                     if (existingType.mightConflictWith(type)) {
-                        log.warn("Ignoring duplicate definition of " + describe(item));
+                        log.warn("Ignoring duplicate definition of " + item);
                     }
-                    wrapper.setNeedingAdding(true);
+                    wrapper.setShouldAdd(true);
 
                 }
             });
         }
-        if (wrapper.isNeedingAdding()) {
+        if (wrapper.shouldAdd()) {
             items.put(ItemKey.keyFor(item), item);
         }
         knownNames.add(name);
     }
 
     private void addError(KubernetesEnvBuildItem item, KubernetesEnvBuildItem existing) {
-        final Set<KubernetesEnvBuildItem> inError = errors.computeIfAbsent(item.getName(), k -> new LinkedHashSet<>());
+        final Set<KubernetesEnvBuildItem> inError = conflicting.computeIfAbsent(item.getName(), k -> new LinkedHashSet<>());
         inError.add(existing);
         inError.add(item);
     }
@@ -89,44 +96,45 @@ public class EnvVarValidator {
      * @throws IllegalArgumentException if the processed items result in an invalid configuration
      */
     Collection<KubernetesEnvBuildItem> getBuildItems() {
-        if (errors.isEmpty()) {
+        if (conflicting.isEmpty() && errors.isEmpty()) {
             return items.values();
         }
         throw new IllegalArgumentException(getError());
     }
 
     private String getError() {
-        String error = "Found conflicts in environment variable definitions:\n";
-        error += errors.entrySet().stream()
-                .map(e -> {
-                    final String conflicting = e.getValue().stream()
-                            .map(this::describe)
-                            .collect(Collectors.joining(" redefined as "));
-                    return String.format("\t\t- '%s': first defined as %s", e.getKey(), conflicting);
-                })
-                .collect(Collectors.joining("\n"));
+        String error = "\n";
+        if (!conflicting.isEmpty()) {
+            error += "\t+ Conflicts in environment variable definitions:\n";
+            error += conflicting.entrySet().stream()
+                    .map(e -> {
+                        final String conflicting = e.getValue().stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining(" redefined as "));
+                        return String.format("\t\t- '%s': first defined as %s", e.getKey(), conflicting);
+                    })
+                    .collect(Collectors.joining("\n"));
+        }
+        if (!errors.isEmpty()) {
+            error += "\t+ Invalid declarations:\n";
+            error += errors.stream().map(s -> "\t\t- " + s).collect(Collectors.joining("\n"));
+        }
         return error;
     }
 
-    private String describe(KubernetesEnvBuildItem kebi) {
-        return String.format("'%s' env var with value '%s'", kebi.getType().name(), kebi.getValue());
-    }
+    private static final class ShouldAddHolder {
+        private boolean shouldAdd;
 
-    private static final class KEBIWrapper {
-        private final KubernetesEnvBuildItem item;
-        private boolean needingAdding;
-
-        KEBIWrapper(KubernetesEnvBuildItem item) {
-            this.item = item;
-            needingAdding = true;
+        ShouldAddHolder() {
+            shouldAdd = true;
         }
 
-        public boolean isNeedingAdding() {
-            return needingAdding;
+        public boolean shouldAdd() {
+            return shouldAdd;
         }
 
-        public void setNeedingAdding(boolean needingAdding) {
-            this.needingAdding = needingAdding;
+        public void setShouldAdd(boolean shouldAdd) {
+            this.shouldAdd = shouldAdd;
         }
     }
 

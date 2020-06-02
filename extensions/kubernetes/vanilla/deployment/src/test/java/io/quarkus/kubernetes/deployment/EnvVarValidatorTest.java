@@ -1,10 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
 class EnvVarValidatorTest {
 
+    private static final String TARGET = "kubernetes";
     private EnvVarValidator validator;
 
     @BeforeEach
@@ -27,8 +27,7 @@ class EnvVarValidatorTest {
 
     @Test
     void getBuildItemsOneItemShouldWork() {
-        final KubernetesEnvBuildItem initial = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, "name", "value",
-                "kubernetes");
+        final KubernetesEnvBuildItem initial = KubernetesEnvBuildItem.createSimpleVar("name", "value", TARGET);
         validator.process(initial);
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(1, items.size());
@@ -40,10 +39,8 @@ class EnvVarValidatorTest {
         final String name = "name";
         final String value1 = "foo";
         final String value2 = "bar";
-        final KubernetesEnvBuildItem first = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, name, value1,
-                "kubernetes");
-        final KubernetesEnvBuildItem second = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.field, name, value2,
-                "kubernetes");
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromField(name, value2, TARGET);
         validator.process(first);
         validator.process(second);
         try {
@@ -58,11 +55,8 @@ class EnvVarValidatorTest {
     @Test
     void getBuildItemsTwoRedundantItemsShouldResultInOnlyOneItem() {
         final String name = "name";
-        final String value1 = "foo";
-        final KubernetesEnvBuildItem first = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.configmap, name, value1,
-                "kubernetes");
-        final KubernetesEnvBuildItem second = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.configmap, name, value1,
-                "kubernetes");
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
         validator.process(first);
         validator.process(second);
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
@@ -74,12 +68,9 @@ class EnvVarValidatorTest {
     void getBuildItemsSimilarlyNamedCompatibleItemsShouldWork() {
         final String name = "name";
         final String value1 = "foo";
-        final KubernetesEnvBuildItem first = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, name, value1,
-                "kubernetes");
-        final KubernetesEnvBuildItem second = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.secret, name, name,
-                "kubernetes");
-        final KubernetesEnvBuildItem third = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.configmap, name, name,
-                "kubernetes");
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromSecret(name, TARGET);
+        final KubernetesEnvBuildItem third = KubernetesEnvBuildItem.createFromConfigMap(name, TARGET);
         validator.process(first);
         validator.process(second);
         validator.process(third);
@@ -101,11 +92,8 @@ class EnvVarValidatorTest {
     void getBuildItemsSameItemsOldAndNewShouldWork() {
         final String name = "name";
         final String value1 = "foo";
-        final KubernetesEnvBuildItem oldStyleVar = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, name, value1,
-                "kubernetes", true);
-        final KubernetesEnvBuildItem newStyleVar = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, name,
-                "newValue",
-                "kubernetes", false);
+        final KubernetesEnvBuildItem oldStyleVar = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET, true);
+        final KubernetesEnvBuildItem newStyleVar = KubernetesEnvBuildItem.createSimpleVar(name, "newValue", TARGET);
         validator.process(oldStyleVar);
         validator.process(newStyleVar);
         Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
@@ -122,14 +110,34 @@ class EnvVarValidatorTest {
     }
 
     @Test
+    void getBuildItemsOldConflictShouldNotPreventNewToWork() {
+        /*
+         * quarkus.kubernetes.env.configmaps=configMap
+         * quarkus.kubernetes.env-vars.xxx.configmap=configMap
+         * quarkus.kubernetes.env.secrets=secret
+         * quarkus.kubernetes.env-vars.xxx.secret=secret
+         */
+        final KubernetesEnvBuildItem newCM = KubernetesEnvBuildItem.createFromConfigMap("configmap", TARGET);
+        final KubernetesEnvBuildItem newS = KubernetesEnvBuildItem.createFromSecret("secret", TARGET);
+        validator.process("foo", Optional.empty(), Optional.empty(), Optional.of("configmap"), Optional.empty(),
+                TARGET, true);
+        validator.process(newS);
+        validator.process(newCM);
+        validator.process("foo", Optional.empty(), Optional.of("secret"), Optional.empty(), Optional.empty(),
+                TARGET, true);
+        Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
+        assertEquals(2, items.size());
+        assertTrue(items.contains(newCM));
+        assertTrue(items.contains(newS));
+    }
+
+    @Test
     void getBuildItemsTwoConflictingItemsUsingDifferentStylesShouldFail() {
         final String name = "name";
         final String value1 = "foo";
         final String value2 = "bar";
-        final KubernetesEnvBuildItem first = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.var, name, value1,
-                "kubernetes", true);
-        final KubernetesEnvBuildItem second = new KubernetesEnvBuildItem(KubernetesEnvBuildItem.EnvType.field, name, value2,
-                "kubernetes");
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET, true);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromField(name, value2, TARGET);
         validator.process(first);
         validator.process(second);
         try {
@@ -151,5 +159,62 @@ class EnvVarValidatorTest {
             final String message = e.getMessage();
             assertTrue(message.contains(name) && message.contains(value1) && message.contains(value2));
         }
+    }
+
+    @Test
+    void getBuildItemsDirectAndFromSecretShouldConflict() {
+        final String name = "name";
+        final String value1 = "foo";
+        final String configmap = "configmap";
+        final String key = "key";
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createSimpleVar(name, value1, TARGET);
+        final KubernetesEnvBuildItem second = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap,
+                TARGET);
+        validator.process(first);
+        validator.process(second);
+        try {
+            validator.getBuildItems();
+            fail();
+        } catch (Exception e) {
+            final String message = e.getMessage();
+            assertTrue(
+                    message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
+        }
+
+        // check different order
+        validator = new EnvVarValidator();
+        validator.process(second);
+        validator.process(first);
+        try {
+            validator.getBuildItems();
+            fail();
+        } catch (Exception e) {
+            final String message = e.getMessage();
+            assertTrue(
+                    message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
+        }
+    }
+
+    @Test
+    void getBuildItemsUsingOldStyleProcessAndNewStyleCreateForSameItemShouldKeepNewStyle() {
+        final String name = "name";
+        final String configmap = "configmap";
+        final String key = "key";
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, TARGET);
+        validator.process(first);
+        validator.process(name, Optional.of("oldKey"), Optional.empty(), Optional.of(configmap), Optional.empty(),
+                TARGET, true);
+        Collection<KubernetesEnvBuildItem> buildItems = validator.getBuildItems();
+        assertEquals(1, buildItems.size());
+        assertTrue(buildItems.contains(first));
+
+        // check different order
+        validator = new EnvVarValidator();
+        validator.process(name, Optional.of("oldKey"), Optional.empty(), Optional.of(configmap), Optional.empty(),
+                TARGET, true);
+        validator.process(first);
+        buildItems = validator.getBuildItems();
+        assertEquals(1, buildItems.size());
+        assertTrue(buildItems.contains(first));
     }
 }

@@ -17,14 +17,14 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithEnvFromSecretTest {
+public class KubernetesWithEnvFromConfigMapTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("env-from-secret")
+            .setApplicationName("env-from-configmap")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("kubernetes-with-env-from-secret.properties");
+            .withConfigurationResource("kubernetes-with-env-from-configmap.properties");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -39,7 +39,7 @@ public class KubernetesWithEnvFromSecretTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("env-from-secret");
+                assertThat(m.getName()).isEqualTo("env-from-configmap");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -47,17 +47,17 @@ public class KubernetesWithEnvFromSecretTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                             assertThat(container.getEnvFrom()).hasOnlyOneElementSatisfying(env -> {
-                                assertThat(env.getSecretRef()).satisfies(secretRef -> {
-                                    assertThat(secretRef.getName()).isEqualTo("my-secret");
+                                assertThat(env.getConfigMapRef()).satisfies(ref -> {
+                                    assertThat(ref.getName()).isEqualTo("my-configmap");
                                 });
                             });
 
-                            assertThat(container.getEnv()).filteredOn(env -> "DB_PASSWORD".equals(env.getName()))
+                            assertThat(container.getEnv()).filteredOn(env -> "DB_DATABASE".equals(env.getName()))
                                     .hasOnlyOneElementSatisfying(env -> {
                                         assertThat(env.getValueFrom()).satisfies(valueFrom -> {
-                                            assertThat(valueFrom.getSecretKeyRef()).satisfies(secretKeyRef -> {
-                                                assertThat(secretKeyRef.getKey()).isEqualTo("database.password");
-                                                assertThat(secretKeyRef.getName()).isEqualTo("db-secret");
+                                            assertThat(valueFrom.getConfigMapKeyRef()).satisfies(configMapKeyRef -> {
+                                                assertThat(configMapKeyRef.getKey()).isEqualTo("database.name");
+                                                assertThat(configMapKeyRef.getName()).isEqualTo("db-config");
                                             });
                                         });
                                     });

@@ -31,8 +31,12 @@ public class EnvConverter {
         e.vars.forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v).build()));
         e.fields.forEach((k, v) -> {
             // env vars from fields need to have their name set in addition to their field field :)
-            envs.add(new EnvBuilder().withName(convertName(k)).withField(convertName(k)).withValue(v).build());
+            final String field = convertName(k);
+            envs.add(new EnvBuilder().withName(field).withField(field).withValue(v).build());
         });
+        e.mapping.forEach(
+                (k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withSecret(v.fromSecret.orElse(null))
+                        .withConfigmap(v.fromConfigmap.orElse(null)).withValue(v.withKey).build()));
         return envs;
     }
 

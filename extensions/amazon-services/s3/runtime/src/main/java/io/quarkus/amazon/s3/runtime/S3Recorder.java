@@ -77,12 +77,17 @@ public class S3Recorder {
     }
 
     private void configureS3Client(S3BaseClientBuilder builder, S3Config config) {
-        builder.serviceConfiguration(
-                S3Configuration.builder()
-                        .accelerateModeEnabled(config.accelerateMode)
-                        .checksumValidationEnabled(config.checksumValidation)
-                        .chunkedEncodingEnabled(config.chunkedEncoding)
-                        .dualstackEnabled(config.dualstack)
-                        .pathStyleAccessEnabled(config.pathStyleAccess).build());
+        S3Configuration.Builder s3ConfigBuilder = S3Configuration.builder()
+                .accelerateModeEnabled(config.accelerateMode)
+                .checksumValidationEnabled(config.checksumValidation)
+                .chunkedEncodingEnabled(config.chunkedEncoding)
+                .dualstackEnabled(config.dualstack)
+                .pathStyleAccessEnabled(config.pathStyleAccess)
+                .useArnRegionEnabled(config.useArnRegionEnabled);
+
+        if (config.profileName.isPresent()) {
+            s3ConfigBuilder.profileName(config.profileName.get());
+        }
+        builder.serviceConfiguration(s3ConfigBuilder.build());
     }
 }

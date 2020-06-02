@@ -3,11 +3,13 @@ package io.quarkus.amazon.common.runtime;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 
 import io.quarkus.amazon.common.runtime.SyncHttpClientBuildTimeConfig.SyncClientType;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.TlsKeyManagersProvider;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient.Builder;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
@@ -27,9 +29,11 @@ public class AmazonClientTransportRecorder {
 
         SdkHttpClient.Builder syncBuilder;
         SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
+
+        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
+
         if (buildConfig.type == SyncClientType.APACHE) {
             Builder builder = ApacheHttpClient.builder();
-
             validateApacheClientConfig(clientName, syncConfig);
 
             builder.connectionTimeout(syncConfig.connectionTimeout);
@@ -54,18 +58,14 @@ public class AmazonClientTransportRecorder {
 
                 builder.proxyConfiguration(proxyBuilder.build());
             }
-
-            TlsManagersProviderConfig tlsManagersProvider = syncConfig.apache.tlsManagersProvider;
-            if (tlsManagersProvider.fileStore != null && tlsManagersProvider.fileStore.path.isPresent()
-                    && tlsManagersProvider.fileStore.type.isPresent()) {
-                builder.tlsKeyManagersProvider(tlsManagersProvider.type.create(tlsManagersProvider));
-            }
+            getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
 
             syncBuilder = builder;
         } else {
             UrlConnectionHttpClient.Builder builder = UrlConnectionHttpClient.builder();
             builder.connectionTimeout(syncConfig.connectionTimeout);
             builder.socketTimeout(syncConfig.socketTimeout);
+            getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
 
             syncBuilder = builder;
         }
@@ -95,6 +95,7 @@ public class AmazonClientTransportRecorder {
             Http2Configuration.Builder http2Builder = Http2Configuration.builder();
             asyncConfig.http2.initialWindowSize.ifPresent(http2Builder::initialWindowSize);
             asyncConfig.http2.maxStreams.ifPresent(http2Builder::maxStreams);
+            asyncConfig.http2.healthCheckPingPeriod.ifPresent(http2Builder::healthCheckPingPeriod);
             builder.http2Configuration(http2Builder.build());
         }
 
@@ -110,11 +111,7 @@ public class AmazonClientTransportRecorder {
             builder.proxyConfiguration(proxyBuilder.build());
         }
 
-        TlsManagersProviderConfig tlsManagersProvider = asyncConfig.tlsManagersProvider;
-        if (tlsManagersProvider.fileStore != null && tlsManagersProvider.fileStore.path.isPresent()
-                && tlsManagersProvider.fileStore.type.isPresent()) {
-            builder.tlsKeyManagersProvider(tlsManagersProvider.type.create(tlsManagersProvider));
-        }
+        getTlsKeyManagersProvider(asyncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
 
         if (asyncConfig.eventLoop.override) {
             SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
@@ -129,6 +126,13 @@ public class AmazonClientTransportRecorder {
         return new RuntimeValue<>(builder);
     }
 
+    private Optional<TlsKeyManagersProvider> getTlsKeyManagersProvider(TlsManagersProviderConfig config) {
+        if (config.fileStore != null && config.fileStore.path.isPresent() && config.fileStore.type.isPresent()) {
+            return Optional.of(config.type.create(config));
+        }
+        return Optional.empty();
+    }
+
     private void validateApacheClientConfig(String extension, SyncHttpClientConfig config) {
         if (config.apache.maxConnections <= 0) {
             throw new RuntimeConfigurationError(
@@ -137,7 +141,6 @@ public class AmazonClientTransportRecorder {
         if (config.apache.proxy.enabled) {
             config.apache.proxy.endpoint.ifPresent(uri -> validateProxyEndpoint(extension, uri, "sync"));
         }
-        validateTlsManagersProvider(extension, config.apache.tlsManagersProvider, "sync");
     }
 
     private void validateNettyClientConfig(String extension, NettyHttpClientConfig config) {

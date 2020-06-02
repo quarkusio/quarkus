@@ -138,6 +138,16 @@ public class NettyHttpClientConfig {
          */
         @ConfigItem(defaultValueDocumentation = "1048576")
         public Optional<Integer> initialWindowSize;
+
+        /**
+         * Sets the period that the Netty client will send {@code PING} frames to the remote endpoint to check the
+         * health of the connection. To disable this feature, set a duration of 0.
+         * <p>
+         * This setting is only respected when the HTTP/2 protocol is used.
+         * <p>
+         */
+        @ConfigItem(defaultValueDocumentation = "5")
+        public Optional<Duration> healthCheckPingPeriod;
     }
 
     @ConfigGroup

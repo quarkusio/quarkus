@@ -1,5 +1,7 @@
 package io.quarkus.amazon.s3.runtime;
 
+import java.util.Optional;
+
 import io.quarkus.amazon.common.runtime.AwsConfig;
 import io.quarkus.amazon.common.runtime.NettyHttpClientConfig;
 import io.quarkus.amazon.common.runtime.SdkConfig;
@@ -48,6 +50,24 @@ public class S3Config {
      */
     @ConfigItem(defaultValue = "false")
     public boolean pathStyleAccess;
+
+    /**
+     * Enable cross-region call to the region specified in the S3 resource ARN different than the region
+     * the client was configured with.
+     * If this flag is not set to 'true', the cross-region call will throw an exception.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useArnRegionEnabled;
+
+    /**
+     * Define the profile name that should be consulted to determine the default value of {@link #useArnRegionEnabled}.
+     * This is not used, if the {@link #useArnRegionEnabled} is configured to 'true'.
+     * <p>
+     * If not specified, the value in `AWS_PROFILE` environment variable or `aws.profile` system property is used and
+     * defaults to `default` name.
+     */
+    @ConfigItem
+    public Optional<String> profileName;
 
     /**
      * AWS SDK client configurations

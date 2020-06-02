@@ -1,7 +1,5 @@
 package io.quarkus.maven;
 
-import static java.util.stream.Collectors.joining;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -618,7 +616,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
 
-            addQuarkusDevModeDeps(classPathManifest, devModeContext);
+            addQuarkusDevModeDeps(classPathManifest);
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
 
@@ -705,7 +703,7 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
-        private void addQuarkusDevModeDeps(StringBuilder classPathManifest, final DevModeContext devModeContext)
+        private void addQuarkusDevModeDeps(StringBuilder classPathManifest)
                 throws MojoExecutionException, DependencyResolutionException {
             final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
             final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
@@ -801,7 +799,7 @@ public class DevMojo extends AbstractMojo {
         public void run() throws Exception {
             // Display the launch command line in dev mode
             if (getLog().isDebugEnabled()) {
-                getLog().debug("Launching JVM with command line: " + args.stream().collect(joining(" ")));
+                getLog().debug("Launching JVM with command line: " + String.join(" ", args));
             }
             process = new ProcessBuilder(args)
                     .inheritIO()

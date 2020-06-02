@@ -1,11 +1,10 @@
 package io.quarkus.devtools.project;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import io.quarkus.devtools.buildfile.BuildFile;
-import io.quarkus.devtools.buildfile.GradleBuildFile;
-import io.quarkus.devtools.buildfile.MavenBuildFile;
-import io.quarkus.devtools.writer.ProjectWriter;
+import io.quarkus.devtools.project.buildfile.GenericGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.MavenBuildFile;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import java.nio.file.Path;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -53,14 +52,14 @@ public enum BuildTool {
         return buildDirectory;
     }
 
-    public BuildFile createBuildFile(final ProjectWriter writer) {
-        checkNotNull(writer, "writer is required");
+    public ExtensionManager createExtensionManager(final Path projectFolderPath,
+            final QuarkusPlatformDescriptor platformDescriptor) {
         switch (this) {
             case GRADLE:
-                return new GradleBuildFile(writer);
+                return new GenericGradleBuildFile();
             case MAVEN:
             default:
-                return new MavenBuildFile(writer);
+                return new MavenBuildFile(projectFolderPath, platformDescriptor);
         }
     }
 }

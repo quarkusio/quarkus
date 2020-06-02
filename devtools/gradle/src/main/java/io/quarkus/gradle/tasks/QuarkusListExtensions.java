@@ -6,10 +6,7 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.writer.FileProjectWriter;
-import io.quarkus.gradle.GradleBuildFileFromConnector;
+import io.quarkus.devtools.commands.ListExtensions;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
@@ -58,11 +55,7 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            final GradleBuildFileFromConnector buildFileFromConnector = new GradleBuildFileFromConnector(
-                    new FileProjectWriter(getProject().getProjectDir()));
-            QuarkusProject quarkusProject = QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor(),
-                    buildFileFromConnector);
-            new ListExtensions(quarkusProject)
+            new ListExtensions(getQuarkusProject())
                     .all(isAll())
                     .format(getFormat())
                     .search(getSearchPattern())

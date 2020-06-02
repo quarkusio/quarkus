@@ -11,6 +11,7 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
+import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 

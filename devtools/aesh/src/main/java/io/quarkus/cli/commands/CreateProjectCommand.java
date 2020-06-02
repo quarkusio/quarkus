@@ -11,6 +11,7 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
+import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**

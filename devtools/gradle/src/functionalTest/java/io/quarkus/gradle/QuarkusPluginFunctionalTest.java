@@ -21,9 +21,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import com.google.common.collect.ImmutableMap;
 
-import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.generators.SourceType;
+import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 

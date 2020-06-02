@@ -195,6 +195,9 @@ public class Extension implements Serializable {
         if (version != null && !version.isEmpty() && !stripVersion) {
             dependency.setVersion(version);
         }
+        if (type != null && !type.isEmpty()) {
+            dependency.setType(type);
+        }
         return dependency;
     }
 

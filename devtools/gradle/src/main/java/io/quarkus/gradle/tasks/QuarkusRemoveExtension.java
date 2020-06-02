@@ -11,7 +11,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.cli.commands.RemoveExtensions;
+import io.quarkus.devtools.commands.RemoveExtensions;
 
 public class QuarkusRemoveExtension extends QuarkusPlatformTask {
 

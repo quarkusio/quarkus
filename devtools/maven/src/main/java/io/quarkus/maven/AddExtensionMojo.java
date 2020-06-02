@@ -10,8 +10,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.AddExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
@@ -22,7 +22,7 @@ import io.quarkus.platform.tools.MessageWriter;
  * parameters.
  */
 @Mojo(name = "add-extension")
-public class AddExtensionMojo extends BuildFileMojoBase {
+public class AddExtensionMojo extends QuarkusProjectMojoBase {
 
     /**
      * The list of extensions to be added.

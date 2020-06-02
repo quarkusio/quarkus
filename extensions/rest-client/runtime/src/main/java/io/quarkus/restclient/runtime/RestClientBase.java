@@ -16,9 +16,12 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.graalvm.nativeimage.ImageInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.graal.DisabledSSLContext;
+import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
 
@@ -76,6 +79,12 @@ public class RestClientBase {
         Optional<String> maybeHostnameVerifier = getOptionalProperty(REST_HOSTNAME_VERIFIER, String.class);
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
+        }
+
+        // we need to push a disabled SSL context when SSL has been disabled
+        // because otherwise Apache HTTP Client will try to initialize one and will fail
+        if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
+            builder.sslContext(new DisabledSSLContext());
         }
     }
 

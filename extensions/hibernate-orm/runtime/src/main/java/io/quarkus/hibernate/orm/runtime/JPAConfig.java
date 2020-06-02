@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,6 +93,15 @@ public class JPAConfig {
 
     boolean isJtaEnabled() {
         return jtaEnabled.get();
+    }
+
+    /**
+     * Returns the registered persistence units.
+     *
+     * @return Set containing the names of all registered persistence units.
+     */
+    public Set<String> getPersistenceUnits() {
+        return persistenceUnits.keySet();
     }
 
     /**

@@ -18,7 +18,8 @@ import com.arjuna.common.util.propertyservice.PropertiesFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -48,7 +49,7 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.TRANSACTIONS);
+        return new CapabilityBuildItem(Capability.TRANSACTIONS);
     }
 
     @BuildStep
@@ -59,7 +60,7 @@ class NarayanaJtaProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
             BuildProducer<FeatureBuildItem> feature,
             TransactionManagerConfiguration transactions) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_JTA));
+        feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CDIDelegatingTransactionManager.class));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(

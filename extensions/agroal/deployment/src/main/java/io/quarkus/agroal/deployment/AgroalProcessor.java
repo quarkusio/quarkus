@@ -41,6 +41,8 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -69,8 +71,8 @@ class AgroalProcessor {
     @BuildStep
     void agroal(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CapabilityBuildItem> capability) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.AGROAL));
-        capability.produce(new CapabilityBuildItem(Capabilities.AGROAL));
+        feature.produce(new FeatureBuildItem(Feature.AGROAL));
+        capability.produce(new CapabilityBuildItem(Capability.AGROAL));
     }
 
     @BuildStep
@@ -121,7 +123,7 @@ class AgroalProcessor {
                 java.sql.ResultSet[].class.getName()));
 
         // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.AGROAL));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.AGROAL.getName()));
     }
 
     private static void validateBuildTimeConfig(AggregatedDataSourceBuildTimeConfigBuildItem aggregatedConfig) {
@@ -175,7 +177,7 @@ class AgroalProcessor {
         }
 
         return new DataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
-                capabilities.isCapabilityPresent(Capabilities.METRICS), dataSourceSupportEntries);
+                capabilities.isPresent(Capability.METRICS), dataSourceSupportEntries);
     }
 
     @Record(ExecutionTime.STATIC_INIT)

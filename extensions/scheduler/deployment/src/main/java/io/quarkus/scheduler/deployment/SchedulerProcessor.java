@@ -46,6 +46,8 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -87,7 +89,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     void beans(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (!capabilities.isCapabilityPresent(Capabilities.QUARTZ)) {
+        if (capabilities.isMissing(Capability.QUARTZ)) {
             additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
         }
     }
@@ -209,13 +211,12 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans, SchedulerRecorder recorder,
+    public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            SchedulerRecorder recorder,
             List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<FeatureBuildItem> feature,
             AnnotationProxyBuildItem annotationProxy, ExecutorBuildItem executor) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SCHEDULER));
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
@@ -237,6 +238,8 @@ public class SchedulerProcessor {
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
                 .supplier(recorder.createContext(config, executor.getExecutorProxy(), scheduledMetadata))
                 .done());
+
+        return new FeatureBuildItem(Feature.SCHEDULER);
     }
 
     private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {

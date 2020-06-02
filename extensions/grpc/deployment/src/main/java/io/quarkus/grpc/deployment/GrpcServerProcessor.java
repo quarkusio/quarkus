@@ -1,6 +1,6 @@
 package io.quarkus.grpc.deployment;
 
-import static io.quarkus.deployment.builditem.FeatureBuildItem.GRPC_SERVER;
+import static io.quarkus.deployment.Feature.GRPC_SERVER;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;

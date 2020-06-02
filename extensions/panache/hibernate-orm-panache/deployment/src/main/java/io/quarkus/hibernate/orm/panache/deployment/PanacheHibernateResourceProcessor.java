@@ -18,6 +18,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
@@ -54,7 +55,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM_PANACHE);
+        return new FeatureBuildItem(Feature.HIBERNATE_ORM_PANACHE);
     }
 
     @BuildStep

@@ -29,6 +29,7 @@ import org.optaplanner.core.impl.score.director.incremental.IncrementalScoreCalc
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -49,7 +50,7 @@ class OptaPlannerProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.OPTAPLANNER);
+        return new FeatureBuildItem(Feature.OPTAPLANNER);
     }
 
     @BuildStep

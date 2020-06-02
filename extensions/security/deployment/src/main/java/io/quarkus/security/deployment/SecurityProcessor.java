@@ -36,7 +36,8 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
@@ -341,12 +342,12 @@ public class SecurityProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SECURITY);
+        return new CapabilityBuildItem(Capability.SECURITY);
     }
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY);
+        return new FeatureBuildItem(Feature.SECURITY);
     }
 
     @BuildStep

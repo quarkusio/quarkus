@@ -28,7 +28,8 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -59,8 +60,8 @@ class VertxProcessor {
 
     @BuildStep
     void featureAndCapability(BuildProducer<FeatureBuildItem> feature, BuildProducer<CapabilityBuildItem> capability) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
-        capability.produce(new CapabilityBuildItem(Capabilities.RESTEASY_JSON_EXTENSION));
+        feature.produce(new FeatureBuildItem(Feature.VERTX));
+        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
     }
 
     @BuildStep

@@ -29,7 +29,8 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -90,12 +91,12 @@ public class PanacheMongoResourceProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.MONGODB_PANACHE);
+        return new CapabilityBuildItem(Capability.MONGODB_PANACHE);
     }
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(FeatureBuildItem.MONGODB_PANACHE);
+        return new FeatureBuildItem(Feature.MONGODB_PANACHE);
     }
 
     @BuildStep

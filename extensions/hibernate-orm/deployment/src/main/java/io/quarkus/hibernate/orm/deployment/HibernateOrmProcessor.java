@@ -72,6 +72,8 @@ import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -144,7 +146,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.HIBERNATE_ORM);
+        return new CapabilityBuildItem(Capability.HIBERNATE_ORM);
     }
 
     // We do our own enhancement during the compilation phase, so disable any
@@ -295,10 +297,10 @@ public final class HibernateOrmProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
+        feature.produce(new FeatureBuildItem(Feature.HIBERNATE_ORM));
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
-        final boolean hibernateReactivePresent = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
+        final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
         //The Hibernate Reactive extension is able to handle registration of PersistenceProviders for both reactive and
         //traditional blocking Hibernate, by depending on this module and delegating to this code.
         //So when the Hibernate Reactive extension is present, trust that it will register its own PersistenceProvider
@@ -538,7 +540,7 @@ public final class HibernateOrmProcessor {
         MultiTenancyStrategy strategy = MultiTenancyStrategy
                 .valueOf(hibernateConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
         buildProducer.produce(new BeanContainerListenerBuildItem(
-                recorder.initializeJpa(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS), strategy,
+                recorder.initializeJpa(capabilities.isPresent(Capability.TRANSACTIONS), strategy,
                         hibernateConfig.multitenantSchemaDatasource.orElse(null))));
 
         // Bootstrap all persistence units

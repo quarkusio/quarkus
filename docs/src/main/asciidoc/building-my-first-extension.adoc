@@ -272,6 +272,10 @@ class GreetingProcessor {
 }
 ----
 
+NOTE: `FeatureBuildItem` represents a functionality provided by an extension. 
+The name of the feature gets displayed in the log during application bootstrap.
+An extension should provide at most one feature.
+
 Be patient, we will explain the `Build Step Processor` concept and all the extension deployment API later on.
 At this point, you just need to understand that this class explains to Quarkus how to deploy a feature named `greeting` which is your extension.
 In other words, you are augmenting your application to use the `greeting` extension with all the Quarkus benefits (build time optimization, native support, etc.).

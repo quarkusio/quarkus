@@ -36,6 +36,8 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -84,7 +86,7 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemProperty) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
+        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_FAULT_TOLERANCE));
 
         serviceProvider.produce(new ServiceProviderBuildItem(ExecutorFactory.class.getName(),
                 ContextPropagationExecutorFactory.class.getName()));
@@ -148,7 +150,7 @@ public class SmallRyeFaultToleranceProcessor {
                 MetricsCollectorFactory.class);
         additionalBean.produce(builder.build());
 
-        if (!capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+        if (!capabilities.isPresent(Capability.METRICS)) {
             //disable fault tolerance metrics with the MP sys props and provides a No-op metric registry.
             additionalBean.produce(AdditionalBeanBuildItem.builder().addBeanClass(NoopMetricRegistry.class).setRemovable()
                     .setDefaultScope(DotName.createSimple(Singleton.class.getName())).build());

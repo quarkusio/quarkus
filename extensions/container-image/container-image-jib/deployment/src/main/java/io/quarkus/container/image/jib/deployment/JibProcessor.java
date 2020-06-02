@@ -39,7 +39,7 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -64,7 +64,7 @@ public class JibProcessor {
 
     @BuildStep
     public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_JIB);
+        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_JIB);
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)

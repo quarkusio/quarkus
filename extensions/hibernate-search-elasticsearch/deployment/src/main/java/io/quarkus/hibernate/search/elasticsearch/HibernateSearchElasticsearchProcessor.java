@@ -27,6 +27,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.VoidType;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -64,7 +65,7 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<HibernateOrmIntegrationBuildItem> integrations,
             BuildProducer<FeatureBuildItem> feature) throws Exception {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_SEARCH_ELASTICSEARCH));
+        feature.produce(new FeatureBuildItem(Feature.HIBERNATE_SEARCH_ELASTICSEARCH));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 

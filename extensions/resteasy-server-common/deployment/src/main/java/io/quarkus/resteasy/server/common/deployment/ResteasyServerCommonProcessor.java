@@ -54,6 +54,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -436,8 +437,8 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ResteasyJaxrsProviderBuildItem> jaxRsProviders,
             BuildProducer<FilterBuildItem> servletFilters,
             Capabilities capabilities) {
-        if (buildConfig.metricsEnabled && capabilities.isCapabilityPresent(Capabilities.METRICS)) {
-            if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (buildConfig.metricsEnabled && capabilities.isPresent(Capability.METRICS)) {
+            if (capabilities.isPresent(Capability.SERVLET)) {
                 // if running with servlet, use the MetricsFilter implementation from SmallRye
                 jaxRsProviders.produce(
                         new ResteasyJaxrsProviderBuildItem("io.smallrye.metrics.jaxrs.JaxRsMetricsFilter"));

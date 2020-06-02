@@ -25,7 +25,7 @@ import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -49,7 +49,7 @@ public class DockerProcessor {
 
     @BuildStep
     public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_DOCKER);
+        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_DOCKER);
     }
 
     @BuildStep(onlyIf = { IsNormal.class }, onlyIfNot = NativeBuild.class)

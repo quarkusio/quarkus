@@ -12,6 +12,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -38,7 +39,7 @@ public class ResteasyBuiltinsProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.RESTEASY);
+        return new CapabilityBuildItem(Capability.RESTEASY);
     }
 
     @BuildStep
@@ -70,7 +71,7 @@ public class ResteasyBuiltinsProcessor {
         providers.produce(new ResteasyJaxrsProviderBuildItem(UnauthorizedExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(AuthenticationFailedExceptionMapper.class.getName()));
-        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
             providers.produce(new ResteasyJaxrsProviderBuildItem(SecurityContextFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
         }

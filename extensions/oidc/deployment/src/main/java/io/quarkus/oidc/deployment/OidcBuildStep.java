@@ -9,6 +9,8 @@ import org.eclipse.microprofile.jwt.Claim;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -37,12 +39,12 @@ public class OidcBuildStep {
 
     @BuildStep(onlyIf = IsEnabled.class)
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(FeatureBuildItem.OIDC);
+        return new FeatureBuildItem(Feature.OIDC);
     }
 
     @BuildStep(onlyIf = IsEnabled.class)
     AdditionalBeanBuildItem jwtClaimIntegration(Capabilities capabilities) {
-        if (!capabilities.isCapabilityPresent(Capabilities.JWT)) {
+        if (!capabilities.isPresent(Capability.JWT)) {
             AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
             removable.addBeanClass(CommonJwtProducer.class);
             removable.addBeanClass(RawClaimTypeProducer.class);

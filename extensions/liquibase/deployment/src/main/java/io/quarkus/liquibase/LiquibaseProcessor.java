@@ -35,7 +35,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -91,7 +92,7 @@ class LiquibaseProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.LIQUIBASE);
+        return new CapabilityBuildItem(Capability.LIQUIBASE);
     }
 
     /**
@@ -245,7 +246,7 @@ class LiquibaseProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.LIQUIBASE);
+        return new FeatureBuildItem(Feature.LIQUIBASE);
     }
 
     @BuildStep

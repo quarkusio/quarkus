@@ -30,9 +30,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -80,8 +81,8 @@ public class JacksonProcessor {
     @Inject
     List<IgnoreJsonDeserializeClassBuildItem> ignoreJsonDeserializeClassBuildItems;
 
-    @BuildStep(providesCapabilities = Capabilities.JACKSON)
-    void register() {
+    @BuildStep
+    CapabilityBuildItem register() {
         addReflectiveClass(true, false,
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
                 "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
@@ -141,6 +142,8 @@ public class JacksonProcessor {
 
         // this needs to be registered manually since the runtime module is not indexed by Jandex
         additionalBeans.produce(new AdditionalBeanBuildItem(ObjectMapperProducer.class));
+
+        return new CapabilityBuildItem(Capability.JACKSON);
     }
 
     private void addReflectiveHierarchyClass(DotName className) {

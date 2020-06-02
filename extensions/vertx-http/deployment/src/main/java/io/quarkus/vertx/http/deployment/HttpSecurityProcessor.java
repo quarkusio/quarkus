@@ -11,6 +11,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -113,7 +114,7 @@ public class HttpSecurityProcessor {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));
         }
 
-        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());

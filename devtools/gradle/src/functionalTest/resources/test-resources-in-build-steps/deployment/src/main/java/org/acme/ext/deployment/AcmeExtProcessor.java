@@ -1,5 +1,6 @@
 package org.acme.ext.deployment;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;

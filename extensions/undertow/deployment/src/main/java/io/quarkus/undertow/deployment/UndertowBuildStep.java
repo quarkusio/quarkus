@@ -81,6 +81,8 @@ import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -140,12 +142,12 @@ public class UndertowBuildStep {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SERVLET);
+        return new CapabilityBuildItem(Capability.SERVLET);
     }
 
     @BuildStep
     public FeatureBuildItem setupCapability() {
-        return new FeatureBuildItem(FeatureBuildItem.SERVLET);
+        return new FeatureBuildItem(Feature.SERVLET);
     }
 
     @BuildStep
@@ -161,7 +163,7 @@ public class UndertowBuildStep {
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities) throws Exception {
 
-        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
             recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
         }
         Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
@@ -184,7 +186,7 @@ public class UndertowBuildStep {
             BuildProducer<ListenerBuildItem> listeners,
             Capabilities capabilities) {
         additionalBeans.produce(new AdditionalBeanBuildItem(ServletProducer.class));
-        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ServletHttpSecurityPolicy.class));
         }
         contextRegistrars.produce(new ContextRegistrarBuildItem(new ContextRegistrar() {

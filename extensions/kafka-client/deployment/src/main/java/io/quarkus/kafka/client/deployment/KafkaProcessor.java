@@ -42,6 +42,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -95,12 +96,12 @@ public class KafkaProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));
             collectSubclasses(toRegister, indexBuildItem, i);
         }
-        if (capabilities.isCapabilityPresent(Capabilities.JSONB)) {
+        if (capabilities.isPresent(Capability.JSONB)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
             collectSubclasses(toRegister, indexBuildItem, JsonbSerializer.class);
             collectSubclasses(toRegister, indexBuildItem, JsonbDeserializer.class);
         }
-        if (capabilities.isCapabilityPresent(Capabilities.JACKSON)) {
+        if (capabilities.isPresent(Capability.JACKSON)) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
             collectSubclasses(toRegister, indexBuildItem, ObjectMapperSerializer.class);

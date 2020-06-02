@@ -29,6 +29,7 @@ import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -129,7 +130,7 @@ class SmallRyeHealthProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             LaunchModeBuildItem launchModeBuildItem) throws IOException {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
+        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_HEALTH));
 
         // add health endpoints to not found page
         if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {

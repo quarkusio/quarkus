@@ -3,6 +3,7 @@ package io.quarkus.jgit.deployment;
 import java.util.Arrays;
 import java.util.List;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -14,12 +15,12 @@ class JGitProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.JGIT);
+        return new FeatureBuildItem(Feature.JGIT);
     }
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JGIT);
+        return new ExtensionSslNativeSupportBuildItem(Feature.JGIT);
     }
 
     @BuildStep

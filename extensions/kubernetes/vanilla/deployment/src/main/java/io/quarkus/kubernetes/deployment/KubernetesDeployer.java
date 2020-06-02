@@ -30,6 +30,7 @@ import io.dekorate.utils.Serialization;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -119,7 +120,7 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capabilities.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
+            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         }

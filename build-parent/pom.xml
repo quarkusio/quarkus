@@ -33,7 +33,7 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>19.3.1</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>20.1.0</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.16</axle-client.version>
         <mutiny-client.version>0.0.16</mutiny-client.version>

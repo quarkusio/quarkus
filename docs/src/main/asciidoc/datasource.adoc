@@ -59,7 +59,7 @@ quarkus.datasource.jdbc.max-size=16
 
 === Reactive datasource
 
-Add either the `reactive-pg-client` or the `reactive-mysql-client` extension.
+Add the correct reactive extension for the database you are using: `reactive-pg-client`, `reactive-mysql-client`, or `reactive-db2-client`.
 
 Then configure your reactive datasource:
 
@@ -89,6 +89,7 @@ The database kind defines which type of database you will connect to.
 
 We currently include these built-in database kinds:
 
+* DB2: `db2` (reactive only)
 * Derby: `derby`
 * H2: `h2`
 * MariaDB: `mariadb`
@@ -284,16 +285,19 @@ Because of this, you can also use `javax.sql.DataSource` as the injected type.
 
 === Reactive datasource
 
-If you prefer using a reactive datasource, Quarkus offers MySQL/MariaDB and PostgreSQL reactive clients.
+If you prefer using a reactive datasource, Quarkus offers DB2, MySQL/MariaDB, and PostgreSQL reactive clients.
 
 ==== Install the Maven dependencies
 
-Depending on whether you wish to use MySQL/MariaDB or PostgreSQL, you need to add either the `quarkus-reactive-pg-client`
-or the `quarkus-reactive-mysql-client` extension.
+Depending on which database you want to use, add the corresponding extension:
+
+* DB2: `quarkus-reactive-db2-client`
+* MySQL/MariaDB: `quarkus-reactive-mysql-client`
+* PostgreSQL: `quarkus-reactive-pg-client`
 
 The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.
 
-==== Configure the JDBC datasource
+==== Configure the reactive datasource
 
 Once the driver is there, you just need to configure the connection URL.
 
@@ -305,7 +309,7 @@ quarkus.datasource.reactive.url=postgresql:///your_database
 quarkus.datasource.reactive.max-size=20
 ----
 
-=== Both
+=== JDBC and reactive datasources simultaneously
 
 By default, if you include both a JDBC extension (+ Agroal) and a reactive datasource extension handling the given database kind,
 both will be created.
@@ -400,7 +404,7 @@ AgroalDataSource inventoryDataSource;
 
 == Datasource Health Check
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-agroal`, `quarkus-reactive-pg-client` and `quarkus-reactive-mysql-client` extensions will automatically add a readiness health check
+If you are using the `quarkus-smallrye-health` extension, the `quarkus-agroal` and reactive client extensions will automatically add a readiness health check
 to validate the datasource.
 
 So when you access the `/health/ready` endpoint of your application you will have information about the datasource validation status.
@@ -564,6 +568,10 @@ You can find more information at the https://db.apache.org/derby/docs/10.8/devgu
 == Reactive Datasource Configuration Reference
 
 include::{generated-dir}/config/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
+
+=== Reactive DB2 Configuration
+
+include::{generated-dir}/config/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
 
 === Reactive MariaDB/MySQL Specific Configuration
 

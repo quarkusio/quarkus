@@ -11,6 +11,7 @@ include::./attributes.adoc[]
 The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.
 Currently, the following database servers are supported:
 
+* DB2
 * PostgreSQL
 * MariaDB/MySQL
 
@@ -462,13 +463,17 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |===
 |Database |Extension name |Pool class name
 
-|PostgreSQL
-|`quarkus-reactive-pg-client`
-|`io.vertx.mutiny.pgclient.PgPool`
+|DB2
+|`quarkus-reactive-db2-client`
+|`io.vertx.mutiny.db2client.DB2Pool`
 
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
 |`io.vertx.mutiny.mysqlclient.MySQLPool`
+
+|PostgreSQL
+|`quarkus-reactive-pg-client`
+|`io.vertx.mutiny.pgclient.PgPool`
 |===
 
 == Transactions
@@ -532,6 +537,10 @@ include::{generated-dir}/config/quarkus-datasource.adoc[opts=optional, leveloffs
 === Reactive Datasource
 
 include::{generated-dir}/config/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
+
+=== DB2
+
+include::{generated-dir}/config/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
 
 === MariaDB/MySQL
 

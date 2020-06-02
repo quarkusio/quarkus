@@ -68,6 +68,6 @@ class ReactiveMySQLClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.reactive.mysql.client.runtime.health.ReactiveMySQLDataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
+                dataSourcesBuildTimeConfig.healthEnabled);
     }
 }

@@ -251,7 +251,7 @@ public class MongoClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(MongoClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
-                buildTimeConfig.healthEnabled, "mongodb");
+                buildTimeConfig.healthEnabled);
     }
 
     @BuildStep

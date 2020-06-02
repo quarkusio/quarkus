@@ -441,7 +441,7 @@ class AgroalProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
+                dataSourcesBuildTimeConfig.healthEnabled);
     }
 
     @BuildStep

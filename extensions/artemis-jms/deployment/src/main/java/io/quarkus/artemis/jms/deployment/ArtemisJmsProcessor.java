@@ -29,7 +29,7 @@ public class ArtemisJmsProcessor {
     HealthBuildItem health(ArtemisBuildTimeConfig buildConfig) {
         return new HealthBuildItem(
                 "io.quarkus.artemis.jms.runtime.health.ConnectionFactoryHealthCheck",
-                buildConfig.healthEnabled, "artemis");
+                buildConfig.healthEnabled);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

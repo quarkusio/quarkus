@@ -87,7 +87,7 @@ public class ArtemisCoreProcessor {
 
         return new HealthBuildItem(
                 "io.quarkus.artemis.core.runtime.health.ServerLocatorHealthCheck",
-                buildConfig.healthEnabled, "artemis");
+                buildConfig.healthEnabled);
     }
 
     @BuildStep

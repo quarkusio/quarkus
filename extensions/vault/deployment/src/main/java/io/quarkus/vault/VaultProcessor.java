@@ -73,7 +73,7 @@ public class VaultProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(VaultBuildTimeConfig config) {
         return new HealthBuildItem("io.quarkus.vault.runtime.health.VaultHealthCheck",
-                config.health.enabled, "vault");
+                config.health.enabled);
     }
 
 }

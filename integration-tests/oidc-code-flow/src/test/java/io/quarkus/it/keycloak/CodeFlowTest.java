@@ -481,6 +481,26 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testAccessAndRefreshTokenInjectionWithoutIndexHtmlWithQuery() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh-query?a=aValue");
+            assertEquals("/web-app/refresh-query?a=aValue", getStateCookieSavedPath(webClient, null));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("RT injected:aValue", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testNoCodeFlowUnprotected() {
         RestAssured.when().get("/public-web-app/access")
                 .then()

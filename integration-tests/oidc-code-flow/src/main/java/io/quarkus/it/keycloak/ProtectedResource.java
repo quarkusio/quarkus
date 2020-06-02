@@ -4,6 +4,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -100,5 +101,11 @@ public class ProtectedResource {
             throw new OIDCException("Refresh token values are not equal");
         }
         return refreshToken.getToken() != null && !refreshToken.getToken().isEmpty() ? "RT injected" : "no refresh";
+    }
+
+    @GET
+    @Path("refresh-query")
+    public String refresh(@QueryParam("a") String aValue) {
+        return refresh() + ":" + aValue;
     }
 }

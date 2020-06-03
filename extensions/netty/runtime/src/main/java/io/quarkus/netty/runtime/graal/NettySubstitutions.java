@@ -1,5 +1,6 @@
 package io.quarkus.netty.runtime.graal;
 
+import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
@@ -386,6 +387,15 @@ final class Target_io_netty_util_internal_NativeLibraryLoader {
             throws ClassNotFoundException {
         return Class.forName(helper.getName(), false, loader);
     }
+
+}
+
+@TargetClass(className = "io.netty.buffer.EmptyByteBuf")
+final class Target_io_netty_buffer_EmptyByteBuf {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
+    private static ByteBuffer EMPTY_BYTE_BUFFER;
 
 }
 

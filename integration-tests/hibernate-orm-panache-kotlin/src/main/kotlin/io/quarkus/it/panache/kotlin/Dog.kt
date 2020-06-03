@@ -7,7 +7,7 @@ import javax.persistence.ManyToOne
 
 @Entity
 open class Dog() : PanacheEntity() {
-    companion object : PanacheCompanion<Dog, Int>
+    companion object : PanacheCompanion<Dog>
 
     constructor(name: String, race: String): this() {
         this.name = name

@@ -52,15 +52,13 @@ public final class KotlinPanacheResourceProcessor {
     static final DotName PANACHE_REPOSITORY_DOTNAME = createSimple(PanacheRepository.class.getName());
 
     static final DotName PANACHE_ENTITY_BASE_DOTNAME = createSimple(PanacheEntityBase.class.getName());
-    static final DotName PANACHE_COMPANION_DOTNAME = createSimple(PanacheCompanion.class.getName());
     static final DotName PANACHE_ENTITY_DOTNAME = createSimple(PanacheEntity.class.getName());
+    static final DotName PANACHE_COMPANION_DOTNAME = createSimple(PanacheCompanion.class.getName());
 
-    static final String PANACHE_REPOSITORY_BASE_SIGNATURE = toBinarySignature(PanacheRepositoryBase.class);
-    static final String PANACHE_REPOSITORY_SIGNATURE = toBinarySignature(PanacheRepository.class);
-    static final String PANACHE_COMPANION_SIGNATURE = toBinarySignature(PanacheCompanion.class);
+    static final String PANACHE_ENTITY_BASE_SIGNATURE = toBinarySignature(PanacheEntityBase.class);
     static final String PANACHE_ENTITY_SIGNATURE = toBinarySignature(PanacheEntity.class);
+    static final String PANACHE_COMPANION_SIGNATURE = toBinarySignature(PanacheCompanion.class);
 
-    static final String ID_TYPE_SIGNATURE = toBinarySignature(Long.class);
     static final String OBJECT_SIGNATURE = toBinarySignature(Object.class);
     static final String CLASS_SIGNATURE = toBinarySignature(Class.class);
 
@@ -179,7 +177,7 @@ public final class KotlinPanacheResourceProcessor {
                 transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), companionEnhancer));
             }
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(PANACHE_ENTITY_DOTNAME)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_ENTITY_BASE_DOTNAME)) {
             if (classInfo.name().equals(PANACHE_ENTITY_DOTNAME))
                 continue;
             if (modelClasses.add(classInfo.name().toString())) {

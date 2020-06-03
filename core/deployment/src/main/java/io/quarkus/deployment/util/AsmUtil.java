@@ -99,7 +99,7 @@ public class AsmUtil {
      * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List;</tt> if
      * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
      * 
-     * @param method the type you want the descriptor for.
+     * @param type the type you want the descriptor for.
      * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
      * @return a bytecode descriptor for that type.
      */

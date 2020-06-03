@@ -1,46 +1,34 @@
 package io.quarkus.netty.runtime.virtual;
 
 import java.net.SocketAddress;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * A virtual client connection to an intra-JVM netty server channel.
- *
- * Clients can block and wait directly for posted messages from the server channel.
- *
+ * A virtual client connection to an intra-JVM request/response netty server channel.
  */
-public class VirtualClientConnection {
-    protected SocketAddress clientAddress;
-    protected BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
+public class VirtualClientConnection<T> {
+    protected final SocketAddress clientAddress;
     protected boolean connected = true;
     protected VirtualChannel peer;
+    protected final VirtualResponseHandler handler;
 
-    VirtualClientConnection(SocketAddress clientAddress) {
+    public VirtualClientConnection(SocketAddress clientAddress, VirtualResponseHandler handler) {
         this.clientAddress = clientAddress;
+        this.handler = handler;
     }
 
     public SocketAddress clientAddress() {
         return clientAddress;
     }
 
-    /**
-     * Blocking queue for a client to obtain messages directly from server
-     *
-     * @return
-     */
-    public BlockingQueue<Object> queue() {
-        return queue;
-    }
-
     public void close() {
         // todo more cleanup?
         connected = false;
         peer.close();
+        handler.close();
     }
 
     public boolean isConnected() {
@@ -104,9 +92,8 @@ public class VirtualClientConnection {
      * @param remoteAddress
      * @return
      */
-    public static VirtualClientConnection connect(final VirtualAddress remoteAddress) {
-        return connect(remoteAddress, remoteAddress);
-
+    public static VirtualClientConnection connect(VirtualResponseHandler handler, VirtualAddress remoteAddress) {
+        return connect(handler, remoteAddress, remoteAddress);
     }
 
     /**
@@ -116,7 +103,8 @@ public class VirtualClientConnection {
      * @param clientAddress
      * @return
      */
-    public static VirtualClientConnection connect(VirtualAddress remoteAddress, SocketAddress clientAddress) {
+    public static VirtualClientConnection connect(VirtualResponseHandler handler, VirtualAddress remoteAddress,
+            SocketAddress clientAddress) {
         if (clientAddress == null)
             clientAddress = remoteAddress;
 
@@ -129,7 +117,7 @@ public class VirtualClientConnection {
         }
 
         VirtualServerChannel serverChannel = (VirtualServerChannel) boundChannel;
-        VirtualClientConnection conn = new VirtualClientConnection(clientAddress);
+        VirtualClientConnection conn = new VirtualClientConnection(clientAddress, handler);
         conn.peer = serverChannel.serve(conn);
         return conn;
     }

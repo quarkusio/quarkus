@@ -42,6 +42,10 @@ public class JpaOperations {
     //
     // Instance methods
 
+    public static void merge(Object entity) {
+        delegate.merge(entity);
+    }
+
     public static void persist(Object entity) {
         delegate.persist(entity);
     }

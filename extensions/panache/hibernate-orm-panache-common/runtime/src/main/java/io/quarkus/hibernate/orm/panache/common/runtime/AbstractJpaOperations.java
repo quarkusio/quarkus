@@ -30,6 +30,11 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     //
     // Instance methods
 
+    public void merge(Object entity) {
+        EntityManager em = getEntityManager();
+        em.merge(entity);
+    }
+
     public void persist(Object entity) {
         EntityManager em = getEntityManager();
         persist(em, entity);

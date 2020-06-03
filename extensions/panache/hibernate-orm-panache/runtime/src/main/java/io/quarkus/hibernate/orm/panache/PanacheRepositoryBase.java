@@ -29,6 +29,15 @@ public interface PanacheRepositoryBase<Entity, Id> {
     // Operations
 
     /**
+     * Merge the given entity in the database
+     *
+     * @param entity the entity to persist.
+     */
+    public default void merge(Entity entity) {
+        JpaOperations.merge(entity);
+    }
+
+    /**
      * Persist the given entity in the database, if not already persisted.
      * 
      * @param entity the entity to persist.

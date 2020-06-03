@@ -346,6 +346,13 @@ class TestEndpoint {
 
         Assertions.assertThrows(PanacheQueryException::class.java, { personRepository.update(" ") },
                 "PanacheQueryException should have thrown")
+
+        val p1 = makeSavedPerson()
+        p1.name = "updated name"
+        personRepository.merge(p1)
+        val p2 = personRepository.find("name = 'updated name'")
+        Assertions.assertNotNull(p2, "Person.name should have been updated.")
+
     }
 
     private fun testSorting() {

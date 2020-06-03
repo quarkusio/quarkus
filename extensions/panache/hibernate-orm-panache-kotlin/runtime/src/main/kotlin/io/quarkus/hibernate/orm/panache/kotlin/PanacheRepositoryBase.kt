@@ -15,6 +15,16 @@ import javax.persistence.LockModeType
  * @param Id The ID type of the entity
  */
 interface PanacheRepositoryBase<Entity : Any, Id: Any> {
+    // Operations
+    /**
+     * Merge the given entity in the database
+     *
+     * @param entity the entity to persist.
+     */
+    fun merge(entity: Entity) {
+        JpaOperations.merge(entity)
+    }
+
     /**
      * Persist the given entity in the database, if not already persisted.
      *

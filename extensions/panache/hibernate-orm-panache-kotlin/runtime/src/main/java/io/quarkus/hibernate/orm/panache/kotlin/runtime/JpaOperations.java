@@ -209,6 +209,10 @@ public class JpaOperations {
         return delegate.listAll(entityClass, sort);
     }
 
+    public static void merge(Object entity) {
+        delegate.merge(entity);
+    }
+
     static int paramCount(Object[] params) {
         return delegate.paramCount(params);
     }

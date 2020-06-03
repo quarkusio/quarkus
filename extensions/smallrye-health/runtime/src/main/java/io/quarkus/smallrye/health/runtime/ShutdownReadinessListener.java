@@ -2,7 +2,6 @@ package io.quarkus.smallrye.health.runtime;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
-import javax.enterprise.util.AnnotationLiteral;
 
 import org.eclipse.microprofile.health.Readiness;
 
@@ -21,9 +20,8 @@ public class ShutdownReadinessListener implements ShutdownListener {
 
     @Override
     public void preShutdown(ShutdownNotification notification) {
-        Instance<ShutdownReadinessCheck> instance = CDI.current()
-                .select(ShutdownReadinessCheck.class, new AnnotationLiteral<Readiness>() {
-                });
+        Instance<ShutdownReadinessCheck> instance = CDI.current().select(ShutdownReadinessCheck.class,
+                Readiness.Literal.INSTANCE);
         if (!instance.isUnsatisfied()) {
             instance.get().shutdown();
         }

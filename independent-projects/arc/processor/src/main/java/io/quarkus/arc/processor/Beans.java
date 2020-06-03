@@ -72,6 +72,12 @@ final class Beans {
                 // Qualifiers
                 qualifiers.add(qualifierAnnotation);
             }
+            // Treat the case when an additional bean defining annotation that is also a qualifier declares the default scope
+            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
+            if (stereotype != null) {
+                stereotypes.add(stereotype);
+                continue;
+            }
             if (!qualifierCollection.isEmpty()) {
                 // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
@@ -100,11 +106,6 @@ final class Beans {
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null) {
                 scopes.add(scopeAnnotation);
-                continue;
-            }
-            StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
-            if (stereotype != null) {
-                stereotypes.add(stereotype);
                 continue;
             }
         }

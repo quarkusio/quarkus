@@ -1,6 +1,6 @@
 [![Quarkus](https://design.jboss.org/quarkus/logo/final/PNG/quarkus_logo_horizontal_rgb_1280px_default.png)](https://quarkus.io/)
 
-[![Version](https://img.shields.io/github/v/release/quarkusio/quarkus?style=for-the-badge)](https://github.com/quarkusio/quarkus/releases/latest)
+[![Version](https://img.shields.io/maven-central/v/io.quarkus/quarkus-bom?style=for-the-badge)](https://search.maven.org/artifact/io.quarkus/quarkus-bom)
 [![GitHub Actions Status](<https://img.shields.io/github/workflow/status/QuarkusIO/quarkus/Quarkus CI?logo=GitHub&style=for-the-badge>)](https://github.com/quarkusio/quarkus/actions?query=workflow%3A%22Quarkus+CI%22)
 [![License](https://img.shields.io/github/license/quarkusio/quarkus?style=for-the-badge&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Project Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg?style=for-the-badge&logo=zulip)](https://quarkusio.zulipchat.com/)

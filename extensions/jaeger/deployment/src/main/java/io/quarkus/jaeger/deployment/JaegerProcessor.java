@@ -101,9 +101,16 @@ public class JaegerProcessor {
                 .reusable()
                 .build();
         if (implementor == null) {
-            return new MetricBuildItem(metadata, true, "jaeger", tags);
+            return new MetricBuildItem.Builder()
+                    .metadata(metadata)
+                    .tags(tags)
+                    .build();
         } else {
-            return new MetricBuildItem(metadata, implementor, true, "jaeger", tags);
+            return new MetricBuildItem.Builder()
+                    .metadata(metadata)
+                    .implementor(implementor)
+                    .tags(tags)
+                    .build();
         }
     }
 

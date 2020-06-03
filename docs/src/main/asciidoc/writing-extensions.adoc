@@ -1397,11 +1397,12 @@ void registerMetrics(BuildProducer<MetricBuildItem> metrics) {
             .build();
     List<DataSource> dataSources = getAllDataSources(); // your relevant components specific to the extension
     for(DataSource dataSource : dataSources) {
-        metrics.produce(new MetricBuildItem(activeCountMetadata,
-                new ActiveCountGauge(dataSource.getName()),
-                agroalBuildTimeConfig.metricsEnabled,
-                configRootName, // name of the config root pertaining to this extension
-                new Tag("datasource", dataSource.getName())));
+        MetricBuildItem buildItem = new MetricBuildItem.Builder()
+                .metadata(activeCountMetadata)
+                .implementor(new ActiveCountGauge(dataSource.getName()))
+                .tags(new Tag("datasource", dataSource.getName()))
+                .build();
+        metrics.produce(buildItem);
     }
 }
 ----

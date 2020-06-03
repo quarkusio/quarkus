@@ -698,14 +698,16 @@ public final class HibernateOrmProcessor {
 
     private MetricBuildItem createMetricBuildItem(String metricName, String description, String metric,
             boolean metricsEnabled) {
-        return new MetricBuildItem(Metadata.builder()
+        Metadata metadata = Metadata.builder()
                 .withName(metricName)
                 .withDescription(description)
                 .withType(MetricType.COUNTER)
-                .build(),
-                new HibernateCounter("default", metric),
-                metricsEnabled,
-                "hibernate-orm");
+                .build();
+        return new MetricBuildItem.Builder()
+                .metadata(metadata)
+                .implementor(new HibernateCounter("default", metric))
+                .enabled(metricsEnabled)
+                .build();
     }
 
     private Optional<String> getSqlLoadScript(LaunchMode launchMode) {

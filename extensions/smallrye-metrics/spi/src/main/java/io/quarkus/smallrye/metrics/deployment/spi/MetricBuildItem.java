@@ -29,7 +29,9 @@ public final class MetricBuildItem extends MultiBuildItem {
      * @param tags The tags that will be applied to this metric
      * @param configRootName the name of the root configuration of the extension as defined by the <code>@ConfigRoot</code>
      *        annotation.
+     * @deprecated Prefer to use the {@link MetricBuildItem.Builder} instead
      */
+    @Deprecated
     public MetricBuildItem(Metadata metadata, boolean enabled, String configRootName, Tag... tags) {
         if (metadata.getTypeRaw() == MetricType.GAUGE) {
             throw new IllegalArgumentException("Gauges require a non-null implementation object");
@@ -54,8 +56,10 @@ public final class MetricBuildItem extends MultiBuildItem {
      * @param tags The tags that will be applied to this metric
      * @param configRootName the name of the root configuration of the extension as defined by the <code>@ConfigRoot</code>
      *        annotation.
+     * @deprecated Prefer to use the {@link MetricBuildItem.Builder} instead
      *
      */
+    @Deprecated
     public MetricBuildItem(Metadata metadata, Object implementor, boolean enabled, String configRootName, Tag... tags) {
         if (implementor == null && metadata.getTypeRaw() == MetricType.GAUGE) {
             throw new IllegalArgumentException("Gauges require a non-null implementation object");
@@ -112,6 +116,10 @@ public final class MetricBuildItem extends MultiBuildItem {
         return enabled;
     }
 
+    /**
+     * @deprecated This value is unused.
+     */
+    @Deprecated
     public String getConfigRootName() {
         return configRootName;
     }
@@ -155,6 +163,10 @@ public final class MetricBuildItem extends MultiBuildItem {
             return this;
         }
 
+        /**
+         * @deprecated This value is unused.
+         */
+        @Deprecated
         public Builder configRootName(String configRootName) {
             this.configRootName = configRootName;
             return this;

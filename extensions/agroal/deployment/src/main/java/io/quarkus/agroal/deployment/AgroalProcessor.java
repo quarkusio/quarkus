@@ -548,92 +548,108 @@ class AgroalProcessor {
             boolean metricsEnabledForThisDatasource = dataSourcesBuildTimeConfig.metricsEnabled &&
                     aggregatedDataSourceBuildTimeConfig.getJdbcConfig().enableMetrics.orElse(true);
             Tag tag = new Tag("datasource", DataSourceUtil.isDefault(dataSourceName) ? "default" : dataSourceName);
-            String configRootName = "datasource";
-            metrics.produce(new MetricBuildItem(activeCountMetadata,
-                    new AgroalGauge(dataSourceName, "activeCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(maxUsedCountMetadata,
-                    new AgroalGauge(dataSourceName, "maxUsedCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(awaitingCountMetadata,
-                    new AgroalGauge(dataSourceName, "awaitingCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(availableCountMetadata,
-                    new AgroalGauge(dataSourceName, "availableCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeAverageMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeAverage"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeMaxMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeMax"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeTotalMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeTotal"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeAverageMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeAverage"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeMaxMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeMax"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeTotalMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeTotal"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(acquireCountMetadata,
-                    new AgroalCounter(dataSourceName, "acquireCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationCountMetadata,
-                    new AgroalCounter(dataSourceName, "creationCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(leakDetectionCountMetadata,
-                    new AgroalCounter(dataSourceName, "leakDetectionCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(destroyCountMetadata,
-                    new AgroalCounter(dataSourceName, "destroyCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(flushCountMetadata,
-                    new AgroalCounter(dataSourceName, "flushCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(invalidCountMetadata,
-                    new AgroalCounter(dataSourceName, "invalidCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(reapCountMetadata,
-                    new AgroalCounter(dataSourceName, "reapCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(activeCountMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "activeCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(maxUsedCountMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "maxUsedCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(awaitingCountMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "awaitingCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(availableCountMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "availableCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(blockingTimeAverageMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "blockingTimeAverage"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(blockingTimeMaxMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "blockingTimeMax"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(blockingTimeTotalMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "blockingTimeTotal"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(creationTimeAverageMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "creationTimeAverage"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(creationTimeMaxMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "creationTimeMax"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(creationTimeTotalMetadata)
+                    .implementor(new AgroalGauge(dataSourceName, "creationTimeTotal"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(acquireCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "acquireCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(creationCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "creationCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(leakDetectionCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "leakDetectionCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(destroyCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "destroyCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(flushCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "flushCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(invalidCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "invalidCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
+            metrics.produce(new MetricBuildItem.Builder()
+                    .metadata(reapCountMetadata)
+                    .implementor(new AgroalCounter(dataSourceName, "reapCount"))
+                    .enabled(metricsEnabledForThisDatasource)
+                    .tags(tag)
+                    .build());
         }
     }
 }

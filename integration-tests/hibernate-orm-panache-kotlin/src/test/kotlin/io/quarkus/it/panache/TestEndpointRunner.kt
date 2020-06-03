@@ -62,7 +62,7 @@ class TestEndpointRunner {
         invokeNonOverload { addressDao.count() }
 
         invokeNonOverload { addressDao.findById(12) }
-        invokeNonOverload { Address.findById(12) }
+        invokeNonOverload { Address.findById(12L) }
     }
 
     private fun invokeOverload(function: () -> Any?) {

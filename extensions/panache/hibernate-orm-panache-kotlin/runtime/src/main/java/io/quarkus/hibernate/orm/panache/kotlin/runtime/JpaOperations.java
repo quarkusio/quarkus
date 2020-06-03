@@ -15,6 +15,7 @@ import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public class JpaOperations {
 
@@ -49,7 +50,7 @@ public class JpaOperations {
     }
 
     static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
-        return delegate.createFindQuery(entityClass, query, paramCount);
+        return PanacheJpaUtil.createFindQuery(entityClass, query, paramCount);
     }
 
     public static void delete(Object entity) {
@@ -294,7 +295,7 @@ public class JpaOperations {
     }
 
     public static String toOrderBy(Sort sort) {
-        return delegate.toOrderBy(sort);
+        return PanacheJpaUtil.toOrderBy(sort);
     }
 
     public static int update(Class<?> entityClass, String query, Map<String, Object> params) {

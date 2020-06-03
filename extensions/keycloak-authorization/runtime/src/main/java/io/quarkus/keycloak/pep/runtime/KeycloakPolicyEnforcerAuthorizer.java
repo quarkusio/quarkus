@@ -71,7 +71,7 @@ public class KeycloakPolicyEnforcerAuthorizer
                         if (context != null) {
                             String scopes = permission.getActions();
 
-                            if (scopes == null) {
+                            if (scopes == null || "".equals(scopes)) {
                                 return Uni.createFrom().item(context.hasResourcePermission(permission.getName()));
                             }
 

@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.security.BasicPermission;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -32,6 +34,27 @@ public class ProtectedResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<List<Permission>> permissions() {
         return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
+                .apply(new Function<Boolean, List<Permission>>() {
+                    @Override
+                    public List<Permission> apply(Boolean granted) {
+                        if (granted) {
+                            return identity.getAttribute("permissions");
+                        }
+                        throw new ForbiddenException();
+                    }
+                });
+    }
+
+    @GET
+    @Path("/scope")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<List<Permission>> hasScopePermission(@QueryParam("scope") String scope) {
+        return identity.checkPermission(new BasicPermission("Scope Permission Resource") {
+            @Override
+            public String getActions() {
+                return scope;
+            }
+        }).onItem()
                 .apply(new Function<Boolean, List<Permission>>() {
                     @Override
                     public List<Permission> apply(Boolean granted) {

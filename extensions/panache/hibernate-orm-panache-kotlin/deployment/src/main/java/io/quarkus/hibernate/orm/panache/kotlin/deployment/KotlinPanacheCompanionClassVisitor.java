@@ -5,6 +5,7 @@ import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheRe
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.JPA_OPERATIONS;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.OBJECT_SIGNATURE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_COMPANION_SIGNATURE;
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_ENTITY_BASE_SIGNATURE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_ENTITY_SIGNATURE;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -76,6 +77,7 @@ class KotlinPanacheCompanionClassVisitor extends ClassVisitor {
                     if (opcode == INVOKESTATIC && owner.equals(DEFAULT_IMPLS)) {
                         String replace = descriptor
                                 .replace(PANACHE_ENTITY_SIGNATURE, OBJECT_SIGNATURE)
+                                .replace(PANACHE_ENTITY_BASE_SIGNATURE, OBJECT_SIGNATURE)
                                 .replace(PANACHE_COMPANION_SIGNATURE, CLASS_SIGNATURE);
                         super.visitMethodInsn(opcode, JPA_OPERATIONS, name, replace, isInterface);
                     } else {

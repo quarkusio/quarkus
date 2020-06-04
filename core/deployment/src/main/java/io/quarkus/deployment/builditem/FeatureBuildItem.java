@@ -57,6 +57,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String MUTINY = "mutiny";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String NARAYANA_STM = "narayana-stm";
+    public static final String REACTIVE_DB2_CLIENT = "reactive-db2-client";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
     public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";
     public static final String NEO4J = "neo4j";

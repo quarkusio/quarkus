@@ -128,7 +128,7 @@
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <mutiny.version>0.5.2</mutiny.version>
         <axle-client.version>0.0.16</axle-client.version>
-        <mutiny-client.version>0.0.16</mutiny-client.version>
+        <mutiny-client.version>0.1.0</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>
         <debezium.version>1.1.2.Final</debezium.version>
         <zookeeper.version>3.5.7</zookeeper.version>
@@ -712,6 +712,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-datasource</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-db2-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2592,6 +2597,11 @@
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-mysql-client</artifactId>
                 <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-db2-client</artifactId>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

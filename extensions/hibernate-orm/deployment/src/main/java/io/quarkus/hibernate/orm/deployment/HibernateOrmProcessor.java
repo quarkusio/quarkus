@@ -296,8 +296,13 @@ public final class HibernateOrmProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
-        final boolean enableRX = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
-        if (!enableRX) {
+        final boolean hibernateReactivePresent = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
+        //The Hibernate Reactive extension is able to handle registration of PersistenceProviders for both reactive and
+        //traditional blocking Hibernate, by depending on this module and delegating to this code.
+        //So when the Hibernate Reactive extension is present, trust that it will register its own PersistenceProvider
+        //which will be responsible to decide which type of ORM to bootstrap.
+        //But if the extension is not present, we need to register our own PersistenceProvider - even if the ORM is not enabled!
+        if (!hibernateReactivePresent) {
             recorder.callHibernateFeatureInit(enableORM);
         }
 

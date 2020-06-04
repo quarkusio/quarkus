@@ -2,6 +2,7 @@ package io.quarkus.arc.test.configproperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.config.ConfigIgnore;
 import io.quarkus.arc.config.ConfigPrefix;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -47,6 +49,7 @@ public class TypicalClassConfigPrefixTest {
         assertTrue(dummyProperties.getOptionalInt().isPresent());
         assertEquals(100, dummyProperties.getOptionalInt().get());
         assertFalse(dummyProperties.getOptionalString().isPresent());
+        assertNull(dummyProperties.ignored);
     }
 
     @Singleton
@@ -67,6 +70,8 @@ public class TypicalClassConfigPrefixTest {
         private List<Integer> numbers;
         private Optional<Integer> optionalInt;
         private Optional<String> optionalString;
+        @ConfigIgnore
+        public String ignored;
 
         public String getName() {
             return name;

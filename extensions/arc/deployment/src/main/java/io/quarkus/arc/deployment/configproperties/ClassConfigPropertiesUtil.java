@@ -232,6 +232,9 @@ final class ClassConfigPropertiesUtil {
                 if (Modifier.isStatic(field.flags())) { // nothing we need to do about static fields
                     continue;
                 }
+                if (field.hasAnnotation(DotNames.CONFIG_IGNORE)) {
+                    continue;
+                }
                 if (field.hasAnnotation(DotNames.CONFIG_PROPERTY)) {
                     LOGGER.warn(
                             "'@ConfigProperty' is ignored when added to a field of a class annotated with '@ConfigProperties'. Offending field is '"

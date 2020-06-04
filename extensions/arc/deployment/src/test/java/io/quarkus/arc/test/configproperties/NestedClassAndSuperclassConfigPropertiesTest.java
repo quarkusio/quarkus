@@ -1,6 +1,7 @@
 package io.quarkus.arc.test.configproperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -14,6 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.config.ConfigIgnore;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -32,38 +34,27 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
 
     @Test
     public void testConfiguredValues() {
-        assertEquals("quarkus", dummyBean.getName());
-        assertEquals("redhat", dummyBean.getLastname());
-        assertEquals(4, dummyBean.getAge().size());
-        assertTrue(dummyBean.getAge().contains(1));
-        assertTrue(dummyBean.getAge().contains(2));
-        assertTrue(dummyBean.getAge().contains(3));
-        assertTrue(dummyBean.getAge().contains(4));
-        assertEquals(2, dummyBean.getHeights().size());
-        assertTrue(dummyBean.getHeights().contains(100));
-        assertTrue(dummyBean.getHeights().contains(200));
+        DummyProperties dummyProperties = dummyBean.dummyProperties;
+
+        assertEquals("quarkus", dummyProperties.getName());
+        assertEquals("redhat", dummyProperties.getLastname());
+        Set<Integer> ages = dummyProperties.nested.ages;
+        assertEquals(4, ages.size());
+        assertTrue(ages.contains(1));
+        assertTrue(ages.contains(2));
+        assertTrue(ages.contains(3));
+        assertTrue(ages.contains(4));
+        Set<Integer> heights = dummyProperties.getSupernested().heights;
+        assertEquals(2, heights.size());
+        assertTrue(heights.contains(100));
+        assertTrue(heights.contains(200));
+        assertNull(dummyProperties.getSupernested().ignored);
     }
 
     @Singleton
     public static class DummyBean {
         @Inject
         DummyProperties dummyProperties;
-
-        String getName() {
-            return dummyProperties.getName();
-        }
-
-        String getLastname() {
-            return dummyProperties.getLastname();
-        }
-
-        Set<Integer> getAge() {
-            return dummyProperties.nested.ages;
-        }
-
-        Set<Integer> getHeights() {
-            return dummyProperties.getSupernested().heights;
-        }
     }
 
     @ConfigProperties(prefix = "dummy")
@@ -109,6 +100,8 @@ public class NestedClassAndSuperclassConfigPropertiesTest {
         public static class NestedSuperDummyProperties {
 
             public Set<Integer> heights;
+            @ConfigIgnore
+            public Integer ignored;
         }
     }
 }

@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.reactive.runtime.boot.registry;
 
-import static org.hibernate.internal.HEMLogging.messageLogger;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,13 +18,14 @@ import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
+import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
@@ -56,8 +55,6 @@ import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironment
  * more explicit input.
  */
 public class PreconfiguredReactiveServiceRegistryBuilder {
-
-    private static final EntityManagerMessageLogger LOG = messageLogger(PreconfiguredReactiveServiceRegistryBuilder.class);
 
     private final Map configurationValues = new HashMap();
     private final List<StandardServiceInitiator> initiators;
@@ -132,6 +129,12 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
     private static List<StandardServiceInitiator> buildQuarkusServiceInitiatorList(RecordedState rs) {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
+        // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
+        serviceInitiators.add(ReactiveMarkerServiceInitiator.INSTANCE);
+
+        //Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveSessionFactoryBuilderInitiator.INSTANCE);
+
         //Enforces no bytecode enhancement will happen at runtime:
         serviceInitiators.add(DisabledBytecodeProviderInitiator.INSTANCE);
 
@@ -156,7 +159,6 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
-        //serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
         serviceInitiators.add(new QuarkusNoJdbcEnvironmentInitiator(rs.getDialect()));
 
         // Custom one!
@@ -165,13 +167,11 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Custom one!
         serviceInitiators.add(DisabledJMXInitiator.INSTANCE);
 
-        //serviceInitiators.add(PersisterClassResolverInitiator.INSTANCE);
+        //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactivePersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
-        // Custom one!
-        // TODO: May check if a JDBC datasource is configured, and if it is then register
-        // the real connectionprovider instead of the dummy one
+        //Custom for Hibernate Reactive:
         serviceInitiators.add(NoJdbcConnectionProviderInitiator.INSTANCE);
         //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);

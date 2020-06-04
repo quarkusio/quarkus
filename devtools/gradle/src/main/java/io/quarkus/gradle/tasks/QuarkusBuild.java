@@ -2,9 +2,12 @@ package io.quarkus.gradle.tasks;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
@@ -23,12 +26,23 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 
 public class QuarkusBuild extends QuarkusTask {
 
+    private static final String NATIVE_PROPERTY_NAMESPACE = "quarkus.native";
+
     private boolean uberJar;
 
     private List<String> ignoredEntries = new ArrayList<>();
 
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
+    }
+
+    public QuarkusBuild nativeArgs(Action<Map<String, ?>> action) {
+        Map<String, ?> nativeArgsMap = new HashMap<>();
+        action.execute(nativeArgsMap);
+        for (Map.Entry<String, ?> nativeArg : nativeArgsMap.entrySet()) {
+            System.setProperty(expandConfigurationKey(nativeArg.getKey()), nativeArg.getValue().toString());
+        }
+        return this;
     }
 
     @Input
@@ -101,5 +115,12 @@ public class QuarkusBuild extends QuarkusTask {
                 System.clearProperty("quarkus.package.uber-jar");
             }
         }
+    }
+
+    private String expandConfigurationKey(String shortKey) {
+        if (shortKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
+            return shortKey;
+        }
+        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, shortKey);
     }
 }

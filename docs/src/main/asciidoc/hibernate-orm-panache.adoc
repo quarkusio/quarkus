@@ -12,13 +12,16 @@ include::./attributes.adoc[]
 As a Java developer, you can use Hibernate ORM with Panache to simplify persistence with your Quarkus applications.
 
 .Prerequisites
-You have a Quarkus Maven project that uses a Java database connectivy (JDBC) datasource.
+You have a Quarkus Maven project configured with a Java database connectivy (JDBC) datasource and Hibernate ORM.
 
-* For information about creating a Quarkus Maven project, see <<XREF>>.
-* For information about configuring your Quarkus Maven project with a JDBC datasource, see <<XREF>>.
+* For information about creating a Quarkus Maven project, see https://access.redhat.com/documentation/en-us/red_hat_build_of_quarkus/1.3/html-single/creating_quarkus_applications_with_apache_maven/[_Creating Quarkus applications with Apache Maven_].
+//need ifdef
+* For information about configuring your Quarkus Maven project with a JDBC datasource, see https://quarkus.io/guides/datasource[_Configuring your datasources_].
+* For information about configuring your Quarkus Maven project Hibernate ORM, see https://quarkus.io/guides/hibernate-orm[_Using Hibernate ORM and JPA_].
+
+For an example of a comleted Quarkus Maven project that uses the Panache extension, see the https://github.com/quarkusio/quarkus-quickstarts/tree/master/hibernate-orm-panache-quickstart[Hibernate ORM Panache Quickstart].
 
 == Hibernate ORM
-
 
 //adapted from https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html. Module will be reused in Hibernate ORM story.
 
@@ -69,13 +72,6 @@ Panache provides Hibernate Query Language (HQL) shortcuts to simplify your queri
 When you use Hiberate ORM, you must create two classes that separates the state and its operations even though you would never that for regular Java objects where state and methods are in the same class. In addition to requiring two classes, Hibernate ORM requires you to  inject the repository where you need to perform entity operations, which breaks your edit flow and requires you to get out of the code that you are  writing to set up an injection point before coming back to use it.
 
 You can use the Panache active record pattern with the `PanacheEntity` to keep the model and the repository together.
-
-
-.Prerequisites
-You have a Quarkus Maven project that uses a Java database connectivy (JDBC) datasource.
-
-* For information about creating a Quarkus Maven project, see <<XREF>>.
-* For information about configuring your Quarkus Maven project with a JDBC datasource, see <<XREF>>.
 
 .Procedure.
 
@@ -169,12 +165,6 @@ public class Person extends PanacheEntity {
 
 === Using the Panache repository pattern
 Panache enables you to create entities that contain the model and repository in a single class. However, if you prefer to create a separate class for the model and a separate class for the repository and still have the other benefits of Panache, for example having the `getters` and `setter` automatically generate, you can use the repository pattern.
-
-.Prerequisites
-You have a Quarkus Maven project that uses a Java database connectivy (JDBC) datasource.
-
-* For information about creating a Quarkus Maven project, see <<XREF>>.
-* For information about configuring your Quarkus Maven project with a JDBC datasource, see <<XREF>>.
 
 .Procedure.
 
@@ -467,7 +457,7 @@ person.update("name = 'Mortal' where status = ?1", Status.Alive);
 personRepository.update("name = 'Mortal' where status = ?1", Status.Alive);
 ----
 
-All `List` methods have equivalent `stream` method, which requires a transaction to work:
+All `List` methods have equivalent `stream` methods, which requires a transaction to work as shown in the following example:
 
 [source,java]
 ----
@@ -477,9 +467,6 @@ List<String> namesButEmmanuels = persons
     .filter( n -> ! "emmanuel".equals(n) )
     .collect(Collectors.toList());
 ----
-
-
-
 
 == Hibernate ORM with Panache queries
 
@@ -748,14 +735,15 @@ public class Person extends PanacheEntity {
 
 === Query parameters
 
-You can pass query parameters by using 1-based indexing, by creating a map, or by creating an instance of the `Parameter` class. Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
+You can pass query parameters by using 1-based indexing, by creating a map, or by creating an instance of the `Parameter` class.
 
+* *1-based indexing example*:
 [source,java]
 ----
 Person.find("name = ?1 and status = ?2", "stef", Status.Alive);
 ----
 
-Or by name using a `Map`:
+* *Map example*:
 
 [source,java]
 ----
@@ -765,15 +753,19 @@ params.put("status", Status.Alive);
 Person.find("name = :name and status = :status", params);
 ----
 
-Or using the convenience class `Parameters` either as is or to build a `Map`:
-
+* *`Parameters` class examples*:
+** Generate a map:
++
 [source,java]
 ----
-// generate a Map
+
 Person.find("name = :name and status = :status",
          Parameters.with("name", "stef").and("status", Status.Alive).map());
-
-// use it as-is
+----
+** Use as-is:
++
+[source,java]
+----
 Person.find("name = :name and status = :status",
          Parameters.with("name", "stef").and("status", Status.Alive));
 ----
@@ -811,21 +803,19 @@ The `Sort` class has many methods for adding columns and specifying sort directi
 //Is sort class correct?
 
 
-
-
 == Transactions
 
-Make sure to wrap methods that modify your database, for example `entity.persist()), within a transaction. Marking a
-CDI bean method with the `@Transactional` annotation will do that for you and make that method a transaction boundary. We recommend doing
-so at your application entry point boundaries such as your REST endpoint controllers.
+Wrap methods that modify your database, for example `entity.persist()`, within a transaction. When you do this, the JPA will batch any changes that you make to you entities at the end of the transaction or before a query. This process is called a flush. It is the most efficient way to persist changes.
 
-JPA batches changes you make to your entities and sends changes (it's called flush) at the end of the transaction or before a query.
-This is usually a good thing because it is more efficient.
-But if you want to check optimistic locking failures, do object validation right away or generally want to get immediate feedback, you can force the flush operation by calling `entity.flush()` or even use `entity.persistAndFlush()` to make it a single method call. This will allow you to catch any `PersistenceException` that could occur when JPA send those changes to the database.
-Remember, this is less efficient so don't abuse it.
-And your transaction still has to be committed.
 
-Here is an example of the usage of the flush method to allow making a specific action in case of `PersistenceException`:
+NOTE: If you want to check optimistic locking failures, perform object validation right away, or get immediate feedback, you can force the flush operation by calling `entity.flush()` or use `entity.persistAndFlush()` to make it a single method call. This enables you to catch any `PersistenceException` errors that occur when JPA sends changes to the database. However, this method is not efficient and transactions must still be committed.
+
+
+.Procedure
+
+To create a transaction, add the `@Transactional` annotation to your method at application entry point boundaries such as REST endpoint controllers.
+
+The following example demonstrates the use of the flush method to allow a specific action in case of `PersistenceException`:
 [source,java]
 ----
 @Transactional
@@ -844,7 +834,7 @@ public void create(Parameter parameter){
 
 == Panache lock management
 
-Panache provides direct support for database locking with your entity or repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`. The following examples use  the active record pattern and the `Person` class. You can apply the same method with repositories.
+Panache provides direct support for database locking with your entity or repository, using `findById(Object, LockModeType)`, or `find().withLock(LockModeType)`. The following examples use  the active record pattern and the `Person` class. You can apply the same method with repositories.
 
 .Locking using the `findById()` method
 
@@ -975,85 +965,3 @@ For example, the following entries ensure that the `org.acme:acme-api` dependenc
 quarkus.index-dependency.acme.group-id=org.acme
 quarkus.index-dependency.acme.artifact-id=acme-api
 ----
-
-
-
-
-
-
-
-
-
-
---------------------------------------------------
-
-== Setting up and configuring Hibernate ORM
-//Added and adapted from Hibernate ORM guide
-
-NOTE: To see the completed example, clone the https://github.com/quarkusio/quarkus-quickstarts.git[Quarkus Quickstarts] Git repository or download the https://github.com/quarkusio/quarkus-quickstarts/archive/master.zip[Quarkus Quickstarts] archive. The solution is located in the `hibernate-orm-panache-quickstart` directory.
-
-//When using Hibernate ORM in Quarkus, you don't need to have a `persistence.xml` resource to configure it. Using such a classic configuration file is an option, but unnecessary unless you have specific advanced needs;
-so we'll see first how Hibernate ORM can be configured without a `persistence.xml` resource.
-
-In Quarkus, you just need to:
-
-//* add your configuration settings in `{config-file}`
-//* annotate your entities with `@Entity` and any other mapping annotation as usual
-
-//Other configuration needs have been automated: Quarkus will make some opinionated choices and educated guesses.
-
-Add the following dependencies to your project:
-
-* The Panache JPA extension: `io.quarkus:quarkus-hibernate-orm-panache`
-* Your Java database connectivity (JDBC) driver extension. Quarkus support the following JDBC driver extensions:
-+
-* `quarkus-jdbc-derby` for link:https://db.apache.org/derby/[Apache Derby]
-* `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
-* `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
-* `quarkus-jdbc-mssql` for link:https://www.microsoft.com/en-gb/sql-server/[Microsoft SQL Server]
-* `quarkus-jdbc-mysql` for link:https://www.mysql.com/[MySQL]
-* `quarkus-jdbc-postgresql` for link:https://www.postgresql.org/[PostgreSQL]
-
-
-  The following example shows how to add the Panache JPA extension and the PostgreSQL JDBC driver:
-  +
-  [source,xml]
-  ----
-  <dependencies>
-      <!-- Hibernate ORM specific dependencies -->
-      <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-hibernate-orm-panache</artifactId>
-      </dependency>
-
-      <!-- JDBC driver dependencies -->
-      <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-jdbc-postgresql</artifactId>
-      </dependency>
-  </dependencies>
-  ----
-
-.Add the relevant configuration properties to the `application.properties` file.
-+
-[source,properties]
---
-# datasource configuration
-quarkus.datasource.url = jdbc:postgresql://localhost:5432/hibernate_db
-quarkus.datasource.driver = org.postgresql.Driver
-quarkus.datasource.username = hibernate
-quarkus.datasource.password = hibernate
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
---
-
-NOTE: These configuration properties are different from a Hibernate ORM configuration file: these drive Quarkus configuration properties,
-which often will map to Hibernate configuration properties but could have different names and don't necessarily map 1:1 to each other.
-
-
-See the  <<hibernate-configuration-properties, Hibernate ORM configuration properties>> section for the list of properties you can set in `{config-file}`.
-
-An `EntityManagerFactory` will be created based on the Quarkus `datasource` configuration as long as the Hibernate ORM extension is listed among your project dependencies.
-
-The dialect will be selected based on the JDBC driver - unless you set one explicitly.

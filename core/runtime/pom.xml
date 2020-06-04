@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-core</artifactId>
     <name>Quarkus - Core - Runtime</name>
+    <description>Quarkus core components</description>
 
     <dependencies>
         <dependency>

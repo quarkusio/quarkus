@@ -68,6 +68,7 @@ import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
+import org.hibernate.service.Service;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
 import org.hibernate.service.internal.ProvidedService;
 import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
@@ -156,10 +157,10 @@ public class FastBootMetadataBuilder {
          * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
          *
          */
-        //        for (Class<? extends Service> postBuildProvidedService : ssrBuilder.getPostBuildProvidedServices()) {
-        //            providedServices.add(new ProvidedService(postBuildProvidedService,
-        //                    standardServiceRegistry.getService(postBuildProvidedService)));
-        //        }
+        for (Class<? extends Service> postBuildProvidedService : ssrBuilder.getPostBuildProvidedServices()) {
+            providedServices.add(new ProvidedService(postBuildProvidedService,
+                    standardServiceRegistry.getService(postBuildProvidedService)));
+        }
 
         final MetadataSources metadataSources = new MetadataSources(bsr);
         addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);

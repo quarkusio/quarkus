@@ -574,6 +574,40 @@ public class PriceResource {
 }
 ----
 
+== Blocking processing
+
+You often need to combine Reactive Messaging with blocking processing such as database interactions.
+For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and cannot be run on the caller thread.
+
+For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
+
+[source,java]
+----
+package org.acme.panache;
+
+import io.smallrye.reactive.messaging.annotations.Blocking;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
+
+@ApplicationScoped
+public class PriceStorage {
+
+    @Incoming("prices")
+    @Blocking
+    @Transactional
+    public void store(int priceInUsd) {
+        Price price = new Price();
+        price.value = priceInUsd;
+        price.persist();
+    }
+
+}
+----
+
+The complete example is available in the `kafka-panache-quickstart` {quickstarts-tree-url}/kafka-panache-quickstart[directory].
+
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.

@@ -64,7 +64,7 @@
         <microprofile-health-api.version>2.2</microprofile-health-api.version>
         <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>2.1.1</microprofile-fault-tolerance-api.version>
+        <microprofile-fault-tolerance-api.version>3.0-RC2</microprofile-fault-tolerance-api.version>
         <microprofile-reactive-messaging-api.version>1.0</microprofile-reactive-messaging-api.version>
         <microprofile-rest-client-api.version>1.4.1</microprofile-rest-client-api.version>
         <microprofile-open-api.version>1.1.2</microprofile-open-api.version>

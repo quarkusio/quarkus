@@ -225,12 +225,12 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
 
     @Override
     public void generateSchema(PersistenceUnitInfo info, Map map) {
-        throw new IllegalStateException("Hibernate Reactive does not support schema generation");
+        delegate.generateSchema(info, map);
     }
 
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
-        throw new IllegalStateException("Hibernate Reactive does not support schema generation");
+        return delegate.generateSchema(persistenceUnitName, map);
     }
 
 }

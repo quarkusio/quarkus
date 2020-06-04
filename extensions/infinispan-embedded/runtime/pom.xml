@@ -11,6 +11,7 @@
 
     <artifactId>quarkus-infinispan-embedded</artifactId>
     <name>Quarkus - Infinispan - Embedded - Runtime</name>
+    <description>Embed Infinispan into your Java application</description>
 
     <dependencies>
         <dependency>

@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-amazon-common</artifactId>
     <name>Quarkus - Amazon Services - Common - Runtime</name>
+    <description>Common components for AWS Lambda functions</description>
 
     <dependencies>
         <dependency>

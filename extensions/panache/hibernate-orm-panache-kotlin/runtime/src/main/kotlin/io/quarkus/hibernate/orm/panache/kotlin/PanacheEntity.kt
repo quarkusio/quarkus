@@ -27,8 +27,7 @@ open class PanacheEntity: PanacheEntityBase {
      */
     @Id
     @GeneratedValue
-    @JvmField
-    var id: Long? = null
+    open var id: Long? = null
 
     /**
      * Default toString() implementation

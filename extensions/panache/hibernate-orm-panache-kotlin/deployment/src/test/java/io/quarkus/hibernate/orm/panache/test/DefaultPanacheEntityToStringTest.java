@@ -19,7 +19,7 @@ public class DefaultPanacheEntityToStringTest {
 
     static class MyPanacheEntity extends PanacheEntity {
         public MyPanacheEntity(Long id) {
-            this.id = id;
+            this.setId(id);
         }
     }
 }

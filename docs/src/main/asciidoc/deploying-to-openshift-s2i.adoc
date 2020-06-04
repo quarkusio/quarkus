@@ -126,7 +126,7 @@ We are going to create an OpenShift `build` executing it:
 [source,shell, subs="attributes"]
 ----
 # To build the image on OpenShift
-oc new-app registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart
+oc new-app registry.access.redhat.com/ubi8/openjdk-11:latest~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart
 oc logs -f bc/quarkus-quickstart
 
 # To create the route

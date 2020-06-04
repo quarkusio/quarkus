@@ -48,10 +48,11 @@ public class ConfigPropertyBuildItemCandidateUtil {
         @Override
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (access != Modifier.PUBLIC) {
-                LOGGER.warn("Class '" + configClass
-                        + "' which is meant to hold configuration properties does not have a public constructor and therefore may not function correctly");
-            } else if (name.equals("<init>") && descriptor.equals("()V")) {
+            if (name.equals("<init>") && descriptor.equals("()V")) {
+                if (access != Modifier.PUBLIC) {
+                    LOGGER.warn("Class '" + configClass
+                            + "' which is meant to hold configuration properties does not have a public constructor and therefore may not function correctly");
+                }
                 return new ConfigClassConstructorVisitor(superMethodVisitor, candidates);
             }
             return superMethodVisitor;

@@ -209,13 +209,9 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
 
     @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
-        final String persistenceProviderClassName = info.getPersistenceProviderClassName();
-        if (persistenceProviderClassName == null || IMPLEMENTATION_NAME.equals(persistenceProviderClassName)) {
-            Map<Object, Object> protectiveCopy = map != null ? new HashMap<Object, Object>(map) : new HashMap<Object, Object>();
-            return delegate.createContainerEntityManagerFactory(info, protectiveCopy);
-        }
-        //not the right provider
-        return null;
+        //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
+        //persistence provider name checks and possibly reject if it's not a suitable.
+        return delegate.createContainerEntityManagerFactory(info, map);
     }
 
     @Override

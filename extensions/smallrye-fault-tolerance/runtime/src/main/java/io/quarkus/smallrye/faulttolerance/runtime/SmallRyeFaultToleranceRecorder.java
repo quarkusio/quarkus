@@ -85,4 +85,8 @@ public class SmallRyeFaultToleranceRecorder {
         }
         return allMethods;
     }
+
+    public void initExistingCircuitBreakerNames(Set<String> names) {
+        Arc.container().instance(QuarkusExistingCircuitBreakerNames.class).get().init(names);
+    }
 }

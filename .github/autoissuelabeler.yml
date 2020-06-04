@@ -62,6 +62,6 @@
   description: "(?i).*jib.*"
   addcomment: "/cc @geoand"
 - labels: [area/kafka-streams]
-  title: "(?i).*k(afka)?(\s|-)?stream.*"
-  description: "(?i).*k(afka)?(\s|-)?stream.*"
+  title: "(?i).*k(afka)?(\\s|-)?stream.*"
+  description: "(?i).*k(afka)?(\\s|-)?stream.*"
   addcomment: "/cc @gunnarmorling"

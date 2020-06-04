@@ -36,9 +36,7 @@ class KotlinPanacheEntityClassVisitor extends PanacheEntityEnhancer.PanacheEntit
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
 
-        String className = name.replace('.', '/');
-
-        entityBinaryType = className.replace("$Companion", "");
+        entityBinaryType = name.replace('.', '/');
         entityType = org.objectweb.asm.Type.getType("L" + entityBinaryType + ";");
     }
 

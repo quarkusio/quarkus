@@ -126,18 +126,18 @@ The Funqy Knative Events extension also has annotations to do this Cloud Event m
 [source, java]
 ----
 import io.quarkus.funqy.Funq;
-import io.quarkus.funqy.knative.events.CloudEvent;
+import io.quarkus.funqy.knative.events.CloudEventMapping;
 
 public class SimpleFunctionChain {
     @Funq
-    @CloudEvent(trigger = "annotated", responseSource = "annotated", responseType = "lastChainLink")
+    @CloudEventMapping(trigger = "annotated", responseSource = "annotated", responseType = "lastChainLink")
     public String annotatedChain(String input) {
         log.info("*** annotatedChain ***");
         return input + "::" + "annotatedChain";
     }
 ----
 
-If you use the `@CloudEvent` annotation on your function you can map the Cloud Event type trigger
+If you use the `@CloudEventMapping` annotation on your function you can map the Cloud Event type trigger
 and the Cloud Event response.  In this example the `annotatedChain` function will be triggered
 by the `annotated` Cloud Event type and the response will be mapped to a `lastChainLink` type
 and `annotated` Cloud Event source.

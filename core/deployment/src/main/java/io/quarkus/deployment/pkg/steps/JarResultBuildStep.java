@@ -421,6 +421,7 @@ public class JarResultBuildStep {
         Map<AppArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
 
         List<Path> jars = new ArrayList<>();
+        List<Path> bootJars = new ArrayList<>();
         //we process in order of priority
         //transformed classes first
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
@@ -480,29 +481,27 @@ public class JarResultBuildStep {
             } else {
                 copyDependency(curateOutcomeBuildItem, copiedArtifacts, libDir, baseLib, jars, true, classPath, appDep);
             }
+            if (curateOutcomeBuildItem.getEffectiveModel().getParentFirstArtifacts()
+                    .contains(appDep.getArtifact().getKey())) {
+                bootJars.addAll(appDep.getArtifact().getPaths().toList());
+            }
         }
-
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
-        try (OutputStream out = wrapForJDK8232879(Files.newOutputStream(appInfo, DEFAULT_OPEN_OPTIONS))) {
-            ByteArrayOutputStream bs = new ByteArrayOutputStream();
-            SerializedApplication.write(bs, mainClassBuildItem.getClassName(), buildDir, jars);
-            out.write(bs.toByteArray());
-            out.flush();
+        try (OutputStream out = Files.newOutputStream(appInfo)) {
+            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars);
         }
 
+        runnerJar.toFile().setReadable(true, false);
         if (!rebuild) {
+
             Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
             try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
                 AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
                         applicationInfo);
-                runnerZipFs.close();
             }
-        }
-        runnerJar.toFile().setReadable(true, false);
 
-        if (!rebuild) {
             //now copy the deployment artifacts, if required
             if (packageConfig.mutableApplication) {
 

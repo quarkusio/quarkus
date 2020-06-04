@@ -36,6 +36,7 @@ import io.netty.handler.ssl.SslProvider;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
+import io.quarkus.netty.runtime.EmptyByteBufStub;
 
 /**
  * This substitution avoid having loggers added to the build
@@ -403,17 +404,17 @@ final class Target_io_netty_buffer_EmptyByteBuf {
 
     @Substitute
     public ByteBuffer nioBuffer() {
-        return ByteBuffer.allocateDirect(0);
+        return EmptyByteBufStub.emptyByteBuffer();
     }
 
     @Substitute
     public ByteBuffer[] nioBuffers() {
-        return new ByteBuffer[] { ByteBuffer.allocateDirect(0) };
+        return new ByteBuffer[] { EmptyByteBufStub.emptyByteBuffer() };
     }
 
     @Substitute
     public ByteBuffer internalNioBuffer(int index, int length) {
-        return ByteBuffer.allocateDirect(0);
+        return EmptyByteBufStub.emptyByteBuffer();
     }
 
 }

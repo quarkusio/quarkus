@@ -8,7 +8,8 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 :config-file: application.properties
-:COMM:
+//:COMM:
+:ENT:
 
 
 As a Java developer, you can use Hibernate ORM with Panache to simplify persistence with your {ProductName} applications.
@@ -799,6 +800,45 @@ List<Person> persons = Person.list("status", Sort.by("name").and("birth"), Statu
 ----
 
 The `Sort` class has many methods for adding columns and specifying sort direction.
+
+=== Query projection
+
+You can perform query projection with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods. You can use it to restrict which fields will be returned by the database. Hibernate uses data transfer object (DTO) projection and generates a `SELECT` clause with the attributes from the projection class. This is also called _dynamic instantiation_ or _constructor expression_. For more information, see "The SELECT clause" section of the
+link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html[_Hibernate_User_Guide_].
+
+The projection class must be a valid Java Bean and have a constructor that contains all of its attributes. This constructor will be used to instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+
+The following example shows how to perform query projection:
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
+public class PersonName {
+    public final String name; // <2>
+
+    public PersonName(String name){ // <3>
+        this.name = name;
+    }
+}
+
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+This example uses public fields, but you can use private fields and `getters` and `setters` if you prefer. The `public final String name;` constructor is used by Hibernate. You must have only one constructor in your class and all of the class attributes must be parameters. Only `name` will be loaded from the database.
+
+ifdef::COMM[]
+NOTE: If you plan to deploy your application as a native executable, you must manually register the projection class for reflection.
+endif::COMM[]
+
+
+[WARNING]
+====
+The implementation of the `project(Class)` method uses the constructor's parameter names to build the select clause of the query,
+so the compiler must be configured to store parameter names inside the compiled class.
+This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your `pom.xml` file.
+====
 
 == Transactions
 

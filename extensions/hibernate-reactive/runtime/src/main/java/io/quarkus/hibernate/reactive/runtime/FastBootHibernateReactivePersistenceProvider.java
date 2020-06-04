@@ -16,8 +16,7 @@ import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.reactive.boot.service.ReactiveGenerationTarget;
-import org.hibernate.reactive.jpa.impl.DelegatorPersistenceUnitInfo;
+import org.hibernate.reactive.provider.service.ReactiveGenerationTarget;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
@@ -46,7 +45,7 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
 
     private static final Logger log = Logger.getLogger(FastBootHibernateReactivePersistenceProvider.class);
 
-    private static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.jpa.impl.ReactivePersistenceProvider";
+    private static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.provider.ReactivePersistenceProvider";
 
     private final FastBootHibernatePersistenceProvider delegate = new FastBootHibernatePersistenceProvider();
 
@@ -213,9 +212,7 @@ final class FastBootHibernateReactivePersistenceProvider implements PersistenceP
         final String persistenceProviderClassName = info.getPersistenceProviderClassName();
         if (persistenceProviderClassName == null || IMPLEMENTATION_NAME.equals(persistenceProviderClassName)) {
             Map<Object, Object> protectiveCopy = map != null ? new HashMap<Object, Object>(map) : new HashMap<Object, Object>();
-            return delegate.createContainerEntityManagerFactory(
-                    new DelegatorPersistenceUnitInfo(info),
-                    protectiveCopy);
+            return delegate.createContainerEntityManagerFactory(info, protectiveCopy);
         }
         //not the right provider
         return null;

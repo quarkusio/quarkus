@@ -5,7 +5,7 @@ import java.util.Map;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
-import org.hibernate.reactive.boot.service.NoJdbcEnvironmentInitiator;
+import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 public class QuarkusNoJdbcEnvironmentInitiator extends NoJdbcEnvironmentInitiator {

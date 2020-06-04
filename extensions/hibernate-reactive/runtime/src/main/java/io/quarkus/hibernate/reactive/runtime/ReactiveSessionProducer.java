@@ -45,7 +45,7 @@ public class ReactiveSessionProducer {
     }
 
     public void disposeMutinySession(@Disposes Uni<Mutiny.Session> reactiveSession) {
-    	// TODO: @AGG this is not working, need to check w/ Clement to figure out the proper way
+        // TODO: @AGG this is not working, need to check w/ Clement to figure out the proper way
         reactiveSession.on().termination((session, ex, cancelled) -> {
             if (session != null)
                 session.close();

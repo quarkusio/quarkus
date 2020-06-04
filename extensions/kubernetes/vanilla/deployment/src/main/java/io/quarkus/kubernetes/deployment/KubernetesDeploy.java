@@ -70,6 +70,12 @@ public class KubernetesDeploy {
             masterURL = client.getConfiguration().getMasterUrl();
             //Let's check if we can connect.
             VersionInfo version = client.getVersion();
+            if (version == null) {
+                return Result.exceptional(new RuntimeException(
+                        "Although a Kubernetes deployment was requested, it however cannot take place because the version of the API Server at '"
+                                + masterURL + "' could not be determined. Please ensure that a valid token is being used."));
+            }
+
             log.info("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
             log.debugf("Kubernetes Version: %s.%s", version.getMajor(), version.getMinor());
             serverFound = true;

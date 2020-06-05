@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,6 +16,10 @@ import org.jboss.logging.Logger;
  * @author Alexey Loubyansky
  */
 public class AppModel implements Serializable {
+
+    public static final String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
+    public static final String EXCLUDED_ARTIFACTS = "excluded-artifacts";
+    public static final String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
 
     private static final Logger log = Logger.getLogger(AppModel.class);
 
@@ -177,14 +180,14 @@ public class AppModel implements Serializable {
          * @param props The quarkus-extension.properties file
          */
         public void handleExtensionProperties(Properties props, String extension) {
-            String parentFirst = props.getProperty(BootstrapConstants.PARENT_FIRST_ARTIFACTS);
+            String parentFirst = props.getProperty(PARENT_FIRST_ARTIFACTS);
             if (parentFirst != null) {
                 String[] artifacts = parentFirst.split(",");
                 for (String artifact : artifacts) {
                     parentFirstArtifacts.add(new AppArtifactKey(artifact.split(":")));
                 }
             }
-            String excluded = props.getProperty(BootstrapConstants.EXCLUDED_ARTIFACTS);
+            String excluded = props.getProperty(EXCLUDED_ARTIFACTS);
             if (excluded != null) {
                 String[] artifacts = excluded.split(",");
                 for (String artifact : artifacts) {
@@ -192,7 +195,7 @@ public class AppModel implements Serializable {
                     log.debugf("Extension %s is excluding %s", extension, artifact);
                 }
             }
-            String lesserPriority = props.getProperty(BootstrapConstants.LESSER_PRIORITY_ARTIFACTS);
+            String lesserPriority = props.getProperty(LESSER_PRIORITY_ARTIFACTS);
             if (lesserPriority != null) {
                 String[] artifacts = lesserPriority.split(",");
                 for (String artifact : artifacts) {

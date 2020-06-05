@@ -26,7 +26,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
@@ -148,12 +147,9 @@ public class GenerateConfigMojo extends AbstractMojo {
                 Path configFile = new File(target, name).toPath();
                 curatedApplication.runInAugmentClassLoader(GenerateConfigTask.class.getName(),
                         Collections.singletonMap(GenerateConfigTask.CONFIG_FILE, configFile));
-
-            } catch (Exception e) {
-                throw new MojoExecutionException("Failed to generate config file", e);
             }
-        } catch (AppModelResolverException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to generate config file", e);
         }
     }
 }

@@ -146,7 +146,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
         if (artifactResolver == null) {
             try {
                 artifactResolver = new BootstrapAppModelResolver(MavenArtifactResolver.builder().build());
-            } catch (AppModelResolverException e) {
+            } catch (Exception e) {
                 throw new IllegalStateException("Failed to initialize the Maven artifact resolver", e);
             }
         }

@@ -1,10 +1,11 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.BootstrapException;
+// import io.quarkus.bootstrap.BootstrapConstants;
+// import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,11 +30,11 @@ public class LocalProject {
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
 
-    public static LocalProject load(Path path) throws BootstrapException {
+    public static LocalProject load(Path path) throws BootstrapMavenException {
         return load(path, true);
     }
 
-    public static LocalProject load(Path path, boolean required) throws BootstrapException {
+    public static LocalProject load(Path path, boolean required) throws BootstrapMavenException {
         final Path pom = locateCurrentProjectPom(path, required);
         if (pom == null) {
             return null;
@@ -46,11 +47,11 @@ public class LocalProject {
         }
     }
 
-    public static LocalProject loadWorkspace(Path path) throws BootstrapException {
+    public static LocalProject loadWorkspace(Path path) throws BootstrapMavenException {
         return loadWorkspace(path, true);
     }
 
-    public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
+    public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapMavenException {
         path = path.normalize().toAbsolutePath();
         Path currentProjectPom = null;
         Model rootModel = null;
@@ -61,7 +62,7 @@ public class LocalProject {
                 if (rootModel != null) {
                     currentProjectPom = path;
                 }
-            } catch (BootstrapException e) {
+            } catch (BootstrapMavenException e) {
                 // ignore, it's not a POM file, we'll be looking for the POM later
             }
         }
@@ -81,9 +82,9 @@ public class LocalProject {
      *
      * @param ctx bootstrap maven context
      * @return current project with the workspace or null in case the current project could not be resolved
-     * @throws BootstrapException in case of an error
+     * @throws BootstrapMavenException in case of an error
      */
-    public static LocalProject loadWorkspace(BootstrapMavenContext ctx) throws BootstrapException {
+    public static LocalProject loadWorkspace(BootstrapMavenContext ctx) throws BootstrapMavenException {
         final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
         if (currentProjectPom == null) {
             return null;
@@ -97,7 +98,7 @@ public class LocalProject {
         return lp;
     }
 
-    private static LocalProject loadWorkspace(Path currentProjectPom, Model rootModel) throws BootstrapException {
+    private static LocalProject loadWorkspace(Path currentProjectPom, Model rootModel) throws BootstrapMavenException {
         final LocalWorkspace ws = new LocalWorkspace();
         LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
         if (project == null) {
@@ -108,7 +109,7 @@ public class LocalProject {
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir)
-            throws BootstrapException {
+            throws BootstrapMavenException {
         final LocalProject project = new LocalProject(model, workspace);
         if (parent != null) {
             parent.modules.add(project);
@@ -129,7 +130,7 @@ public class LocalProject {
         return result;
     }
 
-    private static Model loadRootModel(Path pomXml) throws BootstrapException {
+    private static Model loadRootModel(Path pomXml) throws BootstrapMavenException {
         Model model = null;
         while (pomXml != null && Files.exists(pomXml)) {
             model = readModel(pomXml);
@@ -149,17 +150,17 @@ public class LocalProject {
         return model;
     }
 
-    private static final Model readModel(Path pom) throws BootstrapException {
+    private static final Model readModel(Path pom) throws BootstrapMavenException {
         try {
             final Model model = ModelUtils.readModel(pom);
             model.setPomFile(pom.toFile());
             return model;
         } catch (IOException e) {
-            throw new BootstrapException("Failed to read " + pom, e);
+            throw new BootstrapMavenException("Failed to read " + pom, e);
         }
     }
 
-    private static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapException {
+    private static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapMavenException {
         Path p = path;
         while (p != null) {
             final Path pom = p.resolve(POM_XML);
@@ -169,7 +170,7 @@ public class LocalProject {
             p = p.getParent();
         }
         if (required) {
-            throw new BootstrapException("Failed to locate project pom.xml for " + path);
+            throw new BootstrapMavenException("Failed to locate project pom.xml for " + path);
         }
         return null;
     }
@@ -183,7 +184,7 @@ public class LocalProject {
     private final List<LocalProject> modules = new ArrayList<>(0);
     private AppArtifactKey key;
 
-    private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapException {
+    private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapMavenException {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
@@ -273,7 +274,7 @@ public class LocalProject {
     }
 
     public AppArtifact getAppArtifact(String extension) {
-        return new AppArtifact(groupId, artifactId, BootstrapConstants.EMPTY, extension, version);
+        return new AppArtifact(groupId, artifactId, "", extension, version);
     }
 
     public List<LocalProject> getSelfWithLocalDeps() {

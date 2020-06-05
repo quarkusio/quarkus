@@ -48,6 +48,8 @@
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
     </properties>
     <modules>
+        <module>app-model</module>
+        <module>maven-resolver</module>
         <module>core</module>
         <module>maven-plugin</module>
         <module>runner</module>
@@ -80,6 +82,16 @@
                 <version>${project.version}</version>
                 <type>test-jar</type>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-app-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

@@ -198,7 +198,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             child.accept(visitor);
         }
 
-        final ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
+        ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
         if (managingProject == null) {
             managedDeps = appArtifactDescr.getManagedDependencies();
         } else {

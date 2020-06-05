@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.AppModel;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -128,17 +129,17 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
             String val = String.join(",", parentFirstArtifacts);
-            props.put(BootstrapConstants.PARENT_FIRST_ARTIFACTS, val);
+            props.put(AppModel.PARENT_FIRST_ARTIFACTS, val);
         }
 
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
             String val = String.join(",", excludedArtifacts);
-            props.put(BootstrapConstants.EXCLUDED_ARTIFACTS, val);
+            props.put(AppModel.EXCLUDED_ARTIFACTS, val);
         }
 
         if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
             String val = String.join(",", lesserPriorityArtifacts);
-            props.put(BootstrapConstants.LESSER_PRIORITY_ARTIFACTS, val);
+            props.put(AppModel.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
         try {
@@ -283,7 +284,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     /**
      * parse yaml or json and then return jackson JSonNode for furhter processing
-     * 
+     *
      ***/
     private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
             throws IOException {

@@ -1,8 +1,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -116,12 +114,12 @@ public class BootstrapMavenContext {
         return new BootstrapMavenContextConfig<>();
     }
 
-    public BootstrapMavenContext() throws AppModelResolverException {
+    public BootstrapMavenContext() throws BootstrapMavenException {
         this(new BootstrapMavenContextConfig<>());
     }
 
     public BootstrapMavenContext(BootstrapMavenContextConfig<?> config)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         /*
          * WARNING: this constructor calls instance method as part of the initialization.
          * This means the values that are available in the config should be set before
@@ -154,7 +152,7 @@ public class BootstrapMavenContext {
                 });
     }
 
-    public AppArtifact getCurrentProjectArtifact(String extension) throws AppModelResolverException {
+    public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
         if (currentProject != null) {
             return currentProject.getAppArtifact(extension);
         }
@@ -186,25 +184,25 @@ public class BootstrapMavenContext {
         return globalSettings;
     }
 
-    public boolean isOffline() throws AppModelResolverException {
+    public boolean isOffline() throws BootstrapMavenException {
         return offline == null
                 ? offline = (getCliOptions().hasOption(BootstrapMavenOptions.OFFLINE) || getEffectiveSettings().isOffline())
                 : offline;
     }
 
-    public RepositorySystem getRepositorySystem() throws AppModelResolverException {
+    public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
         return repoSystem == null ? repoSystem = newRepositorySystem() : repoSystem;
     }
 
-    public RepositorySystemSession getRepositorySystemSession() throws AppModelResolverException {
+    public RepositorySystemSession getRepositorySystemSession() throws BootstrapMavenException {
         return repoSession == null ? repoSession = newRepositorySystemSession() : repoSession;
     }
 
-    public List<RemoteRepository> getRemoteRepositories() throws AppModelResolverException {
+    public List<RemoteRepository> getRemoteRepositories() throws BootstrapMavenException {
         return remoteRepos == null ? remoteRepos = resolveRemoteRepos() : remoteRepos;
     }
 
-    public Settings getEffectiveSettings() throws AppModelResolverException {
+    public Settings getEffectiveSettings() throws BootstrapMavenException {
         if (settings != null) {
             return settings;
         }
@@ -222,7 +220,7 @@ public class BootstrapMavenContext {
                     switch (problem.getSeverity()) {
                         case ERROR:
                         case FATAL:
-                            throw new AppModelResolverException("Settings problem encountered at " + problem.getLocation(),
+                            throw new BootstrapMavenException("Settings problem encountered at " + problem.getLocation(),
                                     problem.getException());
                         default:
                             log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
@@ -231,20 +229,20 @@ public class BootstrapMavenContext {
             }
             effectiveSettings = result.getEffectiveSettings();
         } catch (SettingsBuildingException e) {
-            throw new AppModelResolverException("Failed to initialize Maven repository settings", e);
+            throw new BootstrapMavenException("Failed to initialize Maven repository settings", e);
         }
         return settings = effectiveSettings;
     }
 
-    public String getLocalRepo() throws AppModelResolverException {
+    public String getLocalRepo() throws BootstrapMavenException {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
-    private LocalProject resolveCurrentProject() throws AppModelResolverException {
+    private LocalProject resolveCurrentProject() throws BootstrapMavenException {
         try {
             return LocalProject.loadWorkspace(this);
-        } catch (BootstrapException e) {
-            throw new AppModelResolverException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
+        } catch (Exception e) {
+            throw new BootstrapMavenException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }
     }
 
@@ -291,7 +289,7 @@ public class BootstrapMavenContext {
         return userSettings.exists() ? userSettings : null;
     }
 
-    private DefaultRepositorySystemSession newRepositorySystemSession() throws AppModelResolverException {
+    private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         final Settings settings = getEffectiveSettings();
 
@@ -384,7 +382,7 @@ public class BootstrapMavenContext {
         return session;
     }
 
-    private List<RemoteRepository> resolveRemoteRepos() throws AppModelResolverException {
+    private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
 
         getActiveSettingsProfiles().forEach(p -> addProfileRepos(p, rawRepos));
@@ -408,7 +406,7 @@ public class BootstrapMavenContext {
                 .build();
     }
 
-    private Model loadCurrentProjectModel() throws AppModelResolverException {
+    private Model loadCurrentProjectModel() throws BootstrapMavenException {
         final Path pom = getCurrentProjectPomOrNull();
         if (pom == null) {
             return null;
@@ -416,12 +414,12 @@ public class BootstrapMavenContext {
         try {
             return ModelUtils.readModel(pom);
         } catch (IOException e) {
-            throw new AppModelResolverException("Failed to parse " + pom, e);
+            throw new BootstrapMavenException("Failed to parse " + pom, e);
         }
     }
 
     private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         final Model model = loadCurrentProjectModel();
         if (model == null) {
             return repos;
@@ -436,13 +434,13 @@ public class BootstrapMavenContext {
                             .setRepositories(repos))
                     .getRepositories();
         } catch (ArtifactDescriptorException e) {
-            throw new AppModelResolverException("Failed to read artifact descriptor for " + projectArtifact, e);
+            throw new BootstrapMavenException("Failed to read artifact descriptor for " + projectArtifact, e);
         }
         return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
     }
 
     public List<org.apache.maven.model.Profile> getActiveSettingsProfiles()
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         if (activeSettingsProfiles != null) {
             return activeSettingsProfiles;
         }
@@ -491,7 +489,7 @@ public class BootstrapMavenContext {
         return activeSettingsProfiles = modelProfiles;
     }
 
-    private static Profile getProfile(String name, Settings settings) throws AppModelResolverException {
+    private static Profile getProfile(String name, Settings settings) throws BootstrapMavenException {
         final Profile profile = settings.getProfilesAsMap().get(name);
         if (profile == null) {
             unrecognizedProfile(name, true);
@@ -563,7 +561,7 @@ public class BootstrapMavenContext {
         return new Proxy(proxy.getProtocol(), proxy.getHost(), proxy.getPort(), auth);
     }
 
-    private RepositorySystem newRepositorySystem() throws AppModelResolverException {
+    private RepositorySystem newRepositorySystem() throws BootstrapMavenException {
         final DefaultServiceLocator locator = getServiceLocator();
         if (!isOffline()) {
             locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);

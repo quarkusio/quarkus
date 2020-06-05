@@ -2,8 +2,8 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -186,7 +186,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             return (mvnCtx == null
                     ? mvnCtx = new BootstrapMavenContext(BootstrapMavenContext.config().setCurrentProject(currentProject))
                     : mvnCtx).getLocalRepo();
-        } catch (AppModelResolverException e) {
+        } catch (BootstrapMavenException e) {
             return null;
         }
     }

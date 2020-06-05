@@ -8,13 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.io.File;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -294,7 +292,7 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
-            boolean resolvesFromWorkspace) throws BootstrapException, URISyntaxException {
+            boolean resolvesFromWorkspace) throws Exception {
         final URL module1Url = Thread.currentThread().getContextClassLoader()
                 .getResource(testResourceDirName + "/root/module1");
         assertNotNull(module1Url);

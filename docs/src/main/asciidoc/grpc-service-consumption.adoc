@@ -74,7 +74,7 @@ public Uni<String> helloMutiny(@PathParam("name") String name) {
 }
 ----
 
-Note that in this example, the `grpc.quarkus.clients.hello.host` property must be set.
+Note that in this example, the `quarkus.grpc.clients.hello.host` property must be set.
 
 === Handling streams
 
@@ -164,8 +164,8 @@ To enable TLS, use the following configuration:
 
 [source]
 ----
-grpc.quarkus.clients.hello.host=localhost
-grpc.quarkus.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
+quarkus.grpc.clients.hello.host=localhost
+quarkus.grpc.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
 ----
 
 NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
@@ -176,9 +176,9 @@ To use TLS with mutual authentication, use the following configuration:
 
 [source]
 ----
-grpc.quarkus.clients.hello.host=localhost
-grpc.quarkus.clients.hello.plain-text=false
-grpc.quarkus.clients.hello.ssl.certificate=src/main/resources/tls/client.pem
-grpc.quarkus.clients.hello.ssl.key=src/main/resources/tls/client.key
-grpc.quarkus.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
+quarkus.grpc.clients.hello.host=localhost
+quarkus.grpc.clients.hello.plain-text=false
+quarkus.grpc.clients.hello.ssl.certificate=src/main/resources/tls/client.pem
+quarkus.grpc.clients.hello.ssl.key=src/main/resources/tls/client.key
+quarkus.grpc.clients.hello.ssl.trust-store=src/main/resources/tls/ca.pem
 ----

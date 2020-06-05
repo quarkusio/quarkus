@@ -53,12 +53,12 @@ public final class PersistenceUnitsHolder {
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
 
-    static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+    public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
         checkJPAInitialization();
         return persistenceUnits.units;
     }
 
-    static RecordedState getRecordedState(String persistenceUnitName) {
+    public static RecordedState getRecordedState(String persistenceUnitName) {
         checkJPAInitialization();
         Object key = persistenceUnitName;
         if (persistenceUnitName == null) {

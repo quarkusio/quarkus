@@ -84,6 +84,7 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
+        <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>

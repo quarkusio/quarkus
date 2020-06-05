@@ -1,0 +1,12 @@
+---
+name: "Hibernate Reactive"
+metadata:
+  keywords:
+  - "hibernate-reactive"
+  - "hibernate"
+  - "reactive"
+  - "database"
+  categories:
+  - "data"
+  - "reactive"
+  status: "preview"

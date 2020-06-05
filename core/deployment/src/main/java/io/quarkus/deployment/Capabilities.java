@@ -37,6 +37,7 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String CONTAINER_IMAGE_S2I = "io.quarkus.container-image-s2i";
     public static final String HIBERNATE_ORM = "io.quarkus.hibernate-orm";
     public static final String SMALLRYE_OPENTRACING = "io.quarkus.opentracing";
+    public static final String HIBERNATE_REACTIVE = "io.quarkus.hibernate-reactive";
 
     private final Set<String> capabilities;
 

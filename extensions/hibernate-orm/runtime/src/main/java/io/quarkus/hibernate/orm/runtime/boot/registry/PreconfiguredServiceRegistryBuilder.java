@@ -81,6 +81,11 @@ public class PreconfiguredServiceRegistryBuilder {
         return this;
     }
 
+    public PreconfiguredServiceRegistryBuilder addIntegrator(Integrator integrator) {
+        integrators.add(integrator);
+        return this;
+    }
+
     public PreconfiguredServiceRegistryBuilder addService(ProvidedService providedService) {
         providedServices.add(providedService);
         return this;

@@ -183,7 +183,7 @@ jobs:
           sudo service mysql stop || true
           docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - name: Start DB2
-        # Cannot run as service becuase the service schema does not support --privileged mode
+        # Cannot run as a service becuase the service schema does not support --privileged mode
         shell: bash
         run: |
           docker run --rm --publish 50000:50000 --name build-db2 --privileged=true \
@@ -360,12 +360,13 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 40
+            timeout: 45
             test-modules: >
               hibernate-search-elasticsearch
               narayana-stm
               narayana-jta
               reactive-pg-client
+              hibernate-reactive
           - category: Amazon
             amazonServices: "true"
             timeout: 35

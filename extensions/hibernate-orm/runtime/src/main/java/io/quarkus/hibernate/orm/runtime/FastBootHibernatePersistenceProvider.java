@@ -35,7 +35,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
  * that: we need to be able to fully exclude HibernatePersistenceProvider from
  * the native image.
  */
-final class FastBootHibernatePersistenceProvider implements PersistenceProvider {
+public final class FastBootHibernatePersistenceProvider implements PersistenceProvider {
 
     private static final Logger log = Logger.getLogger(FastBootHibernatePersistenceProvider.class);
 
@@ -92,8 +92,12 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
     }
 
     @SuppressWarnings("rawtypes")
-    protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
-        throw new UnsupportedOperationException("Not implemented");
+    public EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
+        return getEntityManagerFactoryBuilder(info.getPersistenceUnitName(), integration);
+    }
+
+    public EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(String persistenceUnitName, Map integration) {
+        return getEntityManagerFactoryBuilderOrNull(persistenceUnitName, integration);
     }
 
     /**

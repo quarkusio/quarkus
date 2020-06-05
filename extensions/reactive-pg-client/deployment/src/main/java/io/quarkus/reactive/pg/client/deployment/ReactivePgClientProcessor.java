@@ -14,14 +14,17 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
+import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.pg.client.runtime.DataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.LegacyDataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.vertx.pgclient.PgPool;
 
 @SuppressWarnings("deprecation")
 class ReactivePgClientProcessor {
@@ -39,7 +42,9 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<PgPoolBuildItem> pgPool,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<PgPoolBuildItem> pgPool,
+            BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
@@ -63,10 +68,12 @@ class ReactivePgClientProcessor {
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
 
-        pgPool.produce(new PgPoolBuildItem(recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
-                shutdown)));
+                shutdown);
+        pgPool.produce(new PgPoolBuildItem(pool));
+        vertxPool.produce(new VertxPoolBuildItem(pool));
 
         return serviceStart;
     }

@@ -13,14 +13,17 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.mysql.client.runtime.DataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.LegacyDataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolProducer;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.vertx.mysqlclient.MySQLPool;
 
 @SuppressWarnings("deprecation")
 class ReactiveMySQLClientProcessor {
@@ -32,7 +35,9 @@ class ReactiveMySQLClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<MySQLPoolBuildItem> mysqlPool,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<MySQLPoolBuildItem> mysqlPool,
+            BuildProducer<VertxPoolBuildItem> vertxPool,
             MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
@@ -57,10 +62,12 @@ class ReactiveMySQLClientProcessor {
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
 
-        mysqlPool.produce(new MySQLPoolBuildItem(recorder.configureMySQLPool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<MySQLPool> mySqlPool = recorder.configureMySQLPool(vertx.getVertx(), beanContainer.getValue(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactiveMySQLConfig, isLegacy,
-                shutdown)));
+                shutdown);
+        mysqlPool.produce(new MySQLPoolBuildItem(mySqlPool));
+        vertxPool.produce(new VertxPoolBuildItem(mySqlPool));
 
         return serviceStart;
     }

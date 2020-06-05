@@ -558,7 +558,7 @@ jobs:
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
-        run: find . -name '*-reports' -type d | tar -czvf test-reports.tgz -T - 
+        run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' | tar -czvf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v1
         if: failure()

@@ -3,7 +3,6 @@ package io.quarkus.flyway.runtime;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.flywaydb.core.api.Location;
@@ -21,6 +20,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
     private static final String LOCATION_SEPARATOR = "/";
     private static List<String> applicationMigrationFiles;
+    private static List<Class<?>> applicationMigrationClasses;
 
     private final Collection<LoadableResource> scannedResources;
 
@@ -74,11 +74,14 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
      */
     @Override
     public Collection<Class<?>> scanForClasses() {
-        // Classes are not supported in native mode
-        return Collections.emptyList();
+        return applicationMigrationClasses;
     }
 
     public static void setApplicationMigrationFiles(List<String> applicationMigrationFiles) {
         QuarkusPathLocationScanner.applicationMigrationFiles = applicationMigrationFiles;
+    }
+
+    public static void setApplicationMigrationClasses(List<Class<?>> applicationMigrationClasses) {
+        QuarkusPathLocationScanner.applicationMigrationClasses = applicationMigrationClasses;
     }
 }

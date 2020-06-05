@@ -25,6 +25,11 @@ public class FlywayRecorder {
         QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
     }
 
+    public void setApplicationMigrationClasses(List<Class<?>> migrationClasses) {
+        log.debugv("Setting the following application migration classes: {0}", migrationClasses);
+        QuarkusPathLocationScanner.setApplicationMigrationClasses(migrationClasses);
+    }
+
     public Supplier<Flyway> flywaySupplier(String dataSourceName) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
         FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();

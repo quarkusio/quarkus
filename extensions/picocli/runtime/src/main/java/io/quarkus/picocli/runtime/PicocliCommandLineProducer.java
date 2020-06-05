@@ -5,6 +5,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.runtime.annotations.CommandLineArguments;
 import picocli.CommandLine;
 
 @ApplicationScoped
@@ -22,4 +23,8 @@ public class PicocliCommandLineProducer {
         return picocliCommandLineFactory.create();
     }
 
+    @Produces
+    public CommandLine.ParseResult picocliParseResult(CommandLine commandLine, @CommandLineArguments String[] args) {
+        return commandLine.parseArgs(args);
+    }
 }

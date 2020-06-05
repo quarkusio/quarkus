@@ -74,8 +74,10 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
             if (javaMember instanceof Executable) {
                 this.annotated = new AnnotatedParameterImpl<>(injectionPointType, annotations, position,
                         (Executable) javaMember);
-            } else {
+            } else if (javaMember instanceof Field) {
                 this.annotated = new AnnotatedFieldImpl<>(injectionPointType, annotations, (Field) javaMember);
+            } else {
+                this.annotated = null;
             }
             this.member = javaMember;
         }

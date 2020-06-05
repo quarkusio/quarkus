@@ -162,7 +162,7 @@ public class ExecutorRecorder {
         final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
         builder.setCorePoolSize(threadPoolConfig.coreThreads);
-        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(8 * cpus));
+        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(Math.max(8 * cpus, 200)));
         if (threadPoolConfig.queueSize.isPresent()) {
             if (threadPoolConfig.queueSize.getAsInt() < 0) {
                 builder.setMaximumQueueSize(Integer.MAX_VALUE);

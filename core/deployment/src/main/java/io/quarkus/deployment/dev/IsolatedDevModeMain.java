@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -53,6 +54,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private static volatile AugmentAction augmentAction;
     private static volatile boolean restarting;
     private static volatile boolean firstStartCompleted;
+    private static final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
     private synchronized void firstStart() {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -229,6 +231,24 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     @Override
     public void accept(CuratedApplication o, Map<String, Object> o2) {
         Timing.staticInitStarted(o.getBaseRuntimeClassLoader());
+        //https://github.com/quarkusio/quarkus/issues/9748
+        //if you have an app with all daemon threads then the app thread
+        //may be the only thread keeping the JVM alive
+        //during the restart process when this thread is stopped then
+        //the JVM will die
+        //we start this thread to keep the JVM alive until the shutdown hook is run
+        //even for command mode we still want the JVM to live until it receives
+        //a signal to make the 'press enter to restart' function to work
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    shutdownLatch.await();
+                } catch (InterruptedException ignore) {
+
+                }
+            }
+        }, "Quarkus Devmode keep alive thread").start();
         try {
             curatedApplication = o;
 
@@ -289,6 +309,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    shutdownLatch.countDown();
                     synchronized (DevModeMain.class) {
                         if (runner != null) {
                             try {

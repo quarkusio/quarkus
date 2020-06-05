@@ -335,7 +335,8 @@ jobs:
             db2: "true"
             mysql: "true"
             postgres: "true"
-            timeout: 50
+            mariadb: "true"
+            timeout: 55
             test-modules: >
               jpa
               jpa-postgresql
@@ -343,6 +344,7 @@ jobs:
               reactive-mysql-client
               reactive-db2-client
               hibernate-reactive-db2
+              hibernate-reactive-mysql
           - category: Data3
             postgres: "true"
             timeout: 60

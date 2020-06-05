@@ -188,10 +188,18 @@ public class ClassPathUtils {
                 jarURL = url;
             }
             final Path jar = toLocalPath(jarURL);
-            try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
-                try (InputStream is = Files.newInputStream(jarFs.getPath(file.substring(fileExclam + 1)))) {
-                    return function.apply(is);
+            final ClassLoader ccl = Thread.currentThread().getContextClassLoader();
+            try {
+                // We are loading "installed" FS providers that are loaded from from the system classloader anyway
+                // To avoid potential ClassCastExceptions we are setting the context classloader to the system one
+                Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+                try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
+                    try (InputStream is = Files.newInputStream(jarFs.getPath(file.substring(fileExclam + 1)))) {
+                        return function.apply(is);
+                    }
                 }
+            } finally {
+                Thread.currentThread().setContextClassLoader(ccl);
             }
         }
         if (FILE.equals(url.getProtocol())) {

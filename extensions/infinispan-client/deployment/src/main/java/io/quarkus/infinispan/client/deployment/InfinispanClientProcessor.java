@@ -7,9 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
@@ -225,16 +223,9 @@ class InfinispanClientProcessor {
         return new BeanContainerListenerBuildItem(recorder.configureInfinispan(properties));
     }
 
-    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    DotName.createSimple(BaseMarshaller.class.getName()),
-                    DotName.createSimple(EnumMarshaller.class.getName()),
-                    DotName.createSimple(MessageMarshaller.class.getName()),
-                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
-                    DotName.createSimple(FileDescriptorSource.class.getName()))));
-
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypesExclusion(UNREMOVABLE_BEANS));
+        return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
+                RawProtobufMarshaller.class, FileDescriptorSource.class);
     }
 }

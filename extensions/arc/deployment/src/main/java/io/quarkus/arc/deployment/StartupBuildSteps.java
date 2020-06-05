@@ -1,7 +1,5 @@
 package io.quarkus.arc.deployment;
 
-import java.util.function.Predicate;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -77,19 +75,7 @@ public class StartupBuildSteps {
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         // Make all classes annotated with @Startup unremovable
-        return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
-            @Override
-            public boolean test(BeanInfo bean) {
-                if (bean.isClassBean()) {
-                    return bean.getTarget().get().asClass().annotations().containsKey(STARTUP_NAME);
-                } else if (bean.isProducerMethod()) {
-                    return bean.getTarget().get().asMethod().hasAnnotation(STARTUP_NAME);
-                } else if (bean.isProducerField()) {
-                    return bean.getTarget().get().asField().hasAnnotation(STARTUP_NAME);
-                }
-                return false;
-            }
-        });
+        return UnremovableBeanBuildItem.targetWithAnnotation(STARTUP_NAME);
     }
 
     @BuildStep

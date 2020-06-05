@@ -108,7 +108,7 @@ class FlywayProcessor {
         Set<Class<?>> javaMigrationClasses = new HashSet<>();
         addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
                 reflectiveClassProducer, javaMigrationClasses);
-        recorder.setApplicationMigrationClasses(new ArrayList<>(javaMigrationClasses));
+        recorder.setApplicationMigrationClasses(javaMigrationClasses);
 
         resourceProducer.produce(new NativeImageResourceBuildItem(applicationMigrations.toArray(new String[0])));
     }

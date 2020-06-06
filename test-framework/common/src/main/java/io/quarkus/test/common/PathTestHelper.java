@@ -59,12 +59,8 @@ public final class PathTestHelper {
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
-        URL resource = testClass.getClassLoader().getResource(classFileName);
-        if (resource == null) {
-            // Even on Windows we have to use / instead of \
-            resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
-        }
-
+        URL resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
+        
         if (resource.getProtocol().equals("jar")) {
             try {
                 resource = URI.create(resource.getFile().substring(0, resource.getFile().indexOf('!'))).toURL();

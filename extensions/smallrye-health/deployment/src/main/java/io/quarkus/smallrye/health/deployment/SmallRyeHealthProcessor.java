@@ -1,9 +1,15 @@
 package io.quarkus.smallrye.health.deployment;
 
+import static io.quarkus.arc.processor.Annotations.containsAny;
+import static io.quarkus.arc.processor.Annotations.getAnnotations;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Health;
@@ -11,12 +17,18 @@ import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -128,19 +140,11 @@ class SmallRyeHealthProcessor {
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.groupPath));
         }
 
-        // Make ArC discover the beans marked with the @Health qualifier
+        // Discover the beans annotated with @Health, @Liveness, @Readiness, @HealthGroup and @HealthGroups even if no scope is defined
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
-
-        // Make ArC discover the beans marked with the @Liveness qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS));
-
-        // Make ArC discover the beans marked with the @Readiness qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
-
-        // Make ArC discover the beans marked with the @HealthGroup qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP));
-
-        // Make ArC discover the beans marked with the repeatable @HealthGroups annotation
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUPS));
 
         // Add additional beans
@@ -226,5 +230,50 @@ class SmallRyeHealthProcessor {
     @BuildStep
     ShutdownListenerBuildItem shutdownListener() {
         return new ShutdownListenerBuildItem(new ShutdownReadinessListener());
+    }
+
+    @BuildStep
+    AnnotationsTransformerBuildItem annotationTransformer(BeanArchiveIndexBuildItem beanArchiveIndex,
+            CustomScopeAnnotationsBuildItem scopes) {
+        // Transform health checks that are not annotated with a scope or a stereotype
+        Set<DotName> stereotypes = beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE).stream()
+                .map(AnnotationInstance::name).collect(Collectors.toSet());
+        List<DotName> healthAnnotations = new ArrayList<>(5);
+        healthAnnotations.add(HEALTH);
+        healthAnnotations.add(LIVENESS);
+        healthAnnotations.add(READINESS);
+        healthAnnotations.add(HEALTH_GROUP);
+        healthAnnotations.add(HEALTH_GROUPS);
+
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS || kind == Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (ctx.getAnnotations().isEmpty()) {
+                    return;
+                }
+                Collection<AnnotationInstance> annotations;
+                if (ctx.isClass()) {
+                    annotations = ctx.getAnnotations();
+                    if (containsAny(annotations, stereotypes)) {
+                        return;
+                    }
+                } else {
+                    annotations = getAnnotations(Kind.METHOD, ctx.getAnnotations());
+                }
+                if (scopes.isScopeIn(annotations)) {
+                    return;
+                }
+                if (containsAny(annotations, healthAnnotations)) {
+                    ctx.transform().add(BuiltinScope.SINGLETON.getName()).done();
+                }
+            }
+
+        });
     }
 }

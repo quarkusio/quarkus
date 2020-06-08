@@ -2,66 +2,66 @@
 - labels: [area/amazon-lambda]
   title: "(?i).*lambda.*"
   description: "(?i).*lambda.*"
-  addcomment: "/cc @patriot1burke"
+  notify: [patriot1burke]
 - labels: [area/funqy]
   title: "(?i).*funqy.*"
   description: "(?i).*funqy.*"
-  addcomment: "/cc @patriot1burke"
+  notify: [patriot1burke]
 - labels: [area/devmode]
   title: "(?i).*dev mode.*"
   description: "(?i).*dev mode.*"
 - labels: [area/gradle]
   title: "(?i).*gradle.*"
-  addcomment: "/cc @quarkusio/devtools"
+  notify: [quarkusio/devtools]
 - labels: [area/maven]
   title: "(?i).*maven.*"
-  addcomment: "/cc @quarkusio/devtools"
+  notify: [quarkusio/devtools]
 - labels: [area/hibernate-orm, area/persistence]
   expression: |
               title_description.matches("(?is).*hibernate.*") 
               and
               !title_description.matches("(?is).*validator.*") 
-  addcomment: "/cc @gsmet @Sanne"
+  notify: [gsmet,Sanne]
 - labels: [area/hibernate-search]
   expression: |
               title_description.matches("(?is).*hibernate search.*") 
               or
               title_description.matches("(?is).*elasticsearch.*") 
-  addcomment: "/cc @gsmet @yrodiere"
+  notify: [gsmet,yrodiere]
 - labels: [area/hibernate-validator]
   title: "(?i).*hibernate validator.*"
   description: "(?i).*hibernate validator.*"
-  addcomment: "/cc @gsmet"
+  notify: [gsmet]
 - labels: [area/kotlin]
   title: "(?i).*kotlin.*"
   description: "(?i).*kotlin.*"
 - labels: [area/mongodb]
   title: "(?i).*mongo.*"
   description: "(?i).*mongo.*"
-  addcomment: "/cc @loicmathieu"
+  notify: [loicmathieu]
 - labels: [area/openapi]
   title: "(?i).*openapi.*"
-  addcomment: "/cc @EricWittmann"
+  notify: [EricWittmann]
 - labels: [area/panache]
   title: "(?i).*panache.*"
   description: "(?i).*panache.*"
-  addcomment: "/cc @FroMage @loicmathieu"
+  notify: [FroMage,loicmathieu]
 - labels: [area/qute]
   title: "(?i).*qute.*"
   description: "(?i).*qute.*"
-  addcomment: "/cc @mkouba"
+  notify: [mkouba]
 - labels: [area/spring]
   title: "(?i).*spring.*"
   description: "(?i).*spring.*"
-  addcomment: "/cc @geoand"
+  notify: [geoand]
 - labels: [env/windows]
   title: "(?i).*windows.*"
   description: "(?i).*windows.*"
 - labels: [area/container-image]
   title: "(?i).*jib.*"
   description: "(?i).*jib.*"
-  addcomment: "/cc @geoand"
+  notify: [geoand]
 - labels: [area/kafka-streams]
   title: "(?i).*k(afka)?(\\s|-)?stream.*"
   description: "(?i).*k(afka)?(\\s|-)?stream.*"
-  addcomment: "/cc @gunnarmorling"
+  notify: [gunnarmorling]

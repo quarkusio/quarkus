@@ -45,6 +45,8 @@
         <module>hibernate-orm-rest-data-panache</module>
         <module>hibernate-orm-panache-kotlin</module>
         <module>hibernate-reactive</module>
+        <module>hibernate-reactive-db2</module>
+        <module>hibernate-reactive-mysql</module>
         <module>hibernate-search-elasticsearch</module>
         <module>hibernate-tenancy</module>
         <module>vertx-http</module>

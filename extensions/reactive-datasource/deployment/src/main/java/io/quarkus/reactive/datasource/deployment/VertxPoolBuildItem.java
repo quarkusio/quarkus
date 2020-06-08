@@ -14,8 +14,8 @@ public final class VertxPoolBuildItem extends MultiBuildItem {
 
     private final RuntimeValue<? extends Pool> vertxPool;
 
-    public VertxPoolBuildItem(RuntimeValue<? extends Pool> pgPool) {
-        this.vertxPool = pgPool;
+    public VertxPoolBuildItem(RuntimeValue<? extends Pool> vertxPool) {
+        this.vertxPool = vertxPool;
     }
 
     public RuntimeValue<? extends Pool> getPool() {

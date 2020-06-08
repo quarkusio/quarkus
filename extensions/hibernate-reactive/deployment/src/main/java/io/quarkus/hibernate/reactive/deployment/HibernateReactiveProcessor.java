@@ -209,8 +209,6 @@ public final class HibernateReactiveProcessor {
                 defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                         defaultNullOrdering));
 
-        // TODO @AGG hibernate reactive properties
-
         // Logging
         if (hibernateConfig.log.sql) {
             desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");

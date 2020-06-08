@@ -41,6 +41,7 @@ import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
@@ -946,6 +947,9 @@ public final class HibernateOrmProcessor {
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
         String resolvedDbKind = dbKind.orElse("NO_DATABASE_KIND");
+        if (DatabaseKind.isDB2(resolvedDbKind)) {
+            return Optional.of(DB297Dialect.class.getName());
+        }
         if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
             return Optional.of(QuarkusPostgreSQL10Dialect.class.getName());
         }
@@ -959,10 +963,10 @@ public final class HibernateOrmProcessor {
             return Optional.of(MySQL8Dialect.class.getName());
         }
         if (DatabaseKind.isDerby(resolvedDbKind)) {
-            return Optional.of((DerbyTenSevenDialect.class.getName()));
+            return Optional.of(DerbyTenSevenDialect.class.getName());
         }
         if (DatabaseKind.isMsSQL(resolvedDbKind)) {
-            return Optional.of((SQLServer2012Dialect.class.getName()));
+            return Optional.of(SQLServer2012Dialect.class.getName());
         }
 
         String error = dbKind.isPresent()

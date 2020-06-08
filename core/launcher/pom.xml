@@ -36,19 +36,28 @@
                             <createSourcesJar>true</createSourcesJar>
                             <filters>
                                 <filter>
+                                    <artifact>org.eclipse.sisu:org.eclipse.sisu.inject</artifact>
+                                    <excludes>
+                                        <!-- exclude the annotation processor service -->
+                                        <exclude>META-INF/services/**</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
                                     <artifact>*:*</artifact>
                                 </filter>
                             </filters>
-                            <!--
                             <relocations>
                                 <relocation>
-                                    <shadedPattern>io.quarkus.shaded</shadedPattern>
+                                    <shadedPattern>io.quarkus.launcher.shaded.</shadedPattern>
                                     <excludes>
-                                        <exclude>io.quarkus</exclude>
+                                        <exclude>META-INF/**</exclude>
+                                        <exclude>licenses/**</exclude>
+                                        <exclude>plugin.xml</exclude>
+                                        <exclude>java/**</exclude> <!-- unless this is is added, the build may fail with e.g. cannot access io.quarkus.launcher.shaded.java.lang.String -->
+                                        <exclude>io.quarkus.launcher.*</exclude>
                                     </excludes>
                                 </relocation>
                             </relocations>
-                            -->
                         </configuration>
                     </execution>
                 </executions>

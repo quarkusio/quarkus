@@ -312,7 +312,7 @@ public class ArcProcessor {
     // PHASE 2 - register all beans
     @BuildStep
     public BeanRegistrationPhaseBuildItem registerBeans(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
-            List<ContextConfiguratorBuildItem> contextConfigurators) {
+            List<ContextConfiguratorBuildItem> contextConfigurators, BuildProducer<InterceptorResolverBuildItem> resolver) {
 
         for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurators) {
             for (ContextConfigurator value : contextConfigurator.getValues()) {
@@ -320,6 +320,8 @@ public class ArcProcessor {
                 value.done();
             }
         }
+
+        resolver.produce(new InterceptorResolverBuildItem(contextRegistrationPhase.getBeanProcessor().getBeanDeployment()));
 
         return new BeanRegistrationPhaseBuildItem(contextRegistrationPhase.getBeanProcessor().registerBeans(),
                 contextRegistrationPhase.getBeanProcessor());

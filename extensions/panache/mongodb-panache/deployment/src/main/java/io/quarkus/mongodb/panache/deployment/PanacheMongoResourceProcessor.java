@@ -138,12 +138,35 @@ public class PanacheMongoResourceProcessor {
     }
 
     @BuildStep
+    void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheMongoEntityClassBuildItem> entityClasses) {
+        // NOTE: we don't skip abstract/generic entities because they still need accessors
+        for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
+            // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
+            if (!panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_ENTITY)) {
+                entityClasses.produce(new PanacheMongoEntityClassBuildItem(panacheEntityBaseSubclass));
+            }
+        }
+    }
+
+    @BuildStep
+    PanacheEntityClassesBuildItem findEntityClasses(List<PanacheMongoEntityClassBuildItem> entityClasses) {
+        if (!entityClasses.isEmpty()) {
+            Set<String> ret = new HashSet<>();
+            for (PanacheMongoEntityClassBuildItem entityClass : entityClasses) {
+                ret.add(entityClass.get().name().toString());
+            }
+            return new PanacheEntityClassesBuildItem(ret);
+        }
+        return null;
+    }
+
+    @BuildStep
     void buildImperative(CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            List<PanacheMongoEntityClassBuildItem> entityClasses,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
@@ -183,34 +206,18 @@ public class PanacheMongoResourceProcessor {
 
         PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
-        // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
-            if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY)) {
-                continue;
-            }
-            if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
-        }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY)) {
-            if (modelClasses.add(classInfo.name().toString()))
-                modelEnhancer.collectFields(classInfo);
-        }
-
         Set<String> modelClassNamesInternal = new HashSet<>();
-        // iterate over all the entity classes
-        for (String modelClass : modelClasses) {
-            modelClassNamesInternal.add(modelClass.replace(".", "/"));
-            transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
 
+        for (PanacheMongoEntityClassBuildItem entityClass : entityClasses) {
+            String entityClassName = entityClass.get().name().toString();
+            modelClasses.add(entityClassName);
+            modelEnhancer.collectFields(entityClass.get());
+            modelClassNamesInternal.add(entityClassName.replace(".", "/"));
+            transformers.produce(new BytecodeTransformerBuildItem(entityClassName, modelEnhancer));
             //register for reflection entity classes
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, modelClass));
-
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, entityClassName));
             // Register for building the property mapping cache
-            propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
-        }
-        if (!modelClasses.isEmpty()) {
-            entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
+            propertyMappingClass.produce(new PropertyMappingClassBuildStep(entityClassName));
         }
 
         if (!modelEnhancer.entities.isEmpty()) {

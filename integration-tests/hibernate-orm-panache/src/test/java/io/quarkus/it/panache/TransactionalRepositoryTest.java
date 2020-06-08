@@ -15,6 +15,9 @@ public class TransactionalRepositoryTest {
 
     @Test
     public void testTransactionalRepository() {
+        // Make sure there are no beers stored
+        beerRepository.deleteAll();
+
         Beer b = new Beer();
         b.name = "IPA";
         beerRepository.persist(b);

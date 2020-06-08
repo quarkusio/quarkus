@@ -19,10 +19,11 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 
 /**
- *
- * @author Martin Kouba
+ * Generates shared annotation literal classes that can be used to represent annotation instances at runtime.
+ * <p>
+ * This construct is thread-safe.
  */
-class AnnotationLiteralProcessor {
+public class AnnotationLiteralProcessor {
 
     private final ComputingCache<Key, Literal> cache;
 
@@ -54,7 +55,7 @@ class AnnotationLiteralProcessor {
      * @param targetPackage Target package is only used if annotation literals are not shared
      * @return an annotation literal result handle
      */
-    ResultHandle process(BytecodeCreator bytecode, ClassOutput classOutput, ClassInfo annotationClass,
+    public ResultHandle process(BytecodeCreator bytecode, ClassOutput classOutput, ClassInfo annotationClass,
             AnnotationInstance annotationInstance,
             String targetPackage) {
         Objects.requireNonNull(annotationClass, "Annotation class not available: " + annotationInstance);

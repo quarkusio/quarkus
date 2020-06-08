@@ -572,6 +572,36 @@ class Producers {
 }
 ----
 
+=== Interception of Static Methods 
+
+The Interceptors specification is clear that _around-invoke_ methods must not be declared static.
+However, this restriction was driven mostly by technical limitations.
+And since Quarkus is a build-time oriented stack that allows for additional class transformations, those limitations don't apply anymore. 
+It's possible to annotate a non-private static method with an interceptor binding:
+
+[source,java]
+----
+class Services {
+
+  @Logged <1>
+  static BigDecimal computePrice(long amout) { <2>
+    BigDecimal price;
+    // Perform computations...
+    return price;
+  }
+}
+----
+<1> `Logged` is an interceptor binding.
+<2> Each method invocation is intercepted if there is an interceptor associated with `Logged`. 
+
+==== Limitations
+
+* Only *method-level bindings* are considered for backward compatibility reasons (otherwise static methods of bean classes that declare class-level bindings would be suddenly intercepted)
+* Private static methods are never intercepted
+* `InvocationContext#getTarget()` returns `null` for obvious reasons; therefore not all existing interceptors may behave correctly when intercepting static methods
++
+NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly. 
+
 == Build Time Extension Points
 
 [[portable_extensions]]

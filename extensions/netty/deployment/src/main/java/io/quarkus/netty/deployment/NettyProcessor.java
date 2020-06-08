@@ -23,10 +23,12 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
+import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
@@ -217,5 +219,11 @@ class NettyProcessor {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"));
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
+        // this holds a direct allocated byte buffer that needs to be initialised at run time
+        return new RuntimeInitializedClassBuildItem(EmptyByteBufStub.class.getName());
     }
 }

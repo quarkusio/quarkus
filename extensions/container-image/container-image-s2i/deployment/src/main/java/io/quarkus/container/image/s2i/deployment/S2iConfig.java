@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class S2iConfig {
 
     public static final String DEFAULT_BASE_JVM_IMAGE = "fabric8/s2i-java:2.3";
-    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:19.3.0";
+    public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
     /**
@@ -75,7 +75,7 @@ public class S2iConfig {
 
     /**
      * Check if baseJvmImage is the default
-     * 
+     *
      * @returns true if baseJvmImage is the default
      */
     public boolean hasDefaultBaseJvmImage() {

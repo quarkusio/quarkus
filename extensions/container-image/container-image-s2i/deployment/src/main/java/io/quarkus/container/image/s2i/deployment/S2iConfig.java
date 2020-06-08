@@ -41,28 +41,28 @@ public class S2iConfig {
 
     /**
      * The directory where the jar is added during the assemble phase.
-     * This is dependant on the s2i image and should be supplied if a non default image is used.
+     * This is dependent on the S2I image and should be supplied if a non default image is used.
      */
     @ConfigItem(defaultValue = "/deployments/")
     public String jarDirectory;
 
     /**
-     * The resulting filename of the jar in the s2i image.
-     * This option may be used if the selected s2i image uses a fixed name for the jar.
+     * The resulting filename of the jar in the S2I image.
+     * This option may be used if the selected S2I image uses a fixed name for the jar.
      */
     @ConfigItem
     public Optional<String> jarFileName;
 
     /**
      * The directory where the native binary is added during the assemble phase.
-     * This is dependant on the s2i image and should be supplied if a non-default image is used.
+     * This is dependent on the S2I image and should be supplied if a non-default image is used.
      */
     @ConfigItem(defaultValue = "/home/quarkus/")
     public String nativeBinaryDirectory;
 
     /**
-     * The resulting filename of the native binary in the s2i image.
-     * This option may be used if the selected s2i image uses a fixed name for the native binary.
+     * The resulting filename of the native binary in the S2I image.
+     * This option may be used if the selected S2I image uses a fixed name for the native binary.
      */
     @ConfigItem
     public Optional<String> nativeBinaryFileName;
@@ -75,7 +75,7 @@ public class S2iConfig {
 
     /**
      * Check if baseJvmImage is the default
-     * 
+     *
      * @returns true if baseJvmImage is the default
      */
     public boolean hasDefaultBaseJvmImage() {

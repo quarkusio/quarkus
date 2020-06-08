@@ -254,7 +254,7 @@ Then run it:
 java -jar ./target/security-openid-connect-quickstart-runner.jar
 ----
 
-=== Runing in Native Mode
+=== Running in Native Mode
 
 This same demo can be compiled into native code: no modifications required.
 

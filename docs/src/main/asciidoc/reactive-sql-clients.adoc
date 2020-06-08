@@ -503,10 +503,10 @@ public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit
 }
 ----
 
-In this example, the two insertions are not dependant on each other and are executed concurrently (but in the same transaction).
+In this example, the two insertions are not dependent on each other and are executed concurrently (but in the same transaction).
 This transaction is committed on success and rolled back on failure.
 
-You can also create dependant actions as follows:
+You can also create dependent actions as follows:
 
 [source, java]
 ----

@@ -134,7 +134,8 @@ public class UndertowWebsocketProcessor {
                 new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
 
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
-                recorder.createDeploymentInfo(annotated, endpoints, config, websocketConfig.maxFrameSize));
+                recorder.createDeploymentInfo(annotated, endpoints, config, websocketConfig.maxFrameSize,
+                        websocketConfig.dispatchToWorker));
     }
 
     private void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,

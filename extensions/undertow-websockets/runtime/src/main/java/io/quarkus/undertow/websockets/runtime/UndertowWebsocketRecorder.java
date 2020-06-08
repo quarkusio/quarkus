@@ -24,10 +24,10 @@ public class UndertowWebsocketRecorder {
 
     @SuppressWarnings("unchecked")
     public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
-            Set<String> serverApplicationConfigClasses, int maxFrameSize) {
+            Set<String> serverApplicationConfigClasses, int maxFrameSize, boolean dispatchToWorker) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setMaxFrameSize(maxFrameSize);
-        container.setDispatchToWorkerThread(false);
+        container.setDispatchToWorkerThread(dispatchToWorker);
         container.setExecutor(new ExecutorSupplier());
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {

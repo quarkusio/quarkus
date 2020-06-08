@@ -110,7 +110,7 @@ public class PgPoolRecorder {
                 pgConnectOptions.setUser(user);
             }
             if (password != null) {
-                pgConnectOptions.setPassword(user);
+                pgConnectOptions.setPassword(password);
             }
         }
 

@@ -269,7 +269,7 @@ public class ArcProcessor {
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
 
         if (arcConfig.selectedAlternatives.isPresent()) {
-            final List<Predicate<ClassInfo>> selectedAlternatives = initAlternativePredicates(
+            final List<Predicate<ClassInfo>> selectedAlternatives = initClassPredicates(
                     arcConfig.selectedAlternatives.get());
             builder.setAlternativePriorities(new AlternativePriorities() {
 
@@ -302,6 +302,13 @@ public class ArcProcessor {
                     return null;
                 }
             });
+        }
+
+        if (arcConfig.excludeTypes.isPresent()) {
+            for (Predicate<ClassInfo> predicate : initClassPredicates(
+                    arcConfig.excludeTypes.get())) {
+                builder.addExcludeType(predicate);
+            }
         }
 
         BeanProcessor beanProcessor = builder.build();
@@ -467,7 +474,7 @@ public class ArcProcessor {
         return new CustomScopeAnnotationsBuildItem(names);
     }
 
-    private List<Predicate<ClassInfo>> initAlternativePredicates(List<String> selectedAlternatives) {
+    private List<Predicate<ClassInfo>> initClassPredicates(List<String> selectedAlternatives) {
         final String packMatch = ".*";
         final String packStarts = ".**";
         List<Predicate<ClassInfo>> predicates = new ArrayList<>();

@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 
 /**
@@ -63,9 +64,16 @@ public interface ApplicationArchive {
     PathsCollection getRootDirs();
 
     /**
-     * Returns paths representing the application root paths.
+     * 
+     * @return The paths representing the application root paths.
      */
     PathsCollection getPaths();
+
+    /**
+     * 
+     * @return the artifact key or null if not available
+     */
+    AppArtifactKey getArtifactKey();
 
     /**
      * Convenience method, returns the child path if it exists, otherwise null.

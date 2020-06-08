@@ -104,7 +104,7 @@ public class ApplicationArchiveBuildStep {
                 markerFiles, root, additionalApplicationArchiveBuildItem, indexDependencyBuildItems, indexCache,
                 curateOutcomeBuildItem);
         return new ApplicationArchivesBuildItem(
-                new ApplicationArchiveImpl(appindex.getIndex(), root.getRootDirs(), root.getPaths()),
+                new ApplicationArchiveImpl(appindex.getIndex(), root.getRootDirs(), root.getPaths(), null),
                 applicationArchives);
     }
 
@@ -131,7 +131,7 @@ public class ApplicationArchiveBuildStep {
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
             for (Path apPath : i.getPaths()) {
                 if (!root.getPaths().contains(apPath) && indexedPaths.add(apPath)) {
-                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath));
+                    appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, apPath, null));
                 }
             }
         }
@@ -164,7 +164,7 @@ public class ApplicationArchiveBuildStep {
                 }
                 for (Path path : artifact.getPaths()) {
                     if (!root.isExcludedFromIndexing(path) && !root.getPaths().contains(path) && indexedDeps.add(path)) {
-                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path));
+                        appArchives.add(createApplicationArchive(buildCloseables, classLoader, indexCache, path, key));
                     }
                 }
             }
@@ -175,10 +175,10 @@ public class ApplicationArchiveBuildStep {
 
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
             ClassLoader classLoader,
-            IndexCache indexCache, Path dep) throws IOException {
+            IndexCache indexCache, Path dep, AppArtifactKey artifactKey) throws IOException {
         final FileSystem fs = Files.isDirectory(dep) ? null : buildCloseables.add(FileSystems.newFileSystem(dep, classLoader));
         return new ApplicationArchiveImpl(indexPath(indexCache, dep),
-                fs == null ? dep : fs.getRootDirectories().iterator().next(), fs, fs != null, dep);
+                fs == null ? dep : fs.getRootDirectories().iterator().next(), fs, fs != null, dep, artifactKey);
     }
 
     private static IndexView indexPath(IndexCache indexCache, Path dep) throws IOException {
@@ -232,7 +232,7 @@ public class ApplicationArchiveBuildStep {
                 }
                 appArchives
                         .add(new ApplicationArchiveImpl(indexes.size() == 1 ? indexes.get(0) : CompositeIndex.create(indexes),
-                                rootDirs.build(), artifactPaths));
+                                rootDirs.build(), artifactPaths, dep.getArtifact().getKey()));
             }
         }
     }

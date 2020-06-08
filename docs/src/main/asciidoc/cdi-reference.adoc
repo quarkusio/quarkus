@@ -76,10 +76,39 @@ quarkus.index-dependency.<name>.classifier=(this one is optional)
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
+=== How To Exclude Types and Dependencies from Discovery
+
+It may happen that some beans from third-party libraries do not work correctly in Quarkus.
+A typical example is a bean injecting a portable extension.
+In such case, it's possible to exclude types and dependencies from the bean discovery.
+The `quarkus.arc.exclude-types` property accepts a list of string values that are used to match classes that should be excluded.
+
+.Value Examples
+|===
+|Value|Description
+|`org.acme.Foo`| Match the fully qualified name of the class
+|`org.acme.*`| Match classes with package `org.acme`
+|`org.acme.**`| Match classes where the package starts with `org.acme` 
+|`Bar`| Match the simple name of the class
+|===
+
+.Example application.properties
 [source,properties]
 ----
-quarkus.index-dependency.acme.group-id=org.acme <1>
-quarkus.index-dependency.acme.artifact-id=acme-api <2>
+quarkus.arc.exclude-types=org.acme.Foo,org.acme.*,Bar <1><2><3>
+----
+<1> Exclude the type `org.acme.Foo`.
+<2> Exclude all types from the `org.acme` package.
+<3> Exclude all types whose simple name is `Bar`
+
+It is also possible to exclude a dependency artifact that would be otherwise scanned for beans.
+For example, because it contains a `beans.xml` descriptor.  
+
+.Example application.properties
+[source,properties]
+----
+quarkus.arc.exclude-dependency.acme.group-id=org.acme <1>
+quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 ----
 <1> Value is a group id for a dependency identified by name `acme`.
 <2> Value is an artifact id for a dependency identified by name `acme`.

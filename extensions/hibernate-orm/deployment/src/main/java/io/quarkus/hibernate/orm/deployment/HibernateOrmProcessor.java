@@ -128,8 +128,8 @@ import net.bytebuddy.dynamic.DynamicType;
  */
 public final class HibernateOrmProcessor {
 
-    private static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
-    private static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
+    public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
+    public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
@@ -186,6 +186,7 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
+            Capabilities capabilities,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
             JpaEntitiesBuildItem domainObjects,
@@ -210,8 +211,12 @@ public final class HibernateOrmProcessor {
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             allDescriptors.add(persistenceXmlDescriptorBuildItem.getDescriptor());
         }
-        handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer,
-                defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
+
+        final boolean hibernateReactivePresent = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
+        if (!hibernateReactivePresent) {
+            handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer,
+                    defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
+        }
 
         for (ParsedPersistenceXmlDescriptor descriptor : allDescriptors) {
             persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(descriptor));
@@ -936,7 +941,7 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private Optional<String> guessDialect(Optional<String> dbKind) {
+    public static Optional<String> guessDialect(Optional<String> dbKind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them

@@ -48,7 +48,8 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
+            BeanContainerBuildItem beanContainer,
+            ShutdownContextBuildItem shutdown,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
@@ -74,7 +75,9 @@ class ReactivePgClientProcessor {
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
                 shutdown);
         pgPool.produce(new PgPoolBuildItem(pool));
-        vertxPool.produce(new VertxPoolBuildItem(pool));
+
+        boolean isDefault = true; // assume always the default pool for now
+        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, isDefault));
 
         return serviceStart;
     }

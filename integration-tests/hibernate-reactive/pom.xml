@@ -16,7 +16,6 @@
 
     <properties>
         <postgres.image>postgres:10.5</postgres.image>
-        <postgres.url>jdbc:postgresql://localhost:5432/hibernate_orm_test</postgres.url>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
@@ -169,7 +168,6 @@
                 </property>
             </activation>
             <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
                 <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
             </properties>
             <build>

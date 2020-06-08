@@ -105,21 +105,23 @@ jobs:
         java :
           - { name: Java8,
               java-version: 8,
-              maven_args: "-pl !integration-tests/vault-app,!integration-tests/vault-agroal,!integration-tests/vault,!integration-tests/google-cloud-functions-http"
+              maven_args: "-pl !integration-tests/vault-app,!integration-tests/vault-agroal,!integration-tests/vault,!integration-tests/google-cloud-functions-http,!integration-tests/gradle"
           }
           - {
             name: "Java 8 - 242",
             java-version: 8,
             release: "jdk8u242-b08",
-            maven_args: "-pl !integration-tests/google-cloud-functions-http"
+            maven_args: "-pl !integration-tests/google-cloud-functions-http,!integration-tests/gradle"
           }
           - {
             name: Java 11,
-            java-version: 11
+            java-version: 11,
+            maven_args: "-pl !integration-tests/gradle"
           }
           - {
             name: Java 14,
-            java-version: 14
+            java-version: 14,
+            maven_args: "-pl !integration-tests/gradle"
           }
 
     services:
@@ -216,6 +218,15 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
       - name: Build with Maven
         run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
@@ -252,9 +263,18 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
       - name: Build with Maven
         shell: bash
-        run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dformat.skip install
+        run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dformat.skip -pl !integration-tests/gradle install
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -459,6 +479,7 @@ jobs:
             test-modules: >
               smallrye-graphql
               picocli-native
+              gradle
           - category: Spring
             timeout: 40
             test-modules: >

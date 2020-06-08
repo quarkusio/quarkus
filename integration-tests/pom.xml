@@ -28,6 +28,7 @@
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
         <module>infinispan-embedded</module>
+        <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
         <module>kafka-streams</module>

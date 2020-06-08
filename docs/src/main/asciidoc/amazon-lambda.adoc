@@ -489,7 +489,7 @@ This is explicitly set in `manage.sh` `cmd_create()`. Whilst the native image po
 == Using HTTPS or SSL/TLS
 
 If your code makes HTTPS calls, such as to a micro-service (or AWS service), you will need to add configuration to the native image,
-as GraalVM will only include the dependencies when explictly declared.  Quarkus, by default enables this functionality on extensions that implicitly require it.
+as GraalVM will only include the dependencies when explicitly declared.  Quarkus, by default enables this functionality on extensions that implicitly require it.
 For further information, please consult the link:native-and-ssl[Quarkus SSL guide]
 
 Open src/main/resources/application.properties and add the following line to enable SSL in your native image.

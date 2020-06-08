@@ -582,7 +582,7 @@ kafkacat -b kafka:9092 -C -o beginning -q -t temperatures-aggregated
 ----
 
 You should see new values arrive as the producer continues to emit temperature measurements,
-each value on the outbound topic showing the mininum, maxium and average temperature values of the represented weather station.
+each value on the outbound topic showing the minimum, maximum and average temperature values of the represented weather station.
 
 == Interactive Queries
 

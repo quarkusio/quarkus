@@ -184,7 +184,7 @@ A typical example is the for/each loop - during iteration the content of the sec
 [TIP]
 ====
 Data passed to the template instance are always accessible using the `data` namespace. 
-This could be useful to access data for which the key is overriden:  
+This could be useful to access data for which the key is overridden:  
 
 [source,html]
 ----
@@ -542,8 +542,8 @@ These sections can be used to include another template and possibly override som
 </body>
 </html>
 ----
-<1> `insert` sections are used to specify parts that could be overriden by a template that includes the given template.
-<2> An `insert` section may define the default content that is rendered if not overriden.
+<1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
+<2> An `insert` section may define the default content that is rendered if not overridden.
 
 .Template "detail"
 [source,html]
@@ -558,7 +558,7 @@ These sections can be used to include another template and possibly override som
 {/include}
 ----
 <1> `include` section is used to specify the extended template.
-<2> Nested blocks are used to specify the parts that should be overriden.
+<2> Nested blocks are used to specify the parts that should be overridden.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.
 

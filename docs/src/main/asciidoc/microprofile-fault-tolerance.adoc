@@ -391,7 +391,7 @@ public class CoffeeRepositoryService {
 }
 ----
 
-And inject the code bellow into the `CoffeeResource` endpoint:
+And inject the code below into the `CoffeeResource` endpoint:
 
 [source,java]
 ----

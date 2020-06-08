@@ -94,6 +94,7 @@ jobs:
 
   linux-jvm-tests:
     name: JDK ${{matrix.java.name}} JVM Tests
+    runs-on: ubuntu-latest
     needs: build-jdk11
     timeout-minutes: 120
     strategy:
@@ -117,8 +118,6 @@ jobs:
             name: Java 14,
             java-version: 14
           }
-
-    runs-on: ubuntu-latest
 
     services:
       keycloak:

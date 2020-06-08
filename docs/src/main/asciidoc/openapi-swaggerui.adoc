@@ -185,7 +185,7 @@ You just need to add the `openapi` extension to your Quarkus application:
 
 [source, shell]
 ----
-./mvnw quarkus:add-extension -Dextensions="openapi"
+./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-openapi"
 ----
 
 This will add the following to your `pom.xml`:

@@ -88,7 +88,7 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertFalse(Files.exists(jar));
 
         jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT/quarkus-run.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         Assertions.assertTrue(Files.exists(jar));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
@@ -131,7 +131,7 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertFalse(Files.exists(jar));
 
         jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT/quarkus-run.jar"));
+                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         Assertions.assertTrue(Files.exists(jar));
         File output = new File(testDir, "target/output.log");
         output.createNewFile();

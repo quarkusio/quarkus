@@ -134,6 +134,7 @@ public class JarResultBuildStep {
     public static final String TRANSFORMED_BYTECODE_JAR = "transformed-bytecode.jar";
     public static final String APP = "app";
     public static final String QUARKUS = "quarkus";
+    public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
@@ -397,7 +398,7 @@ public class JarResultBuildStep {
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
         Path buildDir = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName());
+                .resolve(packageConfig.outputDirectory.orElse(DEFAULT_FAST_JAR_DIRECTORY_NAME));
         //unmodified 3rd party dependencies
         Path libDir = buildDir.resolve(LIB);
         //parent first entries

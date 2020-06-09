@@ -5,7 +5,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.util.List;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -27,12 +28,12 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.HIBERNATE_REACTIVE);
+        return new FeatureBuildItem(Feature.HIBERNATE_REACTIVE);
     }
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.HIBERNATE_REACTIVE);
+        return new CapabilityBuildItem(Capability.HIBERNATE_REACTIVE);
     }
 
     @BuildStep

@@ -5,6 +5,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -43,7 +44,7 @@ class ReactiveDB2ClientProcessor {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_DB2_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
         // Make sure the DB2PoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-db2-client");
 

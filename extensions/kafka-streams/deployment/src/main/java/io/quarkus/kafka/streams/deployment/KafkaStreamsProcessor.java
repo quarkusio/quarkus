@@ -19,6 +19,7 @@ import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -50,7 +51,7 @@ class KafkaStreamsProcessor {
             LaunchModeBuildItem launchMode,
             NativeConfig config) throws IOException {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.KAFKA_STREAMS));
+        feature.produce(new FeatureBuildItem(Feature.KAFKA_STREAMS));
 
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);

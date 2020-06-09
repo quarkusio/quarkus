@@ -37,6 +37,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -62,7 +63,7 @@ class InfinispanEmbeddedProcessor {
             BuildProducer<NativeImageResourceBuildItem> resources, CombinedIndexBuildItem combinedIndexBuildItem,
             List<InfinispanReflectionExcludedBuildItem> excludedReflectionClasses,
             ApplicationIndexBuildItem applicationIndexBuildItem) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_EMBEDDED));
+        feature.produce(new FeatureBuildItem(Feature.INFINISPAN_EMBEDDED));
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanEmbeddedProducer.class));
 

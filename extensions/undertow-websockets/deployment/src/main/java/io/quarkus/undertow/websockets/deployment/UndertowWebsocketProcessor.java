@@ -23,6 +23,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -50,7 +51,7 @@ public class UndertowWebsocketProcessor {
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature, HotReloadConfig hotReloadConfig) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
+        feature.produce(new FeatureBuildItem(Feature.UNDERTOW_WEBSOCKETS));
     }
 
     @BuildStep

@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -108,7 +109,7 @@ public final class KotlinPanacheResourceProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM_PANACHE_KOTLIN);
+        return new FeatureBuildItem(Feature.HIBERNATE_ORM_PANACHE_KOTLIN);
     }
 
     @BuildStep

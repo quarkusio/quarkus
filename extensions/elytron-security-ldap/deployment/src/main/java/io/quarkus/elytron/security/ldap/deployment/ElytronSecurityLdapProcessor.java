@@ -3,7 +3,8 @@ package io.quarkus.elytron.security.ldap.deployment;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -24,12 +25,12 @@ class ElytronSecurityLdapProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SECURITY_ELYTRON_LDAP);
+        return new CapabilityBuildItem(Capability.SECURITY_ELYTRON_LDAP);
     }
 
     @BuildStep()
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY_LDAP);
+        return new FeatureBuildItem(Feature.SECURITY_LDAP);
     }
 
     /**

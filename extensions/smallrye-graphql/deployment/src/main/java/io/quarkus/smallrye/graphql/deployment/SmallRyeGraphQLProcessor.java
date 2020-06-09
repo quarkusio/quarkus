@@ -29,6 +29,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -99,7 +101,7 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_GRAPHQL));
+        featureProducer.produce(new FeatureBuildItem(Feature.SMALLRYE_GRAPHQL));
     }
 
     @BuildStep
@@ -162,7 +164,7 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
-            if (capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+            if (capabilities.isPresent(Capability.METRICS)) {
                 unremovableBeans.produce(new UnremovableBeanBuildItem(
                         new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricsRegistryImpl")));
                 unremovableBeans.produce(new UnremovableBeanBuildItem(
@@ -226,7 +228,7 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void openTracingIntegration(Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> properties) {
-        if (capabilities.isCapabilityPresent(Capabilities.SMALLRYE_OPENTRACING)) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
             properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
         }
     }

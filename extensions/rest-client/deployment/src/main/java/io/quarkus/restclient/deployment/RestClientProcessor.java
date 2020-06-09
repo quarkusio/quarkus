@@ -50,6 +50,8 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -116,7 +118,7 @@ class RestClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             RestClientRecorder restClientRecorder) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.REST_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.REST_CLIENT));
 
         restClientRecorder.setRestClientBuilderResolver();
 
@@ -219,7 +221,7 @@ class RestClientProcessor {
         }));
 
         // Indicates that this extension would like the SSL support to be enabled
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.REST_CLIENT));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REST_CLIENT));
 
         restClientRecorder.setSslEnabled(sslNativeConfig.isEnabled());
     }
@@ -284,7 +286,7 @@ class RestClientProcessor {
             final BuiltinScope builtinScope = BuiltinScope.from(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
-            } else if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+            } else if (capabilities.isPresent(Capability.SERVLET)) {
                 if (scope.equals(SESSION_SCOPED)) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }

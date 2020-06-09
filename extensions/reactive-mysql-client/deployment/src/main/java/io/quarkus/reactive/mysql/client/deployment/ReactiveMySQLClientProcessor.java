@@ -6,6 +6,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -48,7 +49,7 @@ class ReactiveMySQLClientProcessor {
             LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
             LegacyDataSourceReactiveMySQLConfig legacyDataSourceReactiveMySQLConfig) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_MYSQL_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
         // Make sure the MySQLPoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-mysql-client");
 

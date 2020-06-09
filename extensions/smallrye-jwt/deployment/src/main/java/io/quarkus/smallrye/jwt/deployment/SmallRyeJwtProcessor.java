@@ -22,7 +22,8 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -57,7 +58,7 @@ class SmallRyeJwtProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.JWT);
+        return new CapabilityBuildItem(Capability.JWT);
     }
 
     /**
@@ -96,7 +97,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
+        return new FeatureBuildItem(Feature.SMALLRYE_JWT);
     }
 
     /**

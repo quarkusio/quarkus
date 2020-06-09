@@ -91,6 +91,7 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -123,7 +124,7 @@ class KubernetesProcessor {
 
     @BuildStep
     FeatureBuildItem produceFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.KUBERNETES);
+        return new FeatureBuildItem(Feature.KUBERNETES);
     }
 
     @BuildStep

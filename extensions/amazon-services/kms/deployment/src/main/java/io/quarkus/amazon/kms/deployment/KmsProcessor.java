@@ -19,6 +19,7 @@ import io.quarkus.amazon.kms.runtime.KmsRecorder;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -34,8 +35,8 @@ public class KmsProcessor extends AbstractAmazonServiceProcessor {
     KmsBuildTimeConfig buildTimeConfig;
 
     @Override
-    protected String amazonServiceClientName() {
-        return FeatureBuildItem.AMAZON_KMS;
+    protected Feature amazonServiceClientName() {
+        return Feature.AMAZON_KMS;
     }
 
     @Override

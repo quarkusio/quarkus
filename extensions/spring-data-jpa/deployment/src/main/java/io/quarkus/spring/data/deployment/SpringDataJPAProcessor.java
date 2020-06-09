@@ -31,6 +31,7 @@ import org.springframework.data.repository.query.QueryByExampleExecutor;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -64,7 +65,7 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.SPRING_DATA_JPA);
+        return new FeatureBuildItem(Feature.SPRING_DATA_JPA);
     }
 
     @BuildStep

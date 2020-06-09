@@ -7,6 +7,8 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.Tag;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -32,10 +34,10 @@ public class JaegerProcessor {
             ApplicationConfig appConfig, Capabilities capabilities, BuildProducer<MetricBuildItem> metricProducer) {
 
         // Indicates that this extension would like the SSL support to be enabled
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JAEGER));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.JAEGER.getName()));
 
         if (buildTimeConfig.enabled) {
-            boolean metricsEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS)
+            boolean metricsEnabled = capabilities.isPresent(Capability.METRICS)
                     && buildTimeConfig.metricsEnabled;
             if (metricsEnabled) {
                 produceMetrics(metricProducer);
@@ -48,7 +50,7 @@ public class JaegerProcessor {
 
     @BuildStep
     public void build(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAEGER));
+        feature.produce(new FeatureBuildItem(Feature.JAEGER));
     }
 
     @BuildStep

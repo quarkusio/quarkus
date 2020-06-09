@@ -5,6 +5,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.File;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -214,10 +215,15 @@ class MainClassBuildStep {
         }
 
         // Startup log messages
-        ResultHandle featuresHandle = tryBlock.load(features.stream()
-                .map(f -> f.getInfo())
-                .sorted()
-                .collect(Collectors.joining(", ")));
+        List<String> featureNames = new ArrayList<>();
+        for (FeatureBuildItem feature : features) {
+            if (featureNames.contains(feature.getName())) {
+                throw new IllegalStateException(
+                        "Multiple extensions registered a feature of the same name: " + feature.getName());
+            }
+            featureNames.add(feature.getName());
+        }
+        ResultHandle featuresHandle = tryBlock.load(featureNames.stream().sorted().collect(Collectors.joining(", ")));
         ResultHandle activeProfile = tryBlock
                 .invokeStaticMethod(ofMethod(ProfileManager.class, "getActiveProfile", String.class));
         tryBlock.invokeStaticMethod(

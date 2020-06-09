@@ -13,6 +13,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -49,7 +50,7 @@ public class MailerProcessor {
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MAILER);
+        return new ExtensionSslNativeSupportBuildItem(Feature.MAILER);
     }
 
     @BuildStep
@@ -67,7 +68,7 @@ public class MailerProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.MAILER);
+        return new FeatureBuildItem(Feature.MAILER);
     }
 
     @BuildStep

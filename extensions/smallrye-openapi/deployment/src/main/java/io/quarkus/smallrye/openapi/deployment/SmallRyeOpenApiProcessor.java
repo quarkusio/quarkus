@@ -35,6 +35,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -245,7 +246,7 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
+        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
         OpenAPI staticModel = generateStaticModel(archivesBuildItem);
 
         OpenAPI annotationModel;

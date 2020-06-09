@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -69,7 +70,7 @@ public class SwaggerUiProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
         if (swaggerUiConfig.enable && (launch.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude)) {
-            feature.produce(new FeatureBuildItem(FeatureBuildItem.SWAGGER_UI));
+            feature.produce(new FeatureBuildItem(Feature.SWAGGER_UI));
         }
     }
 

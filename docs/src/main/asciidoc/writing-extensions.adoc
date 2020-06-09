@@ -1914,7 +1914,11 @@ We have an extension that is used to test for regressions in the extension proce
 author will typically need to perform using the test-extension code to illustrate how the task could be done.
 
 ==== Features and Capabilities
-When you start a Quarkus instance, you will see a line like the one highlighted in this example:
+
+===== Features
+
+A _feature_ represents a functionality provided by an extension. 
+The name of the feature gets displayed in the log during application bootstrap.
 
 .Example Startup Lines
 [source, bash]
@@ -1924,27 +1928,24 @@ When you start a Quarkus instance, you will see a line like the one highlighted 
 ----
 <1> A list of features installed in the runtime image
 
-The features listed reflect the types of extensions that are installed. An extension declares its display name
- using a <<Build Step Processors>> method that produces a `FeatureBuildItem` like this TestProcessor#featureBuildItem() method example:
+A feature can be registered in a <<Build Step Processors>> method that produces a `FeatureBuildItem`:
 
-
-.TestProcessor#featureBuildItem()
+.TestProcessor#feature()
 [source,java]
 ----
-    /**
-     * Register a extension capability and feature
-     *
-     * @return test-extension feature build item
-     */
-    @BuildStep(providesCapabilities = "io.quarkus.test-extension")
-    FeatureBuildItem featureBuildItem() {
+    @BuildStep
+    FeatureBuildItem feature() {
         return new FeatureBuildItem("test-extension");
     }
 ----
 
-The feature name should map to a label in the extension's devtools/common/src/main/filtered/extensions.json entry so that
+The name of the feature should only contain lowercase characters, words are separated by dash; e.g. `security-jpa`.
+An extension should provide at most one feature and the name must be unique.
+If multiple extensions register a feature of the same name the build fails.
+
+The feature name should also map to a label in the extension's `devtools/common/src/main/filtered/extensions.json` entry so that
 the feature name displayed by the startup line matches a label that one can used to select the extension when creating a project
-using the Quarkus maven plugin as shown in this example taken from the Writing JSON REST Services guide where the "resteasy-jsonb" feature is referenced:
+using the Quarkus maven plugin as shown in this example taken from the link:rest-json[Writing JSON REST Services] guide where the `resteasy-jsonb` feature is referenced:
 
 [source,shell,subs=attributes+]
 ----
@@ -1956,6 +1957,40 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dextensions="resteasy-jsonb"
 cd rest-json
 ----
+
+===== Capabilities
+
+A _capability_ represents a technical capability that can be queried by other extensions.
+An extension may provide multiple capabilities and multiple extensions can provide the same capability. 
+By default, capabilities are not displayed to users.
+
+Capabilities can be registered in a <<Build Step Processors>> method that produces a `CapabilityBuildItem`:
+
+.TestProcessor#capability()
+[source,java]
+----
+    @BuildStep
+    void capabilities(BuildProducer<CapabilityBuildItem> capabilityProducer) {
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-transactions"));
+        capabilityProducer.produce(new CapabilityBuildItem("org.acme.test-metrics"));
+    }
+----
+
+Extensions can consume registered capabilities using the `Capabilities` build item:
+
+.TestProcessor#doSomeCoolStuff()
+[source,java]
+----
+    @BuildStep
+    void doSomeCoolStuff(Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+          // do something only if JTA transactions are in...
+        }
+    }
+----
+
+Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`. 
+Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations
 The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:

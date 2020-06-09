@@ -42,6 +42,8 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -77,7 +79,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_MESSAGING);
+        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING);
     }
 
     @BuildStep
@@ -250,7 +252,7 @@ public class SmallRyeReactiveMessagingProcessor {
     @BuildStep
     public void enableMetrics(BuildProducer<AnnotationsTransformerBuildItem> transformers,
             Capabilities capabilities, ReactiveMessagingConfiguration configuration) {
-        boolean isMetricEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS) && configuration.metricsEnabled;
+        boolean isMetricEnabled = capabilities.isPresent(Capability.METRICS) && configuration.metricsEnabled;
         if (!isMetricEnabled) {
             LOGGER.debug("Metric is disabled - vetoing the MetricDecorator");
             // We veto the Metric Decorator

@@ -3,6 +3,7 @@ package io.quarkus.consul.config;
 import io.quarkus.consul.config.runtime.ConsulConfig;
 import io.quarkus.consul.config.runtime.ConsulConfigRecorder;
 import io.quarkus.consul.config.runtime.Response;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -16,12 +17,12 @@ public class ConsulConfigProcessor {
 
     @BuildStep
     public void feature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.CONSUL_CONFIG));
+        feature.produce(new FeatureBuildItem(Feature.CONSUL_CONFIG));
     }
 
     @BuildStep
     public void enableSsl(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.CONSUL_CONFIG));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.CONSUL_CONFIG));
     }
 
     @BuildStep

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 
-import static io.quarkus.deployment.builditem.FeatureBuildItem.HIBERNATE_ORM_REST_DATA_PANACHE;
+import static io.quarkus.deployment.Feature.HIBERNATE_ORM_REST_DATA_PANACHE;
 
 import java.lang.reflect.Modifier;
 import java.util.List;

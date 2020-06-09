@@ -21,6 +21,7 @@ import org.springframework.cache.annotation.Cacheable;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.cache.deployment.AdditionalCacheNameBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -42,7 +43,7 @@ public class SpringCacheProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SPRING_CACHE));
+        feature.produce(new FeatureBuildItem(Feature.SPRING_CACHE));
     }
 
     @BuildStep

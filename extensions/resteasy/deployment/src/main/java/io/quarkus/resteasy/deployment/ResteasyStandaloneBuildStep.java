@@ -19,6 +19,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -68,7 +70,7 @@ public class ResteasyStandaloneBuildStep {
             ResteasyInjectionReadyBuildItem resteasyInjectionReady,
             HttpBuildTimeConfig httpConfig,
             BuildProducer<ResteasyStandaloneBuildItem> standalone) throws Exception {
-        if (capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
 
@@ -166,7 +168,7 @@ public class ResteasyStandaloneBuildStep {
         if (standalone == null) {
             return;
         }
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
+        feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         boolean isDefaultOrNullDeploymentPath = standalone.deploymentRootPath == null
                 || standalone.deploymentRootPath.equals("/");

@@ -3,6 +3,7 @@ package io.quarkus.elytron.security.properties.deployment;
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityRealm;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -41,7 +42,7 @@ class ElytronPropertiesProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY_PROPERTIES_FILE);
+        return new FeatureBuildItem(Feature.SECURITY_PROPERTIES_FILE);
     }
 
     /**

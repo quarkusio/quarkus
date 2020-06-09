@@ -11,6 +11,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -48,7 +49,7 @@ public class KubernetesClientProcessor {
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
 
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES_CLIENT));
+        featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
         roleProducer.produce(new KubernetesRoleBuildItem("view"));
 
         Set<String> watchedClasses = new HashSet<>();
@@ -127,7 +128,7 @@ public class KubernetesClientProcessor {
                 .produce(new ReflectiveClassBuildItem(true, false, "io.fabric8.kubernetes.internal.KubernetesDeserializer"));
 
         // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.KUBERNETES_CLIENT));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
 
         // wire up the KubernetesClient bean support
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));

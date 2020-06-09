@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -68,7 +69,7 @@ class SmallRyeContextPropagationProcessor {
             ExecutorBuildItem executorBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ManagedExecutorInitializedBuildItem> managedExecutorInitialized) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_CONTEXT_PROPAGATION));
+        feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
 
         recorder.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
         managedExecutorInitialized.produce(new ManagedExecutorInitializedBuildItem());

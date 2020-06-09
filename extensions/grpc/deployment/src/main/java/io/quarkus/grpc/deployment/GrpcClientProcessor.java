@@ -1,6 +1,6 @@
 package io.quarkus.grpc.deployment;
 
-import static io.quarkus.deployment.builditem.FeatureBuildItem.GRPC_CLIENT;
+import static io.quarkus.deployment.Feature.GRPC_CLIENT;
 import static io.quarkus.grpc.deployment.GrpcDotNames.CREATE_CHANNEL_METHOD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RETRIEVE_CHANNEL_METHOD;
 

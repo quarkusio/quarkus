@@ -18,6 +18,8 @@ import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -83,10 +85,10 @@ public class ResteasyServletProcessor {
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
-        if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
+        feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,

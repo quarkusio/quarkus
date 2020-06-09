@@ -2,6 +2,7 @@ package io.quarkus.mutiny.deployment;
 
 import java.util.concurrent.ExecutorService;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -13,7 +14,7 @@ public class MutinyProcessor {
 
     @BuildStep
     public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.MUTINY);
+        return new FeatureBuildItem(Feature.MUTINY);
     }
 
     @BuildStep

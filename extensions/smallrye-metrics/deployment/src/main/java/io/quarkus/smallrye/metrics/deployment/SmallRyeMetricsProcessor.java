@@ -53,7 +53,8 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -262,12 +263,12 @@ public class SmallRyeMetricsProcessor {
 
     @BuildStep
     public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.METRICS);
+        return new CapabilityBuildItem(Capability.METRICS);
     }
 
     @BuildStep
     public FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS);
+        return new FeatureBuildItem(Feature.SMALLRYE_METRICS);
     }
 
     @BuildStep

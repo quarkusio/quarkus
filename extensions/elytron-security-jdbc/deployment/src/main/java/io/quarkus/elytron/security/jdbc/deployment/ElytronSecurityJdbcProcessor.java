@@ -6,7 +6,8 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -25,12 +26,12 @@ class ElytronSecurityJdbcProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SECURITY_ELYTRON_JDBC);
+        return new CapabilityBuildItem(Capability.SECURITY_ELYTRON_JDBC);
     }
 
     @BuildStep()
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY_JDBC);
+        return new FeatureBuildItem(Feature.SECURITY_JDBC);
     }
 
     /**

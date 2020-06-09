@@ -8,4 +8,7 @@
     <include relativeToChangelogFile="true" file="json/changeLog.json" />
     <include relativeToChangelogFile="true" file="sql/changeLog.sql" />
     <include relativeToChangelogFile="true" file="yaml/changeLog.yaml" />
+
+    <includeAll path="db/all/" errorIfMissingOrEmpty="true"/>
+
 </databaseChangeLog>

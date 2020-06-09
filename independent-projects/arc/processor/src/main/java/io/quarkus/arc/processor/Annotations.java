@@ -39,15 +39,7 @@ public final class Annotations {
      * @return {@code true} if the given collection contains an annotation instance with the given name, {@code false} otherwise
      */
     public static boolean contains(Collection<AnnotationInstance> annotations, DotName name) {
-        if (annotations.isEmpty()) {
-            return false;
-        }
-        for (AnnotationInstance annotationInstance : annotations) {
-            if (annotationInstance.name().equals(name)) {
-                return true;
-            }
-        }
-        return false;
+        return find(annotations, name) != null;
     }
 
     /**

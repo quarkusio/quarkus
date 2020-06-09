@@ -51,7 +51,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
             //we don't allow absolute paths
             return null;
         }
-        if (!normal.endsWith(Paths.get(cn))) {
+        if (!normal.endsWith(Paths.get(cn)) && !cn.isEmpty()) {
             //make sure the case is correct
             //if the file on disk does not match the case of name return null
             return null;

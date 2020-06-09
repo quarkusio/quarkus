@@ -31,7 +31,7 @@ import javax.persistence.EnumType
 )
 open class Person : PanacheEntity() {
     companion object : PanacheCompanion<Person, Long> {
-        fun findOrdered(): List<Dog>  = AddressDao.shouldBeOverridden()
+        fun findOrdered(): List<Address>  = AddressDao.shouldBeOverridden()
     }
 
     var name: String? = null
@@ -56,7 +56,7 @@ open class Person : PanacheEntity() {
         }
 
     override fun toString(): String {
-        return "Person(name=$name, status=$status)"
+        return "Person(id=$id, name=$name, status=$status)"
     }
 
 

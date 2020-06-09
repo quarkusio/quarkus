@@ -2,11 +2,14 @@ package io.quarkus.it.panache.kotlin
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.Id
 import javax.persistence.ManyToOne
 
 @Entity
-open class Dog() : PanacheEntity() {
+open class Dog() : PanacheEntityBase {
     companion object : PanacheCompanion<Dog, Long>
 
     constructor(name: String, race: String): this() {
@@ -18,4 +21,20 @@ open class Dog() : PanacheEntity() {
     var owner: Person? = null
     lateinit var name: String
     lateinit var race: String
+    /**
+     * The auto-generated ID field. This field is set by Hibernate ORM when this entity
+     * is persisted.
+     *
+     * @see [PanacheEntity.persist]
+     */
+    @Id
+    @GeneratedValue
+    var id: Long? = null
+
+    /**
+     * Default toString() implementation
+     *
+     * @return the class type and ID type
+     */
+    override fun toString() = "${javaClass.simpleName}<$id>"
 }

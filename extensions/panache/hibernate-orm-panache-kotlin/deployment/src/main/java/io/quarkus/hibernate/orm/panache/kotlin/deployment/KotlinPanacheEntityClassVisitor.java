@@ -3,10 +3,12 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 import java.util.List;
 import java.util.StringJoiner;
 
+import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
@@ -65,17 +67,23 @@ class KotlinPanacheEntityClassVisitor extends PanacheEntityEnhancer.PanacheEntit
     }
 
     @Override
-    protected void generateAccessors() {
-    }
-
-    @Override
     protected void generateAccessorSetField(MethodVisitor mv, EntityField field) {
-        throw new UnsupportedOperationException("generateAccessorSetField has not yet been implemented.");
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                thisClass.getInternalName(),
+                EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name,
+                Type.getMethodDescriptor(Type.getType(void.class), Type.getType(field.descriptor)),
+                false);
     }
 
     @Override
     protected void generateAccessorGetField(MethodVisitor mv, EntityField field) {
-        throw new UnsupportedOperationException("generateAccessorGetField has not yet been implemented.");
+        mv.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                thisClass.getInternalName(),
+                EnhancerConstants.PERSISTENT_FIELD_READER_PREFIX + field.name,
+                Type.getMethodDescriptor(Type.getType(field.descriptor)),
+                false);
     }
 
     @Override

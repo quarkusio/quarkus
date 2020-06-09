@@ -8,6 +8,9 @@ import io.quarkus.panache.common.exception.PanacheQueryException
 import org.hibernate.engine.spi.SelfDirtinessTracker
 import org.hibernate.jpa.QueryHints
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.fail
+import org.wildfly.common.Assert
+import java.lang.UnsupportedOperationException
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.stream.Collectors
@@ -139,11 +142,12 @@ class TestEndpoint {
 
         var byId: Person? = person.id?.let { Person.findById(it) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person(name=${person.name}, status=${person.status})", byId.toString())
+        Assertions.assertEquals("Person(id=${person.id}, name=${person.name}, status=${person.status})", byId.toString())
 
         byId = person.id?.let { Person.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person(name=${person.name}, status=${person.status})", byId.toString())
+        Assertions.assertEquals("Person(id=${person.id}, name=${person.name}, status=${person.status})", byId.toString())
+        Assertions.assertNotNull(person.dogs.toString())
 
         person.delete()
         Assertions.assertEquals(0, Person.count())
@@ -187,8 +191,6 @@ class TestEndpoint {
         }
 
         Assertions.assertNotNull(Person.findAll().firstResult())
-
-//        Assertions.assertNotNull(Person.findAll().firstResultOptional().get())
 
         Assertions.assertEquals(7, Person.deleteAll())
 
@@ -813,6 +815,7 @@ class TestEndpoint {
     fun testAccessors(): String {
         checkMethod(AccessorEntity::class.java, "getString", String::class.java)
         checkMethod(AccessorEntity::class.java, "getBool", Boolean::class.javaPrimitiveType)
+        checkMethod(AccessorEntity::class.java, "getB", Byte::class.javaPrimitiveType)
         checkMethod(AccessorEntity::class.java, "getC", Char::class.javaPrimitiveType)
         checkMethod(AccessorEntity::class.java, "getS", Short::class.javaPrimitiveType)
         checkMethod(AccessorEntity::class.java, "getI", Int::class.javaPrimitiveType)
@@ -844,6 +847,18 @@ class TestEndpoint {
         entity.method()
         Assertions.assertEquals(2, entity.getBCalls)
         Assertions.assertEquals(2, entity.setICalls)
+
+        try {
+            entity.l
+            fail("This call should have invoked getL() which throws an exception")
+        } catch(_ : UnsupportedOperationException) {
+        }
+
+        try {
+            entity.l = 42
+            fail("This call should have invoked setL() which throws an exception")
+        } catch(_ : UnsupportedOperationException) {
+        }
         return "OK"
     }
 

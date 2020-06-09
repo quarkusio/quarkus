@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
@@ -179,6 +180,44 @@ public class JarRunnerIT extends MojoTestBase {
             assertApplicationPropertiesSetCorrectly("/moved");
 
             assertResourceReadingFromClassPathWorksCorrectly("/moved");
+        } finally {
+            process.destroy();
+        }
+    }
+
+    /**
+     * Tests that quarkus.arc.exclude-dependency.* can be used for modules in a multimodule project
+     */
+    @Test
+    public void testArcExcludeDependencyOnLocalModule() throws Exception {
+        File testDir = initProject("projects/arc-exclude-dependencies");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running.execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        File targetDir = new File(testDir.getAbsoluteFile(), "runner" + File.separator + "target");
+        Path jar = targetDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("acme-1.0-SNAPSHOT-runner.jar"));
+        File output = new File(targetDir, "output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(jar, output);
+        try {
+            // Wait until server up
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/hello", true);
+                        response.set(ret);
+                        return ret.contains("hello:");
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).containsIgnoringCase("hello:false");
         } finally {
             process.destroy();
         }

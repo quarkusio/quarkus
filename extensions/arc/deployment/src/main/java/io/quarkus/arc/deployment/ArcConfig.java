@@ -6,10 +6,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.arc.config.ConfigProperties;
+import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -93,6 +95,29 @@ public class ArcConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean autoProducerMethods;
+
+    /**
+     * The list of types that should be excluded from discovery.
+     * <p>
+     * An element value can be:
+     * <ul>
+     * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
+     * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * </ul>
+     * If any element value matches a discovered type then the type is excluded from discovery, i.e. no beans and observer
+     * methods are created from this type.
+     */
+    @ConfigItem
+    public Optional<List<String>> excludeTypes;
+
+    /**
+     * The artifacts that should be excluded from discovery. These artifacts would be otherwise scanned for beans, i.e. they
+     * contain a Jandex index or a beans.xml descriptor.
+     */
+    @ConfigItem
+    Map<String, IndexDependencyConfig> excludeDependency;
 
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());

@@ -4,7 +4,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -85,7 +84,7 @@ public class MavenArtifactResolver {
             return this;
         }
 
-        public MavenArtifactResolver build() throws AppModelResolverException {
+        public MavenArtifactResolver build() throws BootstrapMavenException {
             return new MavenArtifactResolver(this);
         }
     }
@@ -100,7 +99,7 @@ public class MavenArtifactResolver {
     protected final MavenLocalRepositoryManager localRepoManager;
     protected final RemoteRepositoryManager remoteRepoManager;
 
-    private MavenArtifactResolver(Builder builder) throws AppModelResolverException {
+    private MavenArtifactResolver(Builder builder) throws BootstrapMavenException {
         final BootstrapMavenContext mvnSettings = new BootstrapMavenContext(builder);
         this.repoSystem = mvnSettings.getRepositorySystem();
 
@@ -119,7 +118,7 @@ public class MavenArtifactResolver {
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
     }
 
-    public MavenArtifactResolver(BootstrapMavenContext mvnSettings) throws AppModelResolverException {
+    public MavenArtifactResolver(BootstrapMavenContext mvnSettings) throws BootstrapMavenException {
         this.repoSystem = mvnSettings.getRepositorySystem();
         this.repoSession = mvnSettings.getRepositorySystemSession();
         localRepoManager = null;
@@ -147,46 +146,46 @@ public class MavenArtifactResolver {
         remoteRepos.addAll(repos);
     }
 
-    public ArtifactResult resolve(Artifact artifact) throws AppModelResolverException {
+    public ArtifactResult resolve(Artifact artifact) throws BootstrapMavenException {
         return resolveInternal(artifact, remoteRepos);
     }
 
-    public ArtifactResult resolve(Artifact artifact, List<RemoteRepository> mainRepos) throws AppModelResolverException {
+    public ArtifactResult resolve(Artifact artifact, List<RemoteRepository> mainRepos) throws BootstrapMavenException {
         return resolveInternal(artifact, aggregateRepositories(mainRepos, remoteRepos));
     }
 
     private ArtifactResult resolveInternal(Artifact artifact, List<RemoteRepository> aggregatedRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         try {
             return repoSystem.resolveArtifact(repoSession,
                     new ArtifactRequest()
                             .setArtifact(artifact)
                             .setRepositories(aggregatedRepos));
         } catch (ArtifactResolutionException e) {
-            throw new AppModelResolverException("Failed to resolve artifact " + artifact, e);
+            throw new BootstrapMavenException("Failed to resolve artifact " + artifact, e);
         }
     }
 
-    public List<ArtifactResult> resolve(List<ArtifactRequest> artifacts) throws AppModelResolverException {
+    public List<ArtifactResult> resolve(List<ArtifactRequest> artifacts) throws BootstrapMavenException {
         try {
             return repoSystem.resolveArtifacts(repoSession, artifacts);
         } catch (ArtifactResolutionException e) {
-            throw new AppModelResolverException("Failed to resolve artifacts", e);
+            throw new BootstrapMavenException("Failed to resolve artifacts", e);
         }
     }
 
     public ArtifactDescriptorResult resolveDescriptor(final Artifact artifact)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         return resolveDescriptorInternal(artifact, remoteRepos);
     }
 
     public ArtifactDescriptorResult resolveDescriptor(final Artifact artifact, List<RemoteRepository> mainRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         return resolveDescriptorInternal(artifact, aggregateRepositories(mainRepos, remoteRepos));
     }
 
     private ArtifactDescriptorResult resolveDescriptorInternal(final Artifact artifact, List<RemoteRepository> aggregatedRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         try {
             return repoSystem.readArtifactDescriptor(repoSession,
                     new ArtifactDescriptorRequest()
@@ -194,60 +193,60 @@ public class MavenArtifactResolver {
                             .setRepositories(
                                     aggregatedRepos));
         } catch (ArtifactDescriptorException e) {
-            throw new AppModelResolverException("Failed to read descriptor of " + artifact, e);
+            throw new BootstrapMavenException("Failed to read descriptor of " + artifact, e);
         }
     }
 
-    public VersionRangeResult resolveVersionRange(Artifact artifact) throws AppModelResolverException {
+    public VersionRangeResult resolveVersionRange(Artifact artifact) throws BootstrapMavenException {
         try {
             return repoSystem.resolveVersionRange(repoSession,
                     new VersionRangeRequest()
                             .setArtifact(artifact)
                             .setRepositories(remoteRepos));
         } catch (VersionRangeResolutionException ex) {
-            throw new AppModelResolverException("Failed to resolve version range for " + artifact, ex);
+            throw new BootstrapMavenException("Failed to resolve version range for " + artifact, ex);
         }
     }
 
-    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
+    public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
         return collectDependencies(artifact, deps, Collections.emptyList());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         final CollectRequest request = newCollectRequest(artifact, mainRepos);
         request.setDependencies(deps);
         try {
             return repoSystem.collectDependencies(repoSession, request);
         } catch (DependencyCollectionException e) {
-            throw new AppModelResolverException("Failed to collect dependencies for " + artifact, e);
+            throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
     }
 
-    public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws AppModelResolverException {
+    public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
         return resolveDependencies(artifact, deps, Collections.emptyList());
     }
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         final CollectRequest request = newCollectRequest(artifact, mainRepos);
         request.setDependencies(deps);
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(request));
         } catch (DependencyResolutionException e) {
-            throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
+            throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
         }
     }
 
     public DependencyResult resolveManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws AppModelResolverException {
+            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(
                             newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes)));
         } catch (DependencyResolutionException e) {
-            throw new AppModelResolverException("Failed to resolve dependencies for " + artifact, e);
+            throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
         }
     }
 
@@ -255,7 +254,7 @@ public class MavenArtifactResolver {
      * Turns the list of dependencies into a simple dependency tree
      */
     public DependencyResult toDependencyTree(List<Dependency> deps, List<RemoteRepository> mainRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         DependencyResult result = new DependencyResult(
                 new DependencyRequest().setCollectRequest(new CollectRequest(deps, Collections.emptyList(), mainRepos)));
         DefaultDependencyNode root = new DefaultDependencyNode((Dependency) null);
@@ -275,17 +274,17 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws AppModelResolverException {
+            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
         try {
             return repoSystem.collectDependencies(repoSession,
                     newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes));
         } catch (DependencyCollectionException e) {
-            throw new AppModelResolverException("Failed to collect dependencies for " + artifact, e);
+            throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
     }
 
     private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws AppModelResolverException {
+            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
         final List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
         Collection<String> excluded;
@@ -342,16 +341,16 @@ public class MavenArtifactResolver {
                 : remoteRepoManager.aggregateRepositories(repoSession, dominant, recessive, false);
     }
 
-    public void install(Artifact artifact) throws AppModelResolverException {
+    public void install(Artifact artifact) throws BootstrapMavenException {
         try {
             repoSystem.install(repoSession, new InstallRequest().addArtifact(artifact));
         } catch (InstallationException ex) {
-            throw new AppModelResolverException("Failed to install " + artifact, ex);
+            throw new BootstrapMavenException("Failed to install " + artifact, ex);
         }
     }
 
     private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos)
-            throws AppModelResolverException {
+            throws BootstrapMavenException {
         return new CollectRequest()
                 .setRoot(new Dependency(artifact, JavaScopes.RUNTIME))
                 .setRepositories(aggregateRepositories(mainRepos, remoteRepos));

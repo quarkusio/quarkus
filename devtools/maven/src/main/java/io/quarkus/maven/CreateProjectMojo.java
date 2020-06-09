@@ -44,7 +44,6 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.fusesource.jansi.Ansi;
 
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
@@ -144,7 +143,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos).build();
-        } catch (AppModelResolverException e1) {
+        } catch (Exception e1) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e1);
         }
         final QuarkusPlatformDescriptor platform = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion,

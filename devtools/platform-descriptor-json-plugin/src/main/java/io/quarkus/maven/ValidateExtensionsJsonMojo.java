@@ -26,7 +26,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.dependencies.Extension;
@@ -84,7 +83,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
                     .build();
-        } catch (AppModelResolverException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize maven artifact resolver", e);
         }
 
@@ -135,7 +134,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
         final List<Dependency> bomDeps;
         try {
             bomDeps = mvn.resolveDescriptor(platformBom).getManagedDependencies();
-        } catch (AppModelResolverException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve platform BOM " + platformBom, e);
         }
 
@@ -151,7 +150,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
             }
             try {
                 analyzeArtifact(mvn.resolve(artifact).getArtifact(), bomExtensions);
-            } catch (AppModelResolverException e) {
+            } catch (Exception e) {
                 getLog().warn("Failed to resolve " + artifact + " from managed dependencies of BOM " + platformBom);
             }
         }

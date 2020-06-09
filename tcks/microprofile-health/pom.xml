@@ -65,6 +65,10 @@
                     <groupId>javax.activation</groupId>
                     <artifactId>activation</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

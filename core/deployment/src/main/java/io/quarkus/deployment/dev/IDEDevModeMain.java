@@ -7,9 +7,9 @@ import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 
 @SuppressWarnings("unused")
@@ -32,7 +32,7 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 }
                 devModeContext.getAdditionalModules().add(toModule(module.getValue()));
             }
-        } catch (BootstrapException e) {
+        } catch (BootstrapMavenException e) {
             log.error("Failed to load workspace, hot reload will not be available", e);
         }
 

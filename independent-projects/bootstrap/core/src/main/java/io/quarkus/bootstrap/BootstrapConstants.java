@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
+
 /**
  *
  * @author Alexey Loubyansky
@@ -24,6 +26,6 @@ public interface BootstrapConstants {
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
 
     String EMPTY = "";
-    String JAR = "jar";
-    String POM = "pom";
+    String JAR = AppArtifactCoords.TYPE_JAR;
+    String POM = AppArtifactCoords.TYPE_POM;
 }

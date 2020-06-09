@@ -40,7 +40,6 @@ import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
-import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public final class PanacheHibernateResourceProcessor {
 
@@ -117,12 +116,12 @@ public final class PanacheHibernateResourceProcessor {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
-            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+            if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
-            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+            if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
         }

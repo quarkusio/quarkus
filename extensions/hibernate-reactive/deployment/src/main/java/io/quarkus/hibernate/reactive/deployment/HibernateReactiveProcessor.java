@@ -23,9 +23,9 @@ import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.Feature;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -111,7 +111,6 @@ public final class HibernateReactiveProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer) {
 
         final boolean enableHR = hasEntities(domainObjects, nonJpaModelBuildItems);
-
         if (!enableHR) {
             // we have to bail out early as we might not have a Vertx pool configuration
             return;
@@ -137,8 +136,15 @@ public final class HibernateReactiveProcessor {
         persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(reactivePU));
     }
 
+    /**
+     * This is mostly copied from
+     * {@link io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml}
+     * Key differences are:
+     * - Always produces a persistence unit descriptor, since we assume there always 1 reactive persistence unit
+     * - Any JDBC-only configuration settings are removed
+     * - If we ever add any Reactive-only config settings, they can be set here
+     */
     private ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
-            //            List<ParsedPersistenceXmlDescriptor> descriptors,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             Optional<String> dbKind,

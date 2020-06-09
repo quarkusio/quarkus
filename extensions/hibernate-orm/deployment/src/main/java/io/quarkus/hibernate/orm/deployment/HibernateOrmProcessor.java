@@ -213,7 +213,7 @@ public final class HibernateOrmProcessor {
             allDescriptors.add(persistenceXmlDescriptorBuildItem.getDescriptor());
         }
 
-        final boolean hibernateReactivePresent = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_REACTIVE);
+        final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
         if (!hibernateReactivePresent) {
             handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer,
                     defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());

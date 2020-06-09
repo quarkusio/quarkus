@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Transient;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -40,7 +41,6 @@ import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
-import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public final class KotlinPanacheResourceProcessor {
 
@@ -49,12 +49,12 @@ public final class KotlinPanacheResourceProcessor {
     static final String JPA_OPERATIONS = createSimple(JpaOperations.class.getName())
             .toString().replace(".", "/");
 
-    static final DotName PANACHE_REPOSITORY_BASE_DOTNAME = createSimple(PanacheRepositoryBase.class.getName());
-    static final DotName PANACHE_REPOSITORY_DOTNAME = createSimple(PanacheRepository.class.getName());
+    static final DotName PANACHE_REPOSITORY_BASE = createSimple(PanacheRepositoryBase.class.getName());
+    static final DotName PANACHE_REPOSITORY = createSimple(PanacheRepository.class.getName());
 
-    static final DotName PANACHE_ENTITY_BASE_DOTNAME = createSimple(PanacheEntityBase.class.getName());
-    static final DotName PANACHE_ENTITY_DOTNAME = createSimple(PanacheEntity.class.getName());
-    static final DotName PANACHE_COMPANION_DOTNAME = createSimple(PanacheCompanion.class.getName());
+    static final DotName PANACHE_ENTITY_BASE = createSimple(PanacheEntityBase.class.getName());
+    static final DotName PANACHE_ENTITY = createSimple(PanacheEntity.class.getName());
+    static final DotName PANACHE_COMPANION = createSimple(PanacheCompanion.class.getName());
 
     static final String PANACHE_ENTITY_BASE_SIGNATURE = toBinarySignature(PanacheEntityBase.class);
     static final String PANACHE_ENTITY_SIGNATURE = toBinarySignature(PanacheEntity.class);
@@ -62,6 +62,7 @@ public final class KotlinPanacheResourceProcessor {
 
     static final String OBJECT_SIGNATURE = toBinarySignature(Object.class);
     static final String CLASS_SIGNATURE = toBinarySignature(Class.class);
+    static final DotName TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     static final org.objectweb.asm.Type CLASS_TYPE = org.objectweb.asm.Type.getType(Class.class);
     static final org.objectweb.asm.Type OBJECT_TYPE = org.objectweb.asm.Type.getType(Object.class);
@@ -72,15 +73,6 @@ public final class KotlinPanacheResourceProcessor {
             org.objectweb.asm.Type.getType(PanacheEntityBase.class),
             org.objectweb.asm.Type.getType(PanacheEntity.class),
             org.objectweb.asm.Type.getType(PanacheCompanion.class));
-    public static final List<org.objectweb.asm.Type> PRIMITIVE_TYPES = asList(
-            org.objectweb.asm.Type.getType(Void.class),
-            org.objectweb.asm.Type.getType(Boolean.class),
-            org.objectweb.asm.Type.getType(Character.class),
-            org.objectweb.asm.Type.getType(Byte.class),
-            org.objectweb.asm.Type.getType(Short.class),
-            org.objectweb.asm.Type.getType(Integer.class),
-            org.objectweb.asm.Type.getType(Float.class),
-            org.objectweb.asm.Type.getType(Long.class));
 
     static org.objectweb.asm.Type sanitize(org.objectweb.asm.Type[] argumentTypes) {
         org.objectweb.asm.Type primitiveReplaced = null;
@@ -96,10 +88,6 @@ public final class KotlinPanacheResourceProcessor {
             }
         }
         return primitiveReplaced;
-    }
-
-    static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
-        return PRIMITIVE_TYPES.get(primitive.getSort());
     }
 
     @NotNull
@@ -147,16 +135,16 @@ public final class KotlinPanacheResourceProcessor {
 
         KotlinPanacheRepositoryEnhancer daoEnhancer = new KotlinPanacheRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_BASE_DOTNAME)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
-            if (classInfo.name().equals(PANACHE_REPOSITORY_DOTNAME))
+            if (classInfo.name().equals(PANACHE_REPOSITORY))
                 continue;
-            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+            if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_DOTNAME)) {
-            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY)) {
+            if (daoEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
         }
@@ -171,15 +159,15 @@ public final class KotlinPanacheResourceProcessor {
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
         // NOTE: we don't skip abstract/generic entities because they still need accessors
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_COMPANION_DOTNAME)) {
-            if (classInfo.name().equals(PANACHE_ENTITY_DOTNAME))
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_COMPANION)) {
+            if (classInfo.name().equals(PANACHE_ENTITY))
                 continue;
             if (modelClasses.add(classInfo.name().toString())) {
                 transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), companionEnhancer));
             }
         }
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_ENTITY_BASE_DOTNAME)) {
-            if (classInfo.name().equals(PANACHE_ENTITY_DOTNAME))
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_ENTITY_BASE)) {
+            if (classInfo.name().equals(PANACHE_ENTITY))
                 continue;
             if (modelClasses.add(classInfo.name().toString())) {
                 entityEnhancer.collectFields(classInfo);

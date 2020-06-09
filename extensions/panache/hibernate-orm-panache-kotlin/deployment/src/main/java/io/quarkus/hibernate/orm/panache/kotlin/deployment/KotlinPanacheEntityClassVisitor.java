@@ -13,18 +13,17 @@ import org.objectweb.asm.Type;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
-import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassVisitor;
 
 /**
  * This visitor process kotlin entities and removes the final modifier from the compiler generated getters and setters.
  * Unlike Java entities, we don't need to generate the getters and setters because kotlinc does that for us but kotlin,
  * by default, is final so we need to open those up for hibernate to add its hooks.
  */
-class KotlinPanacheEntityClassVisitor extends PanacheEntityEnhancer.PanacheEntityClassVisitor<EntityField> {
+class KotlinPanacheEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
 
     private String entityBinaryType;
-    private org.objectweb.asm.Type entityType;
 
     public KotlinPanacheEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
             MetamodelInfo<EntityModel<EntityField>> modelInfo,
@@ -38,8 +37,7 @@ class KotlinPanacheEntityClassVisitor extends PanacheEntityEnhancer.PanacheEntit
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
 
-        entityBinaryType = name.replace('.', '/');
-        entityType = org.objectweb.asm.Type.getType("L" + entityBinaryType + ";");
+        entityBinaryType = name;
     }
 
     @Override
@@ -52,18 +50,8 @@ class KotlinPanacheEntityClassVisitor extends PanacheEntityEnhancer.PanacheEntit
     }
 
     @Override
-    protected String getModelDescriptor() {
-        return "Ljava/lang/Class;";
-    }
-
-    @Override
-    protected String getPanacheOperationsBinaryName() {
+    protected String getPanacheOperationsInternalName() {
         return KotlinPanacheEntityEnhancer.JPA_OPERATIONS_BINARY_NAME;
-    }
-
-    @Override
-    protected void injectModel(MethodVisitor mv) {
-        mv.visitLdcInsn(entityType);
     }
 
     @Override

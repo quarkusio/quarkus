@@ -1,7 +1,20 @@
 package io.quarkus.deployment.util;
 
+import static java.util.Arrays.asList;
+import static org.objectweb.asm.Type.BOOLEAN_TYPE;
+import static org.objectweb.asm.Type.BYTE_TYPE;
+import static org.objectweb.asm.Type.CHAR_TYPE;
+import static org.objectweb.asm.Type.FLOAT_TYPE;
+import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.LONG_TYPE;
+import static org.objectweb.asm.Type.SHORT_TYPE;
+import static org.objectweb.asm.Type.VOID_TYPE;
+import static org.objectweb.asm.Type.getType;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.jboss.jandex.ArrayType;
@@ -19,6 +32,36 @@ import org.objectweb.asm.Opcodes;
  * A collection of ASM and Jandex utilities.
  */
 public class AsmUtil {
+
+    public static final List<org.objectweb.asm.Type> PRIMITIVES = asList(
+            VOID_TYPE,
+            BOOLEAN_TYPE,
+            CHAR_TYPE,
+            BYTE_TYPE,
+            SHORT_TYPE,
+            INT_TYPE,
+            FLOAT_TYPE,
+            LONG_TYPE);
+    public static final List<org.objectweb.asm.Type> WRAPPERS = asList(
+            getType(Void.class),
+            getType(Boolean.class),
+            getType(Character.class),
+            getType(Byte.class),
+            getType(Short.class),
+            getType(Integer.class),
+            getType(Float.class),
+            getType(Long.class));
+    public static final Map<org.objectweb.asm.Type, org.objectweb.asm.Type> WRAPPER_TO_PRIMITIVE = new HashMap<>();
+
+    static {
+        for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
+            AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
+        }
+    }
+
+    public static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
+        return WRAPPERS.get(primitive.getSort());
+    }
 
     /**
      * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
@@ -427,6 +470,43 @@ public class AsmUtil {
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown primitive type: " + jandexType);
+            }
+        }
+    }
+
+    /**
+     * Calls the right unboxing method for the given Jandex Type if it is a primitive.
+     *
+     * @param mv The MethodVisitor on which to visit the unboxing instructions
+     * @param type The Jandex Type to unbox if it is a primitive.
+     */
+    public static void unboxIfRequired(MethodVisitor mv, org.objectweb.asm.Type type) {
+        if (type.getSort() <= org.objectweb.asm.Type.DOUBLE) {
+            switch (type.getSort()) {
+                case org.objectweb.asm.Type.BOOLEAN:
+                    unbox(mv, "java/lang/Boolean", "booleanValue", "Z");
+                    break;
+                case org.objectweb.asm.Type.BYTE:
+                    unbox(mv, "java/lang/Byte", "byteValue", "B");
+                    break;
+                case org.objectweb.asm.Type.CHAR:
+                    unbox(mv, "java/lang/Character", "charValue", "C");
+                    break;
+                case org.objectweb.asm.Type.DOUBLE:
+                    unbox(mv, "java/lang/Double", "doubleValue", "D");
+                    break;
+                case org.objectweb.asm.Type.FLOAT:
+                    unbox(mv, "java/lang/Float", "floatValue", "F");
+                    break;
+                case org.objectweb.asm.Type.INT:
+                    unbox(mv, "java/lang/Integer", "intValue", "I");
+                    break;
+                case org.objectweb.asm.Type.LONG:
+                    unbox(mv, "java/lang/Long", "longValue", "J");
+                    break;
+                case org.objectweb.asm.Type.SHORT:
+                    unbox(mv, "java/lang/Short", "shortValue", "S");
+                    break;
             }
         }
     }

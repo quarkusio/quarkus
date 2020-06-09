@@ -129,6 +129,7 @@
         <module>grpc-interceptors</module>
         <module>grpc-proto-v2</module>
         <module>grpc-health</module>
+        <module>google-cloud-functions-http</module>
     </modules>
 
     <build>

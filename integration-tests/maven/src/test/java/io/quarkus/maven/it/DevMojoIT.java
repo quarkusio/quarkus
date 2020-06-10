@@ -167,6 +167,54 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testAlternatePom() throws Exception {
+        testDir = initProject("projects/classic", "projects/project-classic-alternate-pom");
+
+        File pom = new File(testDir, "pom.xml");
+        if (!pom.exists()) {
+            throw new IllegalStateException("Failed to locate project's pom.xml at " + pom);
+        }
+        final String alternatePomName = "alternate-pom.xml";
+        File alternatePom = new File(testDir, alternatePomName);
+        if (alternatePom.exists()) {
+            alternatePom.delete();
+        }
+        pom.renameTo(alternatePom);
+        if (pom.exists()) {
+            throw new IllegalStateException(pom + " was expected to be renamed to " + alternatePom);
+        }
+        runAndCheck("-f", alternatePomName);
+
+        // Edit a Java file too
+        final File javaSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(javaSource, Collections.singletonMap("return \"hello\";", "return \"hello " + uuid + "\";"));
+
+        // edit the application.properties too
+        final File applicationProps = new File(testDir, "src/main/resources/application.properties");
+        filter(applicationProps, Collections.singletonMap("greeting=bonjour", "greeting=" + uuid + ""));
+
+        // Now edit the pom.xml to trigger the dev mode restart
+        filter(alternatePom, Collections.singletonMap("<!-- insert test dependencies here -->",
+                "        <dependency>\n" +
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
+                        "        </dependency>"));
+
+        // Wait until we get the updated responses
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello " + uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greeting").contains(uuid));
+
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnPomChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-pom-change");
         runAndCheck();

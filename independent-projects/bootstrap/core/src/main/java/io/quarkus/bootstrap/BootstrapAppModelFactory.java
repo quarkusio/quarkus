@@ -208,8 +208,9 @@ public class BootstrapAppModelFactory {
             config.setOffline(offline);
         }
         // Currently projectRoot may be an app location which is not exactly a Maven project dir
-        if (projectRoot != null && Files.isDirectory(projectRoot) && Files.exists(projectRoot.resolve("pom.xml"))) {
-            config.setCurrentProject(projectRoot.toString());
+        final Path projectPom = config.getPomForDirOrNull(projectRoot);
+        if (projectPom != null) {
+            config.setCurrentProject(projectPom.toString());
         }
         config.setWorkspaceDiscovery(isWorkspaceDiscoveryEnabled());
         return mvnContext = new BootstrapMavenContext(config);

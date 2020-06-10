@@ -129,7 +129,6 @@
         <module>grpc-interceptors</module>
         <module>grpc-proto-v2</module>
         <module>grpc-health</module>
-        <module>google-cloud-functions-http</module>
     </modules>
 
     <build>
@@ -196,4 +195,16 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <id>jdk11plus</id>
+            <activation>
+                <jdk>[11,)</jdk>
+            </activation>
+            <modules>
+                <module>google-cloud-functions-http</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

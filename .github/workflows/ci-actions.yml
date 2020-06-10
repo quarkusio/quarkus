@@ -148,7 +148,7 @@ jobs:
         ports:
           - 127.0.0.1:3308:3306
       mssql:
-        image: microsoft/mssql-server-linux:2017-CU12
+        image: microsoft/mssql-server-linux:2017-CU13
         env:
           ACCEPT_EULA: Y
           SA_PASSWORD: ActuallyRequired11Complexity
@@ -506,7 +506,7 @@ jobs:
         run: |
           docker run --rm --publish 1433:1433 --name build-mssql \
             -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity \
-            -d microsoft/mssql-server-linux:2017-CU12
+            -d microsoft/mssql-server-linux:2017-CU13
         if: matrix.mssql
       - name: Amazon Services
         run: |

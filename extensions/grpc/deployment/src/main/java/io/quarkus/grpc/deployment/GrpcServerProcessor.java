@@ -42,11 +42,6 @@ public class GrpcServerProcessor {
     private static final Logger logger = Logger.getLogger(GrpcServerProcessor.class);
 
     @BuildStep
-    public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(GRPC_SERVER);
-    }
-
-    @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         Collection<ClassInfo> bindableServices = combinedIndexBuildItem.getIndex()
@@ -70,11 +65,12 @@ public class GrpcServerProcessor {
 
     @BuildStep
     void buildContainerBean(BuildProducer<AdditionalBeanBuildItem> beans,
-            List<BindableServiceBuildItem> bindables) {
+            List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         if (!bindables.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
+            features.produce(new FeatureBuildItem(GRPC_SERVER));
         } else {
-            logger.warn("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            logger.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
     }
 

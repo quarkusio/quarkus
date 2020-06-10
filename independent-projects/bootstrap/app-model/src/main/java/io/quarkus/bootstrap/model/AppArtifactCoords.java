@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * GroupId, artifactId, classifier, type, version
@@ -40,6 +41,15 @@ public class AppArtifactCoords implements Serializable {
         classifier = parts[2];
         type = parts[3] == null ? TYPE_JAR : parts[3];
         version = parts[4];
+    }
+
+    public AppArtifactCoords(AppArtifactKey key, String version) {
+        this.key = key;
+        this.groupId = key.getGroupId();
+        this.artifactId = key.getGroupId();
+        this.classifier = key.getClassifier();
+        this.type = key.getType();
+        this.version = version;
     }
 
     public AppArtifactCoords(String groupId, String artifactId, String version) {
@@ -83,52 +93,24 @@ public class AppArtifactCoords implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
-        result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());
-        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((version == null) ? 0 : version.hashCode());
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AppArtifactCoords that = (AppArtifactCoords) o;
+        return Objects.equals(groupId, that.groupId) &&
+                Objects.equals(artifactId, that.artifactId) &&
+                Objects.equals(classifier, that.classifier) &&
+                Objects.equals(type, that.type) &&
+                Objects.equals(version, that.version);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        AppArtifactCoords other = (AppArtifactCoords) obj;
-        if (artifactId == null) {
-            if (other.artifactId != null)
-                return false;
-        } else if (!artifactId.equals(other.artifactId))
-            return false;
-        if (classifier == null) {
-            if (other.classifier != null)
-                return false;
-        } else if (!classifier.equals(other.classifier))
-            return false;
-        if (groupId == null) {
-            if (other.groupId != null)
-                return false;
-        } else if (!groupId.equals(other.groupId))
-            return false;
-        if (type == null) {
-            if (other.type != null)
-                return false;
-        } else if (!type.equals(other.type))
-            return false;
-        if (version == null) {
-            if (other.version != null)
-                return false;
-        } else if (!version.equals(other.version))
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects.hash(groupId, artifactId, classifier, type, version);
     }
 
     @Override
@@ -140,7 +122,7 @@ public class AppArtifactCoords implements Serializable {
 
     protected StringBuilder append(final StringBuilder buf) {
         buf.append(groupId).append(':').append(artifactId).append(':');
-        if (!classifier.isEmpty()) {
+        if (classifier != null && !classifier.isEmpty()) {
             buf.append(classifier);
         }
         return buf.append(':').append(type).append(':').append(version);

@@ -1344,7 +1344,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-funqy-amazon-lambda-deployment</artifactId>
+                <artifactId>quarkus-funqy-google-cloud-functions</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-funqy-google-cloud-functions-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

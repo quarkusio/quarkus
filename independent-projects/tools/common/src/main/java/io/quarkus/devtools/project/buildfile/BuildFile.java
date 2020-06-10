@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 
-public abstract class BuildFile<T> implements ExtensionManager {
+public abstract class BuildFile implements ExtensionManager {
 
     private final Path projectFolderPath;
     private final QuarkusPlatformDescriptor platformDescriptor;

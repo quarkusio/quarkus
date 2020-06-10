@@ -45,11 +45,9 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.fusesource.jansi.Ansi;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.generators.SourceType;
+import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -161,19 +159,7 @@ public class CreateProjectMojo extends AbstractMojo {
         File pom = new File(projectRoot, "pom.xml");
 
         if (pom.isFile()) {
-            // Enforce that the GAV are not set
-            if (!StringUtils.isBlank(projectGroupId) || !StringUtils.isBlank(projectArtifactId)
-                    || !StringUtils.isBlank(projectVersion)) {
-                throw new MojoExecutionException("Unable to generate the project, the `projectGroupId`, " +
-                        "`projectArtifactId` and `projectVersion` parameters are not supported when applied to an " +
-                        "existing `pom.xml` file");
-            }
-
-            // Load the GAV from the existing project
-            projectGroupId = project.getGroupId();
-            projectArtifactId = project.getArtifactId();
-            projectVersion = project.getVersion();
-
+            throw new MojoExecutionException("Unable to generate the project in a directory that already contains a pom.xml");
         } else {
             askTheUserForMissingValues();
             projectRoot = new File(outputDirectory, projectArtifactId);
@@ -213,11 +199,6 @@ public class CreateProjectMojo extends AbstractMojo {
             success = createProject.execute().isSuccess();
 
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            if (success) {
-                success = new AddExtensions(QuarkusProject.of(projectFolderPath, platform, buildToolEnum))
-                        .extensions(extensions).execute()
-                        .isSuccess();
-            }
             if (BuildTool.MAVEN.equals(buildToolEnum)) {
                 createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
             } else if (BuildTool.GRADLE.equals(buildToolEnum)) {

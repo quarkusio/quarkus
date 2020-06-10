@@ -2,7 +2,6 @@ package io.quarkus.gradle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
@@ -14,13 +13,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-import io.quarkus.devtools.writer.FileProjectWriter;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class GradleBuildFileTest {
 
@@ -31,7 +30,8 @@ class GradleBuildFileTest {
         URL url = GradleBuildFileTest.class.getClassLoader().getResource("gradle-project");
         URI uri = url.toURI();
         Path gradleProjectPath = Paths.get(uri);
-        buildFile = new GradleBuildFileFromConnector(new FileProjectWriter(gradleProjectPath.toFile()));
+        final QuarkusPlatformDescriptor descriptor = Mockito.mock(QuarkusPlatformDescriptor.class);
+        buildFile = new GradleBuildFileFromConnector(gradleProjectPath, descriptor);
     }
 
     @Test
@@ -60,22 +60,6 @@ class GradleBuildFileTest {
     @Test
     void testGetTestClosure() throws IOException {
         assertNull(buildFile.getProperty("test"));
-    }
-
-    @Test
-    void testFindInstalled() throws IOException {
-        Map<String, Dependency> installed = buildFile.findInstalled();
-        assertNotNull(installed);
-        assertThat(installed).isNotEmpty();
-
-        Dependency jsonb = installed.get("io.quarkus:quarkus-jsonb");
-        assertThat(jsonb).extracting("version").isEqualTo("0.23.2");
-
-        Dependency jsonp = installed.get("io.quarkus:quarkus-jsonp");
-        assertThat(jsonp).extracting("version").isEqualTo("0.23.2");
-
-        Dependency resteasy = installed.get("io.quarkus:quarkus-resteasy");
-        assertThat(resteasy).extracting("version").isEqualTo("0.23.2");
     }
 
 }

@@ -2,33 +2,38 @@ package io.quarkus.devtools.project;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.quarkus.devtools.buildfile.BuildFile;
-import io.quarkus.devtools.writer.FileProjectWriter;
+import io.quarkus.devtools.project.buildfile.MavenBuildFile;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.nio.file.Path;
 
 public final class QuarkusProject {
 
     private final Path projectFolderPath;
-    private final BuildFile buildFile;
-    private final QuarkusPlatformDescriptor descriptor;
+    private final QuarkusPlatformDescriptor platformDescriptor;
+    private final ExtensionManager extensionManager;
 
-    private QuarkusProject(final Path projectFolderPath, final QuarkusPlatformDescriptor descriptor,
-            final BuildFile buildFile) {
+    private QuarkusProject(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+            final ExtensionManager extensionManager) {
         this.projectFolderPath = checkNotNull(projectFolderPath, "projectFolderPath is required");
-        this.descriptor = checkNotNull(descriptor, "descriptor is required");
-        this.buildFile = checkNotNull(buildFile, "buildFile is required");
+        this.platformDescriptor = checkNotNull(platformDescriptor, "platformDescriptor is required");
+        this.extensionManager = checkNotNull(extensionManager, "extensionManager is required");
     }
 
-    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor descriptor,
+    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+            final ExtensionManager extensionManager) {
+        return new QuarkusProject(projectFolderPath, platformDescriptor, extensionManager);
+    }
+
+    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
             final BuildTool buildTool) {
-        final BuildFile buildFile = buildTool.createBuildFile(new FileProjectWriter(projectFolderPath.toFile()));
-        return of(projectFolderPath, descriptor, buildFile);
+        return new QuarkusProject(projectFolderPath, platformDescriptor,
+                buildTool.createExtensionManager(projectFolderPath, platformDescriptor));
     }
 
-    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor descriptor,
-            final BuildFile buildFile) {
-        return new QuarkusProject(projectFolderPath, descriptor, buildFile);
+    public static QuarkusProject maven(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        return new QuarkusProject(projectFolderPath, platformDescriptor,
+                new MavenBuildFile(projectFolderPath, platformDescriptor));
     }
 
     public static QuarkusProject resolveExistingProject(final Path projectFolderPath,
@@ -44,19 +49,19 @@ public final class QuarkusProject {
         return projectFolderPath;
     }
 
-    public BuildFile getBuildFile() {
-        return buildFile;
-    }
-
     public BuildTool getBuildTool() {
-        return buildFile.getBuildTool();
+        return extensionManager.getBuildTool();
     }
 
-    public QuarkusPlatformDescriptor getDescriptor() {
-        return descriptor;
+    public ExtensionManager getExtensionManager() {
+        return extensionManager;
     }
 
-    private static BuildTool resolveExistingProjectBuildTool(Path projectFolderPath) {
+    public QuarkusPlatformDescriptor getPlatformDescriptor() {
+        return platformDescriptor;
+    }
+
+    public static BuildTool resolveExistingProjectBuildTool(Path projectFolderPath) {
         if (projectFolderPath.resolve("pom.xml").toFile().exists()) {
             return BuildTool.MAVEN;
         } else if (projectFolderPath.resolve("build.gradle").toFile().exists()
@@ -65,4 +70,5 @@ public final class QuarkusProject {
         }
         return null;
     }
+
 }

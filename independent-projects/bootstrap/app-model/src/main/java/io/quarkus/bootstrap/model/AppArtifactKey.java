@@ -73,12 +73,12 @@ public class AppArtifactKey implements Serializable {
     protected AppArtifactKey(String[] parts) {
         this.groupId = parts[0];
         this.artifactId = parts[1];
-        if (parts.length == 2) {
+        if (parts.length == 2 || parts[2] == null) {
             this.classifier = "";
         } else {
             this.classifier = parts[2];
         }
-        if (parts.length <= 3) {
+        if (parts.length <= 3 || parts[3] == null) {
             this.type = "jar";
         } else {
             this.type = parts[3];

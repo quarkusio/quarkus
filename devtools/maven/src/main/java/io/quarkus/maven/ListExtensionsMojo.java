@@ -4,7 +4,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.ListExtensions;
+import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
@@ -15,7 +15,7 @@ import io.quarkus.platform.tools.MessageWriter;
  * You can list all extension or just installable. Choose between 3 output formats: name, concise and full.
  */
 @Mojo(name = "list-extensions", requiresProject = false)
-public class ListExtensionsMojo extends BuildFileMojoBase {
+public class ListExtensionsMojo extends QuarkusProjectMojoBase {
 
     /**
      * List all extensions or just the installable.

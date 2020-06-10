@@ -6,11 +6,11 @@ import static org.apache.commons.io.FileUtils.contentEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.cli.commands.CreateProject;
-import io.quarkus.cli.commands.CreateProjectTest;
-import io.quarkus.cli.commands.PlatformAwareTestBase;
-import io.quarkus.cli.commands.QuarkusCommandException;
-import io.quarkus.cli.commands.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProjectTest;
+import io.quarkus.devtools.commands.PlatformAwareTestBase;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import java.io.File;
 import java.io.FileInputStream;

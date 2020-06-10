@@ -19,7 +19,6 @@ public class AddExtensionToModuleInMultiModuleProjectTest extends QuarkusGradleT
     public void testBasicMultiModuleBuild() throws Exception {
 
         final File projectDir = getProjectDir("add-extension-multi-module");
-        
         BuildResult build = GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()

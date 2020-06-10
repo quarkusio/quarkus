@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import io.quarkus.cli.commands.PlatformAwareTestBase;
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.commands.PlatformAwareTestBase;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.util.List;

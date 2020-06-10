@@ -59,7 +59,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -138,9 +137,7 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
-            SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -148,8 +145,7 @@ class RestClientProcessor {
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<RestClientBuildItem> restClient,
-            RestClientRecorder restClientRecorder) {
+            BuildProducer<RestClientBuildItem> restClient) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
@@ -222,8 +218,6 @@ class RestClientProcessor {
 
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REST_CLIENT));
-
-        restClientRecorder.setSslEnabled(sslNativeConfig.isEnabled());
     }
 
     private void findInterfaces(IndexView index, Map<DotName, ClassInfo> interfaces, Set<Type> returnTypes,

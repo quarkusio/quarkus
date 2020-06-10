@@ -42,7 +42,7 @@ public class BaseFunction {
         PrintWriter errorWriter = new PrintWriter(error, true);
         if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock azure unit testing.
             try {
-                Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
+                Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
                 Application app = (Application) appClass.newInstance();
                 app.start(args);
@@ -93,7 +93,7 @@ public class BaseFunction {
         }
 
         ResponseHandler handler = new ResponseHandler(request);
-        VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
 
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
@@ -104,13 +104,13 @@ public class BaseFunction {
         }
     }
 
-    private ByteArrayOutputStream createByteStream() {
+    private static ByteArrayOutputStream createByteStream() {
         ByteArrayOutputStream baos;
         baos = new ByteArrayOutputStream(500);
         return baos;
     }
 
-    private class ResponseHandler implements VirtualResponseHandler {
+    private static class ResponseHandler implements VirtualResponseHandler {
         HttpResponseMessage.Builder responseBuilder;
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;

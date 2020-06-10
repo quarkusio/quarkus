@@ -93,7 +93,9 @@ public class QuarkusHttpFunction implements HttpFunction {
         Optional<String> host = request.getFirstHeader("Host");
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getMethod()), path);
-        host.ifPresent(h -> nettyRequest.headers().set("Host", host));
+        if (host.isPresent()) {
+            nettyRequest.headers().set("Host", host.get());
+        }
         for (Map.Entry<String, List<String>> header : request.getHeaders().entrySet()) {
             nettyRequest.headers().add(header.getKey(), header.getValue());
         }
@@ -114,7 +116,7 @@ public class QuarkusHttpFunction implements HttpFunction {
         }
 
         ResponseHandler handler = new ResponseHandler(response);
-        VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
         try {
@@ -124,7 +126,7 @@ public class QuarkusHttpFunction implements HttpFunction {
         }
     }
 
-    private class ResponseHandler implements VirtualResponseHandler {
+    private static class ResponseHandler implements VirtualResponseHandler {
 
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;

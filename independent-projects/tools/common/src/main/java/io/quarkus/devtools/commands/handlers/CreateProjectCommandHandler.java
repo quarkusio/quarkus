@@ -13,7 +13,9 @@ import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.codegen.ProjectGeneratorRegistry;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.devtools.project.codegen.rest.BasicRestProjectGenerator;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ConsoleMessageFormats;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
 import java.util.Collections;
@@ -70,7 +72,12 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                             quarkusProps,
                             extensionsToAdd);
                 } else {
-                    invocation.getQuarkusProject().getExtensionManager().install(extensionsToAdd);
+                    final ExtensionManager.InstallResult result = invocation.getQuarkusProject().getExtensionManager()
+                            .install(extensionsToAdd);
+                    result.getInstalled()
+                            .forEach(a -> invocation.log()
+                                    .info(ConsoleMessageFormats.ok("Extension " + a.getGroupId() + ":" + a.getArtifactId())
+                                            + " has been installed"));
                 }
             }
         } catch (IOException e) {

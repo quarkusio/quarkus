@@ -193,8 +193,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 LOG.debug("State parameter can not be empty or multi-valued");
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             } else if (!stateCookie.getValue().startsWith(values.get(0))) {
-                LOG.debugf("State cookie value '%s' does not match the state query parameter value '%s'",
-                        stateCookie.getValue(), values.get(0));
+                LOG.debug("State cookie value does not match the state query parameter value");
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
             } else if (context.queryParam("pathChecked").isEmpty()) {
                 // This is an original redirect from IDP, check if the request path needs to be updated

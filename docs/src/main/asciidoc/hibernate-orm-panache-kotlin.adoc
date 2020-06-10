@@ -54,7 +54,7 @@ querying bound to a specific type.
 knowing they will be properly assigned either by the constructor (not shown) or by hibernate loading data from the
 database.
 
-NOTE: These types differ from the Java types mentioned in those tutorials.  For kotlin support, all the Panache
+NOTE: These types differ from the Java types mentioned in those tutorials.  For Kotlin support, all the Panache
 types will be found in the `io.quarkus.hibernate.orm.panache.kotlin` package.  This subpackage allows for the distinction
 between the Java and Kotlin variants and allows for both to be used unambiguously in a single project.
 
@@ -177,8 +177,8 @@ NOTE: The rest of the documentation show usages based on the active record patte
 but keep in mind that they can be performed with the repository pattern as well.
 The repository pattern examples have been omitted for brevity.
 
-For more examples, please consult the link:hibernate-orm-panache.adoc[java version] for complete details.  Both APIs
-are the same and work identically except for some kotlin-specific tweaks to make things feel more natural to
+For more examples, please consult the link:hibernate-orm-panache[Java version] for complete details.  Both APIs
+are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
 methods.
 
@@ -199,4 +199,4 @@ need but if all you need are the Kotlin APIs then include the following dependen
 </dependencies>
 ----
 <1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
-both java and kotlin code, you can safely include both artifacts.
+both Java and Kotlin code, you can safely include both artifacts.

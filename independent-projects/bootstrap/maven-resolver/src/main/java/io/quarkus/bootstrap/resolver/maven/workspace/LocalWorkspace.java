@@ -148,9 +148,9 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
             // otherwise, this project hasn't been built yet
         } else if (type.equals(AppArtifactCoords.TYPE_POM)) {
-            final Path path = lp.getDir().resolve("pom.xml");
-            if (Files.exists(path)) {
-                return path.toFile();
+            final File pom = lp.getRawModel().getPomFile();
+            if (pom.exists()) {
+                return pom;
             }
         }
         return null;

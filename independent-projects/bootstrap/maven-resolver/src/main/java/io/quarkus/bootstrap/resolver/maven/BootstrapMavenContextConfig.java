@@ -1,7 +1,11 @@
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -18,9 +22,10 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected RepositorySystemSession repoSession;
     protected List<RemoteRepository> remoteRepos;
     protected RemoteRepositoryManager remoteRepoManager;
-    protected String alternativePomName;
+    protected String alternatePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
+    protected BootstrapMavenOptions cliOptions;
 
     /**
      * Local repository location
@@ -133,7 +138,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
      */
     @SuppressWarnings("unchecked")
     public T setCurrentProject(String currentProject) {
-        this.alternativePomName = currentProject;
+        this.alternatePomName = currentProject;
         return (T) this;
     }
 
@@ -160,5 +165,25 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     public T setArtifactTransferLogging(boolean artifactTransferLogging) {
         this.artifactTransferLogging = artifactTransferLogging;
         return (T) this;
+    }
+
+    /**
+     * Resolves a POM file for a basedir.
+     *
+     * @param basedir project's basedir
+     * @return POM file for the basedir or null, if it could not be resolved
+     */
+    public Path getPomForDirOrNull(Path basedir) {
+        if (!Files.isDirectory(basedir)) {
+            return null;
+        }
+        final String altPom = alternatePomName == null
+                ? getInitializedCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE)
+                : alternatePomName;
+        return BootstrapMavenContext.getPomForDirOrNull(basedir, altPom == null ? null : Paths.get(altPom));
+    }
+
+    private BootstrapMavenOptions getInitializedCliOptions() {
+        return cliOptions == null ? cliOptions = BootstrapMavenOptions.newInstance() : cliOptions;
     }
 }

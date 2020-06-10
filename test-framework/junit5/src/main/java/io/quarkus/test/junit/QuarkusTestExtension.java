@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +65,7 @@ import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.internal.DeepClone;
 import io.quarkus.test.junit.internal.XStreamDeepClone;
 
@@ -87,6 +89,7 @@ public class QuarkusTestExtension
     private static List<Object> beforeAllCallbacks = new ArrayList<>();
     private static List<Object> beforeEachCallbacks = new ArrayList<>();
     private static List<Object> afterEachCallbacks = new ArrayList<>();
+    private static Class<?> quarkusTestMethodContextClass;
 
     private static DeepClone deepClone;
 
@@ -232,33 +235,6 @@ public class QuarkusTestExtension
     }
 
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
-        if (isNativeTest(context)) {
-            return;
-        }
-        if (!failedBoot) {
-            popMockContext();
-            for (Object afterEachCallback : afterEachCallbacks) {
-                afterEachCallback.getClass().getMethod("afterEach", Object.class).invoke(afterEachCallback, actualTestInstance);
-            }
-            boolean nativeImageTest = isNativeTest(context);
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            try {
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                        .getDeclaredMethod("clearURL").invoke(null);
-                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                        .getDeclaredMethod("tearDown", boolean.class).invoke(null, nativeImageTest);
-            } finally {
-                setCCL(original);
-            }
-        }
-    }
-
-    private boolean isNativeTest(ExtensionContext context) {
-        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
-    }
-
-    @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (isNativeTest(context)) {
             return;
@@ -268,15 +244,15 @@ public class QuarkusTestExtension
             try {
                 pushMockContext();
                 for (Object beforeEachCallback : beforeEachCallbacks) {
-                    beforeEachCallback.getClass().getMethod("beforeEach", Object.class).invoke(beforeEachCallback,
-                            actualTestInstance);
+                    Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                    beforeEachCallback.getClass().getMethod("beforeEach", tuple.getKey())
+                            .invoke(beforeEachCallback, tuple.getValue());
                 }
-                boolean nativeImageTest = isNativeTest(context);
                 if (runningQuarkusApplication != null) {
                     runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                             .getDeclaredMethod("setURL", boolean.class).invoke(null, false);
                     runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                            .getDeclaredMethod("setup", boolean.class).invoke(null, nativeImageTest);
+                            .getDeclaredMethod("setup", boolean.class).invoke(null, false);
                 }
             } finally {
                 setCCL(original);
@@ -290,6 +266,44 @@ public class QuarkusTestExtension
                 throw new TestAbortedException("Boot failed");
             }
         }
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        if (isNativeTest(context)) {
+            return;
+        }
+        if (!failedBoot) {
+            popMockContext();
+            for (Object afterEachCallback : afterEachCallbacks) {
+                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+                afterEachCallback.getClass().getMethod("afterEach", tuple.getKey())
+                        .invoke(afterEachCallback, tuple.getValue());
+            }
+            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
+            try {
+                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                        .getDeclaredMethod("clearURL").invoke(null);
+                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                        .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
+            } finally {
+                setCCL(original);
+            }
+        }
+    }
+
+    private Map.Entry<Class<?>, ?> createQuarkusTestMethodContextTuple(ExtensionContext context) throws Exception {
+        if (quarkusTestMethodContextClass == null) {
+            quarkusTestMethodContextClass = Class.forName(QuarkusTestMethodContext.class.getName(), true,
+                    runningQuarkusApplication.getClassLoader());
+        }
+        Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, Method.class);
+        return new AbstractMap.SimpleEntry<>(quarkusTestMethodContextClass,
+                constructor.newInstance(actualTestInstance, context.getRequiredTestMethod()));
+    }
+
+    private boolean isNativeTest(ExtensionContext context) {
+        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
     }
 
     private ExtensionState ensureStarted(ExtensionContext extensionContext) {

@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -29,22 +30,33 @@ public final class OidcUtils {
      * ignoring those which are located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
-    private static final Pattern JWT_PARTS_PATTERN = Pattern.compile("\\.");
 
     private OidcUtils() {
 
     }
 
     public static boolean isOpaqueToken(String token) {
-        return JWT_PARTS_PATTERN.split(token).length != 3;
+        return new StringTokenizer(token, ".").countTokens() != 3;
     }
 
     public static JsonObject decodeJwtContent(String jwt) {
-        String[] parts = JWT_PARTS_PATTERN.split(jwt);
-        if (parts.length != 3) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        // part 1: skip the token headers
+        tokens.nextToken();
+        if (!tokens.hasMoreTokens()) {
             return null;
-        } else {
-            return new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8));
+        }
+        // part 2: token content
+        String encodedContent = tokens.nextToken();
+
+        // lets check only 1 more signature part is available
+        if (tokens.countTokens() != 1) {
+            return null;
+        }
+        try {
+            return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException ex) {
+            return null;
         }
     }
 

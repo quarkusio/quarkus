@@ -162,7 +162,7 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(200)
                 .body(equalTo("tenant-oidc:alice"));
 
-        // Get a token with kid '3' - it can only be verified via the introspection fallback since OIDC returns JWL set with kid '2'
+        // Get a token with kid '3' - it can only be verified via the introspection fallback since OIDC returns JWK set with kid '2'
         // 403 since the introspection is not enabled
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("3"))
                 .when().get("/tenant/tenant-oidc/api/user")

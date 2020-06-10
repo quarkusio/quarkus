@@ -641,8 +641,8 @@ public class OidcTenantConfig {
         /**
          * Forced JWK set refresh interval in minutes.
          */
-        @ConfigItem(defaultValue = "10")
-        public long forcedJwkRefreshInterval = 10;
+        @ConfigItem(defaultValue = "10M")
+        public Duration forcedJwkRefreshInterval = Duration.ofMinutes(10);
 
         public Optional<String> getIssuer() {
             return issuer;
@@ -684,11 +684,11 @@ public class OidcTenantConfig {
             this.refreshExpired = refreshExpired;
         }
 
-        public long getForcedJwkRefreshInterval() {
+        public Duration getForcedJwkRefreshInterval() {
             return forcedJwkRefreshInterval;
         }
 
-        public void setForcedJwkRefreshInterval(long forcedJwkRefreshInterval) {
+        public void setForcedJwkRefreshInterval(Duration forcedJwkRefreshInterval) {
             this.forcedJwkRefreshInterval = forcedJwkRefreshInterval;
         }
     }

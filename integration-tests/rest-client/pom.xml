@@ -70,6 +70,8 @@
 					<systemPropertyVariables>
 						<!-- force the locale as we want to explicitly test message interpolation -->
 						<user.language>en</user.language>
+						<javax.net.ssl.trustStore>${project.basedir}/self-signed</javax.net.ssl.trustStore>
+						<javax.net.ssl.trustStorePassword>changeit</javax.net.ssl.trustStorePassword>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>
@@ -119,9 +121,11 @@
 									<reportErrorsAtRuntime>false</reportErrorsAtRuntime>
 									<cleanupServer>true</cleanupServer>
 									<enableHttpUrlHandler>true</enableHttpUrlHandler>
+									<enableHttpsUrlHandler>true</enableHttpsUrlHandler>
 									<enableServer>false</enableServer>
 									<dumpProxies>false</dumpProxies>
 									<graalvmHome>${graalvmHome}</graalvmHome>
+									<additionalBuildArgs>-J-Djavax.net.ssl.trustStore=${project.basedir}/self-signed, -J-Djavax.net.ssl.trustStorePassword=changeit</additionalBuildArgs>
 								</configuration>
 							</execution>
 						</executions>

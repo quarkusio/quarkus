@@ -229,6 +229,11 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
+      - name: Parse JUnit Failures
+        uses: stuartwdouglas/citest@0c04e25aa4ae2e316a7c10a3686d7335e741ead4
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+        if: failure()
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -311,6 +316,11 @@ jobs:
       - name: Build with Maven
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dformat.skip -pl !integration-tests/gradle install
+      - name: Parse JUnit Failures
+        uses: stuartwdouglas/citest@0c04e25aa4ae2e316a7c10a3686d7335e741ead4
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+        if: failure()
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -382,6 +392,11 @@ jobs:
         run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install
       - name: Verify with Maven
         run: mvn -B --settings .github/mvn-settings.xml -f tcks/pom.xml verify
+      - name: Parse JUnit Failures
+        uses: stuartwdouglas/citest@0c04e25aa4ae2e316a7c10a3686d7335e741ead4
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+        if: failure()
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -659,6 +674,11 @@ jobs:
           if [ "$CATEGORY" == "Misc1" ]; then
             mvn -Dnative -Dquarkus.native.container-build=true -B --settings .github/mvn-settings.xml -f 'integration-tests/simple with space/' verify
           fi
+      - name: Parse JUnit Failures
+        uses: stuartwdouglas/citest@0c04e25aa4ae2e316a7c10a3686d7335e741ead4
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+        if: failure()
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash

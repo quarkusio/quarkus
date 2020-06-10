@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -30,12 +31,14 @@ public class InjectionPointInfo {
     static InjectionPointInfo fromField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(field)) {
+        Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(field);
+        for (AnnotationInstance annotation : annotations) {
             beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
         }
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
-                transformer.applyTransformers(type, field, qualifiers), field, -1);
+                transformer.applyTransformers(type, field, qualifiers), field, -1,
+                Annotations.contains(annotations, DotNames.TRANSIENT_REFERENCE));
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -43,7 +46,7 @@ public class InjectionPointInfo {
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
                 transformer.applyTransformers(type, field, new HashSet<>(field.annotations())),
-                InjectionPointKind.RESOURCE, field, -1);
+                InjectionPointKind.RESOURCE, field, -1, false);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, ClassInfo beanClass, BeanDeployment beanDeployment,
@@ -69,7 +72,7 @@ public class InjectionPointInfo {
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,
                     transformer.applyTransformers(type, method, paramQualifiers),
-                    method, position));
+                    method, position, Annotations.contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE)));
         }
         return injectionPoints;
     }
@@ -86,12 +89,15 @@ public class InjectionPointInfo {
 
     private final int position;
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position) {
-        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position);
+    private final boolean isTransientReference;
+
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position,
+            boolean isTransientReference) {
+        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position, isTransientReference);
     }
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
-            AnnotationTarget target, int position) {
+            AnnotationTarget target, int position, boolean isTransientReference) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
                 requiredQualifiers.isEmpty()
                         ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
@@ -101,6 +107,7 @@ public class InjectionPointInfo {
         this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
         this.target = target;
         this.position = position;
+        this.isTransientReference = isTransientReference;
     }
 
     void resolve(BeanInfo bean) {
@@ -155,6 +162,16 @@ public class InjectionPointInfo {
 
     public boolean isParam() {
         return target.kind() == Kind.METHOD;
+    }
+
+    /**
+     * 
+     * @return true if this injection point represents a method parameter annotated with {@code TransientReference} that
+     *         resolves to a dependent bean
+     */
+    boolean isDependentTransientReference() {
+        BeanInfo bean = getResolvedBean();
+        return bean != null && isParam() && BuiltinScope.DEPENDENT.is(bean.getScope()) && isTransientReference;
     }
 
     /**

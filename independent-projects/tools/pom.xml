@@ -72,7 +72,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-core</artifactId>
+                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
                 <version>${quarkus.version}</version>
             </dependency>
             <dependency>
@@ -151,6 +151,13 @@
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <version>${quarkus.version}</version>
             </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>

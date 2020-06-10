@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.QuarkusApplicationClassBuildItem;
-import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -87,7 +86,6 @@ class MainClassBuildStep {
             List<MainBytecodeRecorderBuildItem> mainMethod,
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
-            Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
@@ -184,20 +182,22 @@ class MainClassBuildStep {
                     mv.invokeVirtualMethod(ofMethod(StringBuilder.class, "toString", String.class), javaLibraryPath));
         }
 
-        if (sslTrustStoreSystemProperty.isPresent()) {
-            ResultHandle alreadySetTrustStore = mv.invokeStaticMethod(
-                    ofMethod(System.class, "getProperty", String.class, String.class),
-                    mv.load(JAVAX_NET_SSL_TRUST_STORE));
+        // GraalVM uses the build-time trustStore and bakes the backing classes of the TrustStore into the the native binary,
+        // so we need to warn users trying to set the 'javax.net.ssl.trustStore' property that it won't have an effect
+        ResultHandle trustStoreSystemProp = mv.invokeStaticMethod(
+                ofMethod(System.class, "getProperty", String.class, String.class),
+                mv.load(JAVAX_NET_SSL_TRUST_STORE));
 
-            BytecodeCreator inGraalVMCode = mv
-                    .ifNonZero(mv.invokeStaticMethod(ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)))
-                    .trueBranch();
+        BytecodeCreator inGraalVMCode = mv
+                .ifNonZero(mv.invokeStaticMethod(ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)))
+                .trueBranch();
 
-            inGraalVMCode.ifNull(alreadySetTrustStore).trueBranch().invokeStaticMethod(
-                    ofMethod(System.class, "setProperty", String.class, String.class, String.class),
-                    inGraalVMCode.load(JAVAX_NET_SSL_TRUST_STORE),
-                    inGraalVMCode.load(sslTrustStoreSystemProperty.get().getPath()));
-        }
+        BytecodeCreator inGraalVMCodeAndTrustStoreSet = inGraalVMCode.ifNull(trustStoreSystemProp).falseBranch();
+        inGraalVMCodeAndTrustStoreSet.invokeVirtualMethod(
+                ofMethod(Logger.class, "warn", void.class, Object.class),
+                inGraalVMCodeAndTrustStoreSet.readStaticField(logField.getFieldDescriptor()),
+                inGraalVMCodeAndTrustStoreSet.load("Setting the '" + JAVAX_NET_SSL_TRUST_STORE
+                        + "' system property will not have any effect at runtime. Make sure to set this property at build time (for example by setting 'quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/some/path')."));
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());

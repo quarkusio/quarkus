@@ -3,12 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Funqy HTTP
+= Quarkus - Funqy HTTP (Standalone)
 
 include::./attributes.adoc[]
 :extension-status: preview
 
-The guide walks through quickstart code to show you how you can deploy and invoke on Funqy functions in a pure HTTP environment.
+The guide walks through quickstart code to show you how you can deploy Funqy as a
+standalone service and invoke on Funqy functions using HTTP.
 
 == Prerequisites
 

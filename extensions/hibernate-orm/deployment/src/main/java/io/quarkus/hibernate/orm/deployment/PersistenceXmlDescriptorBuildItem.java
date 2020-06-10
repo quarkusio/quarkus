@@ -20,7 +20,7 @@ public final class PersistenceXmlDescriptorBuildItem extends MultiBuildItem {
         this.descriptor = descriptor;
     }
 
-    protected ParsedPersistenceXmlDescriptor getDescriptor() {
+    public ParsedPersistenceXmlDescriptor getDescriptor() {
         return descriptor;
     }
 }

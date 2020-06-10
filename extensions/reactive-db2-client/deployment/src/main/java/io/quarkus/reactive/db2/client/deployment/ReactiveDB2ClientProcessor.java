@@ -59,7 +59,9 @@ class ReactiveDB2ClientProcessor {
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config,
                 shutdown);
         db2Pool.produce(new DB2PoolBuildItem(db2PoolValue));
-        vertxPool.produce(new VertxPoolBuildItem(db2PoolValue));
+
+        boolean isDefault = true; // assume always the default pool for now
+        vertxPool.produce(new VertxPoolBuildItem(db2PoolValue, DatabaseKind.DB2, isDefault));
 
         return serviceStart;
     }

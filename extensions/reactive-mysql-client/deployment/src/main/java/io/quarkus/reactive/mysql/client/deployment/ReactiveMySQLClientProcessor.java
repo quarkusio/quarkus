@@ -68,7 +68,9 @@ class ReactiveMySQLClientProcessor {
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactiveMySQLConfig, isLegacy,
                 shutdown);
         mysqlPool.produce(new MySQLPoolBuildItem(mySqlPool));
-        vertxPool.produce(new VertxPoolBuildItem(mySqlPool));
+
+        boolean isDefault = true; // assume always the default pool for now
+        vertxPool.produce(new VertxPoolBuildItem(mySqlPool, DatabaseKind.MYSQL, isDefault));
 
         return serviceStart;
     }

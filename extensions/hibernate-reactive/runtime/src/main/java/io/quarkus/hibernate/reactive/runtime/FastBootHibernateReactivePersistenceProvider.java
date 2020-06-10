@@ -41,11 +41,11 @@ import io.vertx.sqlclient.Pool;
  * and that would trigger the native-image tool to include all code which could be triggered from using
  * that: we need to be able to fully exclude HibernatePersistenceProvider from the native image.
  */
-final class FastBootHibernateReactivePersistenceProvider implements PersistenceProvider {
+public final class FastBootHibernateReactivePersistenceProvider implements PersistenceProvider {
 
     private static final Logger log = Logger.getLogger(FastBootHibernateReactivePersistenceProvider.class);
 
-    private static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.provider.ReactivePersistenceProvider";
+    public static final String IMPLEMENTATION_NAME = "org.hibernate.reactive.provider.ReactivePersistenceProvider";
 
     private final FastBootHibernatePersistenceProvider delegate = new FastBootHibernatePersistenceProvider();
 

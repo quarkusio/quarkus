@@ -24,10 +24,10 @@ public class JsonAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     private static final Logger log = Logger.getLogger(JsonAuthenticationMechanism.class);
 
-    private final PersistentLoginManager loginManager;
+    private final DefaultPersistentLoginManager loginManager;
     private final String postLocation;
 
-    public JsonAuthenticationMechanism(PersistentLoginManager loginManager, String postLocation) {
+    public JsonAuthenticationMechanism(DefaultPersistentLoginManager loginManager, String postLocation) {
         this.loginManager = loginManager;
         this.postLocation = postLocation;
     }
@@ -69,7 +69,7 @@ public class JsonAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        PersistentLoginManager.RestoreResult result = loginManager.restore(context);
+        DefaultPersistentLoginManager.RestoreResult result = loginManager.restore(context);
         if (result != null) {
             Uni<SecurityIdentity> ret = identityProviderManager
                     .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));

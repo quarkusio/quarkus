@@ -240,7 +240,7 @@ public class HttpSecurityRecorder {
                     key = httpConfiguration.encryptionKey.get();
                 }
                 FormAuthConfig form = buildTimeConfig.auth.form;
-                PersistentLoginManager loginManager = new PersistentLoginManager(key,
+                DefaultPersistentLoginManager loginManager = new DefaultPersistentLoginManager(key,
                         form.cookieName.orElse(buildTimeConfig.auth.cookie.cookieName),
                         form.timeout.orElse(buildTimeConfig.auth.cookie.timeout).toMillis(),
                         form.newCookieInterval.orElse(buildTimeConfig.auth.cookie.newCookieInterval).toMillis());
@@ -275,7 +275,7 @@ public class HttpSecurityRecorder {
                 }
                 JsonAuthConfig json = buildTimeConfig.auth.json;
                 AuthCookieConfig cookieConfig = buildTimeConfig.auth.cookie;
-                PersistentLoginManager loginManager = new PersistentLoginManager(key, cookieConfig.cookieName,
+                DefaultPersistentLoginManager loginManager = new DefaultPersistentLoginManager(key, cookieConfig.cookieName,
                         cookieConfig.timeout.toMillis(),
                         cookieConfig.newCookieInterval.toMillis());
                 String postLocation = json.postLocation.startsWith("/") ? json.postLocation : "/" + json.postLocation;

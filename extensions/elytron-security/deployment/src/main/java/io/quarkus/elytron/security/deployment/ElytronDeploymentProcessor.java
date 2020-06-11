@@ -17,7 +17,6 @@ import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
 import io.quarkus.elytron.security.runtime.ElytronRecorder;
 import io.quarkus.elytron.security.runtime.ElytronSecurityDomainManager;
 import io.quarkus.elytron.security.runtime.ElytronTokenIdentityProvider;
-import io.quarkus.elytron.security.runtime.ElytronTrustedIdentityProvider;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -26,10 +25,6 @@ import io.quarkus.runtime.RuntimeValue;
  * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
  * and {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm} realm implementations. Others could be
  * added by creating an extension that produces a SecurityRealmBuildItem for the realm.
- *
- * Additional authentication mechanisms can be added by producing AuthConfigBuildItems and including the associated
- * {@linkplain io.undertow.servlet.ServletExtension} implementations to register the
- * {@linkplain io.undertow.security.api.AuthenticationMechanismFactory}.
  *
  * TODO: The handling of the configuration to SecurityRealm instance creation/loading is clumsy to not being able to
  * have a config object annotated with @ConfigGroup inherit from another object with MP config annotated properties.
@@ -48,7 +43,6 @@ class ElytronDeploymentProcessor {
         }
         if (!pw.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronPasswordIdentityProvider.class));
-            beans.produce(AdditionalBeanBuildItem.unremovableOf(ElytronTrustedIdentityProvider.class));
         }
     }
 

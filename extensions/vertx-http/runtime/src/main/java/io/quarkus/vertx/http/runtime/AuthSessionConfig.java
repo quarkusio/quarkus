@@ -1,15 +1,23 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
-/**
- * Config for the persistent login cookies used for JSON and FORM auth.
- */
 @ConfigGroup
-public class AuthCookieConfig {
+public class AuthSessionConfig {
+
+    /**
+     * The encryption key that is used to store persistent logins (e.g. for form auth). Logins are stored in a persistent
+     * cookie that is encrypted with AES-256 using a key derived from a SHA-256 hash of the key that is provided here.
+     *
+     * If no key is provided then an in-memory one will be generated, this will change on every restart though so it
+     * is not suitable for production environments. This must be more than 16 characters long for security reasons
+     */
+    @ConfigItem
+    public Optional<String> encryptionKey;
 
     /**
      * The inactivity (idle) timeout
@@ -20,7 +28,7 @@ public class AuthCookieConfig {
     public Duration timeout;
 
     /**
-     * How old a cookie can get before it will be replaced with a new cookie with an updated timeout, also
+     * How old a token can get before it will be replaced with a new token with an updated timeout, also
      * referred to as "renewal-timeout".
      *
      * Note that smaller values will result in slightly more server load (as new encrypted cookies will be
@@ -35,11 +43,5 @@ public class AuthCookieConfig {
      * and it is decrypted and parsed with each request.
      */
     @ConfigItem(defaultValue = "PT1M")
-    public Duration newCookieInterval;
-
-    /**
-     * The cookie that is used to store the persistent session
-     */
-    @ConfigItem(defaultValue = "quarkus-credential")
-    public String cookieName;
+    public Duration newTokenInterval;
 }

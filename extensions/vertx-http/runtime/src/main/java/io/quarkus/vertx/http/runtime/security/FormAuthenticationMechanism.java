@@ -36,10 +36,10 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final String landingPage;
     private final boolean redirectAfterLogin;
 
-    private final PersistentLoginManager loginManager;
+    private final DefaultPersistentLoginManager loginManager;
 
     public FormAuthenticationMechanism(String loginPage, String errorPage, String landingPage, boolean redirectAfterLogin,
-            PersistentLoginManager loginManager) {
+            DefaultPersistentLoginManager loginManager) {
         this.loginPage = loginPage;
         this.errorPage = errorPage;
         this.landingPage = landingPage;
@@ -140,7 +140,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
 
-        PersistentLoginManager.RestoreResult result = loginManager.restore(context);
+        DefaultPersistentLoginManager.RestoreResult result = loginManager.restore(context);
         if (result != null) {
             Uni<SecurityIdentity> ret = identityProviderManager
                     .authenticate(new TrustedAuthenticationRequest(result.getPrincipal()));

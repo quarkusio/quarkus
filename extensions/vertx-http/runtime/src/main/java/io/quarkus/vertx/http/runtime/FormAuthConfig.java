@@ -79,7 +79,8 @@ public class FormAuthConfig {
      *
      * @deprecated use quarkus.auth.cookie.cookie-name instead
      */
-    @Deprecated
-    @ConfigItem
-    public Optional<String> cookieName;
+    @ConfigItem(defaultValue = "quarkus-credential")
+    public String cookieName;
+
+
 }

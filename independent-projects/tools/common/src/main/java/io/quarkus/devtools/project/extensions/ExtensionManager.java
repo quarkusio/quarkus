@@ -73,34 +73,34 @@ public interface ExtensionManager {
     UninstallResult uninstall(Collection<AppArtifactKey> keys) throws IOException;
 
     class InstallResult {
-        private final int installed;
+        private final Collection<AppArtifactCoords> installed;
 
-        public InstallResult(int installed) {
+        public InstallResult(Collection<AppArtifactCoords> installed) {
             this.installed = installed;
         }
 
-        public int getInstalled() {
+        public Collection<AppArtifactCoords> getInstalled() {
             return installed;
         }
 
         public boolean isSourceUpdated() {
-            return installed > 0;
+            return installed.size() > 0;
         }
     }
 
     class UninstallResult {
-        private final int uninstalled;
+        private final Collection<AppArtifactKey> uninstalled;
 
-        public UninstallResult(int uninstalled) {
+        public UninstallResult(Collection<AppArtifactKey> uninstalled) {
             this.uninstalled = uninstalled;
         }
 
-        public int getUninstalled() {
+        public Collection<AppArtifactKey> getUninstalled() {
             return uninstalled;
         }
 
         public boolean isSourceUpdated() {
-            return uninstalled > 0;
+            return uninstalled.size() > 0;
         }
 
     }

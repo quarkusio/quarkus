@@ -41,10 +41,10 @@ final class QuarkusCommandHandlers {
                     Set<Extension> candidates = result.getExtensions();
                     if (candidates.isEmpty()) {
                         // No matches at all.
-                        invocation.log().info(nok(" Cannot find a dependency matching '" + query + "', maybe a typo?"));
+                        invocation.log().info(nok("Cannot find a dependency matching '" + query + "', maybe a typo?"));
                         return null;
                     } else {
-                        sb.append(nok(" Multiple extensions matching '")).append(query).append("'");
+                        sb.append(nok("Multiple extensions matching '")).append(query).append("'");
                         result.getExtensions()
                                 .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
                                         .append(extension.managementKey()));

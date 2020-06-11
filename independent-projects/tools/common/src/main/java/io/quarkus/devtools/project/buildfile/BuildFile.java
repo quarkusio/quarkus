@@ -6,6 +6,7 @@ import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 import static java.util.stream.Collectors.toList;
 
+import com.google.common.collect.ImmutableList;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
@@ -19,11 +20,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 
-public abstract class BuildFile<T> implements ExtensionManager {
+public abstract class BuildFile implements ExtensionManager {
 
     private final Path projectFolderPath;
     private final QuarkusPlatformDescriptor platformDescriptor;
@@ -45,20 +45,20 @@ public abstract class BuildFile<T> implements ExtensionManager {
         }
         this.refreshData();
         final Set<AppArtifactKey> existingKeys = getDependenciesKeys();
-        final LongAdder counter = new LongAdder();
+        final ImmutableList.Builder<AppArtifactCoords> installedBuilder = ImmutableList.builder();
         coords.stream()
                 .distinct()
                 .filter(a -> !existingKeys.contains(a.getKey()))
                 .forEach(e -> {
                     try {
                         addDependencyInBuildFile(e);
-                        counter.increment();
+                        installedBuilder.add(e);
                     } catch (IOException ex) {
                         throw new UncheckedIOException(ex);
                     }
                 });
         this.writeToDisk();
-        return new InstallResult(counter.intValue());
+        return new InstallResult(installedBuilder.build());
     }
 
     @Override
@@ -74,20 +74,20 @@ public abstract class BuildFile<T> implements ExtensionManager {
     public final UninstallResult uninstall(Collection<AppArtifactKey> keys) throws IOException {
         this.refreshData();
         final Set<AppArtifactKey> existingKeys = getDependenciesKeys();
-        final LongAdder counter = new LongAdder();
+        final ImmutableList.Builder<AppArtifactKey> uninstalledBuilder = ImmutableList.builder();
         keys.stream()
                 .distinct()
                 .filter(existingKeys::contains)
                 .forEach(k -> {
                     try {
                         removeDependencyFromBuildFile(k);
-                        counter.increment();
+                        uninstalledBuilder.add(k);
                     } catch (IOException ex) {
                         throw new UncheckedIOException(ex);
                     }
                 });
         this.writeToDisk();
-        return new UninstallResult(counter.intValue());
+        return new UninstallResult(uninstalledBuilder.build());
     }
 
     protected abstract void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException;

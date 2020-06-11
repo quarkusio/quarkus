@@ -10,6 +10,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.ExtensionManager.InstallResult;
+import io.quarkus.platform.tools.ConsoleMessageFormats;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,10 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
         try {
             if (extensionsToAdd != null) {
                 final InstallResult result = extensionManager.install(extensionsToAdd);
+                result.getInstalled()
+                        .forEach(a -> invocation.log()
+                                .info(ConsoleMessageFormats.ok("Extension " + a.getGroupId() + ":" + a.getArtifactId())
+                                        + " has been installed"));
                 return new QuarkusCommandOutcome(true).setValue(AddExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
             }
 

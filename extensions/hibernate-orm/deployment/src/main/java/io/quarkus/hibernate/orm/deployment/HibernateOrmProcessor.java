@@ -307,6 +307,7 @@ public final class HibernateOrmProcessor {
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
         final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
+        final boolean jtaPresent = capabilities.isPresent(Capability.TRANSACTIONS);
         //The Hibernate Reactive extension is able to handle registration of PersistenceProviders for both reactive and
         //traditional blocking Hibernate, by depending on this module and delegating to this code.
         //So when the Hibernate Reactive extension is present, trust that it will register its own PersistenceProvider
@@ -371,7 +372,7 @@ public final class HibernateOrmProcessor {
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses,
-                                proxyDefinitions.getProxies(), strategy)));
+                                proxyDefinitions.getProxies(), strategy, jtaPresent)));
     }
 
     private MultiTenancyStrategy getMultiTenancyStrategy() {

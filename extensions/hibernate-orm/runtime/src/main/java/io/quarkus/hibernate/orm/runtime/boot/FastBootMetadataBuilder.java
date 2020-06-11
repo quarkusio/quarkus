@@ -76,7 +76,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -107,13 +107,17 @@ public class FastBootMetadataBuilder {
     private final PreGeneratedProxies preGeneratedProxies;
     private final MultiTenancyStrategy multiTenancyStrategy;
 
+    //JTA is currently required for regular Hibernate ORM, but it's not for Hibernate Reactive.
+    private final boolean jtaPresent;
+
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies,
-            MultiTenancyStrategy strategy) {
+            MultiTenancyStrategy strategy, boolean jtaPresent) {
         this.persistenceUnit = persistenceUnit;
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
+        this.jtaPresent = jtaPresent;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
@@ -128,7 +132,7 @@ public class FastBootMetadataBuilder {
         final BootstrapServiceRegistry bsr = buildBootstrapServiceRegistry(providedClassLoaderService);
 
         // merge configuration sources and build the "standard" service registry
-        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr);
+        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr, jtaPresent);
 
         final MergedSettings mergedSettings = mergeSettings(persistenceUnit);
         this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
@@ -342,7 +346,7 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry(fullMeta);
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy);
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy, jtaPresent);
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {
@@ -379,7 +383,8 @@ public class FastBootMetadataBuilder {
     }
 
     private JtaPlatform extractJtaPlatform() {
-        return QuarkusJtaPlatform.INSTANCE;
+        final QuarkusJtaPlatformInitiator quarkusJtaPlatformInitiator = new QuarkusJtaPlatformInitiator(jtaPresent);
+        return quarkusJtaPlatformInitiator.buildJtaPlatformInstance();
     }
 
     private Dialect extractDialect() {

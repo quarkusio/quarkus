@@ -23,11 +23,12 @@ public final class RecordedState {
     private final IntegrationSettings integrationSettings;
     private final ProxyDefinitions proxyClassDefinitions;
     private final MultiTenancyStrategy multiTenancyStrategy;
+    private final boolean jtaPresent;
 
     public RecordedState(Dialect dialect, JtaPlatform jtaPlatform, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
             Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
-            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy) {
+            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy, boolean jtaPresent) {
         this.dialect = dialect;
         this.jtaPlatform = jtaPlatform;
         this.metadata = metadata;
@@ -37,6 +38,7 @@ public final class RecordedState {
         this.integrationSettings = integrationSettings;
         this.proxyClassDefinitions = classDefinitions;
         this.multiTenancyStrategy = strategy;
+        this.jtaPresent = jtaPresent;
     }
 
     public Dialect getDialect() {
@@ -65,6 +67,10 @@ public final class RecordedState {
 
     public JtaPlatform getJtaPlatform() {
         return jtaPlatform;
+    }
+
+    public boolean isJtaPresent() {
+        return jtaPresent;
     }
 
     public ProxyDefinitions getProxyClassDefinitions() {

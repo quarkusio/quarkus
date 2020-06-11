@@ -5,7 +5,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,7 +48,8 @@ public class SerializedApplication {
         return mainClass;
     }
 
-    public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath)
+    public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
+            List<Path> parentFirst)
             throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
@@ -55,6 +60,15 @@ public class SerializedApplication {
                 String relativePath = relativize(applicationRoot, jar).replace("\\", "/");
                 data.writeUTF(relativePath);
                 writeJar(data, jar);
+            }
+            Set<String> parentFirstPackages = new HashSet<>();
+
+            for (Path jar : parentFirst) {
+                collectPackages(jar, parentFirstPackages);
+            }
+            data.writeInt(parentFirstPackages.size());
+            for (String p : parentFirstPackages) {
+                data.writeUTF(p.replace("/", ".").replace("\\", "."));
             }
             data.flush();
         }
@@ -70,6 +84,7 @@ public class SerializedApplication {
             }
             String mainClass = in.readUTF();
             Map<String, ClassLoadingResource[]> resourceDirectoryMap = new HashMap<>();
+            Set<String> parentFirstPackages = new HashSet<>();
             int numPaths = in.readInt();
             for (int pathCount = 0; pathCount < numPaths; ++pathCount) {
                 String path = in.readUTF();
@@ -94,7 +109,12 @@ public class SerializedApplication {
                     }
                 }
             }
-            return new SerializedApplication(new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap),
+            int packages = in.readInt();
+            for (int i = 0; i < packages; ++i) {
+                parentFirstPackages.add(in.readUTF());
+            }
+            return new SerializedApplication(
+                    new RunnerClassLoader(ClassLoader.getSystemClassLoader(), resourceDirectoryMap, parentFirstPackages),
                     mainClass);
         }
     }
@@ -148,6 +168,51 @@ public class SerializedApplication {
             out.writeInt(dirs.size());
             for (String i : dirs) {
                 out.writeUTF(i);
+            }
+        }
+    }
+
+    private static void collectPackages(Path jar, Set<String> dirs) throws IOException {
+        if (Files.isDirectory(jar)) {
+            //this can only really happen when testing quarkus itself
+            //but is included for completeness
+            Files.walkFileTree(jar, new FileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    dirs.add(jar.relativize(dir).toString());
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } else {
+            try (JarFile zip = new JarFile(jar.toFile())) {
+                Enumeration<? extends ZipEntry> entries = zip.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    if (!entry.isDirectory()) {
+                        //some jars don't have correct  directory entries
+                        //so we look at the file paths instead
+                        //looking at you h2
+                        final int index = entry.getName().lastIndexOf('/');
+                        if (index > 0) {
+                            dirs.add(entry.getName().substring(0, index));
+                        }
+                    }
+                }
             }
         }
     }

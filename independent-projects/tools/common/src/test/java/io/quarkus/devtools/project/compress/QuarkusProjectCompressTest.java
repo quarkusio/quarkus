@@ -11,7 +11,6 @@ import io.quarkus.devtools.commands.CreateProjectTest;
 import io.quarkus.devtools.commands.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
-import io.quarkus.devtools.project.QuarkusProject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,7 +35,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
         final Path projectPath = createProject(testDir);
 
         // When zipping without including the project directory
-        zip(QuarkusProject.resolveExistingProject(projectPath, getPlatformDescriptor()), zip, false);
+        zip(projectPath, zip, false);
         assertTrue(zip.toFile().exists());
 
         // Then the zip content is valid
@@ -57,7 +56,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
         final Path projectPath = createProject(testDir);
 
         // When zipping without including the project directory
-        zip(QuarkusProject.resolveExistingProject(projectPath, getPlatformDescriptor()), zip, true);
+        zip(projectPath, zip, true);
         assertTrue(zip.toFile().exists());
 
         // Then the zip content is valid and included in a parent folder

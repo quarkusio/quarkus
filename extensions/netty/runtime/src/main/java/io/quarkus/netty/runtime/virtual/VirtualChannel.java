@@ -313,7 +313,8 @@ public class VirtualChannel extends AbstractChannel {
                     // It is possible the peer could have closed while we are writing, and in this case we should
                     // simulate real socket behavior and ensure the sendMessage operation is failed.
                     if (peer.isConnected()) {
-                        peer.queue().add(ReferenceCountUtil.retain(msg));
+                        ReferenceCountUtil.retain(msg);
+                        peer.handler.handleMessage(msg);
                         in.remove();
                     } else {
                         if (exception == null) {

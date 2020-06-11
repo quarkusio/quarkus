@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -19,7 +20,11 @@ public class LocalPortAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return Integer.toString(exchange.request().localAddress().port());
+        final SocketAddress localAddr = exchange.request().localAddress();
+        if (localAddr == null) {
+            return null;
+        }
+        return Integer.toString(localAddr.port());
     }
 
     @Override

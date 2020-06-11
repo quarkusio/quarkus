@@ -9,6 +9,7 @@ import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.FixedValueSupplier;
+import io.quarkus.arc.impl.InjectableReferenceProviders;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptorInvocation;
 import io.quarkus.arc.impl.InvocationContexts;
@@ -131,6 +132,10 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy",
             void.class, Object.class,
+            CreationalContext.class);
+
+    public static final MethodDescriptor INJECTABLE_REFERENCE_PROVIDERS_DESTROY = MethodDescriptor.ofMethod(
+            InjectableReferenceProviders.class, "destroy", void.class, InjectableReferenceProvider.class, Object.class,
             CreationalContext.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_RELEASE = MethodDescriptor.ofMethod(CreationalContext.class, "release",

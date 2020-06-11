@@ -23,6 +23,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Intercepted;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Stereotype;
+import javax.enterprise.inject.TransientReference;
 import javax.enterprise.inject.Typed;
 import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.Bean;
@@ -89,6 +90,7 @@ public final class DotNames {
     public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
     public static final DotName TRANSACTION_PHASE = create(TransactionPhase.class);
     public static final DotName INITIALIZED = create(Initialized.class);
+    public static final DotName TRANSIENT_REFERENCE = create(TransientReference.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

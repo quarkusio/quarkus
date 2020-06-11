@@ -125,7 +125,7 @@ class DefaultConsulConfigGateway implements ConsulConfigGateway {
             HttpGet request = new HttpGet(finalUri);
             request.addHeader("Accept", "application/json");
             if (consulConfig.agent.token.isPresent()) {
-                request.addHeader("Authorization", "Bearer " + consulConfig.agent.token);
+                request.addHeader("Authorization", "Bearer " + consulConfig.agent.token.get());
             }
 
             try (CloseableHttpResponse response = client.execute(request)) {

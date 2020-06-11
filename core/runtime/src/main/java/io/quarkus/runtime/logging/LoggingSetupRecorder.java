@@ -284,10 +284,12 @@ public class LoggingSetupRecorder {
             final List<LogCleanupFilterElement> filterElements) {
         FileHandler handler = new FileHandler();
         FileConfig.RotationConfig rotationConfig = config.rotation;
-        if (rotationConfig.maxFileSize.isPresent() && rotationConfig.fileSuffix.isPresent()) {
+        if ((rotationConfig.maxFileSize.isPresent() || rotationConfig.rotateOnBoot)
+                && rotationConfig.fileSuffix.isPresent()) {
             PeriodicSizeRotatingFileHandler periodicSizeRotatingFileHandler = new PeriodicSizeRotatingFileHandler();
             periodicSizeRotatingFileHandler.setSuffix(rotationConfig.fileSuffix.get());
-            periodicSizeRotatingFileHandler.setRotateSize(rotationConfig.maxFileSize.get().asLongValue());
+            rotationConfig.maxFileSize
+                    .ifPresent(memorySize -> periodicSizeRotatingFileHandler.setRotateSize(memorySize.asLongValue()));
             periodicSizeRotatingFileHandler.setRotateOnBoot(rotationConfig.rotateOnBoot);
             periodicSizeRotatingFileHandler.setMaxBackupIndex(rotationConfig.maxBackupIndex);
             handler = periodicSizeRotatingFileHandler;

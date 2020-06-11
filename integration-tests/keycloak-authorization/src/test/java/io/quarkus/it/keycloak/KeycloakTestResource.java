@@ -93,6 +93,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         configureHttpResponseClaimBasedPermission(authorizationSettings);
         configureBodyClaimBasedPermission(authorizationSettings);
         configurePaths(authorizationSettings);
+        configureScopePermission(authorizationSettings);
 
         client.setAuthorizationSettings(authorizationSettings);
 
@@ -106,6 +107,13 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                 "$evaluation.grant();\n" +
                 "}", settings);
         createPermission(settings, createResource(settings, "Permission Resource", "/api/permission"), policy);
+    }
+
+    private static void configureScopePermission(ResourceServerRepresentation settings) {
+        PolicyRepresentation policy = createJSPolicy("Grant Policy", "$evaluation.grant();", settings);
+        createScopePermission(settings,
+                createResource(settings, "Scope Permission Resource", "/api/permission/scope", "read", "write"), policy,
+                "read");
     }
 
     private static void configureClaimBasedPermission(ResourceServerRepresentation settings) {
@@ -166,9 +174,29 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         settings.getPolicies().add(permission);
     }
 
+    private static void createScopePermission(ResourceServerRepresentation settings, ResourceRepresentation resource,
+            PolicyRepresentation policy, String scope) {
+        PolicyRepresentation permission = new PolicyRepresentation();
+
+        permission.setName(resource.getName() + " Permission");
+        permission.setType("scope");
+        permission.setResources(new HashSet<>());
+        permission.getResources().add(resource.getName());
+        permission.setScopes(new HashSet<>());
+        permission.getScopes().add(scope);
+        permission.setPolicies(new HashSet<>());
+        permission.getPolicies().add(policy.getName());
+
+        settings.getPolicies().add(permission);
+    }
+
     private static ResourceRepresentation createResource(ResourceServerRepresentation authorizationSettings, String name,
-            String uri) {
+            String uri, String... scopes) {
         ResourceRepresentation resource = new ResourceRepresentation(name);
+
+        for (String scope : scopes) {
+            resource.addScope(scope);
+        }
 
         if (uri != null) {
             resource.setUris(Collections.singleton(uri));

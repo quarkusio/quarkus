@@ -92,13 +92,19 @@ public class LocalProject {
         final Model rootModel = rootProjectBaseDir == null || rootProjectBaseDir.equals(currentProjectPom.getParent())
                 ? loadRootModel(currentProjectPom)
                 : readModel(rootProjectBaseDir.resolve(POM_XML));
-        return loadWorkspace(currentProjectPom, rootModel);
+        final LocalProject lp = loadWorkspace(currentProjectPom, rootModel);
+        lp.getWorkspace().setBootstrapMavenContext(ctx);
+        return lp;
     }
 
     private static LocalProject loadWorkspace(Path currentProjectPom, Model rootModel) throws BootstrapException {
         final LocalWorkspace ws = new LocalWorkspace();
-        final LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
-        return project == null ? load(ws, null, readModel(currentProjectPom), currentProjectPom.getParent()) : project;
+        LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
+        if (project == null) {
+            project = load(ws, null, readModel(currentProjectPom), currentProjectPom.getParent());
+        }
+        ws.setCurrentProject(project);
+        return project;
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir)

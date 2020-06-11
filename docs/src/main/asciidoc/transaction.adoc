@@ -44,12 +44,12 @@ public class SantaClausService {
     @Inject ChildDAO childDAO;
     @Inject SantaClausDAO santaDAO;
 
-    @Transactional <1>
+    @Transactional // <1>
     public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         Gift gift = childDAO.addToGiftList(child, giftDescription);
         if (gift == null) {
-            throw new OMGGiftNotRecognizedException(); <2>
+            throw new OMGGiftNotRecognizedException(); // <2>
         }
         else {
             santaDAO.addToSantaTodoList(gift);
@@ -89,16 +89,16 @@ Inject a `TransactionManager` for this.
 @ApplicationScoped
 public class SantaClausService {
 
-    @Inject TransactionManager tm; <1>
+    @Inject TransactionManager tm; // <1>
     @Inject ChildDAO childDAO;
     @Inject SantaClausDAO santaDAO;
 
     @Transactional
-    public void getAGiftFromSanta(Child child, String giftDescription) throws Exception {
+    public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         Gift gift = childDAO.addToGiftList(child, giftDescription);
         if (gift == null) {
-            tm.setRollbackOnly(); <2>
+            tm.setRollbackOnly(); // <2>
         }
         else {
             santaDAO.addToSantaTodoList(gift);
@@ -113,7 +113,7 @@ public class SantaClausService {
 
 === Transaction Configuration
 
-Extended configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
+Advanced configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
 
 The `@TransactionConfiguration` annotation allows to set a timeout property, in seconds, that applies to transactions created within the annotated method.
 
@@ -151,11 +151,11 @@ The less easy way is to inject a `UserTransaction` and use the various transacti
 @ApplicationScoped
 public class SantaClausService {
 
-    @Inject ChildDAO childDAO
-    @Inject SantaClausDAO santaDAO
-    @Inject UserTransaction transaction
+    @Inject ChildDAO childDAO;
+    @Inject SantaClausDAO santaDAO;
+    @Inject UserTransaction transaction;
 
-    public void getAGiftFromSanta(Child child, String giftDescription) throws Exception {
+    public void getAGiftFromSanta(Child child, String giftDescription) {
         // some transaction work
         try {
             transaction.begin();

@@ -8,7 +8,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseContext;
@@ -54,15 +53,13 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
                 instance.renderAsync()
                         .whenComplete((r, t) -> {
                             if (t == null) {
-                                Response resp = Response.ok(r, mediaType).build();
                                 // make sure we avoid setting a null media type because that causes
                                 // an NPE further down
-                                if (resp.getMediaType() != null) {
-                                    ctx.setEntity(resp.getEntity(), null, resp.getMediaType());
+                                if (mediaType != null) {
+                                    ctx.setEntity(r, null, mediaType);
                                 } else {
-                                    ctx.setEntity(resp.getEntity());
+                                    ctx.setEntity(r);
                                 }
-                                ctx.setStatus(resp.getStatus());
                                 ctx.resume();
                             } else {
                                 ctx.resume(t);

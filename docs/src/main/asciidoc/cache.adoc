@@ -282,6 +282,7 @@ Loads a method result from the cache without executing the method body whenever 
 
 When a method annotated with `@CacheResult` is invoked, Quarkus will compute a cache key and use it to check in the cache whether the method has been already invoked.
 If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
+Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
 This annotation can also be used on a method with no arguments, a default key derived from the cache name is generated in that case.
 If a value is found in the cache, it is returned and the annotated method is never actually executed.
 If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed or generated key.
@@ -328,7 +329,7 @@ Caffeine is a high performance, near optimal caching library.
 === Caffeine configuration properties
 
 Each of the Caffeine caches backing up the Quarkus application data caching extension can be configured using the following
-properties in the `application.properties` file.
+properties in the `application.properties` file. By default caches do not perform any type of eviction if not configured.
 
 [TIP]
 ====
@@ -485,4 +486,3 @@ public class CachedService {
 ----
 <1> This method can be used to force a refresh of the cache entry corresponding to the given key. 
 <2> This method will invalidate all entries from the `foo` and `bar` caches with a single call.
-

@@ -450,7 +450,8 @@ public class JandexUtil {
                     String binaryName = argsSignature.substring(i + 1, end);
                     // arrays take the entire signature
                     if (dimensions > 0) {
-                        args.add(Type.create(DotName.createSimple(argsSignature.substring(start, end + 1)), Kind.ARRAY));
+                        args.add(Type.create(DotName.createSimple(argsSignature.substring(start, end + 1).replace('/', '.')),
+                                Kind.ARRAY));
                         dimensions = 0;
                     } else {
                         // class names take only the binary name

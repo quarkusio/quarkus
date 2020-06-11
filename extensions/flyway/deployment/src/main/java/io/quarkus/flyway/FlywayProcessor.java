@@ -3,6 +3,7 @@ package io.quarkus.flyway;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -27,6 +28,9 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Default;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.migration.JavaMigration;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
@@ -42,9 +46,13 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
@@ -56,6 +64,8 @@ class FlywayProcessor {
     private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
+
+    private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
 
@@ -73,11 +83,19 @@ class FlywayProcessor {
                         new ScannerTransformer()));
     }
 
+    @BuildStep
+    IndexDependencyBuildItem indexFlyway() {
+        return new IndexDependencyBuildItem("org.flywaydb", "flyway-core");
+    }
+
     @Record(STATIC_INIT)
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             FlywayRecorder recorder,
+            RecorderContext context,
+            CombinedIndexBuildItem combinedIndexBuildItem,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) throws IOException, URISyntaxException {
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.FLYWAY));
@@ -87,7 +105,23 @@ class FlywayProcessor {
         List<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
+        Set<Class<?>> javaMigrationClasses = new HashSet<>();
+        addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
+                reflectiveClassProducer, javaMigrationClasses);
+        recorder.setApplicationMigrationClasses(javaMigrationClasses);
+
         resourceProducer.produce(new NativeImageResourceBuildItem(applicationMigrations.toArray(new String[0])));
+    }
+
+    private void addJavaMigrations(Collection<ClassInfo> candidates, RecorderContext context,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer, Set<Class<?>> javaMigrationClasses) {
+        for (ClassInfo javaMigration : candidates) {
+            if (Modifier.isAbstract(javaMigration.flags())) {
+                continue;
+            }
+            javaMigrationClasses.add(context.classProxy(javaMigration.name().toString()));
+            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, javaMigration.name().toString()));
+        }
     }
 
     @BuildStep

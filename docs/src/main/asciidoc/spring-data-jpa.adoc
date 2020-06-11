@@ -444,7 +444,7 @@ package org.acme.spring.data.jpa;
 
 import org.springframework.data.repository.Repository;
 
-public class PersonRepository extends Repository<Person, Long> {
+public interface PersonRepository extends Repository<Person, Long> {
 
     Person save(Person entity);
 

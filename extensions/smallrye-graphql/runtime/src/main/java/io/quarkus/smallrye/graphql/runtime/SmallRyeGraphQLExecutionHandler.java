@@ -12,6 +12,7 @@ import javax.json.JsonReader;
 import javax.json.JsonWriter;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.smallrye.graphql.execution.ExecutionService;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -35,6 +36,20 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
 
     @Override
     public void handle(final RoutingContext ctx) {
+        ManagedContext requestContext = Arc.container().requestContext();
+        if (requestContext.isActive()) {
+            doHandle(ctx);
+        } else {
+            try {
+                requestContext.activate();
+                doHandle(ctx);
+            } finally {
+                requestContext.terminate();
+            }
+        }
+    }
+
+    private void doHandle(final RoutingContext ctx) {
         HttpServerRequest request = ctx.request();
         HttpServerResponse response = ctx.response();
 

@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+rootProject.name = 'quarkus-custom-filesystem-provider'
+
+include ':common'
+include ':custom-filesystem-provider'
+include ':application'
+

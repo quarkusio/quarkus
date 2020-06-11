@@ -1,5 +1,6 @@
 package io.quarkus.it.qute;
 
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import org.junit.jupiter.api.Test;
@@ -19,4 +20,10 @@ public class QuteTestCase {
 
     }
 
+    @Test
+    public void testNotFoundPageStatusCode() {
+        RestAssured.when().get("/not-exists").then()
+                .body(containsString("Not Found!"))
+                .statusCode(NOT_FOUND.getStatusCode());
+    }
 }

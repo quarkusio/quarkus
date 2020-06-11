@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-elytron-security-common</artifactId>
     <name>Quarkus - Elytron Security - Common - Runtime</name>
+    <description>Common components to secure your applications via Elytron</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

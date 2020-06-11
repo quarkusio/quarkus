@@ -108,7 +108,7 @@ public class MySQLPoolRecorder {
                 mysqlConnectOptions.setUser(user);
             }
             if (password != null) {
-                mysqlConnectOptions.setPassword(user);
+                mysqlConnectOptions.setPassword(password);
             }
         }
 

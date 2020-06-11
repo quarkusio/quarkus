@@ -18,7 +18,7 @@ Cypher is used to for both querying the graph and creating or updating nodes and
 As a declarative language it used to tell the database what to do and not how to do it.
 
 NOTE: Learn more about Cypher in the https://neo4j.com/docs/cypher-manual/current/[Neo4j Cypher manual].
-      Cypher is not only availabe in Neo4j, but for example coming to https://github.com/opencypher/morpheus[Apache Spark].
+      Cypher is not only available in Neo4j, but for example coming to https://github.com/opencypher/morpheus[Apache Spark].
       A spec called http://www.opencypher.org[OpenCypher] is available, too.
 
 Clients communicate over the so called Bolt protocol with the database.

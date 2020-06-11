@@ -166,6 +166,10 @@ public class BootstrapMavenContext {
                 ModelUtils.getVersion(model));
     }
 
+    public LocalProject getCurrentProject() {
+        return currentProject;
+    }
+
     public LocalWorkspace getWorkspace() {
         return workspace;
     }
@@ -626,7 +630,6 @@ public class BootstrapMavenContext {
     }
 
     private Path resolveCurrentPom() {
-
         Path alternatePom = null;
         // explicitly set absolute path has a priority
         if (alternatePomName != null) {

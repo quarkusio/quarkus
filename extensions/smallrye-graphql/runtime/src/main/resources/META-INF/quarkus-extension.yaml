@@ -9,4 +9,5 @@ metadata:
   - "web"
   categories:
   - "web"
+  guide: "https://quarkus.io/guides/microprofile-graphql"
   status: "preview"

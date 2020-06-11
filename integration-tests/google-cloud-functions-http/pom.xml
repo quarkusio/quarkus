@@ -9,11 +9,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-    </properties>
-
     <artifactId>quarkus-integration-test-google-cloud-functions-http</artifactId>
     <name>Quarkus - Integration Tests - Google Cloud Functions HTTP</name>
 

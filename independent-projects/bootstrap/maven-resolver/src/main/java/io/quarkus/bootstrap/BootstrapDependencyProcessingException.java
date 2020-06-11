@@ -1,10 +1,12 @@
 package io.quarkus.bootstrap;
 
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+
 /**
  *
  * @author Alexey Loubyansky
  */
-public class BootstrapDependencyProcessingException extends BootstrapException {
+public class BootstrapDependencyProcessingException extends BootstrapMavenException {
 
     /**
      *

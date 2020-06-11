@@ -147,10 +147,11 @@ tests while having the application running in parallel.
 [TIP]
 .Changing the test port
 ====
-You can configure the port used by tests by configuring `quarkus.http.test-port` in your `application.properties`:
+You can configure the ports used by tests by configuring `quarkus.http.test-port` for HTTP and `quarkus.http.test-ssl-port` for HTTPS in your `application.properties`:
 [source]
 ----
 quarkus.http.test-port=8083
+quarkus.http.test-ssl-port=8446
 ----
 `0` will result in the use of a random port (assigned by the operating system).
 ====

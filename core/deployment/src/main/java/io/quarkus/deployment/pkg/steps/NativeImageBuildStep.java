@@ -373,7 +373,7 @@ public class NativeImageBuildStep {
                 String trimmedBuildArg = buildArg.trim();
                 if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && isContainerBuild) {
                     /*
-                     * When the native binary is being built with a docker container, because a volume is create,
+                     * When the native binary is being built with a docker container, because a volume is created,
                      * we need to copy the trustStore file into the output directory (which is the root of volume)
                      * and change the value of 'javax.net.ssl.trustStore' property to point to this value
                      *

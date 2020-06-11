@@ -84,8 +84,8 @@ As long as you have one of those extensions in your project, the SSL support wil
 
 Now, let's just check the size of our native executable as it will be useful later:
 ```
-$ ls -lh target/rest-client-1.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gsmet gsmet 34M Feb 22 15:27 target/rest-client-1.0-SNAPSHOT-runner
+$ ls -lh target/rest-client-quickstart-1.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 46M Jun 11 13:01 target/rest-client-quickstart-1.0-SNAPSHOT-runner
 ```
 
 == Let's disable SSL and see how it goes
@@ -138,11 +138,11 @@ And we end up with:
 You remember we checked the size of the native executable with SSL enabled?
 Let's check again with SSL support entirely disabled:
 ```
-$ ls -lh target/rest-client-1.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gsmet gsmet 25M Feb 22 15:19 target/rest-client-1.0-SNAPSHOT-runner
+$ ls -lh target/rest-client-quickstart-1.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0-SNAPSHOT-runner
 ```
 
-Yes, it is now **25 MB** whereas it used to be **34 MB**. SSL comes with a 9 MB overhead in native executable size.
+Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with a 11 MB overhead in native executable size.
 
 And there's more to it.
 
@@ -161,71 +161,36 @@ And let's build the native executable again:
 [#the-truststore-path]
 == The TrustStore path
 
-You haven't noticed anything but, while building the image,
-Quarkus has automatically set `javax.net.ssl.trustStore` to point to the `cacerts` file bundled in the GraalVM distribution.
-This file contains the root certificates.
-
-This is useful when running tests but, obviously, it is not portable as this path is hardcoded.
-
-You can check that pretty easily:
-
- * move your GraalVM directory to another place (let's call it `<new-graalvm-home>`)
- * run the native executable `./target/rest-client-1.0-SNAPSHOT-runner`
- * in a browser, go to `http://localhost:8080/country/name/greece`
- * you will have an Internal Server Error
- * in your terminal, you should have an exception: `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty`
- * hit `Ctrl+C` to stop the application
-
-To make it work, you need to manually set `javax.net.ssl.trustStore` to point to the new GraalVM home:
-```
-./target/rest-client-1.0-SNAPSHOT-runner -Djavax.net.ssl.trustStore=<new-graalvm-home>/jre/lib/security/cacerts
-```
-
-Now, the application should work as expected:
-
- * in a browser, go to `http://localhost:8080/country/name/greece`
- * you should see a JSON output with some information about Greece
- * hit `Ctrl+C` to stop the application
-
-[TIP]
-====
-The root certificates file of GraalVM might not be totally up to date.
-If you have issues with some certificates, your best bet is to include the `cacerts` file of a regular JDK instead.
-====
-
 [WARNING]
 ====
-Don't forget to move your GraalVM directory back to where it was.
+This behavior is new to GraalVM 19.3+.
+====
+
+When creating a native binary, GraalVM embraces the principle of "immutable security" for the root certificates.
+This essentially means that the root certificates are fixed at image build time, based on the certificate configuration used at that build time
+(which for Quarkus means when you perform a build having `quarkus.package.type=native` set).
+This avoids shipping a `cacerts` file or requiring a system property be set in order to set up root
+certificates that are provided by the OS where the binary runs.
+
+As a consequence, system properties such as `javax.net.ssl.trustStore` do not have an effect at
+run time, so when the defaults need to be changed, these system properties must be provided at image build time.
+The easiest way to do so is by setting `quarkus.native.additional-build-args`. For example:
+
+```
+quarkus.native.additional-build-args=-J-Djavax.net.ssl.trustStore=/tmp/mycerts,-J-Djavax.net.ssl.trustStorePassword=changeit
+```
+
+will ensure that the certificates of `/tmp/mycerts` are baked into the native binary and used *in addition* to the default cacerts.
+
+[IMPORTANT]
+====
+The file containing the custom TrustStore does *not* have to be present at runtime as its content has been baked into the native binary.
 ====
 
 === Working with containers
 
-When working with containers, the idea is to bundle the certificates in the container and to point your binary to them using the system property mentioned above.
-
-You can for example modify your `Dockerfile.native` as follows to copy the required files to your final image:
-
-[source, subs=attributes+]
-----
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} as nativebuilder
-RUN mkdir -p /tmp/ssl \
-  && cp /opt/graalvm/lib/security/cacerts /tmp/ssl/
-
-FROM registry.access.redhat.com/ubi8/ubi-minimal
-WORKDIR /work/
-COPY --from=nativebuilder /tmp/ssl/ /work/
-COPY target/*-runner /work/application
-
-# set up permissions for user `1001`
-RUN chmod 775 /work /work/application \
-  && chown -R 1001 /work \
-  && chmod -R "g+rwX" /work \
-  && chown -R 1001:root /work
-
-EXPOSE 8080
-USER 1001
-
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djavax.net.ssl.trustStore=/work/cacerts"]
-----
+No special action needs to be taken when running the native binary in a container. If the native binary was properly built with the custom TrustStore
+as described in the previous section, it will work properly in container as well.
 
 == Conclusion
 

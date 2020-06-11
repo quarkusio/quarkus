@@ -69,6 +69,26 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     @Test
+    void addExtensionWithGroupIdAndArtifactId() throws Exception {
+        createProject();
+
+        final QuarkusCommandOutcome result = addExtensions(Collections.singletonList("io.quarkus:quarkus-agroal"));
+
+        final T project = readProject();
+        hasDependency(project, "io.quarkus", "quarkus-agroal", null);
+    }
+
+    @Test
+    void addExtensionWithGAV() throws Exception {
+        createProject();
+
+        final QuarkusCommandOutcome result = addExtensions(Collections.singletonList("io.quarkus:quarkus-agroal:2.5"));
+
+        final T project = readProject();
+        hasDependency(project, "io.quarkus", "quarkus-agroal", "2.5");
+    }
+
+    @Test
     void addMissingExtension() throws Exception {
         createProject();
 

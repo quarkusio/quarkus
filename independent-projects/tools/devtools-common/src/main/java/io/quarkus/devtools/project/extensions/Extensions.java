@@ -25,6 +25,10 @@ public final class Extensions {
         return list.stream().filter(e -> Objects.equals(toCoords(e).getKey(), key)).findFirst();
     }
 
+    public static AppArtifactCoords toCoords(final AppArtifactKey k, final String version) {
+        return new AppArtifactCoords(k, version);
+    }
+
     public static AppArtifactCoords toCoords(final Extension e) {
         return toCoords(e.toDependency(false));
     }

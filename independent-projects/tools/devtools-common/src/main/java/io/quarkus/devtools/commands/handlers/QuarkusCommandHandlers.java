@@ -1,8 +1,10 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
 import static io.quarkus.platform.tools.ConsoleMessageFormats.nok;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
@@ -15,6 +17,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 final class QuarkusCommandHandlers {
 
@@ -25,7 +28,10 @@ final class QuarkusCommandHandlers {
             final Set<String> extensionsQuery) {
         final ArrayList<AppArtifactCoords> builder = new ArrayList<>();
         for (String query : extensionsQuery) {
-            if (query.contains(":")) {
+            final int countColons = StringUtils.countMatches(query, ":");
+            if (countColons == 1) {
+                builder.add(toCoords(AppArtifactKey.fromString(query), null));
+            } else if (countColons > 1) {
                 builder.add(AppArtifactCoords.fromString(query));
             } else {
                 SelectionResult result = select(query, invocation.getPlatformDescriptor().getExtensions(), false);

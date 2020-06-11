@@ -9,11 +9,11 @@ include::./attributes.adoc[]
 :extension-status: preview
 
 Quarkus Funqy is part of Quarkus's serverless strategy and aims to provide a portable Java API to write functions
-deployable to various FaaS environments like AWS Lambda, Azure Functions, Knative, and Knative events.  It is also
-usable outside of FaaS in more traditional environments.
+deployable to various FaaS environments like AWS Lambda, Azure Functions, Knative, and Knative Events (Cloud Events).  It is also
+usable as a standalone service.
 
-Another goal of Funqy is to create a remoting, RPC framework that is as small and optimized as possible for the
-Quarkus runtime.  This means sacrificing on flexibility to provide a runtime that has little to no overhead.  Funqy
+Another goal of Funqy is to create an RPC framework that is as small and as optimized as possible for the
+Quarkus runtime.  This means sacrificing a little bit on flexibility to provide a runtime that has little to no overhead.  Funqy
 should never become more complicated than you see in this initial doc.
 
 == Funqy Basics
@@ -34,7 +34,11 @@ public class GreetingFunction {
 ----
 
 Java classes can also be used as input and output and must follow the Java bean convention and have
-a default constructor.
+a default constructor.  The Java type that is declared as the parameter or return type is the type that will be
+expected by the Funqy runtime.  Funqy does type introspection at build time to speed up boot time, so any derived types
+will not be noticed by the Funqy marshalling layer at runtime.
+
+Here's an example of using a POJO as input and output types.
 
 [source, java]
 ----
@@ -59,6 +63,25 @@ public class GreetingFunction {
     @Funq
     public Greeting greet(Friend friend) {
        return new Greeting("Hello " + friend.getName());
+    }
+}
+----
+
+== Async Reactive Types
+
+Funqy supports the https://smallrye.io/smallrye-mutiny[Smallrye Mutiny] `Uni` reactive type as a return type.  The only requirement is that
+the `Uni` must fill out the generic type.
+
+[source, java]
+----
+import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
+
+public class GreetingFunction {
+
+    @Funq
+    public Uni<Greeting> reactiveGreeting(String name) {
+       ...
     }
 }
 ----
@@ -112,8 +135,8 @@ public class GreetingFunction {
 
 == Context injection
 
-You can inject contextual information that is specific to the Funqy runtime (lambda, azure, etc.)
-you are deploying.
+You can inject contextual information that is specific to the Funqy runtime or specific to the
+Funqy binding you are using (lambda, azure, cloud events, etc.).
 
 NOTE: We do not recommend injecting contextual information specific to a runtime.  Keep your functions portable.
 

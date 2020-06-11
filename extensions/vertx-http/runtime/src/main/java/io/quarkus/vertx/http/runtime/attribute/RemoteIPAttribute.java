@@ -21,6 +21,9 @@ public class RemoteIPAttribute implements ExchangeAttribute {
     @Override
     public String readAttribute(final RoutingContext exchange) {
         final SocketAddress sourceAddress = exchange.request().remoteAddress();
+        if (sourceAddress == null) {
+            return null;
+        }
         return sourceAddress.host();
     }
 

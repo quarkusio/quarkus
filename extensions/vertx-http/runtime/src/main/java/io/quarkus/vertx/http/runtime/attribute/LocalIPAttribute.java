@@ -20,6 +20,9 @@ public class LocalIPAttribute implements ExchangeAttribute {
     @Override
     public String readAttribute(final RoutingContext exchange) {
         SocketAddress localAddress = exchange.request().localAddress();
+        if (localAddress == null) {
+            return null;
+        }
         return localAddress.host();
     }
 

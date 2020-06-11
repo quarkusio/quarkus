@@ -21,10 +21,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.apache.http.ProtocolVersion;
+import org.apache.http.params.CoreProtocolPNames;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -40,6 +43,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
+import io.restassured.specification.RequestSpecification;
 
 /**
  * Tests writing the access log to a file
@@ -90,7 +97,13 @@ public class AccessLogFileTestCase {
 
     @Test
     public void testSingleLogMessageToFile() throws IOException, InterruptedException {
-        RestAssured.get("/does-not-exist?foo=bar");
+        // issue the request with a specific HTTP protocol version, so that we can then verify
+        // the protocol value logged in the access log file
+        final RestAssuredConfig http10Config = RestAssured.config().httpClient(
+                new HttpClientConfig().setParam(CoreProtocolPNames.PROTOCOL_VERSION, new ProtocolVersion("HTTP", 1, 0)));
+        final RequestSpecification requestSpec = new RequestSpecBuilder().setConfig(http10Config).build();
+        final String paramValue = UUID.randomUUID().toString();
+        RestAssured.given(requestSpec).get("/does-not-exist?foo=" + paramValue);
 
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
@@ -105,10 +118,12 @@ public class AccessLogFileTestCase {
                         String data = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
                         Assertions.assertTrue(data.contains("404"));
                         Assertions.assertTrue(data.contains("/does-not-exist"));
-                        Assertions.assertTrue(data.contains("?foo=bar"),
+                        Assertions.assertTrue(data.contains("?foo=" + paramValue),
                                 "access log is missing query params");
-                        Assertions.assertFalse(data.contains("?foo=bar?foo=bar"),
+                        Assertions.assertFalse(data.contains("?foo=" + paramValue + "?foo=" + paramValue),
                                 "access log contains duplicated query params");
+                        Assertions.assertTrue(data.contains("HTTP/1.0"),
+                                "HTTP/1.0 protocol value is missing in the access log");
                     }
                 });
     }

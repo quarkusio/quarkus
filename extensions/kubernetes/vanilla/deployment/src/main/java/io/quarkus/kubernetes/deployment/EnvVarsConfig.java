@@ -35,4 +35,11 @@ public class EnvVarsConfig {
      */
     @ConfigItem
     Map<String, String> vars;
+
+    /**
+     * The map recording the configuration of environment variable taking their value from resource (Secret or
+     * ConfigMap) keys
+     */
+    @ConfigItem
+    Map<String, EnvVarFromKeyConfig> mapping;
 }

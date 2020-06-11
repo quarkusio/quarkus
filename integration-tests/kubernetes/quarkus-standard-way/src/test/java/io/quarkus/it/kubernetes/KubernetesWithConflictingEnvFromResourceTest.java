@@ -15,20 +15,17 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithConflictingEnvTest {
-    private static final String APPLICATION_NAME = "conflicting";
-
+public class KubernetesWithConflictingEnvFromResourceTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName(APPLICATION_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .assertBuildException(e -> assertThat(e)
                     .isInstanceOf(RuntimeException.class)
                     .hasCauseInstanceOf(BuildException.class)
                     .hasMessageContaining(
-                            "- 'envvar': first defined as 'envvar' env var with value 'value' redefined as 'envvar' env var with value from field 'field'"))
-            .withConfigurationResource("kubernetes-with-" + APPLICATION_NAME + "-env.properties");
+                            "'db-password' env var can't simultaneously take its value from 'db-configmap' configmap & 'db-secret' secret"))
+            .withConfigurationResource("kubernetes-with-conflicting-env-from-resource.properties");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

@@ -96,7 +96,9 @@ jobs:
     name: JDK ${{matrix.java.name}} JVM Tests
     runs-on: ubuntu-latest
     needs: build-jdk11
-    timeout-minutes: 120
+    timeout-minutes: 130
+    env:
+      MAVEN_OPTS: -Xmx2048m
     strategy:
       fail-fast: false
       matrix:

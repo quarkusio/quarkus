@@ -20,15 +20,10 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.Escaper;
-import io.quarkus.qute.Expression;
 import io.quarkus.qute.NamespaceResolver;
-import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
-import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
-import io.quarkus.qute.TemplateNode.Origin;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
@@ -76,21 +71,7 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.rawResolver());
 
         // Escape some characters for HTML templates
-        Escaper htmlEscaper = Escaper.builder().add('"', "&quot;").add('\'', "&#39;")
-                .add('&', "&amp;").add('<', "&lt;").add('>', "&gt;").build();
-        builder.addResultMapper(new ResultMapper() {
-
-            @Override
-            public boolean appliesTo(Origin origin, Object result) {
-                return !(result instanceof RawString)
-                        && origin.getVariant().filter(EngineProducer::requiresDefaultEscaping).isPresent();
-            }
-
-            @Override
-            public String map(Object result, Expression expression) {
-                return htmlEscaper.escape(result.toString());
-            }
-        });
+        builder.addResultMapper(new HtmlEscaper());
 
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());
@@ -195,12 +176,6 @@ public class EngineProducer {
             return new Variant(null, TemplateProducer.parseMediaType(suffix), null);
         }
         return null;
-    }
-
-    static boolean requiresDefaultEscaping(Variant variant) {
-        return variant.mediaType != null
-                ? (Variant.TEXT_HTML.equals(variant.mediaType) || Variant.TEXT_XML.equals(variant.mediaType))
-                : false;
     }
 
     static class ResourceTemplateLocation implements TemplateLocation {

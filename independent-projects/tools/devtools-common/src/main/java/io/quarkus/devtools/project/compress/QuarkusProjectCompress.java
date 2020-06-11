@@ -42,7 +42,8 @@ public final class QuarkusProjectCompress {
                         try {
                             String entryName = quarkusProjectFolderPath.relativize(path).toString().replace('\\', '/');
                             if (includeProjectFolder) {
-                                entryName = quarkusProjectFolderPath.getFileName() + "/" + entryName;
+                                entryName = quarkusProjectFolderPath.getFileName()
+                                        + (entryName.length() == 0 ? "" : "/" + entryName);
                             }
                             int unixMode;
                             if (Files.isDirectory(path)) {

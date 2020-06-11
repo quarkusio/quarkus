@@ -9,44 +9,44 @@ import java.nio.file.Path;
 
 public final class QuarkusProject {
 
-    private final Path projectFolderPath;
+    private final Path projectDirPath;
     private final QuarkusPlatformDescriptor platformDescriptor;
     private final ExtensionManager extensionManager;
 
-    private QuarkusProject(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+    private QuarkusProject(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor,
             final ExtensionManager extensionManager) {
-        this.projectFolderPath = requireNonNull(projectFolderPath, "projectFolderPath is required");
+        this.projectDirPath = requireNonNull(projectDirPath, "projectDirPath is required");
         this.platformDescriptor = requireNonNull(platformDescriptor, "platformDescriptor is required");
         this.extensionManager = requireNonNull(extensionManager, "extensionManager is required");
     }
 
-    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+    public static QuarkusProject of(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor,
             final ExtensionManager extensionManager) {
-        return new QuarkusProject(projectFolderPath, platformDescriptor, extensionManager);
+        return new QuarkusProject(projectDirPath, platformDescriptor, extensionManager);
     }
 
-    public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+    public static QuarkusProject of(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor,
             final BuildTool buildTool) {
-        return new QuarkusProject(projectFolderPath, platformDescriptor,
-                buildTool.createExtensionManager(projectFolderPath, platformDescriptor));
+        return new QuarkusProject(projectDirPath, platformDescriptor,
+                buildTool.createExtensionManager(projectDirPath, platformDescriptor));
     }
 
-    public static QuarkusProject maven(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        return new QuarkusProject(projectFolderPath, platformDescriptor,
-                new MavenBuildFile(projectFolderPath, platformDescriptor));
+    public static QuarkusProject maven(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        return new QuarkusProject(projectDirPath, platformDescriptor,
+                new MavenBuildFile(projectDirPath, platformDescriptor));
     }
 
-    public static QuarkusProject resolveExistingProject(final Path projectFolderPath,
+    public static QuarkusProject resolveExistingProject(final Path projectDirPath,
             final QuarkusPlatformDescriptor descriptor) {
-        final BuildTool buildTool = resolveExistingProjectBuildTool(projectFolderPath);
+        final BuildTool buildTool = resolveExistingProjectBuildTool(projectDirPath);
         if (buildTool == null) {
             throw new IllegalStateException("This is neither a Maven or Gradle project");
         }
-        return of(projectFolderPath, descriptor, buildTool);
+        return of(projectDirPath, descriptor, buildTool);
     }
 
-    public Path getProjectFolderPath() {
-        return projectFolderPath;
+    public Path getProjectDirPath() {
+        return projectDirPath;
     }
 
     public BuildTool getBuildTool() {
@@ -61,11 +61,11 @@ public final class QuarkusProject {
         return platformDescriptor;
     }
 
-    public static BuildTool resolveExistingProjectBuildTool(Path projectFolderPath) {
-        if (projectFolderPath.resolve("pom.xml").toFile().exists()) {
+    public static BuildTool resolveExistingProjectBuildTool(Path projectDirPath) {
+        if (projectDirPath.resolve("pom.xml").toFile().exists()) {
             return BuildTool.MAVEN;
-        } else if (projectFolderPath.resolve("build.gradle").toFile().exists()
-                || projectFolderPath.resolve("build.gradle.kts").toFile().exists()) {
+        } else if (projectDirPath.resolve("build.gradle").toFile().exists()
+                || projectDirPath.resolve("build.gradle.kts").toFile().exists()) {
             return BuildTool.GRADLE;
         }
         return null;

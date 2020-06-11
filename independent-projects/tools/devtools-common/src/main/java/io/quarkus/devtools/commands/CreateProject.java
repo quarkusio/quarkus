@@ -38,15 +38,15 @@ public class CreateProject {
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
-    private final Path projectFolderPath;
+    private final Path projectDirPath;
     private final QuarkusPlatformDescriptor platformDescr;
     private String javaTarget;
     private BuildTool buildTool = BuildTool.MAVEN;
 
     private Map<String, Object> values = new HashMap<>();
 
-    public CreateProject(final Path projectFolderPath, QuarkusPlatformDescriptor platformDescr) {
-        this.projectFolderPath = requireNonNull(projectFolderPath, "projectFolderPath is required");
+    public CreateProject(final Path projectDirPath, QuarkusPlatformDescriptor platformDescr) {
+        this.projectDirPath = requireNonNull(projectDirPath, "projectDirPath is required");
         this.platformDescr = requireNonNull(platformDescr, "platformDescr is required");
     }
 
@@ -130,7 +130,7 @@ public class CreateProject {
             setValue(JAVA_TARGET, "11");
         }
 
-        final QuarkusProject quarkusProject = QuarkusProject.of(projectFolderPath, platformDescr, buildTool);
+        final QuarkusProject quarkusProject = QuarkusProject.of(projectDirPath, platformDescr, buildTool);
         final QuarkusCommandInvocation invocation = new QuarkusCommandInvocation(quarkusProject, values);
         return new CreateProjectCommandHandler().execute(invocation);
     }

@@ -59,7 +59,7 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
         zip(projectPath, zip, true);
         assertTrue(zip.toFile().exists());
 
-        // Then the zip content is valid and included in a parent folder
+        // Then the zip content is valid and included in a parent directory
         final Path unzipProject = testDir.resolve("unzipProject");
         unzip(zip, unzipProject);
 

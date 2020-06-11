@@ -23,8 +23,8 @@ public class MavenBuildFile extends BuildFile {
 
     private AtomicReference<Model> modelRef = new AtomicReference<>();
 
-    public MavenBuildFile(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectFolderPath, platformDescriptor);
+    public MavenBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        super(projectDirPath, platformDescriptor);
     }
 
     @Override

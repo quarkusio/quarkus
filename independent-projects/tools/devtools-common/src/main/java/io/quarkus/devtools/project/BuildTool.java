@@ -52,14 +52,14 @@ public enum BuildTool {
         return buildDirectory;
     }
 
-    public ExtensionManager createExtensionManager(final Path projectFolderPath,
+    public ExtensionManager createExtensionManager(final Path projectDirPath,
             final QuarkusPlatformDescriptor platformDescriptor) {
         switch (this) {
             case GRADLE:
                 return new GenericGradleBuildFile();
             case MAVEN:
             default:
-                return new MavenBuildFile(projectFolderPath, platformDescriptor);
+                return new MavenBuildFile(projectDirPath, platformDescriptor);
         }
     }
 }

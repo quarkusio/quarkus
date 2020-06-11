@@ -63,8 +63,8 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
 
     static class TestingGradleBuildFile extends AbstractGradleBuildFile {
 
-        public TestingGradleBuildFile(Path projectFolderPath, QuarkusPlatformDescriptor platformDescriptor) {
-            super(projectFolderPath, platformDescriptor);
+        public TestingGradleBuildFile(Path projectDirPath, QuarkusPlatformDescriptor platformDescriptor) {
+            super(projectDirPath, platformDescriptor);
         }
 
         @Override

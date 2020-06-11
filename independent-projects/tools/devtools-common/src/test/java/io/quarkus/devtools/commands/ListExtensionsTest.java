@@ -186,13 +186,13 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
     private QuarkusProject createNewProject(final File pom) throws IOException, QuarkusCommandException {
         CreateProjectTest.delete(pom.getParentFile());
-        final Path projectFolderPath = pom.getParentFile().toPath();
-        new CreateProject(projectFolderPath, getPlatformDescriptor())
+        final Path projectDirPath = pom.getParentFile().toPath();
+        new CreateProject(projectDirPath, getPlatformDescriptor())
                 .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .execute();
-        return QuarkusProject.maven(projectFolderPath, getPlatformDescriptor());
+        return QuarkusProject.maven(projectDirPath, getPlatformDescriptor());
     }
 
     private static Map<AppArtifactKey, AppArtifactCoords> readByKey(QuarkusProject project) throws IOException {

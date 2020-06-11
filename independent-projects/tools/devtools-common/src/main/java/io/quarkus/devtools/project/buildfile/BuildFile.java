@@ -24,11 +24,11 @@ import org.apache.maven.model.Dependency;
 
 public abstract class BuildFile implements ExtensionManager {
 
-    private final Path projectFolderPath;
+    private final Path projectDirPath;
     private final QuarkusPlatformDescriptor platformDescriptor;
 
-    public BuildFile(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        this.projectFolderPath = requireNonNull(projectFolderPath, "projectPath is required");
+    public BuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        this.projectDirPath = requireNonNull(projectDirPath, "projectPath is required");
         this.platformDescriptor = requireNonNull(platformDescriptor, "platformDescriptor is required");
     }
 
@@ -101,22 +101,22 @@ public abstract class BuildFile implements ExtensionManager {
 
     protected abstract void refreshData();
 
-    protected Path getProjectFolderPath() {
-        return projectFolderPath;
+    protected Path getProjectDirPath() {
+        return projectDirPath;
     }
 
     protected boolean hasProjectFile(final String fileName) throws IOException {
-        final Path filePath = projectFolderPath.resolve(fileName);
+        final Path filePath = projectDirPath.resolve(fileName);
         return Files.exists(filePath);
     }
 
     protected byte[] readProjectFile(final String fileName) throws IOException {
-        final Path filePath = projectFolderPath.resolve(fileName);
+        final Path filePath = projectDirPath.resolve(fileName);
         return Files.readAllBytes(filePath);
     }
 
     protected void writeToProjectFile(final String fileName, final byte[] content) throws IOException {
-        Files.write(projectFolderPath.resolve(fileName), content);
+        Files.write(projectDirPath.resolve(fileName), content);
     }
 
     private boolean isQuarkusExtension(final AppArtifactKey key) {

@@ -28,14 +28,14 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
 
     private AtomicReference<Model> modelReference = new AtomicReference<>();
 
-    public AbstractGradleBuildFile(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectFolderPath, platformDescriptor);
+    public AbstractGradleBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        super(projectDirPath, platformDescriptor);
         this.rootProjectPath = Optional.empty();
     }
 
-    public AbstractGradleBuildFile(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
+    public AbstractGradleBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor,
             Path rootProjectPath) {
-        super(projectFolderPath, platformDescriptor);
+        super(projectDirPath, platformDescriptor);
         this.rootProjectPath = Optional.ofNullable(rootProjectPath);
     }
 

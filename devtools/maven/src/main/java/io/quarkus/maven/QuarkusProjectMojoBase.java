@@ -60,8 +60,8 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         validateParameters();
 
         final MessageWriter log = new MojoMessageWriter(getLog());
-        final Path projectFolderPath = project.getBasedir().toPath();
-        final BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectFolderPath);
+        final Path projectDirPath = project.getBasedir().toPath();
+        final BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDirPath);
         final QuarkusPlatformDescriptor platformDescriptor = resolvePlatformDescriptor(log);
 
         doExecute(QuarkusProject.of(project.getBasedir().toPath(), platformDescriptor, buildTool), log);

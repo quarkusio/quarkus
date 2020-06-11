@@ -115,17 +115,17 @@ public final class GradleBuildFilesCreator {
     }
 
     protected boolean hasProjectFile(final String fileName) throws IOException {
-        final Path filePath = quarkusProject.getProjectFolderPath().resolve(fileName);
+        final Path filePath = quarkusProject.getProjectDirPath().resolve(fileName);
         return Files.exists(filePath);
     }
 
     protected byte[] readProjectFile(final String fileName) throws IOException {
-        final Path filePath = quarkusProject.getProjectFolderPath().resolve(fileName);
+        final Path filePath = quarkusProject.getProjectDirPath().resolve(fileName);
         return Files.readAllBytes(filePath);
     }
 
     protected void writeToProjectFile(final String fileName, final byte[] content) throws IOException {
-        Files.write(quarkusProject.getProjectFolderPath().resolve(fileName), content);
+        Files.write(quarkusProject.getProjectDirPath().resolve(fileName), content);
     }
 
     private void createBuildContent(String groupId, String version)

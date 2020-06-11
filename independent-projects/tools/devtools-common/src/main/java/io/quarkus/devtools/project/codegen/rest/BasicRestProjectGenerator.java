@@ -27,7 +27,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
     @Override
     public void generate(QuarkusCommandInvocation invocation) throws IOException {
-        final FileProjectWriter writer = new FileProjectWriter(invocation.getQuarkusProject().getProjectFolderPath().toFile());
+        final FileProjectWriter writer = new FileProjectWriter(invocation.getQuarkusProject().getProjectDirPath().toFile());
         writer.init();
         generate(writer, invocation);
     }

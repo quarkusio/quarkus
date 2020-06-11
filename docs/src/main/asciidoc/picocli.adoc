@@ -206,8 +206,9 @@ This event will be generated in `QuarkusApplication` class created by this exten
 ----
 @CommandLine.Command
 public class EntryCommand implements Runnable {
-@CommandLine.Option(names = "-c", description = "JDBC connection string")
-String connectionString;
+    
+    @CommandLine.Option(names = "-c", description = "JDBC connection string")
+    String connectionString;
 
     @Inject
     DataSource dataSource;

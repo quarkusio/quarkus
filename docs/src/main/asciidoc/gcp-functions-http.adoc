@@ -27,9 +27,9 @@ To complete this guide, you need:
 
 == Solution
 
-This guide walks you through running a Maven Archetype to generate a sample project then creating three http endpoints
-written with JAX-RS APIs, Servlet APIs or Vert.x Web APIs.  After building, you will then be able to deploy
-to Google Cloud.
+This guide walks you through generating a sample project followed by creating three HTTP endpoints
+written with JAX-RS APIs, Servlet APIs or Vert.x Web APIs. Once built, you will be able to deploy
+the project to Google Cloud.
 
 == Creating the Maven Deployment Project
 
@@ -48,14 +48,14 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 
 == Login to Google Cloud
 
-If you don't login to Google Cloud you won't be able to deploy.
+Login to Google Cloud is necessary for deploying the application and it can be done as follows:
 
 [source, subs=attributes+]
 ----
 gcloud auth login
 ----
 
-At the time writing this guide, Cloud Functions are still in beta so make sure to install the `beta` command group.
+At the time of this writing, Cloud Functions are still in beta so make sure to install the `beta` command group.
 
 [source, subs=attributes+]
 ----
@@ -67,7 +67,7 @@ gcloud components install beta
 For this example project, we will create three endpoints, one for RESTEasy (JAX-RS), one for Undertow (Servlet)
 and one for Vert.x Web (reactive routes).
 
-If you don't want endpoints to all these technologies, you can remove the unnecessary extensions from your `pom.xml`.
+If you don't need endpoints of each type, you can remove the corresponding extensions from your `pom.xml`.
 
 === The JAX-RS endpoint
 
@@ -147,8 +147,8 @@ To build your application, you first need to define a packaging of type `uber-ja
 quarkus.package.uber-jar=true
 ----
 
-Then you can package your application via `mvn clean package`.
-You will have a single JAR inside the target repository that contains your classes and all your dependencies in it.
+Package your application using the standard `mvn clean package` command.
+The result of the previous command is a single JAR file inside the `target` repository that contains classes and dependencies of the project.
 
 To deploy your JAR to Google Cloud, you need to pass a directory with only this JAR inside it, to the `gcloud` utility.
 
@@ -169,19 +169,23 @@ gcloud beta functions deploy quarkus-example-http \
   --runtime=java11 --trigger-http --source=deployment
 ----
 
+[IMPORTANT]
+====
+The entry point must always be set to `io.quarkus.gcp.functions.http.QuarkusHttpFunction` as this is the class that integrates Cloud Functions with Quarkus.
+====
+
 [WARNING]
-----
+====
 The first time you launch this command, you can have the following error message:
-```
-ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
-```
-This means that Cloud Build is not activated yet, please go to the mentionned URL to activate it, wait a few minutes and retry the command.
+[source]
 ----
+ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Failed: Cloud Build has not been used in project <project_name> before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/cloudbuild.googleapis.com/overview?project=<my-project> then retry.
+----
+This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
+====
 
-The entry point always needs to be `io.quarkus.gcp.functions.http.QuarkusHttpFunction` as it will be this class
-that bootstraps Quarkus.
 
-This command will give you as output a `httpsTrigger.url` that point to your function.
+This command will give you as output a `httpsTrigger.url` that points to your function.
 
 You can then call your endpoints via:
 

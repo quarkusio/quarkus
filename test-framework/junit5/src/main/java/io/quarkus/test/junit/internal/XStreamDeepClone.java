@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.internal;
 
+import java.util.function.Supplier;
+
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -17,7 +19,33 @@ public class XStreamDeepClone implements DeepClone {
     }
 
     public Object clone(Object objectToClone) {
+        if (objectToClone == null) {
+            return null;
+        }
+
+        if (objectToClone instanceof Supplier) {
+            return handleSupplier((Supplier<?>) objectToClone);
+        }
+
+        return doClone(objectToClone);
+    }
+
+    private Supplier<Object> handleSupplier(final Supplier<?> supplier) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return doClone(supplier.get());
+            }
+        };
+    }
+
+    private Object doClone(Object objectToClone) {
         final String serialized = xStream.toXML(objectToClone);
-        return xStream.fromXML(serialized);
+        final Object result = xStream.fromXML(serialized);
+        if (result == null) {
+            throw new IllegalStateException("Unable to deep clone object of type '" + objectToClone.getClass().getName()
+                    + "'. Please report the issue on the Quarkus issue tracker.");
+        }
+        return result;
     }
 }

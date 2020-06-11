@@ -303,6 +303,61 @@ public class TestStereotypeTestCase {
 }
 ----
 
+== Testing Different Profiles
+
+So far in all our examples we only start Quarkus once for all tests. Before the first test is run Quarkus will boot,
+then all tests will run, then Quarkus will shutdown at the end. This makes for a very fast testing experience however
+it is a bit limited as you can't test different configurations.
+
+To get around this Quarkus supports the idea of a test profile. If a test has a different profile to the previously
+run test then Quarkus will be shut down and started with the new profile before running the tests. This is obviously
+a bit slower, as it adds a shutdown/startup cycle to the test time, but gives a great deal of flexibility.
+
+NOTE: In order to reduce the amount of times Quarkus needs to restart it is recommended that you place all tests
+that need a specific profile into their own package, and then run tests alphabetically.
+
+=== Writing a Profile
+
+To implement a test profile we need to implement `io.quarkus.test.junit.QuarkusTestProfile`:
+
+[source,java]
+----
+package org.acme.getting.started.testing;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
+import io.quarkus.test.junit.QuarkusTestProfile;
+
+public class MockGreetingProfile implements QuarkusTestProfile {
+
+    @Override
+    public Map<String, String> getConfigOverrides() { <1>
+        return Collections.singletonMap("quarkus.resteasy.path","/api");
+    }
+
+    @Override
+    public Set<Class<?>> getEnabledAlternatives() { <2>
+        return Collections.singleton(MockGreetingService.class);
+    }
+
+
+    @Override
+    public String getConfigProfile() { <3>
+        return "test";
+    }
+}
+----
+<1> This method allows us to override configuration properties. Here we are changing the JAX-RS root path.
+<2> This method allows us to enable CDI `@Alternative` beans. This makes it easy to mock out certain beans functionality.
+<3> This can be used to change the config profile. As this default is `test` this does nothing, but is included for completeness.
+
+Now we have defined our profile we need to include it on our test class. We do this with `@TestProfile(MockGreetingProfile.class)`.
+
+All the test profile config is stored in a single class, which makes it easy to tell if the previous test ran with the
+same configuration.
+
 
 == Mock Support
 
@@ -311,9 +366,9 @@ mock out a bean for all test classes, or use `QuarkusMock` to mock out beans on 
 
 === CDI `@Alternative` mechanism.
 
-To use this simply override the bean you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations on the bean. 
+To use this simply override the bean you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations on the bean.
 Alternatively, a convenient `io.quarkus.test.Mock` stereotype annotation could be used.
-This built-in stereotype declares `@Alternative`, `@Priority(1)` and `@Dependent`. 
+This built-in stereotype declares `@Alternative`, `@Priority(1)` and `@Dependent`.
 For example if I have the following service:
 
 [source,java]
@@ -596,7 +651,7 @@ public class SpyGreetingServiceTest {
 
 ==== Using `@InjectMock` with `@RestClient`
 
-The `@RegisterRestClient` registers the implementation of the rest-client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`. 
+The `@RegisterRestClient` registers the implementation of the rest-client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.
 
 [source,java]
 ----
@@ -612,7 +667,7 @@ public interface GreetingService {
 }
 ----
 
-For the test class here is an example: 
+For the test class here is an example:
 
 [source,java]
 ----

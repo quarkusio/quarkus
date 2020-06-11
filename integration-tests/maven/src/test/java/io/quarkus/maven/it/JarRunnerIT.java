@@ -169,8 +169,8 @@ public class JarRunnerIT extends MojoTestBase {
         try {
             // Wait until server up
             await()
-                    .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/moved/app/hello/package", 200));
+                    .pollDelay(5, TimeUnit.SECONDS)
+                    .atMost(2, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/moved/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 

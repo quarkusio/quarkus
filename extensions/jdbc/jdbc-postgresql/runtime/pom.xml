@@ -21,23 +21,6 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <exclusions>
-                <!-- These dependencies used to be optional in previous versions of the postgresql,
-                    the change seems to be a mistake in the latest release.
-                    Since we didn't have them before, exclude them now explicitly.-->
-                <exclusion>
-                    <groupId>com.github.waffle</groupId>
-                    <artifactId>waffle-jna</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.osgi</groupId>
-                    <artifactId>org.osgi.core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.osgi</groupId>
-                    <artifactId>org.osgi.enterprise</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

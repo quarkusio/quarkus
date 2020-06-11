@@ -1,6 +1,5 @@
 package io.quarkus.devtools.commands;
 
-import com.google.common.collect.ImmutableList;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
@@ -10,6 +9,7 @@ import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -71,7 +71,7 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
         protected List<Dependency> getDependencies() throws IOException {
             final Matcher matcher = Pattern.compile("\\s*implementation\\s+'([^\\v:]+):([^\\v:]+)(:[^:\\v]+)?'")
                     .matcher(getBuildContent());
-            final ImmutableList.Builder<Dependency> builder = ImmutableList.builder();
+            final ArrayList<Dependency> builder = new ArrayList<>();
             while (matcher.find()) {
                 final Dependency dep = new Dependency();
                 dep.setGroupId(matcher.group(1));
@@ -79,7 +79,7 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
                 dep.setVersion(matcher.group(3));
                 builder.add(dep);
             }
-            return builder.build();
+            return builder;
         }
     }
 }

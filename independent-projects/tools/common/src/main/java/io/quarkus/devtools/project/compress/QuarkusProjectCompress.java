@@ -1,12 +1,12 @@
 package io.quarkus.devtools.project.compress;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import io.quarkus.devtools.project.QuarkusProject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.commons.compress.archivers.zip.UnixStat;
 import org.apache.commons.compress.archivers.zip.X5455_ExtendedTimestamp;
@@ -17,13 +17,13 @@ import org.apache.commons.compress.archivers.zip.ZipLong;
 
 public final class QuarkusProjectCompress {
 
-    private static final List<String> EXECUTABLES = ImmutableList.of(
+    private static final List<String> EXECUTABLES = Collections.unmodifiableList(Arrays.asList(
             "gradlew",
             "gradlew.bat",
             "mvnw",
-            "mvnw.bat");
+            "mvnw.bat"));
 
-    @VisibleForTesting
+    // Visible for testing
     static final int DIR_UNIX_MODE = UnixStat.DIR_FLAG | UnixStat.DEFAULT_DIR_PERM;
 
     private QuarkusProjectCompress() {
@@ -70,12 +70,12 @@ public final class QuarkusProjectCompress {
         }
     }
 
-    @VisibleForTesting
+    // Visible for testing
     static int getFileUnixMode(boolean isExecutable) {
         return UnixStat.FILE_FLAG | (isExecutable ? 0755 : UnixStat.DEFAULT_FILE_PERM);
     }
 
-    @VisibleForTesting
+    // Visible for testing
     static boolean isExecutable(final String entryName) {
         return EXECUTABLES.stream().anyMatch(entryName::contains);
     }

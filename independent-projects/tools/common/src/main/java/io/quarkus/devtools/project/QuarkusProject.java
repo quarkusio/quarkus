@@ -1,6 +1,6 @@
 package io.quarkus.devtools.project;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
@@ -15,9 +15,9 @@ public final class QuarkusProject {
 
     private QuarkusProject(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,
             final ExtensionManager extensionManager) {
-        this.projectFolderPath = checkNotNull(projectFolderPath, "projectFolderPath is required");
-        this.platformDescriptor = checkNotNull(platformDescriptor, "platformDescriptor is required");
-        this.extensionManager = checkNotNull(extensionManager, "extensionManager is required");
+        this.projectFolderPath = requireNonNull(projectFolderPath, "projectFolderPath is required");
+        this.platformDescriptor = requireNonNull(platformDescriptor, "platformDescriptor is required");
+        this.extensionManager = requireNonNull(extensionManager, "extensionManager is required");
     }
 
     public static QuarkusProject of(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor,

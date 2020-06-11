@@ -1,6 +1,5 @@
 package io.quarkus.devtools.commands;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.IS_SPRING;
@@ -9,6 +8,7 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_ARTIF
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.SOURCE_TYPE;
+import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -46,8 +46,8 @@ public class CreateProject {
     private Map<String, Object> values = new HashMap<>();
 
     public CreateProject(final Path projectFolderPath, QuarkusPlatformDescriptor platformDescr) {
-        this.projectFolderPath = checkNotNull(projectFolderPath, "projectFolderPath is required");
-        this.platformDescr = checkNotNull(platformDescr, "platformDescr is required");
+        this.projectFolderPath = requireNonNull(projectFolderPath, "projectFolderPath is required");
+        this.platformDescr = requireNonNull(platformDescr, "platformDescr is required");
     }
 
     public CreateProject groupId(String groupId) {
@@ -100,7 +100,7 @@ public class CreateProject {
     }
 
     public CreateProject buildTool(BuildTool buildTool) {
-        this.buildTool = checkNotNull(buildTool, "buildTool is required");
+        this.buildTool = requireNonNull(buildTool, "buildTool is required");
         return this;
     }
 

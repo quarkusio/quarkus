@@ -16,8 +16,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.commands.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -27,6 +25,7 @@ import io.quarkus.devtools.project.codegen.writer.ProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -35,22 +34,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
-    private final Map<String, Object> BASIC_PROJECT_CONTEXT = Maps.newHashMap(ImmutableMap.<String, Object> builder()
-            .put(PROJECT_GROUP_ID, "org.example")
-            .put(PROJECT_ARTIFACT_ID, "quarkus-app")
-            .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
-            .put(BOM_VERSION, getBomVersion())
-            .put(PACKAGE_NAME, "org.example")
-            .put(CLASS_NAME, "ExampleResource")
-            .put("path", "/hello")
-            .put(SOURCE_TYPE, SourceType.JAVA)
-            .build());
+    private final Map<String, Object> basicProjectContext = new HashMap<>();
+
+    @BeforeEach
+    void setUp() {
+        basicProjectContext.put(PROJECT_GROUP_ID, "org.example");
+        basicProjectContext.put(PROJECT_ARTIFACT_ID, "quarkus-app");
+        basicProjectContext.put(PROJECT_VERSION, "0.0.1-SNAPSHOT");
+        basicProjectContext.put(BOM_VERSION, getBomVersion());
+        basicProjectContext.put(PACKAGE_NAME, "org.example");
+        basicProjectContext.put(CLASS_NAME, "ExampleResource");
+        basicProjectContext.put("path", "/hello");
+        basicProjectContext.put(SOURCE_TYPE, SourceType.JAVA);
+    }
 
     @Test
     @Timeout(2)
@@ -136,7 +139,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
     private QuarkusCommandInvocation createQuarkusCommandInvocation(Path projectPath) {
         return new QuarkusCommandInvocation(QuarkusProject.maven(projectPath, getPlatformDescriptor()),
-                BASIC_PROJECT_CONTEXT);
+                basicProjectContext);
     }
 
 }

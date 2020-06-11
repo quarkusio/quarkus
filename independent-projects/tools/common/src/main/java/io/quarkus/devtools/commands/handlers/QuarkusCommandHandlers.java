@@ -2,12 +2,12 @@ package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.platform.tools.ConsoleMessageFormats.nok;
 
-import com.google.common.collect.ImmutableList;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
 import io.quarkus.devtools.project.extensions.Extensions;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,7 +23,7 @@ final class QuarkusCommandHandlers {
 
     static List<AppArtifactCoords> computeCoordsFromQuery(final QuarkusCommandInvocation invocation,
             final Set<String> extensionsQuery) {
-        final ImmutableList.Builder<AppArtifactCoords> builder = ImmutableList.builder();
+        final ArrayList<AppArtifactCoords> builder = new ArrayList<>();
         for (String query : extensionsQuery) {
             if (query.contains(":")) {
                 builder.add(AppArtifactCoords.fromString(query));
@@ -56,7 +56,7 @@ final class QuarkusCommandHandlers {
                 }
             }
         }
-        return builder.build();
+        return builder;
     }
 
     /**

@@ -1,6 +1,6 @@
 package io.quarkus.devtools.commands.data;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -25,8 +25,8 @@ public final class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvoc
     public QuarkusCommandInvocation(final QuarkusProject quarkusProject, final Map<String, Object> values,
             final MessageWriter log) {
         super(values);
-        this.quarkusProject = checkNotNull(quarkusProject, "quarkusProject is required");
-        this.log = checkNotNull(log, "log is required");
+        this.quarkusProject = requireNonNull(quarkusProject, "quarkusProject is required");
+        this.log = requireNonNull(log, "log is required");
     }
 
     public QuarkusCommandInvocation(QuarkusCommandInvocation original) {

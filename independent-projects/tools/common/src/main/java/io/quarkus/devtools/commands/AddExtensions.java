@@ -1,6 +1,6 @@
 package io.quarkus.devtools.commands;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -30,7 +30,7 @@ public class AddExtensions {
     }
 
     public AddExtensions extensionManager(ExtensionManager extensionManager) {
-        invocation.setValue(EXTENSION_MANAGER, checkNotNull(extensionManager, "extensionManager is required"));
+        invocation.setValue(EXTENSION_MANAGER, requireNonNull(extensionManager, "extensionManager is required"));
         return this;
     }
 

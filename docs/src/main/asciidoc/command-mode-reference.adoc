@@ -20,25 +20,33 @@ that exit.
 In this document the `QuarkusApplication` instance is referred to as the application main,
 and a class with a Java main method is the Java main.
 
-The simplest possible command mode application might appear as follows:
+The simplest possible command mode application with access to Quarkus API's might appear as follows:
 
 [source,java]
 ----
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 
-@QuarkusMain    // <1>
+@QuarkusMain    // <.>
 public class HelloWorldMain implements QuarkusApplication {
   @Override
-  public int run(String... args) throws Exception {   // <2>
+  public int run(String... args) throws Exception {   // <.>
     System.out.println("Hello World");
     return 10;
  }
 }
 ----
-<1> The `@QuarkusMain` annotation tells Quarkus that this is the main entry point.
-<2> The `run` method is invoked once Quarkus starts, and the application stops when it finishes.
+<.> The `@QuarkusMain` annotation tells Quarkus that this is the main entry point.
+<.> The `run` method is invoked once Quarkus starts, and the application stops when it finishes.
 
+=== Contexts
+
+To get access to your application beans and services, be aware that 
+a `@QuarkusMain` instance is an application scoped bean by default. It has access to singletons, application and dependent scoped beans. If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method. 
+
+This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity. Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
+
+=== Main method
 If we want to use a Java main to run the application main it would look like:
 
 [source,java]
@@ -63,7 +71,7 @@ launch the application main. In development mode the Java main will run in a
 different ClassLoader to the main application, so may not behave as you would
 expect.
 
-=== Multiple Main Methods
+==== Multiple Main Methods
 
 It is possible to have multiple main methods in an application, and select between them at build time.
 The `@QuarkusMain` annotation takes an optional 'name' parameter, and this can be used to select the
@@ -77,7 +85,6 @@ that just runs the application.
 NOTE: The `name` of `@QuarkusMain` must be unique (including the default of the empty string). If you
 have multiple `@QuarkusMain` annotations in your application the build will fail if the names are not
 unique.
-
 
 === The command mode lifecycle
 

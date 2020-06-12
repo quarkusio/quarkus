@@ -21,13 +21,13 @@ public class GradleBuildFileFromConnector extends AbstractGradleBuildFile {
 
     private List<Dependency> dependencies = null;
 
-    public GradleBuildFileFromConnector(final Path projectFolderPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectFolderPath, platformDescriptor);
+    public GradleBuildFileFromConnector(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+        super(projectDirPath, platformDescriptor);
     }
 
-    public GradleBuildFileFromConnector(Path projectFolderPath, QuarkusPlatformDescriptor platformDescriptor,
+    public GradleBuildFileFromConnector(Path projectDirPath, QuarkusPlatformDescriptor platformDescriptor,
             Path rootProjectPath) {
-        super(projectFolderPath, platformDescriptor, rootProjectPath);
+        super(projectDirPath, platformDescriptor, rootProjectPath);
     }
 
     @Override
@@ -37,7 +37,7 @@ public class GradleBuildFileFromConnector extends AbstractGradleBuildFile {
             if (getBuildContent() != null) {
                 try {
                     ProjectConnection connection = GradleConnector.newConnector()
-                            .forProjectDirectory(getProjectFolderPath().toFile())
+                            .forProjectDirectory(getProjectDirPath().toFile())
                             .connect();
                     eclipseProject = connection.getModel(EclipseProject.class);
                 } catch (BuildException e) {

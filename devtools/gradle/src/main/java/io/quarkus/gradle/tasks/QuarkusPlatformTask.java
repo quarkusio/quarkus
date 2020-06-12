@@ -67,10 +67,10 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     @Internal
     protected BuildFile getGradleBuildFile() {
-        final Path projectFolderPath = getProject().getProjectDir().toPath();
+        final Path projectDirPath = getProject().getProjectDir().toPath();
         final Path rootProjectPath = getProject().getParent() != null ? getProject().getRootProject().getProjectDir().toPath()
                 : null;
-        return new GradleBuildFileFromConnector(projectFolderPath, platformDescriptor(),
+        return new GradleBuildFileFromConnector(projectDirPath, platformDescriptor(),
                 rootProjectPath);
     }
 

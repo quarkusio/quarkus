@@ -46,7 +46,7 @@ public class AppArtifactCoords implements Serializable {
     public AppArtifactCoords(AppArtifactKey key, String version) {
         this.key = key;
         this.groupId = key.getGroupId();
-        this.artifactId = key.getGroupId();
+        this.artifactId = key.getArtifactId();
         this.classifier = key.getClassifier();
         this.type = key.getType();
         this.version = version;

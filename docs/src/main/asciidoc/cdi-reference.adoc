@@ -687,7 +687,7 @@ AnnotationsTransformerBuildItem transform() {
         }
 
         public void transform(TransformationContext context) {
-            if (contex.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
+            if (context.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
                 context.transform().add(MyInterceptorBinding.class).done();
             }
         }

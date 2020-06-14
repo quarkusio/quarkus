@@ -25,4 +25,12 @@ public class HealthConfig {
     @ConfigItem
     public boolean performanceStandByOk;
 
+    @Override
+    public String toString() {
+        return "HealthConfig{" +
+                "enabled=" + enabled +
+                ", standByOk=" + standByOk +
+                ", performanceStandByOk=" + performanceStandByOk +
+                '}';
+    }
 }

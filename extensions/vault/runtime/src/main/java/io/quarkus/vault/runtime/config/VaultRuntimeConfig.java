@@ -5,6 +5,7 @@ import static io.quarkus.vault.runtime.LogConfidentialityLevel.MEDIUM;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
+import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.NAME;
 
 import java.net.URL;
 import java.time.Duration;
@@ -12,14 +13,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vault.runtime.LogConfidentialityLevel;
 
-@ConfigRoot(name = "vault", phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(name = NAME, phase = ConfigPhase.BOOTSTRAP)
 public class VaultRuntimeConfig {
+
+    public static final String NAME = "vault";
 
     public static final String DEFAULT_KUBERNETES_JWT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token";
     public static final String DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH = "secret";
@@ -133,6 +137,23 @@ public class VaultRuntimeConfig {
     // @formatter:on
     @ConfigItem(name = "secret-config-kv-path.\"prefix\"")
     public Map<String, List<String>> secretConfigKvPrefixPath;
+
+    // FIXME DEBUG
+    /** A map of property lists */
+    @ConfigItem
+    @ConfigDocMapKey("list-of-strings")
+    public Map<String, List<String>> stringListMap;
+
+    // FIXME DEBUG
+    /** A map of properties */
+    @ConfigItem
+    @ConfigDocMapKey("string-property")
+    public Map<String, String> stringMap;
+
+    // FIXME DEBUG
+    /** A List of string values */
+    @ConfigItem
+    public List<String> stringList;
 
     /**
      * Used to hide confidential infos, for logging in particular.

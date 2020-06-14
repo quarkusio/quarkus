@@ -334,7 +334,9 @@ public class BootstrapMavenContext {
 
         final DefaultProxySelector proxySelector = new DefaultProxySelector();
         for (org.apache.maven.settings.Proxy p : decrypted.getProxies()) {
-            proxySelector.add(toAetherProxy(p), p.getNonProxyHosts());
+            if (p.isActive()) {
+                proxySelector.add(toAetherProxy(p), p.getNonProxyHosts());
+            }
         }
         session.setProxySelector(proxySelector);
 

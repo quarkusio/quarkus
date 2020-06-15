@@ -19,11 +19,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +74,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatFastJarFormatWorks() throws MavenInvocationException, IOException {
+    public void testThatFastJarFormatWorks() throws Exception {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar");
         RunningInvoker running = new RunningInvoker(testDir, false);
 
@@ -96,9 +98,12 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(jar, output);
         try {
             // Wait until server up
-            await()
-                    .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -114,7 +119,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatMutableFastJarWorks() throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatMutableFastJarWorks() throws Exception {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output-mutable-fast-jar");
         RunningInvoker running = new RunningInvoker(testDir, false);
 
@@ -139,9 +144,12 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(jar, output);
         try {
             // Wait until server up
-            await()
-                    .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -228,9 +236,11 @@ public class JarRunnerIT extends MojoTestBase {
         commands.add(JavaBinFinder.findBin());
         commands.add("-jar");
         commands.add(jar.toString());
+        // write out the command used to launch the process, into the log file
+        Files.write(output.toPath(), commands);
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
-        processBuilder.redirectOutput(output);
-        processBuilder.redirectError(output);
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(output));
+        processBuilder.redirectError(ProcessBuilder.Redirect.appendTo(output));
         return processBuilder.start();
     }
 
@@ -255,5 +265,32 @@ public class JarRunnerIT extends MojoTestBase {
 
     private static void failResourcesFromTheClasspath() {
         fail("Failed to assert that the application properly reads resources from the classpath");
+    }
+
+    /**
+     * Calls the {@link Callable} and if that call results in an exception of type {@code failureType} then,
+     * prints out the contents of the passed {@code logFile} and throws back the original exception
+     *
+     * @param operation The operation to invoke
+     * @param logFile The file which contains the logs generated when the operation was running
+     * @param failureType The type of failure that should trigger printing out the logs
+     * @throws Exception
+     */
+    private void dumpFileContentOnFailure(final Callable<Void> operation, final File logFile,
+            final Class<? extends Throwable> failureType) throws Exception {
+        try {
+            operation.call();
+        } catch (Throwable t) {
+            if (failureType != null && failureType.isInstance(t)) {
+                final String logs = FileUtils.readFileToString(logFile, "UTF-8");
+                System.out.println("####### LOG DUMP ON FAILURE (start) ######");
+                System.out.println("Dumping logs that were generated in " + logFile + " for an operation that resulted in "
+                        + t.getClass().getName() + ":");
+                System.out.println();
+                System.out.println(logs);
+                System.out.println("####### LOG DUMP ON FAILURE (end) ######");
+            }
+            throw t;
+        }
     }
 }

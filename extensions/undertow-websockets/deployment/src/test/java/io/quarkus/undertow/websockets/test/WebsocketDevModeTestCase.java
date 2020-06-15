@@ -35,7 +35,7 @@ public class WebsocketDevModeTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(EchoWebSocket.class);
+                            .addClasses(EchoWebSocket.class, EchoService.class);
                 }
             });
 
@@ -62,7 +62,7 @@ public class WebsocketDevModeTestCase {
             session.close();
         }
 
-        test.modifySourceFile(EchoWebSocket.class, (s) -> s.replace("return msg;", "return \"changed:\" + msg;"));
+        test.modifySourceFile(EchoService.class, (s) -> s.replace("return msg;", "return \"changed:\" + msg;"));
 
         session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override

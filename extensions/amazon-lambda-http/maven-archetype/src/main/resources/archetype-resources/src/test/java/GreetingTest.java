@@ -33,8 +33,8 @@ public class GreetingTest
     @Test
     public void testFunqy() {
         RestAssured.when().get("/funqyHello").then()
-                .contentType("text/plain")
-                .body(equalTo("hello funqy"));
+                .contentType("application/json")
+                .body(equalTo("\"hello funqy\""));
     }
 
 }

@@ -65,3 +65,11 @@
   title: "(?i).*k(afka)?(\\s|-)?stream.*"
   description: "(?i).*k(afka)?(\\s|-)?stream.*"
   notify: [gunnarmorling]
+- labels: [area/infinispan]
+  title: "(?i).*infinispan.*"
+  description: "(?i).*infinispan.*"
+  notify: [karesti,wburns]
+- labels: [area/grpc]
+  title: "(?i).*grpc.*"
+  description: "(?i).*grpc.*"
+  notify: [michalszynkiewicz,cescoffier]

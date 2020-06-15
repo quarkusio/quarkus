@@ -34,6 +34,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     private final Type type;
     private IndexView index;
     private final Predicate<DotName> ignorePredicate;
+    private String source;
 
     public ReflectiveHierarchyBuildItem(Type type) {
         this(type, DefaultIgnorePredicate.INSTANCE);
@@ -44,14 +45,30 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignorePredicate) {
-        this.type = type;
-        this.ignorePredicate = ignorePredicate;
+        this(type, ignorePredicate, null);
     }
 
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignorePredicate) {
+        this(type, index, ignorePredicate, null);
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, String source) {
+        this(type, DefaultIgnorePredicate.INSTANCE, source);
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, IndexView index, String source) {
+        this(type, index, DefaultIgnorePredicate.INSTANCE, source);
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignorePredicate, String source) {
+        this(type, null, ignorePredicate, source);
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignorePredicate, String source) {
         this.type = type;
         this.index = index;
         this.ignorePredicate = ignorePredicate;
+        this.source = source;
     }
 
     public Type getType() {
@@ -64,6 +81,14 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     public Predicate<DotName> getIgnorePredicate() {
         return ignorePredicate;
+    }
+
+    public boolean hasSource() {
+        return source != null;
+    }
+
+    public String getSource() {
+        return source;
     }
 
     public static class DefaultIgnorePredicate implements Predicate<DotName> {

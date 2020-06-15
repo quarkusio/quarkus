@@ -330,15 +330,16 @@ public class ProtectedResource {
 
 == Mapping Protected Resources
 
-By default, the extension loads all the protected resources managed by Keycloak where their `URI` are used to map the resources 
-in your application that should be protected. This is done during the application startup.
+By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.
 
-If you want to disable this behavior and map resources on-demand, you can use the following configuration:
+If you want to disable this behavior and fetch resources during startup, you can use the following configuration:
 
 [source,properties]
 ----
-quarkus.keycloak.policy-enforcer.lazy-load-paths=true
+quarkus.keycloak.policy-enforcer.lazy-load-paths=false
 ----
+
+Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time. 
 
 == More About Configuring Protected Resources 
 

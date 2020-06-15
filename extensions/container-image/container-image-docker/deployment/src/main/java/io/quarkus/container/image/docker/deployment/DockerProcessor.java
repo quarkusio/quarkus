@@ -1,6 +1,8 @@
 
 package io.quarkus.container.image.docker.deployment;
 
+import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -337,25 +339,6 @@ public class DockerProcessor {
         public Path getDockerExecutionPath() {
             return dockerExecutionPath;
         }
-    }
-
-    /**
-     * Return a Map.Entry (which is used as a Tuple) containing the main sources root as the key
-     * and the project root as the value
-     */
-    private static AbstractMap.SimpleEntry<Path, Path> findMainSourcesRoot(Path outputDirectory) {
-        Path currentPath = outputDirectory;
-        do {
-            Path toCheck = currentPath.resolve(Paths.get("src", "main"));
-            if (toCheck.toFile().exists()) {
-                return new AbstractMap.SimpleEntry<>(toCheck, currentPath);
-            }
-            if (Files.exists(currentPath.getParent())) {
-                currentPath = currentPath.getParent();
-            } else {
-                return null;
-            }
-        } while (true);
     }
 
 }

@@ -48,13 +48,41 @@
                             </filters>
                             <relocations>
                                 <relocation>
-                                    <shadedPattern>io.quarkus.launcher.shaded.</shadedPattern>
+                                    <pattern>org</pattern>
+                                    <shadedPattern>io.quarkus.launcher.shaded.org</shadedPattern>
                                     <excludes>
                                         <exclude>META-INF/**</exclude>
                                         <exclude>licenses/**</exclude>
                                         <exclude>plugin.xml</exclude>
-                                        <exclude>java/**</exclude> <!-- unless this is is added, the build may fail with e.g. cannot access io.quarkus.launcher.shaded.java.lang.String -->
+                                    </excludes>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com</pattern>
+                                    <shadedPattern>io.quarkus.launcher.shaded.com</shadedPattern>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                        <exclude>licenses/**</exclude>
+                                        <exclude>plugin.xml</exclude>
+                                    </excludes>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net</pattern>
+                                    <shadedPattern>io.quarkus.launcher.shaded.net</shadedPattern>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                        <exclude>licenses/**</exclude>
+                                        <exclude>plugin.xml</exclude>
+                                    </excludes>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io</pattern>
+                                    <shadedPattern>io.quarkus.launcher.shaded.io</shadedPattern>
+                                    <excludes>
+                                        <exclude>META-INF/**</exclude>
+                                        <exclude>licenses/**</exclude>
+                                        <exclude>plugin.xml</exclude>
                                         <exclude>io.quarkus.launcher.*</exclude>
+                                        <exclude>io.quarkus.deployment.dev.*</exclude>
                                     </excludes>
                                 </relocation>
                             </relocations>

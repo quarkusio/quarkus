@@ -2,6 +2,8 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Basics.index;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 import java.io.IOException;
@@ -28,9 +30,26 @@ public class DotNamesTest {
         assertEquals("DotNamesTest$Nested", DotNames.simpleName("io.quarkus.arc.processor.DotNamesTest$Nested"));
     }
 
+    @Test
+    public void testCreate() throws IOException {
+        DotName nested = DotNames.create(Nested.class);
+        assertTrue(nested.isComponentized());
+        assertEquals("io.quarkus.arc.processor.DotNamesTest$Nested", nested.toString());
+        assertEquals("DotNamesTest$Nested", nested.local());
+        assertEquals("DotNamesTest$Nested", nested.withoutPackagePrefix());
+        assertFalse(nested.isInner());
+
+        DotName nestedNested = DotNames.create(NestedNested.class);
+        assertTrue(nestedNested.isComponentized());
+        assertEquals("io.quarkus.arc.processor.DotNamesTest$Nested$NestedNested", nestedNested.toString());
+        assertEquals("DotNamesTest$Nested$NestedNested", nestedNested.local());
+        assertEquals("DotNamesTest$Nested$NestedNested", nestedNested.withoutPackagePrefix());
+        assertFalse(nestedNested.isInner());
+    }
+
     static final class Nested {
 
-        static final class NestedNested {
+        final class NestedNested {
 
         }
 

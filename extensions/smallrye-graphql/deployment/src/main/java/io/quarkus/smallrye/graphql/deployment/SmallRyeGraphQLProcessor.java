@@ -493,7 +493,7 @@ public class SmallRyeGraphQLProcessor {
 
         @Override
         public boolean test(DotName t) {
-            return Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.net.");
+            return Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.");
         }
     }
 }

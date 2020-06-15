@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,6 +62,9 @@ public class NativeImageBuildStep {
 
     private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
+    private static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
+    private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
+    private static final String MOVED_TRUST_STORE_NAME = "trustStore";
 
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
@@ -83,7 +87,8 @@ public class NativeImageBuildStep {
 
         String noPIE = "";
 
-        if (nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild) {
+        boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
+        if (isContainerBuild) {
             String containerRuntime = nativeConfig.containerRuntime.orElse("docker");
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
@@ -92,7 +97,8 @@ public class NativeImageBuildStep {
             if (IS_WINDOWS) {
                 outputPath = FileUtil.translateToVolumePath(outputPath);
             }
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z", "--env", "LANG=C");
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v",
+                    outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
 
             if (IS_LINUX) {
                 if ("docker".equals(containerRuntime)) {
@@ -227,7 +233,7 @@ public class NativeImageBuildStep {
                 nativeConfig.enableAllSecurityServices = true;
             }
 
-            nativeConfig.additionalBuildArgs.ifPresent(l -> l.stream().map(String::trim).forEach(command::add));
+            handleAdditionalProperties(nativeConfig, command, isContainerBuild, outputDir);
             nativeConfig.resources.includes.ifPresent(l -> l.stream()
                     .map(GlobUtil::toRegexPattern)
                     .map(re -> "-H:IncludeResources=" + re.trim())
@@ -343,7 +349,7 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, command);
             }
-            if (IS_WINDOWS && !(nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild)) {
+            if (IS_WINDOWS && !(isContainerBuild)) {
                 //once image is generated it gets added .exe on Windows
                 executableName = executableName + ".exe";
             }
@@ -356,6 +362,40 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
+        }
+    }
+
+    private void handleAdditionalProperties(NativeConfig nativeConfig, List<String> command, boolean isContainerBuild,
+            Path outputDir) {
+        if (nativeConfig.additionalBuildArgs.isPresent()) {
+            List<String> strings = nativeConfig.additionalBuildArgs.get();
+            for (String buildArg : strings) {
+                String trimmedBuildArg = buildArg.trim();
+                if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && isContainerBuild) {
+                    /*
+                     * When the native binary is being built with a docker container, because a volume is created,
+                     * we need to copy the trustStore file into the output directory (which is the root of volume)
+                     * and change the value of 'javax.net.ssl.trustStore' property to point to this value
+                     *
+                     * TODO: we might want to introduce a dedicated property in order to overcome this ugliness
+                     */
+                    int index = trimmedBuildArg.indexOf(TRUST_STORE_SYSTEM_PROPERTY_MARKER);
+                    if (trimmedBuildArg.length() > index + 2) {
+                        String configuredTrustStorePath = trimmedBuildArg
+                                .substring(index + TRUST_STORE_SYSTEM_PROPERTY_MARKER.length());
+                        try {
+                            IoUtils.copy(Paths.get(configuredTrustStorePath), outputDir.resolve(MOVED_TRUST_STORE_NAME));
+                            command.add(trimmedBuildArg.substring(0, index) + TRUST_STORE_SYSTEM_PROPERTY_MARKER
+                                    + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
+                                    + "' to volume root directory '" + outputDir.toAbsolutePath().toString() + "'", e);
+                        }
+                    }
+                } else {
+                    command.add(trimmedBuildArg);
+                }
+            }
         }
     }
 

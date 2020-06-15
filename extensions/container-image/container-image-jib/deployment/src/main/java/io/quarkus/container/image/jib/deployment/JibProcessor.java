@@ -17,10 +17,8 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import com.google.cloud.tools.jib.api.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.Containerizer;
 import com.google.cloud.tools.jib.api.DockerDaemonImage;
-import com.google.cloud.tools.jib.api.FilePermissions;
 import com.google.cloud.tools.jib.api.ImageReference;
 import com.google.cloud.tools.jib.api.InvalidImageReferenceException;
 import com.google.cloud.tools.jib.api.JavaContainerBuilder;
@@ -30,6 +28,9 @@ import com.google.cloud.tools.jib.api.JibContainerBuilder;
 import com.google.cloud.tools.jib.api.LayerConfiguration;
 import com.google.cloud.tools.jib.api.LogEvent;
 import com.google.cloud.tools.jib.api.RegistryImage;
+import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
+import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
+import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -231,9 +232,6 @@ public class JibProcessor {
         return ImageReference.of(registry, repository, tag);
     }
 
-    // TODO createContainerBuilderFromJar won't work with fast-jar so we are better off just using our own
-    //  containerBuilder with the proper layering (lib -> boot-lib -> quarkus-run -> transformed-bytecode -> generated-bytecode -> app)
-
     /**
      * We don't use Jib's JavaContainerBuilder here because we need to support the custom fast-jar format
      * We create the following layers (least likely to change to most likely to change):
@@ -326,7 +324,7 @@ public class JibProcessor {
             return Jib
                     .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), containerImageConfig.username,
                             containerImageConfig.password))
-                    .addLayer(LayerConfiguration.builder()
+                    .addFileEntriesLayer(FileEntriesLayer.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))
                             .build())

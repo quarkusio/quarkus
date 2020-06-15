@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.cloud.functions.Context;
-import com.google.cloud.functions.HttpRequest;
-import com.google.cloud.functions.HttpResponse;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -68,25 +66,6 @@ public class FunqyCloudFunctionsBindingRecorder {
         }
         if (invoker.hasOutput()) {
             writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-        }
-    }
-
-    /**
-     * Handle HttpFunction.
-     *
-     * @param httpRequest
-     * @param httpResponse
-     */
-    public static void handle(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
-        Object input = null;
-        if (invoker.hasInput()) {
-            input = reader.readValue(httpRequest.getInputStream());
-        }
-        FunqyServerResponse response = dispatch(input);
-
-        Object value = response.getOutput().await().indefinitely();
-        if (value != null) {
-            writer.writeValue(httpResponse.getOutputStream(), value);
         }
     }
 

@@ -26,7 +26,7 @@
         <dependency>
             <groupId>com.google.cloud.functions</groupId>
             <artifactId>functions-framework-api</artifactId>
-            <scope>compile</scope><!-- Should be provided but it generates a build error -->
+            <scope>compile</scope><!-- Should be provided but it generates a build error as we need it at deployment time-->
         </dependency>
     </dependencies>
 

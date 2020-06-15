@@ -43,7 +43,7 @@ gcloud components install beta
 == The Code
 
 There is nothing special about the code and more importantly nothing Google Cloud specific.  Funqy functions can be deployed to many different
-environments and Google Cloud Functions is one of them.  The Java code is actually the same exact code as the {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[funqy-http-quickstart].
+environments and Google Cloud Functions is one of them.
 
 [[choose]]
 == Choose Your Function
@@ -73,7 +73,7 @@ This will compile and package your code.
 
 == Create the function
 
-In this example, we will create 3 functions, an http function and two background functions. Background functions allow to
+In this example, we will create two background functions. Background functions allow to
 react to Google Cloud events like PubSub messages, Cloud Storage events, Firestore events, ...
 
 [source,java]
@@ -89,25 +89,13 @@ public class GreetingFunctions {
     @Inject
     GreetingService service;
 
-    // <1>
-    @Funq
-    public Greeting helloHttpWorld() {
-        String message = service.hello("world");
-        Greeting greeting = new Greeting();
-        greeting.setMessage(message);
-        greeting.setName("world");
-        return greeting;
-    }
-
-    // <2>
-    @Funq
+    @Funq // <1>
     public void helloPubSubWorld(PubsubMessage pubSubEvent) {
         String message = service.hello("world");
         System.out.println(pubSubEvent.messageId + " - " + message);
     }
 
-    // <3>
-    @Funq
+    @Funq // <2>
     public void helloGCSWorld(StorageEvent storageEvent) {
         String message = service.hello("world");
         System.out.println(storageEvent.name + " - " + message);
@@ -118,10 +106,9 @@ public class GreetingFunctions {
 
 NOTE: Function return type can also be Mutiny reactive types.
 
-1. This is an HTTP function
-2. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.PubsubMessage`,
+1. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.PubsubMessage`,
 this is a convenient class to deserialize a PubSub message.
-3. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.StorageEvent`,
+2. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.StorageEvent`,
 this is a convenient class to deserialize a Google Storage event.
 
 NOTE: we provide convenience class to deserialize common Google Cloud event inside the `io.quarkus.funqy.gcp.functions.event` package.
@@ -136,18 +123,10 @@ quarkus.funqy.export=helloHttpWorld
 
 == Build and Deploy to Google Cloud
 
-To build your application, you first need to define a packaging of type `uber-jar` via your `application.properties`.
-
-[source]
-----
-quarkus.package.uber-jar=true
-----
-
-Then you can package your application via `mvn clean package`.
+To build your application, you can package your application via `mvn clean package`.
 You will have a single JAR inside the `target/deployment` repository that contains your classes and all your dependencies in it.
 
-Then you will be able to use `gcloud` to deploy your function to Google Cloud, the `gcloud` command will be different regarding which
-type of function you want to deploy (http or background), and for background function, from which event you want to be triggered.
+Then you will be able to use `gcloud` to deploy your function to Google Cloud, the `gcloud` command will be different depending from which event you want to be triggered.
 
 [WARNING]
 ====
@@ -157,23 +136,6 @@ ERROR: (gcloud.beta.functions.deploy) OperationError: code=7, message=Build Fail
 ```
 This means that Cloud Build is not activated yet. To overcome this error, open the URL shown in the error, follow the instructions and then wait a few minutes before retrying the command.
 ====
-
-
-=== Http Functions
-
-Use this command to deploy to Google Cloud Functions:
-
-[source]
-----
-gcloud beta functions deploy quarkus-example-funky-http \
-  --entry-point=io.quarkus.funqy.gcp.functions.FunqyHttpFunction \
-  --runtime=java11 --trigger-http --source=target/deployment
-----
-
-The entry point always needs to be `io.quarkus.funqy.gcp.functions.FunqyHttpFunction` as it will be this class
-that will bootstrap Quarkus.
-
-This command will give you as output a `httpsTrigger.url` that points to your function.
 
 === Background Functions - PubSub
 
@@ -197,11 +159,10 @@ To trigger an event to this function, you can use the `gcloud functions call` co
 
 [source]
 ----
-gcloud functions call quarkus-example-funky-pubsub --data '{"data":"SGVsbG8sIFB1Yi9TdWIh"}'
+gcloud functions call quarkus-example-funky-pubsub --data '{"data":"Hello, Pub/Sub"}'
 ----
 
-The `--data '{"data":"SGVsbG8sIFB1Yi9TdWIh"}'` option allow to specify the message to be send to PubSub, this needs to be BASE64 encoded.
-Here we send `Hello, Pub/Sub!`.
+The `--data '{"data":"Hello, Pub/Sub"}'` option allow to specify the message to be send to PubSub.
 
 === Background Functions - Cloud Storage
 
@@ -254,25 +215,6 @@ mvn dependency:copy \
 
 Then you can use it to launch your function locally, again, the command depends on the type of function and the type of events.
 
-=== Http Functions
-
-For HTTP functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyHttpFunction`.
-
-[source]
-----
-java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/funqy-google-cloud-functions-1.0-SNAPSHOT-runner.jar \
-  --target io.quarkus.funqy.gcp.functions.FunqyHttpFunction
-----
-
-Then you can call your HTTP function:
-
-[source]
-----
-curl localhost:8080
-> {"name":"world","message":"Hello world!"}
-----
-
 === Background Functions - PubSub
 
 For background functions, you launch the invoker with a target class of `io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction`.
@@ -312,6 +254,14 @@ curl localhost:8080 -d '{"data":{"name":"text"}}'
 ----
 
 This will call your PubSub background function with a Cloud Storage event `{"name":"file.txt"}`, so an event on the `file.txt` file.
+
+
+== Deploying HTTP Functions via Funqy
+
+You can use link:funqy-http[Funqy HTTP] on Google Cloud Functions.
+This allows you to invoke on multiple Funqy functions using HTTP deployed as one Google Cloud Function.
+
+For this you need to include both `quarkus-funqy-http` and `quarkus-google-cloud-functions` extension.
 
 == What's next?
 

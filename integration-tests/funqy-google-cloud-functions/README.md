@@ -16,29 +16,12 @@ Then you need to use Maven to build the artifact, the build will automatically c
 mvn clean package
 ```
 
-Finally, you need to use `gcloud` to deploy the function to Google Cloud. The `gcloud` command is different for HttpFunction and
+Finally, you need to use `gcloud` to deploy the function to Google Cloud. The `gcloud` command is different for each
 Background function so the set of instructions differs for each.
 
 This example contains multiple Funqy functions, if you want to test a different function that the one defined inside
 your `application.properties`, you can use the `--set-env-vars` option of `gcloud` to define the name of the function via the 
 `QUARKUS_FUNQY_EXPORT` environment variable.
-
-## HTTP function
-To deploy the HttpFunction, you can use the following `gcloud` command:
-
-```shell script
-gcloud beta functions deploy quarkus-funqy-http --entry-point=io.quarkus.funqy.gcp.functions.FunqyHttpFunction \
-  --trigger-http \
-  --runtime=java11 --source=target/deployment
-```
-
-After deploying your HTTP function to Google Cloud, the `gcloud` command will output the endpoint base location.
-
-You can issue the following `curl` commands to test it:
-
-```shell script
-curl -v {httpsTrigger.url}
-```
 
 ## Background function
 

@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.runtime.util.StringUtil;
 
 public class QuarkusBuild extends QuarkusTask {
 
@@ -118,9 +119,10 @@ public class QuarkusBuild extends QuarkusTask {
     }
 
     private String expandConfigurationKey(String shortKey) {
-        if (shortKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
-            return shortKey;
+        final String hyphenatedKey = StringUtil.hyphenate(shortKey);
+        if (hyphenatedKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
+            return hyphenatedKey;
         }
-        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, shortKey);
+        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, hyphenatedKey);
     }
 }

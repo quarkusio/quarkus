@@ -70,35 +70,6 @@ gradlePlugin {
     }
 }
 
-// Add a source set for the functional test suite
-sourceSets {
-    functionalTest {
-    }
-}
-
-gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
-configurations.functionalTestRuntime.extendsFrom(configurations.testRuntimeOnly)
-
-// Add a task to run the functional tests
-task functionalTest(type: Test) {
-    description = "Runs functional tests"
-    group = "verification"
-    useJUnitPlatform()
-    testClassesDirs = sourceSets.functionalTest.output.classesDirs
-    classpath = sourceSets.functionalTest.runtimeClasspath
-
-    // Kotlin compiler does not support Java 14
-    if(JavaVersion.current() == JavaVersion.VERSION_14) {
-        exclude 'io/quarkus/gradle/devmode/MultiModuleKotlinProjectDevModeTest.class'
-    }
-}
-
-check {
-    // Run the functional tests as part of `check`
-    dependsOn(tasks.functionalTest)
-}
-
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }

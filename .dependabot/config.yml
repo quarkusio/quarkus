@@ -183,6 +183,11 @@ update_configs:
     update_schedule: "daily"
     default_labels:
       - "area/dependencies"
+  - package_manager: "java:gradle"
+    directory: "/integration-tests/gradle"
+    update_schedule: "daily"
+    default_labels:
+      - "area/dependencies"
 
   # 1.3
   - package_manager: "java:maven"

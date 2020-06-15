@@ -1,10 +1,13 @@
 package io.quarkus.oidc.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -30,6 +33,31 @@ public final class OidcUtils {
 
     private OidcUtils() {
 
+    }
+
+    public static boolean isOpaqueToken(String token) {
+        return new StringTokenizer(token, ".").countTokens() != 3;
+    }
+
+    public static JsonObject decodeJwtContent(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        // part 1: skip the token headers
+        tokens.nextToken();
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
+        // part 2: token content
+        String encodedContent = tokens.nextToken();
+
+        // lets check only 1 more signature part is available
+        if (tokens.countTokens() != 1) {
+            return null;
+        }
+        try {
+            return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {

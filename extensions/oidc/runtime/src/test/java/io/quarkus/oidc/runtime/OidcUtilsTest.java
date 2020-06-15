@@ -1,6 +1,8 @@
 package io.quarkus.oidc.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -12,10 +14,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {
@@ -174,6 +180,33 @@ public class OidcUtilsTest {
         } catch (Exception ex) {
             // expected
         }
+    }
+
+    @Test
+    public void testTokenIsOpaque() throws Exception {
+        assertTrue(OidcUtils.isOpaqueToken("123"));
+        assertTrue(OidcUtils.isOpaqueToken("1.23"));
+        assertFalse(OidcUtils.isOpaqueToken("1.2.3"));
+    }
+
+    @Test
+    public void testDecodeOpaqueTokenAsJwt() throws Exception {
+        assertNull(OidcUtils.decodeJwtContent("123"));
+        assertNull(OidcUtils.decodeJwtContent("1.23"));
+        assertNull(OidcUtils.decodeJwtContent("1.2.3"));
+    }
+
+    @Test
+    public void testDecodeJwt() throws Exception {
+        final byte[] keyBytes = "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                .getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
+        String jwt = Jwt.claims().sign(key);
+        assertNull(OidcUtils.decodeJwtContent(jwt + ".4"));
+        JsonObject json = OidcUtils.decodeJwtContent(jwt);
+        assertTrue(json.containsKey("iat"));
+        assertTrue(json.containsKey("exp"));
+        assertTrue(json.containsKey("jti"));
     }
 
     public static JsonObject read(InputStream input) throws IOException {

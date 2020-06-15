@@ -8,6 +8,7 @@ import javax.ws.rs.PathParam;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
 
@@ -16,6 +17,9 @@ public class TenantResource {
 
     @Inject
     JsonWebToken accessToken;
+
+    @Inject
+    AccessTokenCredential accessTokenCred;
 
     @Inject
     @IdToken
@@ -40,10 +44,16 @@ public class TenantResource {
         if (!"Bearer".equals(accessToken.getClaim("typ"))) {
             throw new OIDCException("Wrong access token type");
         }
+        if (accessTokenCred.isOpaque()) {
+            throw new OIDCException("JWT token is expected");
+        }
         return name;
     }
 
     private String getNameServiceType() {
+        if (accessTokenCred.isOpaque()) {
+            throw new OIDCException("JWT token is expected");
+        }
         if (!"Bearer".equals(accessToken.getClaim("typ"))) {
             throw new OIDCException("Wrong access token type");
         }

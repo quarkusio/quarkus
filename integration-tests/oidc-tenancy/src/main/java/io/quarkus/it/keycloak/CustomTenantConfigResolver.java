@@ -10,23 +10,26 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantConfigResolver implements TenantConfigResolver {
     @Override
     public OidcTenantConfig resolve(RoutingContext context) {
-        if ("tenant-d".equals(context.request().path().split("/")[2])) {
+        String path = context.request().path();
+        String tenantId = path.split("/")[2];
+        if ("tenant-d".equals(tenantId)) {
             OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("tenant-id");
+            config.setTenantId("tenant-d");
             config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-d");
             config.setClientId("quarkus-d");
-            OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
-
-            credentials.setSecret("secret");
-
-            config.setCredentials(credentials);
-
-            OidcTenantConfig.Token token = new OidcTenantConfig.Token();
-
-            token.setIssuer(getIssuerUrl() + "/realms/quarkus-d");
-
-            config.setToken(token);
-
+            config.getCredentials().setSecret("secret");
+            config.getToken().setIssuer(getIssuerUrl() + "/realms/quarkus-d");
+            return config;
+        } else if ("tenant-oidc".equals(tenantId)) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("tenant-oidc");
+            String uri = context.request().absoluteURI();
+            String keycloakUri = path.contains("tenant-opaque")
+                    ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
+                    : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+            config.setAuthServerUrl(keycloakUri);
+            config.setClientId("client");
+            config.getCredentials().setSecret("secret");
             return config;
         }
         return null;

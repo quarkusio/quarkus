@@ -191,7 +191,9 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
             LaunchModeBuildItem launchMode,
             SmallRyeGraphQLRecorder recorder,
-            ShutdownContextBuildItem shutdownContext) throws IOException {
+            ShutdownContextBuildItem shutdownContext,
+            BeanContainerBuildItem beanContainerBuildItem // don't remove this - makes sure beanContainer is initialized
+    ) {
 
         /*
          * <em>Ugly Hack</em>

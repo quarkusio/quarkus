@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
-:extension-status: preview
+:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -12,6 +12,8 @@ The `quarkus-google-cloud-functions-http` extension allows you to write microser
 Undertow (servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
 
 One Google Cloud Functions deployment can represent any number of JAX-RS, servlet, or Vert.x Web endpoints.
+
+As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
 include::./status-include.adoc[]
 

@@ -264,7 +264,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             }
         }
 
-        List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);
+        List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps.size() + deploymentDeps.size());
+        fullDeploymentDeps.addAll(userDeps);
         fullDeploymentDeps.addAll(deploymentDeps);
         //we need these to have a type of 'jar'
         //type is blank when loaded

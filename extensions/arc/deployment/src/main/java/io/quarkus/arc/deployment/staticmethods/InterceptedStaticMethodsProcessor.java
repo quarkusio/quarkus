@@ -40,6 +40,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.impl.InterceptedStaticMethods;
@@ -82,54 +83,52 @@ public class InterceptedStaticMethodsProcessor {
     private static final String INITIALIZER_CLASS_SUFFIX = "_InterceptorInitializer";
 
     @BuildStep
-    void collectInterceptedStaticMethodsCandidates(BeanArchiveIndexBuildItem beanArchiveIndex,
+    void collectInterceptedStaticMethods(BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
-            InterceptorResolverBuildItem interceptorResolver) {
+            InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations) {
 
         // In this step we collect all intercepted static methods, ie. static methods annotated with interceptor bindings  
-        IndexView index = beanArchiveIndex.getIndex();
-        Set<MethodInfo> processedMethods = new HashSet<>();
+        Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
 
-        for (DotName interceptorBinding : interceptorResolver.getInterceptorBindings()) {
-            // Find all occurrences of each binding annotation
-            for (AnnotationInstance bindingInstance : index.getAnnotations(interceptorBinding)) {
-                if (bindingInstance.target().kind() != Kind.METHOD) {
-                    // Only consider annotation instances declared on methods
+        for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
+            for (MethodInfo method : clazz.methods()) {
+                // Find all static methods (except for static initializers)
+                if (!Modifier.isStatic(method.flags()) || "<clinit>".equals(method.name())) {
                     continue;
                 }
-                MethodInfo method = bindingInstance.target().asMethod();
-
-                if (Modifier.isStatic(method.flags()) && !"clinit".equals(method.name())
-                        && processedMethods.add(method)) {
-                    // Found static method (except for static initializer) that was not processed yet
-                    Collection<AnnotationInstance> annotations = method.annotations();
-                    if (!annotations.isEmpty()) {
-                        // Only method-level bindings are considered due to backwards compatibility
-                        Set<AnnotationInstance> methodLevelBindings = new HashSet<>();
-                        for (AnnotationInstance annotationInstance : annotations) {
-                            if (annotationInstance.target().kind() == Kind.METHOD
-                                    && interceptorResolver.getInterceptorBindings().contains(annotationInstance.name())) {
-                                methodLevelBindings.add(annotationInstance);
-                            }
+                // Get the (possibly transformed) set of annotations
+                Collection<AnnotationInstance> annotations = transformedAnnotations.getAnnotations(method);
+                if (annotations.isEmpty()) {
+                    continue;
+                }
+                // Only method-level bindings are considered due to backwards compatibility
+                Set<AnnotationInstance> methodLevelBindings = null;
+                for (AnnotationInstance annotationInstance : annotations) {
+                    if (annotationInstance.target().kind() == Kind.METHOD
+                            && interceptorBindings.contains(annotationInstance.name())) {
+                        if (methodLevelBindings == null) {
+                            methodLevelBindings = new HashSet<>();
                         }
-                        if (!methodLevelBindings.isEmpty()) {
-                            if (Modifier.isPrivate(method.flags())) {
-                                LOGGER.warnf(
-                                        "Interception of private static methods is not supported; bindings found on %s: %s",
-                                        method.declaringClass().name(),
-                                        method);
-                            } else {
-                                List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
-                                        InterceptionType.AROUND_INVOKE,
-                                        methodLevelBindings);
-                                if (!interceptors.isEmpty()) {
-                                    LOGGER.debugf("Intercepted static method found on %s: %s", method.declaringClass().name(),
-                                            method);
-                                    interceptedStaticMethods.produce(
-                                            new InterceptedStaticMethodBuildItem(method, methodLevelBindings, interceptors));
-                                }
-                            }
-                        }
+                        methodLevelBindings.add(annotationInstance);
+                    }
+                }
+                if (methodLevelBindings == null || methodLevelBindings.isEmpty()) {
+                    continue;
+                }
+                if (Modifier.isPrivate(method.flags())) {
+                    LOGGER.warnf(
+                            "Interception of private static methods is not supported; bindings found on %s: %s",
+                            method.declaringClass().name(),
+                            method);
+                } else {
+                    List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
+                            InterceptionType.AROUND_INVOKE,
+                            methodLevelBindings);
+                    if (!interceptors.isEmpty()) {
+                        LOGGER.debugf("Intercepted static method found on %s: %s", method.declaringClass().name(),
+                                method);
+                        interceptedStaticMethods.produce(
+                                new InterceptedStaticMethodBuildItem(method, methodLevelBindings, interceptors));
                     }
                 }
             }

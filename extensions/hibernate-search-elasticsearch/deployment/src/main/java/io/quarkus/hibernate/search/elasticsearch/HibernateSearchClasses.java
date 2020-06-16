@@ -17,6 +17,7 @@ import org.hibernate.search.backend.elasticsearch.lowlevel.index.analysis.impl.T
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.analysis.impl.TokenizerDefinition;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.AbstractTypeMapping;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicTemplate;
+import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicTemplateJsonAdapterFactory;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicType;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.FormatJsonAdapter;
 import org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.NamedDynamicTemplate;
@@ -43,10 +44,6 @@ class HibernateSearchClasses {
 
     static final List<DotName> GSON_CLASSES = new ArrayList<>();
     static {
-        // TODO this type should be public; see https://hibernate.atlassian.net/browse/HSEARCH-3916
-        GSON_CLASSES.add(DotName.createSimple(
-                "org.hibernate.search.backend.elasticsearch.lowlevel.index.mapping.impl.DynamicTemplateJsonAdapterFactory"));
-
         List<Class<?>> publicGsonClasses = Arrays.asList(
                 AbstractTypeMapping.class,
                 DynamicType.class,
@@ -71,6 +68,7 @@ class HibernateSearchClasses {
                 IndexAliasDefinition.class,
                 IndexAliasDefinitionJsonAdapterFactory.class,
                 DynamicTemplate.class,
+                DynamicTemplateJsonAdapterFactory.class,
                 NamedDynamicTemplate.class,
                 NamedDynamicTemplateJsonAdapterFactory.class);
         for (Class<?> publicGsonClass : publicGsonClasses) {

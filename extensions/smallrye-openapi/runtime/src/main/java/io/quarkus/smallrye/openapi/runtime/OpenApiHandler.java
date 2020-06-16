@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.io.Format;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -62,12 +62,12 @@ public class OpenApiHandler implements Handler<RoutingContext> {
             String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
 
             // Default content type is YAML
-            OpenApiSerializer.Format format = OpenApiSerializer.Format.YAML;
+            Format format = Format.YAML;
 
             // Check Accept, then query parameter "format" for JSON; else use YAML.
-            if ((accept != null && accept.contains(OpenApiSerializer.Format.JSON.getMimeType())) ||
+            if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
                     ("JSON".equalsIgnoreCase(formatParam))) {
-                format = OpenApiSerializer.Format.JSON;
+                format = Format.JSON;
             }
 
             addCorsResponseHeaders(resp);

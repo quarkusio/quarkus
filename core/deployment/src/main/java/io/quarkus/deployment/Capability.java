@@ -46,7 +46,7 @@ public enum Capability {
     HIBERNATE_ORM,
     HIBERNATE_REACTIVE,
     SMALLRYE_OPENTRACING,
-    ;
+    SPRING_WEB;
 
     /**
      * 

@@ -69,6 +69,8 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String HIBERNATE_ORM = Capability.HIBERNATE_ORM.getName();
     @Deprecated
     public static final String SMALLRYE_OPENTRACING = Capability.SMALLRYE_OPENTRACING.getName();
+    @Deprecated
+    public static final String SPRING_WEB = Capability.SPRING_WEB.getName();
 
     private final Set<String> capabilities;
 

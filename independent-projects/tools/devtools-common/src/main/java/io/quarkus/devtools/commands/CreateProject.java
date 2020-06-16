@@ -36,6 +36,7 @@ import javax.lang.model.SourceVersion;
  */
 public class CreateProject {
 
+    public static final String NAME = "create-project";
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     private final Path projectDirPath;

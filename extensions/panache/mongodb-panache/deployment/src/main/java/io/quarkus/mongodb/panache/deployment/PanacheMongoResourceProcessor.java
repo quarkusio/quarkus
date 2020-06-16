@@ -15,10 +15,8 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -36,6 +34,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -43,7 +42,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
@@ -100,6 +98,12 @@ public class PanacheMongoResourceProcessor {
     }
 
     @BuildStep
+    void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                DOTNAME_OBJECT_ID.toString()));
+    }
+
+    @BuildStep
     void registerJsonbSerDeser(BuildProducer<JsonbSerializerBuildItem> jsonbSerializers,
             BuildProducer<JsonbDeserializerBuildItem> jsonbDeserializers) {
         jsonbSerializers
@@ -120,13 +124,8 @@ public class PanacheMongoResourceProcessor {
 
     @BuildStep
     ReflectiveHierarchyBuildItem registerForReflection(CombinedIndexBuildItem index) {
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        IndexingUtil.indexClass(ObjectId.class.getName(), indexer, index.getIndex(), additionalIndex,
-                PanacheMongoResourceProcessor.class.getClassLoader());
-        CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
         Type type = Type.create(DOTNAME_OBJECT_ID, Type.Kind.CLASS);
-        return new ReflectiveHierarchyBuildItem(type, compositeIndex);
+        return new ReflectiveHierarchyBuildItem(type, index.getIndex());
     }
 
     @BuildStep

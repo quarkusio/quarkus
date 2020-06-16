@@ -15,11 +15,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import javax.enterprise.inject.Alternative;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
@@ -54,6 +58,7 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -90,10 +95,12 @@ public class QuarkusTestExtension
     private static List<Object> beforeEachCallbacks = new ArrayList<>();
     private static List<Object> afterEachCallbacks = new ArrayList<>();
     private static Class<?> quarkusTestMethodContextClass;
+    private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
 
     private static DeepClone deepClone;
 
-    private ExtensionState doJavaStart(ExtensionContext context) throws Throwable {
+    private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
+        quarkusTestProfile = profile;
         Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
@@ -114,10 +121,38 @@ public class QuarkusTestExtension
                 }
             }
             originalCl = Thread.currentThread().getContextClassLoader();
+            Map<String, String> sysPropRestore = new HashMap<>();
+            sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
+                    System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
 
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
+            if (profile != null) {
+                QuarkusTestProfile profileInstance = profile.newInstance();
+                Map<String, String> additional = new HashMap<>(profileInstance.getConfigOverrides());
+                if (!profileInstance.getEnabledAlternatives().isEmpty()) {
+                    additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
+                            .peek((c) -> {
+                                if (!c.isAnnotationPresent(Alternative.class)) {
+                                    throw new RuntimeException(
+                                            "Enabled alternative " + c + " is not annotated with @Alternative");
+                                }
+                            })
+                            .map(Class::getName).collect(Collectors.joining(",")));
+                }
+                if (profileInstance.getConfigProfile() != null) {
+                    System.setProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP, profileInstance.getConfigProfile());
+                }
+                //we just use system properties for now
+                //its a lot simpler
+                for (Map.Entry<String, String> i : additional.entrySet()) {
+                    sysPropRestore.put(i.getKey(), System.getProperty(i.getKey()));
+                }
+                for (Map.Entry<String, String> i : additional.entrySet()) {
+                    System.setProperty(i.getKey(), i.getValue());
+                }
+            }
 
             runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
 
@@ -176,6 +211,14 @@ public class QuarkusTestExtension
                                 shutdownTasks.pop().run();
                             }
                         } finally {
+                            for (Map.Entry<String, String> entry : sysPropRestore.entrySet()) {
+                                String val = entry.getValue();
+                                if (val == null) {
+                                    System.clearProperty(entry.getKey());
+                                } else {
+                                    System.setProperty(entry.getKey(), val);
+                                }
+                            }
                             tm.close();
                         }
                     }
@@ -305,10 +348,25 @@ public class QuarkusTestExtension
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        if (state == null && !failedBoot) {
+        TestProfile annotation = extensionContext.getRequiredTestClass().getAnnotation(TestProfile.class);
+        Class<? extends QuarkusTestProfile> selectedProfile = null;
+        if (annotation != null) {
+            selectedProfile = annotation.value();
+        }
+        boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        if ((state == null && !failedBoot) || wrongProfile) {
+            if (wrongProfile) {
+                if (state != null) {
+                    try {
+                        state.close();
+                    } catch (Throwable throwable) {
+                        throwable.printStackTrace();
+                    }
+                }
+            }
             PropertyTestUtil.setLogFileProperty();
             try {
-                state = doJavaStart(extensionContext);
+                state = doJavaStart(extensionContext, selectedProfile);
                 store.put(ExtensionState.class.getName(), state);
 
             } catch (Throwable e) {

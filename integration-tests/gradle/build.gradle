@@ -57,3 +57,7 @@ task nativeTest(type: Test) {
     // Include only native build test package
     include 'io/quarkus/gradle/nativeimage/*.class'
 }
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}

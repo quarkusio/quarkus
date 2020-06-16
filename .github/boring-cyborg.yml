@@ -97,6 +97,7 @@ labelPRBasedOnFilePath:
         - extensions/funqy/**/*
     area/gradle:
         - devtools/gradle/**/*
+        - integration-tests/gradle/**/*
     area/hibernate-orm:
         - extensions/hibernate-orm/**/*
         - extensions/spring-data-jpa/**/*

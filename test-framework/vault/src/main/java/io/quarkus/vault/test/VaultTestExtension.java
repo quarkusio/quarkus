@@ -51,7 +51,9 @@ import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.config.HealthConfig;
+import io.quarkus.vault.runtime.config.VaultAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
+import io.quarkus.vault.runtime.config.VaultKubernetesAuthenticationConfig;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.test.client.TestVaultClient;
@@ -168,6 +170,8 @@ public class VaultTestExtension {
         serverConfig.tls.caCert = Optional.empty();
         serverConfig.connectTimeout = Duration.ofSeconds(5);
         serverConfig.readTimeout = Duration.ofSeconds(1);
+        serverConfig.authentication = new VaultAuthenticationConfig();
+        serverConfig.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
 
         VaultBuildTimeConfig buildTimeConfig = new VaultBuildTimeConfig();
         buildTimeConfig.health = new HealthConfig();

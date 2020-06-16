@@ -98,7 +98,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         verify(mockWriter, times(1)).mkdirs("src/main/resources/META-INF/resources");
         verify(mockWriter, times(1)).mkdirs("src/main/docker");
 
-        verify(mockWriter, times(11)).write(anyString(), anyString());
+        verify(mockWriter, times(12)).write(anyString(), anyString());
         verify(mockWriter, times(1)).write(eq("pom.xml"),
                 argThat(argument -> argument.contains("<groupId>org.example</groupId>")
                         && argument.contains("<artifactId>quarkus-app</artifactId")
@@ -114,6 +114,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         verify(mockWriter, times(1)).write(eq("src/main/resources/META-INF/resources/index.html"), anyString());
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.native"), anyString());
         verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.jvm"), anyString());
+        verify(mockWriter, times(1)).write(eq("src/main/docker/Dockerfile.fast-jar"), anyString());
         verify(mockWriter, times(1)).write(eq(".dockerignore"), anyString());
     }
 

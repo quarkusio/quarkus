@@ -32,6 +32,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -44,6 +45,7 @@ public class DockerProcessor {
     private static final Logger log = Logger.getLogger(DockerProcessor.class);
     private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
+    private static final String DOCKERFILE_FAST_JAR = "Dockerfile.fast-jar";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
     public static final String DOCKER_BINARY_NAME = "docker";
 
@@ -62,6 +64,7 @@ public class DockerProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            PackageConfig packageConfig,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -81,7 +84,7 @@ public class DockerProcessor {
 
         ImageIdReader reader = new ImageIdReader();
         createContainerImage(containerImageConfig, dockerConfig, image, additionalImageTags, out, reader, false,
-                pushRequest.isPresent());
+                pushRequest.isPresent(), packageConfig);
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
@@ -94,6 +97,7 @@ public class DockerProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             OutputTargetBuildItem out,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
@@ -118,15 +122,16 @@ public class DockerProcessor {
 
         ImageIdReader reader = new ImageIdReader();
         createContainerImage(containerImageConfig, dockerConfig, image, additionalImageTags, out, reader, true,
-                pushRequest.isPresent());
+                pushRequest.isPresent(), packageConfig);
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 
     private void createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig, String image,
             List<String> additionalImageTags,
-            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested) {
+            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean pushRequested,
+            PackageConfig packageConfig) {
 
-        DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, out);
+        DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, packageConfig, out);
         String[] dockerArgs = getDockerArgs(image, dockerfilePaths, dockerConfig.buildArgs);
         log.infof("Executing the following command to build docker image: '%s %s'", DOCKER_BINARY_NAME,
                 String.join(" ", dockerArgs));
@@ -201,6 +206,7 @@ public class DockerProcessor {
     }
 
     private DockerfilePaths getDockerfilePaths(DockerConfig dockerConfig, boolean forNative,
+            PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem) {
         Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
         if (forNative) {
@@ -212,6 +218,8 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
+            } else if (packageConfig.type.equals(PackageConfig.FAST_JAR)) {
+                return DockerfileDetectionResult.detect(DOCKERFILE_FAST_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);
             }

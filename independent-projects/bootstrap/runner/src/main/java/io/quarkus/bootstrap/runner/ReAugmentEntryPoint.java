@@ -22,10 +22,10 @@ public class ReAugmentEntryPoint {
 
         String path = ReAugmentEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = URLDecoder.decode(path, "UTF-8");
-        Path appRoot = new File(decodedPath).toPath().getParent().getParent();
+        Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
 
         try (ObjectInputStream in = new ObjectInputStream(
-                Files.newInputStream(appRoot.resolve("deployment-quarkus/deployment-class-path.dat")))) {
+                Files.newInputStream(appRoot.resolve("lib/deployment/deployment-class-path.dat")))) {
             List<String> paths = (List<String>) in.readObject();
             //yuck, should use runner class loader
             URLClassLoader loader = new URLClassLoader(paths.stream().map((s) -> {

@@ -264,12 +264,10 @@ public class JibProcessor {
             return Jib.from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
                     jibConfig.baseRegistryPassword))
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)), workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.BOOT_LIB)),
-                            workDirInContainer)
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)),
                             workDirInContainer)
-                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
                     .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)), workDirInContainer)
+                    .addLayer(Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(jibConfig.environmentVariables)

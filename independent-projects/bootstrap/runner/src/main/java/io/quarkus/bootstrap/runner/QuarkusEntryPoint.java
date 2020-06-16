@@ -22,7 +22,7 @@ public class QuarkusEntryPoint {
             InvocationTargetException, NoSuchMethodException {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = URLDecoder.decode(path, "UTF-8");
-        Path appRoot = new File(decodedPath).toPath().getParent().getParent();
+        Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
         SerializedApplication app = null;
         try (InputStream in = Files.newInputStream(appRoot.resolve(QUARKUS_APPLICATION_DAT))) {
             app = SerializedApplication.read(in, appRoot);

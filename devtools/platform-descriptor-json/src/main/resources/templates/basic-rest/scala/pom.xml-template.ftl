@@ -123,7 +123,6 @@
                         <arg>-feature</arg>
                         <arg>-explaintypes</arg>
                         <arg>-target:jvm-1.8</arg>
-                        <arg>-Ypartial-unification</arg>
                     </args>
                 </configuration>
             </plugin>

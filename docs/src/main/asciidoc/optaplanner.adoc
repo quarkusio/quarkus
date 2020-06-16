@@ -60,8 +60,8 @@ with the following extensions, for Maven or Gradle:
 
 * RESTEasy JAX-RS (`quarkus-resteasy`)
 * RESTEasy Jackson (`quarkus-resteasy-jackson`)
-* OptaPlanner (`quarkus-optaplanner`)
-* OptaPlanner Jackson (`quarkus-optaplanner-jackson`)
+* OptaPlanner (`optaplanner-quarkus`)
+* OptaPlanner Jackson (`optaplanner-quarkus-jackson`)
 
 Alternatively, generate it from the command line with Maven:
 
@@ -99,12 +99,12 @@ In Maven, your `pom.xml` file contains these dependencies:
       <artifactId>quarkus-resteasy-jackson</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-optaplanner</artifactId>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-quarkus</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-optaplanner-jackson</artifactId>
+      <groupId>org.optaplanner</groupId>
+      <artifactId>optaplanner-quarkus-jackson</artifactId>
     </dependency>
 
     <dependency>
@@ -123,8 +123,8 @@ In Maven, your `pom.xml` file contains these dependencies:
 //    implementation enforcedPlatform("io.quarkus:quarkus-universe-bom:{quarkus-version}")
 //    implementation 'io.quarkus:quarkus-resteasy'
 //    implementation 'io.quarkus:quarkus-resteasy-jackson'
-//    implementation 'io.quarkus:quarkus-optaplanner'
-//    implementation 'io.quarkus:quarkus-optaplanner-jackson'
+//    implementation 'org.optaplanner:optaplanner-quarkus'
+//    implementation 'org.optaplanner:optaplanner-quarkus-jackson'
 //
 //    testImplementation 'io.quarkus:quarkus-junit5'
 //}

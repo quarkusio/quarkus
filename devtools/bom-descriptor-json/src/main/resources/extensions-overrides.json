@@ -388,6 +388,24 @@
       "artifact-id": "kogito-quarkus",
       "version": "0.8.0",
       "description": "Kogito extension"
+    },
+    {
+      "group-id": "org.optaplanner",
+      "artifact-id": "optaplanner-quarkus",
+      "version": "7.39.0.CR1",
+      "description": "OptaPlanner extension"
+    },
+    {
+      "group-id": "org.optaplanner",
+      "artifact-id": "optaplanner-quarkus-jackson",
+      "version": "7.39.0.CR1",
+      "description": "OptaPlanner Jackson extension"
+    },
+    {
+      "group-id": "org.optaplanner",
+      "artifact-id": "optaplanner-quarkus-jsonb",
+      "version": "7.39.0.CR1",
+      "description": "OptaPlanner JSON-B extension"
     }
   ]
 }

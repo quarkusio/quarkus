@@ -37,6 +37,8 @@ public class BaseFunction {
     protected static final String deploymentStatus;
     protected static boolean started = false;
 
+    private static final int BUFFER_SIZE = 8096;
+
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
@@ -106,7 +108,7 @@ public class BaseFunction {
 
     private ByteArrayOutputStream createByteStream() {
         ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(500);
+        baos = new ByteArrayOutputStream(BUFFER_SIZE);
         return baos;
     }
 
@@ -136,7 +138,6 @@ public class BaseFunction {
                 if (msg instanceof HttpContent) {
                     HttpContent content = (HttpContent) msg;
                     if (baos == null) {
-                        // todo what is right size?
                         baos = createByteStream();
                     }
                     int readable = content.content().readableBytes();

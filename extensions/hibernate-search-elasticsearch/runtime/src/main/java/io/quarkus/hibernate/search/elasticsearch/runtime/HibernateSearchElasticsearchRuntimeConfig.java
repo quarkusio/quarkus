@@ -374,7 +374,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.6/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          */
         // We can't set an actual default value here: see comment on this class.
@@ -400,7 +400,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.6/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          * <p>
          * Note that raising this number above the queue size has no effect,

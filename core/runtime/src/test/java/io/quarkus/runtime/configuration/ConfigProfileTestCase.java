@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -40,7 +41,7 @@ public class ConfigProfileTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
+        builder.withInterceptors(new ProfileConfigSourceInterceptor(ProfileManager.getActiveProfile()));
         builder.withSources(new PropertiesConfigSource(configMap, "test input", 500));
         final SmallRyeConfig config = (SmallRyeConfig) builder.build();
         cpr.registerConfig(config, classLoader);

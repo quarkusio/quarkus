@@ -50,10 +50,10 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.Converters;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -354,13 +354,9 @@ public final class BuildTimeConfigurationReader {
                     matched = runTimePatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
-                        boolean old = ExpandingConfigSource.setExpanding(false);
-                        try {
-                            specifiedRunTimeDefaultValues.put(propertyName,
-                                    config.getOptionalValue(propertyName, String.class).orElse(""));
-                        } finally {
-                            ExpandingConfigSource.setExpanding(old);
-                        }
+                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
+
                         continue;
                     }
                     // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
@@ -369,23 +365,13 @@ public final class BuildTimeConfigurationReader {
                     matched = bootstrapPatternMap.match(ni);
                     if (matched != null) {
                         // it's a specified run-time default (record for later)
-                        boolean old = ExpandingConfigSource.setExpanding(false);
-                        try {
-                            specifiedRunTimeDefaultValues.put(propertyName,
-                                    config.getOptionalValue(propertyName, String.class).orElse(""));
-                        } finally {
-                            ExpandingConfigSource.setExpanding(old);
-                        }
+                        specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                                () -> config.getOptionalValue(propertyName, String.class).orElse("")));
                     }
                 } else {
                     // it's not managed by us; record it
-                    boolean old = ExpandingConfigSource.setExpanding(false);
-                    try {
-                        specifiedRunTimeDefaultValues.put(propertyName,
-                                config.getOptionalValue(propertyName, String.class).orElse(""));
-                    } finally {
-                        ExpandingConfigSource.setExpanding(old);
-                    }
+                    specifiedRunTimeDefaultValues.put(propertyName, Expressions.withoutExpansion(
+                            () -> config.getOptionalValue(propertyName, String.class).orElse("")));
                 }
             }
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,

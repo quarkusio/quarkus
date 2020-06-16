@@ -113,6 +113,26 @@ public class ArcConfig {
     public Optional<List<String>> excludeTypes;
 
     /**
+     * List of types that should be considered unremovable regardless of whether they are directly used or not.
+     * This is a configuration option equivalent to using {@link io.quarkus.arc.Unremovable} annotation.
+     *
+     * <p>
+     * An element value can be:
+     * <ul>
+     * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
+     * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * </ul>
+     * If any element value matches a discovered bean, then such a bean is considered unremovable.
+     *
+     * @see {@link #removeUnusedBeans}
+     * @see {@link io.quarkus.arc.Unremovable}
+     */
+    @ConfigItem
+    public Optional<List<String>> unremovableTypes;
+
+    /**
      * The artifacts that should be excluded from discovery. These artifacts would be otherwise scanned for beans, i.e. they
      * contain a Jandex index or a beans.xml descriptor.
      */

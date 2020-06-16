@@ -259,6 +259,25 @@ public class ArcProcessor {
         for (UnremovableBeanBuildItem exclusion : removalExclusions) {
             builder.addRemovalExclusion(exclusion.getPredicate());
         }
+        // unremovable beans specified in application.properties
+        if (arcConfig.unremovableTypes.isPresent()) {
+            List<Predicate<ClassInfo>> classPredicates = initClassPredicates(arcConfig.unremovableTypes.get());
+            builder.addRemovalExclusion(new Predicate<BeanInfo>() {
+                @Override
+                public boolean test(BeanInfo beanInfo) {
+                    ClassInfo beanClass = beanInfo.getImplClazz();
+                    if (beanClass != null) {
+                        // if any of the predicates match, we make the given bean unremovable
+                        for (Predicate<ClassInfo> predicate : classPredicates) {
+                            if (predicate.test(beanClass)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+            });
+        }
         if (testClassPredicate.isPresent()) {
             builder.addRemovalExclusion(new Predicate<BeanInfo>() {
                 @Override
@@ -478,11 +497,11 @@ public class ArcProcessor {
         return new CustomScopeAnnotationsBuildItem(names);
     }
 
-    private List<Predicate<ClassInfo>> initClassPredicates(List<String> selectedAlternatives) {
+    private List<Predicate<ClassInfo>> initClassPredicates(List<String> types) {
         final String packMatch = ".*";
         final String packStarts = ".**";
         List<Predicate<ClassInfo>> predicates = new ArrayList<>();
-        for (String val : selectedAlternatives) {
+        for (String val : types) {
             if (val.endsWith(packMatch)) {
                 // Package matches
                 final String pack = val.substring(0, val.length() - packMatch.length());

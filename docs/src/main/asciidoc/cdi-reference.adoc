@@ -391,6 +391,24 @@ This optimization applies to all forms of bean declarations: bean class, produce
 Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
 This annotation can be placed on the types, producer methods, and producer fields.
 
+Since this is not always possible, there is an option to achieve the same via `application.properties`.
+The `quarkus.arc.unremovable-types` property accepts a list of string values that are used to match beans based on their name or package.
+
+.Value Examples
+|===
+|Value|Description
+|`org.acme.Foo`| Match the fully qualified name of the bean class
+|`org.acme.*`| Match beans where the package of the bean class is `org.acme`
+|`org.acme.**`| Match beans where the package of the bean class starts with `org.acme`
+|`Bar`| Match the simple name of the bean class
+|===
+
+.Example application.properties
+[source,properties]
+----
+quarkus.arc.unremovable-types=org.acme.Foo,org.acme.*,Bar
+----
+
 Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
 
 Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,

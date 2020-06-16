@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
@@ -68,7 +69,7 @@ import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
 /**
- * 
+ *
  */
 public class SmallRyeReactiveMessagingProcessor {
 
@@ -86,7 +87,8 @@ public class SmallRyeReactiveMessagingProcessor {
     AdditionalBeanBuildItem beans() {
         // We add the connector and channel qualifiers to make them part of the index.
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
-                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class, QuarkusWorkerPoolRegistry.class);
+                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
+                QuarkusWorkerPoolRegistry.class);
     }
 
     @BuildStep
@@ -163,6 +165,19 @@ public class SmallRyeReactiveMessagingProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext()
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
+
+            Optional<AnnotationInstance> broadcast = annotationStore.getAnnotations(injectionPoint.getTarget())
+                    .stream()
+                    .filter(ai -> ReactiveMessagingDotNames.BROADCAST.equals(ai.name()))
+                    .filter(ai -> {
+                        if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
+                                .isParam()) {
+                            return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
+                        }
+                        return true;
+                    })
+                    .findAny();
+
             // New emitter from the spec.
             if (injectionPoint.getRequiredType().name().equals(
                     ReactiveMessagingDotNames.EMITTER)) {
@@ -187,7 +202,7 @@ public class SmallRyeReactiveMessagingProcessor {
                                 return true;
                             })
                             .findAny();
-                    createEmitter(emitters, injectionPoint, channelName, overflow);
+                    createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
                 }
             }
 
@@ -215,7 +230,8 @@ public class SmallRyeReactiveMessagingProcessor {
                                 return true;
                             })
                             .findAny();
-                    createEmitter(emitters, injectionPoint, channelName, overflow);
+
+                    createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
                 }
             }
         }
@@ -224,18 +240,30 @@ public class SmallRyeReactiveMessagingProcessor {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private void createEmitter(BuildProducer<EmitterBuildItem> emitters, InjectionPointInfo injectionPoint,
             String channelName,
-            Optional<AnnotationInstance> overflow) {
+            Optional<AnnotationInstance> overflow,
+            Optional<AnnotationInstance> broadcast) {
         LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
                 injectionPoint.getTargetInfo(), channelName);
+
+        boolean hasBroadcast = false;
+        int awaitSubscribers = -1;
+        int bufferSize = -1;
+        String strategy = null;
+        if (broadcast.isPresent()) {
+            hasBroadcast = true;
+            AnnotationValue value = broadcast.get().value();
+            awaitSubscribers = value == null ? 0 : value.asInt();
+        }
+
         if (overflow.isPresent()) {
             AnnotationInstance annotation = overflow.get();
             AnnotationValue maybeBufferSize = annotation.value("bufferSize");
-            int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
-            emitters.produce(
-                    EmitterBuildItem.of(channelName, annotation.value().asString(), bufferSize));
-        } else {
-            emitters.produce(EmitterBuildItem.of(channelName));
+            bufferSize = maybeBufferSize == null ? 0 : maybeBufferSize.asInt();
+            strategy = annotation.value().asString();
         }
+
+        emitters.produce(
+                EmitterBuildItem.of(channelName, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
     @BuildStep
@@ -327,16 +355,15 @@ public class SmallRyeReactiveMessagingProcessor {
         for (EmitterBuildItem it : emitterFields) {
             Config config = ConfigProvider.getConfig();
             int defaultBufferSize = config.getOptionalValue("mp.messaging.emitter.default-buffer-size", Integer.class)
-                    .orElseGet(() -> config
-                            .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class)
-                            .orElse(127));
-            if (it.getOverflow() != null) {
-                recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(),
-                        it.getBufferSize(),
-                        defaultBufferSize);
-            } else {
-                recorder.configureEmitter(beanContainer.getValue(), it.getName(), null, 0, defaultBufferSize);
-            }
+                    .orElseGet(new Supplier<Integer>() {
+                        @Override
+                        public Integer get() {
+                            return config
+                                    .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class)
+                                    .orElse(127);
+                        }
+                    });
+            recorder.configureEmitter(beanContainer.getValue(), it.getEmitterConfig(), defaultBufferSize);
         }
     }
 

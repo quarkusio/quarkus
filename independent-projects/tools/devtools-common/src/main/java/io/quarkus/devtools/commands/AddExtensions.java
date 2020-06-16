@@ -10,6 +10,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.ExtensionRegistry;
 import java.util.Set;
 
 /**
@@ -21,6 +22,7 @@ public class AddExtensions {
     public static final String EXTENSIONS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extensions");
     public static final String OUTCOME_UPDATED = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "outcome", "updated");
     public static final String EXTENSION_MANAGER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extension-manager");
+    public static final String EXTENSION_REGISTRY = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extension-registry");
 
     private final QuarkusCommandInvocation invocation;
     private final AddExtensionsCommandHandler handler = new AddExtensionsCommandHandler();
@@ -31,6 +33,11 @@ public class AddExtensions {
 
     public AddExtensions extensionManager(ExtensionManager extensionManager) {
         invocation.setValue(EXTENSION_MANAGER, requireNonNull(extensionManager, "extensionManager is required"));
+        return this;
+    }
+
+    public AddExtensions extensionRegistry(ExtensionRegistry extensionRegistry) {
+        invocation.setValue(EXTENSION_REGISTRY, requireNonNull(extensionRegistry, "extensionRegistry is required"));
         return this;
     }
 

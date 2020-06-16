@@ -145,7 +145,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
             System.setOut(out);
         }
         final String output = baos.toString("UTF-8");
-        Assertions.assertEquals(String.format("No extension found with this pattern%n"), output,
+        Assertions.assertEquals(String.format("No extension found with pattern 'unexpectedSearch'%n"), output,
                 "search to unexpected extension must return a message");
     }
 

@@ -38,14 +38,13 @@ public final class GradleBuildFilesCreator {
         createSettingsContent(artifactId);
         createBuildContent(groupId, version);
         createProperties();
-        extensions.stream()
-                .forEach(e -> {
-                    try {
-                        addDependencyInBuildFile(e);
-                    } catch (IOException ex) {
-                        throw new UncheckedIOException(ex);
-                    }
-                });
+        extensions.forEach(e -> {
+            try {
+                addDependencyInBuildFile(e);
+            } catch (IOException ex) {
+                throw new UncheckedIOException(ex);
+            }
+        });
         this.writeToDisk();
     }
 
@@ -59,7 +58,7 @@ public final class GradleBuildFilesCreator {
     }
 
     private void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException {
-        addDependencyInModel(getModel(), coords);
+        addDependencyInModel(getModel(), coords, false);
     }
 
     protected boolean containsBOM(String groupId, String artifactId) throws IOException {

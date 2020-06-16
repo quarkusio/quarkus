@@ -9,6 +9,7 @@ import static java.util.stream.Collectors.toList;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -39,15 +41,31 @@ public abstract class BuildFile implements ExtensionManager {
         final List<AppArtifactCoords> installed = coords.stream()
                 .distinct()
                 .filter(a -> !existingKeys.contains(a.getKey()))
-                .filter(e -> {
-                    try {
-                        addDependencyInBuildFile(e);
-                        return true;
-                    } catch (IOException ex) {
-                        throw new UncheckedIOException(ex);
-                    }
-                }).collect(toList());
+                .collect(toList());
+        installed.forEach(e -> addDependency(e, e.getVersion() == null));
         this.writeToDisk();
+        return new InstallResult(installed);
+    }
+
+    @Override
+    public InstallResult install(ExtensionInstallPlan plan) throws IOException {
+        List<AppArtifactCoords> installed = new ArrayList<>();
+        for (AppArtifactCoords platform : plan.getPlatforms()) {
+            if (addDependency(platform, false)) {
+                installed.add(platform);
+            }
+        }
+        for (AppArtifactCoords managedExtension : plan.getManagedExtensions()) {
+            if (addDependency(managedExtension, true)) {
+                installed.add(managedExtension);
+            }
+        }
+        for (AppArtifactCoords independentExtension : plan.getIndependentExtensions()) {
+            if (addDependency(independentExtension, false)) {
+                installed.add(independentExtension);
+            }
+        }
+        writeToDisk();
         return new InstallResult(installed);
     }
 
@@ -69,7 +87,7 @@ public abstract class BuildFile implements ExtensionManager {
                 .filter(existingKeys::contains)
                 .filter(k -> {
                     try {
-                        removeDependencyFromBuildFile(k);
+                        removeDependency(k);
                         return true;
                     } catch (IOException ex) {
                         throw new UncheckedIOException(ex);
@@ -79,9 +97,9 @@ public abstract class BuildFile implements ExtensionManager {
         return new UninstallResult(uninstalled);
     }
 
-    protected abstract void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException;
+    protected abstract boolean addDependency(AppArtifactCoords coords, boolean managed);
 
-    protected abstract void removeDependencyFromBuildFile(AppArtifactKey key) throws IOException;
+    protected abstract void removeDependency(AppArtifactKey key) throws IOException;
 
     protected abstract List<Dependency> getDependencies() throws IOException;
 

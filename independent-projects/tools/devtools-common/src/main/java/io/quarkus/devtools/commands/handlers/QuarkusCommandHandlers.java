@@ -10,6 +10,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
 import io.quarkus.devtools.project.extensions.Extensions;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,7 +35,8 @@ final class QuarkusCommandHandlers {
             } else if (countColons > 1) {
                 builder.add(AppArtifactCoords.fromString(query));
             } else {
-                SelectionResult result = select(query, invocation.getPlatformDescriptor().getExtensions(), false);
+                Collection<Extension> extensions = invocation.getPlatformDescriptor().getExtensions();
+                SelectionResult result = select(query, extensions, false);
                 if (result.matches()) {
                     final Set<AppArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
                             .map(Extensions::stripVersion).collect(Collectors.toSet());
@@ -74,7 +76,8 @@ final class QuarkusCommandHandlers {
      *        be {@code false} by default.
      * @return the list of matching candidates and whether or not a match has been found.
      */
-    static SelectionResult select(final String query, final List<Extension> allPlatformExtensions, final boolean labelLookup) {
+    static SelectionResult select(final String query, final Collection<Extension> allPlatformExtensions,
+            final boolean labelLookup) {
         String q = query.trim().toLowerCase();
 
         // Try exact matches

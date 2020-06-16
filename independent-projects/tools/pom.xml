@@ -58,6 +58,7 @@
         <module>devtools-common</module>
         <module>utilities</module>
         <module>platform-descriptor-resolver-json</module>
+        <module>registry-descriptor-resolver</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -70,6 +71,11 @@
                 <groupId>com.eclipsesource.minimal-json</groupId>
                 <artifactId>minimal-json</artifactId>
                 <version>${eclipse-minimal-json.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-app-model</artifactId>
+                <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -89,6 +95,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-platform-descriptor-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

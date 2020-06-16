@@ -19,7 +19,7 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.eclipse.aether.resolution.ArtifactResult;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
@@ -178,7 +178,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         Parent parent;
         while ((parent = model.getParent()) != null) {
             try {
-                ArtifactDescriptorResult result = resolver.resolveDescriptor(new DefaultArtifact(
+                ArtifactResult result = resolver.resolve(new DefaultArtifact(
                         parent.getGroupId(),
                         parent.getArtifactId(),
                         "pom",

@@ -176,7 +176,8 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void parsePersistenceXmlDescriptors(
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
-        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
+        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser
+                .locatePersistenceUnits(hibernateConfig.persistenceXml);
         for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
             persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
         }

@@ -2,9 +2,11 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -147,6 +149,13 @@ public class HibernateOrmConfig {
     @ConfigItem
     @ConfigDocSection
     public HibernateOrmConfigLog log;
+
+    /**
+     * persistence.xml configuration
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceXml persistenceXml;
 
     /**
      * Caching configuration
@@ -359,5 +368,20 @@ public class HibernateOrmConfig {
          */
         @ConfigItem
         public OptionalLong objectCount;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceXml {
+        /**
+         * The persistence units to include from persistence.xml files. Default all.
+         */
+        @ConfigItem
+        public Optional<List<Pattern>> includePersistenceUnit;
+
+        /**
+         * The persistence units to exclude from persistence.xml files. Default none.
+         */
+        @ConfigItem
+        public Optional<List<Pattern>> excludePersistenceUnit;
     }
 }

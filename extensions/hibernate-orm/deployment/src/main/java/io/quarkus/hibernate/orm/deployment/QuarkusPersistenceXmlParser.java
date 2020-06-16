@@ -1,9 +1,12 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
@@ -24,10 +27,32 @@ final class QuarkusPersistenceXmlParser extends PersistenceXmlParser {
      *
      * @return the list of ParsedPersistenceXmlDescriptor(s), after discovery and parsing.
      */
-    public static List<ParsedPersistenceXmlDescriptor> locatePersistenceUnits() {
+    public static List<ParsedPersistenceXmlDescriptor> locatePersistenceUnits(
+            HibernateOrmConfig.HibernateOrmConfigPersistenceXml config) {
         final QuarkusPersistenceXmlParser parser = new QuarkusPersistenceXmlParser();
         parser.doResolve();
-        return parser.getResolvedPersistenceUnits();
+
+        final List<ParsedPersistenceXmlDescriptor> resolvedPersistenceUnits = parser.getResolvedPersistenceUnits();
+        final List<ParsedPersistenceXmlDescriptor> filteredPersistenceUnits = new ArrayList<>();
+
+        resolvedPersistenceUnits.forEach(d -> {
+            //if it is not explicitly excluded, it is included
+            boolean include = config.excludePersistenceUnit.map(Collection::stream).orElse(Stream.empty())
+                    .noneMatch(p -> p.matcher(d.getName()).matches());
+
+            if (!include) {
+                //an explicit include overrides an explicit exclude
+                include = config.includePersistenceUnit.map(Collection::stream).orElse(Stream.empty())
+                        .anyMatch(p -> p.matcher(d.getName()).matches());
+            }
+
+            if (include) {
+                filteredPersistenceUnits.add(d);
+            }
+
+        });
+
+        return filteredPersistenceUnits;
     }
 
     private QuarkusPersistenceXmlParser() {

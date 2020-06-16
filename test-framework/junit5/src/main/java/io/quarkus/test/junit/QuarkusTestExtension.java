@@ -97,6 +97,10 @@ public class QuarkusTestExtension
     private static Class<?> quarkusTestMethodContextClass;
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
 
+    private static CuratedApplication curatedApplication;
+
+    private static Map<Class<? extends QuarkusTestProfile>, StartupAction> existingApplications = new HashMap<>();
+
     private static DeepClone deepClone;
 
     private ExtensionState doJavaStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile) throws Throwable {
@@ -125,9 +129,6 @@ public class QuarkusTestExtension
             sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
                     System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
 
-            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
-                    .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST);
             if (profile != null) {
                 QuarkusTestProfile profileInstance = profile.newInstance();
                 Map<String, String> additional = new HashMap<>(profileInstance.getConfigOverrides());
@@ -153,32 +154,42 @@ public class QuarkusTestExtension
                     System.setProperty(i.getKey(), i.getValue());
                 }
             }
+            StartupAction startupAction = existingApplications.get(profile);
+            if (startupAction == null) {
 
-            runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+                final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
+                        .setIsolateDeployment(true)
+                        .setMode(QuarkusBootstrap.Mode.TEST);
 
-            rootBuilder.add(appClassLocation);
-            final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
-            if (appResourcesLocation != null) {
-                rootBuilder.add(appResourcesLocation);
+                runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+
+                rootBuilder.add(appClassLocation);
+                final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
+                if (appResourcesLocation != null) {
+                    rootBuilder.add(appResourcesLocation);
+                }
+
+                runnerBuilder.setApplicationRoot(rootBuilder.build());
+
+                CuratedApplication curatedApplication = runnerBuilder
+                        .setTest(true)
+                        .build()
+                        .bootstrap();
+
+                Index testClassesIndex = TestClassIndexer.indexTestClasses(requiredTestClass);
+                // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
+                TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
+
+                Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
+                final Map<String, Object> props = new HashMap<>();
+                props.put(TEST_LOCATION, testClassLocation);
+                props.put(TEST_CLASS, requiredTestClass);
+                AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(), props);
+                startupAction = augmentAction.createInitialRuntimeApplication();
+                existingApplications.put(profile, startupAction);
+            } else {
+                startupAction.prepareForRestart();
             }
-
-            runnerBuilder.setApplicationRoot(rootBuilder.build());
-
-            CuratedApplication curatedApplication = runnerBuilder
-                    .setTest(true)
-                    .build()
-                    .bootstrap();
-
-            Index testClassesIndex = TestClassIndexer.indexTestClasses(requiredTestClass);
-            // we need to write the Index to make it reusable from other parts of the testing infrastructure that run in different ClassLoaders
-            TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
-
-            Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
-            final Map<String, Object> props = new HashMap<>();
-            props.put(TEST_LOCATION, testClassLocation);
-            props.put(TEST_CLASS, requiredTestClass);
-            AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(), props);
-            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
             populateDeepCloneField(startupAction);
 

@@ -18,4 +18,6 @@ public interface StartupAction {
      */
     RunningQuarkusApplication runMainClass(String... args) throws Exception;
 
+    void prepareForRestart();
+
 }

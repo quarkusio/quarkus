@@ -47,12 +47,18 @@ public class StartupActionImpl implements StartupAction {
 
     private final CuratedApplication curatedApplication;
     private final BuildResult buildResult;
-    private final QuarkusClassLoader runtimeClassLoader;
+    private QuarkusClassLoader runtimeClassLoader;
+    private final ClassLoader deploymentClassLoader;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult,
             ClassLoader deploymentClassLoader) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
+        this.deploymentClassLoader = deploymentClassLoader;
+        prepareForStart();
+    }
+
+    private void prepareForStart() {
         Set<String> eagerClasses = new HashSet<>();
         Map<String, Predicate<byte[]>> transformerPredicates = new HashMap<>();
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers(
@@ -60,22 +66,12 @@ public class StartupActionImpl implements StartupAction {
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
-        //so we have some differences between dev and test mode here.
-        //test mode only has a single class loader, while dev uses a disposable runtime class loader
-        //that is discarded between restarts
-        if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.DEV) {
-            baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerPredicates,
-                    deploymentClassLoader);
-            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
-                    bytecodeTransformers, transformerPredicates,
-                    deploymentClassLoader, extractGeneratedResources(true));
-        } else {
-            Map<String, byte[]> resources = new HashMap<>();
-            resources.putAll(extractGeneratedResources(false));
-            resources.putAll(extractGeneratedResources(true));
-            baseClassLoader.reset(resources, bytecodeTransformers, transformerPredicates, deploymentClassLoader);
-            runtimeClassLoader = baseClassLoader;
-        }
+        baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerPredicates,
+                deploymentClassLoader);
+        runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
+                bytecodeTransformers, transformerPredicates,
+                deploymentClassLoader, extractGeneratedResources(true));
+
         this.runtimeClassLoader = runtimeClassLoader;
         handleEagerClasses(runtimeClassLoader, eagerClasses);
     }
@@ -123,7 +119,6 @@ public class StartupActionImpl implements StartupAction {
      * of the JVM will exit when the app stops.
      */
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
-
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
@@ -187,6 +182,11 @@ public class StartupActionImpl implements StartupAction {
             Thread.currentThread().setContextClassLoader(old);
         }
 
+    }
+
+    @Override
+    public void prepareForRestart() {
+        prepareForStart();
     }
 
     /**

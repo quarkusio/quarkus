@@ -80,7 +80,7 @@ NOTE: In Quarkus, the caching is done automatically.
 The dynamic parts of a template include:
 
 * *Comment* 
-** `{! This is a comment !}`,
+** Starts with `{!` and ends with `!}`:  `{! This is a comment !}`,
 ** Could be multi-line,
 ** May contain expressions and sections: `{! {#if true} !}`.
 * *Expression*
@@ -93,6 +93,10 @@ The dynamic parts of a template include:
 ** The name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
 ** Can be empty: `{#myTag image=true /}`,
 ** May declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
+* *Unparsed Character Data*
+** Starts with `{[` and ends with `]}`: `{[ <script>if(true){alert('Qute is cute!')};</script> ]}`,
+** Could be multi-line,
+** Used to mark the content that should be rendered but not parsed.
 
 === Identifiers
 

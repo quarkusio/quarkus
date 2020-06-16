@@ -37,6 +37,8 @@ class Parser implements Function<String, Expression> {
     private static final char START_DELIMITER = '{';
     private static final char END_DELIMITER = '}';
     private static final char COMMENT_DELIMITER = '!';
+    private static final char CDATA_START_DELIMITER = '[';
+    private static final char CDATA_END_DELIMITER = ']';
     private static final char UNDERSCORE = '_';
     private static final char ESCAPE_CHAR = '\\';
 
@@ -151,6 +153,9 @@ class Parser implements Function<String, Expression> {
             case COMMENT:
                 comment(character);
                 break;
+            case CDATA:
+                cdata(character);
+                break;
             case TAG_CANDIDATE:
                 tagCandidate(character);
                 break;
@@ -193,6 +198,17 @@ class Parser implements Function<String, Expression> {
         }
     }
 
+    private void cdata(char character) {
+        if (character == END_DELIMITER && buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == CDATA_END_DELIMITER) {
+            // End of cdata
+            state = State.TEXT;
+            buffer.deleteCharAt(buffer.length() - 1);
+            flushText();
+        } else {
+            buffer.append(character);
+        }
+    }
+
     private void tag(char character) {
         if (character == END_DELIMITER) {
             flushTag();
@@ -205,8 +221,15 @@ class Parser implements Function<String, Expression> {
         if (isValidIdentifierStart(character)) {
             // Real tag start, flush text if any
             flushText();
-            state = character == COMMENT_DELIMITER ? State.COMMENT : State.TAG_INSIDE;
-            buffer.append(character);
+            if (character == COMMENT_DELIMITER) {
+                buffer.append(character);
+                state = State.COMMENT;
+            } else if (character == CDATA_START_DELIMITER) {
+                state = State.CDATA;
+            } else {
+                buffer.append(character);
+                state = State.TAG_INSIDE;
+            }
         } else {
             // Ignore expressions/tags starting with an invalid identifier
             buffer.append(START_DELIMITER).append(character);
@@ -219,8 +242,9 @@ class Parser implements Function<String, Expression> {
     }
 
     private boolean isValidIdentifierStart(char character) {
-        // A valid identifier must start with a digit, alphabet, underscore, comment delimiter or a tag command (e.g. # for sections)
-        return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == UNDERSCORE
+        // A valid identifier must start with a digit, alphabet, underscore, comment delimiter, cdata start delimiter or a tag command (e.g. # for sections)
+        return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == CDATA_START_DELIMITER
+                || character == UNDERSCORE
                 || Character.isDigit(character)
                 || Character.isAlphabetic(character);
     }
@@ -570,6 +594,7 @@ class Parser implements Function<String, Expression> {
         TAG_CANDIDATE,
         COMMENT,
         ESCAPE,
+        CDATA,
 
     }
 

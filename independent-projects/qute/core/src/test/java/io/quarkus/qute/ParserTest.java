@@ -165,6 +165,21 @@ public class ParserTest {
         assertEquals("Hello world", engine.parse("Hello {name ?: 'world'  }").render());
     }
 
+    @Test
+    public void testCdata() {
+        Engine engine = Engine.builder().addDefaults().build();
+        String jsSnippet = "<script>const foo = function(){alert('bar');};</script>";
+        try {
+            engine.parse("Hello {name} " + jsSnippet);
+            fail();
+        } catch (Exception expected) {
+        }
+        assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {["
+                + jsSnippet
+                + "]}").data("name", "world").render());
+        assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

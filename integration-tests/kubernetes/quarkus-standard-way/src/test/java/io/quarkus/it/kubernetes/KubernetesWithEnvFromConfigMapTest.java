@@ -1,3 +1,4 @@
+
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,11 +47,15 @@ public class KubernetesWithEnvFromConfigMapTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
-                            assertThat(container.getEnvFrom()).hasOnlyOneElementSatisfying(env -> {
-                                assertThat(env.getConfigMapRef()).satisfies(ref -> {
-                                    assertThat(ref.getName()).isEqualTo("my-configmap");
-                                });
-                            });
+
+                            assertThat(container.getEnvFrom()).filteredOn(env -> env.getConfigMapRef() != null
+                                    && env.getConfigMapRef().getName() != null
+                                    && env.getConfigMapRef().getName().equals("my-configmap"))
+                                    .hasOnlyOneElementSatisfying(env -> {
+                                        assertThat(env.getConfigMapRef()).satisfies(configmapRef -> {
+                                            assertThat(configmapRef.getOptional()).isNull();
+                                        });
+                                    });
 
                             assertThat(container.getEnv()).filteredOn(env -> "DB_DATABASE".equals(env.getName()))
                                     .hasOnlyOneElementSatisfying(env -> {
@@ -58,6 +63,7 @@ public class KubernetesWithEnvFromConfigMapTest {
                                             assertThat(valueFrom.getConfigMapKeyRef()).satisfies(configMapKeyRef -> {
                                                 assertThat(configMapKeyRef.getKey()).isEqualTo("database.name");
                                                 assertThat(configMapKeyRef.getName()).isEqualTo("db-config");
+                                                assertThat(configMapKeyRef.getOptional()).isNull();
                                             });
                                         });
                                     });

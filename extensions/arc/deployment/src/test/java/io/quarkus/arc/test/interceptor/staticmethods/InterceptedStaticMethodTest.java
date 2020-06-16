@@ -10,6 +10,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;
@@ -17,12 +18,20 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
 import javax.interceptor.InvocationContext;
 
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opentest4j.AssertionFailedError;
 
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.builder.BuildChainBuilder;
+import io.quarkus.builder.BuildContext;
+import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class InterceptedStaticMethodTest {
@@ -30,7 +39,40 @@ public class InterceptedStaticMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(InterceptMe.class, Simple.class, SimpleInterceptor.class));
+                    .addClasses(InterceptMe.class, Simple.class, AnotherSimple.class, SimpleInterceptor.class))
+            .addBuildChainCustomizer(buildCustomizer());
+
+    static Consumer<BuildChainBuilder> buildCustomizer() {
+        return new Consumer<BuildChainBuilder>() {
+
+            @Override
+            public void accept(BuildChainBuilder builder) {
+                builder.addBuildStep(new BuildStep() {
+
+                    @Override
+                    public void execute(BuildContext context) {
+                        context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+                            @Override
+                            public boolean appliesTo(Kind kind) {
+                                return AnnotationTarget.Kind.METHOD == kind;
+                            }
+
+                            @Override
+                            public void transform(TransformationContext context) {
+                                MethodInfo method = context.getTarget().asMethod();
+                                if (method.declaringClass().name().toString()
+                                        .endsWith("AnotherSimple")) {
+                                    context.transform().add(InterceptMe.class).done();
+                                }
+                            }
+
+                        }));
+                    }
+                }).produces(AnnotationsTransformerBuildItem.class).build();
+            }
+        };
+    }
 
     @Test
     public void testInterceptor() {
@@ -38,6 +80,7 @@ public class InterceptedStaticMethodTest {
         Simple.pong();
         assertEquals(42.0, Simple.testDouble(2.0, "foo", 5, null));
         assertEquals(1, SimpleInterceptor.VOID_INTERCEPTIONS.get());
+        assertEquals("OK:PONG", AnotherSimple.ping("pong"));
     }
 
     public static class Simple {
@@ -56,6 +99,14 @@ public class InterceptedStaticMethodTest {
             return val;
         }
 
+    }
+
+    public static class AnotherSimple {
+
+        // @InterceptMe is added by the transformer
+        public static String ping(String val) {
+            return val.toUpperCase();
+        }
     }
 
     @Priority(1)

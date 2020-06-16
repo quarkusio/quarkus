@@ -38,6 +38,7 @@ import io.quarkus.arc.processor.AlternativePriorities;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
+import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BytecodeTransformer;
@@ -342,7 +343,9 @@ public class ArcProcessor {
     // PHASE 2 - register all beans
     @BuildStep
     public BeanRegistrationPhaseBuildItem registerBeans(ContextRegistrationPhaseBuildItem contextRegistrationPhase,
-            List<ContextConfiguratorBuildItem> contextConfigurators, BuildProducer<InterceptorResolverBuildItem> resolver) {
+            List<ContextConfiguratorBuildItem> contextConfigurators,
+            BuildProducer<InterceptorResolverBuildItem> interceptorResolver,
+            BuildProducer<TransformedAnnotationsBuildItem> transformedAnnotations) {
 
         for (ContextConfiguratorBuildItem contextConfigurator : contextConfigurators) {
             for (ContextConfigurator value : contextConfigurator.getValues()) {
@@ -351,7 +354,9 @@ public class ArcProcessor {
             }
         }
 
-        resolver.produce(new InterceptorResolverBuildItem(contextRegistrationPhase.getBeanProcessor().getBeanDeployment()));
+        BeanDeployment beanDeployment = contextRegistrationPhase.getBeanProcessor().getBeanDeployment();
+        interceptorResolver.produce(new InterceptorResolverBuildItem(beanDeployment));
+        transformedAnnotations.produce(new TransformedAnnotationsBuildItem(beanDeployment));
 
         return new BeanRegistrationPhaseBuildItem(contextRegistrationPhase.getBeanProcessor().registerBeans(),
                 contextRegistrationPhase.getBeanProcessor());

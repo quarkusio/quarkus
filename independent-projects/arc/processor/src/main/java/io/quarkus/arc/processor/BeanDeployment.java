@@ -420,7 +420,7 @@ public class BeanDeployment {
         return annotationStore;
     }
 
-    Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
+    public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
         return annotationStore.getAnnotations(target);
     }
 

@@ -107,10 +107,26 @@ public final class DotNames {
     private DotNames() {
     }
 
+    /**
+     * Note that this method does not attempt to detect a nested class because the computing cache is shared with the
+     * {@link #create(String)} variant and so the results would be inconsistent. Therefore, this method should only be used for
+     * top-level classes.
+     * 
+     * @param clazz
+     * @return the computed dot name
+     */
     static DotName create(Class<?> clazz) {
         return create(clazz.getName());
     }
 
+    /**
+     * Note that the dollar sign is a valid character for class names so we cannot detect a nested class here. Therefore, this
+     * method returns a dot name for which {@link DotName#local()} returns {@code Foo$Bar} for the parameter
+     * "com.foo.Foo$Bar".
+     * 
+     * @param name
+     * @return the computed dot name
+     */
     static DotName create(String name) {
         int lastDot = name.lastIndexOf('.');
         if (lastDot < 0) {
@@ -149,9 +165,10 @@ public final class DotNames {
     }
 
     /**
-     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
-     * return "Foo$Bar" for the
-     * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
+     * Note that dollar sign is a valid character for class names so we cannot detect a nested class here. Therefore, this
+     * method returns "Foo$Bar" for the parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to
+     * distinguish
+     * the nested classes.
      * 
      * @param name
      * @return the simple name

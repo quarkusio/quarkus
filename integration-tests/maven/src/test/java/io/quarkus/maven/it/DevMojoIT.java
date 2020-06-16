@@ -72,6 +72,17 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testThatInitialMavenResourceFilteringWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic-resource-filtering", "projects/project-classic-resource-filtering");
+        run(false);
+
+        //make sure that a simple HTTP GET request always works
+        IntStream.range(0, 10).forEach(i -> {
+            assertThat(DevModeTestUtils.getStrictHttpResponse("/hello", 200)).isTrue();
+        });
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnJavaChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
         runAndCheck();

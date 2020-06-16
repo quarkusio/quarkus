@@ -1,5 +1,7 @@
 package io.quarkus.container.image.jib.deployment;
 
+import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -17,19 +19,19 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
-import com.google.cloud.tools.jib.api.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.Containerizer;
 import com.google.cloud.tools.jib.api.DockerDaemonImage;
-import com.google.cloud.tools.jib.api.FilePermissions;
 import com.google.cloud.tools.jib.api.ImageReference;
 import com.google.cloud.tools.jib.api.InvalidImageReferenceException;
 import com.google.cloud.tools.jib.api.JavaContainerBuilder;
 import com.google.cloud.tools.jib.api.Jib;
 import com.google.cloud.tools.jib.api.JibContainer;
 import com.google.cloud.tools.jib.api.JibContainerBuilder;
-import com.google.cloud.tools.jib.api.LayerConfiguration;
 import com.google.cloud.tools.jib.api.LogEvent;
 import com.google.cloud.tools.jib.api.RegistryImage;
+import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
+import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
+import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -39,6 +41,7 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
+import io.quarkus.container.util.PathsUtil;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -96,6 +99,7 @@ public class JibProcessor {
             throw new IllegalArgumentException(
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
         }
+        handleExtraFiles(outputTarget, jibContainerBuilder);
         containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
@@ -107,6 +111,7 @@ public class JibProcessor {
             ContainerImageInfoBuildItem containerImage,
             NativeImageBuildItem nativeImage,
             ApplicationInfoBuildItem applicationInfo,
+            OutputTargetBuildItem outputTarget,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -124,7 +129,7 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
-
+        handleExtraFiles(outputTarget, jibContainerBuilder);
         containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
@@ -231,9 +236,6 @@ public class JibProcessor {
         return ImageReference.of(registry, repository, tag);
     }
 
-    // TODO createContainerBuilderFromJar won't work with fast-jar so we are better off just using our own
-    //  containerBuilder with the proper layering (lib -> boot-lib -> quarkus-run -> transformed-bytecode -> generated-bytecode -> app)
-
     /**
      * We don't use Jib's JavaContainerBuilder here because we need to support the custom fast-jar format
      * We create the following layers (least likely to change to most likely to change):
@@ -326,7 +328,7 @@ public class JibProcessor {
             return Jib
                     .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), containerImageConfig.username,
                             containerImageConfig.password))
-                    .addLayer(LayerConfiguration.builder()
+                    .addFileEntriesLayer(FileEntriesLayer.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))
                             .build())
@@ -337,6 +339,46 @@ public class JibProcessor {
                     .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Allow users to have custom files in {@code src/main/jib} that will be copied into the built container's file system
+     * in same manner as the Jib Maven and Gradle plugins do.
+     * For example, {@code src/main/jib/foo/bar} would add {@code /foo/bar} into the container filesystem.
+     *
+     * See: https://github.com/GoogleContainerTools/jib/blob/v0.15.0-core/docs/faq.md#can-i-add-a-custom-directory-to-the-image
+     */
+    private void handleExtraFiles(OutputTargetBuildItem outputTarget, JibContainerBuilder jibContainerBuilder) {
+        Path outputDirectory = outputTarget.getOutputDirectory();
+        PathsUtil.findMainSourcesRoot(outputTarget.getOutputDirectory());
+        Map.Entry<Path, Path> mainSourcesRoot = findMainSourcesRoot(outputDirectory);
+        if (mainSourcesRoot == null) { // this should never happen
+            return;
+        }
+        Path jibFilesRoot = mainSourcesRoot.getKey().resolve("jib");
+        if (!jibFilesRoot.toFile().exists()) {
+            return;
+        }
+
+        FileEntriesLayer extraFilesLayer;
+        try {
+            extraFilesLayer = ContainerBuilderHelper.extraDirectoryLayerConfiguration(
+                    jibFilesRoot,
+                    AbsoluteUnixPath.get("/"),
+                    Collections.emptyMap(),
+                    (localPath, ignored2) -> {
+                        try {
+                            return Files.getLastModifiedTime(localPath).toInstant();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+            jibContainerBuilder.addFileEntriesLayer(
+                    extraFilesLayer);
+        } catch (IOException e) {
+            throw new UncheckedIOException(
+                    "Unable to add extra files in '" + jibFilesRoot.toAbsolutePath().toString() + "' to the container", e);
         }
     }
 

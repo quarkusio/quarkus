@@ -21,7 +21,7 @@ public class ValueMap<V extends ValueMap<V>> {
         this(values.values);
     }
 
-    public Object getValue(String name) {
+    public <T> T getValue(String name) {
         return getValue(name, null);
     }
 

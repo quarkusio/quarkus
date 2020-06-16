@@ -139,11 +139,11 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
                     }
 
                     plainChallenge = new String(decode, charset);
-                    log.debugf("Found basic auth header %s (decoded using charset %s)", plainChallenge, charset);
                     int colonPos;
                     if ((colonPos = plainChallenge.indexOf(COLON)) > -1) {
                         String userName = plainChallenge.substring(0, colonPos);
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
+                        log.debugf("Found basic auth header %s:***** (decoded using charset %s)", userName, charset);
 
                         UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
                                 new PasswordCredential(password));

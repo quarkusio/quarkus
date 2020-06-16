@@ -13,6 +13,10 @@ class ForwardedHandlerInitializer {
         router.route("/forward").handler(rc -> rc.response()
                 .end(rc.request().scheme() + "|" + rc.request().getHeader(HttpHeaders.HOST) + "|"
                         + rc.request().remoteAddress().toString()));
+
+        router.route("/uri").handler(rc -> rc.response()
+                .end(rc.request().uri()));
+
     }
 
 }

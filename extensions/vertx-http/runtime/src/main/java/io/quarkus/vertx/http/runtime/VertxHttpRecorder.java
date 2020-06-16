@@ -300,7 +300,11 @@ public class VertxHttpRecorder {
             root = new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest event) {
-                    delegate.handle(new ForwardedServerRequestWrapper(event, httpConfiguration.allowForwarded));
+                    delegate.handle(new ForwardedServerRequestWrapper(
+                            event,
+                            httpConfiguration.allowForwarded,
+                            httpConfiguration.forwardedHostHeader,
+                            httpConfiguration.forwardedPrefixHeader));
                 }
             };
         }

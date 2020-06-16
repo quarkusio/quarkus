@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -35,9 +36,16 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     private String uri;
     private String absoluteURI;
 
-    ForwardedServerRequestWrapper(HttpServerRequest request, boolean allowForwarded) {
+    ForwardedServerRequestWrapper(HttpServerRequest request,
+            boolean allowForwarded,
+            Optional<String> forwardedHostHeader,
+            Optional<String> forwardedPrefixHeader) {
         delegate = request;
-        forwardedParser = new ForwardedParser(delegate, allowForwarded);
+
+        forwardedParser = new ForwardedParser(delegate,
+                allowForwarded,
+                forwardedHostHeader,
+                forwardedPrefixHeader);
     }
 
     void changeTo(HttpMethod method, String uri) {
@@ -137,7 +145,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public String uri() {
         if (!modified) {
-            return delegate.uri();
+            return forwardedParser.uri();
         }
         return uri;
     }

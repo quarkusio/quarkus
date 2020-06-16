@@ -197,6 +197,18 @@ public class HttpConfiguration {
     @ConfigItem
     public Map<String, SameSiteCookieConfig> sameSiteCookie;
 
+    /**
+     * Allows replace the internal host with a header (disabled by default).
+     */
+    @ConfigItem
+    public Optional<String> forwardedHostHeader;
+
+    /**
+     * Allows use a header to prefix the request's URI (disabled by default).
+     */
+    @ConfigItem
+    public Optional<String> forwardedPrefixHeader;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
     }

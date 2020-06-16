@@ -703,6 +703,23 @@ java.lang.IllegalStateException: Failed to create cache dir
 
 Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
+== Proxy handling
+
+In case quarkus is called through a proxy and it shall behave like it is running on that proxy host, please set the properties
+
+----
+quarkus.http.proxy-address-forwarding=true <1>
+quarkus.http.forwarded-host-header=X-Forwarded-Host <2>
+quarkus.http.forwarded-prefix-header=X-Forwarded-Prefix <3>
+----
+
+<1> This settings allows the replacement of absolute URI using X-Forwarded-* headers.<2>
+<2> Defines the request header quarkus shall replace its internal host with (Disabled by default).
+<3> Defines the request header quarkus shall prefix the request's URI (Disabled by default).
+
+An example use case is the authentication handling with the quarkus OIDC extension behind a proxy.
+Without these settings, quarkus sends the wrong redirect to the authentication server.
+
 == Going further
 
 There are many other facets of Quarkus using Vert.x underneath:

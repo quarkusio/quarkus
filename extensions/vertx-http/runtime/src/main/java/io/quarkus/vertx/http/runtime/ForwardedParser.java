@@ -19,6 +19,7 @@
 
 package io.quarkus.vertx.http.runtime;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,7 +39,6 @@ class ForwardedParser {
     private static final AsciiString FORWARDED = AsciiString.cached("Forwarded");
     private static final AsciiString X_FORWARDED_SSL = AsciiString.cached("X-Forwarded-Ssl");
     private static final AsciiString X_FORWARDED_PROTO = AsciiString.cached("X-Forwarded-Proto");
-    private static final AsciiString X_FORWARDED_HOST = AsciiString.cached("X-Forwarded-Host");
     private static final AsciiString X_FORWARDED_PORT = AsciiString.cached("X-Forwarded-Port");
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
 
@@ -48,17 +48,25 @@ class ForwardedParser {
 
     private final HttpServerRequest delegate;
     private final boolean allowForward;
+    private final Optional<String> forwardedHostHeader;
+    private final Optional<String> forwardedPrefixHeader;
 
     private boolean calculated;
     private String host;
     private int port = -1;
     private String scheme;
+    private String uri;
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
-    ForwardedParser(HttpServerRequest delegate, boolean allowForward) {
+    ForwardedParser(HttpServerRequest delegate,
+            boolean allowForward,
+            Optional<String> forwardedHostHeader,
+            Optional<String> forwardedPrefixHeader) {
         this.delegate = delegate;
         this.allowForward = allowForward;
+        this.forwardedHostHeader = forwardedHostHeader;
+        this.forwardedPrefixHeader = forwardedPrefixHeader;
     }
 
     public String scheme() {
@@ -80,6 +88,13 @@ class ForwardedParser {
         return scheme.equals(HTTPS_SCHEME);
     }
 
+    String uri() {
+        if (!calculated)
+            calculate();
+
+        return uri;
+    }
+
     String absoluteURI() {
         if (!calculated)
             calculate();
@@ -98,6 +113,7 @@ class ForwardedParser {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
+        uri = delegate.uri();
         setHostAndPort(delegate.host(), port);
 
         String forwardedSsl = delegate.getHeader(X_FORWARDED_SSL);
@@ -134,9 +150,11 @@ class ForwardedParser {
                 port = -1;
             }
 
-            String hostHeader = delegate.getHeader(X_FORWARDED_HOST);
-            if (hostHeader != null) {
-                setHostAndPort(hostHeader.split(",")[0], port);
+            if (forwardedHostHeader.isPresent()) {
+                String hostHeader = delegate.getHeader(forwardedHostHeader.get());
+                if (hostHeader != null) {
+                    setHostAndPort(hostHeader.split(",")[0], port);
+                }
             }
 
             String portHeader = delegate.getHeader(X_FORWARDED_PORT);
@@ -148,6 +166,13 @@ class ForwardedParser {
             if (forHeader != null) {
                 remoteAddress = parseFor(forHeader.split(",")[0], remoteAddress.port());
             }
+
+            if (forwardedPrefixHeader.isPresent()) {
+                String prefixHeader = delegate.getHeader(AsciiString.cached(forwardedPrefixHeader.get()));
+                if (prefixHeader != null) {
+                    uri = appendPrefixToUri(prefixHeader, uri);
+                }
+            }
         }
 
         if (((scheme.equals(HTTP_SCHEME) && port == 80) || (scheme.equals(HTTPS_SCHEME) && port == 443))) {
@@ -156,7 +181,8 @@ class ForwardedParser {
 
         host = host + (port >= 0 ? ":" + port : "");
         delegate.headers().set(HttpHeaders.HOST, host);
-        absoluteURI = scheme + "://" + host + delegate.uri();
+        absoluteURI = scheme + "://" + host + uri;
+        log.debugf("Recalculated absoluteURI to %s", absoluteURI);
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {
@@ -190,5 +216,30 @@ class ForwardedParser {
             log.error("Failed to parse a port from \"forwarded\"-type headers.");
             return defaultPort;
         }
+    }
+
+    private String appendPrefixToUri(String prefix, String uri) {
+        String parsed = stripSlash(prefix);
+        return parsed.isEmpty() ? uri : '/' + parsed + uri;
+    }
+
+    private String stripSlash(String uri) {
+        String result;
+        if (!uri.isEmpty()) {
+            int beginIndex = 0;
+            if (uri.startsWith("/")) {
+                beginIndex = 1;
+            }
+
+            int endIndex = uri.length();
+            if (uri.endsWith("/")) {
+                endIndex = uri.length() - 1;
+            }
+            result = uri.substring(beginIndex, endIndex);
+        } else {
+            result = uri;
+        }
+
+        return result;
     }
 }

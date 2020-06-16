@@ -12,13 +12,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class ForwardedForHeaderTest {
+public class ForwardedForServerHeaderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ForwardedHandlerInitializer.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy-address-forwarding=true\n"),
+                    .addAsResource(new StringAsset("quarkus.http.proxy-address-forwarding=true\n"
+                            + "quarkus.http.forwarded-host-header=X-Forwarded-Server\n"),
                             "application.properties"));
 
     @Test
@@ -28,10 +29,10 @@ public class ForwardedForHeaderTest {
         RestAssured.given()
                 .header("X-Forwarded-Proto", "https")
                 .header("X-Forwarded-For", "backend:4444")
-                .header("X-Forwarded-Host", "somehost")
+                .header("X-Forwarded-Server", "somehost")
                 .get("/forward")
                 .then()
-                .body(Matchers.equalTo("https|localhost|backend:4444"));
+                .body(Matchers.equalTo("https|somehost|backend:4444"));
     }
 
 }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class ForwardedForHeaderTest {
+public class ProxyAddressForwardingDefaultSettingsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -22,16 +22,25 @@ public class ForwardedForHeaderTest {
                             "application.properties"));
 
     @Test
-    public void test() {
+    public void testWithHostHeader() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 
         RestAssured.given()
                 .header("X-Forwarded-Proto", "https")
                 .header("X-Forwarded-For", "backend:4444")
                 .header("X-Forwarded-Host", "somehost")
+                .header("X-Forwarded-Prefix", "prefix")
                 .get("/forward")
                 .then()
                 .body(Matchers.equalTo("https|localhost|backend:4444"));
     }
 
+    @Test
+    public void testWithPrefixHeader() {
+        RestAssured.given()
+                .header("X-Forwarded-Prefix", "prefix")
+                .get("/uri")
+                .then()
+                .body(Matchers.equalTo("/uri"));
+    }
 }

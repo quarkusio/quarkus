@@ -291,9 +291,9 @@ public class NativeImageBuildStep {
             } else {
                 command.add("-H:-AddAllCharsets");
             }
-            if (nativeConfig.includeAllTimeZones) {
-                command.add("-H:+IncludeAllTimeZones");
-            } else {
+            //if 'includeAllTimeZones' is set, don't request it explicitly as native-image will log a warning about this being now the default.
+            //(But still disable it when necessary)
+            if (!nativeConfig.includeAllTimeZones) {
                 command.add("-H:-IncludeAllTimeZones");
             }
             if (!protocols.isEmpty()) {

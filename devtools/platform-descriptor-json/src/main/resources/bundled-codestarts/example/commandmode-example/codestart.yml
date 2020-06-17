@@ -1,0 +1,14 @@
+---
+name: commandmode-example
+ref: commandmode
+type: example
+fallback: true
+missing-languages:
+  - kotlin
+  - scala
+language:
+  base:
+    data:
+      greeting:
+        message: "hello"
+        default-name: "commando"

@@ -16,6 +16,7 @@ import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
@@ -124,6 +125,15 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
             throw new IllegalStateException("Resource loader has not been provided");
         }
         return resourceLoader.loadResource(name, consumer);
+    }
+
+    @Override
+    public <T> T loadResourceAsPath(String name, ResourcePathConsumer<T> consumer) throws IOException {
+        getLog().debug("Loading Quarkus platform resource %s", name);
+        if (resourceLoader == null) {
+            throw new IllegalStateException("Resource loader has not been provided");
+        }
+        return resourceLoader.loadResourceAsPath(name, consumer);
     }
 
     @Override

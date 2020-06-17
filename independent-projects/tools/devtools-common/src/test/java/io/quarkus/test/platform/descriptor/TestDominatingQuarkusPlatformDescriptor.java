@@ -3,10 +3,12 @@ package io.quarkus.test.platform.descriptor;
 import static io.quarkus.test.platform.descriptor.loader.QuarkusTestPlatformDescriptorLoader.addCategory;
 import static io.quarkus.test.platform.descriptor.loader.QuarkusTestPlatformDescriptorLoader.addExtension;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +25,9 @@ public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformD
         addCategory("other", "Other category", categories);
         addCategory("web", "Dominating Web", categories);
 
-        addExtension("io.quarkus", "quarkus-resteasy", "dominating-version", "Dominating RESTEasy", "dominating/guide",
-                extensions, bomDeps);
+        addExtension(new AppArtifactCoords("io.quarkus", "quarkus-resteasy", "dominating-version"), "Dominating RESTEasy",
+                "dominating/guide",
+                "reasteasy", extensions, bomDeps);
     }
 
     @Override
@@ -64,7 +67,7 @@ public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformD
 
     @Override
     public String getTemplate(String name) {
-        if ("templates/basic-rest/java/pom.xml-template.ftl".equals(name)) {
+        if ("dir/some-other-file.template".equals(name)) {
             return "dominating pom.xml template";
         }
         return null;
@@ -72,6 +75,11 @@ public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformD
 
     @Override
     public <T> T loadResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {
+        return null;
+    }
+
+    @Override
+    public <T> T loadResourceAsPath(String name, ResourcePathConsumer<T> consumer) throws IOException {
         return null;
     }
 }

@@ -1,18 +1,24 @@
 package io.quarkus.test.platform.descriptor.loader;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -45,12 +51,15 @@ public class QuarkusTestPlatformDescriptorLoader
     private static void addExtensions() {
         addExtension("quarkus-agroal", "Agroal");
         addExtension("quarkus-arc", "Arc");
+        addExtension("quarkus-kotlin", "Kotlin", "url://", "kotlin");
+        addExtension("quarkus-scala", "Scala", "url://", "scala");
+        addExtension("quarkus-config-yaml", "Config Yaml", "url://", "config-yaml");
         addExtension("quarkus-hibernate-orm-panache", "Hibernate ORM Panache");
         addExtension("quarkus-hibernate-search-elasticsearch", "Elasticsearch");
         addExtension("quarkus-hibernate-validator", "Hibernate Validator");
         addExtension("quarkus-jdbc-postgresql", "JDBC PostreSQL");
         addExtension("quarkus-jdbc-h2", "JDBC H2");
-        addExtension("quarkus-resteasy", "RESTEasy", "https://quarkus.io/guides/rest-json");
+        addExtension("quarkus-resteasy", "RESTEasy", "https://quarkus.io/guides/rest-json", "resteasy");
 
         addExtension("quarkus-smallrye-reactive-messaging", "SmallRye Reactive Messaging");
         addExtension("quarkus-smallrye-reactive-streams-operators", "SmallRye Reactive Streams Operators");
@@ -73,21 +82,31 @@ public class QuarkusTestPlatformDescriptorLoader
     }
 
     private static void addExtension(String artifactId, String name, String guide) {
-        addExtension("io.quarkus", artifactId, quarkusVersion, name, guide);
+        addExtension(artifactId, name, guide, null);
     }
 
-    private static void addExtension(String groupId, String artifactId, String version, String name, String guide) {
-        addExtension(groupId, artifactId, version, name, guide, extensions, bomDeps);
+    private static void addExtension(String artifactId, String name, String guide, String codestart) {
+        addExtension(new AppArtifactCoords("io.quarkus", artifactId, quarkusVersion), name, guide, codestart);
     }
 
-    public static void addExtension(String groupId, String artifactId, String version, String name, String guide,
+    private static void addExtension(AppArtifactCoords coords, String name, String guide, String codestart) {
+        addExtension(coords, name, guide, codestart, extensions, bomDeps);
+    }
+
+    public static void addExtension(AppArtifactCoords coords, String name, String guide, String codestart,
             List<Extension> extensions, List<Dependency> bomDeps) {
-        extensions.add(new Extension(groupId, artifactId, version).setName(name).setGuide(guide));
+        final Extension e = new Extension(coords.getGroupId(), coords.getArtifactId(), coords.getVersion())
+                .setName(name)
+                .setGuide(guide);
+        if (codestart != null) {
+            e.setCodestart(codestart);
+        }
+        extensions.add(e);
 
         final Dependency d = new Dependency();
-        d.setGroupId(groupId);
-        d.setArtifactId(artifactId);
-        d.setVersion(version);
+        d.setGroupId(coords.getGroupId());
+        d.setArtifactId(coords.getArtifactId());
+        d.setVersion(coords.getVersion());
         bomDeps.add(d);
     }
 
@@ -193,6 +212,11 @@ public class QuarkusTestPlatformDescriptorLoader
             }
 
             @Override
+            public <T> T loadResourceAsPath(String name, ResourcePathConsumer<T> consumer) throws IOException {
+                return loadStaticResourcePath(name, consumer);
+            }
+
+            @Override
             public List<Category> getCategories() {
                 return categories;
             }
@@ -209,5 +233,14 @@ public class QuarkusTestPlatformDescriptorLoader
         } finally {
             is.close();
         }
+    }
+
+    private static <T> T loadStaticResourcePath(String name, ResourcePathConsumer<T> consumer) throws IOException {
+        final URL url = Thread.currentThread().getContextClassLoader().getResource(name);
+        final File file = ResourceLoaders.getResourceFile(url, name);
+        if (!Files.exists(file.toPath())) {
+            throw new IOException("Failed to locate resource " + name + " on the classpath");
+        }
+        return consumer.consume(file.toPath());
     }
 }

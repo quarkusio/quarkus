@@ -1,0 +1,13 @@
+'%prod':
+   quarkus:
+     spring-cloud-config:
+       url: http://localhost:8089
+       username: user
+       password: pass
+       enabled: true     
+quarkus:
+  application:
+    name: a-bootiful-client
+
+greeting:
+    message: hello from application.properties

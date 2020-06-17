@@ -90,7 +90,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
     }
 
     private void createAndReturn(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle entity) {
-        ResultHandle newEntity = dataAccessImplementor.update(creator, entity);
+        ResultHandle newEntity = dataAccessImplementor.persist(creator, entity);
         ResultHandle response = ResponseImplementor.created(creator, newEntity);
         creator.returnValue(response);
     }

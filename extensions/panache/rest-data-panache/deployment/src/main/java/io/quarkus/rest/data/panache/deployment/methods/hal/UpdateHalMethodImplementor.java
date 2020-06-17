@@ -88,7 +88,7 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
     }
 
     private void createAndReturn(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle entity) {
-        ResultHandle newEntity = dataAccessImplementor.update(creator, entity);
+        ResultHandle newEntity = dataAccessImplementor.persist(creator, entity);
         ResultHandle response = ResponseImplementor
                 .created(creator, wrapHalEntity(creator, newEntity), ResponseImplementor.getEntityUrl(creator, newEntity));
         creator.returnValue(response);

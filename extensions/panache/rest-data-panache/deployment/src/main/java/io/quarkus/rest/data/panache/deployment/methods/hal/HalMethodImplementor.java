@@ -21,7 +21,7 @@ abstract class HalMethodImplementor implements MethodImplementor {
     @Override
     public void implement(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
-        if (propertiesAccessor.isExposed(resourceInfo.getClassInfo(), getStandardMethodMetadata(resourceInfo))) {
+        if (propertiesAccessor.isExposed(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo))) {
             implementInternal(classCreator, index, propertiesAccessor, resourceInfo);
         }
     }
@@ -36,9 +36,9 @@ abstract class HalMethodImplementor implements MethodImplementor {
     }
 
     protected ResultHandle wrapHalEntities(BytecodeCreator creator, ResultHandle entities, RestDataResourceInfo resourceInfo) {
-        String collectionName = ResourceName.fromClass(resourceInfo.getClassInfo().simpleName());
+        String collectionName = ResourceName.fromClass(resourceInfo.getType());
         return creator.newInstance(
                 MethodDescriptor.ofConstructor(HalCollectionWrapper.class, Collection.class, Class.class, String.class),
-                entities, creator.loadClass(resourceInfo.getEntityClassName()), creator.load(collectionName));
+                entities, creator.loadClass(resourceInfo.getEntityInfo().getType()), creator.load(collectionName));
     }
 }

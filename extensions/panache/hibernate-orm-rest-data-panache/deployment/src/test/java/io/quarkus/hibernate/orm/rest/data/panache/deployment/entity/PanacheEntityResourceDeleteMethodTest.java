@@ -12,7 +12,8 @@ class PanacheEntityResourceDeleteMethodTest extends AbstractDeleteMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, Item.class, ItemsController.class)
+                    .addClasses(Collection.class, CollectionsController.class, AbstractItem.class, Item.class,
+                            ItemsController.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 }

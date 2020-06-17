@@ -12,7 +12,7 @@ abstract class StandardMethodImplementor implements MethodImplementor {
     public void implement(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
         MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
-        if (propertiesAccessor.isExposed(resourceInfo.getClassInfo(), methodMetadata)) {
+        if (propertiesAccessor.isExposed(resourceInfo.getType(), methodMetadata)) {
             implementInternal(classCreator, index, propertiesAccessor, resourceInfo);
         } else {
             NotExposedMethodImplementor implementor = new NotExposedMethodImplementor(methodMetadata);

@@ -10,6 +10,14 @@ public final class ResourceName {
     private static final String[] SUFFIXES = { "controller", "resource" };
 
     public static String fromClass(String resourceClassName) {
-        return String.join("-", toList(withoutSuffix(lowerCase(camelHumpsIterator(resourceClassName)), SUFFIXES)));
+        return String.join("-",
+                toList(withoutSuffix(lowerCase(camelHumpsIterator(toSimpleName(resourceClassName))), SUFFIXES)));
+    }
+
+    private static String toSimpleName(String className) {
+        if (className.contains(".")) {
+            return className.substring(className.lastIndexOf(".") + 1);
+        }
+        return className;
     }
 }

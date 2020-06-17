@@ -45,14 +45,13 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
     protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
         MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
-        MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(), resourceInfo.getEntityClassName(),
-                methodMetadata.getParameterTypes());
+        MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(),
+                resourceInfo.getEntityInfo().getType(), methodMetadata.getParameterTypes());
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getClassInfo(), methodMetadata, "{id}"));
+        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata, "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
 
         ResultHandle entity = resourceInfo.getDataAccessImplementor().findById(methodCreator, methodCreator.getMethodParam(0));
         BranchResult entityNotFound = methodCreator.ifNull(entity);
@@ -64,6 +63,6 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
 
     @Override
     protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME, resourceInfo.getIdClassName());
+        return new MethodMetadata(NAME, resourceInfo.getEntityInfo().getIdType());
     }
 }

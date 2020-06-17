@@ -7,33 +7,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.entity.Collection;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.entity.CollectionsController;
-import io.quarkus.hibernate.orm.rest.data.panache.deployment.entity.Item;
-import io.quarkus.rest.data.panache.MethodProperties;
-import io.quarkus.rest.data.panache.ResourceProperties;
-import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.response.Response;
 
-class PathCustomisationTest {
-
-    @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, Item.class,
-                            CustomPathCollectionsController.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+public abstract class AbstractPathCustomisationTest {
 
     @ParameterizedTest
     @ArgumentsSource(TestArgumentsProvider.class)
@@ -46,44 +28,25 @@ class PathCustomisationTest {
     @ParameterizedTest
     @ArgumentsSource(TestArgumentsProvider.class)
     void testCreateAndDelete(String path, String accept) {
-        String name = "test-" + Objects.hash(path, accept);
-        Response response = given().body("{\"name\": \"" + name + "\"}")
+        String id = "test-" + Objects.hash(path, accept);
+        Response response = given().body("{\"id\": \"" + id + "\", \"name\": \"test collection\"}")
                 .and().contentType("application/json")
                 .and().accept(accept)
                 .when().post(path)
                 .thenReturn();
         assertThat(response.getStatusCode()).isEqualTo(201);
-        when().delete(path + "/" + name)
+        when().delete(path + "/" + id)
                 .then().statusCode(204);
     }
 
     @ParameterizedTest
     @ArgumentsSource(TestArgumentsProvider.class)
     void testUpdate(String path, String accept) {
-        given().body("{\"name\": \"test\"}")
+        given().body("{\"id\": \"empty\", \"name\": \"updated collection\"}")
                 .and().contentType("application/json")
                 .and().accept(accept)
                 .when().put(path + "/empty")
                 .then().statusCode(204);
-    }
-
-    @ResourceProperties(path = "custom-collections", hal = true)
-    public interface CustomPathCollectionsController extends PanacheEntityResource<Collection, String> {
-
-        @MethodProperties(path = "api")
-        javax.ws.rs.core.Response list();
-
-        @MethodProperties(path = "api")
-        Collection get(String name);
-
-        @MethodProperties(path = "api")
-        javax.ws.rs.core.Response add(Collection collection);
-
-        @MethodProperties(path = "api")
-        javax.ws.rs.core.Response update(String name, Collection collection);
-
-        @MethodProperties(path = "api")
-        void delete(String name);
     }
 
     static class TestArgumentsProvider implements ArgumentsProvider {

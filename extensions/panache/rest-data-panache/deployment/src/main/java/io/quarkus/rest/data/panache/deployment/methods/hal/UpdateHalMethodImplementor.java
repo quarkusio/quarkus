@@ -10,12 +10,13 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.data.panache.RestDataResource;
+import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
+import io.quarkus.rest.data.panache.deployment.RestDataEntityInfo;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
 import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.MethodMetadata;
 import io.quarkus.rest.data.panache.deployment.methods.UpdateMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
-import io.quarkus.rest.data.panache.deployment.utils.FieldAccessImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 
 public final class UpdateHalMethodImplementor extends HalMethodImplementor {
@@ -59,46 +60,50 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
     @Override
     protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(
-                NAME, Response.class.getName(), resourceInfo.getIdClassName(), resourceInfo.getEntityClassName());
+        MethodCreator methodCreator = classCreator.getMethodCreator(NAME, Response.class.getName(),
+                resourceInfo.getEntityInfo().getIdType(), resourceInfo.getEntityInfo().getType());
         addTransactionalAnnotation(methodCreator);
         addPutAnnotation(methodCreator);
         addPathAnnotation(methodCreator, propertiesAccessor
-                .getPath(resourceInfo.getClassInfo(), getStandardMethodMetadata(resourceInfo), "{id}"));
+                .getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo), "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addConsumesAnnotation(methodCreator, MethodImplementor.APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
 
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entity = methodCreator.getMethodParam(1);
-        BranchResult entityDoesNotExist = methodCreator
-                .ifNull(resourceInfo.getDataAccessImplementor().findById(methodCreator, id));
+        setId(methodCreator, resourceInfo.getEntityInfo(), entity, id);
 
-        FieldAccessImplementor fieldAccessImplementor = new FieldAccessImplementor(index, resourceInfo.getIdFieldPredicate());
-        createAndReturn(entityDoesNotExist.trueBranch(), fieldAccessImplementor, resourceInfo, entity, id);
-        updateAndReturn(entityDoesNotExist.falseBranch(), fieldAccessImplementor, resourceInfo, entity, id);
+        DataAccessImplementor dataAccessImplementor = resourceInfo.getDataAccessImplementor();
+        BranchResult entityDoesNotExist = methodCreator.ifNull(dataAccessImplementor.findById(methodCreator, id));
+        createAndReturn(entityDoesNotExist.trueBranch(), dataAccessImplementor, entity);
+        updateAndReturn(entityDoesNotExist.falseBranch(), dataAccessImplementor, entity);
         methodCreator.close();
     }
 
     @Override
     protected MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(UpdateMethodImplementor.NAME, resourceInfo.getIdClassName(),
-                resourceInfo.getEntityClassName());
+        return new MethodMetadata(UpdateMethodImplementor.NAME, resourceInfo.getEntityInfo().getIdType(),
+                resourceInfo.getEntityInfo().getType());
     }
 
-    private void createAndReturn(BytecodeCreator creator, FieldAccessImplementor fieldAccessImplementor,
-            RestDataResourceInfo resourceInfo, ResultHandle entity, ResultHandle id) {
-        fieldAccessImplementor.setId(creator, resourceInfo.getEntityClassName(), entity, id);
-        ResultHandle newEntity = resourceInfo.getDataAccessImplementor().update(creator, entity);
+    private void createAndReturn(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle entity) {
+        ResultHandle newEntity = dataAccessImplementor.update(creator, entity);
         ResultHandle response = ResponseImplementor
                 .created(creator, wrapHalEntity(creator, newEntity), ResponseImplementor.getEntityUrl(creator, newEntity));
         creator.returnValue(response);
     }
 
-    private void updateAndReturn(BytecodeCreator creator, FieldAccessImplementor fieldAccessImplementor,
-            RestDataResourceInfo resourceInfo, ResultHandle entity, ResultHandle id) {
-        fieldAccessImplementor.setId(creator, resourceInfo.getEntityClassName(), entity, id);
-        resourceInfo.getDataAccessImplementor().update(creator, entity);
+    private void updateAndReturn(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle entity) {
+        dataAccessImplementor.update(creator, entity);
         creator.returnValue(ResponseImplementor.noContent(creator));
+    }
+
+    private void setId(BytecodeCreator creator, RestDataEntityInfo entityInfo, ResultHandle entity, ResultHandle id) {
+        if (entityInfo.getIdSetter().isPresent()) {
+            creator.invokeVirtualMethod(entityInfo.getIdSetter().get(), entity, id);
+        } else {
+            creator.writeInstanceField(entityInfo.getIdField(), entity, id);
+        }
     }
 }

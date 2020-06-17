@@ -46,10 +46,9 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
                 .getMethodCreator(methodMetadata.getName(), void.class.getName(), methodMetadata.getParameterTypes());
         addTransactionalAnnotation(methodCreator);
         addDeleteAnnotation(methodCreator);
-        addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getClassInfo(), methodMetadata, "{id}"));
+        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata, "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
 
         ResultHandle result = resourceInfo.getDataAccessImplementor()
                 .deleteById(methodCreator, methodCreator.getMethodParam(0));
@@ -62,6 +61,6 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
     @Override
     protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME, resourceInfo.getIdClassName());
+        return new MethodMetadata(NAME, resourceInfo.getEntityInfo().getIdType());
     }
 }

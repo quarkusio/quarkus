@@ -65,9 +65,9 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
         MethodCreator methodCreator = classCreator.getMethodCreator(methodMetadata.getName(), Response.class);
         addGetAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getClassInfo(), methodMetadata));
+        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata));
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
 
         FieldDescriptor uriInfoField = of(methodCreator.getMethodDescriptor().getDeclaringClass(), URI_INFO.getName(),
                 URI_INFO.getType());

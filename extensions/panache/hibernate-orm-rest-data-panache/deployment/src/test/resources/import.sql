@@ -1,5 +1,5 @@
-insert into collection(name) values ('empty');
-insert into collection(name) values ('full');
+insert into collection(id, name) values ('empty', 'empty collection');
+insert into collection(id, name) values ('full', 'full collection');
 
-insert into item(id, name, collection_name) values (nextval('hibernate_sequence'), 'first', 'full');
-insert into item(id, name, collection_name) values (nextval('hibernate_sequence'), 'second', 'full');
+insert into item(id, name, collection_id) values (nextval('hibernate_sequence'), 'first', 'full');
+insert into item(id, name, collection_id) values (nextval('hibernate_sequence'), 'second', 'full');

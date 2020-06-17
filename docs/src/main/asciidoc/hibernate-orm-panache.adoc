@@ -435,7 +435,7 @@ List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
 int numberOfPages = livingPersons.pageCount();
 
 // get the total number of entities returned by this query without paging
-int count = livingPersons.count();
+long count = livingPersons.count();
 
 // and you can chain methods of course
 return Person.find("status", Status.Alive)

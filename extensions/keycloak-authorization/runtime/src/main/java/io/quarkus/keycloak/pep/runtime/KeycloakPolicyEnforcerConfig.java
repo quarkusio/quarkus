@@ -10,7 +10,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.DefaultConverter;
 
 @ConfigRoot(name = "keycloak", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class KeycloakPolicyEnforcerConfig {
@@ -108,8 +107,7 @@ public class KeycloakPolicyEnforcerConfig {
             /**
              * Specifies how policies are enforced
              */
-            @DefaultConverter
-            @ConfigItem(defaultValue = "ENFORCING")
+            @ConfigItem(defaultValue = "enforcing")
             public PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
             /**
@@ -139,8 +137,7 @@ public class KeycloakPolicyEnforcerConfig {
             /**
              * A string referencing the enforcement mode for the scopes associated with a method
              */
-            @DefaultConverter
-            @ConfigItem(defaultValue = "ALL")
+            @ConfigItem(defaultValue = "all")
             public PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
         }
 

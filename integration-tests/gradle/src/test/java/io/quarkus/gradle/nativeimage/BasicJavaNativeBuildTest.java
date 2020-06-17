@@ -6,12 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.gradle.testkit.runner.BuildResult;
-import org.gradle.testkit.runner.GradleRunner;
-import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.gradle.BuildResult;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class BasicJavaNativeBuildTest extends QuarkusNativeGradleTestBase {
@@ -20,14 +18,9 @@ public class BasicJavaNativeBuildTest extends QuarkusNativeGradleTestBase {
     public void shouldBuildNativeImage() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
 
-        BuildResult build = GradleRunner.create()
-                .forwardOutput()
-                .withPluginClasspath()
-                .withArguments(arguments("clean", "quarkusBuild", "-Dquarkus.package.type=native"))
-                .withProjectDir(projectDir)
-                .build();
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=native");
 
-        assertThat(build.task(":quarkusBuild").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         Path nativeImagePath = projectDir.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner");
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());

@@ -25,7 +25,7 @@
             <id>Gradle-IT</id>
             <activation>
                 <property>
-                    <name>skipITs</name>
+                    <name>skipTests</name>
                     <value>!true</value>
                 </property>
             </activation>

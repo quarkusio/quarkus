@@ -16,6 +16,14 @@ public enum S2iBaseJavaImage {
     OPENJDK_11_RHEL7("openjdk/openjdk-11-rhel7:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
             "JAVA_OPTIONS"),
     OPENJDK_11_RHEL8("openjdk/openjdk-11-rhel8:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
+            "JAVA_OPTIONS"),
+    OPENJ9_8_RHEL7("openj9/openj9-8-rhel7:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
+            "JAVA_OPTIONS"),
+    OPENJ9_8_RHEL8("openj9/openj9-8-rhel8:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
+            "JAVA_OPTIONS"),
+    OPENJ9_11_RHEL7("openj9/openj9-11-rhel7:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
+            "JAVA_OPTIONS"),
+    OPENJ9_11_RHEL8("openj9/openj9-11-rhel8:latest", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR", "JAVA_CLASSPATH",
             "JAVA_OPTIONS");
 
     private final String image;

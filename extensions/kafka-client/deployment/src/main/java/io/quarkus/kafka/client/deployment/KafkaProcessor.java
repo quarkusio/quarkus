@@ -46,6 +46,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -82,6 +83,20 @@ public class KafkaProcessor {
             StringDeserializer.class,
             FloatDeserializer.class
     };
+
+    @BuildStep
+    void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
+            BuildProducer<IndexDependencyBuildItem> indexDependency) {
+        // This is needed for SASL authentication
+
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                LoginModule.class.getName(),
+                javax.security.auth.Subject.class.getName(),
+                javax.security.auth.login.AppConfigurationEntry.class.getName(),
+                javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag.class.getName()));
+
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
+    }
 
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -135,18 +150,15 @@ public class KafkaProcessor {
     }
 
     @BuildStep
-    public void withSasl(BuildProducer<IndexDependencyBuildItem> indexDependency,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void withSasl(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-
-        indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, AbstractLogin.DefaultLoginCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SaslClientCallbackHandler.class));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DefaultLogin.class));
 
         final Type loginModuleType = Type
-                .create(DotName.createSimple(LoginModule.class.getCanonicalName()), Kind.CLASS);
+                .create(DotName.createSimple(LoginModule.class.getName()), Kind.CLASS);
 
         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(loginModuleType));
     }

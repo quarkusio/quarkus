@@ -751,15 +751,18 @@ public class ResteasyServerCommonProcessor {
             if (instance.target().kind() != Kind.METHOD) {
                 continue;
             }
+
             MethodInfo method = instance.target().asMethod();
+            String source = method.declaringClass() + "[" + method + "]";
+
             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index,
-                    ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+                    ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE, source));
 
             for (short i = 0; i < method.parameters().size(); i++) {
                 Type parameterType = method.parameters().get(i);
                 if (!hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index,
-                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE, source));
                 }
             }
         }

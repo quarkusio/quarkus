@@ -8,10 +8,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,7 +27,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -40,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -50,7 +48,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -96,6 +93,18 @@ public class SmallRyeOpenApiProcessor {
     private static final String OPENAPI_SCHEMA_IMPLEMENTATION = "implementation";
 
     SmallRyeOpenApiConfig openapi;
+
+    @BuildStep
+    void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
+        // contribute additional JDK classes to the index, because SmallRye OpenAPI will check if some
+        // app types implement Map and Collection and will go through super classes until Object is reached,
+        // and yes, it even checks Object
+        // see https://github.com/quarkusio/quarkus/issues/2961
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                Collection.class.getName(),
+                Map.class.getName(),
+                Object.class.getName()));
+    }
 
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> configFiles() {
@@ -299,21 +308,6 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities) {
-        // build a composite index with additional JDK classes, because SmallRye-OpenAPI will check if some
-        // app types implement Map and Collection and will go through super classes until Object is reached,
-        // and yes, it even checks Object
-        // see https://github.com/quarkusio/quarkus/issues/2961
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        IndexingUtil.indexClass(Collection.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-        IndexingUtil.indexClass(Map.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-        IndexingUtil.indexClass(Object.class.getName(), indexer, indexView, additionalIndex,
-                SmallRyeOpenApiProcessor.class.getClassLoader());
-
-        CompositeIndex compositeIndex = CompositeIndex.create(indexView, indexer.complete());
-
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
@@ -322,13 +316,13 @@ public class SmallRyeOpenApiProcessor {
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
         // Add RestEasy if jaxrs
         if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
-            extensions.add(new RESTEasyExtension(compositeIndex));
+            extensions.add(new RESTEasyExtension(indexView));
         }
         // Add path if not null
         if (defaultPath != null) {
             extensions.add(new CustomPathExtension(defaultPath));
         }
-        return new OpenApiAnnotationScanner(openApiConfig, compositeIndex, extensions).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, indexView, extensions).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

@@ -1,6 +1,5 @@
 package io.quarkus.spring.data.deployment;
 
-import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Modifier;
@@ -15,10 +14,8 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.springframework.data.domain.Auditable;
 import org.springframework.data.domain.Persistable;
@@ -35,11 +32,11 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
@@ -66,6 +63,17 @@ public class SpringDataJPAProcessor {
     @BuildStep
     FeatureBuildItem registerFeature() {
         return new FeatureBuildItem(Feature.SPRING_DATA_JPA);
+    }
+
+    @BuildStep
+    void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
+        // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types from it
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
+                Repository.class.getName(),
+                CrudRepository.class.getName(),
+                PagingAndSortingRepository.class.getName(),
+                JpaRepository.class.getName(),
+                QueryByExampleExecutor.class.getName()));
     }
 
     @BuildStep
@@ -191,18 +199,8 @@ public class SpringDataJPAProcessor {
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
-        // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types from it
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        indexRepositoryInterface(index, indexer, additionalIndex, Repository.class);
-        indexRepositoryInterface(index, indexer, additionalIndex, CrudRepository.class);
-        indexRepositoryInterface(index, indexer, additionalIndex, PagingAndSortingRepository.class);
-        indexRepositoryInterface(index, indexer, additionalIndex, JpaRepository.class);
-        indexRepositoryInterface(index, indexer, additionalIndex, QueryByExampleExecutor.class);
-        CompositeIndex compositeIndex = CompositeIndex.create(index, indexer.complete());
-
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
-                compositeIndex, (n) -> {
+                index, (n) -> {
                     // the implementation of fragments don't need to be beans themselves
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
                 },
@@ -215,11 +213,5 @@ public class SpringDataJPAProcessor {
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
             repositoryCreator.implementCrudRepository(crudRepositoryToImplement);
         }
-    }
-
-    private void indexRepositoryInterface(IndexView index, Indexer indexer, Set<DotName> additionalIndex,
-            Class<?> repoClass) {
-        IndexingUtil.indexClass(repoClass.getName(), indexer, index, additionalIndex,
-                SpringDataJPAProcessor.class.getClassLoader());
     }
 }

@@ -91,10 +91,19 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
         @Override
         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-            FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
             EntityField ef = fields.get(name);
             if (ef == null) {
-                return superVisitor;
+                return super.visitField(access, name, descriptor, signature, value);
+            }
+            //we make the fields protected
+            //so any errors are visible immediately, rather than data just being lost
+
+            FieldVisitor superVisitor;
+            if (name.equals("id")) {
+                superVisitor = super.visitField(access, name, descriptor, signature, value);
+            } else {
+                superVisitor = super.visitField((access | Modifier.PROTECTED) & ~(Modifier.PRIVATE | Modifier.PUBLIC),
+                        name, descriptor, signature, value);
             }
             ef.signature = signature;
             // if we have a mapped field, let's add some annotations

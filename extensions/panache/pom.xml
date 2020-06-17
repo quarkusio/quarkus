@@ -28,6 +28,7 @@
         <module>panacheql</module>
         <module>rest-data-panache</module>
         <module>hibernate-orm-rest-data-panache</module>
+        <module>mongodb-rest-data-panache</module>
     </modules>
 
 

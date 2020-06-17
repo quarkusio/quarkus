@@ -21,6 +21,7 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -76,6 +77,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
@@ -133,11 +135,30 @@ public final class PanacheHibernateResourceProcessor {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
             List<ClassPathElement> archives = tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER);
+            Set<String> produced = new HashSet<>();
+            //we always transform the root archive, even though it should be run with the annotation
+            //processor on the CP it might not be if the user is using jpa-modelgen
+            //this won't cover every situation, but we have documented this, and as the fields are now
+            //made private the error should be very obvious
+            //we only do this for hibernate, as it is more common to have an additional annotation processor
+            for (ClassInfo i : applicationArchivesBuildItem.getRootArchive().getIndex().getKnownClasses()) {
+                String cn = i.name().toString();
+                if (!modelClasses.contains(cn)) {
+                    produced.add(cn);
+                    transformers.produce(
+                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
+                }
+            }
+
             for (ClassPathElement i : archives) {
                 for (String res : i.getProvidedResources()) {
                     if (res.endsWith(".class")) {
                         String cn = res.replace("/", ".").substring(0, res.length() - 6);
+                        if (produced.contains(cn)) {
+                            continue;
+                        }
                         if (!modelClasses.contains(cn)) {
+                            produced.add(cn);
                             transformers.produce(
                                     new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, modelClassNamesInternal));
                         }

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.enhancer.Address;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -24,9 +26,23 @@ public class ExcludePersistenceXmlConfigTest {
     @Inject
     EntityManager entityManager;
 
+    @Inject
+    Instance<EntityManager> entityManagers;
+
     @Test
     public void testPersistenceAndConfigTest() {
+        // We have an entity manager
         Assertions.assertNotNull(entityManager);
+        // We have exactly one entity manager
+        Assertions.assertEquals(false, entityManagers.isAmbiguous());
+        Arc.container().requestContext().activate();
+        try {
+            // it is the default entity manager from application.properties, not templatePU from the persistence.xml
+            Assertions.assertEquals("default",
+                    entityManager.getEntityManagerFactory().getProperties().get("hibernate.ejb.persistenceUnitName"));
+        } finally {
+            Arc.container().requestContext().deactivate();
+        }
     }
 
 }

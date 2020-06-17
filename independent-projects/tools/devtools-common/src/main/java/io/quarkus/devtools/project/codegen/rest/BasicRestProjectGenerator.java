@@ -183,6 +183,8 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             generate("templates/dockerfile-native.ftl", invocation, dockerRootDir + "/Dockerfile.native",
                     "native docker file");
             generate("templates/dockerfile-jvm.ftl", invocation, dockerRootDir + "/Dockerfile.jvm", "jvm docker file");
+            generate("templates/dockerfile-fast-jar.ftl", invocation, dockerRootDir + "/Dockerfile.fast-jar",
+                    "jvm docker file");
         }
 
         private void createReadme() throws IOException {

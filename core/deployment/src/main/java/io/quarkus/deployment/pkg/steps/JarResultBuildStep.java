@@ -12,15 +12,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,12 +116,12 @@ public class JarResultBuildStep {
     private static final BiPredicate<Path, BasicFileAttributes> IS_JSON_FILE_PREDICATE = new IsJsonFilePredicate();
     public static final String DEPLOYMENT_CLASS_PATH_DAT = "deployment-class-path.dat";
     public static final String BUILD_SYSTEM_PROPERTIES = "build-system.properties";
-    public static final String DEPLOYMENT_LIB = "deployment-lib";
-    public static final String DEPLOYMENT_QUARKUS = "deployment-quarkus";
+    public static final String DEPLOYMENT_LIB = "deployment";
     public static final String APPMODEL_DAT = "appmodel.dat";
     public static final String QUARKUS_RUN_JAR = "quarkus-run.jar";
-    public static final String BOOT_LIB = "boot-lib";
+    public static final String BOOT_LIB = "boot";
     public static final String LIB = "lib";
+    public static final String MAIN = "main";
     public static final String GENERATED_BYTECODE_JAR = "generated-bytecode.jar";
     public static final String TRANSFORMED_BYTECODE_JAR = "transformed-bytecode.jar";
     public static final String APP = "app";
@@ -401,8 +393,9 @@ public class JarResultBuildStep {
                 .resolve(packageConfig.outputDirectory.orElse(DEFAULT_FAST_JAR_DIRECTORY_NAME));
         //unmodified 3rd party dependencies
         Path libDir = buildDir.resolve(LIB);
+        Path mainLib = libDir.resolve(MAIN);
         //parent first entries
-        Path baseLib = buildDir.resolve(BOOT_LIB);
+        Path baseLib = libDir.resolve(BOOT_LIB);
         Files.createDirectories(baseLib);
 
         Path appDir = buildDir.resolve(APP);
@@ -410,7 +403,7 @@ public class JarResultBuildStep {
         if (!rebuild) {
             IoUtils.recursiveDelete(buildDir);
             Files.createDirectories(buildDir);
-            Files.createDirectories(libDir);
+            Files.createDirectories(mainLib);
             Files.createDirectories(baseLib);
             Files.createDirectories(appDir);
             Files.createDirectories(quarkus);
@@ -479,7 +472,7 @@ public class JarResultBuildStep {
             if (rebuild) {
                 jars.addAll(appDep.getArtifact().getPaths().toList());
             } else {
-                copyDependency(curateOutcomeBuildItem, copiedArtifacts, libDir, baseLib, jars, true, classPath, appDep);
+                copyDependency(curateOutcomeBuildItem, copiedArtifacts, mainLib, baseLib, jars, true, classPath, appDep);
             }
             if (curateOutcomeBuildItem.getEffectiveModel().getParentFirstArtifacts()
                     .contains(appDep.getArtifact().getKey())) {
@@ -490,8 +483,6 @@ public class JarResultBuildStep {
         try (OutputStream out = Files.newOutputStream(appInfo)) {
             SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars);
         }
-
-        runnerJar.toFile().setReadable(true, false);
         if (!rebuild) {
 
             Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
@@ -505,10 +496,8 @@ public class JarResultBuildStep {
             //now copy the deployment artifacts, if required
             if (packageConfig.mutableApplication) {
 
-                Path deploymentLib = buildDir.resolve(DEPLOYMENT_LIB);
+                Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
-                Path depQuarkus = buildDir.resolve(DEPLOYMENT_QUARKUS);
-                Files.createDirectories(depQuarkus);
                 for (AppDependency appDep : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
                     copyDependency(curateOutcomeBuildItem, copiedArtifacts, deploymentLib, baseLib, jars, false, classPath,
                             appDep);
@@ -525,7 +514,8 @@ public class JarResultBuildStep {
                 PersistentAppModel model = new PersistentAppModel(outputTargetBuildItem.getBaseName(), relativePaths,
                         curateOutcomeBuildItem.getEffectiveModel(),
                         buildDir.relativize(runnerJar).toString());
-                try (OutputStream out = Files.newOutputStream(depQuarkus.resolve(APPMODEL_DAT))) {
+                Path appmodelDat = deploymentLib.resolve(APPMODEL_DAT);
+                try (OutputStream out = Files.newOutputStream(appmodelDat)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     obj.writeObject(model);
                     obj.close();
@@ -534,7 +524,8 @@ public class JarResultBuildStep {
                 //we just include all deployment deps, even though we only really need bootstrap
                 //as we don't really have a resolved bootstrap CP
                 //once we have the app model it will all be done in QuarkusClassLoader anyway
-                try (OutputStream out = Files.newOutputStream(depQuarkus.resolve(DEPLOYMENT_CLASS_PATH_DAT))) {
+                Path deploymentCp = deploymentLib.resolve(DEPLOYMENT_CLASS_PATH_DAT);
+                try (OutputStream out = Files.newOutputStream(deploymentCp)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     List<String> paths = new ArrayList<>();
                     for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
@@ -543,12 +534,20 @@ public class JarResultBuildStep {
                     obj.writeObject(paths);
                     obj.close();
                 }
-                try (OutputStream out = Files.newOutputStream(depQuarkus.resolve(BUILD_SYSTEM_PROPERTIES))) {
+                Path buildSystemProps = deploymentLib.resolve(BUILD_SYSTEM_PROPERTIES);
+                try (OutputStream out = Files.newOutputStream(buildSystemProps)) {
                     outputTargetBuildItem.getBuildSystemProperties().store(out, "The original build properties");
                 }
             }
         }
-
+        try (Stream<Path> files = Files.walk(buildDir)) {
+            files.forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path path) {
+                    path.toFile().setReadable(true, false);
+                }
+            });
+        }
         return new JarBuildItem(runnerJar, null, libDir);
     }
 
@@ -571,7 +570,7 @@ public class JarResultBuildStep {
                     final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
                     final Path targetPath = baseLib.resolve(fileName);
                     Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                    classPath.append(" " + BOOT_LIB + "/" + fileName);
+                    classPath.append(" " + LIB + "/" + BOOT_LIB + "/" + fileName);
                     runtimeArtifacts.computeIfAbsent(depArtifact.getKey(), (s) -> new ArrayList<>()).add(targetPath);
                 } else {
                     final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();

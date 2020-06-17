@@ -254,11 +254,17 @@ public class JibProcessor {
         Path componentsPath = sourceJarBuildItem.getPath().getParent().getParent();
 
         AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
-        List<String> entrypoint = new ArrayList<>(3 + jibConfig.jvmArguments.size());
-        entrypoint.add("java");
-        entrypoint.addAll(jibConfig.jvmArguments);
-        entrypoint.add("-jar");
-        entrypoint.add("quarkus-run.jar");
+
+        List<String> entrypoint;
+        if (jibConfig.jvmEntrypoint.isPresent()) {
+            entrypoint = jibConfig.jvmEntrypoint.get();
+        } else {
+            entrypoint = new ArrayList<>(3 + jibConfig.jvmArguments.size());
+            entrypoint.add("java");
+            entrypoint.addAll(jibConfig.jvmArguments);
+            entrypoint.add("-jar");
+            entrypoint.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+        }
 
         try {
             return Jib.from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
@@ -293,9 +299,15 @@ public class JibProcessor {
                     .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
                             jibConfig.baseRegistryPassword))
                     .addResources(classesDir, IS_CLASS_PREDICATE.negate())
-                    .addClasses(classesDir, IS_CLASS_PREDICATE)
-                    .addJvmFlags(jibConfig.jvmArguments)
-                    .setMainClass(mainClassBuildItem.getClassName());
+                    .addClasses(classesDir, IS_CLASS_PREDICATE);
+
+            // when there is no custom entry point, we just set everything up for a regular java run
+            if (!jibConfig.jvmEntrypoint.isPresent()) {
+                javaContainerBuilder
+                        .addJvmFlags(jibConfig.jvmArguments)
+                        .setMainClass(mainClassBuildItem.getClassName());
+            }
+
             if (sourceJarBuildItem.getLibraryDir() != null) {
                 javaContainerBuilder
                         .addDependencies(
@@ -305,10 +317,16 @@ public class JibProcessor {
                                         .collect(Collectors.toList()));
             }
 
-            return javaContainerBuilder.toContainerBuilder()
+            JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
                     .setEnvironment(jibConfig.environmentVariables)
                     .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
+
+            if (jibConfig.jvmEntrypoint.isPresent()) {
+                jibContainerBuilder.setEntrypoint(jibConfig.jvmEntrypoint.get());
+            }
+
+            return jibContainerBuilder;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InvalidImageReferenceException e) {
@@ -318,9 +336,15 @@ public class JibProcessor {
 
     private JibContainerBuilder createContainerBuilderFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             NativeImageBuildItem nativeImageBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
-        List<String> entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
-        entrypoint.add("./" + BINARY_NAME_IN_CONTAINER);
-        entrypoint.addAll(jibConfig.nativeArguments);
+
+        List<String> entrypoint;
+        if (jibConfig.nativeEntrypoint.isPresent()) {
+            entrypoint = jibConfig.nativeEntrypoint.get();
+        } else {
+            entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
+            entrypoint.add("./" + BINARY_NAME_IN_CONTAINER);
+            entrypoint.addAll(jibConfig.nativeArguments);
+        }
         try {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
             return Jib

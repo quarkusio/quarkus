@@ -373,13 +373,13 @@ public class HibernateOrmConfig {
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceXml {
         /**
-         * The persistence units to include from persistence.xml files. Default all.
+         * EXPERIMENTAL: The persistence units to include from persistence.xml files. Default all.
          */
         @ConfigItem
         public Optional<List<Pattern>> includePersistenceUnit;
 
         /**
-         * The persistence units to exclude from persistence.xml files. Default none.
+         * EXPERIMENTAL: The persistence units to exclude from persistence.xml files. Default none.
          */
         @ConfigItem
         public Optional<List<Pattern>> excludePersistenceUnit;

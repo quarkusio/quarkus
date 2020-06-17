@@ -132,9 +132,8 @@ public class HibernateReactiveMySQLTestEndpoint {
     }
 
     private Uni<RowSet<Row>> populateDB() {
-        return mysqlPool.getConnection()
-                .flatMap(c -> c.preparedQuery("DELETE FROM Pig").execute().map(junk -> c))
-                .flatMap(c -> c.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
+        return mysqlPool.query("DELETE FROM Pig").execute()
+                .flatMap(junk -> mysqlPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 
     private Uni<String> selectNameFromId(Integer id) {

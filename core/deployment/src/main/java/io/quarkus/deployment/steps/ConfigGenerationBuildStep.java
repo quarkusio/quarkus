@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.stream.Collectors;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -29,7 +32,8 @@ public class ConfigGenerationBuildStep {
             List<ConfigurationTypeBuildItem> typeItems,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            LiveReloadBuildItem liveReloadBuildItem) {
+            LiveReloadBuildItem liveReloadBuildItem,
+            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
         if (liveReloadBuildItem.isLiveReload()) {
             return;
         }
@@ -46,6 +50,19 @@ public class ConfigGenerationBuildStep {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
 
         RunTimeConfigurationGenerator.generate(readResult, classOutput,
-                launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT, defaults, additionalConfigTypes);
+                launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT, defaults, additionalConfigTypes,
+                getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders));
+    }
+
+    private List<String> getAdditionalBootstrapConfigSourceProviders(
+            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
+        if (additionalBootstrapConfigSourceProviders.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> result = new ArrayList<>(additionalBootstrapConfigSourceProviders.size());
+        for (AdditionalBootstrapConfigSourceProviderBuildItem provider : additionalBootstrapConfigSourceProviders) {
+            result.add(provider.getProviderClassName());
+        }
+        return result;
     }
 }

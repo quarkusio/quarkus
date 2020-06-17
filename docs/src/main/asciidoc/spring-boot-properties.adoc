@@ -390,3 +390,4 @@ Quarkus has more Spring compatibility features. See the following guides for mor
 * link:spring-security[Quarkus - Extension for Spring Security]
 * link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 * link:spring-cache[Quarkus - Extension for Spring Cache]
+* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]

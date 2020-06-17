@@ -158,11 +158,6 @@
         <module>flyway</module>
         <module>liquibase</module>
 
-        <!-- Business automation -->
-        <module>optaplanner</module>
-        <module>optaplanner-jackson</module>
-        <module>optaplanner-jsonb</module>
-
         <!-- Vault -->
         <module>vault</module>
         <module>credentials</module>

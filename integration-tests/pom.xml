@@ -78,8 +78,6 @@
         <module>amazon-lambda-http</module>
         <module>amazon-lambda-http-resteasy</module>
         <module>container-image</module>
-        <module>optaplanner-jackson</module>
-        <module>optaplanner-jsonb</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>tika</module>

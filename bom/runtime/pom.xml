@@ -169,16 +169,12 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>4.10.2</kubernetes-client.version>
-        <optaplanner.version>7.36.1.Final</optaplanner.version>
-        <!-- Namespaced to avoid clashing with the kogito version in the universe-bom. We're working on getting rid of this potential version mismatch -->
-        <optaplanner-kogito.version>0.10.1</optaplanner-kogito.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP3</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mvel2.version>2.4.7.Final</mvel2.version>
         <htmlunit.version>2.40.0</htmlunit.version>
         <mockito.version>3.3.3</mockito.version>
         <jna.version>5.3.1</jna.version><!-- should satisfy both testcontainers and mongodb -->
@@ -257,15 +253,6 @@
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-stack-depchain</artifactId>
                 <version>${vertx.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-                <!-- Optaplanner dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.optaplanner</groupId>
-                <artifactId>optaplanner-bom</artifactId>
-                <version>${optaplanner.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -943,21 +930,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-consul-config</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-optaplanner</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-optaplanner-jackson</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-optaplanner-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3365,28 +3337,6 @@
                 <groupId>com.google.http-client</groupId>
                 <artifactId>google-http-client</artifactId>
                 <version>${google-http-client.version}</version>
-            </dependency>
-
-            <!-- Kogito -->
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>kogito-api</artifactId>
-                <version>${optaplanner-kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>kogito-drools</artifactId>
-                <version>${optaplanner-kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>drools-core-static</artifactId>
-                <version>${optaplanner-kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mvel</groupId>
-                <artifactId>mvel2</artifactId>
-                <version>${mvel2.version}</version>
             </dependency>
 
             <!-- gRPC additional dependencies (the rest is managed by the BOM) -->

@@ -467,8 +467,6 @@ jobs:
               test-extension
               logging-gelf
               bootstrap-config
-              optaplanner-jackson
-              optaplanner-jsonb
           # kubernetes-client alone takes 30mn+
           - category: Misc3
             timeout: 50

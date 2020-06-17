@@ -17,47 +17,32 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bootstrap-core</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-shade-plugin</artifactId>
-
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>unpack-dependencies</id>
+                        <phase>process-classes</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
-                            <createSourcesJar>true</createSourcesJar>
-                            <filters>
-                                <filter>
-                                    <artifact>org.eclipse.sisu:org.eclipse.sisu.inject</artifact>
-                                    <excludes>
-                                        <!-- exclude the annotation processor service -->
-                                        <exclude>META-INF/services/**</exclude>
-                                    </excludes>
-                                </filter>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                </filter>
-                            </filters>
-                            <relocations>
-                                <relocation>
-                                    <shadedPattern>io.quarkus.launcher.shaded.</shadedPattern>
-                                    <excludes>
-                                        <exclude>META-INF/**</exclude>
-                                        <exclude>licenses/**</exclude>
-                                        <exclude>plugin.xml</exclude>
-                                        <exclude>java/**</exclude> <!-- unless this is is added, the build may fail with e.g. cannot access io.quarkus.launcher.shaded.java.lang.String -->
-                                        <exclude>io.quarkus.launcher.*</exclude>
-                                    </excludes>
-                                </relocation>
-                            </relocations>
+                            <fileMappers>
+                                <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                                    <pattern>$</pattern>
+                                    <replacement>.ide-launcher-res</replacement>
+                                </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                            </fileMappers>
+                            <outputDirectory>${project.build.directory}/classes/META-INF/ide-deps</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
                         </configuration>
                     </execution>
                 </executions>

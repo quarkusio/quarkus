@@ -121,6 +121,7 @@
         <module>picocli-native</module>
         <module>webjars-locator</module>
         <module>devmode</module>
+        <module>ide-launcher</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

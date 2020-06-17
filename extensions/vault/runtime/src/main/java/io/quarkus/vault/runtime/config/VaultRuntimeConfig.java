@@ -32,6 +32,7 @@ public class VaultRuntimeConfig {
     public static final String DEFAULT_READ_TIMEOUT = "1S";
     public static final String DEFAULT_TLS_SKIP_VERIFY = "false";
     public static final String DEFAULT_TLS_USE_KUBERNETES_CACERT = "true";
+    public static final String DEFAULT_KUBERNETES_AUTH_MOUNT_PATH = "auth/kubernetes";
 
     /**
      * Vault server url.
@@ -239,6 +240,7 @@ public class VaultRuntimeConfig {
     public String toString() {
         return "VaultRuntimeConfig{" +
                 "url=" + url +
+                ", kubernetesAuthenticationMountPath=" + authentication.kubernetes.authMountPath +
                 ", kubernetesAuthenticationRole="
                 + logConfidentialityLevel.maskWithTolerance(authentication.kubernetes.role.orElse(""), MEDIUM) +
                 ", kubernetesJwtTokenPath='" + authentication.kubernetes.jwtTokenPath + '\'' +

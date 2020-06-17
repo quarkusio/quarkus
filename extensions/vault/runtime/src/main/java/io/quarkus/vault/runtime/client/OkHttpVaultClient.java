@@ -72,6 +72,7 @@ public class OkHttpVaultClient implements VaultClient {
 
     private OkHttpClient client;
     private URL url;
+    private String kubernetesAuthMountPath;
     private ObjectMapper mapper = new ObjectMapper();
 
     public OkHttpVaultClient(VaultRuntimeConfig serverConfig) {
@@ -79,6 +80,8 @@ public class OkHttpVaultClient implements VaultClient {
         this.url = serverConfig.url.get();
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        this.kubernetesAuthMountPath = serverConfig.authentication.kubernetes.authMountPath;
     }
 
     @Override
@@ -90,7 +93,7 @@ public class OkHttpVaultClient implements VaultClient {
     @Override
     public VaultKubernetesAuth loginKubernetes(String role, String jwt) {
         VaultKubernetesAuthBody body = new VaultKubernetesAuthBody(role, jwt);
-        return post("auth/kubernetes/login", null, body, VaultKubernetesAuth.class);
+        return post(kubernetesAuthMountPath + "/login", null, body, VaultKubernetesAuth.class);
     }
 
     @Override

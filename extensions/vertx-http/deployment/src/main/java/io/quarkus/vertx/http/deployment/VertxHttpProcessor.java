@@ -186,7 +186,7 @@ class VertxHttpProcessor {
         // start http socket in dev/test mode even if virtual http is required
         boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         recorder.startServer(vertx.getVertx(), shutdown,
-                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
+                httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.joining(",")));

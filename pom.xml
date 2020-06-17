@@ -46,8 +46,8 @@
         <module>independent-projects/ide-config</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
-        <module>independent-projects/tools</module>
         <module>independent-projects/qute</module>
+        <module>independent-projects/tools</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>

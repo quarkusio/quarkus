@@ -9,3 +9,4 @@ metadata:
   - "core"
   status: "stable"
   guide: "https://quarkus.io/guides/config#yaml"
+  codestart: "config-yaml"

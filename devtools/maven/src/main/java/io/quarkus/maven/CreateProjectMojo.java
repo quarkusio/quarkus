@@ -74,6 +74,12 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "projectVersion")
     private String projectVersion;
 
+    @Parameter(property = "codestartsEnabled", defaultValue = "false")
+    private Boolean codestartsEnabled;
+
+    @Parameter(property = "withExampleCode", defaultValue = "true")
+    private Boolean withExampleCode;
+
     /**
      * Group ID of the target platform BOM
      */
@@ -190,7 +196,9 @@ public class CreateProjectMojo extends AbstractMojo {
                     .version(projectVersion)
                     .sourceType(sourceType)
                     .className(className)
-                    .extensions(extensions);
+                    .extensions(extensions)
+                    .codestartsEnabled(codestartsEnabled)
+                    .withExampleCode(withExampleCode);
             if (path != null) {
                 createProject.setValue("path", path);
             }

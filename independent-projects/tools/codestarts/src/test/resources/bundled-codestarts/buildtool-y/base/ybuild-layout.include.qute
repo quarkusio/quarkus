@@ -1,0 +1,7 @@
+{#insert foo}
+foo
+{/}
+
+{#insert bar}
+bar
+{/}

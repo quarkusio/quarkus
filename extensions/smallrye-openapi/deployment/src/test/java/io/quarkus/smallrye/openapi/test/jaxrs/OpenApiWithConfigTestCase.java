@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.openapi.test;
+package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.openapi.test;
+package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

@@ -221,7 +221,7 @@ A `RowSet` is an `java.lang.Iterable<Row>` and thus can be converted to a `Multi
 [source,java]
 ----
 Multi<Fruit> fruits = rowSet
-  .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
+  .onItem().produceMulti(set -> Multi.createFrom().iterable(set))
   .onItem().apply(Fruit::from);
 ----
 
@@ -243,7 +243,7 @@ Putting it all together, the `Fruit.findAll` method looks like:
 ----
 public static Multi<Fruit> findAll(PgPool client) {
     return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
-            .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
+            .onItem().produceMulti(set -> Multi.createFrom().iterable(set))
             .onItem().apply(Fruit::from);
 }
 ----

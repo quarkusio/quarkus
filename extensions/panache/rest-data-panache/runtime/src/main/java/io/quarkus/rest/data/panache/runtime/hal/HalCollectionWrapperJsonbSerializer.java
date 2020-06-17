@@ -22,7 +22,7 @@ public class HalCollectionWrapperJsonbSerializer implements JsonbSerializer<HalC
     public void serialize(HalCollectionWrapper wrapper, JsonGenerator generator, SerializationContext context) {
         generator.writeStartObject();
         writeEmbedded(wrapper, generator, context);
-        writeLinks(wrapper.getElementType(), generator, context);
+        writeLinks(wrapper, generator, context);
         generator.writeEnd();
     }
 
@@ -38,8 +38,9 @@ public class HalCollectionWrapperJsonbSerializer implements JsonbSerializer<HalC
         generator.writeEnd();
     }
 
-    private void writeLinks(Class<?> type, JsonGenerator generator, SerializationContext context) {
-        Map<String, HalLink> links = linksExtractor.getLinks(type);
+    private void writeLinks(HalCollectionWrapper wrapper, JsonGenerator generator, SerializationContext context) {
+        Map<String, HalLink> links = linksExtractor.getLinks(wrapper.getElementType());
+        links.putAll(wrapper.getLinks());
         context.serialize("_links", links, generator);
     }
 }

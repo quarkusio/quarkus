@@ -9,9 +9,13 @@ public interface DataAccessImplementor {
 
     ResultHandle listAll(BytecodeCreator creator);
 
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page);
+
     ResultHandle persist(BytecodeCreator creator, ResultHandle entity);
 
     ResultHandle update(BytecodeCreator creator, ResultHandle entity);
 
     ResultHandle deleteById(BytecodeCreator creator, ResultHandle id);
+
+    ResultHandle pageCount(BytecodeCreator creator, ResultHandle page);
 }

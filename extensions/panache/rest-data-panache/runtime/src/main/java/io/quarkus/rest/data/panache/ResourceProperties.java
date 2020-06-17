@@ -33,4 +33,13 @@ public @interface ResourceProperties {
      * Default: hyphenated resource name without a suffix. Ignored suffixes are `Controller` and `Resource`.
      */
     String path() default "";
+
+    /**
+     * Return a paged collection from the methods that return collections.
+     * Requested page number and size are extracted from the query parameters `page` (default 0) and `size` (default 20).
+     * These additional headers are injected to the response: first, last, prev (if exists), next (if exists).
+     * <p>
+     * Default: true.
+     */
+    boolean paged() default true;
 }

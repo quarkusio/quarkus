@@ -22,7 +22,7 @@ public class HotReloadTest {
     @Test
     public void shouldModifyPathAndDisableHal() {
         TEST.modifySourceFile(CollectionsController.class,
-                s -> s.replace("@ResourceProperties(hal = true)", "@ResourceProperties(path = \"col\")"));
+                s -> s.replace("@ResourceProperties(hal = true, paged = false)", "@ResourceProperties(path = \"col\")"));
         given().accept("application/json")
                 .when().get("/col")
                 .then().statusCode(200);

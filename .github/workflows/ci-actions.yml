@@ -218,15 +218,6 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
-      - name: Build with Gradle
-        uses: eskatos/gradle-command-action@v1
-        env:
-          GRADLE_OPTS: -Xmx1408m
-        with:
-          gradle-version: wrapper
-          wrapper-directory: integration-tests/gradle
-          build-root-directory: integration-tests/gradle
-          arguments: clean test -i -S --stacktrace --no-daemon
       - name: Build with Maven
         run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
@@ -239,6 +230,51 @@ jobs:
         with:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
+
+  linux-jvm-gradle-tests:
+    name: JDK ${{matrix.java.name}} JVM Gradle Tests
+    runs-on: ubuntu-latest
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - { name: Java8,
+              java-version: 8
+          }
+          - {
+            name: "Java 8 - 242",
+            java-version: 8,
+            release: "jdk8u242-b08"
+          }
+          - {
+            name: Java 11,
+            java-version: 11
+          }
+          - {
+            name: Java 14,
+            java-version: 14
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
 
   windows-jdk11-jvm-tests:
     name: Windows JDK 11 JVM Tests
@@ -263,15 +299,6 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
-      - name: Build with Gradle
-        uses: eskatos/gradle-command-action@v1
-        env:
-          GRADLE_OPTS: -Xmx1408m
-        with:
-          gradle-version: wrapper
-          wrapper-directory: integration-tests/gradle
-          build-root-directory: integration-tests/gradle
-          arguments: clean test -i -S --stacktrace --no-daemon
       - name: Build with Maven
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dformat.skip -pl !integration-tests/gradle install
@@ -287,6 +314,37 @@ jobs:
         with:
           name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
+
+  windows-jdk11-jvm-gradle-tests:
+    name: Windows JDK 11 JVM Gradle Tests
+    needs: build-jdk11
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        with:
+          java-version: 11
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
 
   tcks-test:
     name: TCKS Test

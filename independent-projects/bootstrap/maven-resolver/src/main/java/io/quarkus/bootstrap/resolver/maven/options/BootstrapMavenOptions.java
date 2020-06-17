@@ -51,7 +51,11 @@ public class BootstrapMavenOptions {
 
         final String mavenHome = PropertyUtils.getProperty("maven.home");
         if (mavenHome == null) {
-            return invokeParser(Thread.currentThread().getContextClassLoader(), args);
+            try {
+                return invokeParser(Thread.currentThread().getContextClassLoader(), args);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Failed to load parser", e);
+            }
         }
 
         final Path mvnLib = Paths.get(mavenHome).resolve("lib");
@@ -77,7 +81,16 @@ public class BootstrapMavenOptions {
         final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
         try (URLClassLoader ucl = new URLClassLoader(urls, null)) {
             Thread.currentThread().setContextClassLoader(ucl);
-            return invokeParser(ucl, args);
+            try {
+                return invokeParser(ucl, args);
+            } catch (ClassNotFoundException e) {
+                Thread.currentThread().setContextClassLoader(originalCl);
+                try {
+                    return invokeParser(originalCl, args);
+                } catch (ClassNotFoundException classNotFoundException) {
+                    throw new RuntimeException("Failed to load parser", e);
+                }
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Failed to close URL classloader", e);
         } finally {
@@ -175,11 +188,13 @@ public class BootstrapMavenOptions {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> invokeParser(ClassLoader cl, String[] args) {
+    private static Map<String, Object> invokeParser(ClassLoader cl, String[] args) throws ClassNotFoundException {
         try {
             final Class<?> parserCls = cl.loadClass("io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptionsParser");
             final Method parseMethod = parserCls.getMethod("parse", String[].class);
             return (Map<String, Object>) parseMethod.invoke(null, (Object) args);
+        } catch (ClassNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse command line arguments " + Arrays.asList(args), e);
         }

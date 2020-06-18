@@ -22,6 +22,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.handlers.DelayedHandler;
 
@@ -339,17 +341,25 @@ class MainClassBuildStep {
         } else {
             Collection<ClassInfo> impls = combinedIndexBuildItem.getIndex()
                     .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName()));
-            boolean found = false;
-            for (ClassInfo i : impls) {
-                if (i.name().toString().equals(mainClassName)) {
-                    found = true;
-                    break;
-                }
+            ClassInfo classByName = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(mainClassName));
+            MethodInfo mainClassMethod = null;
+            if (classByName != null) {
+                mainClassMethod = classByName
+                        .method("main", Type.create(DotName.createSimple(String[].class.getName()), Type.Kind.ARRAY));
             }
-            if (found) {
-                //this is QuarkusApplication, generate a real main to run it
-                generateMainForQuarkusApplication(mainClassName, generatedClass);
-                mainClassName = MAIN_CLASS;
+            if (mainClassMethod == null) {
+                boolean found = false;
+                for (ClassInfo i : impls) {
+                    if (i.name().toString().equals(mainClassName)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    //this is QuarkusApplication, generate a real main to run it
+                    generateMainForQuarkusApplication(mainClassName, generatedClass);
+                    mainClassName = MAIN_CLASS;
+                }
             }
         }
 

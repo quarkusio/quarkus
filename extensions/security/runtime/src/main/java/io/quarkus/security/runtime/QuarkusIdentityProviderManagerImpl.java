@@ -72,7 +72,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
 
     QuarkusIdentityProviderManagerImpl(Builder builder) {
         this.providers = builder.providers;
-        this.augmenters = builder.augmenters;
+        this.augmenters = builder.augmentors;
         this.blockingExecutor = builder.blockingExecutor;
     }
 
@@ -186,7 +186,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
 
         private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers = new HashMap<>();
-        private final List<SecurityIdentityAugmentor> augmenters = new ArrayList<>();
+        private final List<SecurityIdentityAugmentor> augmentors = new ArrayList<>();
         private Executor blockingExecutor;
         private boolean built = false;
 
@@ -210,8 +210,8 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
          * @param augmentor The augmentor
          * @return this builder
          */
-        public Builder addSecurityIdentityAugmenter(SecurityIdentityAugmentor augmentor) {
-            augmenters.add(augmentor);
+        public Builder addSecurityIdentityAugmentor(SecurityIdentityAugmentor augmentor) {
+            augmentors.add(augmentor);
             return this;
         }
 
@@ -236,7 +236,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             if (blockingExecutor == null) {
                 throw new IllegalStateException("no blocking executor specified");
             }
-            augmenters.sort(new Comparator<SecurityIdentityAugmentor>() {
+            augmentors.sort(new Comparator<SecurityIdentityAugmentor>() {
                 @Override
                 public int compare(SecurityIdentityAugmentor o1, SecurityIdentityAugmentor o2) {
                     return Integer.compare(o2.priority(), o1.priority());

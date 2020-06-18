@@ -74,7 +74,7 @@ public class NativeConfig {
     public Optional<String> nativeImageXmx;
 
     /**
-     * If debug symbols should be included
+     * If debug symbols should be included. Only applicable to GraalVM EE.
      */
     @ConfigItem
     public boolean debugSymbols;
@@ -275,5 +275,21 @@ public class NativeConfig {
         @ConfigItem
         public Optional<List<String>> includes;
 
+    }
+
+    /**
+     * Debugging options.
+     */
+    @ConfigItem
+    public Debug debug;
+
+    @ConfigGroup
+    public static class Debug {
+        /**
+         * If debug is enabled and debug symbols are generated.
+         * The symbols will be generated in a separate .debug file.
+         */
+        @ConfigItem
+        public boolean enabled;
     }
 }

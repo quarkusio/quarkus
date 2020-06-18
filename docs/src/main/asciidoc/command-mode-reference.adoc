@@ -41,8 +41,8 @@ public class HelloWorldMain implements QuarkusApplication {
 
 === Contexts
 
-To get access to your application beans and services, be aware that 
-a `@QuarkusMain` instance is an application scoped bean by default. It has access to singletons, application and dependent scoped beans. If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method. 
+To get access to your application beans and services, be aware that
+a `@QuarkusMain` instance is an application scoped bean by default. It has access to singletons, application and dependent scoped beans. If you want to interact with beans that requires a request scope put a `@ActivateRequestContext` on your `run()` method.
 
 This let `run()` have access to methods like `listAll()` and `query*` methods on a Panache Entity. Without it you will eventually get a `ContextNotActiveException` when accessing such classes/beans.
 
@@ -65,6 +65,8 @@ public class JavaMain {
 
 This is effectively the same as running the `HelloWorldMain` application main directly, but has the advantage it can
 be run from the IDE.
+
+NOTE: If a class that implements `QuarkusApplication` and has a Java main then the Java main will be run.
 
 WARNING: It is recommended that a Java main perform very little logic, and just
 launch the application main. In development mode the Java main will run in a

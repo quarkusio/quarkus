@@ -82,7 +82,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <!-- JDBC driver dependencies -->

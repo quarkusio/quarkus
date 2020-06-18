@@ -96,7 +96,7 @@ jobs:
     name: JDK ${{matrix.java.name}} JVM Tests
     runs-on: ubuntu-latest
     needs: build-jdk11
-    timeout-minutes: 130
+    timeout-minutes: 180
     env:
       MAVEN_OPTS: -Xmx2048m
     strategy:
@@ -280,7 +280,7 @@ jobs:
     name: Windows JDK 11 JVM Tests
     needs: build-jdk11
     runs-on: windows-latest
-    timeout-minutes: 150
+    timeout-minutes: 180
     env:
       MAVEN_OPTS: -Xmx1408m
    
@@ -398,12 +398,12 @@ jobs:
         include:
           - category: Main
             postgres: "true"
-            timeout: 30
+            timeout: 40
             test-modules: main
           - category: Data1
             mariadb: "true"
             mssql: "true"
-            timeout: 55
+            timeout: 65
             test-modules: >
               jpa-h2
               jpa-mariadb
@@ -416,7 +416,7 @@ jobs:
             mysql: "true"
             postgres: "true"
             mariadb: "true"
-            timeout: 55
+            timeout: 65
             test-modules: >
               jpa
               jpa-postgresql
@@ -427,7 +427,7 @@ jobs:
               hibernate-reactive-mysql
           - category: Data3
             postgres: "true"
-            timeout: 60
+            timeout: 70
             test-modules: >
               flyway
               hibernate-orm-panache
@@ -435,7 +435,7 @@ jobs:
               liquibase
           - category: Data4
             neo4j: "true"
-            timeout: 40
+            timeout: 50
             test-modules: >
               mongodb-client
               mongodb-panache
@@ -443,7 +443,7 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 45
+            timeout: 55
             test-modules: >
               hibernate-search-elasticsearch
               narayana-stm
@@ -452,13 +452,13 @@ jobs:
               hibernate-reactive
           - category: Amazon
             amazonServices: "true"
-            timeout: 35
+            timeout: 45
             test-modules: >
               amazon-services
               amazon-lambda
               amazon-lambda-http
           - category: Messaging
-            timeout: 65
+            timeout: 75
             test-modules: >
               artemis-core
               artemis-jms
@@ -466,7 +466,7 @@ jobs:
               kafka-streams
               reactive-messaging-amqp
           - category: Security1
-            timeout: 40
+            timeout: 50
             keycloak: "true"
             test-modules: >
               elytron-security-oauth2
@@ -475,7 +475,7 @@ jobs:
               elytron-undertow
               elytron-security-ldap
           - category: Security2
-            timeout: 60
+            timeout: 70
             keycloak: "true"
             test-modules: >
               elytron-resteasy
@@ -484,20 +484,20 @@ jobs:
               oidc-tenancy
               keycloak-authorization
           - category: Security3
-            timeout: 40
+            timeout: 50
             test-modules: >
               vault
               vault-app
               vault-agroal
           - category: Cache
-            timeout: 45
+            timeout: 55
             test-modules: >
               infinispan-cache-jpa
               infinispan-client
               infinispan-embedded
               cache
           - category: HTTP
-            timeout: 45
+            timeout: 55
             test-modules: >
               resteasy-jackson
               resteasy-mutiny
@@ -507,7 +507,7 @@ jobs:
               virtual-http
               rest-client
           - category: Misc1
-            timeout: 50
+            timeout: 60
             test-modules: >
               maven
               jackson
@@ -518,7 +518,7 @@ jobs:
               qute
               consul-config
           - category: Misc2
-            timeout: 45
+            timeout: 55
             test-modules: >
               tika
               hibernate-validator
@@ -527,17 +527,17 @@ jobs:
               bootstrap-config
           # kubernetes-client alone takes 30mn+
           - category: Misc3
-            timeout: 50
+            timeout: 60
             test-modules: >
               kubernetes-client
           - category: Misc4
-            timeout: 20
+            timeout: 30
             test-modules: >
               smallrye-graphql
               picocli-native
               gradle
           - category: Spring
-            timeout: 40
+            timeout: 50
             test-modules: >
               spring-di
               spring-web
@@ -545,7 +545,7 @@ jobs:
               spring-boot-properties
               spring-cloud-config-client
           - category: gRPC
-            timeout: 55
+            timeout: 65
             test-modules: >
               grpc-health
               grpc-interceptors

@@ -76,9 +76,15 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         static final Set<String> WHITELISTED_FROM_IGNORED_PACKAGES = new HashSet<>(
                 Arrays.asList("java.math.BigDecimal", "java.math.BigInteger"));
 
+        static final List<String> PRIMITIVE = Arrays.asList("boolean", "byte",
+                "char", "short", "int", "long", "float", "double");
+
         @Override
         public boolean test(DotName dotName) {
             String name = dotName.toString();
+            if (PRIMITIVE.contains(name)) {
+                return true;
+            }
             for (String containerPackageName : DEFAULT_IGNORED_PACKAGES) {
                 if (name.startsWith(containerPackageName)) {
                     return !WHITELISTED_FROM_IGNORED_PACKAGES.contains(name);

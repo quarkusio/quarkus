@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -242,7 +241,7 @@ public class CreateProjectMojo extends AbstractMojo {
             writer.mkdirs("gradle/wrapper");
 
             for (String filename : CreateUtils.GRADLE_WRAPPER_FILES) {
-                byte[] fileContent = platform.loadResource(Paths.get(CreateUtils.GRADLE_WRAPPER_PATH, filename).toString(),
+                byte[] fileContent = platform.loadResource(CreateUtils.GRADLE_WRAPPER_PATH + '/' + filename,
                         is -> {
                             byte[] buffer = new byte[is.available()];
                             is.read(buffer);

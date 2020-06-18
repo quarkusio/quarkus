@@ -13,7 +13,6 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -59,7 +58,6 @@ import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
-import io.smallrye.graphql.execution.Classes;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -148,7 +146,7 @@ public class SmallRyeGraphQLProcessor {
         for (String c : getClassesToRegisterForReflection(schema)) {
             DotName name = DotName.createSimple(c);
             org.jboss.jandex.Type type = org.jboss.jandex.Type.create(name, org.jboss.jandex.Type.Kind.CLASS);
-            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index, GraphQLIgnorePredicate.INSTANCE));
+            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index));
         }
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
@@ -462,16 +460,6 @@ public class SmallRyeGraphQLProcessor {
             } catch (IOException e) {
                 LOG.error("Failed to clean GraphQL UI temp directory on shutdown", e);
             }
-        }
-    }
-
-    public static class GraphQLIgnorePredicate implements Predicate<DotName> {
-
-        public static final GraphQLIgnorePredicate INSTANCE = new GraphQLIgnorePredicate();
-
-        @Override
-        public boolean test(DotName t) {
-            return Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.net.");
         }
     }
 }

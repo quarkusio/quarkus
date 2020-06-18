@@ -236,9 +236,11 @@ public final class RunTimeConfigurationGenerator {
 
     public static void generate(BuildTimeConfigurationReader.ReadResult readResult, final ClassOutput classOutput,
             boolean devMode,
-            final Map<String, String> runTimeDefaults, List<Class<?>> additionalTypes) {
+            final Map<String, String> runTimeDefaults, List<Class<?>> additionalTypes,
+            List<String> additionalBootstrapConfigSourceProviders) {
         new GenerateOperation.Builder().setBuildTimeReadResult(readResult).setClassOutput(classOutput).setDevMode(devMode)
-                .setRunTimeDefaults(runTimeDefaults).setAdditionalTypes(additionalTypes).build().run();
+                .setRunTimeDefaults(runTimeDefaults).setAdditionalTypes(additionalTypes)
+                .setAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders).build().run();
     }
 
     static final class GenerateOperation implements AutoCloseable {
@@ -267,6 +269,7 @@ public final class RunTimeConfigurationGenerator {
         final ResultHandle clinitConfig;
         final Map<FieldDescriptor, Class<?>> convertersToRegister = new HashMap<>();
         final List<Class<?>> additionalTypes;
+        final List<String> additionalBootstrapConfigSourceProviders;
         /**
          * Regular converters organized by type. Each converter is stored in a separate field. Some are used
          * only at build time, some only at run time, and some at both times.
@@ -296,6 +299,7 @@ public final class RunTimeConfigurationGenerator {
             roots = Assert.checkNotNullParam("builder.roots", builder.getBuildTimeReadResult().getAllRoots());
             runTimeDefaults = Assert.checkNotNullParam("runTimeDefaults", builder.getRunTimeDefaults());
             additionalTypes = Assert.checkNotNullParam("additionalTypes", builder.getAdditionalTypes());
+            additionalBootstrapConfigSourceProviders = builder.additionalBootstrapConfigSourceProviders;
             cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_CLASS_NAME).setFinal(true).build();
             // not instantiable
             try (MethodCreator mc = cc.getMethodCreator(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME))) {
@@ -557,6 +561,13 @@ public final class RunTimeConfigurationGenerator {
             // put sources in the bootstrap builder
             if (bootstrapConfigSetupNeeded()) {
                 readBootstrapConfig.invokeVirtualMethod(SRCB_WITH_SOURCES, bootstrapBuilder, bootstrapConfigSourcesArray);
+
+                // add additional providers
+                for (String providerClass : additionalBootstrapConfigSourceProviders) {
+                    ResultHandle providerInstance = readBootstrapConfig
+                            .newInstance(MethodDescriptor.ofConstructor(providerClass));
+                    readBootstrapConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDER, bootstrapBuilder, providerInstance);
+                }
             }
             // put sources in the builder
             readConfig.invokeVirtualMethod(SRCB_WITH_SOURCES, runTimeBuilder, runtimeConfigSourcesArray);
@@ -1404,6 +1415,7 @@ public final class RunTimeConfigurationGenerator {
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
             private Map<String, String> runTimeDefaults;
             private List<Class<?>> additionalTypes;
+            private List<String> additionalBootstrapConfigSourceProviders;
 
             Builder() {
             }
@@ -1450,6 +1462,11 @@ public final class RunTimeConfigurationGenerator {
 
             public Builder setDevMode(boolean devMode) {
                 this.devMode = devMode;
+                return this;
+            }
+
+            Builder setAdditionalBootstrapConfigSourceProviders(List<String> additionalBootstrapConfigSourceProviders) {
+                this.additionalBootstrapConfigSourceProviders = additionalBootstrapConfigSourceProviders;
                 return this;
             }
 

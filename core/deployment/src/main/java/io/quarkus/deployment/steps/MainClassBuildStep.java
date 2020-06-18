@@ -359,6 +359,12 @@ class MainClassBuildStep {
                     //this is QuarkusApplication, generate a real main to run it
                     generateMainForQuarkusApplication(mainClassName, generatedClass);
                     mainClassName = MAIN_CLASS;
+                } else {
+                    ClassInfo classInfo = combinedIndexBuildItem.getIndex().getClassByName(DotName.createSimple(mainClassName));
+                    if (classInfo == null) {
+                        throw new IllegalArgumentException("The supplied 'main-class' value of '" + mainClassName
+                                + "' does not correspond to either a fully qualified class name or a matching 'name' field of one of the '@QuarkusMain' annotations");
+                    }
                 }
             }
         }

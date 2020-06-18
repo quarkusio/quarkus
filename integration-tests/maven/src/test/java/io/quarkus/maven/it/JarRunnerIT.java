@@ -29,7 +29,6 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.runner.ReAugmentEntryPoint;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -124,8 +123,7 @@ public class JarRunnerIT extends MojoTestBase {
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
-                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=fast-jar",
-                        "-Dquarkus.package.mutable-application=true"), Collections.emptyMap());
+                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Collections.emptyMap());
 
         await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
@@ -165,9 +163,9 @@ public class JarRunnerIT extends MojoTestBase {
         List<String> commands = new ArrayList<>();
         commands.add(JavaBinFinder.findBin());
         commands.add("-Dquarkus.http.root-path=/moved");
-        commands.add("-cp");
+        commands.add("-Dquarkus.launch.rebuild=true");
+        commands.add("-jar");
         commands.add(jar.toString());
-        commands.add(ReAugmentEntryPoint.class.getName());
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
         processBuilder.redirectOutput(output);
         processBuilder.redirectError(output);

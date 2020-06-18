@@ -1,11 +1,13 @@
 package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Application model resolver used to resolve application and/or its dependency artifacts.
@@ -78,7 +80,8 @@ public interface AppModelResolver {
      */
     AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException;
 
-    AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+    AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject,
+            Set<AppArtifactKey> localProjects)
             throws AppModelResolverException;
 
     /**

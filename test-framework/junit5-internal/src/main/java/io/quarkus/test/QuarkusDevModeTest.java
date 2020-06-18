@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
@@ -222,9 +223,11 @@ public class QuarkusDevModeTest
             DevModeContext context = new DevModeContext();
             context.setCacheDir(cache.toFile());
 
-            context.setApplicationRoot(new DevModeContext.ModuleInfo("default", deploymentDir.toAbsolutePath().toString(),
-                    Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
-                    classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString()));
+            context.setApplicationRoot(
+                    new DevModeContext.ModuleInfo(AppArtifactKey.fromString("io.quarkus.test:app-under-test"), "default",
+                            deploymentDir.toAbsolutePath().toString(),
+                            Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
+                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString()));
 
             setDevModeRunnerJarFile(context);
             return context;

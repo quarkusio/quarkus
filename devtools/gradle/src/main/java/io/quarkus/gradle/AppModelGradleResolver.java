@@ -358,7 +358,8 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject,
+            Set<AppArtifactKey> localProjects)
             throws AppModelResolverException {
         return resolveModel(appArtifact);
     }

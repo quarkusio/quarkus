@@ -38,10 +38,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -51,6 +53,7 @@ import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
+import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
@@ -105,6 +108,7 @@ public class VertxHttpRecorder {
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
+    private static volatile HotReplacementContext hotReplacementContext;
 
     private static volatile Runnable closeTask;
 
@@ -123,13 +127,16 @@ public class VertxHttpRecorder {
         }
     };
 
-    public static void setHotReplacement(Handler<RoutingContext> handler) {
+    public static void setHotReplacement(Handler<RoutingContext> handler, HotReplacementContext hrc) {
         hotReplacementHandler = handler;
+        hotReplacementContext = hrc;
     }
 
     public static void shutDownDevMode() {
-        closeTask.run();
-        closeTask = null;
+        if (closeTask != null) {
+            closeTask.run();
+            closeTask = null;
+        }
         rootHandler = null;
         hotReplacementHandler = null;
     }
@@ -209,6 +216,7 @@ public class VertxHttpRecorder {
 
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, Supplier<Vertx> vertx,
+            LiveReloadConfig liveReloadConfig,
             RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
@@ -364,7 +372,9 @@ public class VertxHttpRecorder {
                 }
             });
         }
-
+        if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password.isPresent()) {
+            root = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
+        }
         rootHandler = root;
     }
 

@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 
@@ -96,14 +97,19 @@ public class DevModeMain implements Closeable {
 
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
                     .setApplicationRoot(appRoots.build())
+                    .setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath())
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
-                    .setMode(QuarkusBootstrap.Mode.DEV);
+                    .setBaseName(context.getBaseName())
+                    .setMode(context.getMode());
             if (context.getProjectDir() != null) {
                 bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
             } else {
                 bootstrapBuilder.setProjectRoot(new File(".").toPath());
+            }
+            for (AppArtifactKey i : context.getLocalArtifacts()) {
+                bootstrapBuilder.addLocalArtifact(i);
             }
 
             for (DevModeContext.ModuleInfo i : context.getAllModules()) {
@@ -123,10 +129,12 @@ public class DevModeMain implements Closeable {
             buildSystemProperties.putAll(context.getBuildSystemProperties());
             bootstrapBuilder.setBuildSystemProperties(buildSystemProperties);
             curatedApplication = bootstrapBuilder.setTest(context.isTest()).build().bootstrap();
-            realCloseable = (Closeable) curatedApplication.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(),
+            realCloseable = (Closeable) curatedApplication.runInAugmentClassLoader(
+                    context.getAlternateEntryPoint() == null ? IsolatedDevModeMain.class.getName()
+                            : context.getAlternateEntryPoint(),
                     Collections.singletonMap(DevModeContext.class.getName(), context));
         } catch (Throwable t) {
-            log.error("Quarkus dev mode failed to start in curation phase", t);
+            log.error("Quarkus dev mode failed to start", t);
             throw new RuntimeException(t);
             //System.exit(1);
         }

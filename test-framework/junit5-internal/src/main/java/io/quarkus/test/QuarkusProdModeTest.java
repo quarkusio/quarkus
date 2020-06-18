@@ -378,6 +378,8 @@ public class QuarkusProdModeTest
                 } else {
                     throw e;
                 }
+            } finally {
+                curatedApplication.close();
             }
 
             Path builtResultArtifact = setupProdModeResults(testClass, buildDir, result);

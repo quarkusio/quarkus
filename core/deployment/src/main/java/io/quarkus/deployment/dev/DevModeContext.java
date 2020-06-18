@@ -7,10 +7,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 
 /**
  * Object that is used to pass context data from the plugin doing the invocation
@@ -46,12 +50,26 @@ public class DevModeContext implements Serializable {
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginsOptions;
 
+    private String alternateEntryPoint;
+    private QuarkusBootstrap.Mode mode = QuarkusBootstrap.Mode.DEV;
+    private String baseName;
+    private final Set<AppArtifactKey> localArtifacts = new HashSet<>();
+
     public boolean isLocalProjectDiscovery() {
         return localProjectDiscovery;
     }
 
     public DevModeContext setLocalProjectDiscovery(boolean localProjectDiscovery) {
         this.localProjectDiscovery = localProjectDiscovery;
+        return this;
+    }
+
+    public String getAlternateEntryPoint() {
+        return alternateEntryPoint;
+    }
+
+    public DevModeContext setAlternateEntryPoint(String alternateEntryPoint) {
+        this.alternateEntryPoint = alternateEntryPoint;
         return this;
     }
 
@@ -184,8 +202,29 @@ public class DevModeContext implements Serializable {
         return ret;
     }
 
+    public QuarkusBootstrap.Mode getMode() {
+        return mode;
+    }
+
+    public void setMode(QuarkusBootstrap.Mode mode) {
+        this.mode = mode;
+    }
+
+    public String getBaseName() {
+        return baseName;
+    }
+
+    public void setBaseName(String baseName) {
+        this.baseName = baseName;
+    }
+
+    public Set<AppArtifactKey> getLocalArtifacts() {
+        return localArtifacts;
+    }
+
     public static class ModuleInfo implements Serializable {
 
+        private final AppArtifactKey appArtifactKey;
         private final String name;
         private final String projectDirectory;
         private final Set<String> sourcePaths;
@@ -193,22 +232,23 @@ public class DevModeContext implements Serializable {
         private final String resourcePath;
         private final String resourcesOutputPath;
 
-        public ModuleInfo(
+        public ModuleInfo(AppArtifactKey appArtifactKey,
                 String name,
                 String projectDirectory,
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath) {
-            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
+            this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
         }
 
         public ModuleInfo(
-                String name,
+                AppArtifactKey appArtifactKey, String name,
                 String projectDirectory,
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath,
                 String resourceOutputPath) {
+            this.appArtifactKey = appArtifactKey;
             this.name = name;
             this.projectDirectory = projectDirectory;
             this.sourcePaths = sourcePaths == null ? new LinkedHashSet<>() : new LinkedHashSet<>(sourcePaths);
@@ -243,6 +283,10 @@ public class DevModeContext implements Serializable {
 
         public String getResourcesOutputPath() {
             return resourcesOutputPath;
+        }
+
+        public AppArtifactKey getAppArtifactKey() {
+            return appArtifactKey;
         }
     }
 

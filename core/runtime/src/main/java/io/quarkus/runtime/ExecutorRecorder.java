@@ -74,7 +74,9 @@ public class ExecutorRecorder {
     }
 
     static void shutdownDevMode() {
-        devModeExecutor.shutdown();
+        if (devModeExecutor != null) {
+            devModeExecutor.shutdown();
+        }
     }
 
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {

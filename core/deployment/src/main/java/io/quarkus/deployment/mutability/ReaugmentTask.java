@@ -31,7 +31,7 @@ public class ReaugmentTask {
 
             AppModel existingModel = appModel.getAppModel(appRoot);
             System.setProperty("quarkus.package.type", "fast-jar");
-            CuratedApplication bootstrap = QuarkusBootstrap.builder()
+            try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
                     .setAppArtifact(existingModel.getAppArtifact())
                     .setExistingModel(existingModel)
                     .setRebuild(true)
@@ -40,8 +40,9 @@ public class ReaugmentTask {
                     .setApplicationRoot(existingModel.getAppArtifact().getPath())
                     .setTargetDirectory(appRoot.getParent())
                     .setBaseClassLoader(ReaugmentTask.class.getClassLoader())
-                    .build().bootstrap();
-            bootstrap.createAugmentor().createProductionApplication();
+                    .build().bootstrap()) {
+                bootstrap.createAugmentor().createProductionApplication();
+            }
 
         }
     }

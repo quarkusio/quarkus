@@ -218,7 +218,8 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
-            } else if (packageConfig.type.equals(PackageConfig.FAST_JAR)) {
+            } else if (packageConfig.type.equals(PackageConfig.FAST_JAR)
+                    || packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
                 return DockerfileDetectionResult.detect(DOCKERFILE_FAST_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);

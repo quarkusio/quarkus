@@ -130,21 +130,23 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, Collections.emptyList(), null);
+        return resolveManagedModel(appArtifact, Collections.emptyList(), null, Collections.emptySet());
     }
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact, List<AppDependency> directDeps) throws AppModelResolverException {
-        return resolveManagedModel(appArtifact, directDeps, null);
+        return resolveManagedModel(appArtifact, directDeps, null, Collections.emptySet());
     }
 
     @Override
-    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject,
+            Set<AppArtifactKey> localProjects)
             throws AppModelResolverException {
-        return doResolveModel(appArtifact, toAetherDeps(directDeps), managingProject);
+        return doResolveModel(appArtifact, toAetherDeps(directDeps), managingProject, localProjects);
     }
 
-    private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, AppArtifact managingProject)
+    private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, AppArtifact managingProject,
+            Set<AppArtifactKey> localProjects)
             throws AppModelResolverException {
         if (appArtifact == null) {
             throw new IllegalArgumentException("Application artifact is null");
@@ -264,6 +266,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
         List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);
         fullDeploymentDeps.addAll(deploymentDeps);
+        //we need these to have a type of 'jar'
+        //type is blank when loaded
+        for (AppArtifactKey i : localProjects) {
+            appBuilder.addLocalProjectArtifact(new AppArtifactKey(i.getGroupId(), i.getArtifactId(), null, "jar"));
+        }
         return appBuilder
                 .addDeploymentDeps(deploymentDeps)
                 .setAppArtifact(appArtifact)

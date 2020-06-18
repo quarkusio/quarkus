@@ -215,7 +215,7 @@ public class JarResultBuildStep {
             originalJar = null;
         }
 
-        return new JarBuildItem(runnerJar, originalJar, null);
+        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR);
     }
 
     private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -374,7 +374,7 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir);
+        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY);
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -483,9 +483,10 @@ public class JarResultBuildStep {
         try (OutputStream out = Files.newOutputStream(appInfo)) {
             SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars);
         }
-        if (!rebuild) {
 
-            Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        runnerJar.toFile().setReadable(true, false);
+        Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        if (!rebuild) {
             try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
                 AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
@@ -494,7 +495,7 @@ public class JarResultBuildStep {
             }
 
             //now copy the deployment artifacts, if required
-            if (packageConfig.mutableApplication) {
+            if (packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
 
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
@@ -548,7 +549,7 @@ public class JarResultBuildStep {
                 }
             });
         }
-        return new JarBuildItem(runnerJar, null, libDir);
+        return new JarBuildItem(initJar, null, libDir, packageConfig.type);
     }
 
     private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, Map<AppArtifactKey, List<Path>> runtimeArtifacts,
@@ -1100,7 +1101,8 @@ public class JarResultBuildStep {
             return packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY) ||
                     packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
                     packageConfig.type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                    packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR);
+                    packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR) ||
+                    packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
         }
     }
 

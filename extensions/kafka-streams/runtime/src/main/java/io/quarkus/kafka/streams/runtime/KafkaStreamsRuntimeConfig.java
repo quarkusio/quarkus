@@ -57,6 +57,13 @@ public class KafkaStreamsRuntimeConfig {
     public Optional<String> schemaRegistryUrl;
 
     /**
+     * The security protocol to use
+     * See https://docs.confluent.io/current/streams/developer-guide/security.html#security-example
+     */
+    @ConfigItem(name = "security.protocol")
+    public Optional<String> securityProtocol;
+
+    /**
      * The SASL JAAS config.
      */
     public SaslConfig sasl;

@@ -25,6 +25,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsResult;
@@ -112,6 +113,9 @@ public class KafkaStreamsTopologyManager {
         if (runtimeConfig.schemaRegistryUrl.isPresent()) {
             streamsProperties.put(runtimeConfig.schemaRegistryKey, runtimeConfig.schemaRegistryUrl.get());
         }
+
+        // set the security protocol (in case we are doing PLAIN_TEXT)
+        setProperty(runtimeConfig.securityProtocol, streamsProperties, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
 
         // sasl
         SaslConfig sc = runtimeConfig.sasl;

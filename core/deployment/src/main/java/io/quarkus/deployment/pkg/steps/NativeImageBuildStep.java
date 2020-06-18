@@ -261,6 +261,9 @@ public class NativeImageBuildStep {
             if (nativeConfig.debugSymbols) {
                 command.add("-g");
             }
+            if (nativeConfig.debug.enabled) {
+                command.add("-H:GenerateDebugInfo=1");
+            }
             if (nativeConfig.debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
             }
@@ -358,6 +361,10 @@ public class NativeImageBuildStep {
             IoUtils.copy(generatedImage, finalPath);
             Files.delete(generatedImage);
             System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
+
+            if (nativeConfig.debug.enabled && objcopyExists(env)) {
+                splitDebugSymbols(finalPath);
+            }
 
             return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
@@ -528,4 +535,48 @@ public class NativeImageBuildStep {
         return "";
     }
 
+    private boolean objcopyExists(Map<String, String> env) {
+        // System path
+        String systemPath = env.get(PATH);
+        if (systemPath != null) {
+            String[] pathDirs = systemPath.split(File.pathSeparator);
+            for (String pathDir : pathDirs) {
+                File dir = new File(pathDir);
+                if (dir.isDirectory()) {
+                    File file = new File(dir, "objcopy");
+                    if (file.exists()) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        log.info("Cannot find executable (objcopy) to separate symbols from executable.");
+        return false;
+    }
+
+    private void splitDebugSymbols(Path executable) {
+        Path symbols = Paths.get(String.format("%s.debug", executable.toString()));
+        objcopy("--only-keep-debug", executable.toString(), symbols.toString());
+        objcopy("--strip-debug", executable.toString());
+        objcopy(String.format("--add-gnu-debuglink=%s", symbols.toString()), executable.toString());
+    }
+
+    private static void objcopy(String... args) {
+        final List<String> command = new ArrayList<>(args.length + 1);
+        command.add("objcopy");
+        command.addAll(Arrays.asList(args));
+        log.infof("Execute %s", command);
+        Process process = null;
+        try {
+            process = new ProcessBuilder(command).start();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Unable to invoke objcopy", e);
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
+        }
+    }
 }

@@ -362,8 +362,12 @@ public class NativeImageBuildStep {
             Files.delete(generatedImage);
             System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
 
-            if (nativeConfig.debug.enabled && objcopyExists(env)) {
-                splitDebugSymbols(finalPath);
+            if (objcopyExists(env)) {
+                if (nativeConfig.debug.enabled) {
+                    splitDebugSymbols(finalPath);
+                }
+                // Strip debug symbols regardless, because the underlying JDK might contain them
+                objcopy("--strip-debug", finalPath.toString());
             }
 
             return new NativeImageBuildItem(finalPath);
@@ -558,7 +562,6 @@ public class NativeImageBuildStep {
     private void splitDebugSymbols(Path executable) {
         Path symbols = Paths.get(String.format("%s.debug", executable.toString()));
         objcopy("--only-keep-debug", executable.toString(), symbols.toString());
-        objcopy("--strip-debug", executable.toString());
         objcopy(String.format("--add-gnu-debuglink=%s", symbols.toString()), executable.toString());
     }
 

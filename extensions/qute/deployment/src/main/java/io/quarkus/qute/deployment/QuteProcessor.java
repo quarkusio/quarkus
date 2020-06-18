@@ -61,6 +61,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -69,12 +70,15 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
+import io.quarkus.qute.ParserHelper;
+import io.quarkus.qute.ParserHook;
 import io.quarkus.qute.PublisherFactory;
 import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
@@ -86,6 +90,7 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
+import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
@@ -117,6 +122,9 @@ public class QuteProcessor {
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
     static final DotName STRING = DotName.createSimple(String.class.getName());
+
+    static final DotName DOTNAME_CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
+    static final DotName DOTNAME_TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
 
     private static final String MATCH_NAME = "matchName";
     private static final String PRIORITY = "priority";
@@ -167,7 +175,115 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths) {
+    List<CheckedTemplateBuildItem> collectTemplateTypeInfo(BeanArchiveIndexBuildItem index,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            List<TemplatePathBuildItem> templatePaths,
+            List<CheckedTemplateAdapterBuildItem> templateAdaptorBuildItems) {
+        List<CheckedTemplateBuildItem> ret = new ArrayList<>();
+
+        Map<DotName, CheckedTemplateAdapter> adaptors = new HashMap<>();
+        for (CheckedTemplateAdapterBuildItem templateAdaptorBuildItem : templateAdaptorBuildItems) {
+            adaptors.put(DotName.createSimple(templateAdaptorBuildItem.adapter.templateInstanceBinaryName().replace('/', '.')),
+                    templateAdaptorBuildItem.adapter);
+        }
+        String supportedAdaptors;
+        if (adaptors.isEmpty()) {
+            supportedAdaptors = DOTNAME_TEMPLATE_INSTANCE + " is supported";
+        } else {
+            StringBuffer strbuf = new StringBuffer(DOTNAME_TEMPLATE_INSTANCE.toString());
+            List<String> adaptorsList = new ArrayList<>(adaptors.size());
+            for (DotName name : adaptors.keySet()) {
+                adaptorsList.add(name.toString());
+            }
+            Collections.sort(adaptorsList);
+            for (String name : adaptorsList) {
+                strbuf.append(", ").append(name);
+            }
+            supportedAdaptors = strbuf.append(" are supported").toString();
+        }
+
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(DOTNAME_CHECKED_TEMPLATE)) {
+            if (annotation.target().kind() != Kind.CLASS)
+                continue;
+            ClassInfo classInfo = annotation.target().asClass();
+            NativeCheckedTemplateEnhancer enhancer = new NativeCheckedTemplateEnhancer();
+            for (MethodInfo methodInfo : classInfo.methods()) {
+                // only keep native public static methods
+                if (!Modifier.isPublic(methodInfo.flags())
+                        || !Modifier.isStatic(methodInfo.flags())
+                        || !Modifier.isNative(methodInfo.flags()))
+                    continue;
+                // check its return type
+                if (methodInfo.returnType().kind() != Type.Kind.CLASS) {
+                    throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
+                            + " only " + supportedAdaptors);
+                }
+                DotName returnTypeName = methodInfo.returnType().asClassType().name();
+                CheckedTemplateAdapter adaptor = null;
+                // if it's not the default template instance, try to find an adapter
+                if (!returnTypeName.equals(DOTNAME_TEMPLATE_INSTANCE)) {
+                    adaptor = adaptors.get(returnTypeName);
+                    if (adaptor == null)
+                        throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
+                                + " only " + supportedAdaptors);
+                }
+                String methodName = methodInfo.name();
+                String templatePath;
+                if (classInfo.enclosingClass() != null) {
+                    ClassInfo enclosingClass = index.getIndex().getClassByName(classInfo.enclosingClass());
+                    String className = enclosingClass.simpleName();
+                    templatePath = className + "/" + methodName;
+                } else {
+                    templatePath = methodName;
+                }
+                checkTemplatePath(templatePath, templatePaths, classInfo, methodInfo);
+
+                Map<String, String> bindings = new HashMap<>();
+                List<Type> parameters = methodInfo.parameters();
+                List<String> parameterNames = new ArrayList<>(parameters.size());
+                for (int i = 0; i < parameters.size(); i++) {
+                    Type type = parameters.get(i);
+                    String name = methodInfo.parameterName(i);
+                    if (name == null) {
+                        throw new TemplateException("Parameter names not recorded for " + classInfo.name()
+                                + ": compile the class with -parameters");
+                    }
+                    bindings.put(name, JandexUtil.getBoxedTypeName(type));
+                    parameterNames.add(name);
+                }
+                ret.add(new CheckedTemplateBuildItem(templatePath, bindings));
+                enhancer.implement(methodInfo, templatePath, parameterNames, adaptor);
+            }
+            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
+                    enhancer));
+        }
+
+        return ret;
+    }
+
+    private void checkTemplatePath(String templatePath, List<TemplatePathBuildItem> templatePaths, ClassInfo enclosingClass,
+            MethodInfo methodInfo) {
+        for (TemplatePathBuildItem templatePathBuildItem : templatePaths) {
+            // perfect match
+            if (templatePathBuildItem.getPath().equals(templatePath)) {
+                return;
+            }
+            // if our templatePath is "Foo/hello", make it match "Foo/hello.txt"
+            // if they're not equal and they start with our path, there must be something left after
+            if (templatePathBuildItem.getPath().startsWith(templatePath)
+                    // check that we have an extension, let variant matching work later
+                    && templatePathBuildItem.getPath().charAt(templatePath.length()) == '.') {
+                return;
+            }
+        }
+        throw new TemplateException(
+                "Declared template " + templatePath + " could not be found. Either add it or delete its declaration in "
+                        + enclosingClass.name().toString('.') + "." + methodInfo.name());
+    }
+
+    @BuildStep
+    TemplatesAnalysisBuildItem analyzeTemplates(List<TemplatePathBuildItem> templatePaths,
+            List<CheckedTemplateBuildItem> dynamicTemplates) {
         long start = System.currentTimeMillis();
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
@@ -226,7 +342,21 @@ public class QuteProcessor {
                 }
                 return Optional.empty();
             }
-        });
+        }).addParserHook(new ParserHook() {
+
+            @Override
+            public void beforeParsing(ParserHelper parserHelper, String id) {
+                for (CheckedTemplateBuildItem dynamicTemplate : dynamicTemplates) {
+                    // FIXME: check for dot/extension?
+                    if (id.startsWith(dynamicTemplate.templateId)) {
+                        for (Entry<String, String> entry : dynamicTemplate.bindings.entrySet()) {
+                            parserHelper.addParameter(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+            }
+
+        }).build();
 
         Engine dummyEngine = builder.build();
 

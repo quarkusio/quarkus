@@ -27,6 +27,7 @@ public final class EngineBuilder {
     private final List<TemplateLocator> locators;
     private final List<ResultMapper> resultMappers;
     private Function<String, SectionHelperFactory<?>> sectionHelperFunc;
+    private final List<ParserHook> parserHooks;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -34,6 +35,7 @@ public final class EngineBuilder {
         this.namespaceResolvers = new ArrayList<>();
         this.locators = new ArrayList<>();
         this.resultMappers = new ArrayList<>();
+        this.parserHooks = new ArrayList<>();
     }
 
     public EngineBuilder addSectionHelper(SectionHelperFactory<?> factory) {
@@ -115,6 +117,11 @@ public final class EngineBuilder {
         return this;
     }
 
+    public EngineBuilder addParserHook(ParserHook parserHook) {
+        this.parserHooks.add(parserHook);
+        return this;
+    }
+
     /**
      * 
      * @param resultMapper
@@ -132,7 +139,7 @@ public final class EngineBuilder {
 
     public Engine build() {
         return new EngineImpl(sectionHelperFactories, valueResolvers, namespaceResolvers, locators, resultMappers,
-                sectionHelperFunc);
+                sectionHelperFunc, parserHooks);
     }
 
 }

@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +23,7 @@ import org.jboss.logging.Logger;
 /**
  * Simple non-reusable parser.
  */
-class Parser implements Function<String, Expression> {
+class Parser implements Function<String, Expression>, ParserHelper {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     private static final String ROOT_HELPER_NAME = "$root";
@@ -58,7 +56,7 @@ class Parser implements Function<String, Expression> {
     private final Deque<SectionNode.Builder> sectionStack;
     private final Deque<SectionBlock.Builder> sectionBlockStack;
     private final Deque<ParametersInfo> paramsStack;
-    private final Deque<Map<String, String>> typeInfoStack;
+    private final Deque<Scope> scopeStack;
     private int sectionBlockIdx;
     private boolean ignoreContent;
     private String id;
@@ -91,8 +89,8 @@ class Parser implements Function<String, Expression> {
         this.sectionBlockIdx = 0;
         this.paramsStack = new ArrayDeque<>();
         this.paramsStack.addFirst(ParametersInfo.EMPTY);
-        this.typeInfoStack = new ArrayDeque<>();
-        this.typeInfoStack.addFirst(new HashMap<>());
+        this.scopeStack = new ArrayDeque<>();
+        this.scopeStack.addFirst(new Scope(null));
         this.line = 1;
         this.lineCharacter = 1;
     }
@@ -302,16 +300,9 @@ class Parser implements Function<String, Expression> {
                 processParams(tag, sectionName, iter);
 
                 // Initialize the block
-                Map<String, String> typeInfos = typeInfoStack.peek();
-                Map<String, String> result = sectionStack.peek().factory.initializeBlock(typeInfos, block);
-                if (!result.isEmpty()) {
-                    Map<String, String> newTypeInfos = new HashMap<>();
-                    newTypeInfos.putAll(typeInfos);
-                    newTypeInfos.putAll(result);
-                    typeInfoStack.addFirst(newTypeInfos);
-                } else {
-                    typeInfoStack.addFirst(typeInfos);
-                }
+                Scope currentScope = scopeStack.peek();
+                Scope newScope = sectionStack.peek().factory.initializeBlock(currentScope, block);
+                scopeStack.addFirst(newScope);
 
                 // A new block - stop ignoring the block content
                 ignoreContent = false;
@@ -330,8 +321,8 @@ class Parser implements Function<String, Expression> {
                 processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter);
 
                 // Init section block
-                Map<String, String> typeInfos = typeInfoStack.peek();
-                Map<String, String> result = factory.initializeBlock(typeInfos, mainBlock);
+                Scope currentScope = scopeStack.peek();
+                Scope newScope = factory.initializeBlock(currentScope, mainBlock);
                 SectionNode.Builder sectionNode = SectionNode
                         .builder(sectionName, origin())
                         .setEngine(engine)
@@ -346,15 +337,7 @@ class Parser implements Function<String, Expression> {
                     // Add node to the parent block
                     sectionBlockStack.peek().addNode(sectionNode.build());
                 } else {
-                    if (!result.isEmpty()) {
-                        // The section modifies the type info stack
-                        Map<String, String> newTypeInfos = new HashMap<>();
-                        newTypeInfos.putAll(typeInfos);
-                        newTypeInfos.putAll(result);
-                        typeInfoStack.addFirst(newTypeInfos);
-                    } else {
-                        typeInfoStack.addFirst(typeInfos);
-                    }
+                    scopeStack.addFirst(newScope);
                     sectionStack.addFirst(sectionNode);
                 }
             }
@@ -390,16 +373,16 @@ class Parser implements Function<String, Expression> {
             }
 
             // Remove the last type info map from the stack
-            typeInfoStack.pop();
+            scopeStack.pop();
 
         } else if (content.charAt(0) == Tag.PARAM.command) {
 
             // {@org.acme.Foo foo}
-            Map<String, String> typeInfos = typeInfoStack.peek();
+            Scope currentScope = scopeStack.peek();
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            typeInfos.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            currentScope.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
 
         } else {
             sectionBlockStack.peek().addNode(new ExpressionNode(apply(content), engine, origin()));
@@ -598,12 +581,9 @@ class Parser implements Function<String, Expression> {
 
     }
 
-    static ExpressionImpl parseExpression(String value, Map<String, String> typeInfos, Origin origin) {
+    static ExpressionImpl parseExpression(String value, Scope scope, Origin origin) {
         if (value == null || value.isEmpty()) {
             return ExpressionImpl.EMPTY;
-        }
-        if (typeInfos == null) {
-            typeInfos = Collections.emptyMap();
         }
         String namespace = null;
         int namespaceIdx = value.indexOf(':');
@@ -629,7 +609,7 @@ class Parser implements Function<String, Expression> {
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
         for (String strPart : strParts) {
-            Part part = createPart(namespace, first, strPart, typeInfos, origin);
+            Part part = createPart(namespace, first, strPart, scope, origin);
             if (first == null) {
                 first = part;
             }
@@ -638,13 +618,13 @@ class Parser implements Function<String, Expression> {
         return new ExpressionImpl(namespace, parts, Result.NOT_FOUND, origin);
     }
 
-    private static Part createPart(String namespace, Part first, String value, Map<String, String> typeInfos, Origin origin) {
+    private static Part createPart(String namespace, Part first, String value, Scope scope, Origin origin) {
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value));
             List<Expression> params = new ArrayList<>(strParams.size());
             for (String strParam : strParams) {
-                params.add(parseExpression(strParam.trim(), typeInfos, origin));
+                params.add(parseExpression(strParam.trim(), scope, origin));
             }
             return new ExpressionImpl.VirtualMethodExpressionPartImpl(name, params);
         }
@@ -652,7 +632,7 @@ class Parser implements Function<String, Expression> {
         if (namespace != null) {
             typeInfo = value;
         } else if (first == null) {
-            typeInfo = typeInfos.get(value);
+            typeInfo = scope.getBindingType(value);
         } else if (first.getTypeInfo() != null) {
             typeInfo = value;
         }
@@ -683,7 +663,7 @@ class Parser implements Function<String, Expression> {
 
     @Override
     public ExpressionImpl apply(String value) {
-        return parseExpression(value, typeInfoStack.peek(), origin());
+        return parseExpression(value, scopeStack.peek(), origin());
     }
 
     Origin origin() {
@@ -761,4 +741,10 @@ class Parser implements Function<String, Expression> {
 
     }
 
+    @Override
+    public void addParameter(String name, String type) {
+        // {@org.acme.Foo foo}
+        Scope currentScope = scopeStack.peek();
+        currentScope.put(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
+    }
 }

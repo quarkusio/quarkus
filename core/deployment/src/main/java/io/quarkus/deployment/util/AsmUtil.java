@@ -542,4 +542,17 @@ public class AsmUtil {
         return 1;
     }
 
+    /**
+     * Prints the value pushed on the stack (must be an Object) by the given <tt>valuePusher</tt>
+     * to STDERR.
+     * 
+     * @param mv The MethodVisitor to forward printing to.
+     * @param valuePusher The function to invoke to push an Object to print on the stack.
+     */
+    public static void printValueOnStderr(MethodVisitor mv, Runnable valuePusher) {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "err", "Ljava/io/PrintStream;");
+        valuePusher.run();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
+                "(Ljava/lang/Object;)V", false);
+    }
 }

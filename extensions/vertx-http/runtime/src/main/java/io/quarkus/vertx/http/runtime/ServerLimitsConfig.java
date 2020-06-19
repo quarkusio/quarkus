@@ -16,9 +16,9 @@ public class ServerLimitsConfig {
 
     /**
      * The maximum size of a request body.
-     * Default: no limit.
+     * Default: 2048K.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "2048K")
     public Optional<MemorySize> maxBodySize;
 
     /**

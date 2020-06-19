@@ -208,7 +208,7 @@ The following properties are supported.
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.http.limits.max-body-size| `unlimited` |The maximum size of request body.
+|quarkus.http.limits.max-body-size| `2048K` |The maximum size of request body.
 |quarkus.http.limits.max-header-size|`2OK`|The maximum length of all headers.
 |===
 

@@ -124,6 +124,7 @@ public class SmallRyeMetricsRecorder {
         micrometerJvmThreadMetrics(registry);
         micrometerJvmMemoryMetrics(registry);
         micrometerJvmClassLoaderMetrics(registry);
+        micrometerRuntimeMetrics(registry);
     }
 
     public void registerMetrics(BeanInfo beanInfo, MemberInfo memberInfo) {
@@ -748,6 +749,47 @@ public class SmallRyeMetricsRecorder {
             gcMetrics.startWatchingNotifications();
             shutdownContext.addShutdownTask(gcMetrics::cleanUp);
         }
+    }
+
+    /**
+     * Mimics Uptime metrics from Micrometer. Most of the logic here is basically copied from
+     * {@link <a href=
+     * "https://github.com/micrometer-metrics/micrometer/blob/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
+     * Uptime metrics</a>}.
+     * 
+     * @param registry
+     */
+    private void micrometerRuntimeMetrics(MetricRegistry registry) {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+
+        registry.register(
+                new ExtendedMetadataBuilder()
+                        .withName("process.runtime")
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.MILLISECONDS)
+                        .withDescription("The uptime of the Java virtual machine")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .build(),
+                new Gauge() {
+                    @Override
+                    public Number getValue() {
+                        return runtimeMXBean.getUptime();
+                    }
+                });
+        registry.register(
+                new ExtendedMetadataBuilder()
+                        .withName("process.start.time")
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.MILLISECONDS)
+                        .withDescription("Start time of the process since unix epoch.")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .build(),
+                new Gauge() {
+                    @Override
+                    public Number getValue() {
+                        return runtimeMXBean.getStartTime();
+                    }
+                });
     }
 
     private void micrometerJvmThreadMetrics(MetricRegistry registry) {

@@ -125,7 +125,7 @@ public class MethodNameParser {
 
         // handle the 'OrderBy' clause which is assumed to be at the end of the query
         Sort sort = null;
-        if (afterByPart.contains(ORDER_BY)) {
+        if (containsLogicOperator(afterByPart, ORDER_BY)) {
             int orderByIndex = afterByPart.indexOf(ORDER_BY);
             if (orderByIndex + ORDER_BY.length() == afterByPart.length()) {
                 throw new UnableToParseMethodException(
@@ -157,8 +157,8 @@ public class MethodNameParser {
         }
 
         List<String> parts = Collections.singletonList(afterByPart); // default when no 'And' or 'Or' exists
-        boolean containsAnd = afterByPart.contains("And");
-        boolean containsOr = afterByPart.contains("Or");
+        boolean containsAnd = containsLogicOperator(afterByPart, "And");
+        boolean containsOr = containsLogicOperator(afterByPart, "Or");
         if (containsAnd && containsOr) {
             throw new UnableToParseMethodException(
                     "'And' and 'Or' clauses cannot be mixed in a method name - Try specifying the Query with the @Query annotation. Offending method is "
@@ -364,6 +364,24 @@ public class MethodNameParser {
         String whereQuery = where.toString().isEmpty() ? "" : " WHERE " + where.toString();
         return new Result(entityClass, "FROM " + getEntityName() + whereQuery, queryType, paramsCount, sort,
                 topCount);
+    }
+
+    /**
+     * Meant to be called with {@param operator} being {@code "And"} or {@code "Or"}
+     * and returns {@code true} if the string contains the logical operator
+     * and the next character is an uppercase character.
+     * The reasoning is that if the next character is not uppercase,
+     * then the operator string is just part of a word
+     */
+    private boolean containsLogicOperator(String str, String operatorStr) {
+        int index = str.indexOf(operatorStr);
+        if (index == -1) {
+            return false;
+        }
+        if (str.length() < index + operatorStr.length() + 1) {
+            return false;
+        }
+        return Character.isUpperCase(str.charAt(index + operatorStr.length()));
     }
 
     /**

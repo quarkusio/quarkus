@@ -42,6 +42,13 @@ public class PostResource {
 
     @GET
     @Produces("application/json")
+    @Path("/organization/{org}")
+    public List<Post> findAllByOrganization(@PathParam("org") String org) {
+        return postRepository.findAllByOrganization(org);
+    }
+
+    @GET
+    @Produces("application/json")
     @Path("/postComment/postId/{id}")
     public List<PostComment> findByPostId(@PathParam("id") Long id) {
         return postCommentRepository.findByPostId(id);

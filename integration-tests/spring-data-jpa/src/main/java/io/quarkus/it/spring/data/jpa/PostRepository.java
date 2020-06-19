@@ -13,4 +13,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Post findFirstByBypassTrue();
 
     List<Post> findByPostedBefore(ZonedDateTime zdt);
+
+    List<Post> findAllByOrganization(String organization);
 }

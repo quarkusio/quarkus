@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,6 +29,8 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -52,7 +55,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(jar, output);
+        Process process = doLaunch(jar, output).start();
         try {
             // Wait until server up
             await()
@@ -94,7 +97,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(jar, output);
+        Process process = doLaunch(jar, output).start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
@@ -139,7 +142,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(jar, output);
+        Process process = doLaunch(jar, output).start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
@@ -171,7 +174,7 @@ public class JarRunnerIT extends MojoTestBase {
         processBuilder.redirectError(output);
         Assertions.assertEquals(0, processBuilder.start().waitFor());
 
-        process = doLaunch(jar, output);
+        process = doLaunch(jar, output).start();
         try {
             // Wait until server up
             await()
@@ -189,6 +192,48 @@ public class JarRunnerIT extends MojoTestBase {
         } finally {
             process.destroy();
         }
+    }
+
+    @Test
+    @EnabledForJreRange(min = JRE.JAVA_11)
+    public void testThatAppCDSAreUsable() throws Exception {
+        File testDir = initProject("projects/classic", "projects/project-classic-console-output-appcds");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.create-appcds=true"),
+                        Collections.emptyMap());
+
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        Path jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        // by using '-Xshare:on' we ensure that the JVM will fail if for any reason is cannot use the AppCDS
+        // '-Xlog:class+path=info' will print diagnostic information that is useful for debugging if something goes wrong
+        Process process = doLaunch(jar.getFileName(), output,
+                Arrays.asList("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
+                        .directory(jar.getParent().toFile()).start();
+        try {
+            // Wait until server up
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+        } finally {
+            process.destroy();
+        }
+
     }
 
     /**
@@ -210,7 +255,7 @@ public class JarRunnerIT extends MojoTestBase {
         File output = new File(targetDir, "output.log");
         output.createNewFile();
 
-        Process process = doLaunch(jar, output);
+        Process process = doLaunch(jar, output).start();
         try {
             // Wait until server up
             AtomicReference<String> response = new AtomicReference<>();
@@ -229,9 +274,14 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
-    private Process doLaunch(Path jar, File output) throws IOException {
+    private ProcessBuilder doLaunch(Path jar, File output) throws IOException {
+        return doLaunch(jar, output, Collections.emptyList());
+    }
+
+    private ProcessBuilder doLaunch(Path jar, File output, Collection<String> vmArgs) throws IOException {
         List<String> commands = new ArrayList<>();
         commands.add(JavaBinFinder.findBin());
+        commands.addAll(vmArgs);
         commands.add("-jar");
         commands.add(jar.toString());
         // write out the command used to launch the process, into the log file
@@ -239,7 +289,7 @@ public class JarRunnerIT extends MojoTestBase {
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
         processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(output));
         processBuilder.redirectError(ProcessBuilder.Redirect.appendTo(output));
-        return processBuilder.start();
+        return processBuilder;
     }
 
     static void assertResourceReadingFromClassPathWorksCorrectly(String path) {

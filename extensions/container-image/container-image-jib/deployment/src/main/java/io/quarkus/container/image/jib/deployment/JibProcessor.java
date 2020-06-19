@@ -89,13 +89,10 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder;
         String packageType = packageConfig.type;
-        if (packageType.equalsIgnoreCase(PackageConfig.LEGACY)
-                || packageType.equalsIgnoreCase(PackageConfig.JAR)
-                || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
+        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(jibConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);
-        } else if (packageType.equalsIgnoreCase(PackageConfig.FAST_JAR)
-                || packageType.equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
+        } else if (packageConfig.isFastJar()) {
             jibContainerBuilder = createContainerBuilderFromFastJar(jibConfig, sourceJar, containerImageLabels);
         } else {
             throw new IllegalArgumentException(

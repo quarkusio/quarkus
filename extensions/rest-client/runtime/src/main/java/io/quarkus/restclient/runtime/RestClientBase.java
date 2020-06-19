@@ -62,7 +62,8 @@ public class RestClientBase {
             builder.executorService(managedExecutor.get());
         }
 
-        return builder.build(proxyType);
+        Object result = builder.build(proxyType);
+        return result;
     }
 
     private void configureSsl(RestClientBuilder builder) {

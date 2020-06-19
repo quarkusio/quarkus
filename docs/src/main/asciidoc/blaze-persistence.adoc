@@ -16,7 +16,7 @@ queries which are then transformed to optimized queries that only fetch the data
 The same DTO definitions can further be used for applying database updates, leading to a great reduction in boilerplate
 code and removing the need for object mapping tools.
 
-== Setting up and configuring Hibernate ORM
+== Setting up and configuring Blaze-Persistence
 
 The extension comes with default producers for `CriteriaBuilderFactory` and `EntityViewManager` that work out of the
 box given a working Hibernate ORM configuration. For customization, overriding of the default producers is possible via the
@@ -38,7 +38,7 @@ Add the following dependencies to your project:
 
 [source,xml]
 .Example dependencies using Maven
---
+----
 <dependencies>
     <!-- Blaze-Persistence specific dependencies -->
     <dependency>
@@ -46,7 +46,7 @@ Add the following dependencies to your project:
         <artifactId>blaze-persistence-integration-quarkus</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 A `CriteriaBuilderFactory` and an `EntityViewManager` will be created based on the configured `EntityManagerFactory` as provided by the link:{quarkus-home-url}/guides/hibernate-orm[Hibernate-ORM extension].
 
@@ -54,7 +54,7 @@ You can then access these beans via injection:
 
 [source,java]
 .Example application bean using Hibernate
---
+----
 @ApplicationScoped
 public class SantaClausService {
     @Inject
@@ -70,7 +70,7 @@ public class SantaClausService {
         return emv.applySetting(EntityViewSetting.create(GiftView.class), cb).getResultList();
     }
 }
---
+----
 
 <1> Inject the `EntityManager`
 <2> Inject the `CriteriaBuilderFactory`
@@ -79,7 +79,7 @@ public class SantaClausService {
 
 [source,java]
 .Example Entity
---
+----
 @Entity
 public class Gift {
     private Long id;
@@ -112,11 +112,11 @@ public class Gift {
         this.description = description;
     }
 }
---
+----
 
 [source,java]
 .Example Entity-View
---
+----
 @EntityView(Gift.class)
 public interface GiftView {
 
@@ -125,11 +125,11 @@ public interface GiftView {
 
     String getName();
 }
---
+----
 
 [source,java]
 .Example updatable Entity-View
---
+----
 @UpdatableEntityView
 @CreatableEntityView
 @EntityView(Gift.class)
@@ -137,11 +137,11 @@ public interface GiftUpdateView extends GiftView {
 
     void setName(String name);
 }
---
+----
 
 [source,java]
 .Example JAX-RS Resource
---
+----
 @Path("/gifts")
 public class GiftResource {
     @Inject
@@ -183,10 +183,10 @@ public class GiftResource {
         return return entityViewManager.find(entityManager, GiftView.class, view.getId());
     }
 }
---
+----
 
 [[blaze-persistence-configuration-properties]]
-=== Blaze-Persistence configuration properties
+== Blaze-Persistence configuration properties
 
 There are various optional properties useful to refine your `EntityViewManager` and `CriteriaBuilderFactory` or guide guesses of Quarkus.
 
@@ -198,7 +198,7 @@ The configuration properties listed here allow you to override such defaults, an
 
 include::quarkus-blaze-persistence.adoc[opts=optional, leveloffset=+2]
 
-=== Limitations
+== Limitations
 
 Apache Derby::
 Blaze-Persistence currently does not come with support for Apache Derby.

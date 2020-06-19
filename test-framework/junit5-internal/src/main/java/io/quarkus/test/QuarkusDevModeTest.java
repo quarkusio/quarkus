@@ -71,6 +71,7 @@ public class QuarkusDevModeTest
     private Path deploymentResourcePath;
     private Path projectSourceRoot;
     private Path testLocation;
+    private String[] commandLineArgs = new String[0];
 
     private static final List<CompilationProvider> compilationProviders;
 
@@ -149,6 +150,7 @@ public class QuarkusDevModeTest
             }
 
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
+            context.setArgs(commandLineArgs);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
@@ -325,6 +327,15 @@ public class QuarkusDevModeTest
         sleepForFileChanges(path);
         // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
         sleepForFileChanges(path.getParent());
+    }
+
+    public String[] getCommandLineArgs() {
+        return commandLineArgs;
+    }
+
+    public QuarkusDevModeTest setCommandLineArgs(String[] commandLineArgs) {
+        this.commandLineArgs = commandLineArgs;
+        return this;
     }
 
     void modifyFile(String name, Function<String, String> mutator, Path path) {

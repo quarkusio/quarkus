@@ -128,7 +128,7 @@ import net.bytebuddy.dynamic.DynamicType;
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class HibernateOrmProcessor {
-
+    public static final String SKIP_PARSE_PERSISTENCE_XML = "SKIP_PARSE_PERSISTENCE_XML";
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
@@ -176,9 +176,11 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void parsePersistenceXmlDescriptors(
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
-        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
-        for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
-            persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
+        if (!"true".equals(System.getProperty(SKIP_PARSE_PERSISTENCE_XML, "false"))) {
+            List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
+            for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
+                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
+            }
         }
     }
 

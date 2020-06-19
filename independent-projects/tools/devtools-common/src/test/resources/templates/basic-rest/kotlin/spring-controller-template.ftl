@@ -7,10 +7,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("${path}")
-public class ${class_name} {
+class ${class_name} {
 
     @GetMapping
-    public String hello() {
-        return "hello";
-    }
+    fun hello() = "hello"
 }

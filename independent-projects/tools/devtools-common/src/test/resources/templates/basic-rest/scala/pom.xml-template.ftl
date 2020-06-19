@@ -21,7 +21,8 @@
         <scala.version>${scala_version}</scala.version>
         <scala-maven-plugin.version>${scala_plugin_version}</scala-maven-plugin.version>
     </properties>
-
+    ${maven_repositories}
+    ${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -138,23 +139,11 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>${plugin_groupId}</groupId>
-                        <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>

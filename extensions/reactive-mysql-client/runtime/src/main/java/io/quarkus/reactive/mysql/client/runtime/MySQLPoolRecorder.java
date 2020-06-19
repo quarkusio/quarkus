@@ -2,6 +2,12 @@ package io.quarkus.reactive.mysql.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
 import java.util.Map;
 
@@ -121,6 +127,20 @@ public class MySQLPoolRecorder {
         if (dataSourceReactiveMySQLConfig.collation.isPresent()) {
             mysqlConnectOptions.setCollation(dataSourceReactiveMySQLConfig.collation.get());
         }
+
+        if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
+            mysqlConnectOptions.setSslMode(dataSourceReactiveMySQLConfig.sslMode.get());
+        }
+
+        mysqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+
+        configurePemTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
+        configureJksTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
+        configurePfxTrustOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+
+        configurePemKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
+        configureJksKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
+        configurePfxKeyCertOptions(mysqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
 
         return mysqlConnectOptions;
     }

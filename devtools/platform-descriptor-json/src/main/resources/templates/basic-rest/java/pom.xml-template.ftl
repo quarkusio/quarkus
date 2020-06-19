@@ -19,7 +19,8 @@
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
-
+    ${maven_repositories}
+    ${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>

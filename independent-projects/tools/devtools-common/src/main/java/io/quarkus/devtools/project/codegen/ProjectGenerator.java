@@ -12,6 +12,8 @@ public interface ProjectGenerator {
     String PROJECT_VERSION = "project_version";
     String QUARKUS_VERSION = "quarkus_version";
     String PACKAGE_NAME = "package_name";
+    String MAVEN_REPOSITORIES = "maven_repositories";
+    String MAVEN_PLUGIN_REPOSITORIES = "maven_plugin_repositories";
     String SOURCE_TYPE = "source_type";
     String BUILD_FILE = "build_file";
     String BUILD_DIRECTORY = "build_dir";

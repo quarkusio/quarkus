@@ -442,13 +442,13 @@ NOTE: With JSON serialization correctly configured, you can also use `Publisher<
 
 === Serializing via JSON-B
 
-First, you need to include the `quarkus-resteasy-jsonb` extension (if you already use the `quarkus-resteasy-jsonb` extension, this is not needed).
+First, you need to include the `quarkus-jsonb` extension (if you already use the `quarkus-resteasy-jsonb` extension, this is not needed).
 
 [source, xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jsonb</artifactId>
+    <artifactId>quarkus-jsonb</artifactId>
 </dependency>
 ----
 
@@ -493,13 +493,13 @@ Now, your Kafka messages will contain a JSON-B serialized representation of your
 
 === Serializing via Jackson
 
-First, you need to include the `quarkus-resteasy-jackson` extension (if you already use the `quarkus-jackson-jsonb` extension, this is not needed).
+First, you need to include the `quarkus-jackson` extension (if you already use the `quarkus-resteasy-jackson` extension, this is not needed).
 
 [source, xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-jackson</artifactId>
 </dependency>
 ----
 

@@ -51,6 +51,15 @@
     </resources>
     <plugins>
       <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+            <nonFilteredFileExtensions>
+                <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus-plugin.version}</version>

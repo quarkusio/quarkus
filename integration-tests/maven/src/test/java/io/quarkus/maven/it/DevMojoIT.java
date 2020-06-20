@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -15,6 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
@@ -74,12 +78,29 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatInitialMavenResourceFilteringWorks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-resource-filtering", "projects/project-classic-resource-filtering");
+
+        //also test that a zipfile must not be filtered because of nonFilteredFileExtensions configuration
+        //as initProject() would already corrupt the zipfile, it has to be created _after_ initProject()
+        try (ZipOutputStream zipOut = new ZipOutputStream(
+                new FileOutputStream(new File(testDir, "src/main/resources/test.zip")))) {
+            ZipEntry zipEntry = new ZipEntry("test.txt");
+            zipOut.putNextEntry(zipEntry);
+            zipOut.write("test".getBytes());
+        }
+
         run(false);
 
         //make sure that a simple HTTP GET request always works
         IntStream.range(0, 10).forEach(i -> {
             assertThat(DevModeTestUtils.getStrictHttpResponse("/hello", 200)).isTrue();
         });
+
+        //try to open the copied test.zip (which will fail if it was filtered)
+        File copiedTestZipFile = new File(testDir, "target/classes/test.zip");
+        assertThat(copiedTestZipFile).exists();
+        try (ZipFile zipFile = new ZipFile(copiedTestZipFile)) {
+            //everything is fine once we get here (ZipFile is still readable)
+        }
     }
 
     @Test

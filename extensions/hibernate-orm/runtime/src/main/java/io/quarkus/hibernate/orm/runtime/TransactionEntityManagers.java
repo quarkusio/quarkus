@@ -10,16 +10,11 @@ import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.entitymanager.TransactionScopedEntityManager;
 
 @ApplicationScoped
 public class TransactionEntityManagers {
-
-    @Inject
-    TransactionSynchronizationRegistry transactionSynchronizationRegistry;
-
-    @Inject
-    TransactionManager transactionManager;
 
     @Inject
     JPAConfig jpaConfig;
@@ -39,8 +34,18 @@ public class TransactionEntityManagers {
             return entityManager;
         }
         return managers.computeIfAbsent(unitName, (un) -> new TransactionScopedEntityManager(
-                transactionManager, transactionSynchronizationRegistry, jpaConfig.getEntityManagerFactory(un), un,
+                getTransactionManager(), getTransactionSynchronizationRegistry(), jpaConfig.getEntityManagerFactory(un), un,
                 requestScopedEntityManagers));
+    }
+
+    private TransactionManager getTransactionManager() {
+        return Arc.container()
+                .instance(TransactionManager.class).get();
+    }
+
+    private TransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
+        return Arc.container()
+                .instance(TransactionSynchronizationRegistry.class).get();
     }
 
 }

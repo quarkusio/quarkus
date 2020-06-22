@@ -28,6 +28,7 @@
         <module>maven</module>
         <module>vault</module>
         <module>ldap</module>
+        <module>rest-client</module>
     </modules>
 
 </project>

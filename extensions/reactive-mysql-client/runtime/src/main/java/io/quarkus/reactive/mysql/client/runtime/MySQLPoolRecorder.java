@@ -11,6 +11,8 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
@@ -30,6 +32,9 @@ import io.vertx.sqlclient.PoolOptions;
 @Recorder
 @SuppressWarnings("deprecation")
 public class MySQLPoolRecorder {
+
+    private static final Logger log = Logger.getLogger(MySQLPoolRecorder.class);
+
     public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx, BeanContainer container,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
@@ -119,8 +124,12 @@ public class MySQLPoolRecorder {
         }
 
         if (dataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {
+            log.warn("datasource.reactive.mysql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
             mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveMySQLConfig.cachePreparedStatements.get());
+        } else {
+            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
         }
+
         if (dataSourceReactiveMySQLConfig.charset.isPresent()) {
             mysqlConnectOptions.setCharset(dataSourceReactiveMySQLConfig.charset.get());
         }

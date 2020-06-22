@@ -310,7 +310,7 @@ public class DevMojo extends AbstractMojo {
             }
 
             if (jvmArgs != null) {
-                args.addAll(Arrays.asList(jvmArgs.split(" ")));
+                args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
             }
 
             // the following flags reduce startup time and are acceptable only for dev purposes

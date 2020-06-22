@@ -416,7 +416,7 @@ public class DevMojo extends AbstractMojo {
                             MojoExecutor.version(resourcesPlugin.getVersion()),
                             resourcesPlugin.getDependencies()),
                     MojoExecutor.goal("resources"),
-                    MojoExecutor.configuration(),
+                    getPluginConfig(resourcesPlugin),
                     MojoExecutor.executionEnvironment(
                             project,
                             session,
@@ -425,6 +425,21 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
+        MojoExecutor.executeMojo(
+                MojoExecutor.plugin(
+                        MojoExecutor.groupId(groupId),
+                        MojoExecutor.artifactId(artifactId),
+                        MojoExecutor.version(plugin.getVersion()),
+                        plugin.getDependencies()),
+                MojoExecutor.goal("compile"),
+                getPluginConfig(plugin),
+                MojoExecutor.executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
+    }
+
+    private Xpp3Dom getPluginConfig(Plugin plugin) {
         Xpp3Dom configuration = MojoExecutor.configuration();
         Xpp3Dom pluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
         if (pluginConfiguration != null) {
@@ -435,18 +450,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         }
-        MojoExecutor.executeMojo(
-                MojoExecutor.plugin(
-                        MojoExecutor.groupId(groupId),
-                        MojoExecutor.artifactId(artifactId),
-                        MojoExecutor.version(plugin.getVersion()),
-                        plugin.getDependencies()),
-                MojoExecutor.goal("compile"),
-                configuration,
-                MojoExecutor.executionEnvironment(
-                        project,
-                        session,
-                        pluginManager));
+        return configuration;
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {

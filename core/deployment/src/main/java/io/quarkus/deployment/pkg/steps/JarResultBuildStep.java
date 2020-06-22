@@ -5,6 +5,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -58,6 +60,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -160,20 +163,50 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             List<UberJarRequiredBuildItem> uberJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+
+        if (appCDS.isPresent()) {
+            handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
+        }
+
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, closeablesBuildItem,
                     mainClassBuildItem);
-        } else if (packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY)
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.JAR)) {
+        } else if (packageConfig.isLegacyJar()) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
+        }
+    }
+
+    // the idea here is to just dump the class names of the generated and transformed classes into a file
+    // that is read at runtime when AppCDS generation is requested
+    private void handleAppCDSSupportFileGeneration(TransformedClassesBuildItem transformedClasses,
+            List<GeneratedClassBuildItem> generatedClasses, AppCDSRequestedBuildItem appCDS) throws IOException {
+        Path appCDsDir = appCDS.getAppCDSDir();
+        Path generatedClassesFile = appCDsDir.resolve("generatedAndTransformed.lst");
+        try (BufferedWriter writer = Files.newBufferedWriter(generatedClassesFile, StandardOpenOption.CREATE)) {
+            StringBuilder classes = new StringBuilder();
+            for (GeneratedClassBuildItem generatedClass : generatedClasses) {
+                classes.append(generatedClass.getName().replace('/', '.')).append(System.lineSeparator());
+            }
+
+            for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassesSet : transformedClasses
+                    .getTransformedClassesByJar().values()) {
+                for (TransformedClassesBuildItem.TransformedClass transformedClass : transformedClassesSet) {
+                    classes.append(transformedClass.getFileName().replace('/', '.').replace(".class", ""))
+                            .append(System.lineSeparator());
+                }
+            }
+
+            if (classes.length() != 0) {
+                writer.write(classes.toString());
+            }
         }
     }
 
@@ -1098,11 +1131,7 @@ public class JarResultBuildStep {
 
         @Override
         public boolean getAsBoolean() {
-            return packageConfig.type.equalsIgnoreCase(PackageConfig.LEGACY) ||
-                    packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
-                    packageConfig.type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
-                    packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR) ||
-                    packageConfig.type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+            return packageConfig.isAnyJarType();
         }
     }
 

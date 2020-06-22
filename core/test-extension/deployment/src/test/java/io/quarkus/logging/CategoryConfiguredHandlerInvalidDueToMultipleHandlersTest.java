@@ -1,8 +1,9 @@
 package io.quarkus.logging;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +20,7 @@ public class CategoryConfiguredHandlerInvalidDueToMultipleHandlersTest {
 
     @Test
     public void consoleOutputTest() {
-        Assertions.fail();
+        fail("This method should not be invoked because of invalid configuration of logging handlers");
     }
 
 }

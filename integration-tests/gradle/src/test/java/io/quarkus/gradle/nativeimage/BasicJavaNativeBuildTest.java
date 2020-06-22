@@ -1,6 +1,7 @@
 package io.quarkus.gradle.nativeimage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,10 @@ public class BasicJavaNativeBuildTest extends QuarkusNativeGradleTestBase {
         final BuildResult build = runGradleWrapper(projectDir, "clean", "quarkusBuild", "-Dquarkus.package.type=native");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        final String buildOutput = build.getOutput();
+        // make sure the output log during the build contains some expected logs from the native-image process
+        assertTrue(buildOutput.contains("(clinit):") && buildOutput.contains("(typeflow):") && buildOutput.contains("[total]:"),
+                "native-image build log is missing certain expected log messages");
         Path nativeImagePath = projectDir.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner");
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());

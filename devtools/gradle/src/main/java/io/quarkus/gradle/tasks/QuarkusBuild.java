@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +108,14 @@ public class QuarkusBuild extends QuarkusTask {
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {
 
-            appCreationContext.createAugmentor().createProductionApplication();
+            // Processes launched from within the build task of Gradle (daemon) lose content
+            // generated on STDOUT/STDERR by the process (see https://github.com/gradle/gradle/issues/13522).
+            // We overcome this by letting build steps know that the STDOUT/STDERR should be explicitly
+            // streamed, if they need to make available that generated data.
+            // The io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory
+            // does the necessary work to generate such a build item which the build step(s) can rely on
+            appCreationContext.createAugmentor("io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory",
+                    Collections.emptyMap()).createProductionApplication();
 
         } catch (BootstrapException e) {
             throw new GradleException("Failed to build a runnable JAR", e);

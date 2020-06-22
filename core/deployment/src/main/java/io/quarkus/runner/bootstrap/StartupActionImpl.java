@@ -133,7 +133,7 @@ public class StartupActionImpl implements StartupAction {
                 public void run() {
                     Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                     try {
-                        start.invoke(null, (Object) args);
+                        start.invoke(null, (Object) (args == null ? new String[0] : args));
                     } catch (Throwable e) {
                         log.error("Error running Quarkus", e);
                         //this can happen if we did not make it to application init

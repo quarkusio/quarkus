@@ -32,14 +32,17 @@ public class JavaBinFinder {
             }
             // Fallback to java on the path
             if (java == null) {
-                if (OS.determineOS() == OS.WINDOWS) {
-                    java = "java.exe";
-                } else {
-                    java = "java";
-                }
+                java = simpleBinaryName();
             }
         }
         return java;
+    }
+
+    public static String simpleBinaryName() {
+        if (OS.determineOS() == OS.WINDOWS) {
+            return "java.exe";
+        }
+        return "java";
     }
 
     /**

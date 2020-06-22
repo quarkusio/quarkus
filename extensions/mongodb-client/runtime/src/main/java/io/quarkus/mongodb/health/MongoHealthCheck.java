@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.Bean;
 
+import org.bson.Document;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
@@ -45,15 +46,9 @@ public class MongoHealthCheck implements HealthCheck {
             boolean isDefault = DEFAULT_CLIENT.equals(client.getKey());
             MongoClient mongoClient = client.getValue();
             try {
-                StringBuilder databases = new StringBuilder();
-                for (String db : mongoClient.listDatabaseNames()) {
-                    if (databases.length() != 0) {
-                        databases.append(", ");
-                    }
-                    databases.append(db);
-                }
+                Document document = mongoClient.getDatabase("admin").runCommand(new Document("ping", 1));
                 String mongoClientName = isDefault ? "default" : client.getKey();
-                builder.up().withData(mongoClientName, databases.toString());
+                builder.up().withData(mongoClientName, document.toJson());
             } catch (Exception e) {
                 return builder.down().withData("reason", e.getMessage()).build();
             }

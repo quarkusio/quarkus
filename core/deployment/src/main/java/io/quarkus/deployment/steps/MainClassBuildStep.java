@@ -52,6 +52,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -64,6 +65,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
+import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
 import io.quarkus.runtime.Quarkus;
@@ -71,9 +73,10 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import io.quarkus.runtime.appcds.AppCDSUtil;
 import io.quarkus.runtime.configuration.ProfileManager;
 
-class MainClassBuildStep {
+public class MainClassBuildStep {
 
     static final String MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
@@ -88,6 +91,8 @@ class MainClassBuildStep {
             JAVAX_NET_SSL_TRUST_STORE,
             JAVAX_NET_SSL_TRUST_STORE_TYPE, JAVAX_NET_SSL_TRUST_STORE_PROVIDER,
             JAVAX_NET_SSL_TRUST_STORE_PASSWORD));
+
+    public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
 
     private static final FieldDescriptor STARTUP_CONTEXT_FIELD = FieldDescriptor.of(Application.APP_CLASS_NAME, STARTUP_CONTEXT,
             StartupContext.class);
@@ -104,7 +109,8 @@ class MainClassBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReloadBuildItem,
-            ApplicationInfoBuildItem applicationInfo) {
+            ApplicationInfoBuildItem applicationInfo,
+            Optional<AppCDSRequestedBuildItem> appCDSRequested) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
 
@@ -165,6 +171,21 @@ class MainClassBuildStep {
 
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+
+        // if AppCDS generation was requested, we ensure that the application simply loads some classes from a file and terminates
+        if (appCDSRequested.isPresent()) {
+            ResultHandle createAppCDsSysProp = mv.invokeStaticMethod(
+                    ofMethod(System.class, "getProperty", String.class, String.class, String.class),
+                    mv.load(GENERATE_APP_CDS_SYSTEM_PROPERTY), mv.load("false"));
+            ResultHandle createAppCDSBool = mv.invokeStaticMethod(
+                    ofMethod(Boolean.class, "parseBoolean", boolean.class, String.class), createAppCDsSysProp);
+            BytecodeCreator createAppCDS = mv.ifTrue(createAppCDSBool).trueBranch();
+
+            createAppCDS.invokeStaticMethod(ofMethod(AppCDSUtil.class, "loadGeneratedClasses", void.class));
+
+            createAppCDS.invokeStaticMethod(ofMethod(ApplicationLifecycleManager.class, "exit", void.class));
+            createAppCDS.returnValue(null);
+        }
 
         // very first thing is to set system props (for run time, which use substitutions for a different
         // storage from build-time)

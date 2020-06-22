@@ -33,8 +33,10 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.GlobUtil;
+import io.quarkus.deployment.util.ProcessUtil;
 
 public class NativeImageBuildStep {
 
@@ -75,7 +77,8 @@ public class NativeImageBuildStep {
     public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
-            List<NativeImageSystemPropertyBuildItem> nativeImageProperties) {
+            List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
+            final Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
         log.info("Building native image from " + runnerJar);
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
@@ -123,12 +126,12 @@ public class NativeImageBuildStep {
                 // we pull the docker image in order to give users an indication of which step the process is at
                 // it's not strictly necessary we do this, however if we don't the subsequent version command
                 // will appear to block and no output will be shown
-                log.info("Pulling image " + nativeConfig.builderImage);
+                log.info("Checking image status " + nativeConfig.builderImage);
                 Process pullProcess = null;
                 try {
-                    pullProcess = new ProcessBuilder(Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage))
-                            .inheritIO()
-                            .start();
+                    final ProcessBuilder pb = new ProcessBuilder(
+                            Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage));
+                    pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
                     pullProcess.waitFor();
                 } catch (IOException | InterruptedException e) {
                     throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
@@ -193,12 +196,9 @@ public class NativeImageBuildStep {
             if (nativeConfig.cleanupServer) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
-                ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));
+                final ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));
                 pb.directory(outputDir.toFile());
-                pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-                pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-                Process process = pb.start();
+                final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled);
                 process.waitFor();
             }
             Boolean enableSslNative = false;
@@ -335,11 +335,8 @@ public class NativeImageBuildStep {
 
             log.info(String.join(" ", command));
             CountDownLatch errorReportLatch = new CountDownLatch(1);
-
-            Process process = new ProcessBuilder(command)
-                    .directory(outputDir.toFile())
-                    .inheritIO()
-                    .start();
+            final ProcessBuilder processBuilder = new ProcessBuilder(command).directory(outputDir.toFile());
+            final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
                     errorReportLatch));

@@ -25,6 +25,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -62,6 +63,8 @@ import io.quarkus.undertow.deployment.BlacklistedServletContainerInitializerBuil
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(SpringWebProcessor.class.getName());
 
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
@@ -162,6 +165,8 @@ public class SpringWebProcessor {
             BuildProducer<ServletInitParamBuildItem> initParamProducer,
             BuildProducer<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizerProducer) {
 
+        validateControllers(beanArchiveIndexBuildItem);
+
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Collection<AnnotationInstance> annotations = index.getAnnotations(REST_CONTROLLER_ANNOTATION);
         if (annotations.isEmpty()) {
@@ -188,6 +193,35 @@ public class SpringWebProcessor {
         }));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
+    }
+
+    /**
+     * Make sure the controllers have the proper annotation and warn if not
+     */
+    private void validateControllers(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex().getAnnotations(REQUEST_MAPPING);
+        Set<DotName> classesWithoutRestController = new HashSet<>();
+        for (AnnotationInstance annotation : annotations) {
+            ClassInfo targetClass;
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                targetClass = annotation.target().asClass();
+            } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                targetClass = annotation.target().asMethod().declaringClass();
+            } else {
+                continue;
+            }
+
+            if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                classesWithoutRestController.add(targetClass.name());
+            }
+        }
+
+        if (!classesWithoutRestController.isEmpty()) {
+            for (DotName dotName : classesWithoutRestController) {
+                LOGGER.warn("Class '" + dotName
+                        + "' uses '@RequestMapping' but was not annotated with '@RestContoller' and will therefore be ignored.");
+            }
+        }
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

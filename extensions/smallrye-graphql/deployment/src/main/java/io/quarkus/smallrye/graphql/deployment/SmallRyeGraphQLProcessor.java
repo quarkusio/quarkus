@@ -264,6 +264,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLScalarType.class);
         classes.add(graphql.schema.GraphQLSchema.class);
         classes.add(graphql.schema.GraphQLTypeReference.class);
+        classes.add(List.class);
         return classes.toArray(new Class[] {});
     }
 

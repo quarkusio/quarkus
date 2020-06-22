@@ -22,6 +22,9 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.graphql:microprofile-graphql-tck</dependency>
                     </dependenciesToScan>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>testng.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                 </configuration>
             </plugin>
         </plugins>

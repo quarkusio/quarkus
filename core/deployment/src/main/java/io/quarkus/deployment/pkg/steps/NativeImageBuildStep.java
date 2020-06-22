@@ -126,7 +126,7 @@ public class NativeImageBuildStep {
                 // we pull the docker image in order to give users an indication of which step the process is at
                 // it's not strictly necessary we do this, however if we don't the subsequent version command
                 // will appear to block and no output will be shown
-                log.info("Pulling image " + nativeConfig.builderImage);
+                log.info("Checking image status " + nativeConfig.builderImage);
                 Process pullProcess = null;
                 try {
                     final ProcessBuilder pb = new ProcessBuilder(

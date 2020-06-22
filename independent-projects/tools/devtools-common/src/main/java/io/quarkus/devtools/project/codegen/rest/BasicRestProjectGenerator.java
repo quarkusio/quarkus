@@ -96,7 +96,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 invocation.setValue(BUILD_DIRECTORY, buildTool.getBuildDirectory());
             }
             if (!invocation.hasValue(MAVEN_REPOSITORIES)) {
-                invocation.setValue(MAVEN_REPOSITORIES, "\n");
+                invocation.setValue(MAVEN_REPOSITORIES, "");
             }
             if (!invocation.hasValue(MAVEN_PLUGIN_REPOSITORIES)) {
                 invocation.setValue(MAVEN_PLUGIN_REPOSITORIES, "");

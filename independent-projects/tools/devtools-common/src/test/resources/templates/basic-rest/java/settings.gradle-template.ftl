@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        mavenLocal()
+        mavenLocal()${maven_plugin_repositories}
         mavenCentral()
         gradlePluginPortal()
     }

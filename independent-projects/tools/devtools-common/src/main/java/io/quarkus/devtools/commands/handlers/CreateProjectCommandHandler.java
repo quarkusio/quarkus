@@ -39,7 +39,12 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         final Set<String> extensionsQuery = invocation.getValue(ProjectGenerator.EXTENSIONS, Collections.emptySet());
 
         final Properties quarkusProps = ToolsUtils.readQuarkusProperties(platformDescr);
-        quarkusProps.forEach((k, v) -> invocation.setValue(k.toString().replace("-", "_"), v.toString()));
+        quarkusProps.forEach((k, v) -> {
+            String name = k.toString().replace("-", "_");
+            if (!invocation.hasValue(name)) {
+                invocation.setValue(k.toString().replace("-", "_"), v.toString());
+            }
+        });
 
         try {
             String className = invocation.getStringValue(CLASS_NAME);

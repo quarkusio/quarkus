@@ -58,6 +58,7 @@ public class AugmentActionImpl implements AugmentAction {
     private final CuratedApplication curatedApplication;
     private final LaunchMode launchMode;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
+    private final boolean isQuarkusUnitTest;
 
     /**
      * A map that is shared between all re-runs of the same augment instance. This is
@@ -71,11 +72,17 @@ public class AugmentActionImpl implements AugmentAction {
     }
 
     public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
+        this(curatedApplication, chainCustomizers, false);
+    }
+
+    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers,
+            boolean isQuarkusUnitTest) {
         this.quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
         this.curatedApplication = curatedApplication;
         this.chainCustomizers = chainCustomizers;
         this.launchMode = quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.PROD ? LaunchMode.NORMAL
                 : quarkusBootstrap.getMode() == QuarkusBootstrap.Mode.TEST ? LaunchMode.TEST : LaunchMode.DEVELOPMENT;
+        this.isQuarkusUnitTest = isQuarkusUnitTest;
     }
 
     @Override
@@ -131,7 +138,7 @@ public class AugmentActionImpl implements AugmentAction {
         BuildResult result = runAugment(true, Collections.emptySet(), classLoader, GeneratedClassBuildItem.class,
                 GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class,
                 MainClassBuildItem.class);
-        return new StartupActionImpl(curatedApplication, result, classLoader);
+        return new StartupActionImpl(curatedApplication, result, classLoader, isQuarkusUnitTest);
     }
 
     @Override
@@ -142,7 +149,7 @@ public class AugmentActionImpl implements AugmentAction {
         ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
         BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classLoader, GeneratedClassBuildItem.class,
                 GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class);
-        return new StartupActionImpl(curatedApplication, result, classLoader);
+        return new StartupActionImpl(curatedApplication, result, classLoader, isQuarkusUnitTest);
     }
 
     /**

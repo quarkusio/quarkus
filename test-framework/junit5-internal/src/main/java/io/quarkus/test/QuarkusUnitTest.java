@@ -399,7 +399,7 @@ public class QuarkusUnitTest
                 }
                 curatedApplication = builder.build().bootstrap();
 
-                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers)
+                runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers, true)
                         .createInitialRuntimeApplication()
                         .run(commandLineParameters);
                 //we restore the CL at the end of the test

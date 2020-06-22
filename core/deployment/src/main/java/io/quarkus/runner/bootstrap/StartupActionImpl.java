@@ -49,12 +49,14 @@ public class StartupActionImpl implements StartupAction {
     private final BuildResult buildResult;
     private QuarkusClassLoader runtimeClassLoader;
     private final ClassLoader deploymentClassLoader;
+    private final boolean isQuarkusUnitTest;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult,
-            ClassLoader deploymentClassLoader) {
+            ClassLoader deploymentClassLoader, boolean isQuarkusUnitTest) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
         this.deploymentClassLoader = deploymentClassLoader;
+        this.isQuarkusUnitTest = isQuarkusUnitTest;
         prepareForStart();
     }
 
@@ -66,11 +68,19 @@ public class StartupActionImpl implements StartupAction {
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
-        baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerPredicates,
-                deploymentClassLoader);
-        runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
-                bytecodeTransformers, transformerPredicates,
-                deploymentClassLoader, extractGeneratedResources(true));
+        if (isQuarkusUnitTest) { // we need this because otherwise there are CL issues with the GRPC tests that have generated classes
+            Map<String, byte[]> resources = new HashMap<>();
+            resources.putAll(extractGeneratedResources(false));
+            resources.putAll(extractGeneratedResources(true));
+            baseClassLoader.reset(resources, bytecodeTransformers, transformerPredicates, deploymentClassLoader);
+            runtimeClassLoader = baseClassLoader;
+        } else {
+            baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerPredicates,
+                    deploymentClassLoader);
+            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
+                    bytecodeTransformers, transformerPredicates,
+                    deploymentClassLoader, extractGeneratedResources(true));
+        }
 
         this.runtimeClassLoader = runtimeClassLoader;
         handleEagerClasses(runtimeClassLoader, eagerClasses);

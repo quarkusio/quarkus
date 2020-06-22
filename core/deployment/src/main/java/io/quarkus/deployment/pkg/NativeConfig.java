@@ -74,12 +74,6 @@ public class NativeConfig {
     public Optional<String> nativeImageXmx;
 
     /**
-     * If debug symbols should be included. Only applicable to GraalVM EE.
-     */
-    @ConfigItem
-    public boolean debugSymbols;
-
-    /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
      * and is generally only intended for those familiar with GraalVM internals
      */

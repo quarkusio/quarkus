@@ -136,6 +136,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .groupId(groupId)
                 .artifactId(artifactId)
                 .version(version)
+                .quarkusPluginVersion("2.3.5")
                 .execute();
         assertTrue(result.isSuccess());
     }

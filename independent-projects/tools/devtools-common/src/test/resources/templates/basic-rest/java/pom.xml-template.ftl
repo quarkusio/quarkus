@@ -19,7 +19,7 @@
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
-
+    ${maven_repositories}${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -94,23 +94,11 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>${plugin_groupId}</groupId>
-                        <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <!-- Run the tests with the native executable -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>

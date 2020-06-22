@@ -10,8 +10,11 @@ public interface ProjectGenerator {
     String PROJECT_GROUP_ID = "project_groupId";
     String PROJECT_ARTIFACT_ID = "project_artifactId";
     String PROJECT_VERSION = "project_version";
+    String QUARKUS_PLUGIN_VERSION = "plugin_version";
     String QUARKUS_VERSION = "quarkus_version";
     String PACKAGE_NAME = "package_name";
+    String MAVEN_REPOSITORIES = "maven_repositories";
+    String MAVEN_PLUGIN_REPOSITORIES = "maven_plugin_repositories";
     String SOURCE_TYPE = "source_type";
     String BUILD_FILE = "build_file";
     String BUILD_DIRECTORY = "build_dir";

@@ -1,22 +1,11 @@
-// this block is necessary to make enforcedPlatform work for Quarkus plugin available
-// only locally (snapshot) that is also importing the Quarkus BOM
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusPluginVersion}"
-    }
-}
-
 plugins {
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+    id "org.jetbrains.kotlin.plugin.allopen" version "${kotlin_version}"
+    id 'io.quarkus'
 }
 
-apply plugin: 'io.quarkus'
-
 repositories {
-     mavenLocal()
+     mavenLocal()${maven_repositories}
      mavenCentral()
 }
 
@@ -27,9 +16,6 @@ dependencies {
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:kotlin-extensions'
-
-    nativeTestImplementation 'io.quarkus:quarkus-junit5'
-    nativeTestImplementation 'io.rest-assured:kotlin-extensions'
 }
 
 group '${project_groupId}'
@@ -43,3 +29,22 @@ quarkusDev {
     setSourceDir("$projectDir/src/main/kotlin")
 }
 
+allOpen {
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("io.quarkus.test.junit.QuarkusTest")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+    kotlinOptions.javaParameters = true
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+}

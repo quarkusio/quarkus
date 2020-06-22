@@ -1,16 +1,11 @@
 pluginManagement {
     repositories {
-        mavenLocal()
+        mavenLocal()${maven_plugin_repositories}
         mavenCentral()
         gradlePluginPortal()
     }
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == 'io.quarkus') {
-                useModule("io.quarkus:quarkus-gradle-plugin:${quarkus_version}")
-            }
-        }
+    plugins {
+      id 'io.quarkus' version "${quarkusPluginVersion}"
     }
 }
-
 rootProject.name='${project_artifactId}'

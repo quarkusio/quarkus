@@ -20,7 +20,7 @@
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
         <kotlin.version>${kotlin_version}</kotlin.version>
     </properties>
-
+    ${maven_repositories}${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -107,6 +107,8 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <javaParameters>true</javaParameters>
+                    <jvmTarget>1.8</jvmTarget>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
@@ -115,6 +117,8 @@
                     <pluginOptions>
                         <!-- Each annotation is placed on its own line -->
                         <option>all-open:annotation=javax.ws.rs.Path</option>
+                        <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>
                 </configuration>
 
@@ -137,23 +141,11 @@
                     <name>native</name>
                 </property>
             </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>${plugin_groupId}</groupId>
-                        <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>

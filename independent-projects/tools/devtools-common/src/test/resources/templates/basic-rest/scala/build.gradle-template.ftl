@@ -1,36 +1,32 @@
-// this block is necessary to make enforcedPlatform work for Quarkus plugin available
-// only locally (snapshot) that is also importing the Quarkus BOM
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusPluginVersion}"
-    }
-}
-
 plugins {
     id 'scala'
+    id 'io.quarkus'
 }
 
-apply plugin: 'io.quarkus'
-
 repositories {
-     mavenLocal()
+     mavenLocal()${maven_repositories}
      mavenCentral()
 }
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'org.scala-lang:scala-library:${scala_version}'
     implementation 'io.quarkus:quarkus-resteasy'
 
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
-
-    nativeTestImplementation 'io.quarkus:quarkus-junit5'
-    nativeTestImplementation 'io.rest-assured:rest-assured'
 }
 
 group '${project_groupId}'
 version '${project_version}'
 
+compileScala {
+    scalaCompileOptions.encoding = 'UTF-8'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}

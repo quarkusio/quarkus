@@ -7,6 +7,7 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.JAVA_TARGET;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_VERSION;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_PLUGIN_VERSION;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.SOURCE_TYPE;
 import static java.util.Objects.requireNonNull;
 
@@ -63,6 +64,11 @@ public class CreateProject {
 
     public CreateProject version(String version) {
         setValue(PROJECT_VERSION, version);
+        return this;
+    }
+
+    public CreateProject quarkusPluginVersion(String version) {
+        setValue(QUARKUS_PLUGIN_VERSION, version);
         return this;
     }
 

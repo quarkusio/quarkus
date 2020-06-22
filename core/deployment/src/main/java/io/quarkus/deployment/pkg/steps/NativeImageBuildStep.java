@@ -255,9 +255,6 @@ public class NativeImageBuildStep {
             if (nativeConfig.reportExceptionStackTraces) {
                 command.add("-H:+ReportExceptionStackTraces");
             }
-            if (nativeConfig.debugSymbols) {
-                command.add("-g");
-            }
             if (nativeConfig.debug.enabled) {
                 command.add("-H:GenerateDebugInfo=1");
             }

@@ -268,6 +268,8 @@ public class NativeImageBuildStep {
             }
             if (nativeConfig.debug.enabled) {
                 command.add("-H:GenerateDebugInfo=1");
+                final Path sourcePath = Paths.get("..", "..", "src", "main", "java");
+                command.add("-H:DebugInfoSourceSearchPath=" + sourcePath.toString());
             }
             if (nativeConfig.debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");

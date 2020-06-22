@@ -124,7 +124,7 @@ public class MySQLPoolRecorder {
         }
 
         if (dataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {
-            log.warn("cache-prepared-statements is not specific to a database kind, configure it at the parent level");
+            log.warn("datasource.reactive.mysql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
             mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveMySQLConfig.cachePreparedStatements.get());
         } else {
             mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);

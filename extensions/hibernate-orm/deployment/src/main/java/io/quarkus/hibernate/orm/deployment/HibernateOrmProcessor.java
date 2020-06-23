@@ -53,7 +53,6 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
-import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -139,7 +138,6 @@ public final class HibernateOrmProcessor {
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-    private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE = "META-INF/services/org.hibernate.service.spi.ServiceContributor";
 
     /**
      * Hibernate ORM configuration
@@ -166,7 +164,6 @@ public final class HibernateOrmProcessor {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem(INTEGRATOR_SERVICE_FILE));
-        watchedFiles.add(new HotDeploymentWatchedFileBuildItem(SERVICE_CONTRIBUTOR_SERVICE_FILE));
 
         getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
             watchedFiles.add(new HotDeploymentWatchedFileBuildItem(script));
@@ -351,13 +348,6 @@ public final class HibernateOrmProcessor {
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
-        // inspect service files for service contributors
-        Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
-        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
-                SERVICE_CONTRIBUTOR_SERVICE_FILE)) {
-            serviceContributorClasses
-                    .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));
-        }
 
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>();
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
@@ -374,7 +364,7 @@ public final class HibernateOrmProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses,
+                        recorder.initMetadata(allDescriptors, scanner, integratorClasses,
                                 proxyDefinitions.getProxies(), strategy, jtaPresent)));
     }
 

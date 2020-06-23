@@ -127,9 +127,9 @@
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <mutiny.version>0.5.2</mutiny.version>
+        <mutiny.version>0.5.3</mutiny.version>
         <axle-client.version>0.0.16</axle-client.version>
-        <mutiny-client.version>0.1.0</mutiny-client.version>
+        <mutiny-client.version>0.1.1</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->

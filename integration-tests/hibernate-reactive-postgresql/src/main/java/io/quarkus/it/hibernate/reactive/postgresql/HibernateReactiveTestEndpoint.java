@@ -66,6 +66,19 @@ public class HibernateReactiveTestEndpoint {
     }
 
     @GET
+    @Path("/reactiveCowPersist")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<FriesianCow> reactiveCowPersist() {
+        final FriesianCow cow = new FriesianCow();
+        cow.name = "Carolina";
+        return mutinySession
+                .flatMap(s -> s.persist(cow))
+                .flatMap(s -> s.flush())
+                .flatMap(s -> s.createQuery("from FriesianCow f where f.name = :name", FriesianCow.class)
+                        .setParameter("name", cow.name).getSingleResult());
+    }
+
+    @GET
     @Path("/reactiveRemoveTransientEntity")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveTransientEntity() {
@@ -133,6 +146,7 @@ public class HibernateReactiveTestEndpoint {
 
     private Uni<RowSet<Row>> populateDB() {
         return pgPool.query("DELETE FROM Pig").execute()
+                .and(pgPool.query("DELETE FROM Cow").execute())
                 .flatMap(junk -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 

@@ -161,7 +161,6 @@ public class VertxHttpRecorder {
             ConfigInstantiator.handleObject(buildConfig);
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
-
             Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {
                 router.route().order(Integer.MIN_VALUE).blockingHandler(hotReplacementHandler);
@@ -307,12 +306,14 @@ public class VertxHttpRecorder {
             root = mainRouter;
         }
 
-        if (httpConfiguration.proxyAddressForwarding) {
+        warnIfDeprecatedHttpConfigPropertiesPresent(httpConfiguration);
+        ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
+        if (forwardingProxyOptions.proxyAddressForwarding) {
             Handler<HttpServerRequest> delegate = root;
             root = new Handler<HttpServerRequest>() {
                 @Override
                 public void handle(HttpServerRequest event) {
-                    delegate.handle(new ForwardedServerRequestWrapper(event, httpConfiguration.allowForwarded));
+                    delegate.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions));
                 }
             };
         }
@@ -378,6 +379,20 @@ public class VertxHttpRecorder {
         rootHandler = root;
     }
 
+    private void warnIfDeprecatedHttpConfigPropertiesPresent(HttpConfiguration httpConfiguration) {
+        if (httpConfiguration.proxyAddressForwarding.isPresent()) {
+            LOGGER.warn(
+                    "`quarkus.http.proxy-address-forwarding` is deprecated and will be removed in a future version - it is "
+                            + "recommended to switch to `quarkus.http.proxy.proxy-address-forwarding`");
+        }
+
+        if (httpConfiguration.allowForwarded.isPresent()) {
+            LOGGER.warn(
+                    "`quarkus.http.allow-forwarded` is deprecated and will be removed in a future version - it is "
+                            + "recommended to switch to `quarkus.http.proxy.allow-forwarded`");
+        }
+    }
+
     private static void doServerStart(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             Supplier<Integer> eventLoops, String websocketSubProtocols) throws IOException {
@@ -385,6 +400,8 @@ public class VertxHttpRecorder {
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode);
+        ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
+
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
         }

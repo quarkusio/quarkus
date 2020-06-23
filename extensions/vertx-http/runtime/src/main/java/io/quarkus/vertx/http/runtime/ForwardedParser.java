@@ -38,7 +38,6 @@ class ForwardedParser {
     private static final AsciiString FORWARDED = AsciiString.cached("Forwarded");
     private static final AsciiString X_FORWARDED_SSL = AsciiString.cached("X-Forwarded-Ssl");
     private static final AsciiString X_FORWARDED_PROTO = AsciiString.cached("X-Forwarded-Proto");
-    private static final AsciiString X_FORWARDED_HOST = AsciiString.cached("X-Forwarded-Host");
     private static final AsciiString X_FORWARDED_PORT = AsciiString.cached("X-Forwarded-Port");
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
 
@@ -47,7 +46,7 @@ class ForwardedParser {
     private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
 
     private final HttpServerRequest delegate;
-    private final boolean allowForward;
+    private final ForwardingProxyOptions forwardingProxyOptions;
 
     private boolean calculated;
     private String host;
@@ -56,9 +55,9 @@ class ForwardedParser {
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
-    ForwardedParser(HttpServerRequest delegate, boolean allowForward) {
+    ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions) {
         this.delegate = delegate;
-        this.allowForward = allowForward;
+        this.forwardingProxyOptions = forwardingProxyOptions;
     }
 
     public String scheme() {
@@ -104,7 +103,7 @@ class ForwardedParser {
         boolean isForwardedSslOn = forwardedSsl != null && forwardedSsl.equalsIgnoreCase("on");
 
         String forwarded = delegate.getHeader(FORWARDED);
-        if (allowForward && forwarded != null) {
+        if (forwardingProxyOptions.allowForwarded && forwarded != null) {
             String forwardedToUse = forwarded.split(",")[0];
             Matcher matcher = FORWARDED_PROTO_PATTERN.matcher(forwardedToUse);
             if (matcher.find()) {
@@ -124,7 +123,7 @@ class ForwardedParser {
             if (matcher.find()) {
                 remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
             }
-        } else if (!allowForward) {
+        } else if (!forwardingProxyOptions.allowForwarded) {
             String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
             if (protocolHeader != null) {
                 scheme = protocolHeader.split(",")[0];
@@ -134,9 +133,11 @@ class ForwardedParser {
                 port = -1;
             }
 
-            String hostHeader = delegate.getHeader(X_FORWARDED_HOST);
-            if (hostHeader != null) {
-                setHostAndPort(hostHeader.split(",")[0], port);
+            if (forwardingProxyOptions.enableForwardedHost) {
+                String hostHeader = delegate.getHeader(forwardingProxyOptions.forwardedHostHeader);
+                if (hostHeader != null) {
+                    setHostAndPort(hostHeader.split(",")[0], port);
+                }
             }
 
             String portHeader = delegate.getHeader(X_FORWARDED_PORT);

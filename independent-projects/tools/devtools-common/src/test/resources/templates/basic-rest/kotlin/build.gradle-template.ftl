@@ -5,8 +5,8 @@ plugins {
 }
 
 repositories {
-     mavenLocal()${maven_repositories}
-     mavenCentral()
+     mavenLocal()
+     mavenCentral()${maven_repositories}
 }
 
 dependencies {

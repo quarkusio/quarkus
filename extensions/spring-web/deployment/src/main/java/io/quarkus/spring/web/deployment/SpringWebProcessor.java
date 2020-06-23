@@ -199,27 +199,29 @@ public class SpringWebProcessor {
      * Make sure the controllers have the proper annotation and warn if not
      */
     private void validateControllers(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
-        Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex().getAnnotations(REQUEST_MAPPING);
         Set<DotName> classesWithoutRestController = new HashSet<>();
-        for (AnnotationInstance annotation : annotations) {
-            ClassInfo targetClass;
-            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                targetClass = annotation.target().asClass();
-            } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
-                targetClass = annotation.target().asMethod().declaringClass();
-            } else {
-                continue;
-            }
+        for (DotName mappingAnnotation : MAPPING_ANNOTATIONS) {
+            Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingAnnotation);
+            for (AnnotationInstance annotation : annotations) {
+                ClassInfo targetClass;
+                if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    targetClass = annotation.target().asClass();
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    targetClass = annotation.target().asMethod().declaringClass();
+                } else {
+                    continue;
+                }
 
-            if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
-                classesWithoutRestController.add(targetClass.name());
+                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                    classesWithoutRestController.add(targetClass.name());
+                }
             }
         }
 
         if (!classesWithoutRestController.isEmpty()) {
             for (DotName dotName : classesWithoutRestController) {
                 LOGGER.warn("Class '" + dotName
-                        + "' uses '@RequestMapping' but was not annotated with '@RestContoller' and will therefore be ignored.");
+                        + "' uses a mapping annotation but the class itself was not annotated with '@RestContoller'. The mappings will therefore be ignored.");
             }
         }
     }

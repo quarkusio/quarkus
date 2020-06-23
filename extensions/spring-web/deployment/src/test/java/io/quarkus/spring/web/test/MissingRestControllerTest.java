@@ -36,7 +36,7 @@ public class MissingRestControllerTest {
         assertThat(buildLogRecords).isNotEmpty();
         assertThat(buildLogRecords).hasOnlyOneElementSatisfying(r -> {
             assertThat(r.getMessage())
-                    .contains("but was not annotated with")
+                    .contains("a mapping annotation but the class itself")
                     .contains(NonAnnotatedController.class.getName())
                     .doesNotContain(ProperController.class.getName());
         });

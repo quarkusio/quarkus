@@ -151,7 +151,7 @@
         <awaitility.version>4.0.3</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
-        <jgit.version>5.7.0.202003110725-r</jgit.version>
+        <jgit.version>5.8.0.202006091008-r</jgit.version>
         <flyway.version>6.4.4</flyway.version>
         <yasson.version>1.0.7</yasson.version>
         <liquibase.version>3.10.0</liquibase.version>
@@ -1961,6 +1961,11 @@
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit.http.server</artifactId>
+                <version>${jgit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
                 <version>${jgit.version}</version>
             </dependency>
             <dependency>

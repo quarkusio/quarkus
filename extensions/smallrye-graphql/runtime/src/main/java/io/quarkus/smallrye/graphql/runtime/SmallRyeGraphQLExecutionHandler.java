@@ -2,14 +2,20 @@ package io.quarkus.smallrye.graphql.runtime;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.List;
 
 import javax.json.Json;
+import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonReaderFactory;
 import javax.json.JsonWriter;
+import javax.json.JsonWriterFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
@@ -29,12 +35,16 @@ import io.vertx.ext.web.RoutingContext;
 public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> {
     private static boolean allowGet = false;
     private static final String QUERY = "query";
+    private static final String VARIABLES = "variables";
     private static final String OK = "OK";
     private volatile ExecutionService executionService;
     private final CurrentIdentityAssociation currentIdentityAssociation;
+    private static final JsonBuilderFactory jsonObjectFactory = Json.createBuilderFactory(null);
+    private static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
+    private static final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(null);
 
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation) {
-        this.allowGet = allowGet;
+        SmallRyeGraphQLExecutionHandler.allowGet = allowGet;
         this.currentIdentityAssociation = currentIdentityAssociation;
     }
 
@@ -96,19 +106,40 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
 
     private void handleGet(HttpServerResponse response, RoutingContext ctx) {
         if (allowGet) {
-            List<String> queries = ctx.queryParam(QUERY);
-            if (queries != null && !queries.isEmpty()) {
-                String graphqlGetRequest = queries.get(0);
-                String getResponse = doRequest(graphqlGetRequest.getBytes(StandardCharsets.UTF_8));
-                response.setStatusCode(200)
-                        .setStatusMessage(OK)
-                        .end(Buffer.buffer(getResponse));
+            String query = getQueryParameter(ctx, QUERY);
+            if (query != null && !query.isEmpty()) {
+                try {
+                    String variables = getQueryParameter(ctx, VARIABLES);
+
+                    JsonObjectBuilder input = jsonObjectFactory.createObjectBuilder();
+                    input.add(QUERY, URLDecoder.decode(query, "UTF8"));
+                    if (variables != null && !variables.isEmpty()) {
+                        JsonObject jsonObject = toJsonObject(URLDecoder.decode(variables, "UTF8"));
+                        input.add(VARIABLES, jsonObject);
+                    }
+
+                    String getResponse = doRequest(input.build());
+
+                    response.setStatusCode(200)
+                            .setStatusMessage(OK)
+                            .end(Buffer.buffer(getResponse));
+                } catch (UnsupportedEncodingException ex) {
+                    throw new RuntimeException(ex);
+                }
             } else {
                 response.setStatusCode(204).end();
             }
         } else {
             response.setStatusCode(405).end();
         }
+    }
+
+    private String getQueryParameter(RoutingContext ctx, String parameterName) {
+        List<String> all = ctx.queryParam(parameterName);
+        if (all != null && !all.isEmpty()) {
+            return all.get(0);
+        }
+        return null;
     }
 
     private String getAllowedMethods() {
@@ -121,20 +152,36 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
 
     private String doRequest(final byte[] body) {
         try (ByteArrayInputStream input = new ByteArrayInputStream(body);
-                final JsonReader jsonReader = Json.createReader(input)) {
+                final JsonReader jsonReader = jsonReaderFactory.createReader(input)) {
             JsonObject jsonInput = jsonReader.readObject();
-            JsonObject outputJson = getExecutionService().execute(jsonInput);
-            if (outputJson != null) {
-                try (StringWriter output = new StringWriter();
-                        final JsonWriter jsonWriter = Json.createWriter(output)) {
-                    jsonWriter.writeObject(outputJson);
-                    output.flush();
-                    return output.toString();
-                }
-            }
-            return null;
+            return doRequest(jsonInput);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
+        }
+    }
+
+    private String doRequest(JsonObject jsonInput) {
+        JsonObject outputJson = getExecutionService().execute(jsonInput);
+        if (outputJson != null) {
+            try (StringWriter output = new StringWriter();
+                    final JsonWriter jsonWriter = jsonWriterFactory.createWriter(output)) {
+                jsonWriter.writeObject(outputJson);
+                output.flush();
+                return output.toString();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return null;
+    }
+
+    private static JsonObject toJsonObject(String jsonString) {
+        if (jsonString == null || jsonString.isEmpty()) {
+            return null;
+        }
+
+        try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(jsonString))) {
+            return jsonReader.readObject();
         }
     }
 

@@ -51,11 +51,11 @@ public class GraphQLTest extends AbstractGraphQLTest {
 
     @Test
     public void testBasicGet() {
-        String pingRequest = getPayload("{\n" +
+        String pingRequest = "{\n" +
                 "  ping {\n" +
                 "    message\n" +
                 "  }\n" +
-                "}");
+                "}";
 
         RestAssured.given().when()
                 .accept(MEDIATYPE_JSON)

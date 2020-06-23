@@ -327,16 +327,7 @@ public final class HibernateOrmProcessor {
         }
         recorder.enlistPersistenceUnit();
 
-        //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
-        //have discovered. This scanner is bytecode serializable and is passed directly into the recorder
-        QuarkusScanner scanner = new QuarkusScanner();
-        Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String i : domainObjects.getAllModelClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
-                    ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
-        }
-        scanner.setClassDescriptors(classDescriptors);
+        final QuarkusScanner scanner = buildQuarkusScanner(domainObjects);
 
         //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
         recorderContext.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
@@ -366,6 +357,25 @@ public final class HibernateOrmProcessor {
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(allDescriptors, scanner, integratorClasses,
                                 proxyDefinitions.getProxies(), strategy, jtaPresent)));
+    }
+
+    /**
+     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
+     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
+     * 
+     * @param domainObjects the previously discovered domain objects
+     * @return a new QuarkusScanner with all domainObjects registered
+     */
+    public static QuarkusScanner buildQuarkusScanner(JpaEntitiesBuildItem domainObjects) {
+        QuarkusScanner scanner = new QuarkusScanner();
+        Set<ClassDescriptor> classDescriptors = new HashSet<>();
+        for (String i : domainObjects.getAllModelClassNames()) {
+            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
+                    ClassDescriptor.Categorization.MODEL);
+            classDescriptors.add(desc);
+        }
+        scanner.setClassDescriptors(classDescriptors);
+        return scanner;
     }
 
     private MultiTenancyStrategy getMultiTenancyStrategy() {

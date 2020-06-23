@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -172,7 +173,20 @@ public class BuildMojo extends AbstractMojo {
             final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
                     projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
                     projectArtifact.getVersion());
-            appArtifact.setPaths(PathsCollection.of(projectArtifact.getFile().toPath()));
+
+            File projectFile = projectArtifact.getFile();
+            if (projectFile == null) {
+                projectFile = new File(project.getBuild().getOutputDirectory());
+                if (!projectFile.exists()) {
+                    if (hasSources(project)) {
+                        throw new MojoExecutionException("Project " + project.getArtifact() + " has not been compiled yet");
+                    }
+                    if (!projectFile.mkdirs()) {
+                        throw new MojoExecutionException("Failed to create the output dir " + projectFile);
+                    }
+                }
+            }
+            appArtifact.setPaths(PathsCollection.of(projectFile.toPath()));
 
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setAppArtifact(appArtifact)
@@ -223,4 +237,15 @@ public class BuildMojo extends AbstractMojo {
         }
     }
 
+    private static boolean hasSources(MavenProject project) {
+        if (new File(project.getBuild().getSourceDirectory()).exists()) {
+            return true;
+        }
+        for (Resource r : project.getBuild().getResources()) {
+            if (new File(r.getDirectory()).exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

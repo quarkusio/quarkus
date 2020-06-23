@@ -449,7 +449,7 @@ jobs:
               narayana-stm
               narayana-jta
               reactive-pg-client
-              hibernate-reactive
+              hibernate-reactive-postgresql
           - category: Amazon
             amazonServices: "true"
             timeout: 45

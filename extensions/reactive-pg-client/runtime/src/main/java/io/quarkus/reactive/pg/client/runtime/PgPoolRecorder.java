@@ -125,7 +125,8 @@ public class PgPoolRecorder {
         }
 
         if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
-            log.warn("datasource.reactive.postgresql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
+            log.warn(
+                    "datasource.reactive.postgresql.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
             pgConnectOptions.setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
         } else {
             pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);

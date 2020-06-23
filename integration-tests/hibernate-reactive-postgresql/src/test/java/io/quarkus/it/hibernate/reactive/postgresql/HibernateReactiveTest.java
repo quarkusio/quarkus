@@ -1,5 +1,6 @@
 package io.quarkus.it.hibernate.reactive.postgresql;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,14 @@ public class HibernateReactiveTest {
                 .get("/tests/reactiveFind")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
+    }
+
+    @Test
+    public void reactiveCowPersist() {
+        RestAssured.when()
+                .get("/tests/reactiveCowPersist")
+                .then()
+                .body(containsString("\"name\":\"Carolina\"}")); //Use containsString as we don't know the Id this object will have
     }
 
     @Test

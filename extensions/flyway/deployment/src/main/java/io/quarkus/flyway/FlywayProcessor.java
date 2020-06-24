@@ -12,7 +12,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ class FlywayProcessor {
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
-        List<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
+        Set<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
         Set<Class<?>> javaMigrationClasses = new HashSet<>();
@@ -196,9 +195,9 @@ class FlywayProcessor {
         return migrationLocations;
     }
 
-    private List<String> discoverApplicationMigrations(Collection<String> locations) throws IOException, URISyntaxException {
+    private Set<String> discoverApplicationMigrations(Collection<String> locations) throws IOException, URISyntaxException {
         try {
-            List<String> applicationMigrationResources = new ArrayList<>();
+            Set<String> applicationMigrationResources = new HashSet<>();
             // Locations can be a comma separated list
             for (String location : locations) {
                 // Strip any 'classpath:' protocol prefixes because they are assumed

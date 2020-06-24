@@ -68,6 +68,10 @@ public class MySQLPoolRecorder {
                 dataSourceReactiveMySQLConfig);
         MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
+                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
+            return new ThreadLocalMySQLPool(vertx, mysqlConnectOptions, poolOptions);
+        }
         return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
     }
 

@@ -17,6 +17,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -51,6 +52,7 @@ import io.quarkus.bootstrap.runner.SerializedApplication;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -163,7 +165,8 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             List<UberJarRequiredBuildItem> uberJarRequired,
             QuarkusBuildCloseablesBuildItem closeablesBuildItem,
-            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS) throws Exception {
+            MainClassBuildItem mainClassBuildItem, Optional<AppCDSRequestedBuildItem> appCDS,
+            List<AdditionalApplicationArchiveBuildItem> additionalArchives) throws Exception {
 
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
@@ -180,7 +183,8 @@ public class JarResultBuildStep {
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
+                    additionalArchives);
         }
     }
 
@@ -418,7 +422,8 @@ public class JarResultBuildStep {
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            MainClassBuildItem mainClassBuildItem) throws Exception {
+            MainClassBuildItem mainClassBuildItem,
+            List<AdditionalApplicationArchiveBuildItem> additionalArchiveItems) throws Exception {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
@@ -512,9 +517,18 @@ public class JarResultBuildStep {
                 bootJars.addAll(appDep.getArtifact().getPaths().toList());
             }
         }
+
+        List<Path> additionalArchives = new ArrayList<>();
+
+        for (AdditionalApplicationArchiveBuildItem additionalArchive : additionalArchiveItems) {
+            Collection<Path> paths = additionalArchive.getPaths().toList();
+            jars.addAll(paths);
+            additionalArchives.addAll(paths);
+        }
+
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
         try (OutputStream out = Files.newOutputStream(appInfo)) {
-            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars);
+            SerializedApplication.write(out, mainClassBuildItem.getClassName(), buildDir, jars, bootJars, additionalArchives);
         }
 
         runnerJar.toFile().setReadable(true, false);

@@ -9,7 +9,9 @@ import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,6 +82,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -275,7 +278,8 @@ public final class HibernateOrmProcessor {
             JpaEntitiesBuildItem domainObjects,
             JpaModelIndexBuildItem indexBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            List<AdditionalApplicationArchiveBuildItem> additionalArchives) {
 
         Set<String> entitiesToGenerateProxiesFor = new HashSet<>(domainObjects.getEntityClassNames());
 
@@ -289,7 +293,7 @@ public final class HibernateOrmProcessor {
         }
 
         PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, indexBuildItem.getIndex(),
-                generatedClassBuildItemBuildProducer);
+                generatedClassBuildItemBuildProducer, additionalArchives);
         return new ProxyDefinitionsBuildItem(proxyDefinitions);
     }
 
@@ -304,7 +308,8 @@ public final class HibernateOrmProcessor {
             List<HibernateOrmIntegrationBuildItem> integrations,
             ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            List<AdditionalApplicationArchiveBuildItem> additionalArchives) throws Exception {
 
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_ORM));
 
@@ -375,7 +380,7 @@ public final class HibernateOrmProcessor {
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses,
-                                proxyDefinitions.getProxies(), strategy, jtaPresent)));
+                                proxyDefinitions.getProxies(), strategy, jtaPresent, toUrls(additionalArchives))));
     }
 
     private MultiTenancyStrategy getMultiTenancyStrategy() {
@@ -383,7 +388,8 @@ public final class HibernateOrmProcessor {
     }
 
     private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            List<AdditionalApplicationArchiveBuildItem> additionalArchives) {
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
         Map<String, String> proxyAnnotations = new HashMap<>();
@@ -398,14 +404,16 @@ public final class HibernateOrmProcessor {
 
             final BytecodeProviderImpl bytecodeProvider = new BytecodeProviderImpl();
             final ByteBuddyProxyHelper byteBuddyProxyHelper = bytecodeProvider.getByteBuddyProxyHelper();
+            ClassLoader classLoader = new URLClassLoader(toUrls(additionalArchives),
+                    Thread.currentThread().getContextClassLoader());
 
             for (String entity : entityClassNames) {
                 Set<Class<?>> proxyInterfaces = new HashSet<>();
                 proxyInterfaces.add(HibernateProxy.class); //always added
-                Class<?> mappedClass = Class.forName(entity, false, Thread.currentThread().getContextClassLoader());
+                Class<?> mappedClass = Class.forName(entity, false, classLoader);
                 String proxy = proxyAnnotations.get(entity);
                 if (proxy != null) {
-                    proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                    proxyInterfaces.add(Class.forName(proxy, false, classLoader));
                 } else if (!isProxiable(mappedClass)) {
                     //if there is no @Proxy we need to make sure the actual class is proxiable
                     continue;
@@ -418,7 +426,7 @@ public final class HibernateOrmProcessor {
                     }
                     proxy = proxyAnnotations.get(subclassName);
                     if (proxy != null) {
-                        proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                        proxyInterfaces.add(Class.forName(proxy, false, classLoader));
                     }
                 }
                 DynamicType.Unloaded<?> proxyDef = byteBuddyProxyHelper.buildUnloadedProxy(mappedClass,
@@ -1004,4 +1012,17 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    private URL[] toUrls(List<AdditionalApplicationArchiveBuildItem> additionalArchives) {
+        List<URL> additionalArchivesUrl = new ArrayList<>();
+
+        for (AdditionalApplicationArchiveBuildItem additionalArchive : additionalArchives) {
+            try {
+                additionalArchivesUrl.add(additionalArchive.getPaths().getSinglePath().toUri().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException("Failed to create URL from application archive", e);
+            }
+        }
+
+        return additionalArchivesUrl.toArray(new URL[additionalArchives.size()]);
+    }
 }

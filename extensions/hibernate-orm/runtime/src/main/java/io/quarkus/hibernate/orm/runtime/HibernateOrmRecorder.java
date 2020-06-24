@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -85,12 +87,30 @@ public class HibernateOrmRecorder {
     public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             Collection<Class<? extends ServiceContributor>> additionalServiceContributors,
-            PreGeneratedProxies proxyDefinitions, MultiTenancyStrategy strategy, boolean jtaPresent) {
+            PreGeneratedProxies proxyDefinitions, MultiTenancyStrategy strategy, boolean jtaPresent,
+            URL[] additionalArchivesUrl) {
+        if (additionalArchivesUrl.length == 0) {
+            return new BeanContainerListener() {
+                @Override
+                public void created(BeanContainer beanContainer) {
+                    PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
+                            additionalServiceContributors, proxyDefinitions, strategy, jtaPresent);
+                }
+            };
+        }
+
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
-                        additionalServiceContributors, proxyDefinitions, strategy, jtaPresent);
+                ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
+
+                try {
+                    Thread.currentThread().setContextClassLoader(new URLClassLoader(additionalArchivesUrl, oldCl));
+                    PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
+                            additionalServiceContributors, proxyDefinitions, strategy, jtaPresent);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(oldCl);
+                }
             }
         };
     }

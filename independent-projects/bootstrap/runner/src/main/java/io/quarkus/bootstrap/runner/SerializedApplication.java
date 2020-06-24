@@ -49,7 +49,7 @@ public class SerializedApplication {
     }
 
     public static void write(OutputStream outputStream, String mainClass, Path applicationRoot, List<Path> classPath,
-            List<Path> parentFirst)
+            List<Path> parentFirst, List<Path> additionalArchives)
             throws IOException {
         try (DataOutputStream data = new DataOutputStream(outputStream)) {
             data.writeInt(MAGIC);
@@ -57,8 +57,12 @@ public class SerializedApplication {
             data.writeUTF(mainClass);
             data.writeInt(classPath.size());
             for (Path jar : classPath) {
-                String relativePath = relativize(applicationRoot, jar).replace("\\", "/");
-                data.writeUTF(relativePath);
+                if (additionalArchives.contains(jar)) {
+                    data.writeUTF(jar.toString().replace("\\", "/"));
+                } else {
+                    String relativePath = relativize(applicationRoot, jar).replace("\\", "/");
+                    data.writeUTF(relativePath);
+                }
                 writeJar(data, jar);
             }
             Set<String> parentFirstPackages = new HashSet<>();

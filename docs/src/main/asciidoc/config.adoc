@@ -803,8 +803,17 @@ any level for disambiguating configuration keys.
 
 == More info on how to configure
 
-Quarkus relies on Eclipse MicroProfile and inherits its features.
+Quarkus relies on SmallRye Config and inherits its features.
 
-There are converters that convert your property file content from `String` to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
+SmallRye Config provides:
 
-// TODO: make Ken review this section and discuss SmallRye expansion.
+* Additional Config Sources
+* Additional Converters
+* Interceptors for configuration value resolution
+* Relocate Configuration Properties
+* Fallback Configuration Properties
+* Logging
+* Hide Secrets
+
+For more information, please check the
+link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].

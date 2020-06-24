@@ -6,7 +6,7 @@ import javax.persistence.Id;
 @Entity
 public class Book extends NamedEntity {
 
-    private Integer bid;
+    private int bid;
 
     private Integer publicationYear;
 
@@ -20,11 +20,11 @@ public class Book extends NamedEntity {
     }
 
     @Id
-    public Integer getBid() {
+    public int getBid() {
         return bid;
     }
 
-    public void setBid(Integer bid) {
+    public void setBid(int bid) {
         this.bid = bid;
     }
 

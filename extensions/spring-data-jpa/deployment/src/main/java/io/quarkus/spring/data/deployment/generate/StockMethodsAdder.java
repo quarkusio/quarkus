@@ -134,6 +134,13 @@ public class StockMethodsAdder {
                     BytecodeCreator idValueUnset;
                     BytecodeCreator idValueSet;
                     if (idType instanceof PrimitiveType) {
+                        if (!idType.name().equals(DotNames.PRIMITIVE_LONG)
+                                && !idType.name().equals(DotNames.PRIMITIVE_INTEGER)) {
+                            throw new IllegalArgumentException("Id type of '" + entityDotName + "' is invalid.");
+                        }
+                        if (idType.name().equals(DotNames.PRIMITIVE_LONG)) {
+                            idValue = save.checkCast(idValue, int.class);
+                        }
                         BranchResult idValueNonZeroBranch = save.ifNonZero(idValue);
                         idValueSet = idValueNonZeroBranch.trueBranch();
                         idValueUnset = idValueNonZeroBranch.falseBranch();

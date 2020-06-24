@@ -12,7 +12,8 @@ public class Movie extends MovieSuperclass {
     public Movie() {
     }
 
-    public Movie(String title, String rating, int duration) {
+    public Movie(Long id, String title, String rating, int duration) {
+        this.id = id;
         this.title = title;
         this.rating = rating;
         this.duration = duration;
@@ -28,5 +29,9 @@ public class Movie extends MovieSuperclass {
 
     public int getDuration() {
         return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 }

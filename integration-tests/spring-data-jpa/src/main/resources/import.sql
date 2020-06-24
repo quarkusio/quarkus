@@ -15,14 +15,14 @@ INSERT INTO country(id, name, iso3) VALUES (1, 'Greece' , 'GRC');
 INSERT INTO country(id, name, iso3) VALUES (2, 'France' , 'FRA');
 INSERT INTO country(id, name, iso3) VALUES (3, 'Czechia' , 'CZE');
 
-INSERT INTO movie(id, title, rating, duration) VALUES(1, 'Godzilla: King of the Monsters', 'PG-13', 132);
-INSERT INTO movie(id, title, rating, duration) VALUES(2, 'Avengers: Endgame', 'PG-13', 181);
-INSERT INTO movie(id, title, rating, duration) VALUES(3, 'Interstellar', 'PG-13', 169);
-INSERT INTO movie(id, title, rating, duration) VALUES(4, 'Aladdin', 'PG', 128);
-INSERT INTO movie(id, title, rating, duration) VALUES(5, 'Die Hard', 'R', 132);
-INSERT INTO movie(id, title, rating, duration) VALUES(6, 'The Departed', 'R', 151);
-INSERT INTO movie(id, title, rating, duration) VALUES(7, 'Dunkirk', null, 146);
-INSERT INTO movie(id, title, rating, duration) VALUES(8, 'Toy Story 4', 'G', 100);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(1, 'Godzilla: King of the Monsters', 'PG-13', 132, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(2, 'Avengers: Endgame', 'PG-13', 181, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(3, 'Interstellar', 'PG-13', 169, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(4, 'Aladdin', 'PG', 128, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(5, 'Die Hard', 'R', 132, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(6, 'The Departed', 'R', 151, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(7, 'Dunkirk', null, 146, 1);
+INSERT INTO movie(id, title, rating, duration, version) VALUES(8, 'Toy Story 4', 'G', 100, 1);
 
 INSERT INTO address(id, street_name, street_number, zip_code) VALUES (1, 'Easy Street', '10000', '123456');
 INSERT INTO address(id, street_name, street_number, zip_code) VALUES (2, 'Blockbuster Avenue', '1', '654321');

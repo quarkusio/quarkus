@@ -21,14 +21,17 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstanceFactory;
@@ -60,13 +63,14 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
  * A side effect of this is that the tests will run on port 8080 by default instead of port 8081.
  */
 public class QuarkusDevModeTest
-        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
     private static final Logger rootLogger;
+    private Handler[] originalRootLoggerHandlers;
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        rootLogger = LogManager.getLogManager().getLogger("");
+        rootLogger = (Logger) LogManager.getLogManager().getLogger("");
     }
 
     private DevModeMain devModeMain;
@@ -126,8 +130,13 @@ public class QuarkusDevModeTest
     }
 
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
+    public void beforeAll(ExtensionContext context) throws Exception {
+        originalRootLoggerHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext extensionContext) throws Exception {
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
@@ -178,6 +187,11 @@ public class QuarkusDevModeTest
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        rootLogger.setHandlers(originalRootLoggerHandlers);
     }
 
     @Override

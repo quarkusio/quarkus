@@ -88,4 +88,10 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem
     public PfxConfiguration keyCertificatePfx;
+
+    /**
+     * Experimental: use one connection pool per thread.
+     */
+    @ConfigItem
+    public Optional<Boolean> threadLocal;
 }

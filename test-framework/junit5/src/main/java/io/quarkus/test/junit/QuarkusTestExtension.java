@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,6 +33,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -78,6 +80,8 @@ import io.quarkus.test.junit.internal.XStreamDeepClone;
 public class QuarkusTestExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
         ParameterResolver {
+
+    private static final Logger log = Logger.getLogger(QuarkusTestExtension.class);
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
@@ -224,19 +228,14 @@ public class QuarkusTestExtension
                     }
                 }
             };
+            ExtensionState state = new ExtensionState(testResourceManager, shutdownTask);
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        shutdownTask.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        curatedApplication.close();
-                    }
+                    state.close();
                 }
             }, "Quarkus Test Cleanup Shutdown task"));
-            return new ExtensionState(testResourceManager, shutdownTask);
+            return state;
         } catch (Throwable e) {
 
             try {
@@ -679,6 +678,7 @@ public class QuarkusTestExtension
 
         private final Closeable testResourceManager;
         private final Closeable resource;
+        private final AtomicBoolean closed = new AtomicBoolean();
 
         ExtensionState(Closeable testResourceManager, Closeable resource) {
             this.testResourceManager = testResourceManager;
@@ -686,14 +686,28 @@ public class QuarkusTestExtension
         }
 
         @Override
-        public void close() throws Throwable {
-            try {
-                resource.close();
-            } finally {
-                if (QuarkusTestExtension.this.originalCl != null) {
-                    setCCL(QuarkusTestExtension.this.originalCl);
+        public void close() {
+            if (closed.compareAndSet(false, true)) {
+                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                if (runningQuarkusApplication != null) {
+                    Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
                 }
-                testResourceManager.close();
+                try {
+                    resource.close();
+                } catch (Throwable e) {
+                    log.error("Failed to shutdown Quarkus", e);
+                } finally {
+                    try {
+                        if (QuarkusTestExtension.this.originalCl != null) {
+                            setCCL(QuarkusTestExtension.this.originalCl);
+                        }
+                        testResourceManager.close();
+                    } catch (IOException e) {
+                        log.error("Failed to shutdown Quarkus test resources", e);
+                    } finally {
+                        Thread.currentThread().setContextClassLoader(old);
+                    }
+                }
             }
         }
     }

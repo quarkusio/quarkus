@@ -84,7 +84,7 @@ public class GrpcServerProcessor {
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             VertxBuildItem vertx) {
         if (!bindables.isEmpty()) {
-            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown);
+            recorder.initializeGrpcServer(vertx.getVertx(), config);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

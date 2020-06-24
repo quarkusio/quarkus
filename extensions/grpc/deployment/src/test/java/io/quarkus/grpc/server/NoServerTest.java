@@ -7,7 +7,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.grpc.runtime.GrpcServerHolder;
+import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -21,6 +21,6 @@ public class NoServerTest {
 
     @Test
     public void test() {
-        assertThat(GrpcServerHolder.server).isNull();
+        assertThat(GrpcServerRecorder.getVerticleCount()).isZero();
     }
 }

@@ -1,6 +1,5 @@
 package io.quarkus.arc;
 
-import io.quarkus.arc.InjectableContext.ContextState;
 import java.util.Map;
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.AlterableContext;

@@ -322,10 +322,7 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        for (String className : domainObjects.getEntityClassNames()) {
-            recorder.addEntity(className);
-        }
-        recorder.enlistPersistenceUnit();
+        recorder.enlistPersistenceUnit(domainObjects.getEntityClassNames());
 
         final QuarkusScanner scanner = buildQuarkusScanner(domainObjects);
 

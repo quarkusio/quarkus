@@ -190,4 +190,25 @@ public class MovieResourceTest {
                 .statusCode(200)
                 .body(containsString("rating"));
     }
+
+    @Test
+    void testNewMovie() {
+        long id = 999L;
+        String title = "tenet";
+        Movie movie = when().get(String.format("/movie/new/%d/%s", id, title)).then()
+                .statusCode(200)
+                .extract().body().as(Movie.class);
+
+        assertThat(movie.getId()).isEqualTo(id);
+        assertThat(movie.getTitle()).isEqualTo(title);
+        assertThat(movie.getVersion()).isNotNull();
+
+        when().get("/movie/title/" + title).then()
+                .statusCode(200)
+                .body(containsString(title));
+
+        when().get("/movie/delete/title/" + title).then()
+                .statusCode(200)
+                .body(is("1"));
+    }
 }

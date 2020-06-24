@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.Version;
 
 import org.jboss.jandex.DotName;
 import org.springframework.data.domain.Page;
@@ -64,6 +65,7 @@ public final class DotNames {
             .createSimple(Modifying.class.getName());
 
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
+    public static final DotName VERSION = DotName.createSimple(Version.class.getName());
     public static final DotName JPA_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
     public static final DotName VOID = DotName.createSimple(void.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());

@@ -35,6 +35,9 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+
+        <skipDocs>false</skipDocs>
+        <skip.gradle.tests>false</skip.gradle.tests>
     </properties>
 
     <modules>
@@ -92,6 +95,23 @@
     </distributionManagement>
 
     <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+            </properties>
+        </profile>
         <profile>
             <id>release</id>
             <build>

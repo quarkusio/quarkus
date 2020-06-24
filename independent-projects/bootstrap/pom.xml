@@ -472,6 +472,20 @@
 
     <profiles>
         <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
+        </profile>
+        <profile>
             <id>release</id>
             <build>
                 <plugins>

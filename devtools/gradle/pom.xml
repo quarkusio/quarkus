@@ -185,5 +185,16 @@
                 <gradle.task>assemble</gradle.task>
             </properties>
         </profile>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
     </profiles>
 </project>

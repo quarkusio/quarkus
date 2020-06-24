@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-google-cloud-functions-http</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

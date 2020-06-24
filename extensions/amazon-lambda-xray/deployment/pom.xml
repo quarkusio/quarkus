@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-amazon-lambda-common-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

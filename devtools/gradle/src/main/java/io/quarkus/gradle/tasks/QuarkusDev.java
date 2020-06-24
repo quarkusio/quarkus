@@ -531,7 +531,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private void addToClassPaths(StringBuilder classPathManifest, File file) {
         if (filesIncludedInClasspath.add(file)) {
-            getProject().getLogger().info("Adding dependency {}", file);
+            getProject().getLogger().debug("Adding dependency {}", file);
 
             final URI uri = file.toPath().toAbsolutePath().toUri();
             classPathManifest.append(uri).append(" ");

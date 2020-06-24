@@ -178,6 +178,7 @@
         <!-- Command line -->
         <module>picocli</module>
         <module>google-cloud-functions-http</module>
+        <module>google-cloud-functions</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

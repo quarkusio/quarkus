@@ -143,11 +143,37 @@ public class DataSources {
         boolean isLegacy = matchingSupportEntry.isLegacy;
         if (!isLegacy) {
             if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
-                throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
+                if (!legacyDataSourceRuntimeConfig.url.isPresent()) {
+                    String errorMessage;
+                    if (DataSourceUtil.isDefault(dataSourceName)) {
+                        errorMessage = "quarkus.datasource.jdbc.url has not been defined";
+                    } else {
+                        errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
+                    }
+                    throw new ConfigurationException(errorMessage);
+                } else {
+                    String errorMessage;
+                    if (DataSourceUtil.isDefault(dataSourceName)) {
+                        errorMessage = "quarkus.datasource.url is deprecated and will be removed in a future version - it is "
+                                + "recommended to switch to quarkus.datasource.jdbc.url. See https://quarkus.io/guides/datasource";
+                    } else {
+                        errorMessage = "quarkus.datasource." + dataSourceName
+                                + ".url is deprecated and will be removed in a future version - it is " +
+                                "recommended to switch to quarkus.datasource." + dataSourceName
+                                + ".jdbc.url. See https://quarkus.io/guides/datasource";
+                    }
+                    throw new ConfigurationException(errorMessage);
+                }
             }
         } else {
             if (!legacyDataSourceRuntimeConfig.url.isPresent()) {
-                throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
+                String errorMessage;
+                if (DataSourceUtil.isDefault(dataSourceName)) {
+                    errorMessage = "quarkus.datasource.url has not been defined";
+                } else {
+                    errorMessage = "quarkus.datasource." + dataSourceName + ".url has not been defined";
+                }
+                throw new ConfigurationException(errorMessage);
             }
         }
 

@@ -104,7 +104,11 @@ public class OidcRecorder {
         }
 
         // Base IDP server URL
-        options.setSite(oidcConfig.getAuthServerUrl().get());
+        String authServerUrl = oidcConfig.getAuthServerUrl().get();
+        if (authServerUrl.endsWith("/")) {
+            authServerUrl = authServerUrl.substring(0, authServerUrl.length() - 1);
+        }
+        options.setSite(authServerUrl);
         // RFC7662 introspection service address
         if (oidcConfig.getIntrospectionPath().isPresent()) {
             options.setIntrospectionPath(oidcConfig.getIntrospectionPath().get());

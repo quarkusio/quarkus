@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
+import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -77,47 +78,12 @@ public class JarRunnerIT extends MojoTestBase {
 
     @Test
     public void testThatFastJarFormatWorks() throws Exception {
-        File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar");
-        RunningInvoker running = new RunningInvoker(testDir, false);
+        assertThatFastJarFormatWorks(null);
+    }
 
-        MavenProcessInvocationResult result = running
-                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=fast-jar"), Collections.emptyMap());
-
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
-        running.stop();
-
-        Path jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
-        Assertions.assertFalse(Files.exists(jar));
-
-        jar = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
-        Assertions.assertTrue(Files.exists(jar));
-        File output = new File(testDir, "target/output.log");
-        output.createNewFile();
-
-        Process process = doLaunch(jar, output).start();
-        try {
-            // Wait until server up
-            dumpFileContentOnFailure(() -> {
-                await()
-                        .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
-                return null;
-            }, output, ConditionTimeoutException.class);
-
-            String logs = FileUtils.readFileToString(output, "UTF-8");
-
-            assertThatOutputWorksCorrectly(logs);
-
-            // test that the application name and version are properly set
-            assertApplicationPropertiesSetCorrectly();
-            assertResourceReadingFromClassPathWorksCorrectly("");
-        } finally {
-            process.destroy();
-        }
-
+    @Test
+    public void testThatFastJarCustomOutputDirFormatWorks() throws Exception {
+        assertThatFastJarFormatWorks("custom");
     }
 
     @Test
@@ -340,5 +306,54 @@ public class JarRunnerIT extends MojoTestBase {
             }
             throw t;
         }
+    }
+
+    private void assertThatFastJarFormatWorks(String outputDir) throws Exception {
+        File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(Arrays.asList("package",
+                        "-DskipTests",
+                        "-Dquarkus.package.type=fast-jar",
+                        outputDir == null ? "" : "-Dquarkus.package.output-directory=" + outputDir), Collections.emptyMap());
+
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        Path jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/acme-1.0-SNAPSHOT-runner.jar"));
+        Assertions.assertFalse(Files.exists(jar));
+
+        jar = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target",
+                        outputDir == null ? JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME : outputDir,
+                        "quarkus-run.jar"));
+        Assertions.assertTrue(Files.exists(jar));
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(jar, output).start();
+        try {
+            // Wait until server up
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly();
+            assertResourceReadingFromClassPathWorksCorrectly("");
+        } finally {
+            process.destroy();
+        }
+
     }
 }

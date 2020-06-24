@@ -426,8 +426,14 @@ public class JarResultBuildStep {
 
         boolean rebuild = outputTargetBuildItem.isRebuild();
 
-        Path buildDir = outputTargetBuildItem.getOutputDirectory()
-                .resolve(packageConfig.outputDirectory.orElse(DEFAULT_FAST_JAR_DIRECTORY_NAME));
+        Path buildDir;
+
+        if (packageConfig.outputDirectory.isPresent()) {
+            buildDir = outputTargetBuildItem.getOutputDirectory();
+        } else {
+            buildDir = outputTargetBuildItem.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
+        }
+
         //unmodified 3rd party dependencies
         Path libDir = buildDir.resolve(LIB);
         Path mainLib = libDir.resolve(MAIN);

@@ -39,7 +39,7 @@ public class UserTagSectionHelper implements SectionHelper {
                                     result.complete(r2);
                                 }
                             });
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     result.completeExceptionally(e);
                 }
 

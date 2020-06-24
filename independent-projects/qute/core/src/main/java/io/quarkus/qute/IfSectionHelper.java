@@ -243,7 +243,7 @@ public class IfSectionHelper implements SectionHelper {
                                         localValue = null;
                                     }
                                     val = operator.evaluate(localValue, r);
-                                } catch (Exception e) {
+                                } catch (Throwable e) {
                                     result.completeExceptionally(e);
                                     throw e;
                                 }

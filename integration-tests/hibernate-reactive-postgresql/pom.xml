@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-reactive</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate Reactive</name>
+    <artifactId>quarkus-integration-test-hibernate-reactive-postgresql</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate Reactive - PostgreSQL</name>
     <description>Hibernate Reactive related tests running with the PostgreSQL database</description>
 
     <properties>

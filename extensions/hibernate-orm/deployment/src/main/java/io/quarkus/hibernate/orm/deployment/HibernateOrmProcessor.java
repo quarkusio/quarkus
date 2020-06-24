@@ -33,6 +33,7 @@ import javax.persistence.PersistenceUnit;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
+import javax.transaction.TransactionManager;
 
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricType;
@@ -494,7 +495,8 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities,
+            CombinedIndexBuildItem combinedIndex,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
@@ -503,7 +505,10 @@ public final class HibernateOrmProcessor {
 
         List<Class<?>> unremovableClasses = new ArrayList<>();
         unremovableClasses.add(JPAConfig.class);
-        unremovableClasses.add(TransactionEntityManagers.class);
+        if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+            unremovableClasses.add(TransactionManager.class);
+            unremovableClasses.add(TransactionEntityManagers.class);
+        }
         unremovableClasses.add(RequestScopedEntityManagerHolder.class);
         if (getMultiTenancyStrategy() != MultiTenancyStrategy.NONE) {
             unremovableClasses.add(DataSourceTenantConnectionResolver.class);

@@ -5,6 +5,7 @@ import java.util.Properties;
 import org.rocksdb.RocksDB;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -20,9 +21,13 @@ public class KafkaStreamsRecorder {
     }
 
     public BeanContainerListener configure(Properties properties) {
-        return container -> {
-            KafkaStreamsTopologyManager instance = container.instance(KafkaStreamsTopologyManager.class);
-            instance.configure(properties);
+        return new BeanContainerListener() {
+
+            @Override
+            public void created(BeanContainer container) {
+                KafkaStreamsTopologyManager instance = container.instance(KafkaStreamsTopologyManager.class);
+                instance.configure(properties);
+            }
         };
     }
 }

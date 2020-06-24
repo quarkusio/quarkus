@@ -135,6 +135,7 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>
                             </execution>
                         </executions>

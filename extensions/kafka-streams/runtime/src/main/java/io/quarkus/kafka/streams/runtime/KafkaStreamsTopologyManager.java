@@ -1,12 +1,13 @@
 package io.quarkus.kafka.streams.runtime;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -23,9 +25,12 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsResult;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.streams.KafkaClientSupplier;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KafkaStreams.StateListener;
@@ -54,7 +59,7 @@ public class KafkaStreamsTopologyManager {
     private volatile KafkaStreamsRuntimeConfig runtimeConfig;
     private volatile Instance<Topology> topology;
     private volatile Properties properties;
-    private volatile Map<String, Object> adminClientConfig;
+    private volatile Properties adminClientConfig;
 
     private volatile Instance<KafkaClientSupplier> kafkaClientSupplier;
     private volatile Instance<StateListener> stateListener;
@@ -91,15 +96,91 @@ public class KafkaStreamsTopologyManager {
         // build-time options
         streamsProperties.putAll(properties);
 
+        // dynamic add -- back-compatibility
+        streamsProperties.putAll(KafkaStreamsPropertiesUtil.quarkusKafkaStreamsProperties());
+        streamsProperties.putAll(KafkaStreamsPropertiesUtil.appKafkaStreamsProperties());
+
         // add runtime options
         streamsProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
         streamsProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, runtimeConfig.applicationId);
 
+        // app id
         if (runtimeConfig.applicationServer.isPresent()) {
             streamsProperties.put(StreamsConfig.APPLICATION_SERVER_CONFIG, runtimeConfig.applicationServer.get());
         }
 
+        // schema registry
+        if (runtimeConfig.schemaRegistryUrl.isPresent()) {
+            streamsProperties.put(runtimeConfig.schemaRegistryKey, runtimeConfig.schemaRegistryUrl.get());
+        }
+
+        // set the security protocol (in case we are doing PLAIN_TEXT)
+        setProperty(runtimeConfig.securityProtocol, streamsProperties, CommonClientConfigs.SECURITY_PROTOCOL_CONFIG);
+
+        // sasl
+        SaslConfig sc = runtimeConfig.sasl;
+        if (sc != null) {
+            setProperty(sc.jaasConfig, streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
+
+            setProperty(sc.clientCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);
+
+            setProperty(sc.loginCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS);
+            setProperty(sc.loginClass, streamsProperties, SaslConfigs.SASL_LOGIN_CLASS);
+
+            setProperty(sc.kerberosServiceName, streamsProperties, SaslConfigs.SASL_KERBEROS_SERVICE_NAME);
+            setProperty(sc.kerberosKinitCmd, streamsProperties, SaslConfigs.SASL_KERBEROS_KINIT_CMD);
+            setProperty(sc.kerberosTicketRenewWindowFactor, streamsProperties,
+                    SaslConfigs.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR);
+            setProperty(sc.kerberosTicketRenewJitter, streamsProperties, SaslConfigs.SASL_KERBEROS_TICKET_RENEW_JITTER);
+            setProperty(sc.kerberosMinTimeBeforeRelogin, streamsProperties, SaslConfigs.SASL_KERBEROS_MIN_TIME_BEFORE_RELOGIN);
+
+            setProperty(sc.loginRefreshWindowFactor, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_FACTOR);
+            setProperty(sc.loginRefreshWindowJitter, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_JITTER);
+
+            setProperty(sc.loginRefreshMinPeriod, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS,
+                    DurationToSecondsFunction.INSTANCE);
+            setProperty(sc.loginRefreshBuffer, streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS,
+                    DurationToSecondsFunction.INSTANCE);
+        }
+
+        // ssl
+        SslConfig ssl = runtimeConfig.ssl;
+        if (ssl != null) {
+            setProperty(ssl.protocol, streamsProperties, SslConfigs.SSL_PROTOCOL_CONFIG);
+            setProperty(ssl.provider, streamsProperties, SslConfigs.SSL_PROVIDER_CONFIG);
+            setProperty(ssl.cipherSuites, streamsProperties, SslConfigs.SSL_CIPHER_SUITES_CONFIG);
+            setProperty(ssl.enabledProtocols, streamsProperties, SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG);
+
+            setStoreConfig(ssl.truststore, streamsProperties, "ssl.truststore");
+            setStoreConfig(ssl.keystore, streamsProperties, "ssl.keystore");
+            setStoreConfig(ssl.key, streamsProperties, "ssl.key");
+
+            setProperty(ssl.keymanagerAlgorithm, streamsProperties, SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG);
+            setProperty(ssl.trustmanagerAlgorithm, streamsProperties, SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG);
+            Optional<String> eia = Optional.of(ssl.endpointIdentificationAlgorithm.orElse(""));
+            setProperty(eia, streamsProperties, SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG);
+            setProperty(ssl.secureRandomImplementation, streamsProperties, SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
+        }
+
         return streamsProperties;
+    }
+
+    private static void setStoreConfig(StoreConfig sc, Properties properties, String key) {
+        if (sc != null) {
+            setProperty(sc.type, properties, key + ".type");
+            setProperty(sc.location, properties, key + ".location");
+            setProperty(sc.password, properties, key + ".password");
+        }
+    }
+
+    private static <T> void setProperty(Optional<T> property, Properties properties, String key) {
+        setProperty(property, properties, key, Objects::toString);
+    }
+
+    private static <T> void setProperty(Optional<T> property, Properties properties, String key, Function<T, String> fn) {
+        if (property.isPresent()) {
+            properties.put(key, fn.apply(property.get()));
+        }
     }
 
     private static String asString(List<InetSocketAddress> addresses) {
@@ -130,17 +211,21 @@ public class KafkaStreamsTopologyManager {
             streams.setGlobalStateRestoreListener(globalStateRestoreListener.get());
         }
 
-        adminClientConfig = getAdminClientConfig(bootstrapServersConfig);
+        adminClientConfig = getAdminClientConfig(streamsProperties);
 
-        executor.execute(() -> {
-            try {
-                waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+        executor.execute(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                LOGGER.debug("Starting Kafka Streams pipeline");
+                streams.start();
             }
-            LOGGER.debug("Starting Kafka Streams pipeline");
-            streams.start();
         });
     }
 
@@ -199,7 +284,7 @@ public class KafkaStreamsTopologyManager {
             Set<String> topicNames = topics.names().get(10, TimeUnit.SECONDS);
 
             if (topicNames.containsAll(topicsToCheck)) {
-                return Collections.EMPTY_SET;
+                return Collections.emptySet();
             } else {
                 missing.removeAll(topicNames);
             }
@@ -210,9 +295,8 @@ public class KafkaStreamsTopologyManager {
         return missing;
     }
 
-    private Map<String, Object> getAdminClientConfig(String bootstrapServersConfig) {
-        Map<String, Object> adminClientConfig = new HashMap<>();
-        adminClientConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+    private Properties getAdminClientConfig(Properties properties) {
+        Properties adminClientConfig = new Properties(properties);
         // include other AdminClientConfig(s) that have been configured
         for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {
             // give preference to admin.<propname> first
@@ -232,5 +316,15 @@ public class KafkaStreamsTopologyManager {
 
     public void configure(Properties properties) {
         this.properties = properties;
+    }
+
+    private static final class DurationToSecondsFunction implements Function<Duration, String> {
+
+        private static final DurationToSecondsFunction INSTANCE = new DurationToSecondsFunction();
+
+        @Override
+        public String apply(Duration d) {
+            return String.valueOf(d.getSeconds());
+        }
     }
 }

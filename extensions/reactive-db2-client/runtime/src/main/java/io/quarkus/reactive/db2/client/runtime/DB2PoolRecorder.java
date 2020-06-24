@@ -46,10 +46,6 @@ public class DB2PoolRecorder {
                 dataSourceReactiveDB2Config);
         DB2ConnectOptions connectOptions = toConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
-        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
-                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
-            return new ThreadLocalDB2Pool(vertx, connectOptions, poolOptions);
-        }
         return DB2Pool.pool(vertx, connectOptions, poolOptions);
     }
 

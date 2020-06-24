@@ -24,6 +24,7 @@ public class TestResourceManager implements Closeable {
 
     private final List<TestResourceEntry> testResourceEntries;
     private Map<String, String> oldSystemProps;
+    private boolean started = false;
 
     public TestResourceManager(Class<?> testClass) {
         testResourceEntries = getTestResources(testClass);
@@ -40,6 +41,7 @@ public class TestResourceManager implements Closeable {
     }
 
     public Map<String, String> start() {
+        started = true;
         Map<String, String> ret = new HashMap<>();
         for (TestResourceEntry entry : testResourceEntries) {
             try {
@@ -70,6 +72,10 @@ public class TestResourceManager implements Closeable {
     }
 
     public void close() {
+        if (!started) {
+            return;
+        }
+        started = false;
         if (oldSystemProps != null) {
             for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
                 if (e.getValue() == null) {

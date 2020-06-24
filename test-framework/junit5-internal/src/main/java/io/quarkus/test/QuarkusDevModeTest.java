@@ -17,13 +17,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.logging.LogManager;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -62,18 +58,14 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 public class QuarkusDevModeTest
         implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
-    private static final Logger rootLogger;
-
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        rootLogger = LogManager.getLogManager().getLogger("");
     }
 
     private DevModeMain devModeMain;
     private Path deploymentDir;
     private Supplier<JavaArchive> archiveProducer;
     private String logFileName;
-    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
 
     private Path deploymentSourcePath;
     private Path deploymentResourcePath;
@@ -105,15 +97,6 @@ public class QuarkusDevModeTest
         return this;
     }
 
-    public QuarkusDevModeTest setLogRecordPredicate(Predicate<LogRecord> predicate) {
-        this.inMemoryLogHandler = new InMemoryLogHandler(predicate);
-        return this;
-    }
-
-    public List<LogRecord> getLogRecords() {
-        return inMemoryLogHandler.records;
-    }
-
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
@@ -127,7 +110,6 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) throws Exception {
-        rootLogger.addHandler(inMemoryLogHandler);
         if (archiveProducer == null) {
             throw new RuntimeException("QuarkusDevModeTest does not have archive producer set");
         }
@@ -192,7 +174,6 @@ public class QuarkusDevModeTest
                 FileUtil.deleteDirectory(deploymentDir);
             }
         }
-        rootLogger.removeHandler(inMemoryLogHandler);
     }
 
     private DevModeContext exportArchive(Path deploymentDir, Path testSourceDir) {

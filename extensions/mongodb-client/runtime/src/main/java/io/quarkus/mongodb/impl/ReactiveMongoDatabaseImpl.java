@@ -333,4 +333,9 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
             AggregateOptions options) {
         return Wrappers.toMulti(apply(options, database.aggregate(clientSession, pipeline, clazz)));
     }
+
+    @Override
+    public MongoDatabase unwrap() {
+        return database;
+    }
 }

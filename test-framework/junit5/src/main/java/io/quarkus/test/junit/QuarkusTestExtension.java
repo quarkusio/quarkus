@@ -675,7 +675,7 @@ public class QuarkusTestExtension
         }
     }
 
-    class ExtensionState {
+    class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
         private final Closeable testResourceManager;
         private final Closeable resource;
@@ -685,6 +685,7 @@ public class QuarkusTestExtension
             this.resource = resource;
         }
 
+        @Override
         public void close() throws Throwable {
             try {
                 resource.close();

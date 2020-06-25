@@ -156,7 +156,10 @@ public class StockMethodsAdder {
                             throw new IllegalArgumentException("Id type of '" + entityDotName + "' is invalid.");
                         }
                         if (idType.name().equals(DotNames.PRIMITIVE_LONG)) {
-                            idValue = save.checkCast(idValue, int.class);
+                            ResultHandle longObject = save.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, long.class), idValue);
+                            idValue = save.invokeVirtualMethod(MethodDescriptor.ofMethod(Long.class, "intValue", int.class),
+                                    longObject);
                         }
                         BranchResult idValueNonZeroBranch = save.ifNonZero(idValue);
                         idValueSet = idValueNonZeroBranch.trueBranch();

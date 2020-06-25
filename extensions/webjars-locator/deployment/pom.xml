@@ -19,6 +19,10 @@
             <artifactId>webjars-locator</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>webjars-locator-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
@@ -30,7 +34,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-webjars-locator</artifactId>
         </dependency>
-        
+
         <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,7 +46,7 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Using setForcedDependencies only works if the dependency is in the pom's test scope. -->
         <dependency>
           <groupId>org.webjars</groupId>
@@ -56,7 +60,7 @@
           <version>2.24.0</version>
           <scope>test</scope>
         </dependency>
-        
+
         <!-- DevMode has no setForcedDependencies, so need to add resteasy extension here -->
         <dependency>
           <groupId>io.quarkus</groupId>

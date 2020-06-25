@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.internal.ProvidedService;
 
@@ -16,7 +15,6 @@ public final class RecordedState {
 
     private final Dialect dialect;
     private final PrevalidatedQuarkusMetadata metadata;
-    private final JtaPlatform jtaPlatform;
     private final BuildTimeSettings settings;
     private final Collection<Integrator> integrators;
     private final Collection<ProvidedService> providedServices;
@@ -25,12 +23,11 @@ public final class RecordedState {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean jtaPresent;
 
-    public RecordedState(Dialect dialect, JtaPlatform jtaPlatform, PrevalidatedQuarkusMetadata metadata,
+    public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
             Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
             ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy, boolean jtaPresent) {
         this.dialect = dialect;
-        this.jtaPlatform = jtaPlatform;
         this.metadata = metadata;
         this.settings = settings;
         this.integrators = integrators;
@@ -63,10 +60,6 @@ public final class RecordedState {
 
     public IntegrationSettings getIntegrationSettings() {
         return integrationSettings;
-    }
-
-    public JtaPlatform getJtaPlatform() {
-        return jtaPlatform;
     }
 
     public boolean isJtaPresent() {

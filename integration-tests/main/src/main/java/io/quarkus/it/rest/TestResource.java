@@ -321,6 +321,13 @@ public class TestResource {
     }
 
     @GET
+    @Path("/echo/{echo}")
+    @Produces("application/json")
+    public String echo(@PathParam("echo") String echo) {
+        return echo;
+    }
+
+    @GET
     @Path("params/{path}")
     public void regularParams(@PathParam("path") String path,
             @FormParam("form") String form,

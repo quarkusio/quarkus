@@ -400,6 +400,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         final CollectRequest request = new CollectRequest().setRootArtifact(projectArtifact)
+                .setRepositories(repos)
                 .setManagedDependencies(projectDescr.getManagedDependencies());
         for (Dependency dep : projectDescr.getDependencies()) {
             if ("test".equals(dep.getScope())

@@ -95,6 +95,7 @@ public class QuarkusProdModeTest
 
     private String logFileName;
     private Map<String, String> runtimeProperties;
+    private Map<String, String> testResourceProperties = new HashMap<>();
 
     private Process process;
 
@@ -311,7 +312,7 @@ public class QuarkusProdModeTest
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
             manager.init();
-            manager.start();
+            testResourceProperties = manager.start();
             store.put(TestResourceManager.class.getName(), new ExtensionContext.Store.CloseableResource() {
 
                 @Override
@@ -435,7 +436,7 @@ public class QuarkusProdModeTest
         if (runtimeProperties == null) {
             runtimeProperties = new HashMap<>();
         } else {
-            // copy the use supplied properties since it might an immutable map
+            // copy the use supplied properties since it might be an immutable map
             runtimeProperties = new HashMap<>(runtimeProperties);
         }
         runtimeProperties.putIfAbsent(QUARKUS_HTTP_PORT_PROPERTY, DEFAULT_HTTP_PORT);
@@ -444,6 +445,11 @@ public class QuarkusProdModeTest
             runtimeProperties.put("quarkus.log.file.path", logfilePath.toAbsolutePath().toString());
             runtimeProperties.put("quarkus.log.file.enable", "true");
         }
+
+        // ensure that the properties obtained from QuarkusTestResourceLifecycleManager
+        // are propagated to runtime
+        runtimeProperties.putAll(testResourceProperties);
+
         List<String> systemProperties = runtimeProperties.entrySet().stream()
                 .map(e -> "-D" + e.getKey() + "=" + e.getValue()).collect(Collectors.toList());
         List<String> command = new ArrayList<>(systemProperties.size() + 3);

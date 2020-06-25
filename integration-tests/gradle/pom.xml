@@ -22,6 +22,18 @@
 
     <profiles>
         <profile>
+            <id>skip-gradle-build</id>
+            <activation>
+                <property>
+                    <name>skip.gradle.build</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skip.gradle.tests>true</skip.gradle.tests>
+            </properties>
+        </profile>
+        <profile>
             <id>Gradle-IT</id>
             <activation>
                 <property>
@@ -52,7 +64,7 @@
                                         <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
                                         <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
                                     </environmentVariables>
-                                    <skip>${skip.gradle.build}</skip>
+                                    <skip>${skip.gradle.tests}</skip>
                                 </configuration>
                                 <goals>
                                     <goal>exec</goal>

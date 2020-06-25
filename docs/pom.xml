@@ -21,7 +21,6 @@
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
-        <skipDocs>false</skipDocs>
     </properties>
 
     <name>Quarkus - Documentation</name>

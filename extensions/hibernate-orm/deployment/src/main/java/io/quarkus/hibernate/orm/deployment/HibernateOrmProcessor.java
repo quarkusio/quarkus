@@ -8,7 +8,6 @@ import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -40,7 +39,6 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
@@ -52,8 +50,6 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
-import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -129,7 +125,7 @@ import net.bytebuddy.dynamic.DynamicType;
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class HibernateOrmProcessor {
-    public static final String SKIP_PARSE_PERSISTENCE_XML = "SKIP_PARSE_PERSISTENCE_XML";
+
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
@@ -139,7 +135,6 @@ public final class HibernateOrmProcessor {
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
-    private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE = "META-INF/services/org.hibernate.service.spi.ServiceContributor";
 
     /**
      * Hibernate ORM configuration
@@ -164,9 +159,10 @@ public final class HibernateOrmProcessor {
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(LaunchModeBuildItem launchMode) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
-        watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
+        if (shouldIgnorePersistenceXmlResources()) {
+            watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
+        }
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem(INTEGRATOR_SERVICE_FILE));
-        watchedFiles.add(new HotDeploymentWatchedFileBuildItem(SERVICE_CONTRIBUTOR_SERVICE_FILE));
 
         getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
             watchedFiles.add(new HotDeploymentWatchedFileBuildItem(script));
@@ -174,10 +170,22 @@ public final class HibernateOrmProcessor {
         return watchedFiles;
     }
 
+    /**
+     * Undocumented feature: we allow setting the System property
+     * "SKIP_PARSE_PERSISTENCE_XML" to fully ignore any persistence.xml
+     * resource.
+     * 
+     * @return true if we're expected to ignore them
+     */
+    private boolean shouldIgnorePersistenceXmlResources() {
+        return Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
+    }
+
+    //Integration point: allow other extensions to define additional PersistenceXmlDescriptorBuildItem
     @BuildStep
     public void parsePersistenceXmlDescriptors(
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
-        if (!"true".equals(System.getProperty(SKIP_PARSE_PERSISTENCE_XML, "false"))) {
+        if (!shouldIgnorePersistenceXmlResources()) {
             List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
             for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
                 persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
@@ -301,7 +309,7 @@ public final class HibernateOrmProcessor {
             JpaEntitiesBuildItem domainObjects,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            List<HibernateOrmIntegrationBuildItem> integrations,
+            List<HibernateOrmIntegrationBuildItem> integrations, //Used to make sure ORM integrations are performed before this item
             ProxyDefinitionsBuildItem proxyDefinitions,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
@@ -310,7 +318,6 @@ public final class HibernateOrmProcessor {
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
         final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
-        final boolean jtaPresent = capabilities.isPresent(Capability.TRANSACTIONS);
         //The Hibernate Reactive extension is able to handle registration of PersistenceProviders for both reactive and
         //traditional blocking Hibernate, by depending on this module and delegating to this code.
         //So when the Hibernate Reactive extension is present, trust that it will register its own PersistenceProvider
@@ -325,21 +332,9 @@ public final class HibernateOrmProcessor {
             return;
         }
 
-        for (String className : domainObjects.getEntityClassNames()) {
-            recorder.addEntity(className);
-        }
-        recorder.enlistPersistenceUnit();
+        recorder.enlistPersistenceUnit(domainObjects.getEntityClassNames());
 
-        //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
-        //have discovered. This scanner is bytecode serializable and is passed directly into the recorder
-        QuarkusScanner scanner = new QuarkusScanner();
-        Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String i : domainObjects.getAllModelClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
-                    ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
-        }
-        scanner.setClassDescriptors(classDescriptors);
+        final QuarkusScanner scanner = buildQuarkusScanner(domainObjects);
 
         //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
         recorderContext.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
@@ -351,35 +346,46 @@ public final class HibernateOrmProcessor {
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
-        // inspect service files for service contributors
-        Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
-        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
-                SERVICE_CONTRIBUTOR_SERVICE_FILE)) {
-            serviceContributorClasses
-                    .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));
-        }
 
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>();
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
             allDescriptors.add(pud.getDescriptor());
         }
 
-        // Multi tenancy mode (DATABASE, DISCRIMINATOR, NONE, SCHEMA)
-        MultiTenancyStrategy strategy = getMultiTenancyStrategy();
-        if (strategy == MultiTenancyStrategy.DISCRIMINATOR) {
+        beanContainerListener
+                .produce(new BeanContainerListenerBuildItem(
+                        recorder.initMetadata(allDescriptors, scanner, integratorClasses,
+                                proxyDefinitions.getProxies(), getMultiTenancyStrategy())));
+    }
+
+    /**
+     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
+     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
+     * 
+     * @param domainObjects the previously discovered domain objects
+     * @return a new QuarkusScanner with all domainObjects registered
+     */
+    public static QuarkusScanner buildQuarkusScanner(JpaEntitiesBuildItem domainObjects) {
+        QuarkusScanner scanner = new QuarkusScanner();
+        Set<ClassDescriptor> classDescriptors = new HashSet<>();
+        for (String i : domainObjects.getAllModelClassNames()) {
+            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
+                    ClassDescriptor.Categorization.MODEL);
+            classDescriptors.add(desc);
+        }
+        scanner.setClassDescriptors(classDescriptors);
+        return scanner;
+    }
+
+    private MultiTenancyStrategy getMultiTenancyStrategy() {
+        final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
+                .valueOf(hibernateConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
+        if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
             // See https://hibernate.atlassian.net/browse/HHH-6054
             throw new ConfigurationError("The Hibernate ORM multi tenancy strategy "
                     + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
         }
-
-        beanContainerListener
-                .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses,
-                                proxyDefinitions.getProxies(), strategy, jtaPresent)));
-    }
-
-    private MultiTenancyStrategy getMultiTenancyStrategy() {
-        return MultiTenancyStrategy.valueOf(hibernateConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
+        return multiTenancyStrategy;
     }
 
     private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
@@ -394,19 +400,15 @@ public final class HibernateOrmProcessor {
             }
             proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
         }
-        try {
-
-            final BytecodeProviderImpl bytecodeProvider = new BytecodeProviderImpl();
-            final ByteBuddyProxyHelper byteBuddyProxyHelper = bytecodeProvider.getByteBuddyProxyHelper();
-
+        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
             for (String entity : entityClassNames) {
                 Set<Class<?>> proxyInterfaces = new HashSet<>();
                 proxyInterfaces.add(HibernateProxy.class); //always added
-                Class<?> mappedClass = Class.forName(entity, false, Thread.currentThread().getContextClassLoader());
+                Class<?> mappedClass = proxyHelper.uninitializedClass(entity);
                 String proxy = proxyAnnotations.get(entity);
                 if (proxy != null) {
-                    proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
-                } else if (!isProxiable(mappedClass)) {
+                    proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                } else if (!proxyHelper.isProxiable(mappedClass)) {
                     //if there is no @Proxy we need to make sure the actual class is proxiable
                     continue;
                 }
@@ -418,10 +420,10 @@ public final class HibernateOrmProcessor {
                     }
                     proxy = proxyAnnotations.get(subclassName);
                     if (proxy != null) {
-                        proxyInterfaces.add(Class.forName(proxy, false, Thread.currentThread().getContextClassLoader()));
+                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
                     }
                 }
-                DynamicType.Unloaded<?> proxyDef = byteBuddyProxyHelper.buildUnloadedProxy(mappedClass,
+                DynamicType.Unloaded<?> proxyDef = proxyHelper.buildUnloadedProxy(mappedClass,
                         toArray(proxyInterfaces));
 
                 for (Entry<TypeDescription, byte[]> i : proxyDef.getAllTypes().entrySet()) {
@@ -432,23 +434,8 @@ public final class HibernateOrmProcessor {
                         new PreGeneratedProxies.ProxyClassDetailsHolder(proxyDef.getTypeDescription().getName(),
                                 proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet())));
             }
-
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
         return preGeneratedProxies;
-    }
-
-    private boolean isProxiable(Class<?> mappedClass) {
-        if (Modifier.isFinal(mappedClass.getModifiers())) {
-            return false;
-        }
-        try {
-            mappedClass.getDeclaredConstructor();
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-        return true;
     }
 
     private static Class[] toArray(final Set<Class<?>> interfaces) {

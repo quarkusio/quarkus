@@ -54,7 +54,6 @@ import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
@@ -76,7 +75,6 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -107,17 +105,13 @@ public class FastBootMetadataBuilder {
     private final PreGeneratedProxies preGeneratedProxies;
     private final MultiTenancyStrategy multiTenancyStrategy;
 
-    //JTA is currently required for regular Hibernate ORM, but it's not for Hibernate Reactive.
-    private final boolean jtaPresent;
-
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies,
-            MultiTenancyStrategy strategy, boolean jtaPresent) {
+            MultiTenancyStrategy strategy) {
         this.persistenceUnit = persistenceUnit;
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
-        this.jtaPresent = jtaPresent;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
@@ -132,7 +126,7 @@ public class FastBootMetadataBuilder {
         final BootstrapServiceRegistry bsr = buildBootstrapServiceRegistry(providedClassLoaderService);
 
         // merge configuration sources and build the "standard" service registry
-        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr, jtaPresent);
+        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr);
 
         final MergedSettings mergedSettings = mergeSettings(persistenceUnit);
         this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
@@ -340,13 +334,12 @@ public class FastBootMetadataBuilder {
                 (k, v) -> integrationSettingsBuilder.put(k, v));
 
         Dialect dialect = extractDialect();
-        JtaPlatform jtaPlatform = extractJtaPlatform();
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
         //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
         destroyServiceRegistry(fullMeta);
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
-        return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy, jtaPresent);
+        return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy);
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {
@@ -380,11 +373,6 @@ public class FastBootMetadataBuilder {
         );
 
         return PrevalidatedQuarkusMetadata.validateAndWrap(replacement);
-    }
-
-    private JtaPlatform extractJtaPlatform() {
-        final QuarkusJtaPlatformInitiator quarkusJtaPlatformInitiator = new QuarkusJtaPlatformInitiator(jtaPresent);
-        return quarkusJtaPlatformInitiator.buildJtaPlatformInstance();
     }
 
     private Dialect extractDialect() {

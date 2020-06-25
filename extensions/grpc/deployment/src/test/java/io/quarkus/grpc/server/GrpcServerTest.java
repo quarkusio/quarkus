@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
-import io.quarkus.grpc.runtime.GrpcServerHolder;
+import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class GrpcServerTest {
@@ -36,7 +36,7 @@ public class GrpcServerTest {
         assertThat(services.stream().collect(Collectors.toList())).hasSize(2)
                 .anySatisfy(b -> assertThat(b.bindService().getServiceDescriptor().getName()).isEqualTo("service1"))
                 .anySatisfy(b -> assertThat(b.bindService().getServiceDescriptor().getName()).isEqualTo("service2"));
-        assertThat(GrpcServerHolder.server.getPort()).isEqualTo(9000);
+        assertThat(GrpcServerRecorder.getVerticleCount()).isGreaterThan(0);
     }
 
     @Singleton

@@ -218,7 +218,24 @@ class NettyProcessor {
     public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
-                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"));
+                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField", "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField", "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField", "consumerIndex"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+                        "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+                        "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+                        "consumerIndex"));
     }
 
     @BuildStep

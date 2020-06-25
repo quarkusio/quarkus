@@ -13,7 +13,6 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
@@ -35,7 +34,7 @@ public class PgPoolRecorder {
 
     private static final Logger log = Logger.getLogger(PgPoolRecorder.class);
 
-    public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx, BeanContainer container,
+    public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
@@ -53,9 +52,6 @@ public class PgPoolRecorder {
             pgPool = legacyInitialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
                     legacyDataSourcesRuntimeConfig.defaultDataSource, legacyDataSourceReactivePostgreSQLConfig);
         }
-
-        PgPoolProducer producer = container.instance(PgPoolProducer.class);
-        producer.initialize(pgPool);
 
         shutdown.addShutdownTask(pgPool::close);
         return new RuntimeValue<>(pgPool);

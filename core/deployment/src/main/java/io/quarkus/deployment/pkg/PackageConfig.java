@@ -89,6 +89,19 @@ public class PackageConfig {
     @ConfigItem
     public boolean createAppcds;
 
+    /**
+     * This is an advanced option that only takes effect for the mutable-jar format.
+     *
+     * If this is specified a directory of this name will be created in the jar distribution. Users can place
+     * jar files in this directory, and when re-augmentation is performed these will be processed and added to the
+     * class-path.
+     *
+     * Note that before reaugmentation has been performed these jars will be ignored, and if they are updated the app
+     * should be reaugmented again.
+     */
+    @ConfigItem
+    public Optional<String> userProvidersDirectory;
+
     public boolean isAnyJarType() {
         return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
                 type.equalsIgnoreCase(PackageConfig.JAR) ||

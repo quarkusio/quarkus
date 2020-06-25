@@ -7,6 +7,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -27,12 +28,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.awaitility.core.ConditionTimeoutException;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -92,7 +97,8 @@ public class JarRunnerIT extends MojoTestBase {
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
-                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Collections.emptyMap());
+                .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar",
+                        "-Dquarkus.package.user-providers-directory=providers"), Collections.emptyMap());
 
         await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
@@ -105,6 +111,11 @@ public class JarRunnerIT extends MojoTestBase {
         jar = testDir.toPath().toAbsolutePath()
                 .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
         Assertions.assertTrue(Files.exists(jar));
+
+        Path providers = testDir.toPath().toAbsolutePath()
+                .resolve(Paths.get("target/quarkus-app/providers"));
+        Assertions.assertTrue(Files.exists(providers));
+
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
@@ -117,6 +128,7 @@ public class JarRunnerIT extends MojoTestBase {
                         .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
+            performRequest("/app/added", 404);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -127,6 +139,10 @@ public class JarRunnerIT extends MojoTestBase {
         } finally {
             process.destroy();
         }
+
+        //add a user jar to the providers dir, and make sure it is picked up in re-augmentation
+        ShrinkWrap.create(JavaArchive.class).addClass(AddedRestEndpoint.class)
+                .as(ZipExporter.class).exportTo(providers.resolve("added.jar").toFile());
 
         //now reaugment
         List<String> commands = new ArrayList<>();
@@ -155,6 +171,7 @@ public class JarRunnerIT extends MojoTestBase {
             assertApplicationPropertiesSetCorrectly("/moved");
 
             assertResourceReadingFromClassPathWorksCorrectly("/moved");
+            Assertions.assertEquals("added endpoint", performRequest("/moved/app/added", 200));
         } finally {
             process.destroy();
         }
@@ -277,6 +294,26 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
+    static String performRequest(String path, int expectedCode) {
+        try {
+            URL url = new URL("http://localhost:8080" + path);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            if (connection.getResponseCode() != expectedCode) {
+                Assertions.fail("Invalid response code " + connection.getResponseCode());
+            }
+            return new String(IoUtil.readBytes(connection.getInputStream()), StandardCharsets.UTF_8);
+        } catch (FileNotFoundException e) {
+            if (expectedCode == 404) {
+                return "";
+            }
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void failResourcesFromTheClasspath() {
         fail("Failed to assert that the application properly reads resources from the classpath");
     }
@@ -309,7 +346,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private void assertThatFastJarFormatWorks(String outputDir) throws Exception {
-        File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar");
+        File testDir = initProject("projects/classic", "projects/project-classic-console-output-fast-jar" + outputDir);
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running

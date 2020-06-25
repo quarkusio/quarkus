@@ -6,7 +6,7 @@ import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * An additional application archive
+ * An additional application archive. This build item can only be consumed, it should not be produced by build steps.
  */
 public final class AdditionalApplicationArchiveBuildItem extends MultiBuildItem {
 

@@ -15,6 +15,7 @@ import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -264,6 +265,11 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder addAdditionalApplicationArchive(AdditionalDependency path) {
             additionalApplicationArchives.add(path);
+            return this;
+        }
+
+        public Builder addAdditionalApplicationArchives(Collection<AdditionalDependency> path) {
+            additionalApplicationArchives.addAll(path);
             return this;
         }
 

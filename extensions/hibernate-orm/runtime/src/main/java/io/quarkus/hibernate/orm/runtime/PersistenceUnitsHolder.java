@@ -40,14 +40,13 @@ public final class PersistenceUnitsHolder {
      *
      * @param parsedPersistenceXmlDescriptors
      * @param scanner
-     * @param jtaPresent
      */
     static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
-            PreGeneratedProxies preGeneratedProxies, MultiTenancyStrategy strategy, boolean jtaPresent) {
+            PreGeneratedProxies preGeneratedProxies, MultiTenancyStrategy strategy) {
         final List<PersistenceUnitDescriptor> units = convertPersistenceUnits(parsedPersistenceXmlDescriptors);
         final Map<String, RecordedState> metadata = constructMetadataAdvance(units, scanner, additionalIntegrators,
-                preGeneratedProxies, strategy, jtaPresent);
+                preGeneratedProxies, strategy);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
@@ -80,11 +79,11 @@ public final class PersistenceUnitsHolder {
             final List<PersistenceUnitDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyClassDefinitions,
-            MultiTenancyStrategy strategy, boolean jtaPresent) {
+            MultiTenancyStrategy strategy) {
         Map<String, RecordedState> recordedStates = new HashMap<>();
 
         for (PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors) {
-            RecordedState m = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions, strategy, jtaPresent);
+            RecordedState m = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions, strategy);
             Object previous = recordedStates.put(unitName(unit), m);
             if (previous != null) {
                 throw new IllegalStateException("Duplicate persistence unit name: " + unit.getName());
@@ -110,9 +109,9 @@ public final class PersistenceUnitsHolder {
 
     public static RecordedState createMetadata(PersistenceUnitDescriptor unit, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies proxyDefinitions,
-            MultiTenancyStrategy strategy, boolean jtaPresent) {
+            MultiTenancyStrategy strategy) {
         FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner, additionalIntegrators,
-                proxyDefinitions, strategy, jtaPresent);
+                proxyDefinitions, strategy);
         return fastBootMetadataBuilder.build();
     }
 

@@ -189,12 +189,35 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    //Integration point: allow other extensions to watch for ImpliedBlockingPersistenceUnitTypeBuildItem
+    @BuildStep
+    public ImpliedBlockingPersistenceUnitTypeBuildItem defineTypeOfImpliedPU(
+            List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem, //This is from Agroal SPI: safe to use even for Hibernate Reactive
+            List<PersistenceXmlDescriptorBuildItem> actualXmlDescriptors) {
+
+        //We won't generate an implied PU if there are explicitly configured PUs
+        if (actualXmlDescriptors.isEmpty() == false) {
+            //when we have any explicitly provided Persistence Unit, disable the automatically generated ones.
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
+        }
+
+        //The default implied PU requires to bind to the default JDBC datasource, so check that we have one:
+        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSourceBuildItem = jdbcDataSourcesBuildItem.stream()
+                .filter(i -> i.isDefault())
+                .findFirst();
+        if (defaultJdbcDataSourceBuildItem.isPresent()) {
+            return ImpliedBlockingPersistenceUnitTypeBuildItem
+                    .generateImpliedPersistenceUnit(defaultJdbcDataSourceBuildItem.get());
+        } else {
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
+        }
+    }
+
     @BuildStep
     public void configurationDescriptorBuilding(
-            List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem,
+            ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
-            Capabilities capabilities,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
             JpaEntitiesBuildItem domainObjects,
@@ -202,32 +225,21 @@ public final class HibernateOrmProcessor {
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer) {
 
-        final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
-
-        if (!enableORM) {
-            // we have to bail out early as we might not have a datasource configuration
+        if (!hasEntities(domainObjects, nonJpaModelBuildItems)) {
+            // we can bail out early as there are no entities
             return;
         }
 
-        // we only support the default datasource for now
-        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSourceBuildItem = jdbcDataSourcesBuildItem.stream()
-                .filter(i -> i.isDefault())
-                .findFirst();
-
-        // handle the implicit persistence unit
-        List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(persistenceXmlDescriptors.size() + 1);
+        // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
-            allDescriptors.add(persistenceXmlDescriptorBuildItem.getDescriptor());
+            persistenceUnitDescriptorProducer
+                    .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(), false));
         }
 
-        final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
-        if (!hibernateReactivePresent) {
-            handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer,
-                    defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
-        }
-
-        for (ParsedPersistenceXmlDescriptor descriptor : allDescriptors) {
-            persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(descriptor));
+        if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
+            handleHibernateORMWithNoPersistenceXml(persistenceXmlDescriptors, resourceProducer, systemPropertyProducer,
+                    impliedPU.getDatasourceBuildTimeConfiguration(), applicationArchivesBuildItem, launchMode.getLaunchMode(),
+                    persistenceUnitDescriptorProducer);
         }
     }
 
@@ -590,17 +602,17 @@ public final class HibernateOrmProcessor {
     }
 
     private void handleHibernateORMWithNoPersistenceXml(
-            List<ParsedPersistenceXmlDescriptor> descriptors,
+            List<PersistenceXmlDescriptorBuildItem> descriptors,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
-            Optional<JdbcDataSourceBuildItem> driverBuildItem,
+            JdbcDataSourceBuildItem driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer) {
         if (descriptors.isEmpty()) {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
-                dialect = guessDialect(driverBuildItem.map(JdbcDataSourceBuildItem::getDbKind));
+                dialect = guessDialect(driverBuildItem.getDbKind());
             }
             dialect.ifPresent(s -> {
                 // we found one
@@ -734,7 +746,7 @@ public final class HibernateOrmProcessor {
                     p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
                 }
 
-                descriptors.add(desc);
+                persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(desc, false));
             });
         } else {
             if (hibernateConfig.isAnyPropertySet()) {
@@ -767,11 +779,10 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    public static Optional<String> guessDialect(Optional<String> dbKind) {
+    public static Optional<String> guessDialect(String resolvedDbKind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
-        String resolvedDbKind = dbKind.orElse("NO_DATABASE_KIND");
         if (DatabaseKind.isDB2(resolvedDbKind)) {
             return Optional.of(DB297Dialect.class.getName());
         }
@@ -794,10 +805,8 @@ public final class HibernateOrmProcessor {
             return Optional.of(SQLServer2012Dialect.class.getName());
         }
 
-        String error = dbKind.isPresent()
-                ? "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
-                        + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property."
-                : "Hibernate extension cannot guess the dialect as no database kind is specified by 'quarkus.datasource.db-kind'";
+        String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
+                + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property.";
         throw new ConfigurationError(error);
     }
 

@@ -86,6 +86,7 @@ public class QuarkusDevModeTest
     private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
 
+    private Path deploymentSourceParentPath;
     private Path deploymentSourcePath;
     private Path deploymentResourcePath;
     private Path projectSourceRoot;
@@ -220,8 +221,10 @@ public class QuarkusDevModeTest
         try {
 
             deploymentSourcePath = deploymentDir.resolve("src/main/java");
+            deploymentSourceParentPath = deploymentDir.resolve("src/main/java");
             deploymentResourcePath = deploymentDir.resolve("src/main/resources");
             Path classes = deploymentDir.resolve("target/classes");
+            Path targetDir = deploymentDir.resolve("target");
             Path cache = deploymentDir.resolve("target/dev-cache");
             Files.createDirectories(deploymentSourcePath);
             Files.createDirectories(deploymentResourcePath);
@@ -269,7 +272,10 @@ public class QuarkusDevModeTest
                     new DevModeContext.ModuleInfo(AppArtifactKey.fromString("io.quarkus.test:app-under-test"), "default",
                             deploymentDir.toAbsolutePath().toString(),
                             Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
-                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString()));
+                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString(),
+                            deploymentSourceParentPath.toAbsolutePath().toString(),
+                            targetDir.resolve("generated-sources").toAbsolutePath().toString(),
+                            targetDir.toAbsolutePath().toString()));
 
             setDevModeRunnerJarFile(context);
             return context;

@@ -231,14 +231,21 @@ public class DevModeContext implements Serializable {
         private final String classesPath;
         private final String resourcePath;
         private final String resourcesOutputPath;
+        private final String preBuildOutputDir;
+        private final String sourceParent;
+        private final String targetDir;
 
         public ModuleInfo(AppArtifactKey appArtifactKey,
                 String name,
                 String projectDirectory,
                 Set<String> sourcePaths,
                 String classesPath,
-                String resourcePath) {
-            this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
+                String resourcePath,
+                String sourceParent,
+                String preBuildOutputDir,
+                String targetDir) {
+            this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath, sourceParent,
+                    preBuildOutputDir, targetDir);
         }
 
         public ModuleInfo(
@@ -247,7 +254,10 @@ public class DevModeContext implements Serializable {
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath,
-                String resourceOutputPath) {
+                String resourceOutputPath,
+                String sourceParent,
+                String preBuildOutputDir,
+                String targetDir) {
             this.appArtifactKey = appArtifactKey;
             this.name = name;
             this.projectDirectory = projectDirectory;
@@ -255,6 +265,9 @@ public class DevModeContext implements Serializable {
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
             this.resourcesOutputPath = resourceOutputPath;
+            this.sourceParent = sourceParent;
+            this.preBuildOutputDir = preBuildOutputDir;
+            this.targetDir = targetDir;
         }
 
         public String getName() {
@@ -269,8 +282,14 @@ public class DevModeContext implements Serializable {
             return Collections.unmodifiableSet(sourcePaths);
         }
 
+        public String getSourceParent() {
+            return sourceParent;
+        }
+
         public void addSourcePaths(Collection<String> additionalPaths) {
-            additionalPaths.stream().map(p -> projectDirectory + File.separator + p).forEach(sourcePaths::add);
+            additionalPaths.stream()
+                    .map(p -> p.startsWith("/") ? p : (projectDirectory + File.separator + p))
+                    .forEach(sourcePaths::add);
         }
 
         public String getClassesPath() {
@@ -283,6 +302,14 @@ public class DevModeContext implements Serializable {
 
         public String getResourcesOutputPath() {
             return resourcesOutputPath;
+        }
+
+        public String getPreBuildOutputDir() {
+            return preBuildOutputDir;
+        }
+
+        public String getTargetDir() {
+            return targetDir;
         }
 
         public AppArtifactKey getAppArtifactKey() {

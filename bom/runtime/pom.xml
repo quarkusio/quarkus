@@ -1198,6 +1198,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow-websockets</artifactId>
                 <version>${project.version}</version>
             </dependency>

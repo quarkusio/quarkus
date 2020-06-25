@@ -108,6 +108,10 @@ public class DevMojo extends AbstractMojo {
             "install",
             "deploy"));
 
+    private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
+    private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
+    private static final String QUARKUS_PREPARE_GOAL = "prepare";
+
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
     private static final String MAVEN_RESOURCES_PLUGIN = "maven-resources-plugin";
@@ -373,7 +377,12 @@ public class DevMojo extends AbstractMojo {
     private void handleAutoCompile() throws MojoExecutionException {
         //we check to see if there was a compile (or later) goal before this plugin
         boolean compileNeeded = true;
+        boolean prepareNeeded = true;
         for (String goal : session.getGoals()) {
+            if (goal.endsWith("quarkus:prepare")) {
+                prepareNeeded = false;
+            }
+
             if (POST_COMPILE_PHASES.contains(goal)) {
                 compileNeeded = false;
                 break;
@@ -385,8 +394,23 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
+            if (prepareNeeded) {
+                triggerPrepare();
+            }
             triggerCompile();
         }
+    }
+
+    private void triggerPrepare() throws MojoExecutionException {
+        Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
+        MojoExecutor.executeMojo(
+                quarkusPlugin,
+                MojoExecutor.goal(QUARKUS_PREPARE_GOAL),
+                MojoExecutor.configuration(),
+                MojoExecutor.executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
     }
 
     private void triggerCompile() throws MojoExecutionException {
@@ -482,6 +506,7 @@ public class DevMojo extends AbstractMojo {
 
         String projectDirectory = null;
         Set<String> sourcePaths = null;
+        Set<String> sourceGenPaths = null;
         String classesPath = null;
         String resourcePath = null;
 
@@ -506,6 +531,8 @@ public class DevMojo extends AbstractMojo {
                     .collect(Collectors.toSet());
         }
 
+        Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
+
         Path classesDir = localProject.getClassesDir();
         if (Files.isDirectory(classesDir)) {
             classesPath = classesDir.toAbsolutePath().toString();
@@ -514,12 +541,17 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(resourcesSourcesDir)) {
             resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
         }
+
+        Path targetDir = Paths.get(project.getBuild().getOutputDirectory()).getParent();
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(localProject.getKey(),
                 localProject.getArtifactId(),
                 projectDirectory,
                 sourcePaths,
                 classesPath,
-                resourcePath);
+                resourcePath,
+                sourceParent.toAbsolutePath().toString(),
+                targetDir.resolve("generated-sources").toAbsolutePath().toString(),
+                targetDir.toAbsolutePath().toString());
         if (root) {
             devModeContext.setApplicationRoot(moduleInfo);
         } else {

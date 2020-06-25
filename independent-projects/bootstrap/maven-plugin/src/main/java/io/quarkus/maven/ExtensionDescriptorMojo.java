@@ -139,13 +139,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter
     List<String> lesserPriorityArtifacts;
 
-    @Parameter(required = false, defaultValue = "${skipExtensionValidation}")
-    private boolean skipExtensionValidation;
+    @Parameter(required = false, defaultValue = "${forceExtensionValidation}")
+    private boolean forceExtensionValidation;
 
     @Override
     public void execute() throws MojoExecutionException {
 
-        if (!skipExtensionValidation) {
+        if (forceExtensionValidation) {
             validateExtensionDeps();
         }
 

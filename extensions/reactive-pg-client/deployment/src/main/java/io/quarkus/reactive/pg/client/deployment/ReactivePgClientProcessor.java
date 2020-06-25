@@ -51,7 +51,7 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBean,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             ShutdownContextBuildItem shutdown,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -81,7 +81,7 @@ class ReactivePgClientProcessor {
         pgPool.produce(new PgPoolBuildItem(pool));
 
         // Synthetic bean for PgPool
-        syntheticBean.produce(SyntheticBeanBuildItem.configure(PgPool.class).scope(Singleton.class).runtimeValue(pool)
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(PgPool.class).scope(Singleton.class).runtimeValue(pool)
                 .setRuntimeInit().done());
 
         boolean isDefault = true; // assume always the default pool for now

@@ -11,6 +11,9 @@ import javax.transaction.TransactionScoped;
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
+import com.arjuna.ats.internal.arjuna.utils.SocketProcessId;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.CommitMarkableResourceRecordRecoveryModule;
+import com.arjuna.ats.internal.jta.recovery.arjunacore.RecoverConnectableAtomicAction;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
@@ -74,15 +77,21 @@ class NarayanaJtaProcessor {
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(CDIDelegatingTransactionManager.class));
+
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(
                 "com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(CommitMarkableResourceRecordRecoveryModule.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(RecoverConnectableAtomicAction.class.getName()));
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
                 UserTransactionImple.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
                 TransactionManagerImple.class.getName(),
                 TransactionSynchronizationRegistryImple.class.getName(),
                 ObjectStoreEnvironmentBean.class.getName(),
-                ShadowNoFileLockStore.class.getName()));
+                ShadowNoFileLockStore.class.getName(),
+                SocketProcessId.class.getName()));
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);

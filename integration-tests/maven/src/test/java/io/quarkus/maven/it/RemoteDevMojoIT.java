@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -120,6 +121,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
     }
 
     @Test
+    @Disabled
     public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-resource-change-remote");
         agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-resource-change-local");

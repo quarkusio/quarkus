@@ -1,6 +1,6 @@
 package io.quarkus.it.kafka;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.testcontainers.containers.GenericContainer;
@@ -9,7 +9,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class SchemaRegistryTestResource implements QuarkusTestResourceLifecycleManager {
 
-    public GenericContainer<?> registry = new GenericContainer<>("apicurio/apicurio-registry-mem:1.1.0.Final")
+    public GenericContainer<?> registry = new GenericContainer<>("apicurio/apicurio-registry-mem:1.2.2.Final")
             .withExposedPorts(8080)
             .withEnv("QUARKUS_PROFILE", "prod")
             .withEnv("KAFKA_BOOTSTRAP_SERVERS", "localhost:19092")
@@ -19,9 +19,13 @@ public class SchemaRegistryTestResource implements QuarkusTestResourceLifecycleM
     @Override
     public Map<String, String> start() {
         registry.start();
-        return Collections
-                .singletonMap("schema.url",
-                        "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/ccompat");
+        Map<String, String> properties = new HashMap<>();
+        properties.put("schema.url.confluent",
+                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api/ccompat");
+        properties.put("schema.url.apicurio",
+                "http://" + registry.getContainerIpAddress() + ":" + registry.getMappedPort(8080) + "/api");
+
+        return properties;
     }
 
     @Override

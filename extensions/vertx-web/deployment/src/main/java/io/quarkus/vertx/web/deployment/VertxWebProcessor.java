@@ -4,18 +4,9 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.enterprise.context.ContextNotActiveException;
@@ -24,34 +15,15 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.inject.Singleton;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
+import org.jboss.jandex.*;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.*;
+import io.quarkus.arc.deployment.*;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
-import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.*;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -63,14 +35,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.*;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -79,10 +44,8 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
-import io.quarkus.vertx.web.runtime.RouteHandler;
-import io.quarkus.vertx.web.runtime.RouteMatcher;
-import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
-import io.quarkus.vertx.web.runtime.VertxWebRecorder;
+import io.quarkus.vertx.web.runtime.*;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -112,9 +75,11 @@ class VertxWebProcessor {
     private static final String VALUE_ORDER = "order";
     private static final String SLASH = "/";
 
-    private static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
-    private static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class,
-            "getActiveContext", InjectableContext.class, Class.class);
+    private static final MethodDescriptor ARC_CONTAINER = MethodDescriptor
+            .ofMethod(Arc.class, "container", ArcContainer.class);
+    private static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor
+            .ofMethod(ArcContainer.class,
+                    "getActiveContext", InjectableContext.class, Class.class);
     private static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
             InjectableBean.class, String.class);
     private static final MethodDescriptor BEAN_GET_SCOPE = MethodDescriptor.ofMethod(InjectableBean.class, "getScope",
@@ -122,16 +87,19 @@ class VertxWebProcessor {
     private static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class,
             CreationalContext.class);
-    private static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
-            Contextual.class);
+    private static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor
+            .ofMethod(Context.class, "get", Object.class,
+                    Contextual.class);
     private static final MethodDescriptor INJECTABLE_REF_PROVIDER_GET = MethodDescriptor.ofMethod(
             InjectableReferenceProvider.class,
             "get", Object.class,
             CreationalContext.class);
-    private static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy",
-            void.class, Object.class,
-            CreationalContext.class);
+    private static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor
+            .ofMethod(InjectableBean.class, "destroy",
+                    void.class, Object.class,
+                    CreationalContext.class);
     static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
+    public static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -221,8 +189,8 @@ class VertxWebProcessor {
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
 
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
-
-            String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
+            String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
+                    businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
 
@@ -320,7 +288,8 @@ class VertxWebProcessor {
         }
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
-            String handlerClass = generateHandler(filterMethod.getBean(), filterMethod.getMethod(), classOutput);
+            String handlerClass = generateHandler(new HandlerDescriptor(filterMethod.getMethod()),
+                    filterMethod.getBean(), filterMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -360,10 +329,16 @@ class VertxWebProcessor {
     }
 
     private void validateRouteMethod(BeanInfo bean, MethodInfo method, DotName[] validParamTypes) {
-        if (!method.returnType().kind().equals(Type.Kind.VOID)) {
-            throw new IllegalStateException(
-                    String.format("Route handler business method must return void [method: %s, bean: %s]", method, bean));
+        if (method.returnType().name().equals(DOTNAME_UNI)) {
+            List<Type> types = method.returnType().asParameterizedType().arguments();
+            if (types.isEmpty()) {
+                throw new IllegalStateException(
+                        String.format(
+                                "Route handler business returning a `Uni` must have a generic parameter [method: %s, bean: %s]",
+                                method, bean));
+            }
         }
+
         List<Type> params = method.parameters();
         boolean hasInvalidParam = true;
         if (params.size() == 1) {
@@ -381,7 +356,7 @@ class VertxWebProcessor {
         }
     }
 
-    private String generateHandler(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
+    private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -418,13 +393,14 @@ class VertxWebProcessor {
         }
 
         implementConstructor(bean, invokerCreator, beanField, contextField, containerField);
-        implementInvoke(bean, method, invokerCreator, beanField, contextField, containerField);
+        implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField);
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
     }
 
-    void implementConstructor(BeanInfo bean, ClassCreator invokerCreator, FieldCreator beanField, FieldCreator contextField,
+    void implementConstructor(BeanInfo bean, ClassCreator invokerCreator, FieldCreator beanField,
+            FieldCreator contextField,
             FieldCreator containerField) {
         MethodCreator constructor = invokerCreator.getMethodCreator("<init>", void.class);
         // Invoke super()
@@ -450,9 +426,10 @@ class VertxWebProcessor {
         constructor.returnValue(null);
     }
 
-    void implementInvoke(BeanInfo bean, MethodInfo method, ClassCreator invokerCreator, FieldCreator beanField,
+    void implementInvoke(HandlerDescriptor descriptor, BeanInfo bean, MethodInfo method, ClassCreator invokerCreator,
+            FieldCreator beanField,
             FieldCreator contextField, FieldCreator containerField) {
-        // The descriptor is: void invoke(RoutingContext context)
+        // The descriptor is: void invoke(RoutingContext rc)
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
         AssignableResultHandle beanInstanceHandle = invoke.createVariable(Object.class);
@@ -496,25 +473,63 @@ class VertxWebProcessor {
 
         ResultHandle paramHandle;
         MethodDescriptor methodDescriptor;
+        String returnType = descriptor.getReturnType().name().toString();
+
+        // TODO Make Routing Context optional, allow injected Response and Request individually.
+        ResultHandle rc = invoke.getMethodParam(0);
         if (method.parameters().get(0).name().equals(ROUTING_CONTEXT)) {
-            paramHandle = invoke.getMethodParam(0);
-            methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
-                    RoutingContext.class);
+            paramHandle = rc;
+            methodDescriptor = MethodDescriptor
+                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
+                            RoutingContext.class);
         } else if (method.parameters().get(0).name().equals(RX_ROUTING_CONTEXT)) {
             paramHandle = invoke.newInstance(
-                    MethodDescriptor.ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
-                    invoke.getMethodParam(0));
-            methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
-                    io.vertx.reactivex.ext.web.RoutingContext.class);
+                    MethodDescriptor
+                            .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
+                    rc);
+            methodDescriptor = MethodDescriptor
+                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
+                            io.vertx.reactivex.ext.web.RoutingContext.class);
         } else {
-            paramHandle = invoke.newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
-                    invoke.getMethodParam(0));
-            methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
-                    RoutingExchange.class);
+            paramHandle = invoke
+                    .newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
+                            rc);
+            methodDescriptor = MethodDescriptor
+                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
+                            RoutingExchange.class);
         }
 
         // Invoke the business method handler
-        invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandle);
+        ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandle);
+
+        // Get the response: HttpServerResponse response = rc.response()
+        ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, rc);
+        MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);
+        if (descriptor.isReturningUni()) {
+            // The method returns a Uni.
+            // We subscribe to this Uni and write the provided item in the HTTP response
+            // If the method returned null, we fail
+            // If the provided item is null and the method does not return a Uni<Void>, we fail
+            // If the provided item is null, and the method return a Uni<Void>, we reply with a 204 - NO CONTENT
+            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
+            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
+
+            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, rc, end, response);
+            FunctionCreator failureCallback = getUniOnFailureCallback(invoke, rc);
+
+            ResultHandle sub = invoke.invokeInterfaceMethod(Methods.SUBSCRIBE, res);
+            invoke.invokeVirtualMethod(Methods.SUBSCRIBE_WITH, sub, successCallback.getInstance(),
+                    failureCallback.getInstance());
+        } else if (descriptor.getContentType() != null) {
+            // The method returns "something" in a synchronous manner, write it into the response
+
+            // If the method returned null, we fail
+            // If the method returns string or buffer, the response.end method is used to write the response
+            // If the method returns an object, the result is mapped to JSON and written into the response
+
+            ResultHandle content = getContentToWrite(descriptor, response, res, invoke);
+            invoke.invokeInterfaceMethod(end, response, content);
+        }
 
         // Destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
@@ -522,6 +537,126 @@ class VertxWebProcessor {
                     beanInstanceHandle, creationlContextHandle);
         }
         invoke.returnValue(null);
+    }
+
+    /**
+     * Generates the following function depending on the payload type
+     *
+     * If the method returns a {@code Uni<Void>}
+     * 
+     * <pre>
+     *     item -> rc.response().setStatusCode(204).end();
+     * </pre>
+     *
+     * If the method returns a {@code Uni<Buffer>}:
+     * 
+     * <pre>
+     *     item -> {
+     *       if (item != null) {
+     *          Buffer buffer = getBuffer(item); // Manage RX and Mutiny buffer
+     *          rc.response().end(buffer);
+     *       } else {
+     *           rc.fail(new NullPointerException(...);
+     *       }
+     *     }
+     * </pre>
+     *
+     * If the method returns a {@code Uni<String>} :
+     * 
+     * <pre>
+     *     item -> {
+     *       if (item != null) {
+     *          rc.response().end(item);
+     *       } else {
+     *           rc.fail(new NullPointerException(...);
+     *       }
+     *     }
+     * </pre>
+     *
+     * If the method returns a {@code Uni<T>} :
+     * 
+     * <pre>
+     *     item -> {
+     *       if (item != null) {
+     *          String json = Json.encode(item);
+     *          rc.response().end(json);
+     *       } else {
+     *           rc.fail(new NullPointerException(...);
+     *       }
+     *     }
+     * </pre>
+     *
+     * This last version also set the {@code content-type} header to {@code application/json }if not set.
+     *
+     * @param descriptor the method descriptor
+     * @param invoke the main bytecode writer
+     * @param rc the reference to the routing context variable
+     * @param end the end method to use
+     * @param response the reference to the response variable
+     * @return the function creator
+     */
+    private FunctionCreator getUniOnItemCallback(HandlerDescriptor descriptor, MethodCreator invoke, ResultHandle rc,
+            MethodDescriptor end, ResultHandle response) {
+        FunctionCreator callback = invoke.createFunction(Consumer.class);
+        BytecodeCreator creator = callback.getBytecode();
+        if (Methods.isNoContent(descriptor)) { // Uni<Void> - so return a 204.
+            creator.invokeInterfaceMethod(Methods.SET_STATUS, response, creator.load(204));
+            creator.invokeInterfaceMethod(Methods.END, response);
+        } else {
+            // Check if the item is null
+            ResultHandle item = creator.getMethodParam(0);
+            BranchResult isItemNull = creator.ifNull(item);
+
+            BytecodeCreator itemIfNotNull = isItemNull.falseBranch();
+            ResultHandle content = getContentToWrite(descriptor, response, item, itemIfNotNull);
+            itemIfNotNull.invokeInterfaceMethod(end, response, content);
+            itemIfNotNull.close();
+
+            BytecodeCreator resultNull = isItemNull.trueBranch();
+            ResultHandle npe = Methods.createNpeBecauseItemIfNull(resultNull);
+            resultNull.invokeInterfaceMethod(Methods.FAIL, rc, npe);
+            resultNull.close();
+        }
+        Methods.returnAndClose(creator);
+        return callback;
+    }
+
+    /**
+     * Generates the following function:
+     *
+     * <pre>
+     *     throwable -> rc.fail(throwable);
+     * </pre>
+     *
+     * @param writer the bytecode writer
+     * @param rc the reference to the RoutingContext variable
+     * @return the function creator.
+     */
+    private FunctionCreator getUniOnFailureCallback(MethodCreator writer, ResultHandle rc) {
+        FunctionCreator callback = writer.createFunction(Consumer.class);
+        BytecodeCreator creator = callback.getBytecode();
+        Methods.fail(creator, rc, creator.getMethodParam(0));
+        Methods.returnAndClose(creator);
+        return callback;
+    }
+
+    private ResultHandle getContentToWrite(HandlerDescriptor descriptor, ResultHandle response, ResultHandle res,
+            BytecodeCreator writer) {
+        if (descriptor.isContentTypeString() || descriptor.isContentTypeBuffer()) {
+            return res;
+        }
+
+        if (descriptor.isContentTypeRxBuffer()) {
+            return writer.invokeVirtualMethod(Methods.RX_GET_DELEGATE, res);
+        }
+
+        if (descriptor.isContentTypeMutinyBuffer()) {
+            return writer.invokeVirtualMethod(Methods.MUTINY_GET_DELEGATE, res);
+        }
+
+        // Encode to Json
+        Methods.setContentTypeToJson(response, writer);
+        return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);
     }
 
     private static String dashify(String value) {
@@ -543,7 +678,8 @@ class VertxWebProcessor {
         }
         // First we need to group matchers that could potentially match the same request 
         Set<LinkedHashSet<RouteMatcher>> groups = new HashSet<>();
-        for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator.hasNext();) {
+        for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator
+                .hasNext();) {
             Entry<RouteMatcher, MethodInfo> entry = iterator.next();
             LinkedHashSet<RouteMatcher> group = new LinkedHashSet<>();
             group.add(entry.getKey());
@@ -603,15 +739,18 @@ class VertxWebProcessor {
             }
         }
         // methods not matching
-        if (m1.getMethods().length > 0 && m2.getMethods().length > 0 && !Arrays.equals(m1.getMethods(), m2.getMethods())) {
+        if (m1.getMethods().length > 0 && m2.getMethods().length > 0 && !Arrays
+                .equals(m1.getMethods(), m2.getMethods())) {
             return false;
         }
         // produces not matching
-        if (m1.getProduces().length > 0 && m2.getProduces().length > 0 && !Arrays.equals(m1.getProduces(), m2.getProduces())) {
+        if (m1.getProduces().length > 0 && m2.getProduces().length > 0 && !Arrays
+                .equals(m1.getProduces(), m2.getProduces())) {
             return false;
         }
         // consumes not matching
-        if (m1.getConsumes().length > 0 && m2.getConsumes().length > 0 && !Arrays.equals(m1.getConsumes(), m2.getConsumes())) {
+        if (m1.getConsumes().length > 0 && m2.getConsumes().length > 0 && !Arrays
+                .equals(m1.getConsumes(), m2.getConsumes())) {
             return false;
         }
         return true;

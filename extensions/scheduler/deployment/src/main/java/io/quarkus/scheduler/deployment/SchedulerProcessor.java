@@ -220,19 +220,19 @@ public class SchedulerProcessor {
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
-        for (ScheduledBusinessMethodItem businessMethod : scheduledMethods) {
-            ScheduledMethodMetadata scheduledMethod = new ScheduledMethodMetadata();
-            String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
+        for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
+            ScheduledMethodMetadata metadata = new ScheduledMethodMetadata();
+            String invokerClass = generateInvoker(scheduledMethod, classOutput);
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
-            scheduledMethod.setInvokerClassName(invokerClass);
+            metadata.setInvokerClassName(invokerClass);
             List<Scheduled> schedules = new ArrayList<>();
-            for (AnnotationInstance scheduled : businessMethod.getSchedules()) {
+            for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 schedules.add(annotationProxy.builder(scheduled, Scheduled.class).build(classOutput));
             }
-            scheduledMethod.setSchedules(schedules);
-            scheduledMethod.setMethodDescription(
-                    businessMethod.getMethod().declaringClass() + "#" + businessMethod.getMethod().name());
-            scheduledMetadata.add(scheduledMethod);
+            metadata.setSchedules(schedules);
+            metadata.setMethodDescription(
+                    scheduledMethod.getMethod().declaringClass() + "#" + scheduledMethod.getMethod().name());
+            scheduledMetadata.add(metadata);
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
@@ -242,7 +242,10 @@ public class SchedulerProcessor {
         return new FeatureBuildItem(Feature.SCHEDULER);
     }
 
-    private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
+    private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
+
+        BeanInfo bean = scheduledMethod.getBean();
+        MethodInfo method = scheduledMethod.getMethod();
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {

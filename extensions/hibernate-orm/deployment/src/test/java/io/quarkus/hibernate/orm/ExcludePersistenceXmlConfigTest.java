@@ -11,16 +11,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.enhancer.Address;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ExcludePersistenceXmlConfigTest {
 
+    //The system property used by the Hibernate ORM extension to disable parsing of persistence.xml resources:
+    private static String SKIP_PARSE_PERSISTENCE_XML = "SKIP_PARSE_PERSISTENCE_XML";
+
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(() -> System.setProperty(HibernateOrmProcessor.SKIP_PARSE_PERSISTENCE_XML, "true"))
-            .setAfterAllCustomizer(() -> System.getProperties().remove(HibernateOrmProcessor.SKIP_PARSE_PERSISTENCE_XML))
+            .setBeforeAllCustomizer(() -> System.setProperty(SKIP_PARSE_PERSISTENCE_XML, "true"))
+            .setAfterAllCustomizer(() -> System.getProperties().remove(SKIP_PARSE_PERSISTENCE_XML))
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(Address.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")

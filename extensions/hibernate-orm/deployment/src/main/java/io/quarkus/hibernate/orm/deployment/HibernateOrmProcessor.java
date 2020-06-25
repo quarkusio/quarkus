@@ -128,7 +128,7 @@ import net.bytebuddy.dynamic.DynamicType;
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class HibernateOrmProcessor {
-    public static final String SKIP_PARSE_PERSISTENCE_XML = "SKIP_PARSE_PERSISTENCE_XML";
+
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
@@ -162,7 +162,9 @@ public final class HibernateOrmProcessor {
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(LaunchModeBuildItem launchMode) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
-        watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
+        if (shouldIgnorePersistenceXmlResources()) {
+            watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
+        }
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem(INTEGRATOR_SERVICE_FILE));
 
         getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
@@ -171,10 +173,22 @@ public final class HibernateOrmProcessor {
         return watchedFiles;
     }
 
+    /**
+     * Undocumented feature: we allow setting the System property
+     * "SKIP_PARSE_PERSISTENCE_XML" to fully ignore any persistence.xml
+     * resource.
+     * 
+     * @return true if we're expected to ignore them
+     */
+    private boolean shouldIgnorePersistenceXmlResources() {
+        return Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
+    }
+
+    //Integration point: allow other extensions to define additional PersistenceXmlDescriptorBuildItem
     @BuildStep
     public void parsePersistenceXmlDescriptors(
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
-        if (!"true".equals(System.getProperty(SKIP_PARSE_PERSISTENCE_XML, "false"))) {
+        if (!shouldIgnorePersistenceXmlResources()) {
             List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
             for (ParsedPersistenceXmlDescriptor desc : explicitDescriptors) {
                 persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));

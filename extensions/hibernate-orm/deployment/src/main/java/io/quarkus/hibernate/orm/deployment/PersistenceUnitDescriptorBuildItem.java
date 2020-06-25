@@ -15,9 +15,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
+    private final boolean isReactive;
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor) {
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, boolean isReactive) {
         this.descriptor = descriptor;
+        this.isReactive = isReactive;
     }
 
     public ParsedPersistenceXmlDescriptor getDescriptor() {
@@ -42,4 +44,9 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
+    public boolean isReactive() {
+        return isReactive;
+    }
+
 }
+

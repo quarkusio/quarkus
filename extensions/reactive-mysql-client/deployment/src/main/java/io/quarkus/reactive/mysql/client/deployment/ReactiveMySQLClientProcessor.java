@@ -1,7 +1,9 @@
 package io.quarkus.reactive.mysql.client.deployment;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -42,7 +44,7 @@ class ReactiveMySQLClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, ShutdownContextBuildItem shutdown,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
@@ -65,11 +67,15 @@ class ReactiveMySQLClientProcessor {
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
 
-        RuntimeValue<MySQLPool> mySqlPool = recorder.configureMySQLPool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<MySQLPool> mySqlPool = recorder.configureMySQLPool(vertx.getVertx(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactiveMySQLConfig, isLegacy,
                 shutdown);
         mysqlPool.produce(new MySQLPoolBuildItem(mySqlPool));
+
+        // Synthetic bean for MySQLPool
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MySQLPool.class).scope(Singleton.class).runtimeValue(mySqlPool)
+                .setRuntimeInit().done());
 
         boolean isDefault = true; // assume always the default pool for now
         vertxPool.produce(new VertxPoolBuildItem(mySqlPool, DatabaseKind.MYSQL, isDefault));

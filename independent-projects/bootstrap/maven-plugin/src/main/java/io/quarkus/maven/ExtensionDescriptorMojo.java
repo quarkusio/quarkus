@@ -69,8 +69,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private static final String GROUP_ID = "group-id";
     private static final String ARTIFACT_ID = "artifact-id";
 
-    private static DefaultPrettyPrinter prettyPrinter = null;
-
     /**
      * The entry point to Aether, i.e. the component doing all the work.
      *
@@ -148,9 +146,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (!skipExtensionValidation) {
             validateExtensionDeps();
         }
-
-        prettyPrinter = new DefaultPrettyPrinter();
-        prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
@@ -256,6 +251,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (!extObject.has("description") && project.getDescription() != null) {
             extObject.put("description", project.getDescription());
         }
+
+        final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
+        prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
         try (BufferedWriter bw = Files
                 .newBufferedWriter(output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME))) {

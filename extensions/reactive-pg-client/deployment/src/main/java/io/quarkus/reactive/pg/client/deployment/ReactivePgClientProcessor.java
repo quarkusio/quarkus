@@ -1,7 +1,9 @@
 package io.quarkus.reactive.pg.client.deployment;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -49,7 +51,7 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBean,
             ShutdownContextBuildItem shutdown,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -72,11 +74,15 @@ class ReactivePgClientProcessor {
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
 
-        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
                 shutdown);
         pgPool.produce(new PgPoolBuildItem(pool));
+
+        // Synthetic bean for PgPool
+        syntheticBean.produce(SyntheticBeanBuildItem.configure(PgPool.class).scope(Singleton.class).runtimeValue(pool)
+                .setRuntimeInit().done());
 
         boolean isDefault = true; // assume always the default pool for now
         vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, isDefault));

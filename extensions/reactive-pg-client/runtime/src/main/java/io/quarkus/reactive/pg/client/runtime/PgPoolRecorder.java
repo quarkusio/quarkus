@@ -68,6 +68,10 @@ public class PgPoolRecorder {
                 dataSourceReactivePostgreSQLConfig);
         PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
+        if (dataSourceReactiveRuntimeConfig.threadLocal.isPresent() &&
+                dataSourceReactiveRuntimeConfig.threadLocal.get()) {
+            return new ThreadLocalPgPool(vertx, pgConnectOptions, poolOptions);
+        }
         return PgPool.pool(vertx, pgConnectOptions, poolOptions);
     }
 

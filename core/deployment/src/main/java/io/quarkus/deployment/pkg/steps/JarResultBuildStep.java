@@ -23,7 +23,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -38,6 +37,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
@@ -130,8 +130,6 @@ public class JarResultBuildStep {
     public static final String APP = "app";
     public static final String QUARKUS = "quarkus";
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
-
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -669,7 +667,7 @@ public class JarResultBuildStep {
                 .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
                 .collect(Collectors.toList()));
 
-        if (IS_WINDOWS) {
+        if (SystemUtils.IS_OS_WINDOWS) {
             log.warn("Uber JAR strategy is used for native image source JAR generation on Windows. This is done " +
                     "for the time being to work around a current GraalVM limitation on Windows concerning the " +
                     "maximum command length (see https://github.com/oracle/graal/issues/2387).");

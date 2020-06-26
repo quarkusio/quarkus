@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -237,7 +238,5 @@ public class AppCDSBuildStep {
     // copied from Java 9
     // TODO remove when we move to Java 11
 
-    private static final File NULL_FILE = new File(
-            (System.getProperty("os.name")
-                    .startsWith("Windows") ? "NUL" : "/dev/null"));
+    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
 }

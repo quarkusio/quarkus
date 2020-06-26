@@ -15,13 +15,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.IoUtils;
@@ -53,9 +53,6 @@ public class NativeImageBuildStep {
      * Name of the <em>environment</em> variable to retrieve JAVA_HOME
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
-
-    private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     /**
      * The name of the environment variable containing the system path.
@@ -97,13 +94,13 @@ public class NativeImageBuildStep {
             nativeImage = new ArrayList<>();
 
             String outputPath = outputDir.toAbsolutePath().toString();
-            if (IS_WINDOWS) {
+            if (SystemUtils.IS_OS_WINDOWS) {
                 outputPath = FileUtil.translateToVolumePath(outputPath);
             }
             Collections.addAll(nativeImage, containerRuntime, "run", "-v",
                     outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
 
-            if (IS_LINUX) {
+            if (SystemUtils.IS_OS_LINUX) {
                 if ("docker".equals(containerRuntime)) {
                     String uid = getLinuxID("-ur");
                     String gid = getLinuxID("-gr");
@@ -143,7 +140,7 @@ public class NativeImageBuildStep {
             }
 
         } else {
-            if (IS_LINUX) {
+            if (SystemUtils.IS_OS_LINUX) {
                 noPIE = detectNoPIE();
             }
 
@@ -312,7 +309,7 @@ public class NativeImageBuildStep {
                         + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                         + " will be removed in a future Quarkus version.");
             }
-            if (!nativeConfig.enableServer && !IS_WINDOWS) {
+            if (!nativeConfig.enableServer && !SystemUtils.IS_OS_WINDOWS) {
                 command.add("--no-server");
             }
             if (nativeConfig.enableVmInspection) {
@@ -346,7 +343,7 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, command);
             }
-            if (IS_WINDOWS && !(isContainerBuild)) {
+            if (SystemUtils.IS_OS_WINDOWS && !(isContainerBuild)) {
                 //once image is generated it gets added .exe on Windows
                 executableName = executableName + ".exe";
             }
@@ -398,7 +395,7 @@ public class NativeImageBuildStep {
 
     private RuntimeException imageGenerationFailed(int exitValue, List<String> command) {
         if (exitValue == OOM_ERROR_VALUE) {
-            if (command.contains("docker") && !IS_LINUX) {
+            if (command.contains("docker") && !SystemUtils.IS_OS_LINUX) {
                 return new RuntimeException("Image generation failed. Exit code was " + exitValue
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
                         + QUARKUS_XMX_PROPERTY + "\" property");
@@ -423,7 +420,7 @@ public class NativeImageBuildStep {
     }
 
     private static File getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env) {
-        String imageName = IS_WINDOWS ? "native-image.cmd" : "native-image";
+        String imageName = SystemUtils.IS_OS_WINDOWS ? "native-image.cmd" : "native-image";
         if (graalVmHome.isPresent()) {
             File file = Paths.get(graalVmHome.get(), "bin", imageName).toFile();
             if (file.exists()) {

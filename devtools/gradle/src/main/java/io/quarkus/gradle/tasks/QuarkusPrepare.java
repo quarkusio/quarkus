@@ -65,7 +65,6 @@ public class QuarkusPrepare extends QuarkusTask {
                 String generateSourcesDir = test ? "quarkus-test-generated-sources" : "quarkus-generated-sources";
                 final SourceSet generatedSources = javaConvention.getSourceSets().create(generateSourcesDir);
                 generatedSources.getOutput().dir(generateSourcesDir);
-
                 List<Path> paths = new ArrayList<>();
                 generatedSources.getOutput()
                         .filter(f -> f.getName().equals(generateSourcesDir))
@@ -76,22 +75,23 @@ public class QuarkusPrepare extends QuarkusTask {
 
                 getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
                         sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
-                QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
 
+                QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
                 Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
+
                 Optional<Method> initAndRun = Arrays.stream(codeGenerator.getMethods())
                         .filter(m -> m.getName().equals(INIT_AND_RUN))
                         .findAny();
                 if (!initAndRun.isPresent()) {
                     throw new GradleException("Failed to find " + INIT_AND_RUN + " method in " + CodeGenerator.class.getName());
                 }
-
                 initAndRun.get().invoke(null, deploymentClassLoader,
                         sourcesDirectories,
                         paths.iterator().next(),
                         buildDir,
                         sourceRegistrar,
                         appCreationContext.getAppModel());
+
             }
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
             throw new GradleException("Failed to generate sources in the QuarkusPrepare task", e);

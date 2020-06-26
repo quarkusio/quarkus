@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -55,6 +56,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -166,6 +168,12 @@ public class QuarkusTestExtension
             final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
             if (appResourcesLocation != null) {
                 rootBuilder.add(appResourcesLocation);
+            }
+
+            Path root = Paths.get("").normalize().toAbsolutePath();
+            // If gradle project running directly with IDE
+            if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
+                BuildToolHelper.enableGradleAppModel(root, "TEST");
             }
 
             runnerBuilder.setApplicationRoot(rootBuilder.build());

@@ -21,6 +21,10 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.model.ModelParameter;
+import io.quarkus.bootstrap.resolver.model.QuarkusModel;
+import io.quarkus.bootstrap.resolver.model.impl.ModelParameterImpl;
+import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
 
@@ -163,7 +167,22 @@ public class QuarkusPluginExtension {
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
-        return new AppModelGradleResolver(project, mode);
+        return new AppModelGradleResolver(project, getQuarkusModel(mode));
+    }
+
+    public QuarkusModel getQuarkusModel() {
+        return getQuarkusModel(LaunchMode.NORMAL);
+    }
+
+    public QuarkusModel getQuarkusModel(LaunchMode mode) {
+        return create(project, mode);
+    }
+
+    private QuarkusModel create(Project project, LaunchMode mode) {
+        QuarkusModelBuilder builder = new QuarkusModelBuilder();
+        ModelParameter params = new ModelParameterImpl();
+        params.setMode(mode.toString());
+        return (QuarkusModel) builder.buildAll(QuarkusModel.class.getName(), params, project);
     }
 
     /**
@@ -179,4 +198,5 @@ public class QuarkusPluginExtension {
         }
         return result;
     }
+
 }

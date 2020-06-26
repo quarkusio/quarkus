@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
@@ -26,8 +28,10 @@ import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
+import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
@@ -67,9 +71,17 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "nativeTestImplementation";
     public static final String NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "nativeTestRuntimeOnly";
 
+    private final ToolingModelBuilderRegistry registry;
+
+    @Inject
+    public QuarkusPlugin(ToolingModelBuilderRegistry registry) {
+        this.registry = registry;
+    }
+
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
+        registerModel();
         // register extension
         final QuarkusPluginExtension quarkusExt = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class,
                 project);
@@ -185,6 +197,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .map(File::toPath)
                 .map(Path::getParent)
                 .collect(Collectors.toSet());
+    }
+
+    private void registerModel() {
+        registry.register(new QuarkusModelBuilder());
     }
 
     private void verifyGradleVersion() {

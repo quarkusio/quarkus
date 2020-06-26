@@ -1,7 +1,9 @@
 package io.quarkus.gradle;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -19,13 +21,23 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         List<String> command = new LinkedList<>();
         command.add(getGradleWrapperCommand());
         command.add(GRADLE_NO_DAEMON);
+        command.add("--stacktrace");
         command.addAll(Arrays.asList(args));
+
+        File logOutput = new File(projectDir, "command-output.log");
+
         Process p = new ProcessBuilder()
                 .directory(projectDir)
                 .command(command)
+                .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                .redirectOutput(logOutput)
                 .start();
+
         p.waitFor(5, TimeUnit.MINUTES);
-        return BuildResult.of(p.getInputStream());
+
+        try (InputStream is = new FileInputStream(logOutput)) {
+            return BuildResult.of(is);
+        }
     }
 
     private String getGradleWrapperCommand() {

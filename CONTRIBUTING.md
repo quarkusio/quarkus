@@ -88,7 +88,7 @@ In this command we use the groupId and artifactId of the module to identify it.
 
 ##### Running a single test
 
-Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson[here]).
+Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
 One way to accomplish this is by executing the following command:
 
 ```

@@ -8,7 +8,7 @@
     <version>\${version}</version>
     <properties>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <surefire-plugin.version>2.22.0</surefire-plugin.version>
+        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <compiler-plugin.version>3.8.1</compiler-plugin.version>

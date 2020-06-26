@@ -606,12 +606,13 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 * Methods of the `org.springframework.data.repository.query.QueryByExampleExecutor` interface - if any of these are invoked, a Runtime exception will be thrown.
 * QueryDSL support. No attempt will be made to generate implementations of any of the QueryDSL related repositories.
 * Customizing the base repository for all repository interfaces in the code base.
-
-In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
+** In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
-
 * Using `java.util.concurrent.Future` and classes that extend it as return types of repository methods.
 * Native and named queries when using `@Query`
+* https://github.com/spring-projects/spring-data-jpa/blob/master/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
+via `Persistable.isNew(...)` or `EntityInformation`.
+** As of Quarkus 1.6.0, only "Version-Property and Id-Property inspection" is implemented (which should cover most cases).
 
 The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 

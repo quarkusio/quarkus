@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Quarkus security allows you to define security authorization requirements for your code using annotations and/or configuration, and provides
 several ways to load security authentication information using Quarkus extensions.
 
-## Authentication sources
+== Authentication sources
 
 Quarkus supports several sources to load authentication information from. You need to import at least one of the following extensions
 in order for Quarkus to know how to find the authentication information to check for authorizations:

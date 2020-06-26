@@ -10,26 +10,35 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -74,8 +83,13 @@ public class NativeImageBuildStep {
     public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             final Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+        if (nativeConfig.debug.enabled) {
+            copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
+        }
+
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
         log.info("Building native image from " + runnerJar);
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
@@ -164,7 +178,7 @@ public class NativeImageBuildStep {
             nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
         }
 
-        final Optional<String> graalVMVersion;
+        final GraalVM.Version graalVMVersion;
 
         try {
             List<String> versionCommand = new ArrayList<>(nativeImage);
@@ -176,16 +190,14 @@ public class NativeImageBuildStep {
             versionProcess.waitFor();
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                graalVMVersion = reader.lines().filter((l) -> l.startsWith("GraalVM Version")).findFirst();
+                graalVMVersion = GraalVM.Version.of(reader.lines());
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to get GraalVM version", e);
         }
 
-        boolean isMandrel = false;
-        if (graalVMVersion.isPresent()) {
-            checkGraalVMVersion(graalVMVersion.get());
-            isMandrel = graalVMVersion.get().contains("Mandrel");
+        if (graalVMVersion.isDetected()) {
+            checkGraalVMVersion(graalVMVersion);
         } else {
             log.error("Unable to get GraalVM version from the native-image binary.");
         }
@@ -260,7 +272,17 @@ public class NativeImageBuildStep {
                 command.add("-H:+ReportExceptionStackTraces");
             }
             if (nativeConfig.debug.enabled) {
-                command.add("-H:GenerateDebugInfo=1");
+                if (graalVMVersion.isMandrel() || graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_1)) {
+                    command.add("-g");
+
+                    final Path javaSourcesPath = Paths.get("..", "..", "src", "main", "java");
+                    if (outputDir.resolve(javaSourcesPath).toFile().exists()) {
+                        command.add("-H:DebugInfoSourceSearchPath=" + javaSourcesPath.toString());
+                    }
+
+                    final Path sourcesCachePath = outputDir.getParent().resolve("sources-cache");
+                    command.add("-H:DebugInfoSourceCacheRoot=" + sourcesCachePath.toString());
+                }
             }
             if (nativeConfig.debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=" + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
@@ -308,7 +330,7 @@ public class NativeImageBuildStep {
                         + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
                         + " will be removed in a future Quarkus version.");
             }
-            if (!nativeConfig.enableServer && !SystemUtils.IS_OS_WINDOWS && !isMandrel) {
+            if (!nativeConfig.enableServer && !SystemUtils.IS_OS_WINDOWS && !graalVMVersion.isMandrel()) {
                 command.add("--no-server");
             }
             if (nativeConfig.enableVmInspection) {
@@ -363,7 +385,59 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
+        } finally {
+            if (nativeConfig.debug.enabled) {
+                removeJarSourcesFromLib(outputTargetBuildItem);
+            }
         }
+    }
+
+    private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
+        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+
+        final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
+        for (AppDependency appDep : appDeps) {
+            final AppArtifact depArtifact = appDep.getArtifact();
+            if (depArtifact.getType().equals("jar")) {
+                for (Path resolvedDep : depArtifact.getPaths()) {
+                    if (!Files.isDirectory(resolvedDep)) {
+                        // Do we need to handle transformed classes?
+                        // Their bytecode might have been modified but is there source for such modification?
+                        final Path jarSourceDep = toJarSource(resolvedDep);
+                        if (jarSourceDep.toFile().exists()) {
+                            final String fileName = depArtifact.getGroupId() + "." + jarSourceDep.getFileName();
+                            final Path targetPath = libDir.resolve(fileName);
+                            try {
+                                Files.copy(jarSourceDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                throw new RuntimeException("Unable to copy from " + jarSourceDep + " to " + targetPath, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static Path toJarSource(Path path) {
+        final Path parent = path.getParent();
+        final String fileName = path.getFileName().toString();
+        final int extensionIndex = fileName.lastIndexOf('.');
+        final String sourcesFileName = String.format("%s-sources.jar", fileName.substring(0, extensionIndex));
+        return parent.resolve(sourcesFileName);
+    }
+
+    private void removeJarSourcesFromLib(OutputTargetBuildItem outputTargetBuildItem) {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
+        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+
+        final File[] jarSources = libDir.toFile()
+                .listFiles((file, name) -> name.endsWith("-sources.jar"));
+        Stream.of(Objects.requireNonNull(jarSources)).forEach(File::delete);
     }
 
     private void handleAdditionalProperties(NativeConfig nativeConfig, List<String> command, boolean isContainerBuild,
@@ -416,13 +490,13 @@ public class NativeImageBuildStep {
         }
     }
 
-    private void checkGraalVMVersion(String version) {
+    private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.", "19.3.", "20.0.");
-        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
-        if (vmVersionIsObsolete) {
+        if (version.isObsolete()) {
+            final int major = GraalVM.Version.CURRENT.major;
+            final int minor = GraalVM.Version.CURRENT.minor;
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version + "."
-                    + " Quarkus currently supports 20.1.0. Please upgrade GraalVM to this version.");
+                    + " Quarkus currently supports " + major + " ." + minor + ".0. Please upgrade GraalVM to this version.");
         }
     }
 
@@ -570,6 +644,106 @@ public class NativeImageBuildStep {
             if (process != null) {
                 process.destroy();
             }
+        }
+    }
+
+    protected static final class GraalVM {
+        static final class Version implements Comparable<Version> {
+            private static final Pattern PATTERN = Pattern.compile(
+                    "GraalVM Version ((1|[1-9][0-9]).([0-3]).[0-9]|\\p{XDigit}*)[^(\n$]*(\\(Mandrel Distribution\\))?\\s*");
+
+            static final Version UNVERSIONED = new Version(-1, -1, Distribution.ORACLE);
+            static final Version SNAPSHOT_ORACLE = new Version(Integer.MAX_VALUE, Integer.MAX_VALUE, Distribution.ORACLE);
+            static final Version SNAPSHOT_MANDREL = new Version(Integer.MAX_VALUE, Integer.MAX_VALUE, Distribution.MANDREL);
+            static final Version VERSION_20_1 = new Version(20, 1, Distribution.ORACLE);
+            static final Version CURRENT = VERSION_20_1;
+
+            final int major;
+            final int minor;
+            final Distribution distro;
+
+            Version(int major, int minor, Distribution distro) {
+                this.major = major;
+                this.minor = minor;
+                this.distro = distro;
+            }
+
+            boolean isDetected() {
+                return this != UNVERSIONED;
+            }
+
+            boolean isObsolete() {
+                return this.compareTo(CURRENT) < 0;
+            }
+
+            boolean isMandrel() {
+                return distro == Distribution.MANDREL;
+            }
+
+            boolean isSnapshot() {
+                return this == SNAPSHOT_ORACLE || this == SNAPSHOT_MANDREL;
+            }
+
+            boolean isNewerThan(Version version) {
+                return this.compareTo(version) > 0;
+            }
+
+            @Override
+            public int compareTo(Version o) {
+                if (major > o.major)
+                    return 1;
+
+                if (major == o.major) {
+                    if (minor > o.minor)
+                        return 1;
+                    else if (minor == o.minor)
+                        return 0;
+                }
+
+                return -1;
+            }
+
+            static Version of(Stream<String> lines) {
+                final Iterator<String> it = lines.iterator();
+                while (it.hasNext()) {
+                    final String line = it.next();
+                    final Matcher matcher = PATTERN.matcher(line);
+                    if (matcher.find() && matcher.groupCount() >= 3) {
+                        final String distro = matcher.group(4);
+                        if (isSnapshot(matcher.group(2))) {
+                            return isMandrel(distro) ? SNAPSHOT_MANDREL : SNAPSHOT_ORACLE;
+                        } else {
+                            return new Version(
+                                    Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                                    isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
+                        }
+                    }
+                }
+
+                return UNVERSIONED;
+            }
+
+            private static boolean isSnapshot(String s) {
+                return s == null;
+            }
+
+            private static boolean isMandrel(String s) {
+                return "(Mandrel Distribution)".equals(s);
+            }
+
+            @Override
+            public String toString() {
+                return "Version{" +
+                        "major=" + major +
+                        ", minor=" + minor +
+                        ", distro=" + distro +
+                        '}';
+            }
+        }
+
+        enum Distribution {
+            ORACLE,
+            MANDREL;
         }
     }
 }

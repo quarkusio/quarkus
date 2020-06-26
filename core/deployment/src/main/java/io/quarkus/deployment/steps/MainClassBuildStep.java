@@ -75,6 +75,7 @@ import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.appcds.AppCDSUtil;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.util.StepTiming;
 
 public class MainClassBuildStep {
 
@@ -93,9 +94,17 @@ public class MainClassBuildStep {
             JAVAX_NET_SSL_TRUST_STORE_PASSWORD));
 
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
+    public static final String PRINT_STARTUP_TIMES_PROPERTY = "quarkus.debug.print-startup-times";
 
     private static final FieldDescriptor STARTUP_CONTEXT_FIELD = FieldDescriptor.of(Application.APP_CLASS_NAME, STARTUP_CONTEXT,
             StartupContext.class);
+
+    public static final MethodDescriptor PRINT_STEP_TIME_METHOD = ofMethod(StepTiming.class.getName(), "printStepTime",
+            void.class, StartupContext.class);
+    public static final MethodDescriptor CONFIGURE_STEP_TIME_ENABLED = ofMethod(StepTiming.class.getName(), "configureEnabled",
+            void.class);
+    public static final MethodDescriptor CONFIGURE_STEP_TIME_START = ofMethod(StepTiming.class.getName(), "configureStart",
+            void.class);
 
     @BuildStep
     void build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
@@ -141,6 +150,8 @@ public class MainClassBuildStep {
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(ProfileManager.class, "setLaunchMode", void.class, LaunchMode.class),
                 lm);
 
+        mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
+
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
 
         // ensure that the config class is initialized
@@ -155,6 +166,7 @@ public class MainClassBuildStep {
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
         TryBlock tryBlock = mv.tryBlock();
+        tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
             writeRecordedBytecode(holder.getBytecodeRecorder(), null, substitutions, loaders, gizmoOutput, startupContext,
                     tryBlock);
@@ -243,8 +255,10 @@ public class MainClassBuildStep {
                 MethodDescriptor.ofMethod(StartupContext.class, "setCommandLineArguments", void.class, String[].class),
                 startupContext, mv.getMethodParam(0));
 
-        tryBlock = mv.tryBlock();
+        mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
 
+        tryBlock = mv.tryBlock();
+        tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             writeRecordedBytecode(holder.getBytecodeRecorder(), holder.getGeneratedStartupContextClassName(), substitutions,
                     loaders, gizmoOutput, startupContext, tryBlock);
@@ -431,6 +445,7 @@ public class MainClassBuildStep {
                 .newInstance(ofConstructor(recorder != null ? recorder.getClassName() : fallbackGeneratedStartupTaskClassName));
         bytecodeCreator.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
                 startupContext);
+        bytecodeCreator.invokeStaticMethod(PRINT_STEP_TIME_METHOD, startupContext);
     }
 
     /**

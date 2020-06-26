@@ -34,6 +34,7 @@ public class StartupContext implements Closeable {
         }
     };
     private String[] commandLineArgs;
+    private String currentBuildStepName;
 
     public StartupContext() {
         values.put(ShutdownContext.class.getName(), shutdownContext);
@@ -89,5 +90,15 @@ public class StartupContext implements Closeable {
     @SuppressWarnings("unused")
     public void setCommandLineArguments(String[] commandLineArguments) {
         this.commandLineArgs = commandLineArguments;
+    }
+
+    @SuppressWarnings("unused")
+    public String getCurrentBuildStepName() {
+        return currentBuildStepName;
+    }
+
+    @SuppressWarnings("unused")
+    public void setCurrentBuildStepName(String currentBuildStepName) {
+        this.currentBuildStepName = currentBuildStepName;
     }
 }

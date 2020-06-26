@@ -82,7 +82,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     public B types(Class<?>... types) {
         for (Class<?> type : types) {
-            this.types.add(Type.create(DotName.createSimple(type.getName()), Kind.CLASS));
+            addType(type);
         }
         return self();
     }
@@ -100,6 +100,10 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     public B addType(Type type) {
         this.types.add(type);
         return self();
+    }
+
+    public B addType(Class<?> type) {
+        return addType(DotName.createSimple(type.getName()));
     }
 
     public B addQualifier(Class<? extends Annotation> annotationClass) {

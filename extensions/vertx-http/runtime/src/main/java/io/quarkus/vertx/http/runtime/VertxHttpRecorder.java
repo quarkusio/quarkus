@@ -734,7 +734,7 @@ public class VertxHttpRecorder {
 
         Handler<RoutingContext> requestHandler = handler;
         if (blocking == HandlerType.BLOCKING) {
-            vr.blockingHandler(requestHandler);
+            vr.blockingHandler(requestHandler, false);
         } else if (blocking == HandlerType.FAILURE) {
             vr.failureHandler(requestHandler);
         } else {

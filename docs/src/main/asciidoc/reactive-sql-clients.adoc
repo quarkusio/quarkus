@@ -485,47 +485,42 @@ All these operations are asynchronous:
 * `client.begin()` returns a `Uni<Transaction>`
 * `client.commit()` and `client.rollback()` return `Uni<Void>`
 
+Managing transactions in the reactive programming world can be cumbersome.
+Instead of writing repetitive and complex (thus error-prone!) code, you can use the `io.vertx.mutiny.sqlclient.SqlClientHelper`.
+
 The following snippet shows how to run 2 insertions in the same transaction:
 
 [source, java]
 ----
 public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
-    return client.begin()
-            .flatMap(tx -> {
-                Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
-                        .execute(Tuple.of(fruit1.name));
-                Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
-                        .execute(Tuple.of(fruit2.name));
+    return SqlClientHelper.inTransactionUni(client, tx -> {
+        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+                .execute(Tuple.of(fruit1.name));
+        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)")
+                .execute(Tuple.of(fruit2.name));
 
-                return insertOne.and(insertTwo)
-                        // Ignore the results (the two ids)
-                        .onItem().ignore().andContinueWithNull()
-                        // on success, commit
-                        .onItem().produceUni(x -> tx.commit())
-                        // on failure rollback
-                        .onFailure().recoverWithUni(tx::rollback);
-            });
+        return insertOne.and(insertTwo)
+                // Ignore the results (the two ids)
+                .onItem().ignore().andContinueWithNull();
+    });
 }
 ----
 
-In this example, the two insertions are not dependent on each other and are executed concurrently (but in the same transaction).
-This transaction is committed on success and rolled back on failure.
+In this example, the transaction is automatically committed on success or rolled back on failure.
 
 You can also create dependent actions as follows:
 
 [source, java]
 ----
-return this.client.begin()
-       .flatMap(tx -> tx
-               .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING (id)",
-                       Tuple.of(person.getFirstName(),person.getLastName()))
+return SqlClientHelper.inTransactionUni(client, tx -> tx
 
-               .onItem().produceUni(id-> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)",
-                       Tuple.of(id.iterator().next().getLong("id"),person.getLastName())))
+        .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING (id)")
+                .execute(Tuple.of(person.getFirstName(), person.getLastName()))
 
-               .onItem().produceUni(res -> tx.commit())
-               .onFailure().recoverWithUni(ex-> tx.rollback())
-       );
+        .onItem().produceUni(id -> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
+                .execute(Tuple.of(id.iterator().next().getLong("id"), person.getLastName())))
+
+        .onItem().ignore().andContinueWithNull());
 ----
 
 == Configuration Reference

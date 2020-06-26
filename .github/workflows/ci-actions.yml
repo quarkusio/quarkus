@@ -87,7 +87,7 @@ jobs:
           mvn -e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install
       - name: Tar Maven Repo
         shell: bash
-        run: tar -czvf maven-repo.tgz -C ~ .m2/repository
+        run: tar -czf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
         uses: actions/upload-artifact@v1
         with:
@@ -219,7 +219,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
@@ -267,7 +267,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Gradle
         uses: eskatos/gradle-command-action@v1
         env:
@@ -300,7 +300,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         shell: bash
         run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dformat.skip -pl !integration-tests/gradle install
@@ -337,7 +337,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Gradle
         uses: eskatos/gradle-command-action@v1
         env:
@@ -370,7 +370,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         run: mvn -B --settings .github/mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install
       - name: Verify with Maven
@@ -624,7 +624,7 @@ jobs:
           path: .
       - name: Extract Maven Repo
         shell: bash
-        run: tar -xzvf maven-repo.tgz -C ~
+        run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Maven
         env: 
           TEST_MODULES: ${{matrix.test-modules}}

@@ -21,12 +21,13 @@ public class FaultToleranceTestCase {
     @Test
     public void testRetry() throws Exception {
         URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
+        try (InputStream in = connection.getInputStream()) {
+            byte[] buf = new byte[100];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
         }
         Assertions.assertEquals("2:Lucie", new String(out.toByteArray(), StandardCharsets.UTF_8));
     }

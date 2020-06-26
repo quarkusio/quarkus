@@ -105,8 +105,20 @@ public class ProcessUtil {
      * @param process The process whose STDERR needs to be streamed.
      */
     public static void streamErrorToSysErr(final Process process) {
+        streamErrorTo(System.err, process);
+    }
+
+    /**
+     * Streams the {@link Process process'} {@code STDERR} to the given
+     * {@code printStream}. This creates and starts a thread to stream the contents.
+     * The {@link Process} is expected to have been started in {@link java.lang.ProcessBuilder.Redirect#PIPE}
+     * mode
+     *
+     * @param process The process whose STDERR needs to be streamed.
+     */
+    public static void streamErrorTo(final PrintStream printStream, final Process process) {
         final InputStream processStdErr = process.getErrorStream();
-        final Thread t = new Thread(new Streamer(processStdErr, System.err));
+        final Thread t = new Thread(new Streamer(processStdErr, printStream));
         t.setName("Process stderr streamer");
         t.setDaemon(true);
         t.start();

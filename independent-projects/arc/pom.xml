@@ -45,6 +45,8 @@
         <version.jakarta-annotation>1.3.5</version.jakarta-annotation>
         <version.gizmo>1.0.3.Final</version.gizmo>
         <version.jpa>2.2.3</version.jpa>
+
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
     </properties>
 
@@ -247,6 +249,13 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${version.surefire.plugin}</version>
+                    <configuration>
+                        <argLine>${jacoco.agent.argLine}</argLine>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>

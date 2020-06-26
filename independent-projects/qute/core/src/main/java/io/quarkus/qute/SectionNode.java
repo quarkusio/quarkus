@@ -17,13 +17,13 @@ class SectionNode implements TemplateNode {
         return new Builder(helperName, origin);
     }
 
+    final String name;
     final List<SectionBlock> blocks;
-
     private final SectionHelper helper;
-
     private final Origin origin;
 
-    SectionNode(List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+        this.name = name;
         this.blocks = ImmutableList.copyOf(blocks);
         this.helper = helper;
         this.origin = origin;
@@ -36,6 +36,12 @@ class SectionNode implements TemplateNode {
 
     public Origin getOrigin() {
         return origin;
+    }
+
+    void removeNodes(Set<TemplateNode> nodes) {
+        for (SectionBlock block : blocks) {
+            block.removeNodes(nodes);
+        }
     }
 
     @Override
@@ -84,7 +90,7 @@ class SectionNode implements TemplateNode {
         }
 
         SectionNode build() {
-            return new SectionNode(blocks,
+            return new SectionNode(helperName, blocks,
                     factory.initialize(new SectionInitContextImpl(engine, blocks, this::createParserError)), origin);
         }
 

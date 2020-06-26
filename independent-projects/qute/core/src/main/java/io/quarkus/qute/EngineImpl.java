@@ -41,17 +41,15 @@ class EngineImpl implements Engine {
     private final PublisherFactory publisherFactory;
     private final AtomicLong idGenerator = new AtomicLong(0);
     private final List<ParserHook> parserHooks;
+    final boolean removeStandaloneLines;
 
-    EngineImpl(Map<String, SectionHelperFactory<?>> sectionHelperFactories, List<ValueResolver> valueResolvers,
-            List<NamespaceResolver> namespaceResolvers, List<TemplateLocator> locators,
-            List<ResultMapper> resultMappers, Function<String, SectionHelperFactory<?>> sectionHelperFunc,
-            List<ParserHook> parserHooks) {
-        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(sectionHelperFactories));
-        this.valueResolvers = sort(valueResolvers);
-        this.namespaceResolvers = ImmutableList.copyOf(namespaceResolvers);
+    EngineImpl(EngineBuilder builder) {
+        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(builder.sectionHelperFactories));
+        this.valueResolvers = sort(builder.valueResolvers);
+        this.namespaceResolvers = ImmutableList.copyOf(builder.namespaceResolvers);
         this.evaluator = new EvaluatorImpl(this.valueResolvers);
         this.templates = new ConcurrentHashMap<>();
-        this.locators = sort(locators);
+        this.locators = sort(builder.locators);
         ServiceLoader<PublisherFactory> loader = ServiceLoader.load(PublisherFactory.class);
         Iterator<PublisherFactory> iterator = loader.iterator();
         if (iterator.hasNext()) {
@@ -64,9 +62,10 @@ class EngineImpl implements Engine {
                     "Multiple reactive factories found: " + StreamSupport.stream(loader.spliterator(), false)
                             .map(Object::getClass).map(Class::getName).collect(Collectors.joining(",")));
         }
-        this.resultMappers = sort(resultMappers);
-        this.sectionHelperFunc = sectionHelperFunc;
-        this.parserHooks = parserHooks;
+        this.resultMappers = sort(builder.resultMappers);
+        this.sectionHelperFunc = builder.sectionHelperFunc;
+        this.parserHooks = ImmutableList.copyOf(builder.parserHooks);
+        this.removeStandaloneLines = builder.removeStandaloneLines;
     }
 
     @Override

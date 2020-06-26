@@ -76,6 +76,9 @@ public class EngineProducer {
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());
 
+        // Remove standalone lines if desired
+        builder.removeStandaloneLines(context.getConfig().removeStandaloneLines);
+
         // Allow anyone to customize the builder
         builderReady.fire(builder);
 

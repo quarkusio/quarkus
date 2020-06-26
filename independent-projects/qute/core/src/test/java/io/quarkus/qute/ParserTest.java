@@ -180,6 +180,18 @@ public class ParserTest {
         assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
     }
 
+    @Test
+    public void testRemoveStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        String content = "{@java.lang.String foo}\n" // -> standalone
+                + "\n"
+                + "  {#for i in 5}\n" // -> standalone
+                + "{index}:\n"
+                + "{/} "; // -> standalone
+        assertEquals("\n0:\n1:\n2:\n3:\n4:\n", engine.parse(content).render());
+        assertEquals("bar\n", engine.parse("{foo}\n").data("foo", "bar").render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

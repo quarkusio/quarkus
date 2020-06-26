@@ -154,6 +154,17 @@ public class IfSectionTest {
         assertEquals("1", engine.parse("{#if !nonExistent}1{#else}0{/if}").render(data));
     }
 
+    @Test
+    public void testStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        assertEquals("BAZ\n",
+                engine.parse("{#if false}\n"
+                        + "FOO\n"
+                        + "{#else}\n"
+                        + "BAZ\n"
+                        + "{/if}").render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

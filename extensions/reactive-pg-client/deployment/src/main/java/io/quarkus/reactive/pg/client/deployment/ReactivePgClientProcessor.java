@@ -29,6 +29,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 
 @SuppressWarnings("deprecation")
 class ReactivePgClientProcessor {
@@ -81,8 +82,9 @@ class ReactivePgClientProcessor {
         pgPool.produce(new PgPoolBuildItem(pool));
 
         // Synthetic bean for PgPool
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(PgPool.class).scope(Singleton.class).runtimeValue(pool)
-                .setRuntimeInit().done());
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(PgPool.class).addType(Pool.class).scope(Singleton.class).runtimeValue(pool)
+                        .setRuntimeInit().done());
 
         boolean isDefault = true; // assume always the default pool for now
         vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, isDefault));

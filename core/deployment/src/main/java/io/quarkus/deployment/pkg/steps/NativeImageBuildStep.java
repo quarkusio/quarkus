@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,12 +25,15 @@ import java.util.concurrent.Executors;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -74,8 +78,13 @@ public class NativeImageBuildStep {
     public NativeImageBuildItem build(NativeConfig nativeConfig, NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             final Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+        if (nativeConfig.debug.enabled) {
+            copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
+        }
+
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
         log.info("Building native image from " + runnerJar);
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
@@ -365,6 +374,43 @@ public class NativeImageBuildStep {
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         }
+    }
+
+    private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
+        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+
+        log.info("Copy jar sources");
+        final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
+        for (AppDependency appDep : appDeps) {
+            final AppArtifact depArtifact = appDep.getArtifact();
+            if (depArtifact.getType().equals("jar")) {
+                for (Path resolvedDep : depArtifact.getPaths()) {
+                    if (!Files.isDirectory(resolvedDep)) {
+                        // Do we need to handle transformed classes?
+                        // Their bytecode might have been modified but is there source for such modification?
+                        final Path jarSourceDep = toJarSource(resolvedDep);
+                        final String fileName = depArtifact.getGroupId() + "." + jarSourceDep.getFileName();
+                        final Path targetPath = libDir.resolve(fileName);
+                        try {
+                            Files.copy(jarSourceDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to copy from " + resolvedDep + " to " + targetPath);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static Path toJarSource(Path path) {
+        final Path parent = path.getParent();
+        final String fileName = path.getFileName().toString();
+        final int extensionIndex = fileName.lastIndexOf('.');
+        final String sourcesFileName = String.format("%s-sources.jar", fileName.substring(0, extensionIndex));
+        return parent.resolve(sourcesFileName);
     }
 
     private void handleAdditionalProperties(NativeConfig nativeConfig, List<String> command, boolean isContainerBuild,

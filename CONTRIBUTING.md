@@ -49,7 +49,7 @@ Just do the following:
 git clone git@github.com:quarkusio/quarkus.git
 cd quarkus
 export MAVEN_OPTS="-Xmx1563m"
-./mvnw clean install -DskipTests -DskipITs -DskipDocs
+./mvnw -Dquickly
 ```
 
 Wait for a bit and you're done.
@@ -188,20 +188,21 @@ select the `eclipse.importorder` file as the import order config file.
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
 * Set Maven heap to 1.5GB `export MAVEN_OPTS="-Xmx1563m"`
-* Invoke `./mvnw clean install -DskipTests -DskipITs -DskipDocs` from the root directory
+* Invoke `./mvnw -Dquickly` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 export MAVEN_OPTS="-Xmx1563m"
-./mvnw clean install -DskipTests -DskipITs -DskipDocs
+./mvnw -Dquickly
 # Wait... success!
 ```
 
-This build skipped all the tests, native-image builds and documentation generation. 
+This build skipped all the tests, native-image builds, documentation generation etc. and used the Maven goals `clean install` by default.
+For more details about `-Dquickly` have a look at the `quick-build` profile in `quarkus-parent` (root `pom.xml`).
 
-Removing the `-DskipTests -DskipITs` flags enables the tests. 
-It will take much longer to build but will give you more guarantees on your code. 
+Adding `-DskipTests=false -DskipITs=false` enables the tests.
+It will take much longer to build but will give you more guarantees on your code.
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 

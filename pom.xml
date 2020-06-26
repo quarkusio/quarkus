@@ -111,6 +111,9 @@
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
             </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
         </profile>
         <profile>
             <id>release</id>

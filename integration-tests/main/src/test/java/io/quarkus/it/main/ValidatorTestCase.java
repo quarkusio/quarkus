@@ -38,12 +38,13 @@ public class ValidatorTestCase {
             o.write(body);
         }
 
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
+        try (InputStream in = connection.getInputStream()) {
+            byte[] buf = new byte[100];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
         }
         Assertions.assertEquals("failed:email", new String(out.toByteArray(), "UTF-8"));
     }

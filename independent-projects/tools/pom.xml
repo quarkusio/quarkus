@@ -48,6 +48,7 @@
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <maven-core.version>3.6.3</maven-core.version>
         <mockito.version>3.3.3</mockito.version>
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <quarkus-http.version>3.0.11.Final</quarkus-http.version>
@@ -268,6 +269,13 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.surefire.plugin}</version>
+                <configuration>
+                    <argLine>${jacoco.agent.argLine}</argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>

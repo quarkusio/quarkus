@@ -17,12 +17,14 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
     /**
@@ -150,8 +152,9 @@ public final class OidcUtils {
         return list;
     }
 
-    static QuarkusSecurityIdentity validateAndCreateIdentity(TokenCredential credential,
-            OidcTenantConfig config, JsonObject tokenJson) {
+    static QuarkusSecurityIdentity validateAndCreateIdentity(
+            RoutingContext vertxContext, TokenCredential credential,
+            OidcTenantConfig config, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
         try {
             OidcUtils.validateClaims(config.getToken(), tokenJson);
         } catch (OIDCException e) {
@@ -173,12 +176,19 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         try {
             String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), tokenJson)) {
+            for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
                 builder.addRole(role);
             }
         } catch (Exception e) {
             throw new ForbiddenException(e);
         }
+        setSecurityIdentityUserInfo(builder, userInfo);
         return builder.build();
+    }
+
+    public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {
+        if (userInfo != null) {
+            builder.addAttribute("userinfo", new UserInfo(userInfo.encode()));
+        }
     }
 }

@@ -11,6 +11,7 @@ import javax.inject.Inject;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -68,17 +69,24 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
             return validateTokenWithoutOidcServer(request, resolvedContext);
         } else {
-            return validateTokenWithOidcServer(request, resolvedContext);
+            return validateTokenWithOidcServer(vertxContext, request, resolvedContext);
         }
     }
 
     @SuppressWarnings("deprecation")
-    private Uni<SecurityIdentity> validateTokenWithOidcServer(TokenAuthenticationRequest request,
+    private Uni<SecurityIdentity> validateTokenWithOidcServer(RoutingContext vertxContext, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
+        if (request.getToken() instanceof IdTokenCredential
+                && (resolvedContext.oidcConfig.authentication.verifyAccessToken
+                        || resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken)) {
+            vertxContext.put("code_flow_access_token_result",
+                    verifyCodeFlowAccessToken(vertxContext, request, resolvedContext));
+        }
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
             @Override
             public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+
                 resolvedContext.auth.decodeToken(request.getToken().getToken(),
                         new Handler<AsyncResult<AccessToken>>() {
                             @Override
@@ -87,20 +95,31 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     uniEmitter.fail(new AuthenticationFailedException(event.cause()));
                                     return;
                                 }
+
                                 // Token has been verified, as a JWT or an opaque token, possibly involving
                                 // an introspection request.
                                 final TokenCredential tokenCred = request.getToken();
+
                                 JsonObject tokenJson = event.result().accessToken();
+
                                 if (tokenJson == null) {
                                     // JSON token representation may be null not only if it is an opaque access token
                                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
                                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
                                     tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
                                 }
+
+                                JsonObject userInfo = null;
+                                if (resolvedContext.oidcConfig.authentication.isUserInfoRequired()) {
+                                    userInfo = getUserInfo(event.result(), (String) vertxContext.get("access_token"));
+                                }
                                 if (tokenJson != null) {
+                                    JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
+                                            userInfo);
                                     try {
                                         uniEmitter.complete(
-                                                validateAndCreateIdentity(tokenCred, resolvedContext.oidcConfig, tokenJson));
+                                                validateAndCreateIdentity(vertxContext, tokenCred, resolvedContext.oidcConfig,
+                                                        tokenJson, rolesJson, userInfo));
                                     } catch (Throwable ex) {
                                         uniEmitter.fail(ex);
                                     }
@@ -110,9 +129,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     uniEmitter
                                             .fail(new AuthenticationFailedException("JWT token can not be converted to JSON"));
                                 } else {
-                                    // Opaque access token
+                                    // Opaque Bearer Access Token
                                     QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
                                     builder.addCredential(tokenCred);
+                                    OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
                                     if (event.result().principal().containsKey("username")) {
                                         final String userName = event.result().principal().getString("username");
                                         builder.setPrincipal(new Principal() {
@@ -122,6 +142,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                             }
                                         });
                                     }
+                                    if (event.result().principal().containsKey("scope")) {
+                                        for (String role : event.result().principal().getString("scope").split(" ")) {
+                                            builder.addRole(role.trim());
+                                        }
+                                    }
                                     uniEmitter.complete(builder.build());
                                 }
                             }
@@ -130,7 +155,53 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         });
     }
 
-    private Uni<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
+    @SuppressWarnings("deprecation")
+    private static JsonObject getRolesJson(RoutingContext vertxContext, TenantConfigContext resolvedContext,
+            TokenCredential tokenCred,
+            JsonObject tokenJson, JsonObject userInfo) {
+        JsonObject rolesJson = tokenJson;
+        if (tokenCred instanceof IdTokenCredential && resolvedContext.oidcConfig.roles.source.isPresent()) {
+            if (resolvedContext.oidcConfig.roles.source.get() == Source.userinfo) {
+                rolesJson = userInfo;
+            } else if (resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken) {
+                AccessToken result = (AccessToken) vertxContext.get("code_flow_access_token_result");
+                rolesJson = result.accessToken();
+                if (rolesJson == null) {
+                    // JSON token representation may be null not only if it is an opaque access token
+                    // but also if it is JWT and no JWK with a matching kid is available, asynchronous
+                    // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
+                    rolesJson = OidcUtils.decodeJwtContent((String) vertxContext.get("access_token"));
+                }
+                if (rolesJson == null) {
+                    // this is the introspection response which may contain a 'scope' property
+                    rolesJson = result.principal();
+                }
+            }
+        }
+        return rolesJson;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static AccessToken verifyCodeFlowAccessToken(RoutingContext vertxContext, TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext) {
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super AccessToken>>() {
+            @Override
+            public void accept(UniEmitter<? super AccessToken> uniEmitter) {
+                resolvedContext.auth.decodeToken((String) vertxContext.get("access_token"),
+                        new Handler<AsyncResult<AccessToken>>() {
+                            @Override
+                            public void handle(AsyncResult<AccessToken> event) {
+                                if (event.failed()) {
+                                    uniEmitter.fail(new AuthenticationFailedException(event.cause()));
+                                }
+                                uniEmitter.complete(event.result());
+                            }
+                        });
+            }
+        }).await().indefinitely();
+    }
+
+    private static Uni<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
         OAuth2AuthProviderImpl auth = ((OAuth2AuthProviderImpl) resolvedContext.auth);
         JWT jwt = auth.getJWT();
@@ -145,10 +216,33 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         } else {
             try {
                 return Uni.createFrom()
-                        .item(validateAndCreateIdentity(request.getToken(), resolvedContext.oidcConfig, tokenJson));
+                        .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext.oidcConfig, tokenJson,
+                                tokenJson,
+                                null));
             } catch (Throwable ex) {
                 return Uni.createFrom().failure(ex);
             }
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static JsonObject getUserInfo(AccessToken tokenImpl, String opaqueAccessToken) {
+        return Uni.createFrom().emitter(
+                new Consumer<UniEmitter<? super JsonObject>>() {
+                    @Override
+                    public void accept(UniEmitter<? super JsonObject> uniEmitter) {
+                        tokenImpl.principal().put("access_token", opaqueAccessToken);
+                        tokenImpl.userInfo(new Handler<AsyncResult<JsonObject>>() {
+                            @Override
+                            public void handle(AsyncResult<JsonObject> event) {
+                                if (event.failed()) {
+                                    uniEmitter.fail(event.cause());
+                                } else {
+                                    uniEmitter.complete(event.result());
+                                }
+                            }
+                        });
+                    }
+                }).await().indefinitely();
     }
 }

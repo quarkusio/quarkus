@@ -38,7 +38,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testResolveTenantIdentifierWebApp() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user");
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
@@ -55,7 +55,7 @@ public class BearerTokenAuthorizationTest {
     @Test
     public void testResolveTenantIdentifierWebApp2() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user");
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -73,7 +73,7 @@ public class BearerTokenAuthorizationTest {
     public void testReAuthenticateWhenSwitchingTenants() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             // tenant-web-app
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user");
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
             assertEquals("Log in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
@@ -82,7 +82,7 @@ public class BearerTokenAuthorizationTest {
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app:alice", page.getBody().asText());
             // tenant-web-app2
-            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user");
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
             assertEquals("Log in to quarkus-webapp2", page.getTitleText());
             loginForm = page.getForms().get(0);

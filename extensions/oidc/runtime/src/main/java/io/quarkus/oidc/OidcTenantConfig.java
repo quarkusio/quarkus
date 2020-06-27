@@ -459,6 +459,12 @@ public class OidcTenantConfig {
         @ConfigItem
         public Optional<String> roleClaimSeparator = Optional.empty();
 
+        /**
+         * Source of the principal roles.
+         */
+        @ConfigItem
+        public Optional<Source> source = Optional.empty();
+
         public Optional<String> getRoleClaimPath() {
             return roleClaimPath;
         }
@@ -473,6 +479,33 @@ public class OidcTenantConfig {
 
         public void setRoleClaimSeparator(String roleClaimSeparator) {
             this.roleClaimSeparator = Optional.of(roleClaimSeparator);
+        }
+
+        public Optional<Source> getSource() {
+            return source;
+        }
+
+        public void setSource(Source source) {
+            this.source = Optional.of(source);
+        }
+
+        // Source of the principal roles
+        public static enum Source {
+            /**
+             * ID Token - the default value for the 'web-app' applications.
+             */
+            idtoken,
+
+            /**
+             * Access Token - the default and only supported value for the 'service' applications;
+             * can also be used as the source of roles for the 'web-app' applications.
+             */
+            accesstoken,
+
+            /**
+             * User Info - only supported for the "web-app" applications
+             */
+            userinfo
         }
     }
 
@@ -508,6 +541,15 @@ public class OidcTenantConfig {
         public boolean removeRedirectParameters = true;
 
         /**
+         * Both ID and access tokens are verified as part of the authorization code flow and every time
+         * these tokens are retrieved from the user session. One should disable the access token verification if
+         * it is only meant to be propagated to the downstream services.
+         * Note the ID token will always be verified.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean verifyAccessToken = true;
+
+        /**
          * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.
          * This property, if enabled, will also affect the logout `post_logout_redirect_uri` and the local redirect requests.
          */
@@ -532,6 +574,12 @@ public class OidcTenantConfig {
          */
         @ConfigItem
         public Optional<String> cookiePath = Optional.empty();
+
+        /**
+         * If this property is set to 'true' then an OIDC UserInfo endpoint will be called
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean userInfoRequired;
 
         public Optional<String> getRedirectPath() {
             return redirectPath;
@@ -579,6 +627,30 @@ public class OidcTenantConfig {
 
         public void setCookiePath(String cookiePath) {
             this.cookiePath = Optional.of(cookiePath);
+        }
+
+        public boolean isUserInfoRequired() {
+            return userInfoRequired;
+        }
+
+        public void setUserInfoRequired(boolean userInfoRequired) {
+            this.userInfoRequired = userInfoRequired;
+        }
+
+        public boolean isRemoveRedirectParameters() {
+            return removeRedirectParameters;
+        }
+
+        public void setRemoveRedirectParameters(boolean removeRedirectParameters) {
+            this.removeRedirectParameters = removeRedirectParameters;
+        }
+
+        public boolean isVerifyAccessToken() {
+            return verifyAccessToken;
+        }
+
+        public void setVerifyAccessToken(boolean verifyAccessToken) {
+            this.verifyAccessToken = verifyAccessToken;
         }
     }
 

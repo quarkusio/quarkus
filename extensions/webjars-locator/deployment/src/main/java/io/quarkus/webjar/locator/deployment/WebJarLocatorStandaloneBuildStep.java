@@ -2,6 +2,7 @@ package io.quarkus.webjar.locator.deployment;
 
 import java.util.Map;
 
+import org.jboss.logging.Logger;
 import org.webjars.WebJarAssetLocator;
 
 import io.quarkus.deployment.Feature;
@@ -16,6 +17,8 @@ import io.quarkus.webjar.locator.runtime.WebJarLocatorRecorder;
 
 public class WebJarLocatorStandaloneBuildStep {
 
+    private static final Logger log = Logger.getLogger(WebJarLocatorStandaloneBuildStep.class.getName());
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void findWebjarsAndCreateHandler(
@@ -26,7 +29,6 @@ public class WebJarLocatorStandaloneBuildStep {
 
         WebJarAssetLocator webJarLocator = new WebJarAssetLocator();
         Map<String, String> webjarNameToVersionMap = webJarLocator.getWebJars();
-
         if (!webjarNameToVersionMap.isEmpty()) {
             // The context path + the resources path
             String rootPath = httpConfig.rootPath;
@@ -36,6 +38,8 @@ public class WebJarLocatorStandaloneBuildStep {
                     new RouteBuildItem(webjarRootPath + "*",
                             recorder.getHandler(webjarRootPath, webjarNameToVersionMap),
                             false));
+        } else {
+            log.warn("No WebJars were found in the project. Requests to the /webjars/ path will always return 404 (Not Found)");
         }
 
     }

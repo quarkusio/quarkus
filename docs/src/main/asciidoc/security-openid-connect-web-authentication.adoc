@@ -174,6 +174,17 @@ In order to authenticate to the application you should type the following creden
 
 After clicking the `Login` button you should be redirected back to the application.
 
+== Redirection
+
+When the user is redirected to the OpenID Connect Provider to authenticate, the redirect URL includes a `redirect_uri` query parameter which indicates to the Provider where the user has to be redirected to once the authentication has been completed.
+
+Quarkus will set this parameter to the current request URL by default. For example, if the user is trying to access a Quarkus service endpoint at `http://localhost:8080/service/1` then the `redirect_uri` parameter will be set to `http://localhost:8080/service/1`. Similarly, if the request URL is `http://localhost:8080/service/2` then the `redirect_uri` parameter will be set to `http://localhost:8080/service/2`, etc.
+
+OpenID Connect Providers may be configured to require the `redirect_uri` parameter to have the same value (eg. `http://localhost:8080/service/callback`) for all the redirect URLs.
+In such cases a `quarkus.oidc.authentication.redirect-path` property has to be set, for example, `quarkus.oidc.authentication.redirect-path=/service/callback`, and Quarkus will set the `redirect_uri` parameter to an absolute URL such as `http://localhost:8080/service/callback` which will be the same regardless of the current request URL.
+
+If `quarkus.oidc.authentication.redirect-path` is set but the original request URL has to be restored after the user has been redirected back to a callback URL such as `http://localhost:8080/service/callback` then a `quarkus.oidc.authentication.restore-path-after-redirect` property has to be set to `true` which will restore the request URL such as `http://localhost:8080/service/1`, etc.
+
 == Logout
 
 By default the logout is based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the ID Token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
@@ -251,7 +262,7 @@ public class ProtectedResource {
 }
 ----
 
-Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`. However the opaque access tokens are not currently supported by the `web-app` applications.
+Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`.
 
 Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
 

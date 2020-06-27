@@ -13,7 +13,6 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
@@ -35,7 +34,7 @@ public class MySQLPoolRecorder {
 
     private static final Logger log = Logger.getLogger(MySQLPoolRecorder.class);
 
-    public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx, BeanContainer container,
+    public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
@@ -53,9 +52,6 @@ public class MySQLPoolRecorder {
             mysqlPool = legacyInitialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
                     legacyDataSourcesRuntimeConfig.defaultDataSource, legacyDataSourceReactiveMySQLConfig);
         }
-
-        MySQLPoolProducer producer = container.instance(MySQLPoolProducer.class);
-        producer.initialize(mysqlPool);
 
         shutdown.addShutdownTask(mysqlPool::close);
         return new RuntimeValue<>(mysqlPool);

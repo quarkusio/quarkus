@@ -2,6 +2,7 @@ package io.quarkus.reactive.pg.client.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -13,43 +14,16 @@ public class PgPoolProducer {
 
     private static final Logger LOGGER = Logger.getLogger(PgPoolProducer.class);
 
-    private volatile PgPool pgPool;
-    private io.vertx.mutiny.pgclient.PgPool mutinyPgPool;
-
-    /**
-     * @deprecated The Axle API is deprecated and will be removed in the future, use {@link #mutinyPgPool} instead.
-     */
-    @Deprecated
-    private io.vertx.axle.pgclient.PgPool axlePgPool;
-    /**
-     * @deprecated The RX API is deprecated and will be removed in the future, use {@link #mutinyPgPool} instead.
-     */
-    @Deprecated
-    private io.vertx.reactivex.pgclient.PgPool rxPgPool;
-
-    void initialize(PgPool pgPool) {
-        this.pgPool = pgPool;
-    }
-
-    /**
-     * @return the <em>bare</em> PostGreSQL Pool instance.
-     */
-    @Singleton
-    @Produces
-    public PgPool pgPool() {
-        return pgPool;
-    }
+    @Inject
+    PgPool pgPool;
 
     /**
      * @return the <em>mutiny</em> PostGreSQL Pool instance. The instance is created lazily.
      */
     @Singleton
     @Produces
-    public synchronized io.vertx.mutiny.pgclient.PgPool mutinyPgPool() {
-        if (mutinyPgPool == null) {
-            mutinyPgPool = io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool);
-        }
-        return mutinyPgPool;
+    public io.vertx.mutiny.pgclient.PgPool mutinyPgPool() {
+        return io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool);
     }
 
     /**
@@ -61,14 +35,11 @@ public class PgPoolProducer {
     @Singleton
     @Produces
     @Deprecated
-    public synchronized io.vertx.axle.pgclient.PgPool axlePgPool() {
-        if (axlePgPool == null) {
-            LOGGER.warn(
-                    "` io.vertx.axle.pgclient.PgPool` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.pgclient.PgPool`");
-            axlePgPool = io.vertx.axle.pgclient.PgPool.newInstance(pgPool);
-        }
-        return axlePgPool;
+    public io.vertx.axle.pgclient.PgPool axlePgPool() {
+        LOGGER.warn(
+                "`io.vertx.axle.pgclient.PgPool` is deprecated and will be removed in a future version - it is "
+                        + "recommended to switch to `io.vertx.mutiny.pgclient.PgPool`");
+        return io.vertx.axle.pgclient.PgPool.newInstance(pgPool);
     }
 
     /**
@@ -80,13 +51,10 @@ public class PgPoolProducer {
     @Singleton
     @Produces
     @Deprecated
-    public synchronized io.vertx.reactivex.pgclient.PgPool rxPgPool() {
-        if (rxPgPool == null) {
-            LOGGER.warn(
-                    "` io.vertx.reactivex.pgclient.PgPool` is deprecated and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.pgclient.PgPool`");
-            rxPgPool = io.vertx.reactivex.pgclient.PgPool.newInstance(pgPool);
-        }
-        return rxPgPool;
+    public io.vertx.reactivex.pgclient.PgPool rxPgPool() {
+        LOGGER.warn(
+                "`io.vertx.reactivex.pgclient.PgPool` is deprecated and will be removed in a future version - it is "
+                        + "recommended to switch to `io.vertx.mutiny.pgclient.PgPool`");
+        return io.vertx.reactivex.pgclient.PgPool.newInstance(pgPool);
     }
 }

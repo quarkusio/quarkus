@@ -1,7 +1,9 @@
 package io.quarkus.reactive.db2.client.deployment;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -23,6 +25,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.db2client.DB2Pool;
+import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
 
@@ -38,7 +41,7 @@ class ReactiveDB2ClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             DB2PoolRecorder recorder,
             VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, ShutdownContextBuildItem shutdown,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
@@ -55,10 +58,15 @@ class ReactiveDB2ClientProcessor {
             return serviceStart;
         }
 
-        RuntimeValue<DB2Pool> db2PoolValue = recorder.configureDB2Pool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<DB2Pool> db2PoolValue = recorder.configureDB2Pool(vertx.getVertx(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config,
                 shutdown);
         db2Pool.produce(new DB2PoolBuildItem(db2PoolValue));
+
+        // Synthetic bean for DB2Pool
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(DB2Pool.class).addType(Pool.class).scope(Singleton.class)
+                .runtimeValue(db2PoolValue)
+                .setRuntimeInit().done());
 
         boolean isDefault = true; // assume always the default pool for now
         vertxPool.produce(new VertxPoolBuildItem(db2PoolValue, DatabaseKind.DB2, isDefault));

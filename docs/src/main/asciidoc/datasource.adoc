@@ -121,7 +121,7 @@ quarkus.datasource.username=<your username>
 quarkus.datasource.password=<your password>
 ----
 
-You can also retrieve the password from Vault by link:vault#datasource[using a credential provider] for your datasource.
+You can also retrieve the password from Vault by link:vault-datasource[using a credential provider] for your datasource.
 
 Once you have defined the database kind and the credentials, you are ready to configure either a JDBC datasource, a reactive one, or both.
 

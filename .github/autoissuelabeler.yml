@@ -41,7 +41,7 @@
   notify: [loicmathieu]
 - labels: [area/openapi]
   title: "(?i).*openapi.*"
-  notify: [EricWittmann]
+  notify: [EricWittmann,MikeEdgar,phillip-kruger]
 - labels: [area/panache]
   title: "(?i).*panache.*"
   description: "(?i).*panache.*"

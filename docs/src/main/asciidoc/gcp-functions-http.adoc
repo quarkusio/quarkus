@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Google Cloud Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
-:extension-status: preview
+:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -12,6 +12,8 @@ The `quarkus-google-cloud-functions-http` extension allows you to write microser
 Undertow (servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
 
 One Google Cloud Functions deployment can represent any number of JAX-RS, servlet, or Vert.x Web endpoints.
+
+As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
 include::./status-include.adoc[]
 
@@ -140,25 +142,10 @@ public class GreetingRoutes {
 
 == Build and Deploy to Google Cloud
 
-To build your application, you first need to define a packaging of type `uber-jar` via your `application.properties`.
-
-[source]
-----
-quarkus.package.uber-jar=true
-----
+NOTE: Quarkus forces a packaging of type `uber-jar` for your function as Google Cloud Function deployment requires a single JAR.
 
 Package your application using the standard `mvn clean package` command.
-The result of the previous command is a single JAR file inside the `target` repository that contains classes and dependencies of the project.
-
-To deploy your JAR to Google Cloud, you need to pass a directory with only this JAR inside it, to the `gcloud` utility.
-
-So first, create a `deployment` directory and copy the generated artifact inside it.
-
-[source]
-----
-mkdir deployment
-cp target/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar deployment/
-----
+The result of the previous command is a single JAR file inside the `target/deployment` directory that contains the classes and the dependencies of the project.
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
@@ -166,7 +153,7 @@ Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 ----
 gcloud beta functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.http.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --source=deployment
+  --runtime=java11 --trigger-http --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -211,7 +198,7 @@ Then you can use it to launch your function locally.
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar \
+  --classpath target/deployment/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----
 

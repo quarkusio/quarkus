@@ -612,6 +612,18 @@
             "description": "MQTT reactive messaging connector"
         },
         {
+            "name": "SmallRye Reactive Messaging - Cloud Events",
+            "metadata": {
+                "keywords": [
+                    "cloud-events"
+                ]
+            },
+            "group-id": "io.quarkus",
+            "artifact-id": "quarkus-smallrye-reactive-messaging-cloud-events",
+            "version": "999-SNAPSHOT",
+            "description": "CloudEvents builder"
+        },
+        {
             "name": "SmallRye Metrics",
             "short-name": "metrics",
             "guide": "https://quarkus.io/guides/microprofile-metrics",

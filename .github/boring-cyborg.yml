@@ -205,6 +205,7 @@ labelPRBasedOnFilePath:
         - extensions/smallrye-reactive-messaging
         - extensions/smallrye-reactive-messaging-mqtt
         - extensions/smallrye-reactive-messaging-kafka
+        - extensions/smallrye-reactive-messaging-cloud-events
     area/rest-client:
         - extensions/rest-client/**/*
     area/resteasy:

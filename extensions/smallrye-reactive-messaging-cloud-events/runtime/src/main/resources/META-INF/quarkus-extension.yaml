@@ -1,0 +1,10 @@
+---
+name: "SmallRye Reactive Messaging - Cloud Events"
+metadata:
+  short-name: "cloudevents"
+  keywords:
+  - "cloud-events"
+  guide: "https://quarkus.io/guides/kafka"
+  categories:
+  - "formats"
+  status: "stable"

@@ -538,7 +538,7 @@ public final class HibernateOrmProcessor {
         // Bootstrap all persistence units
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : descriptors) {
             buildProducer.produce(new BeanContainerListenerBuildItem(
-                    recorder.registerPersistenceUnit(persistenceUnitDescriptor.getDescriptor().getName())));
+                    recorder.registerPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())));
         }
         buildProducer.produce(new BeanContainerListenerBuildItem(recorder.initDefaultPersistenceUnit()));
     }

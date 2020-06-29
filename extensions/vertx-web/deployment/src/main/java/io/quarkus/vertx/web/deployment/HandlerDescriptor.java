@@ -4,6 +4,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
@@ -12,6 +13,8 @@ import io.vertx.core.buffer.Buffer;
  */
 public class HandlerDescriptor {
 
+    private static final DotName DOT_NAME_UNI = DotName.createSimple(Uni.class.getName());
+    private static final DotName DOT_NAME_MULTI = DotName.createSimple(Multi.class.getName());
     private final MethodInfo method;
 
     public HandlerDescriptor(MethodInfo method) {
@@ -27,7 +30,11 @@ public class HandlerDescriptor {
     }
 
     public boolean isReturningUni() {
-        return method.returnType().name().equals(DotName.createSimple(Uni.class.getName()));
+        return method.returnType().name().equals(DOT_NAME_UNI);
+    }
+
+    public boolean isReturningMulti() {
+        return method.returnType().name().equals(DOT_NAME_MULTI);
     }
 
     public Type getContentType() {
@@ -35,6 +42,9 @@ public class HandlerDescriptor {
             return null;
         }
         if (isReturningUni()) {
+            return getReturnType().asParameterizedType().arguments().get(0);
+        }
+        if (isReturningMulti()) {
             return getReturnType().asParameterizedType().arguments().get(0);
         }
         return getReturnType();

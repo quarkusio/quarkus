@@ -7,6 +7,8 @@ import org.jboss.jandex.DotName;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.vertx.web.runtime.MultiSupport;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -30,12 +32,25 @@ public class Methods {
 
     static final MethodDescriptor FAIL = MethodDescriptor
             .ofMethod(RoutingContext.class, "fail", Void.TYPE, Throwable.class);
-    static final MethodDescriptor SUBSCRIBE = MethodDescriptor.ofMethod(Uni.class, "subscribe", UniSubscribe.class);
 
-    static final MethodDescriptor SUBSCRIBE_WITH = MethodDescriptor
+    static final MethodDescriptor UNI_SUBSCRIBE = MethodDescriptor.ofMethod(Uni.class, "subscribe", UniSubscribe.class);
+    static final MethodDescriptor UNI_SUBSCRIBE_WITH = MethodDescriptor
             .ofMethod(UniSubscribe.class, "with", Cancellable.class, Consumer.class, Consumer.class);
-    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);
 
+    static final MethodDescriptor MULTI_SUBSCRIBE_VOID = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeVoid",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SUBSCRIBE_STRING = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeString",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SUBSCRIBE_BUFFER = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeBuffer",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SUBSCRIBE_RX_BUFFER = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeRxBuffer",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SUBSCRIBE_MUTINY_BUFFER = MethodDescriptor.ofMethod(MultiSupport.class,
+            "subscribeMutinyBuffer", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeObject",
+            Void.TYPE, Multi.class, RoutingContext.class);
+
+    static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);
     static final MethodDescriptor END_WITH_STRING = MethodDescriptor
             .ofMethod(HttpServerResponse.class, "end", Void.TYPE, String.class);
     static final MethodDescriptor END_WITH_BUFFER = MethodDescriptor

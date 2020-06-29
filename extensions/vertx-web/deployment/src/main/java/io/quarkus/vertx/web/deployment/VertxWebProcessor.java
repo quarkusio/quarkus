@@ -517,16 +517,38 @@ class VertxWebProcessor {
             FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, rc, end, response);
             FunctionCreator failureCallback = getUniOnFailureCallback(invoke, rc);
 
-            ResultHandle sub = invoke.invokeInterfaceMethod(Methods.SUBSCRIBE, res);
-            invoke.invokeVirtualMethod(Methods.SUBSCRIBE_WITH, sub, successCallback.getInstance(),
+            ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
+            invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
                     failureCallback.getInstance());
+        } else if (descriptor.isReturningMulti()) {
+            // The method returns a Multi.
+            // We subscribe to this Multi and write the provided items (one by one) in the HTTP response.
+            // On completion, we "end" the response
+            // If the method returned null, we fail
+            // If the provided item is null we fail
+            // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT
+            // If the produce item is a string or buffer, the response.write method is used to write the response
+            // If the produce item is an object, the item is mapped to JSON and written into the response. The response is a JSON array.
+
+            if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
+            } else if (descriptor.isContentTypeBuffer()) {
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_BUFFER, res, rc);
+            } else if (descriptor.isContentTypeMutinyBuffer()) {
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_MUTINY_BUFFER, res, rc);
+            } else if (descriptor.isContentTypeRxBuffer()) {
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_RX_BUFFER, res, rc);
+            } else if (descriptor.isContentTypeString()) {
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_STRING, res, rc);
+            } else { // Multi<Object> - encode to json.
+                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_OBJECT, res, rc);
+            }
         } else if (descriptor.getContentType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
 
             // If the method returned null, we fail
             // If the method returns string or buffer, the response.end method is used to write the response
             // If the method returns an object, the result is mapped to JSON and written into the response
-
             ResultHandle content = getContentToWrite(descriptor, response, res, invoke);
             invoke.invokeInterfaceMethod(end, response, content);
         }

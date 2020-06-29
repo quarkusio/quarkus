@@ -2,9 +2,11 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Set;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitDefinition;
 
 /**
  * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds
@@ -15,15 +17,20 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
+    private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, boolean isReactive) {
         this.descriptor = descriptor;
+        this.multiTenancyStrategy = MultiTenancyStrategy.NONE;
         this.isReactive = isReactive;
     }
 
-    public ParsedPersistenceXmlDescriptor getDescriptor() {
-        return descriptor;
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
+            MultiTenancyStrategy multiTenancyStrategy, boolean isReactive) {
+        this.descriptor = descriptor;
+        this.multiTenancyStrategy = multiTenancyStrategy;
+        this.isReactive = isReactive;
     }
 
     /**
@@ -44,9 +51,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
-    public boolean isReactive() {
-        return isReactive;
+    public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition() {
+        return new QuarkusPersistenceUnitDefinition(descriptor, multiTenancyStrategy, isReactive);
     }
-
 }
-

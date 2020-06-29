@@ -28,7 +28,7 @@ public class JDBCDB2Processor {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.DB2, "com.ibm.db2.jcc.DB2Driver",
                 "com.ibm.db2.jcc.DB2XADataSource"));
     }
-    
+
     @BuildStep
     void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             Capabilities capabilities) {

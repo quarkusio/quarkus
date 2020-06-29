@@ -29,6 +29,7 @@ Add the following dependencies to your project:
 
 * the Hibernate ORM extension: `io.quarkus:quarkus-hibernate-orm`
 * your JDBC driver extension; the following options are available:
+  - `quarkus-jdbc-db2` for link:https://www.ibm.com/products/db2-database[IBM DB2]
   - `quarkus-jdbc-derby` for link:https://db.apache.org/derby/[Apache Derby]
   - `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
   - `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]

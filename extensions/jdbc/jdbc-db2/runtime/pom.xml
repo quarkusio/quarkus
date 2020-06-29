@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-db2</artifactId>
     <name>Quarkus - JDBC - DB2 - Runtime</name>
-	<description>DB2 database connector</description>
+	<description>Connect to the DB2 database via JDBC</description>
 	
     <dependencies>
         <dependency>

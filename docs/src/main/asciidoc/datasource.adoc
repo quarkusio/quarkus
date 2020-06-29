@@ -42,7 +42,7 @@ If you want a better understanding of how all this works, this guide has a lot m
 
 === JDBC datasource
 
-Add the `agroal` extension plus one of `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql` or `jdbc-postgresql`.
+Add the `agroal` extension plus one of `jdbc-db2`, `jdbc-derby`, `jdbc-h2`, `jdbc-mariadb`, `jdbc-mssql`, `jdbc-mysql`, or `jdbc-postgresql`.
 
 Then configure your datasource:
 
@@ -89,7 +89,7 @@ The database kind defines which type of database you will connect to.
 
 We currently include these built-in database kinds:
 
-* DB2: `db2` (reactive only)
+* DB2: `db2`
 * Derby: `derby`
 * H2: `h2`
 * MariaDB: `mariadb`
@@ -151,6 +151,7 @@ You will also need to choose, and add, the Quarkus extension for your relational
 
 Quarkus provides driver extensions for:
 
+* DB2 - `jdbc-db2`
 * Derby - `jdbc-derby`
 * H2 - `jdbc-h2`
 * MariaDB - `jdbc-mariadb`
@@ -202,6 +203,10 @@ When using one of the built-in datasource kinds, the JDBC driver is resolved aut
 .Database kind to JDBC driver mapping
 |===
 |Database kind |JDBC driver |XA driver
+
+|`db2`
+|`com.ibm.db2.jcc.DBDriver`
+|`com.ibm.db2.jcc.DB2XADataSource`
 
 |`derby`
 |`org.apache.derby.jdbc.ClientDriver`
@@ -523,6 +528,14 @@ Defaults for the different parts are as follows:
 `database`:: same name as the username
 
 The https://jdbc.postgresql.org/documentation/head/connect.html[official documentation] go into more detail and list optional parameters as well.
+
+=== DB2
+
+`jdbc:db2://<serverName>[:<portNumber>]/<databaseName>[:<key1>=<value>;[<key2>=<value2>;]]`
+
+Example:: `jdbc:db2://localhost:50000/MYDB:user=dbadm;password=dbadm;`
+
+See the https://www.ibm.com/support/knowledgecenter/SSEPGG_11.5.0/com.ibm.db2.luw.apdv.java.doc/src/tpc/imjcc_r0052342.html[official documentation] for more detail on URL syntax and additional supported options.
 
 === MariaDB
 

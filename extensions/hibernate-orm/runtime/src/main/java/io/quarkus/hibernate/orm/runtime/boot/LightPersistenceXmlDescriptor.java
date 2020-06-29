@@ -36,9 +36,6 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
     }
 
     private static void verifyIgnoredFields(final PersistenceUnitDescriptor toClone) {
-        if (toClone.getNonJtaDataSource() != null) {
-            throw new UnsupportedOperationException("Value found for #getNonJtaDataSource : not supported yet");
-        }
         // This one needs to be ignored:
         // if ( toClone.getPersistenceUnitRootUrl() != null ) {
         // throw new UnsupportedOperationException( "Value found for

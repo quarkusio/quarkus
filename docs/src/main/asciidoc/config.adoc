@@ -290,7 +290,7 @@ Setting the properties would occur in the normal manner, for example in `applica
 ----
 greeting.message = hello
 greeting.name = quarkus
-greeting.hidden.prizeAmount=10
+greeting.hidden.prize-amount=10
 greeting.hidden.recipients=Jane,John
 ----
 

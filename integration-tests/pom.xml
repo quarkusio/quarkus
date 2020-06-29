@@ -34,6 +34,7 @@
         <module>kafka</module>
         <module>kafka-streams</module>
         <module>jpa</module>
+        <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
         <module>vault</module>

@@ -47,8 +47,8 @@ public class LdapRecorder {
     private ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url,
-                dirContext.principal,
-                dirContext.password);
+                dirContext.principal.orElse(null),
+                dirContext.password.orElse(null));
         return () -> dirContextFactory.obtainDirContext(DirContextFactory.ReferralMode.IGNORE);
     }
 

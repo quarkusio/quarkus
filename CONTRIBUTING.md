@@ -54,48 +54,6 @@ export MAVEN_OPTS="-Xmx1563m"
 
 Wait for a bit and you're done.
 
-#### Workflow tips
-
-Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very productive. 
-The following Maven tips can vastly speed up development when working on a specific extension.
-
-##### Building all modules of an extension
-
-Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime` and `spi` modules
-which can all be built by executing following command:
-
-``` 
-./mvnw install -f extensions/jackson/
-```     
-
-This command uses the path of the extension on the filesystem to identify it. Moreover, Maven will automatically build all modules in that path recursively.
-
-##### Building a single module of an extension
-
-Let's say you want to make changes to the `deployment` module of `Jackson` extension. There are two ways to accomplish this task as shown by the following commands:
-
-```
-./mvnw install -f extensions/jackson/deployment
-```                                                  
-
-or 
-
-```
-./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
-``` 
-
-In this command we use the groupId and artifactId of the module to identify it.
-
-##### Running a single test
-
-Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
-One way to accomplish this is by executing the following command:
-
-```
-./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
-```
- 
-
 ### Updating the version
 
 Be careful, when using the `master` branch, you need to use the `quarkus-bom` instead of the `quarkus-universe-bom`.
@@ -210,6 +168,46 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `./mvnw install -Dnative-image.new-server=true`.
 
+### Workflow tips
+
+Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very productive. 
+The following Maven tips can vastly speed up development when working on a specific extension.
+
+#### Building all modules of an extension
+
+Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime` and `spi` modules
+which can all be built by executing following command:
+
+```
+./mvnw install -f extensions/jackson/
+```
+
+This command uses the path of the extension on the filesystem to identify it. Moreover, Maven will automatically build all modules in that path recursively.
+
+#### Building a single module of an extension
+
+Let's say you want to make changes to the `deployment` module of the Jackson extension. There are two ways to accomplish this task as shown by the following commands:
+
+```
+./mvnw install -f extensions/jackson/deployment
+```
+
+or 
+
+```
+./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
+```
+
+In this command we use the groupId and artifactId of the module to identify it.
+
+#### Running a single test
+
+Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
+One way to accomplish this is by executing the following command:
+
+```
+./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
+```
 
 ## Usage
 

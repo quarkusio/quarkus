@@ -307,7 +307,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return initContainers;
     }
 
-    public Map<String, ContainerConfig> getContainers() {
+    public Map<String, ContainerConfig> getSidecars() {
         return containers;
     }
 

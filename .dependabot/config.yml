@@ -178,6 +178,10 @@ update_configs:
       # Caffeine
       - match:
           dependency_name: "com.github.ben-manes.caffeine:caffeine"
+      # Jackson
+      - match:
+          dependency_name: "com.fasterxml.jackson:jackson-bom"
+
   - package_manager: "java:gradle"
     directory: "/devtools/gradle"
     update_schedule: "daily"

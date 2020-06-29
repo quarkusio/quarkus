@@ -8,7 +8,6 @@ import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -100,6 +99,7 @@ import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
+import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
@@ -233,7 +233,8 @@ public final class HibernateOrmProcessor {
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             persistenceUnitDescriptorProducer
-                    .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(), false));
+                    .produce(new PersistenceUnitDescriptorBuildItem(persistenceXmlDescriptorBuildItem.getDescriptor(),
+                            getMultiTenancyStrategy(), false));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -336,10 +337,6 @@ public final class HibernateOrmProcessor {
 
         final QuarkusScanner scanner = buildQuarkusScanner(domainObjects);
 
-        //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
-        recorderContext.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
-                (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
-
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
@@ -347,15 +344,20 @@ public final class HibernateOrmProcessor {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
 
-        List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>();
+        List<QuarkusPersistenceUnitDefinition> finalStagePUDescriptors = new ArrayList<>();
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
-            allDescriptors.add(pud.getDescriptor());
+            finalStagePUDescriptors.add(pud.asOutputPersistenceUnitDefinition());
         }
+
+        //Make it possible to record the QuarkusPersistenceUnitDefinition as bytecode:
+        recorderContext.registerSubstitution(QuarkusPersistenceUnitDefinition.class,
+                QuarkusPersistenceUnitDefinition.Serialized.class,
+                QuarkusPersistenceUnitDefinition.Substitution.class);
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(allDescriptors, scanner, integratorClasses,
-                                proxyDefinitions.getProxies(), getMultiTenancyStrategy())));
+                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses,
+                                proxyDefinitions.getProxies())));
     }
 
     /**
@@ -746,7 +748,8 @@ public final class HibernateOrmProcessor {
                     p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
                 }
 
-                persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(desc, false));
+                persistenceUnitDescriptorProducer
+                        .produce(new PersistenceUnitDescriptorBuildItem(desc, getMultiTenancyStrategy(), false));
             });
         } else {
             if (hibernateConfig.isAnyPropertySet()) {

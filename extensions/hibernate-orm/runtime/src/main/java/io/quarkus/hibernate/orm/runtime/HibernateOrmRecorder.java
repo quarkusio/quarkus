@@ -8,7 +8,6 @@ import java.util.Set;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
@@ -79,14 +78,14 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
+    public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
-            PreGeneratedProxies proxyDefinitions, MultiTenancyStrategy strategy) {
+            PreGeneratedProxies proxyDefinitions) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
                 PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
-                        proxyDefinitions, strategy);
+                        proxyDefinitions);
             }
         };
     }

@@ -73,6 +73,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
@@ -104,10 +105,9 @@ public class FastBootMetadataBuilder {
     private final MultiTenancyStrategy multiTenancyStrategy;
 
     @SuppressWarnings("unchecked")
-    public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies,
-            MultiTenancyStrategy strategy) {
-        this.persistenceUnit = persistenceUnit;
+    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
+        this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
@@ -181,6 +181,7 @@ public class FastBootMetadataBuilder {
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
 
+        final MultiTenancyStrategy strategy = puDefinition.getMultitenancyStrategy();
         if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
             ssrBuilder.addService(MultiTenantConnectionProvider.class, new HibernateMultiTenantConnectionProvider());
         }

@@ -38,4 +38,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getProperties().getProperty("javax.persistence.sql-load-script-source");
     }
 
+    public String getPersistenceUnitName() {
+        return descriptor.getName();
+    }
+
 }

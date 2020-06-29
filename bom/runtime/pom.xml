@@ -2727,6 +2727,11 @@
                 <artifactId>mongodb-driver-sync</artifactId>
                 <version>${mongo-client.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-core</artifactId>
+                <version>${mongo-client.version}</version>
+            </dependency>
             <!-- mongodb-driver-legacy is not needed for Quarkus but we add the dependency for backward compatibility -->
             <dependency>
                 <groupId>org.mongodb</groupId>

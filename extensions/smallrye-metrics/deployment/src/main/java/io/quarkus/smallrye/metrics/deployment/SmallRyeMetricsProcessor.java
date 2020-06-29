@@ -70,6 +70,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
+import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 import io.quarkus.smallrye.metrics.runtime.MetadataHolder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.smallrye.metrics.runtime.TagHolder;
@@ -122,6 +123,11 @@ public class SmallRyeMetricsProcessor {
     }
 
     SmallRyeMetricsConfig metrics;
+
+    @BuildStep
+    MetricsConfigurationBuildItem metricsConfigurationBuildItem() {
+        return new MetricsConfigurationBuildItem(metrics.path);
+    }
 
     @BuildStep
     @Record(STATIC_INIT)

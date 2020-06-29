@@ -55,7 +55,17 @@ import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.kubernetes.spi.*;
+import io.quarkus.kubernetes.deployment.Annotations.Prometheus;
+import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 
 class KubernetesProcessor {
 
@@ -118,12 +128,28 @@ class KubernetesProcessor {
 
     @BuildStep
     public List<KubernetesAnnotationBuildItem> createAnnotations(KubernetesConfig kubernetesConfig,
-            OpenshiftConfig openshiftConfig, KnativeConfig knativeConfig) {
-        List<KubernetesAnnotationBuildItem> items = new ArrayList<KubernetesAnnotationBuildItem>();
-        kubernetesConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, KUBERNETES)));
-        openshiftConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, OPENSHIFT)));
-        knativeConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, KNATIVE)));
-        return items;
+            OpenshiftConfig openshiftConfig, KnativeConfig knativeConfig,
+            Optional<MetricsConfigurationBuildItem> metricsConfiguration, List<KubernetesPortBuildItem> kubernetesPorts) {
+        List<KubernetesAnnotationBuildItem> result = new ArrayList<KubernetesAnnotationBuildItem>();
+        addAnnotations(kubernetesConfig, KUBERNETES, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(openshiftConfig, OPENSHIFT, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(knativeConfig, KNATIVE, metricsConfiguration, kubernetesPorts, result);
+        return result;
+    }
+
+    private void addAnnotations(PlatformConfiguration config, String target,
+            Optional<MetricsConfigurationBuildItem> metricsConfigurationBuildItem,
+            List<KubernetesPortBuildItem> kubernetesPorts,
+            List<KubernetesAnnotationBuildItem> result) {
+        for (Map.Entry<String, String> entry : config.getAnnotations().entrySet()) {
+            result.add(new KubernetesAnnotationBuildItem(entry.getKey(), entry.getValue(), target));
+        }
+        if (metricsConfigurationBuildItem.isPresent() && !kubernetesPorts.isEmpty()) {
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.SCRAPE, "true", target));
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.PATH, metricsConfigurationBuildItem.get().getPath(),
+                    target));
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.PORT, "" + kubernetesPorts.get(0).getPort(), target));
+        }
     }
 
     @BuildStep

@@ -189,7 +189,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * Sidecar containers
      */
     @ConfigItem
-    Map<String, ContainerConfig> containers;
+    Map<String, ContainerConfig> sidecars;
 
     /**
      * The target deployment platform.
@@ -354,8 +354,8 @@ public class KubernetesConfig implements PlatformConfiguration {
         return initContainers;
     }
 
-    public Map<String, ContainerConfig> getContainers() {
-        return containers;
+    public Map<String, ContainerConfig> getSidecars() {
+        return sidecars;
     }
 
     @Override

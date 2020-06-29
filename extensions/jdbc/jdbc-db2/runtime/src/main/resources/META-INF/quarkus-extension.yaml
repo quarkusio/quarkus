@@ -1,0 +1,9 @@
+---
+name: "JDBC Driver - DB2"
+metadata:
+  keywords:
+  - "jdbc-db2"
+  - "jdbc"
+  - "db2"
+  categories:
+  - "data"

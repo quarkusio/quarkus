@@ -33,4 +33,9 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public void addListedEntityClassNamesTo(Set<String> classNames) {
         classNames.addAll(descriptor.getManagedClassNames());
     }
+
+    public String getExplicitSqlImportScriptResourceName() {
+        return descriptor.getProperties().getProperty("javax.persistence.sql-load-script-source");
+    }
+
 }

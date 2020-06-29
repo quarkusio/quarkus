@@ -445,12 +445,11 @@ public final class HibernateOrmProcessor {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
-
         for (PersistenceUnitDescriptorBuildItem i : descriptors) {
             //add resources
-            if (i.getDescriptor().getProperties().containsKey("javax.persistence.sql-load-script-source")) {
-                resources.produce(new NativeImageResourceBuildItem(
-                        (String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
+            String resourceName = i.getExplicitSqlImportScriptResourceName();
+            if (resourceName != null) {
+                resources.produce(new NativeImageResourceBuildItem(resourceName));
             } else {
                 getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
                     resources.produce(new NativeImageResourceBuildItem(script));

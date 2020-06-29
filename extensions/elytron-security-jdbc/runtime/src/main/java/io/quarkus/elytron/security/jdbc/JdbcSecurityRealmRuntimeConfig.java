@@ -8,20 +8,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * A configuration object for a jdbc based realm configuration,
  * {@linkplain org.wildfly.security.auth.realm.jdbc.JdbcSecurityRealm}
  */
-@ConfigRoot(name = "security.jdbc", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class JdbcSecurityRealmConfig {
-
-    /**
-     * The realm name
-     */
-    @ConfigItem(defaultValue = "Quarkus")
-    public String realmName;
-
-    /**
-     * If the properties store is enabled.
-     */
-    @ConfigItem
-    public boolean enabled;
+@ConfigRoot(name = "security.jdbc", phase = ConfigPhase.RUN_TIME)
+public class JdbcSecurityRealmRuntimeConfig {
 
     /**
      * The principal-queries config
@@ -33,9 +21,7 @@ public class JdbcSecurityRealmConfig {
     @Override
     public String toString() {
         return "JdbcRealmConfig{" +
-                ", realmName='" + realmName + '\'' +
-                ", enabled=" + enabled +
-                ", principalQueries=" + principalQueries +
+                "principalQueries=" + principalQueries +
                 '}';
     }
 }

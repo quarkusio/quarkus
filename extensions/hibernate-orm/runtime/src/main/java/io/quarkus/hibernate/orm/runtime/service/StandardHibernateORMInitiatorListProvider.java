@@ -35,13 +35,10 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
  * list, then changes have evolved.
  * Also: Hibernate Reactive uses a different list.
  */
-public final class InitiatorList {
+public final class StandardHibernateORMInitiatorListProvider implements InitialInitiatorListProvider {
 
-    private InitiatorList() {
-        //not to be constructed: static utility
-    }
-
-    public static List<StandardServiceInitiator> standardInitiatorList() {
+    @Override
+    public List<StandardServiceInitiator> initialInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
         //This one needs to be replaced after Metadata has been recorded:

@@ -102,11 +102,13 @@ public class FastBootMetadataBuilder {
     private final Collection<ProvidedService> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
     private final MultiTenancyStrategy multiTenancyStrategy;
+    private final boolean isReactive;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
+        this.isReactive = puDefinition.isReactive();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
@@ -332,7 +334,7 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry();
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy);
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy, isReactive);
     }
 
     private void destroyServiceRegistry() {

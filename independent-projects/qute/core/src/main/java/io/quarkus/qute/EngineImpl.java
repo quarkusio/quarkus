@@ -70,9 +70,9 @@ class EngineImpl implements Engine {
     }
 
     @Override
-    public Template parse(String content, Variant variant) {
+    public Template parse(String content, Variant variant, String id) {
         String generatedId = generateId();
-        return newParser(null).parse(new StringReader(content), Optional.ofNullable(variant), generatedId, generatedId);
+        return newParser(id).parse(new StringReader(content), Optional.ofNullable(variant), generatedId, generatedId);
     }
 
     private Parser newParser(String id) {

@@ -25,7 +25,6 @@ public interface Engine {
      * 
      * @param content
      * @return the template
-     * @see Engine#getTemplate(String)
      */
     default Template parse(String content) {
         return parse(content, null);
@@ -39,9 +38,22 @@ public interface Engine {
      * @param content
      * @param variant
      * @return the template
-     * @see Engine#getTemplate(String)
      */
-    public Template parse(String content, Variant variant);
+    default Template parse(String content, Variant variant) {
+        return parse(content, null, null);
+    }
+
+    /**
+     * Parse the template contents with the specified variant and id.
+     * <p>
+     * Note that this method always returns a new {@link Template} instance.
+     * 
+     * @param content
+     * @param variant
+     * @param id
+     * @return the template
+     */
+    public Template parse(String content, Variant variant, String id);
 
     /**
      * 

@@ -1,6 +1,5 @@
 package ${package};
 
-import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.amazonaws.services.lambda.runtime.Context;

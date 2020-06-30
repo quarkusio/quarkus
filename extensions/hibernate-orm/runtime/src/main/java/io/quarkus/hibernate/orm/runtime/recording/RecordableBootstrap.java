@@ -20,7 +20,7 @@ import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.spi.ServiceContributor;
 
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusEnvironment;
-import io.quarkus.hibernate.orm.runtime.service.InitiatorList;
+import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 
 /**
  * Has to extend StandardServiceRegistryBuilder even if we don't want: needs to
@@ -40,8 +40,9 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     private final BootstrapServiceRegistry bootstrapServiceRegistry;
     private final LoadedConfig aggregatedCfgXml;
 
-    public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry) {
-        this(bootstrapServiceRegistry, initialProperties(), LoadedConfig.baseline());
+    public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry,
+            InitialInitiatorListProvider initialInitiatorsProvider) {
+        this(bootstrapServiceRegistry, initialProperties(), LoadedConfig.baseline(), initialInitiatorsProvider);
     }
 
     private static Map initialProperties() {
@@ -51,12 +52,12 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,
-            LoadedConfig loadedConfigBaseline) {
+            LoadedConfig loadedConfigBaseline, InitialInitiatorListProvider initialInitiatorsProvider) {
         super(bootstrapServiceRegistry, properties, loadedConfigBaseline, null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.aggregatedCfgXml = loadedConfigBaseline;
-        this.initiators = InitiatorList.standardInitiatorList();
+        this.initiators = initialInitiatorsProvider.initialInitiatorList();
     }
 
     /**

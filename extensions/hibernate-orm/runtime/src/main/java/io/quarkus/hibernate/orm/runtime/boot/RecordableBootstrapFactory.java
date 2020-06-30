@@ -9,12 +9,14 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
+import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
 
 final class RecordableBootstrapFactory {
 
     public static RecordableBootstrap createRecordableBootstrapBuilder(QuarkusPersistenceUnitDefinition puDefinition) {
         final BootstrapServiceRegistry bsr = buildBootstrapServiceRegistry();
-        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr);
+        StandardHibernateORMInitiatorListProvider initiatorListProvider = new StandardHibernateORMInitiatorListProvider();
+        final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr, initiatorListProvider);
         return ssrBuilder;
     }
 

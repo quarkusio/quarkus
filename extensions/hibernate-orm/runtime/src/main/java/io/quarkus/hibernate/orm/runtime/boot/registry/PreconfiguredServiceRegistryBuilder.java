@@ -198,7 +198,7 @@ public class PreconfiguredServiceRegistryBuilder {
         // Disabled: IdentifierGenerators are no longer initiated after Metadata was generated.
         // serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(new QuarkusJtaPlatformInitiator(true));
+        serviceInitiators.add(QuarkusJtaPlatformInitiator.INSTANCE);
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 

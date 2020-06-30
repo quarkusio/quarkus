@@ -96,6 +96,13 @@ public class KubernetesWithApplicationPropertiesTest {
 
         assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
             assertThat(i).isInstanceOfSatisfying(Ingress.class, in -> {
+                //Check that lables and annotations are also applied to Ingresses (#10260)
+                assertThat(i.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo("test-it");
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                    assertThat(m.getAnnotations()).contains(entry("bar", "baz"));
+                });
+
                 assertThat(in.getSpec().getRules()).hasOnlyOneElementSatisfying(r -> {
                     assertThat(r.getHost()).isEqualTo("example.com");
                 });

@@ -1,7 +1,7 @@
 '%prod':
    quarkus:
      spring-cloud-config:
-       url: http://localhost:8089
+       url: http://localhost:8089/base
        username: user
        password: pass
        enabled: true     

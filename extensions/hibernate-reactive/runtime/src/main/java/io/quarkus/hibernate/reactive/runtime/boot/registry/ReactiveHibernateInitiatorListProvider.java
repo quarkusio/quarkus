@@ -9,6 +9,7 @@ import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
+import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
@@ -29,6 +30,7 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
+import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
@@ -81,12 +83,10 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(NoJdbcConnectionProviderInitiator.INSTANCE);
         //serviceInitiators.add(QuarkusConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
+        serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 
-        // Disabled: Dialect is injected explicitly
-        // serviceInitiators.add( DialectResolverInitiator.INSTANCE );
-
-        // Disabled: Dialect is injected explicitly
-        // serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+        // Custom Quarkus implementation !
+        serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);

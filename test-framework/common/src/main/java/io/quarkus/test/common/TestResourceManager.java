@@ -27,7 +27,11 @@ public class TestResourceManager implements Closeable {
     private boolean started = false;
 
     public TestResourceManager(Class<?> testClass) {
-        testResourceEntries = getTestResources(testClass);
+        this(testClass, Collections.emptyList());
+    }
+
+    public TestResourceManager(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
+        testResourceEntries = getTestResources(testClass, additionalTestResources);
     }
 
     public void init() {
@@ -101,19 +105,18 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private List<TestResourceEntry> getTestResources(Class<?> testClass) {
+    private List<TestResourceEntry> getTestResources(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
         IndexView index = TestClassIndexer.readIndex(testClass);
 
         List<TestResourceEntry> testResourceEntries = new ArrayList<>();
 
         // we need to keep track of duplicate entries to make sure we don't start the same resource
         // multiple times even if there are multiple same @QuarkusTestResource annotations
-        Set<TestResourceClassEntry> alreadyAddedEntries = new HashSet<>();
+        Set<TestResourceClassEntry> uniqueEntries = new HashSet<>();
         for (AnnotationInstance annotation : findQuarkusTestResourceInstances(index)) {
             try {
-                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = (Class<? extends QuarkusTestResourceLifecycleManager>) Class
-                        .forName(annotation.value().asString(), true, Thread.currentThread().getContextClassLoader());
+                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = loadTestResourceClassFromTCCL(
+                        annotation.value().asString());
 
                 AnnotationValue argsAnnotationValue = annotation.value("initArgs");
                 Map<String, String> args;
@@ -127,16 +130,22 @@ public class TestResourceManager implements Closeable {
                     }
                 }
 
-                TestResourceClassEntry testResourceClassEntry = new TestResourceClassEntry(testResourceClass, args);
-                if (alreadyAddedEntries.contains(testResourceClassEntry)) {
-                    continue;
-                }
-                alreadyAddedEntries.add(testResourceClassEntry);
-
-                testResourceEntries.add(new TestResourceEntry(testResourceClass.getConstructor().newInstance(), args));
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException
-                    | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+                uniqueEntries.add(new TestResourceClassEntry(testResourceClass, args));
+            } catch (IllegalArgumentException | SecurityException e) {
                 throw new RuntimeException("Unable to instantiate the test resource " + annotation.value().asString());
+            }
+        }
+
+        uniqueEntries.addAll(additionalTestResources);
+
+        for (TestResourceClassEntry entry : uniqueEntries) {
+            Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = entry.clazz;
+            Map<String, String> args = entry.args;
+            try {
+                testResourceEntries.add(new TestResourceEntry(testResourceClass.getConstructor().newInstance(), args));
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+                throw new RuntimeException("Unable to instantiate the test resource " + testResourceClass.getName());
             }
         }
 
@@ -158,6 +167,16 @@ public class TestResourceManager implements Closeable {
         return testResourceEntries;
     }
 
+    @SuppressWarnings("unchecked")
+    private Class<? extends QuarkusTestResourceLifecycleManager> loadTestResourceClassFromTCCL(String className) {
+        try {
+            return (Class<? extends QuarkusTestResourceLifecycleManager>) Class
+                    .forName(className, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Collection<AnnotationInstance> findQuarkusTestResourceInstances(IndexView index) {
         Set<AnnotationInstance> testResourceAnnotations = new HashSet<>(index
                 .getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName())));
@@ -168,29 +187,7 @@ public class TestResourceManager implements Closeable {
         return testResourceAnnotations;
     }
 
-    private static class TestResourceEntry {
-        private final QuarkusTestResourceLifecycleManager testResource;
-        private final Map<String, String> args;
-
-        public TestResourceEntry(QuarkusTestResourceLifecycleManager testResource) {
-            this(testResource, Collections.emptyMap());
-        }
-
-        public TestResourceEntry(QuarkusTestResourceLifecycleManager testResource, Map<String, String> args) {
-            this.testResource = testResource;
-            this.args = args;
-        }
-
-        public QuarkusTestResourceLifecycleManager getTestResource() {
-            return testResource;
-        }
-
-        public Map<String, String> getArgs() {
-            return args;
-        }
-    }
-
-    private static class TestResourceClassEntry {
+    public static class TestResourceClassEntry {
         private Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private Map<String, String> args;
 
@@ -213,6 +210,28 @@ public class TestResourceManager implements Closeable {
         @Override
         public int hashCode() {
             return Objects.hash(clazz, args);
+        }
+    }
+
+    private static class TestResourceEntry {
+        private final QuarkusTestResourceLifecycleManager testResource;
+        private final Map<String, String> args;
+
+        public TestResourceEntry(QuarkusTestResourceLifecycleManager testResource) {
+            this(testResource, Collections.emptyMap());
+        }
+
+        public TestResourceEntry(QuarkusTestResourceLifecycleManager testResource, Map<String, String> args) {
+            this.testResource = testResource;
+            this.args = args;
+        }
+
+        public QuarkusTestResourceLifecycleManager getTestResource() {
+            return testResource;
+        }
+
+        public Map<String, String> getArgs() {
+            return args;
         }
     }
 

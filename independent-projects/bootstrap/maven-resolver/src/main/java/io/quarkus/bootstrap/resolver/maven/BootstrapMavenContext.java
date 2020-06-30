@@ -104,6 +104,7 @@ public class BootstrapMavenContext {
     private RepositorySystem repoSystem;
     private RepositorySystemSession repoSession;
     private List<RemoteRepository> remoteRepos;
+    private RemoteRepositoryManager remoteRepoManager;
     private String localRepo;
     private Path currentPom;
     private Boolean currentProjectExists;
@@ -132,6 +133,7 @@ public class BootstrapMavenContext {
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
+        this.remoteRepoManager = config.remoteRepoManager;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
@@ -583,9 +585,12 @@ public class BootstrapMavenContext {
     }
 
     public RemoteRepositoryManager getRemoteRepositoryManager() {
+        if (remoteRepoManager != null) {
+            return remoteRepoManager;
+        }
         final DefaultRemoteRepositoryManager remoteRepoManager = new DefaultRemoteRepositoryManager();
         remoteRepoManager.initService(getServiceLocator());
-        return remoteRepoManager;
+        return this.remoteRepoManager = remoteRepoManager;
     }
 
     private DefaultServiceLocator getServiceLocator() {

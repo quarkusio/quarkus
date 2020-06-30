@@ -192,6 +192,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
+        // Custom for Hibernate Reactive:
         //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
         serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 
@@ -211,6 +212,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
 
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();

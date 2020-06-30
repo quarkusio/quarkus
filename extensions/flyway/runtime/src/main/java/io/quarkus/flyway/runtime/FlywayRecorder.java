@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
@@ -26,7 +27,7 @@ public class FlywayRecorder {
         QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
     }
 
-    public void setApplicationMigrationClasses(Collection<Class<?>> migrationClasses) {
+    public void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> migrationClasses) {
         log.debugv("Setting the following application migration classes: {0}", migrationClasses);
         QuarkusPathLocationScanner.setApplicationMigrationClasses(migrationClasses);
     }

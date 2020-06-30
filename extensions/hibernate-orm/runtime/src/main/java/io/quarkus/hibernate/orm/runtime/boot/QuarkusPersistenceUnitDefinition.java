@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.util.List;
 import java.util.Objects;
@@ -11,7 +11,6 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
-import io.quarkus.hibernate.orm.runtime.boot.LightPersistenceXmlDescriptor;
 import io.quarkus.runtime.ObjectSubstitution;
 
 /**

@@ -280,6 +280,7 @@ final class JavaDocParser {
                 case '}':
                 case '[':
                 case ']':
+                case '|':
                     if (!escaping) {
                         sb.append("++");
                         escaping = true;

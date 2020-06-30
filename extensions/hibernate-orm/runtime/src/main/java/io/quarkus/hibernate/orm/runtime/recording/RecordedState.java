@@ -24,9 +24,9 @@ public final class RecordedState {
     private final boolean isReactive;
 
     public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
-                         BuildTimeSettings settings, Collection<Integrator> integrators,
-                         Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
-                         ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy, boolean isReactive) {
+            BuildTimeSettings settings, Collection<Integrator> integrators,
+            Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
+            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy, boolean isReactive) {
         this.dialect = dialect;
         this.metadata = metadata;
         this.settings = settings;

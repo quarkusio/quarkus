@@ -3,8 +3,10 @@ package io.quarkus.flyway.runtime;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.internal.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
@@ -18,8 +20,8 @@ import org.jboss.logging.Logger;
 public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
     private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
     private static final String LOCATION_SEPARATOR = "/";
-    private static Collection<String> applicationMigrationFiles;
-    private static Collection<Class<?>> applicationMigrationClasses;
+    private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid unit tests
+    private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the set default to aid unit tests
 
     private final Collection<LoadableResource> scannedResources;
 
@@ -72,7 +74,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
      * @return The non-abstract classes that were found.
      */
     @Override
-    public Collection<Class<?>> scanForClasses() {
+    public Collection<Class<? extends JavaMigration>> scanForClasses() {
         return applicationMigrationClasses;
     }
 
@@ -80,7 +82,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         QuarkusPathLocationScanner.applicationMigrationFiles = applicationMigrationFiles;
     }
 
-    public static void setApplicationMigrationClasses(Collection<Class<?>> applicationMigrationClasses) {
+    public static void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> applicationMigrationClasses) {
         QuarkusPathLocationScanner.applicationMigrationClasses = applicationMigrationClasses;
     }
 }

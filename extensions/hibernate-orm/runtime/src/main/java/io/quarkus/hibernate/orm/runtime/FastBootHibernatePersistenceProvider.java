@@ -150,7 +150,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             RecordedState recordedState = PersistenceUnitsHolder.getRecordedState(persistenceUnitName);
 
             if (recordedState.isReactive()) {
-                throw new IllegalStateException("Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
+                throw new IllegalStateException(
+                        "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
             final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();

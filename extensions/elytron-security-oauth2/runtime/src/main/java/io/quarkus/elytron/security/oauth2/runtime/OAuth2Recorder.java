@@ -31,20 +31,21 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 @Recorder
 public class OAuth2Recorder {
 
-    public RuntimeValue<SecurityRealm> createRealm(OAuth2Config config)
+    public RuntimeValue<SecurityRealm> createRealm(OAuth2RuntimeConfig runtimeConfig)
             throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
-        if (!config.clientId.isPresent() || !config.clientSecret.isPresent() || !config.introspectionUrl.isPresent()) {
+        if (!runtimeConfig.clientId.isPresent() || !runtimeConfig.clientSecret.isPresent()
+                || !runtimeConfig.introspectionUrl.isPresent()) {
             throw new ConfigurationException(
                     "client-id, client-secret and introspection-url must be configured when the oauth2 extension is enabled");
         }
 
         OAuth2IntrospectValidator.Builder validatorBuilder = OAuth2IntrospectValidator.builder()
-                .clientId(config.clientId.get())
-                .clientSecret(config.clientSecret.get())
-                .tokenIntrospectionUrl(URI.create(config.introspectionUrl.get()).toURL());
+                .clientId(runtimeConfig.clientId.get())
+                .clientSecret(runtimeConfig.clientSecret.get())
+                .tokenIntrospectionUrl(URI.create(runtimeConfig.introspectionUrl.get()).toURL());
 
-        if (config.caCertFile.isPresent()) {
-            validatorBuilder.useSslContext(createSSLContext(config));
+        if (runtimeConfig.caCertFile.isPresent()) {
+            validatorBuilder.useSslContext(createSSLContext(runtimeConfig));
         } else {
             validatorBuilder.useSslContext(SSLContext.getDefault());
         }
@@ -71,9 +72,9 @@ public class OAuth2Recorder {
         return attributeMap;
     }
 
-    private SSLContext createSSLContext(OAuth2Config config)
+    private SSLContext createSSLContext(OAuth2RuntimeConfig runtimeConfig)
             throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-        try (InputStream is = new FileInputStream(config.caCertFile.get())) {
+        try (InputStream is = new FileInputStream(runtimeConfig.caCertFile.get())) {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             X509Certificate caCert = (X509Certificate) cf.generateCertificate(is);
 
@@ -92,8 +93,8 @@ public class OAuth2Recorder {
         }
     }
 
-    public RuntimeValue<OAuth2Augmentor> augmentor(OAuth2Config config) {
-        return new RuntimeValue<>(new OAuth2Augmentor(config.roleClaim));
+    public RuntimeValue<OAuth2Augmentor> augmentor(OAuth2BuildTimeConfig buildTimeConfig) {
+        return new RuntimeValue<>(new OAuth2Augmentor(buildTimeConfig.roleClaim));
     }
 
 }

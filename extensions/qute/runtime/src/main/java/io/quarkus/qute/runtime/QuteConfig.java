@@ -19,4 +19,11 @@ public class QuteConfig {
     @ConfigItem(defaultValue = "qute.html,qute.txt,html,txt")
     public List<String> suffixes;
 
+    /**
+     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains
+     * only section tags, parameter declarations and whitespace characters.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean removeStandaloneLines;
+
 }

@@ -28,6 +28,10 @@ public class TextNode implements TemplateNode, ResultNode {
         return origin;
     }
 
+    public String getValue() {
+        return value;
+    }
+
     @Override
     public void process(Consumer<String> consumer) {
         consumer.accept(value);

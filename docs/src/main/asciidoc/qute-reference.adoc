@@ -124,6 +124,63 @@ A closing curly bracket (`}`) is ignored if not inside an expression/tag.
 
 TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no evaluation will happen).
 
+=== Removing Standalone Lines From the Template
+
+By default, Qute parser removes standalone lines from the template output.
+A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`) or parameter declaration (e.g. `{@org.acme.Foo foo}`) but no expression and non-whitespace character.
+In other words, a line that contains no section tag or a parameter declaration is *not* a standalone line.
+Likewise, a line that contains an _expression_ or a _non-whitespace character_ is *not* a standalone line.
+
+.Template Example
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+     {#for item in items} <1>
+       <li>{item.name} {#if item.active}{item.price}{/if}</li>  <2>
+                          <3>
+     {/for}               <4>
+     </ul>
+   <body>
+</html>
+----
+<1> This is a standalone line and will be removed.
+<2> Not a standalone line - contains an expression and non-whitespace characters 
+<3> Not a standalone line - contains no section tag/parameter declaration
+<4> This is a standalone line.
+
+.Default Output
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+       <li>Foo 100</li>  
+                             
+     </ul>
+   <body>
+</html>
+----
+
+The default behavior can be disabled by setting the property `quarkus.qute.remove-standalone-lines` to `false`.
+In this case, all whitespace characters from a standalone line will be printed to the output.
+
+.Output with `quarkus.qute.remove-standalone-lines=false`
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+     
+       <li>Foo 100</li>
+                                    
+     
+     </ul>
+   <body>
+</html>
+----
+
 ==== Expressions
 
 An expression consists of:

@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "urlPattern": "/a-bootiful-client/prod",
+    "urlPattern": "/base/a-bootiful-client/prod",
     "basicAuth" : {
       "username" : "user",
       "password" : "pass"

@@ -30,6 +30,10 @@
             <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.dekorate</groupId>
             <artifactId>kubernetes-annotations</artifactId>
             <classifier>noapt</classifier>

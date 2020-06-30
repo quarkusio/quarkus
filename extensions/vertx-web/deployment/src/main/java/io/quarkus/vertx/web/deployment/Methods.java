@@ -7,6 +7,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.vertx.web.runtime.MultiSseSupport;
 import io.quarkus.vertx.web.runtime.MultiSupport;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -48,6 +49,24 @@ public class Methods {
     static final MethodDescriptor MULTI_SUBSCRIBE_MUTINY_BUFFER = MethodDescriptor.ofMethod(MultiSupport.class,
             "subscribeMutinyBuffer", Void.TYPE, Multi.class, RoutingContext.class);
     static final MethodDescriptor MULTI_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiSupport.class, "subscribeObject",
+            Void.TYPE, Multi.class, RoutingContext.class);
+
+    static final MethodDescriptor IS_SSE = MethodDescriptor.ofMethod(MultiSseSupport.class, "isSSE", Boolean.TYPE, Multi.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_VOID = MethodDescriptor.ofMethod(MultiSseSupport.class, "subscribeVoid",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_STRING = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeString",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_BUFFER = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeBuffer",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_RX_BUFFER = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeRxBuffer",
+            Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeMutinyBuffer", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiSseSupport.class,
+            "subscribeObject",
             Void.TYPE, Multi.class, RoutingContext.class);
 
     static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);

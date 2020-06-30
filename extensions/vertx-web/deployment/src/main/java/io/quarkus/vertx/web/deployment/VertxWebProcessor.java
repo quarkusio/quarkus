@@ -521,28 +521,17 @@ class VertxWebProcessor {
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
                     failureCallback.getInstance());
         } else if (descriptor.isReturningMulti()) {
-            // The method returns a Multi.
-            // We subscribe to this Multi and write the provided items (one by one) in the HTTP response.
-            // On completion, we "end" the response
-            // If the method returned null, we fail
-            // If the provided item is null we fail
-            // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT
-            // If the produce item is a string or buffer, the response.write method is used to write the response
-            // If the produce item is an object, the item is mapped to JSON and written into the response. The response is a JSON array.
 
-            if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
-            } else if (descriptor.isContentTypeBuffer()) {
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_BUFFER, res, rc);
-            } else if (descriptor.isContentTypeMutinyBuffer()) {
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_MUTINY_BUFFER, res, rc);
-            } else if (descriptor.isContentTypeRxBuffer()) {
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_RX_BUFFER, res, rc);
-            } else if (descriptor.isContentTypeString()) {
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_STRING, res, rc);
-            } else { // Multi<Object> - encode to json.
-                invoke.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_OBJECT, res, rc);
-            }
+            // 2 cases - regular multi vs. sse multi, we need to check the type.
+            BranchResult branches = invoke.ifTrue(invoke.invokeStaticMethod(Methods.IS_SSE, res));
+            BytecodeCreator isSSE = branches.trueBranch();
+            handleSSEMulti(descriptor, isSSE, rc, res);
+            isSSE.close();
+
+            BytecodeCreator isRegular = branches.falseBranch();
+            handleRegularMulti(descriptor, isRegular, rc, res);
+            isRegular.close();
+
         } else if (descriptor.getContentType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
 
@@ -559,6 +548,58 @@ class VertxWebProcessor {
                     beanInstanceHandle, creationlContextHandle);
         }
         invoke.returnValue(null);
+    }
+
+    private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
+            ResultHandle res) {
+        // The method returns a Multi.
+        // We subscribe to this Multi and write the provided items (one by one) in the HTTP response.
+        // On completion, we "end" the response
+        // If the method returned null, we fail
+        // If the provided item is null we fail
+        // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT
+        // If the produce item is a string or buffer, the response.write method is used to write the response
+        // If the produce item is an object, the item is mapped to JSON and written into the response. The response is a JSON array.
+
+        if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
+        } else if (descriptor.isContentTypeBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeMutinyBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_MUTINY_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeRxBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_RX_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeString()) {
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_STRING, res, rc);
+        } else { // Multi<Object> - encode to json.
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_OBJECT, res, rc);
+        }
+    }
+
+    private void handleSSEMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
+            ResultHandle res) {
+        // The method returns a Multi that needs to be written as server-sent event.
+        // We subscribe to this Multi and write the provided items (one by one) in the HTTP response.
+        // On completion, we "end" the response
+        // If the method returned null, we fail
+        // If the provided item is null we fail
+        // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT (as regular)
+        // If the produce item is a string or buffer, the response.write method is used to write the events in the response
+        // If the produce item is an object, the item is mapped to JSON and included in the `data` section of the event.
+
+        if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
+            writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
+        } else if (descriptor.isContentTypeBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeMutinyBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_MUTINY_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeRxBuffer()) {
+            writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_RX_BUFFER, res, rc);
+        } else if (descriptor.isContentTypeString()) {
+            writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_STRING, res, rc);
+        } else { // Multi<Object> - encode to json.
+            writer.invokeStaticMethod(Methods.MULTI_SSE_SUBSCRIBE_OBJECT, res, rc);
+        }
     }
 
     /**

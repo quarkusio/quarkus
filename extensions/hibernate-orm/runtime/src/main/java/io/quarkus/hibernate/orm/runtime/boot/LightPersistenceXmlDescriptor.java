@@ -26,8 +26,9 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
 
     /**
      * Internal constructor, as we're trusting all parameters. Useful for serialization to bytecode.
+     * (intentionally set to package-private visibility)
      */
-    public LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
+    LightPersistenceXmlDescriptor(String name, String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType transactionType,
             ValidationMode validationMode, SharedCacheMode sharedCachemode, List<String> managedClassNames,
             Properties properties) {

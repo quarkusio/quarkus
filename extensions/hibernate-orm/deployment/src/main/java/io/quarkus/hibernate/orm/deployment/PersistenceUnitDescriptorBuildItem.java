@@ -6,7 +6,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitDefinition;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 
 /**
  * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds

@@ -16,6 +16,7 @@ import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
+import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
@@ -28,7 +29,6 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
@@ -99,7 +99,8 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         // Custom one! Also, this one has state so can't use the singleton.
         serviceInitiators.add(new QuarkusMutableIdentifierGeneratorFactoryInitiator());// MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(new QuarkusJtaPlatformInitiator(false));
+        // Custom for Hibernate Reactive:
+        serviceInitiators.add(NoJtaPlatformInitiator.INSTANCE);
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 

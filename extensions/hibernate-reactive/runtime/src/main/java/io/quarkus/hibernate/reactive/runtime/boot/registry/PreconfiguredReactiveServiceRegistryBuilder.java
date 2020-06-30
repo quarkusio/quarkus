@@ -22,6 +22,7 @@ import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
 import org.hibernate.reactive.provider.service.NoJdbcConnectionProviderInitiator;
+import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
 import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
@@ -36,7 +37,6 @@ import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 import io.quarkus.hibernate.orm.runtime.boot.registry.MirroringIntegratorService;
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
@@ -199,7 +199,8 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // Disabled: IdentifierGenerators are no longer initiated after Metadata was generated.
         // serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(new QuarkusJtaPlatformInitiator(false));
+        // Custom for Hibernate Reactive:
+        serviceInitiators.add(NoJtaPlatformInitiator.INSTANCE);
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 

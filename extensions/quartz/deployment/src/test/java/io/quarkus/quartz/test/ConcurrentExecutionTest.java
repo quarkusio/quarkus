@@ -1,6 +1,6 @@
 package io.quarkus.quartz.test;
 
-import static io.quarkus.scheduler.Scheduled.ConcurrentExection.SKIP;
+import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 

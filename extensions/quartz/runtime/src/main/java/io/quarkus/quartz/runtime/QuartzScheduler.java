@@ -44,16 +44,16 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduled.ConcurrentExection;
+import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
-import io.quarkus.scheduler.runtime.SkipConcurrentExecutionInvoker;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerContext;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.scheduler.runtime.SkipConcurrentExecutionInvoker;
 
 @Singleton
 public class QuartzScheduler implements Scheduler {
@@ -116,7 +116,7 @@ public class QuartzScheduler implements Scheduler {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
                         }
                         ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
-                        if (scheduled.concurrentExecution() == ConcurrentExection.SKIP) {
+                        if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
                             invoker = new SkipConcurrentExecutionInvoker(invoker);
                         }
                         invokers.put(identity, invoker);

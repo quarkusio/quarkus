@@ -11,7 +11,7 @@ import io.quarkus.scheduler.ScheduledExecution;
  * A scheduled invoker wrapper that skips concurrent executions.
  * 
  * @see Scheduled#concurrentExecution()
- * @see io.quarkus.scheduler.Scheduled.ConcurrentExection#SKIP
+ * @see io.quarkus.scheduler.Scheduled.ConcurrentExecution#SKIP
  */
 public final class SkipConcurrentExecutionInvoker implements ScheduledInvoker {
 

@@ -33,7 +33,7 @@ import com.cronutils.parser.CronParser;
 
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
-import io.quarkus.scheduler.Scheduled.ConcurrentExection;
+import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
@@ -83,7 +83,7 @@ public class SimpleScheduler implements Scheduler {
                     SimpleTrigger trigger = createTrigger(method.getInvokerClassName(), parser, scheduled, nameSequence,
                             config);
                     ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
-                    if (scheduled.concurrentExecution() == ConcurrentExection.SKIP) {
+                    if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
                         invoker = new SkipConcurrentExecutionInvoker(invoker);
                     }
                     scheduledTasks.add(new ScheduledTask(trigger, invoker));

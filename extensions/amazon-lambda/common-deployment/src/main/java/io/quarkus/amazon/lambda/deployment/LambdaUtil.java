@@ -50,6 +50,13 @@ public class LambdaUtil {
         Files.write(artifact, output.getBytes(StandardCharsets.UTF_8));
     }
 
+    public static void writeExecutableFile(OutputTargetBuildItem target, String name, String output) throws IOException {
+        writeFile(target, name, output);
+
+        Path artifact = target.getOutputDirectory().resolve(name);
+        artifact.toFile().setExecutable(true, true);
+    }
+
     public static String copyResource(String resource) throws Exception {
         try (InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource)) {
 
@@ -69,14 +76,14 @@ public class LambdaUtil {
 
     public static void generateScripts(String handler, OutputTargetBuildItem target) throws Exception {
         String output = copyResource("lambda/bootstrap-example.sh");
-        writeFile(target, "bootstrap-example.sh", output);
+        writeExecutableFile(target, "bootstrap-example.sh", output);
 
         String lambdaName = artifactToLambda(target.getBaseName());
 
         output = copyResource("lambda/manage.sh")
                 .replace("${handler}", handler)
                 .replace("${lambdaName}", lambdaName);
-        writeFile(target, "manage.sh", output);
+        writeExecutableFile(target, "manage.sh", output);
 
         output = copyResource("lambda/sam.jvm.yaml")
                 .replace("${handler}", handler)

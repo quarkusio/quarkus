@@ -12,6 +12,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.AnnotationVisitor;
@@ -47,6 +48,8 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
     private static final String JSON_PROPERTY_BINARY_NAME = "com/fasterxml/jackson/annotation/JsonProperty";
     private static final String JSON_PROPERTY_SIGNATURE = "L" + JSON_PROPERTY_BINARY_NAME + ";";
+
+    private static final DotName JSON_IGNORE_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
 
     protected MetamodelType modelInfo;
     protected final ClassInfo panacheEntityBaseClassInfo;
@@ -242,7 +245,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     }
                     // Add an explicit Jackson annotation so that the entire property is not ignored due to having @XmlTransient
                     // on the field
-                    if (!field.hasAnnotation(JSON_PROPERTY_SIGNATURE)) {
+                    if (shouldAddJsonProperty(field)) {
                         mv.visitAnnotation(JSON_PROPERTY_SIGNATURE, true);
                     }
                     mv.visitEnd();
@@ -285,6 +288,22 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     mv.visitEnd();
                 }
             }
+        }
+
+        private boolean shouldAddJsonProperty(EntityField entityField) {
+            if (isAnnotatedWithJsonIgnore(entityField)) {
+                return false;
+            }
+            return !entityField.hasAnnotation(JSON_PROPERTY_SIGNATURE);
+        }
+
+        private boolean isAnnotatedWithJsonIgnore(EntityField entityField) {
+            FieldInfo field = entityInfo.field(entityField.name);
+            if (field != null) {
+                return field.hasAnnotation(JSON_IGNORE_DOT_NAME);
+            }
+
+            return false;
         }
 
         protected abstract void generateAccessorSetField(MethodVisitor mv, EntityField field);

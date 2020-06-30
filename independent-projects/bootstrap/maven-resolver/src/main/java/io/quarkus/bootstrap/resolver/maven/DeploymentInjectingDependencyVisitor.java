@@ -40,10 +40,9 @@ public class DeploymentInjectingDependencyVisitor {
 
     private final MavenArtifactResolver resolver;
     private final List<Dependency> managedDeps;
-    private final List<Dependency> runtimeExtensionDeps = new ArrayList<>();
     private final List<RemoteRepository> mainRepos;
 
-    boolean injectedDeps;
+    private boolean collectExtensions = true;
 
     private List<DependencyNode> runtimeNodes = new ArrayList<>();
     private final AppModel.Builder appBuilder;
@@ -57,7 +56,7 @@ public class DeploymentInjectingDependencyVisitor {
     }
 
     public boolean isInjectedDeps() {
-        return injectedDeps;
+        return !runtimeNodes.isEmpty();
     }
 
     public void injectDeploymentDependencies(DependencyNode root) throws BootstrapDependencyProcessingException {
@@ -68,10 +67,7 @@ public class DeploymentInjectingDependencyVisitor {
         }
     }
 
-    public void collectRuntimeExtensions(List<DependencyNode> list) {
-        if (list.isEmpty()) {
-            return;
-        }
+    private void collectRuntimeExtensions(List<DependencyNode> list) {
         int i = 0;
         while (i < list.size()) {
             collectRuntimeExtensions(list.get(i++));
@@ -84,54 +80,59 @@ public class DeploymentInjectingDependencyVisitor {
             return;
         }
         final Path path = resolve(artifact);
+        final boolean parentCollectsExtensions = collectExtensions;
         try {
             if (Files.isDirectory(path)) {
-                processMetaInfDir(node, path.resolve(BootstrapConstants.META_INF));
+                collectExtensions &= !processMetaInfDir(node, path.resolve(BootstrapConstants.META_INF));
             } else {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    processMetaInfDir(node, artifactFs.getPath(BootstrapConstants.META_INF));
+                    collectExtensions &= !processMetaInfDir(node, artifactFs.getPath(BootstrapConstants.META_INF));
                 }
             }
+            collectRuntimeExtensions(node.getChildren());
+        } catch (DeploymentInjectionException e) {
+            throw e;
         } catch (Exception t) {
             throw new DeploymentInjectionException("Failed to inject extension deplpyment dependencies", t);
+        } finally {
+            collectExtensions = parentCollectsExtensions;
         }
-        collectRuntimeExtensions(node.getChildren());
     }
 
-    private void processMetaInfDir(DependencyNode node, Path metaInfDir) throws BootstrapDependencyProcessingException {
-        if (!Files.exists(metaInfDir)) {
-            return;
-        }
+    /**
+     * @return true in case the node is a Quarkus runtime extension artifact, otherwise - false
+     * @throws BootstrapDependencyProcessingException in case of a failure
+     */
+    private boolean processMetaInfDir(DependencyNode node, Path metaInfDir) throws BootstrapDependencyProcessingException {
         final Path p = metaInfDir.resolve(BootstrapConstants.DESCRIPTOR_FILE_NAME);
-        if (!Files.exists(p)) {
-            return;
-        }
-        processPlatformArtifact(node, p);
+        return Files.exists(p) ? processPlatformArtifact(node, p) : false;
     }
 
-    private void processPlatformArtifact(DependencyNode node, Path descriptor) throws BootstrapDependencyProcessingException {
+    /**
+     * @return true in case the node is a Quarkus runtime extension artifact, otherwise - false
+     * @throws BootstrapDependencyProcessingException in case of a failure
+     */
+    private boolean processPlatformArtifact(DependencyNode node, Path descriptor)
+            throws BootstrapDependencyProcessingException {
         final Properties rtProps = resolveDescriptor(descriptor);
         if (rtProps == null) {
-            return;
+            return false;
         }
-        final String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         appBuilder.handleExtensionProperties(rtProps, node.getArtifact().toString());
+        final String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         if (value == null) {
-            return;
+            return false;
         }
         Artifact deploymentArtifact = toArtifact(value);
         if (deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
             deploymentArtifact = deploymentArtifact.setVersion(node.getArtifact().getVersion());
         }
-        node.setData(QUARKUS_DEPLOYMENT_ARTIFACT, deploymentArtifact);
-        runtimeNodes.add(node);
-        Dependency dependency = new Dependency(node.getArtifact(), JavaScopes.COMPILE);
-        runtimeExtensionDeps.add(dependency);
         managedDeps.add(new Dependency(deploymentArtifact, JavaScopes.COMPILE));
-    }
-
-    public List<Dependency> getRuntimeExtensionDeps() {
-        return runtimeExtensionDeps;
+        if (collectExtensions) {
+            node.setData(QUARKUS_DEPLOYMENT_ARTIFACT, deploymentArtifact);
+            runtimeNodes.add(node);
+        }
+        return true;
     }
 
     private void replaceWith(DependencyNode originalNode, DependencyNode newNode)
@@ -149,7 +150,6 @@ public class DeploymentInjectingDependencyVisitor {
         originalNode.setArtifact(newNode.getArtifact());
         originalNode.getDependency().setArtifact(newNode.getArtifact());
         originalNode.setChildren(children);
-        injectedDeps = true;
     }
 
     private DependencyNode collectDependencies(Artifact artifact) throws BootstrapDependencyProcessingException {

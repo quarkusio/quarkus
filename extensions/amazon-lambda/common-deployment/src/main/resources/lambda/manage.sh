@@ -30,7 +30,7 @@ function cmd_invoke() {
     --payload file://payload.json \
     --log-type Tail \
     --query 'LogResult' \
-    --output text |  base64 -d
+    --output text |  base64 --decode
   { set +x; } 2>/dev/null
   cat response.txt && rm -f response.txt
 }

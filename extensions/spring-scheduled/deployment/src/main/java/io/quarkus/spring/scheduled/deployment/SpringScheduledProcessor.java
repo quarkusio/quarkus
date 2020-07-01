@@ -4,9 +4,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +58,6 @@ public class SpringScheduledProcessor {
     void collectScheduledMethods(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
-        Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
         AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
@@ -71,18 +68,17 @@ public class SpringScheduledProcessor {
                 if (scheduledAnnotation != null) {
                     schedules = Collections.singletonList(scheduledAnnotation);
                 } else {
-                    AnnotationInstance scheduledsAnnotation = annotationStore.getAnnotation(method, SPRING_SCHEDULES);
-                    if (scheduledsAnnotation != null) {
+                    AnnotationInstance schedulesAnnotation = annotationStore.getAnnotation(method, SPRING_SCHEDULES);
+                    if (schedulesAnnotation != null) {
                         schedules = new ArrayList<>();
-                        for (AnnotationInstance scheduledInstance : scheduledsAnnotation.value().asNestedArray()) {
-                            schedules.add(scheduledInstance);
+                        for (AnnotationInstance scheduledInstance : schedulesAnnotation.value().asNestedArray()) {
+                            schedules.add(AnnotationInstance.create(scheduledInstance.name(),
+                                    schedulesAnnotation.target(), scheduledInstance.values()));
                         }
                     }
                 }
                 processSpringScheduledAnnotation(scheduledBusinessMethods, bean, method, schedules);
-
             }
-
         }
     }
 

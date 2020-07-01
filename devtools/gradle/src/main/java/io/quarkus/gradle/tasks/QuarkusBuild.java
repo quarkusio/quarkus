@@ -90,8 +90,11 @@ public class QuarkusBuild extends QuarkusTask {
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
         final AppModelResolver modelResolver = extension().getAppModelResolver();
 
-        final Properties realProperties = getBuildSystemProperties(appArtifact);
-
+        final Properties effectiveProperties = getBuildSystemProperties(appArtifact);
+        if (ignoredEntries != null && ignoredEntries.size() > 0) {
+            String joinedEntries = String.join(",", ignoredEntries);
+            effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+        }
         boolean clear = false;
         if (uberJar && System.getProperty("quarkus.package.uber-jar") == null) {
             System.setProperty("quarkus.package.uber-jar", "true");
@@ -102,7 +105,7 @@ public class QuarkusBuild extends QuarkusTask {
                 .setAppModelResolver(modelResolver)
                 .setTargetDirectory(getProject().getBuildDir().toPath())
                 .setBaseName(extension().finalName())
-                .setBuildSystemProperties(realProperties)
+                .setBuildSystemProperties(effectiveProperties)
                 .setAppArtifact(appArtifact)
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)

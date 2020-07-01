@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.jar.JarInputStream;
@@ -54,10 +53,5 @@ public class BuildIT extends MojoTestBase {
                 assertThat(manifest).isNotNull();
             }
         }
-    }
-
-    private List<File> getFilesEndingWith(File dir, String suffix) {
-        final File[] files = dir.listFiles((d, name) -> name.endsWith(suffix));
-        return files != null ? Arrays.asList(files) : Collections.emptyList();
     }
 }

@@ -34,3 +34,4 @@ quarkus.log
 replay_*.logß
 nbactions.xml
 nb-configuration.xml
+.cache

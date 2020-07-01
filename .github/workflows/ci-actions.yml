@@ -416,13 +416,12 @@ jobs:
           - category: Data2
             db2: "true"
             mysql: "true"
-            postgres: "true"
             mariadb: "true"
             timeout: 65
             test-modules: >
               jpa
-              jpa-postgresql
               jpa-mysql
+              jpa-db2
               reactive-mysql-client
               reactive-db2-client
               hibernate-reactive-db2
@@ -445,8 +444,9 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 55
+            timeout: 60
             test-modules: >
+              jpa-postgresql
               hibernate-search-elasticsearch
               narayana-stm
               narayana-jta

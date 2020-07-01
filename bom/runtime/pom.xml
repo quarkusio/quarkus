@@ -115,6 +115,7 @@
         <mysql-jdbc.version>8.0.20</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
+        <db2-jdbc.version>11.5.4.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.3.0</rest-assured.version>
         <junit.jupiter.version>5.6.2</junit.jupiter.version>
@@ -715,6 +716,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jaeger-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-db2</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3328,6 +3334,11 @@
                 <groupId>org.apache.derby</groupId>
                 <artifactId>derbytools</artifactId>
                 <version>${derby-jdbc.version}</version>
+            </dependency>
+            <dependency>
+            	<groupId>com.ibm.db2</groupId>
+            	<artifactId>jcc</artifactId>
+            	<version>${db2-jdbc.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.sqlserver</groupId>

@@ -294,7 +294,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         run(true, "-Dquarkus.platform.version=" + projectVersion,
                 "-Dquarkus-plugin.version=" + projectVersion);
 
-        assertEquals("class not found", DevModeTestUtils.getHttpResponse("/hello"));
+        assertEquals("Test class is not visible", DevModeTestUtils.getHttpResponse("/hello"));
     }
 
     @Test

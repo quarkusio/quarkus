@@ -1,4 +1,4 @@
-package org.acme.quarkus.test;
+package org.acme;
 
 public class SomeTestSupport {
 

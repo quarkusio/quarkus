@@ -294,6 +294,9 @@ public class LocalProject {
             }
         }
         for (Dependency dep : project.getRawModel().getDependencies()) {
+            if ("test".equals(dep.getScope())) {
+                continue;
+            }
             final AppArtifactKey depKey = project.getKey(dep);
             final LocalProject localDep = project.workspace.getProject(depKey);
             if (localDep == null || addedDeps.contains(depKey)) {

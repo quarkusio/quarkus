@@ -128,12 +128,16 @@ public final class HibernateReactiveProcessor {
         }
 
         // we only support the default pool for now
-        Optional<String> dbKind = dataSourcesBuildTimeConfig.defaultDataSource.dbKind;
+        Optional<String> dbKindOptional = dataSourcesBuildTimeConfig.defaultDataSource.dbKind;
+        if (dbKindOptional.isPresent()) {
+            final String dbKind = dbKindOptional.get();
+            ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(resourceProducer,
+                    systemPropertyProducer,
+                    dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode());
 
-        ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(resourceProducer, systemPropertyProducer,
-                dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode());
+            persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(reactivePU, true));
+        }
 
-        persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(reactivePU));
     }
 
     /**
@@ -147,7 +151,7 @@ public final class HibernateReactiveProcessor {
     private ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
-            Optional<String> dbKind,
+            String dbKind,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode) {
 

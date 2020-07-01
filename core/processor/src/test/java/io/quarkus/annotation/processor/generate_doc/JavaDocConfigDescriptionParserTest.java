@@ -245,7 +245,7 @@ public class JavaDocConfigDescriptionParserTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "#", "*", "\\", "[", "]" })
+    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
     public void escape(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";

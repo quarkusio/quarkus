@@ -1,8 +1,12 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Set;
+
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 
 /**
  * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds
@@ -13,12 +17,41 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
+    private final MultiTenancyStrategy multiTenancyStrategy;
+    private final boolean isReactive;
 
-    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor) {
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, boolean isReactive) {
         this.descriptor = descriptor;
+        this.multiTenancyStrategy = MultiTenancyStrategy.NONE;
+        this.isReactive = isReactive;
     }
 
-    public ParsedPersistenceXmlDescriptor getDescriptor() {
-        return descriptor;
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
+            MultiTenancyStrategy multiTenancyStrategy, boolean isReactive) {
+        this.descriptor = descriptor;
+        this.multiTenancyStrategy = multiTenancyStrategy;
+        this.isReactive = isReactive;
+    }
+
+    /**
+     * Modifies the passed set by adding all explicitly listed classnames from this PU
+     * into the set.
+     * 
+     * @param classNames the set to modify
+     */
+    public void addListedEntityClassNamesTo(Set<String> classNames) {
+        classNames.addAll(descriptor.getManagedClassNames());
+    }
+
+    public String getExplicitSqlImportScriptResourceName() {
+        return descriptor.getProperties().getProperty("javax.persistence.sql-load-script-source");
+    }
+
+    public String getPersistenceUnitName() {
+        return descriptor.getName();
+    }
+
+    public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition() {
+        return new QuarkusPersistenceUnitDefinition(descriptor, multiTenancyStrategy, isReactive);
     }
 }

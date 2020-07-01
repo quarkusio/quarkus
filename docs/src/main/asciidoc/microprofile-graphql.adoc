@@ -19,13 +19,13 @@ gives clients the power to ask for exactly what they need and nothing more, make
 and enables powerful developer tools.
 
 **GraphQL** was originally developed by **Facebook** in 2012 and has been
-a open standard since 2015.
+an open standard since 2015.
 
-GraphQL is not a replacement for REST API specification but merely a
-alternative. Unlike REST GraphQL API's have a ability to benefit the client by:
+GraphQL is not a replacement for REST API specification but merely an
+alternative. Unlike REST, GraphQL API's have the ability to benefit the client by:
 
 Preventing Over-fetching and Under-fetching::
-    REST API's are server-driven fixed data responses that can not be determined by
+    REST API's are server-driven fixed data responses that cannot be determined by
     the client. Although the client does not require all the fields the client
     must retrieve all the data hence `Over-fetching`. A client may also require
     multiple REST API calls according to the first call (HATEOAS) to retrieve
@@ -50,7 +50,7 @@ To complete this guide, you need:
 In this guide, we build a simple GraphQL application that exposes a GraphQL API
 at `/graphql`.
 
-This example was inspired by a popular GraphQL API
+This example was inspired by a popular GraphQL API.
 
 == Solution
 
@@ -99,7 +99,7 @@ This will add the following to your `pom.xml`:
 
 In this section we will start creating the GraphQL API.
 
-First, create a the following entities representing a film from a galaxy far far away:
+First, create the following entities representing a film from a galaxy far far away:
 
 [source,java]
 ----
@@ -339,7 +339,7 @@ public class FilmResource {
 }
 ----
 
-<1> `@GraphQLApi` annotation indicates that the CDI will be a GraphQL endpoint
+<1> `@GraphQLApi` annotation indicates that the CDI bean will be a GraphQL endpoint
 <2> `@Query` annotation defines that this method will be queryable with the name `allFilms`
 <3> Documentation of the queryable method
 
@@ -371,8 +371,8 @@ The server will return the complete schema of the GraphQL API.
 
 GraphiQL UI is a great tool permitting easy interaction with your GraphQL APIs.
 
-The Quarkus `smallrye-graphql` extension comes with `GraphiQL` that by
-default is started in `dev` and `test` modes and by configuration in `production`.
+The Quarkus `smallrye-graphql` extension ships with `GraphiQL` and enables it by default in `dev` and `test` modes,
+but it can also be explicitly configured for `production` mode as well.
 
 GraphiQL can be accessed from http://localhost:8080/graphql-ui/ .
 
@@ -431,10 +431,10 @@ Let's continue to expand our GraphQL API by adding the following to the
 ----
 
 WARNING: Notice how we have excluded the value in the `@Query` annotation.
-Therefore, the name of the query is implicitly set as the function name
+Therefore, the name of the query is implicitly set as the method name
 excluding the `get`.
 
-This query will enable the client to retrieve the film by id.
+This query will allow the client to retrieve the film by id.
 
 Enter the following into `GraphiQL` and make a request.
 
@@ -484,7 +484,7 @@ This enabled the client to fetch the required data in a single request.
 
 == Expanding the API
 
-Until now we have created a GraphQL API to retrieve film data.
+Until now, we have created a GraphQL API to retrieve film data.
 We now want to enable the clients to retrieve the `Hero` data of the `Film`.
 
 Add the following to our `FilmResource` class:
@@ -605,7 +605,7 @@ Add the following to our `FilmResource` class:
 ----
 
 By using the `@DefaultValue` annotation we have determined that the surname value
-will be `Skywalker` when the parameter is not given.
+will be `Skywalker` when the parameter is not provided.
 
 Test the following queries with GraphiQL:
 

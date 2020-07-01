@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.List;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
@@ -16,6 +17,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected RepositorySystem repoSystem;
     protected RepositorySystemSession repoSession;
     protected List<RemoteRepository> remoteRepos;
+    protected RemoteRepositoryManager remoteRepoManager;
     protected String alternativePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
@@ -107,6 +109,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setRemoteRepositories(List<RemoteRepository> remoteRepos) {
         this.remoteRepos = remoteRepos;
+        return (T) this;
+    }
+
+    /**
+     * Remote repository manager
+     *
+     * @param remoteRepoManager
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setRemoteRepositoryManager(RemoteRepositoryManager remoteRepoManager) {
+        this.remoteRepoManager = remoteRepoManager;
         return (T) this;
     }
 

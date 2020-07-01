@@ -32,6 +32,14 @@ public class ParserTest {
     }
 
     @Test
+    public void testSectionEndWithoutStart() {
+        assertParserError("Hello {/}",
+                "Parser error on line 1: no section start tag found for {/}", 1);
+        assertParserError("{#if true}Bye...{/if} Hello {/if}",
+                "Parser error on line 1: no section start tag found for {/if}", 1);
+    }
+
+    @Test
     public void testNonexistentHelper() {
         assertParserError("Hello!\n {#foo test/}",
                 "Parser error on line 2: no section helper found for {#foo test/}", 2);

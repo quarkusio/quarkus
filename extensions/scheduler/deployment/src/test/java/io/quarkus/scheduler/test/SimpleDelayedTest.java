@@ -33,7 +33,7 @@ public class SimpleDelayedTest {
 
         static final CountDownLatch LATCH = new CountDownLatch(4);
 
-        @Scheduled(every = "1s", delay = 1, delayUnit = TimeUnit.SECONDS)
+        @Scheduled(every = "1s", delay = 1, delayUnit = TimeUnit.SECONDS, delayed = "2h")
         @Scheduled(every = "1s", delayed = "{jobs.delay}")
         void ping() {
             LATCH.countDown();

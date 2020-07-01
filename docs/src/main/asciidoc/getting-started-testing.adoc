@@ -303,6 +303,7 @@ public class TestStereotypeTestCase {
 }
 ----
 
+[[testing_different_profiles]]
 == Testing Different Profiles
 
 So far in all our examples we only start Quarkus once for all tests. Before the first test is run Quarkus will boot,

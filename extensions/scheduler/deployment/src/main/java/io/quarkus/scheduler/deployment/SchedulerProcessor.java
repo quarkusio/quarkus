@@ -142,11 +142,13 @@ public class SchedulerProcessor {
             if (scheduledAnnotation != null) {
                 schedules = Collections.singletonList(scheduledAnnotation);
             } else {
-                AnnotationInstance scheduledsAnnotation = annotationStore.getAnnotation(method, SCHEDULES_NAME);
-                if (scheduledsAnnotation != null) {
+                AnnotationInstance schedulesAnnotation = annotationStore.getAnnotation(method, SCHEDULES_NAME);
+                if (schedulesAnnotation != null) {
                     schedules = new ArrayList<>();
-                    for (AnnotationInstance scheduledInstance : scheduledsAnnotation.value().asNestedArray()) {
-                        schedules.add(scheduledInstance);
+                    for (AnnotationInstance scheduledInstance : schedulesAnnotation.value().asNestedArray()) {
+                        // We need to set the target of the containing instance
+                        schedules.add(AnnotationInstance.create(scheduledInstance.name(), schedulesAnnotation.target(),
+                                scheduledInstance.values()));
                     }
                 }
             }
@@ -220,19 +222,19 @@ public class SchedulerProcessor {
         List<ScheduledMethodMetadata> scheduledMetadata = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
-        for (ScheduledBusinessMethodItem businessMethod : scheduledMethods) {
-            ScheduledMethodMetadata scheduledMethod = new ScheduledMethodMetadata();
-            String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
+        for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
+            ScheduledMethodMetadata metadata = new ScheduledMethodMetadata();
+            String invokerClass = generateInvoker(scheduledMethod, classOutput);
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
-            scheduledMethod.setInvokerClassName(invokerClass);
+            metadata.setInvokerClassName(invokerClass);
             List<Scheduled> schedules = new ArrayList<>();
-            for (AnnotationInstance scheduled : businessMethod.getSchedules()) {
+            for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 schedules.add(annotationProxy.builder(scheduled, Scheduled.class).build(classOutput));
             }
-            scheduledMethod.setSchedules(schedules);
-            scheduledMethod.setMethodDescription(
-                    businessMethod.getMethod().declaringClass() + "#" + businessMethod.getMethod().name());
-            scheduledMetadata.add(scheduledMethod);
+            metadata.setSchedules(schedules);
+            metadata.setMethodDescription(
+                    scheduledMethod.getMethod().declaringClass() + "#" + scheduledMethod.getMethod().name());
+            scheduledMetadata.add(metadata);
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
@@ -242,7 +244,10 @@ public class SchedulerProcessor {
         return new FeatureBuildItem(Feature.SCHEDULER);
     }
 
-    private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
+    private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
+
+        BeanInfo bean = scheduledMethod.getBean();
+        MethodInfo method = scheduledMethod.getMethod();
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -302,7 +307,9 @@ public class SchedulerProcessor {
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
             Map<String, AnnotationInstance> encounteredIdentities) {
+        MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
+        AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
             if (SchedulerContext.isConfigValue(cron)) {
@@ -314,8 +321,12 @@ public class SchedulerProcessor {
             } catch (IllegalArgumentException e) {
                 return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
             }
+            if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
+                LOGGER.warnf(
+                        "%s declared on %s#%s() defines both cron() and every() - the cron expression takes precedence",
+                        schedule, method.declaringClass().name(), method.name());
+            }
         } else {
-            AnnotationValue everyValue = schedule.value("every");
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
                 if (SchedulerContext.isConfigValue(every)) {
@@ -333,8 +344,9 @@ public class SchedulerProcessor {
                 return new IllegalStateException("@Scheduled must declare either cron() or every(): " + schedule);
             }
         }
-        if (schedule.value("delay") == null) {
-            AnnotationValue delayedValue = schedule.value("delayed");
+        AnnotationValue delay = schedule.value("delay");
+        AnnotationValue delayedValue = schedule.value("delayed");
+        if (delay == null || delay.asLong() <= 0) {
             if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
                 String delayed = delayedValue.asString().trim();
                 if (SchedulerContext.isConfigValue(delayed)) {
@@ -348,6 +360,12 @@ public class SchedulerProcessor {
                 } catch (Exception e) {
                     return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
                 }
+            }
+        } else {
+            if (delayedValue != null && !delayedValue.asString().trim().isEmpty()) {
+                LOGGER.warnf(
+                        "%s declared on %s#%s() defines both delay() and delayed() - the delayed() value is ignored",
+                        schedule, method.declaringClass().name(), method.name());
             }
         }
 

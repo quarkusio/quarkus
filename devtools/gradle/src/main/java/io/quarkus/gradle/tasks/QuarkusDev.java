@@ -58,7 +58,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
-import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.JavaBinFinder;
@@ -482,20 +481,19 @@ public class QuarkusDev extends QuarkusTask {
         boolean foundQuarkusPlugin = false;
         Project prj = getProject();
         while (prj != null && !foundQuarkusPlugin) {
-            if (prj.getPlugins().hasPlugin(QuarkusPlugin.ID)) {
-                final Set<ResolvedDependency> firstLevelDeps = prj.getBuildscript().getConfigurations().getByName("classpath")
-                        .getResolvedConfiguration().getFirstLevelModuleDependencies();
-                if (firstLevelDeps.isEmpty()) {
-                    // TODO this looks weird
-                } else {
-                    for (ResolvedDependency rd : firstLevelDeps) {
-                        if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
-                            rd.getAllModuleArtifacts().stream()
-                                    .map(ResolvedArtifact::getFile)
-                                    .forEach(f -> addToClassPaths(classPathManifest, f));
-                            foundQuarkusPlugin = true;
-                            break;
-                        }
+            final Set<ResolvedDependency> firstLevelDeps = prj.getBuildscript().getConfigurations().getByName("classpath")
+                    .getResolvedConfiguration().getFirstLevelModuleDependencies();
+
+            if (firstLevelDeps.isEmpty()) {
+                // TODO this looks weird
+            } else {
+                for (ResolvedDependency rd : firstLevelDeps) {
+                    if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
+                        rd.getAllModuleArtifacts().stream()
+                                .map(ResolvedArtifact::getFile)
+                                .forEach(f -> addToClassPaths(classPathManifest, f));
+                        foundQuarkusPlugin = true;
+                        break;
                     }
                 }
             }

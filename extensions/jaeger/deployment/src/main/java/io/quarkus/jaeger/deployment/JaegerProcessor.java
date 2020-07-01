@@ -6,6 +6,7 @@ import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.Tag;
 
+import io.jaegertracing.internal.JaegerTracer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -16,6 +17,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.jaeger.runtime.JaegerBuildTimeConfig;
 import io.quarkus.jaeger.runtime.JaegerConfig;
 import io.quarkus.jaeger.runtime.JaegerDeploymentRecorder;
@@ -27,6 +29,12 @@ public class JaegerProcessor {
 
     @Inject
     BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport;
+
+    @BuildStep(onlyIf = NativeBuild.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void setVersion(JaegerDeploymentRecorder jdr) {
+        jdr.setJaegerVersion(JaegerTracer.getVersionFromProperties());
+    }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)

@@ -17,6 +17,12 @@ public class JaegerDeploymentRecorder {
     private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
+    public static String jaegerVersion;
+
+    public void setJaegerVersion(String version) {
+        jaegerVersion = version;
+    }
+
     synchronized public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
         registerTracer(jaeger, appConfig, new NoopMetricsFactory());
     }

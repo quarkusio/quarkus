@@ -6,6 +6,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
@@ -51,6 +52,8 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private final Member javaMember;
     private final int position;
 
+    private final LazyValue<T> cachedGetResult;
+
     InstanceImpl(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
             CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
         this(targetBean, type, getRequiredType(type), qualifiers, creationalContext, annotations, javaMember, position);
@@ -77,6 +80,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         this.annotations = annotations;
         this.javaMember = javaMember;
         this.position = position;
+        this.cachedGetResult = isGetCached(annotations) ? new LazyValue<>(this::getInternal) : null;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     @Override
     public T get() {
-        return getBeanInstance(bean());
+        return cachedGetResult != null ? cachedGetResult.get() : getInternal();
     }
 
     @Override
@@ -180,6 +184,18 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return creationalContext.hasDependentInstances();
     }
 
+    @Override
+    public void clearCache() {
+        if (cachedGetResult.isSet()) {
+            creationalContext.release();
+            cachedGetResult.clear();
+        }
+    }
+
+    private T getInternal() {
+        return getBeanInstance(bean());
+    }
+
     void destroy() {
         creationalContext.release();
     }
@@ -261,6 +277,15 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             }
         }
         throw new IllegalArgumentException("Not a valid type: " + type);
+    }
+
+    private boolean isGetCached(Set<Annotation> annotations) {
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(WithCaching.class)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

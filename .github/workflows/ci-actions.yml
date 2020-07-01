@@ -444,7 +444,7 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 55
+            timeout: 60
             test-modules: >
               jpa-postgresql
               hibernate-search-elasticsearch

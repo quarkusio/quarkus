@@ -394,7 +394,7 @@ class KubernetesProcessor {
             session.resources().decorate(target, new AddInitContainerDecorator(name, ContainerConverter.convert(e)));
         });
 
-        config.getContainers().entrySet().forEach(e -> {
+        config.getSidecars().entrySet().forEach(e -> {
             session.resources().decorate(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)));
         });
 

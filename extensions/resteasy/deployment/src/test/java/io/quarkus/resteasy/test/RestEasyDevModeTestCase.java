@@ -1,7 +1,8 @@
 package io.quarkus.resteasy.test;
 
+import static org.hamcrest.Matchers.is;
+
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -16,16 +17,13 @@ public class RestEasyDevModeTestCase {
 
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(PostResource.class);
-                }
-            });
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(PostResource.class)
+                    .addClass(GreetingResource.class)
+                    .addAsResource("config-test.properties", "application.properties"));
 
     @Test
-    public void testRESTeasyHotReplacement() {
+    public void testRESTEasyHotReplacement() {
         RestAssured.given().body("Stuart")
                 .when()
                 .post("/post")
@@ -42,5 +40,18 @@ public class RestEasyDevModeTestCase {
                 .post("/post")
                 .then()
                 .body(Matchers.equalTo("Hi: Stuart"));
+    }
+
+    @Test
+    public void testConfigHotReplacement() {
+        RestAssured.when().get("/greeting").then()
+                .statusCode(200)
+                .body(is("hello from dev mode"));
+
+        test.modifyResourceFile("application.properties", s -> s.replace("hello", "hi"));
+
+        RestAssured.when().get("/greeting").then()
+                .statusCode(200)
+                .body(is("hi from dev mode"));
     }
 }

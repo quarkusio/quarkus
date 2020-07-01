@@ -15,7 +15,7 @@ import org.wildfly.security.auth.server.SecurityRealm;
 import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
 import io.quarkus.elytron.security.ldap.config.DirContextConfig;
 import io.quarkus.elytron.security.ldap.config.IdentityMappingConfig;
-import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmConfig;
+import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -25,19 +25,19 @@ public class LdapRecorder {
     /**
      * Create a runtime value for a {@linkplain LdapSecurityRealm}
      *
-     * @param config - the realm config
-     * @return - runtime value wrapper for the SecurityRealm
+     * @param runtimeConfig the realm config
+     * @return runtime value wrapper for the SecurityRealm
      */
-    public RuntimeValue<SecurityRealm> createRealm(LdapSecurityRealmConfig config) {
+    public RuntimeValue<SecurityRealm> createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
         LdapSecurityRealmBuilder builder = LdapSecurityRealmBuilder.builder()
-                .setDirContextSupplier(createDirContextSupplier(config.dirContext))
+                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext))
                 .identityMapping()
-                .map(createAttributeMappings(config.identityMapping))
-                .setRdnIdentifier(config.identityMapping.rdnIdentifier)
-                .setSearchDn(config.identityMapping.searchBaseDn)
+                .map(createAttributeMappings(runtimeConfig.identityMapping))
+                .setRdnIdentifier(runtimeConfig.identityMapping.rdnIdentifier)
+                .setSearchDn(runtimeConfig.identityMapping.searchBaseDn)
                 .build();
 
-        if (config.directVerification) {
+        if (runtimeConfig.directVerification) {
             builder.addDirectEvidenceVerification(false);
         }
 
@@ -47,8 +47,8 @@ public class LdapRecorder {
     private ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url,
-                dirContext.principal,
-                dirContext.password);
+                dirContext.principal.orElse(null),
+                dirContext.password.orElse(null));
         return () -> dirContextFactory.obtainDirContext(DirContextFactory.ReferralMode.IGNORE);
     }
 

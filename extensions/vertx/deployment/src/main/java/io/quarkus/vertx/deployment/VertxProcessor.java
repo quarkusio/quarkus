@@ -18,12 +18,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
@@ -71,7 +70,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(CoreVertxBuildItem vertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
+    VertxBuildItem build(CoreVertxBuildItem vertx, VertxRecorder recorder,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
@@ -108,14 +107,13 @@ class VertxProcessor {
     }
 
     @BuildStep
-    void validateBeanDeployment(
-            ValidationPhaseBuildItem validationPhase,
+    void collectEventConsumers(
+            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
-            BuildProducer<ValidationErrorBuildItem> errors) {
-
-        // We need to collect all business methods annotated with @MessageConsumer first
-        AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
-        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            BuildProducer<BeanConfiguratorBuildItem> errors) {
+        // We need to collect all business methods annotated with @ConsumeEvent first
+        AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+        for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
             for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {

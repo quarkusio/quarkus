@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -41,7 +40,7 @@ public class ConfigProfileTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withInterceptors(new ProfileConfigSourceInterceptor(ProfileManager.getActiveProfile()));
+        builder.withInterceptors(new QuarkusProfileConfigSourceInterceptor(ProfileManager.getActiveProfile()));
         builder.withSources(new PropertiesConfigSource(configMap, "test input", 500));
         final SmallRyeConfig config = (SmallRyeConfig) builder.build();
         cpr.registerConfig(config, classLoader);
@@ -101,6 +100,31 @@ public class ConfigProfileTestCase {
             assertEquals("v2", config.getValue("foo.two", String.class));
             assertEquals("f1", config.getValue("foo.three", String.class));
             assertFalse(config.getOptionalValue("foo.four", String.class).isPresent());
+        } finally {
+            System.clearProperty("quarkus-profile");
+        }
+    }
+
+    @Test
+    public void testBackwardCompatibleOrdinalProfile() {
+        System.setProperty("quarkus-profile", "foo");
+        try {
+            final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+            builder.withInterceptors(new QuarkusProfileConfigSourceInterceptor(ProfileManager.getActiveProfile()));
+            builder.withSources(new PropertiesConfigSource(new HashMap<String, String>() {
+                {
+                    put("foo", "default");
+                }
+            }, "source", Integer.MAX_VALUE));
+            builder.withSources(new PropertiesConfigSource(new HashMap<String, String>() {
+                {
+                    put("%foo.foo", "profile");
+                }
+            }, "source", Integer.MIN_VALUE));
+            final SmallRyeConfig config = builder.build();
+            cpr.registerConfig(config, classLoader);
+
+            assertEquals("profile", config.getValue("foo", String.class));
         } finally {
             System.clearProperty("quarkus-profile");
         }

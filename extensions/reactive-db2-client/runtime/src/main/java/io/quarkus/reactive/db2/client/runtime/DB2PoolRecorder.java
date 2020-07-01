@@ -5,7 +5,6 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 
 import java.util.Map;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
@@ -22,7 +21,7 @@ import io.vertx.sqlclient.PoolOptions;
 @Recorder
 public class DB2PoolRecorder {
 
-    public RuntimeValue<DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx, BeanContainer container,
+    public RuntimeValue<DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
@@ -31,9 +30,6 @@ public class DB2PoolRecorder {
         DB2Pool pool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
                 dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveDB2Config);
-
-        DB2PoolProducer producer = container.instance(DB2PoolProducer.class);
-        producer.initialize(pool);
 
         shutdown.addShutdownTask(pool::close);
         return new RuntimeValue<>(pool);

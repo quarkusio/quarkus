@@ -697,6 +697,7 @@ public class GreetingResourceTest {
 
 If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the link:hibernate-orm-panache#mocking[Hibernate ORM with Panache Mocking] and link:mongodb-panache#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
 
+[#quarkus-test-resource]
 == Starting services before the Quarkus application starts
 
 A very common need is to start some services on which your Quarkus application depends, before the Quarkus application starts for testing. To address this need, Quarkus provides `@io.quarkus.test.common.QuarkusTestResource` and `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
@@ -727,7 +728,8 @@ guide except injecting into tests (and the native executable runs in a separate 
 
 This is covered in the link:building-native-image[Native Executable Guide].
 
-== [[test-from-ide]]Running `@QuarkusTest` from an IDE
+[[test-from-ide]]
+== Running `@QuarkusTest` from an IDE
 
 Most IDEs offer the possibility to run a selected class as JUnit test directly. For this you should set a few properties in the settings of your chosen IDE:
 

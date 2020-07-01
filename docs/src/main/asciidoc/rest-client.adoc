@@ -432,6 +432,108 @@ You should see a JSON object containing some basic information about Greece.
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Using a Mock HTTP Server for tests
+
+Setting up a mock HTTP server, against which tests are run, is a common testing pattern.
+Examples of such servers are link:http://wiremock.org/[Wiremock] and link:https://docs.hoverfly.io/projects/hoverfly-java/en/latest/index.html[Hoverfly].
+In this section we'll demonstrate how Wiremock can be leveraged for testing the `CountriesService` which was developed above.
+
+First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
+    <scope>test</scope>
+    <version>${wiremock.version}</version> <1>
+</dependency>
+----
+
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+
+In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
+annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
+values that Quarkus will use.
+
+[NOTE]
+====
+For more details about `@QuarkusTestResource` refer to  link:getting-started-testing#quarkus-test-resource[this part of the documentation].
+====
+
+Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `WiremockCountries` like so:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import java.util.Collections;
+import java.util.Map;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*; // <1>
+
+public class WiremockCountries implements QuarkusTestResourceLifecycleManager {  // <2>
+
+	private WireMockServer wireMockServer;
+
+	@Override
+	public Map<String, String> start() {
+		wireMockServer = new WireMockServer();
+		wireMockServer.start(); // <3>
+
+		stubFor(get(urlEqualTo("/v2/name/GR"))   // <4>
+				.willReturn(aResponse()
+						.withHeader("Content-Type", "application/json")
+						.withBody(
+                        "[{" +
+                        "\"name\": \"Ελλάδα\"," +
+                        "\"capital\": \"Αθήνα\"" +
+                        "}]"
+						)));
+
+		stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://restcountries.eu/rest")));   // <5>
+
+		return Collections.singletonMap("org.acme.getting.started.country.CountriesService/mp-rest/url", wireMockServer.baseUrl()); // <6>
+	}
+
+	@Override
+	public void stop() {
+		if (null != wireMockServer) {
+			wireMockServer.stop();  // <7>
+		}
+	}
+}
+----
+
+<1> Statically importing the methods in the Wiremock package makes it easier to read the test.
+<2> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
+<3> Launch Wiremock.
+<4> Configure Wiremock to stub the calls to `/v2/name/GR` by returning a specific canned response.
+<5> All HTTP calls that have not been stubbed are handled by calling the real service. This is done for demonstration purposes, as it is not something that would usually happen in a real test.
+<6> As the `start` method returns configuration that applies for tests, we set the rest-client property that controls the base URL which is used by the implementation
+of `CountriesService` to the base URL where Wiremock is listening for incoming requests.
+<7> When all tests have finished, shutdown Wiremock.
+
+
+The `CountriesResourceTest` test class needs to be annotated like so:
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(WiremockCountries.class)
+public class CountriesResourceTest {
+
+}
+----
+
+[WARNING]
+====
+`@QuarkusTestResource` applies to all tests, not just `CountriesResourceTest`.
+====
+
 == Further reading
 
  * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.2.1/microprofile-rest-client-1.2.1.html[MicroProfile Rest Client specification]

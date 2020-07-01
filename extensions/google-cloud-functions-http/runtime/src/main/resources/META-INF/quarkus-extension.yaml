@@ -10,4 +10,4 @@ metadata:
   categories:
   - "cloud"
   guide: "https://quarkus.io/guides/gcp-functions-http"
-  status: "preview"
+  status: "experimental"

@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 
@@ -103,6 +104,7 @@ public class ConfigPropertiesBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
         if (configPropertiesMetadataList.isEmpty()) {
             return;
@@ -148,7 +150,7 @@ public class ConfigPropertiesBuildStep {
                         Thread.currentThread().getContextClassLoader(), classInfo, producerClassCreator,
                         configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
                         configPropertiesMetadata.isFailOnMismatchingMember(), configPropertiesMetadata.isNeedsQualifier(),
-                        combinedIndex.getIndex(), configProperties);
+                        combinedIndex.getIndex(), reflectiveMethods, configProperties);
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());
                 }

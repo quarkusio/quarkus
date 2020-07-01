@@ -27,7 +27,7 @@ public class JdbcRecorder {
      * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      */
-    public RuntimeValue<SecurityRealm> createRealm(JdbcSecurityRealmConfig config) {
+    public RuntimeValue<SecurityRealm> createRealm(JdbcSecurityRealmRuntimeConfig config) {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {

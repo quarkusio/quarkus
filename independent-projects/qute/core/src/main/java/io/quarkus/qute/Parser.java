@@ -357,6 +357,9 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 ignoreContent = true;
             } else {
                 // Section end
+                if (section.helperName.equals(ROOT_HELPER_NAME)) {
+                    throw parserError("no section start tag found for " + tag);
+                }
                 if (!name.isEmpty() && !section.helperName.equals(name)) {
                     throw parserError(
                             "section end tag [" + name + "] does not match the start tag [" + section.helperName + "]");

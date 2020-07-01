@@ -20,6 +20,8 @@
     <modules>
         <module>app</module>
         <module>test</module>
+        <module>common</module>
+        <module>library</module>
     </modules>
 
     <build>
@@ -43,7 +45,17 @@
             </dependency>
             <dependency>
                 <groupId>org.acme</groupId>
+                <artifactId>quarkus-app-common</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
                 <artifactId>quarkus-app</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>quarkus-app-lib</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>

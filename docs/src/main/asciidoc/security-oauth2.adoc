@@ -403,7 +403,7 @@ public class MockAuthorizationServerTestResource implements QuarkusTestResourceL
     @Override
     public void stop() {
         if (null != wireMockServer) {
-            wireMockServer.stop();  // (5)
+            wireMockServer.stop();  // <5>
         }
     }
 }
@@ -412,7 +412,7 @@ public class MockAuthorizationServerTestResource implements QuarkusTestResourceL
 <1> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
 <2> Launch Wiremock.
 <3> Configure Wiremock to stub the calls to `/introspect` by returning an OAuth2 introspect response. You need to customize this line to return what's needed for your application (at least the scope property as roles are derived from the scope).
-<5> As the `start` method returns configuration that applies for tests, we set the `quarkus.oauth2.introspection-url` property that controls the URL of the introspect endpoint used by the OAuth2 extension.
+<4> As the `start` method returns configuration that applies for tests, we set the `quarkus.oauth2.introspection-url` property that controls the URL of the introspect endpoint used by the OAuth2 extension.
 <5> When all tests have finished, shutdown Wiremock.
 
 

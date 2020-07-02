@@ -15,6 +15,10 @@
     <name>Quarkus - Core - Runtime</name>
     <description>Quarkus core components</description>
 
+    <properties>
+        <revapi.skip>false</revapi.skip>
+    </properties>
+
     <dependencies>
         <dependency>
           <groupId>jakarta.annotation</groupId>

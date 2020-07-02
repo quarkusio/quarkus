@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- The basic configuration for Revapi API checks in all modules that have API checks enabled. -->
+<analysisConfiguration>
+  <revapi.java>
+    <missing-classes>
+      <behavior>error</behavior>
+      <ignoreMissingAnnotations>true</ignoreMissingAnnotations>
+    </missing-classes>
+    <filter>
+      <packages>
+        <regex>true</regex>
+        <exclude><item>javax\..*</item></exclude>
+      </packages>
+    </filter>
+  </revapi.java>
+    <!-- <revapi.reporter.text id="stdout">
+      <output>out</output>
+      <template>revapi.ftl</template>
+    </revapi.reporter.text>  -->
+    <revapi.reporter.text>
+      <minSeverity>POTENTIALLY_BREAKING</minSeverity>
+      <output>revapi-results/revapi-breakages.md</output>
+      <template>revapi.ftl</template>
+      <append>true</append>
+    </revapi.reporter.text>
+    <revapi.reporter.json>
+        <minSeverity>POTENTIALLY_BREAKING</minSeverity>
+        <output>revapi-results/revapi-breakages.json</output>
+        <indent>true</indent>
+        <append>true</append>
+      </revapi.reporter.json>
+</analysisConfiguration>

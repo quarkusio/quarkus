@@ -14,6 +14,10 @@
     <artifactId>quarkus-extension-processor</artifactId>
     <name>Quarkus - Core - Extension Processor</name>
 
+    <properties>
+              <revapi.skip>false</revapi.skip>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>org.jboss.jdeparser</groupId>

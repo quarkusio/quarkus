@@ -1,0 +1,14 @@
+{
+    "problemMatcher": [
+        {
+            "owner": "revapi",
+            "pattern": [
+                {
+                    "regexp": "\\[ERROR\\] (.*?) \\[(.*)\\]$",
+                    "message": 1,
+                    "code": 2
+                }
+            ]
+        }
+    ]
+}

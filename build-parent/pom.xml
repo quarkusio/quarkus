@@ -93,6 +93,7 @@
         <jacoco.version>0.8.5</jacoco.version>
 
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+<<<<<<< HEAD
 
         <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
         <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
@@ -100,6 +101,29 @@
 
         <boring-ssl.version>2.0.30.Final</boring-ssl.version>
 
+||||||| parent of 545194457e... Enable revapi
+=======
+
+        <!-- revapi API check -->
+        <revapi-maven-plugin.version>0.11.5</revapi-maven-plugin.version>
+        <revapi-java-plugin.version>0.21.1</revapi-java-plugin.version>
+        <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
+        <revapi-reporter-text.version>0.11.0</revapi-reporter-text.version>
+        <revapi-reporter-json.version>0.1.0</revapi-reporter-json.version>
+         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+        <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
+        <revapi.newVersion>${project.version}</revapi.newVersion>
+        <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
+        <revapi.reportSeverity>nonBreaking</revapi.reportSeverity>
+        <!-- Skip the API checks by default. Let the modules opt in. -->
+        <revapi.skip>true</revapi.skip>
+<<<<<<< HEAD
+>>>>>>> 545194457e... Enable revapi
+||||||| parent of 62d927e6a7... flag for revapi.checkdeps
+=======
+        <!-- By default don't check dependencies -->
+        <revapi.checkdeps>false</revapi.checkdeps>
+>>>>>>> 62d927e6a7... flag for revapi.checkdeps
     </properties>
 
     <dependencyManagement>
@@ -495,6 +519,40 @@
                         </dependency>
                     </dependencies>
                 </plugin>
+<<<<<<< HEAD
+||||||| parent of 545194457e... Enable revapi
+                <plugin>
+                    <groupId>kr.motd.maven</groupId>
+                    <artifactId>os-maven-plugin</artifactId>
+                    <version>${os-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.xolstice.maven.plugins</groupId>
+                    <artifactId>protobuf-maven-plugin</artifactId>
+                    <version>${protobuf-maven-plugin.version}</version>
+                </plugin>
+=======
+                <plugin>
+                    <groupId>kr.motd.maven</groupId>
+                    <artifactId>os-maven-plugin</artifactId>
+                    <version>${os-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.xolstice.maven.plugins</groupId>
+                    <artifactId>protobuf-maven-plugin</artifactId>
+                    <version>${protobuf-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${build-helper-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.revapi</groupId>
+                    <artifactId>revapi-maven-plugin</artifactId>
+                    <version>${revapi-maven-plugin.version}</version>
+                </plugin>
+>>>>>>> 545194457e... Enable revapi
             </plugins>
         </pluginManagement>
     </build>
@@ -818,5 +876,118 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>api-check</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>parse-version</id>
+                                <goals>
+                                    <goal>parse-version</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+        
+                    <plugin>
+                        <groupId>org.revapi</groupId>
+                        <artifactId>revapi-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>io.quarkus</groupId>
+                                <artifactId>quarkus-revapi-config</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                            <dependency>
+                              <groupId>org.revapi</groupId>
+                              <artifactId>revapi-java</artifactId>
+                              <version>${revapi-java-plugin.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.revapi</groupId>
+                                <artifactId>revapi-reporter-json</artifactId>
+                                <version>${revapi-reporter-json.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.revapi</groupId>
+                                <artifactId>revapi-reporter-text</artifactId>
+                                <version>${revapi-reporter-text.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <oldArtifacts>
+                              <artifact>${project.groupId}:${project.artifactId}:${revapi.oldVersion}</artifact>
+                            </oldArtifacts>
+                            <newArtifacts>
+                              <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
+                            </newArtifacts>
+                            <!-- don't fail is false making it possible to have revapi checks without requiring config files -->
+                            <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
+                            <!-- Consider changes from the latest .Final version, not from the latest non-snapshot. -->
+                            <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
+                            <!-- By default revapi will check the oldArtifact against the currently executed build -->
+                            <!-- <checkDependencies>false</checkDependencies> -->
+                            <analysisConfigurationFiles>
+                                <configurationFile>
+                                    <resource>revapi/revapi-configuration.xml</resource>
+                                </configurationFile>
+                              <configurationFile>
+                                <path>api-changes.json</path>
+                                <roots>
+                                  <root>global-filters</root>
+                                </roots>
+                              </configurationFile>
+                              <configurationFile>
+                                  <path>api-changes.json</path>
+                                  <roots>
+                                    <root>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}/filters</root>
+                                    <root>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}/ignores</root>
+                                  </roots>
+                                </configurationFile>
+                              </analysisConfigurationFiles>
+                            <!-- By default, revapi will only fail the build if there are potentially breaking or breaking changes. However, in the report
+                                 we want even non breaking changes to be present. -->
+                            <reportSeverity>nonBreaking</reportSeverity>
+                            <failSeverity>potentiallyBreaking</failSeverity>
+                            <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
+                            <checkDependencies>${revapi.checkdeps}</checkDependencies>
+                        </configuration>
+                          <!-- Running two executions is a workaround to make sure we get a HTML report in case revapi finds
+                               some incompatible changes. The "check" goal will simply fail the whole build before it could get
+                               to the report. To make sure we always get a HTML report, the "report" goal needs to be executed
+                               before the "check" goal.
+                               Once https://github.com/revapi/revapi/issues/11 is fixed it should be possible to use single execution. -->
+                        <executions>
+                            <execution>
+                              <id>api-check</id>
+                              <goals>
+                                <goal>check</goal>
+                              </goals>
+                              <phase>verify</phase>
+                            </execution>
+                            <execution>
+                              <!-- report can be found in ${build.directory}/site/revapi-report.html -->
+                              <id>api-report</id>
+                              <goals>
+                                <goal>report</goal>
+                              </goals>
+                              <phase>package</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>  
+            </build>
+        </profile>
+        
     </profiles>
 </project>

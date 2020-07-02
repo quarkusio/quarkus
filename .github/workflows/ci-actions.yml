@@ -88,9 +88,11 @@ jobs:
           key: q2maven-${{ hashFiles('bom/application/pom.xml') }}
           restore-keys: ${{ env.COMPUTED_RESTORE_KEY }}
           restore-only: ${{ github.event_name == 'pull_request' }}
+      - name: enable revapi matchers
+        run: echo "::add-matcher::.github/revapi-matcher.json"
       - name: Build
         run: |
-          mvn -e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install
+          mvn -e -B -DskipTests -DskipITs -Papi-check -Dno-format -Ddocumentation-pdf clean install
       - name: Tar Maven Repo
         shell: bash
         run: tar -czf maven-repo.tgz -C ~ .m2/repository

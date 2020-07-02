@@ -41,19 +41,26 @@
     </properties>
 
     <modules>
-
+    
         <!-- External projects -->
         <module>independent-projects/ide-config</module>
+        <module>independent-projects/revapi</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/qute</module>
+<<<<<<< HEAD
         <module>independent-projects/tools</module>
 
+||||||| parent of 0ea70f4559... move to independent project to make clean build work
+
+=======
+        
+>>>>>>> 0ea70f4559... move to independent project to make clean build work
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
         <module>bom/test</module>
         <module>build-parent</module>
-
+        
         <!-- Core components -->
         <module>core</module>
         <module>test-framework</module>

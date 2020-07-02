@@ -657,7 +657,12 @@ public class DevMojo extends AbstractMojo {
             //in most cases these are not used, however they need to be present for some
             //parent-first cases such as logging
             for (Artifact appDep : project.getArtifacts()) {
-                addToClassPaths(classPathManifest, appDep.getFile());
+                // only add the artifact if it's present in the dev mode context
+                // we need this to avoid having jars on the classpath multiple times
+                if (!devModeContext.getLocalArtifacts().contains(new AppArtifactKey(appDep.getGroupId(), appDep.getArtifactId(),
+                        appDep.getClassifier(), appDep.getArtifactHandler().getExtension()))) {
+                    addToClassPaths(classPathManifest, appDep.getFile());
+                }
             }
 
             //now we need to build a temporary jar to actually run

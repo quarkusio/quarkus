@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
@@ -237,6 +238,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multimodule", "projects/multimodule-with-deps");
         runAndCheck();
+
+        // test that we don't get multiple instances of a resource when loading from the ClassLoader
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/resourcesCount").equals("1"));
 
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
@@ -780,5 +787,31 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         runAndCheck("-Dquarkus.enforceBuildGoal=false");
 
         assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
+    }
+
+    @Test
+    public void testResourcesFromClasspath() throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath");
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+
+        // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
+        invoker.execute(Collections.singletonList("install"), Collections.emptyMap());
+        MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
+                Collections.emptyMap());
+        assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExitCode()).isEqualTo(0);
+
+        // run dev mode from the runner module
+        testDir = testDir.toPath().resolve("runner").toFile();
+        run(true);
+
+        // make sure the application starts
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(20, TimeUnit.SECONDS)
+                .until(() -> DevModeTestUtils.getHttpResponse("/cp/hello").equals("hello"));
+
+        // test that we don't get multiple instances of a resource when loading from the ClassLoader
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourcesCount")).isEqualTo("1");
     }
 }

@@ -209,7 +209,7 @@ The following properties are supported.
 |===
 |Property Name|Default|Description
 |quarkus.http.limits.max-body-size| `10240K` |The maximum size of request body.
-|quarkus.http.limits.max-header-size|`2OK`|The maximum length of all headers.
+|quarkus.http.limits.max-header-size|`20K`|The maximum length of all headers.
 |===
 
 [NOTE]

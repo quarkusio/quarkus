@@ -1,8 +1,11 @@
 package io.quarkus.test.junit;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 /**
  * Defines a 'test profile'. Tests run under a test profile
@@ -38,5 +41,31 @@ public interface QuarkusTestProfile {
      */
     default String getConfigProfile() {
         return null;
+    }
+
+    /**
+     * {@link QuarkusTestResourceLifecycleManager} classes (along with their init params) to be used from this
+     * specific test profile
+     */
+    default List<TestResourceEntry> testResources() {
+        return Collections.emptyList();
+    }
+
+    final class TestResourceEntry {
+        private Class<? extends QuarkusTestResourceLifecycleManager> clazz;
+        private Map<String, String> args;
+
+        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args) {
+            this.clazz = clazz;
+            this.args = args;
+        }
+
+        public Class<? extends QuarkusTestResourceLifecycleManager> getClazz() {
+            return clazz;
+        }
+
+        public Map<String, String> getArgs() {
+            return args;
+        }
     }
 }

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,8 +133,9 @@ public class QuarkusTestExtension
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
+            QuarkusTestProfile profileInstance = null;
             if (profile != null) {
-                QuarkusTestProfile profileInstance = profile.newInstance();
+                profileInstance = profile.newInstance();
                 Map<String, String> additional = new HashMap<>(profileInstance.getConfigOverrides());
                 if (!profileInstance.getEnabledAlternatives().isEmpty()) {
                     additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives().stream()
@@ -188,8 +190,9 @@ public class QuarkusTestExtension
 
             //must be done after the TCCL has been set
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
-                    .getConstructor(Class.class)
-                    .newInstance(requiredTestClass);
+                    .getConstructor(Class.class, List.class)
+                    .newInstance(requiredTestClass,
+                            getAdditionalTestResources(profileInstance, startupAction.getClassLoader()));
             testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
 
@@ -250,6 +253,37 @@ public class QuarkusTestExtension
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
+        }
+    }
+
+    /**
+     * Since {@link TestResourceManager} is loaded from the ClassLoader passed in as an argument,
+     * we need to convert the user input {@link QuarkusTestProfile.TestResourceEntry} into instances of
+     * {@link TestResourceManager.TestResourceClassEntry}
+     * that are loaded from that ClassLoader
+     */
+    private List<Object> getAdditionalTestResources(
+            QuarkusTestProfile profileInstance, ClassLoader classLoader) {
+        if ((profileInstance == null) || profileInstance.testResources().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            Constructor<?> testResourceClassEntryConstructor = Class
+                    .forName(TestResourceManager.TestResourceClassEntry.class.getName(), true, classLoader)
+                    .getConstructor(Class.class, Map.class);
+
+            List<QuarkusTestProfile.TestResourceEntry> testResources = profileInstance.testResources();
+            List<Object> result = new ArrayList<>(testResources.size());
+            for (QuarkusTestProfile.TestResourceEntry testResource : testResources) {
+                Object instance = testResourceClassEntryConstructor.newInstance(
+                        Class.forName(testResource.getClazz().getName(), true, classLoader), testResource.getArgs());
+                result.add(instance);
+            }
+
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to handle profile " + profileInstance.getClass());
         }
     }
 
@@ -538,6 +572,7 @@ public class QuarkusTestExtension
         invocation.skip();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T interceptTestFactoryMethod(Invocation<T> invocation,
             ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {

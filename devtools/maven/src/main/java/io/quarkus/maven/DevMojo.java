@@ -635,16 +635,16 @@ public class DevMojo extends AbstractMojo {
             setKotlinSpecificFlags(devModeContext);
             final LocalProject localProject;
             if (noDeps) {
-                localProject = LocalProject.load(outputDirectory.toPath());
+                localProject = LocalProject.load(project.getModel().getPomFile().toPath());
                 addProject(devModeContext, localProject, true);
-                pomFiles.add(localProject.getDir().resolve("pom.xml"));
+                pomFiles.add(localProject.getRawModel().getPomFile().toPath());
                 devModeContext.getLocalArtifacts()
                         .add(new AppArtifactKey(localProject.getGroupId(), localProject.getArtifactId(), null, "jar"));
             } else {
-                localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
+                localProject = LocalProject.loadWorkspace(project.getModel().getPomFile().toPath());
                 for (LocalProject project : filterExtensionDependencies(localProject)) {
                     addProject(devModeContext, project, project == localProject);
-                    pomFiles.add(project.getDir().resolve("pom.xml"));
+                    pomFiles.add(project.getRawModel().getPomFile().toPath());
                     devModeContext.getLocalArtifacts()
                             .add(new AppArtifactKey(project.getGroupId(), project.getArtifactId(), null, "jar"));
                 }

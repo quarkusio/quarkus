@@ -16,26 +16,25 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
+public class UberJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
+
     private static Future<?> jarRun;
 
     @Test
-    public void testFastJarFormatWorks() throws Exception {
+    public void testUberJarFormatWorks() throws Exception {
 
-        final File projectDir = getProjectDir("test-that-fast-jar-format-works");
-
+        final File projectDir = getProjectDir("test-uber-jar-format-works");
         runGradleWrapper(projectDir, "clean", "build");
-
-        final Path quarkusApp = projectDir.toPath().resolve("build").resolve("quarkus-app");
+        final Path quarkusApp = projectDir.toPath().resolve("build");
         assertThat(quarkusApp).exists();
-        Path jar = quarkusApp.resolve("quarkus-run.jar");
+        Path jar = quarkusApp.resolve("uber-jar-test-1.0.0-SNAPSHOT-runner.jar");
         assertThat(jar).exists();
 
         File output = new File(projectDir, "build/output.log");
         output.createNewFile();
         Process process = launch(jar, output);
         try {
-            //Wait until server up
+            // Wait until server up
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
@@ -54,6 +53,7 @@ public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
         } finally {
             process.destroy();
         }
+
     }
 
     private void assertThatOutputWorksCorrectly(String logs) {

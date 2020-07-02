@@ -46,7 +46,7 @@ public class GrpcClientConfiguration {
      * The flow control window in bytes. Default is 1MiB.
      */
     @ConfigItem
-    public Optional<Integer> flowControlWindow;
+    public OptionalInt flowControlWindow;
 
     /**
      * The duration without ongoing RPCs before going to idle mode.

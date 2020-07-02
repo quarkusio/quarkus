@@ -341,7 +341,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
-            maxAge += configContext.oidcConfig.token.lifespanGrace.get();
+            maxAge += configContext.oidcConfig.token.lifespanGrace.getAsInt();
         }
         createCookie(context, configContext, getSessionCookieName(configContext), cookieValue, maxAge);
     }

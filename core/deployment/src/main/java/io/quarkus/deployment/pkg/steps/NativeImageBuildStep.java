@@ -546,7 +546,7 @@ public class NativeImageBuildStep {
             }
         }
 
-        log.info("Cannot find executable (objcopy) to separate symbols from executable.");
+        log.debug("Cannot find executable (objcopy) to separate symbols from executable.");
         return false;
     }
 

@@ -70,7 +70,12 @@ public class QuarkusDevModeTest
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        rootLogger = (Logger) LogManager.getLogManager().getLogger("");
+        java.util.logging.Logger logger = LogManager.getLogManager().getLogger("");
+        if (!(logger instanceof org.jboss.logmanager.Logger)) {
+            throw new IllegalStateException(
+                    "QuarkusDevModeTest must be used with the the JBoss LogManager. See https://quarkus.io/guides/logging#how-to-configure-logging-for-quarkustest for an example of how to configure it in Maven.");
+        }
+        rootLogger = (org.jboss.logmanager.Logger) logger;
     }
 
     private DevModeMain devModeMain;

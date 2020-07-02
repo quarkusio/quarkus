@@ -14,6 +14,6 @@ public class S2iBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return true;
+        return containerImageConfig.builder.map(b -> b.equals(S2iProcessor.S2I)).orElse(true);
     }
 }

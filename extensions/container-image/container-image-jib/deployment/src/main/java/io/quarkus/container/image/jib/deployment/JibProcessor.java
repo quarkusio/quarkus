@@ -61,11 +61,11 @@ public class JibProcessor {
 
     private static final Logger log = Logger.getLogger(JibProcessor.class);
 
-    private static final String JIB = "jib";
+    public static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    @BuildStep
+    @BuildStep(onlyIf = JibBuild.class)
     public CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_JIB);
     }

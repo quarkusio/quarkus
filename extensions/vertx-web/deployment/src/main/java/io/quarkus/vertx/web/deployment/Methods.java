@@ -7,6 +7,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.vertx.web.runtime.MultiJsonArraySupport;
 import io.quarkus.vertx.web.runtime.MultiSseSupport;
 import io.quarkus.vertx.web.runtime.MultiSupport;
 import io.smallrye.mutiny.Multi;
@@ -52,8 +53,6 @@ public class Methods {
             Void.TYPE, Multi.class, RoutingContext.class);
 
     static final MethodDescriptor IS_SSE = MethodDescriptor.ofMethod(MultiSseSupport.class, "isSSE", Boolean.TYPE, Multi.class);
-    static final MethodDescriptor MULTI_SSE_SUBSCRIBE_VOID = MethodDescriptor.ofMethod(MultiSseSupport.class, "subscribeVoid",
-            Void.TYPE, Multi.class, RoutingContext.class);
     static final MethodDescriptor MULTI_SSE_SUBSCRIBE_STRING = MethodDescriptor.ofMethod(MultiSseSupport.class,
             "subscribeString",
             Void.TYPE, Multi.class, RoutingContext.class);
@@ -68,6 +67,23 @@ public class Methods {
     static final MethodDescriptor MULTI_SSE_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiSseSupport.class,
             "subscribeObject",
             Void.TYPE, Multi.class, RoutingContext.class);
+
+    static final MethodDescriptor IS_JSON_ARRAY = MethodDescriptor.ofMethod(MultiJsonArraySupport.class, "isJsonArray",
+            Boolean.TYPE, Multi.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_VOID = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeVoid", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_STRING = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeString", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_BUFFER = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeBuffer", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_RX_BUFFER = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeRxBuffer", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_MUTINY_BUFFER = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeMutinyBuffer", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_SUBSCRIBE_OBJECT = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "subscribeObject", Void.TYPE, Multi.class, RoutingContext.class);
+    static final MethodDescriptor MULTI_JSON_FAIL = MethodDescriptor.ofMethod(MultiJsonArraySupport.class,
+            "fail", Void.TYPE, RoutingContext.class);
 
     static final MethodDescriptor END = MethodDescriptor.ofMethod(HttpServerResponse.class, "end", Void.TYPE);
     static final MethodDescriptor END_WITH_STRING = MethodDescriptor

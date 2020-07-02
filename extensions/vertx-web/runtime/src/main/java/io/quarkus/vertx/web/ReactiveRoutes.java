@@ -2,6 +2,7 @@ package io.quarkus.vertx.web;
 
 import java.util.Objects;
 
+import io.quarkus.vertx.web.runtime.JsonArrayMulti;
 import io.quarkus.vertx.web.runtime.SSEMulti;
 import io.smallrye.mutiny.Multi;
 
@@ -49,6 +50,39 @@ public class ReactiveRoutes {
      */
     public static <T> Multi<T> asEventStream(Multi<T> multi) {
         return new SSEMulti<>(Objects.requireNonNull(multi, "The passed multi must not be `null`"));
+    }
+
+    /**
+     * Indicates the the given stream should be written as a <em>chunked</em> JSON array in the response.
+     * Returning a {@code multi} wrapped using this method produces a {@code application/json} response. Each item
+     * is written as an JSON object in the response. The response automatically enables the chunked encoding and set the
+     * content type.
+     * <p>
+     * If the item is a String, the content is written in the array.
+     * If the item is an Object, the content is transformed to JSON and written in the array.
+     * <p>
+     * Note that the array is written in the response item by item, without accumulating the data.
+     *
+     * Example of usage:
+     *
+     * <pre>
+     * &#64;Route(path = "/people")
+     * Multi&lt;Person&gt; people(RoutingContext context) {
+     *     return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
+     *             new Person("superman", 1),
+     *             new Person("batman", 2),
+     *             new Person("spiderman", 3)));
+     * }
+     * </pre>
+     *
+     * This example produces: {@code [{"name":"superman", "id":1}, {...}, {..,}]}
+     *
+     * @param multi the multi to be written
+     * @param <T> the type of item, can be string or object
+     * @return the wrapped multi
+     */
+    public static <T> Multi<T> asJsonArray(Multi<T> multi) {
+        return new JsonArrayMulti<>(Objects.requireNonNull(multi, "The passed multi must not be `null`"));
     }
 
     /**

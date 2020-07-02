@@ -25,17 +25,16 @@ public class MultiRouteTest {
     @Test
     public void testMultiRoute() {
         when().get("/hello").then().statusCode(200)
-                .body(is("[\"Hello world!\"]"))
-                .header("content-type", "application/json");
+                .body(is("Hello world!"))
+                .header("content-type", is(nullValue()));
         when().get("/hellos").then().statusCode(200)
-                .body(is("[\"hello\",\"world\",\"!\"]"))
-                .header("content-type", "application/json");
-        when().get("/no-hello").then().statusCode(200).body(is("[]"))
-                .header("content-type", "application/json");
+                .body(is("helloworld!"))
+                .header("content-type", is(nullValue()));
+        when().get("/no-hello").then().statusCode(204).body(hasLength(0))
+                .header("content-type", is(nullValue()));
         // status already sent, but not the end of the array
         when().get("/hello-and-fail").then().statusCode(200)
-                .body(containsString("[\"Hello\""))
-                .body(not(containsString("]")));
+                .body(containsString("Hello"));
 
         when().get("/buffer").then().statusCode(200).body(is("Buffer"))
                 .header("content-type", is(nullValue()));
@@ -48,18 +47,10 @@ public class MultiRouteTest {
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
         when().get("/people").then().statusCode(200)
-                .body("size()", is(3))
-                .body("[0].name", is("superman"))
-                .body("[1].name", is("batman"))
-                .body("[2].name", is("spiderman"))
-                .header("content-type", "application/json");
-
-        when().get("/people-content-type").then().statusCode(200)
-                .body("size()", is(3))
-                .body("[0].name", is("superman"))
-                .body("[1].name", is("batman"))
-                .body("[2].name", is("spiderman"))
-                .header("content-type", "application/json;charset=utf-8");
+                .body(containsString("{\"name\":\"superman\",\"id\":1}"))
+                .body(containsString("{\"name\":\"batman\",\"id\":2}"))
+                .body(containsString("{\"name\":\"spiderman\",\"id\":3}"))
+                .header("content-type", is(nullValue()));
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
         when().get("/null").then().statusCode(500).body(containsString("null"));
@@ -131,15 +122,6 @@ public class MultiRouteTest {
 
         @Route(path = "/people")
         Multi<Person> people(RoutingContext context) {
-            return Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3));
-        }
-
-        @Route(path = "/people-content-type")
-        Multi<Person> peopleWithContentType(RoutingContext context) {
-            context.response().putHeader("content-type", "application/json;charset=utf-8");
             return Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),

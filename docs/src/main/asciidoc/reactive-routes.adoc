@@ -236,15 +236,14 @@ Multi<String> hellos(RoutingContext context) {
     return Multi.createFrom().items("hello", "world", "!");  // <1>
 }
 ----
-1. Produces `["hello", "world", "!"]`
+1. Produces `helloworld!`
 
 The method can return:
 
-* a `Multi<String>` - the items are written one by one in a JSON Array.
-The `content-type` is set to `application/json` if not already set.
+* a `Multi<String>` - the items are written one by one (one per _chunk_) in the response.
 * a `Multi<Buffer>` - the buffers are written one by one (one per _chunk_) without any processing.
-* a `Multi<Object>` - the items are encoded to JSON written one by one in a JSON Array.
-The `content-type` attribute is set to `application/json` if not already set:
+* a `Multi<Object>` - the items are encoded to JSON written one by one in the response.
+
 
 [source, java]
 ----
@@ -261,12 +260,45 @@ Ths previous snippet produces:
 
 [source, json]
 ----
+{"name":"superman", "id": 1} // chunk 1
+{"name":"batman", "id": 2} // chunk 2
+{"name":"spiderman", "id": 3} // chunk 3
+----
+
+=== Streaming JSON Array items
+
+You can return a `Multi` to produce a JSON Array, where every item is an item from this array.
+The response is written item by item to the client.
+The `content-type` is set to `application/json` if not set already.
+
+To use this feature, you need to wrap the returned `Multi` using `io.quarkus.vertx.web.ReactiveRoutes.asJsonArray`:
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
+            new Person("superman", 1),
+            new Person("batman", 2),
+            new Person("spiderman", 3)));
+}
+----
+
+Ths previous snippet produces:
+
+[source, json]
+----
 [
- {"name":"superman", "id": 1} // chunk 1
- ,{"name":"batman", "id": 2} // chunk 2
- ,{"name":"spiderman", "id": 3} // chunk 3
+  {"name":"superman", "id": 1} // chunk 1
+  ,{"name":"batman", "id": 2} // chunk 2
+  ,{"name":"spiderman", "id": 3} // chunk 3
 ]
 ----
+
+Only `Multi<String>`, `Multi<Object>` and `Multi<Void>` can be written into the JSON Array.
+Using a `Multi<Void>` produces an empty array.
+You cannot use `Multi<Buffer>`.
+If you need to use `Buffer`, transform the content into a JSON or String representation first.
 
 === Event Stream and Server-Sent Event support
 

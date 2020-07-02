@@ -29,8 +29,9 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        return isWebApp(context) ? codeAuth.authenticate(context, identityProviderManager, resolver)
-                : bearerAuth.authenticate(context, identityProviderManager, resolver);
+        return Uni.createFrom().deferred(() -> isWebApp(context),
+                isWebApp -> isWebApp ? codeAuth.authenticate(context, identityProviderManager, resolver)
+                        : bearerAuth.authenticate(context, identityProviderManager, resolver));
     }
 
     @Override

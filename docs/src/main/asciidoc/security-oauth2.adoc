@@ -342,3 +342,122 @@ $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 0.006s. Listening on: http://[::]:8080
 2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
 ----
+
+== Integration testing
+
+If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the
+link:security-properties[Properties based security] extension for your test, or mock an authorization server using Wiremock.
+
+First of all, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.github.tomakehurst</groupId>
+    <artifactId>wiremock-jre8</artifactId>
+    <scope>test</scope>
+    <version>${wiremock.version}</version> // <1>
+</dependency>
+----
+
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+
+In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
+annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
+values that Quarkus will use.
+
+[NOTE]
+====
+For more details about `@QuarkusTestResource` refer to  link:getting-started-testing#quarkus-test-resource[this part of the documentation].
+====
+
+Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `MockAuthorizationServerTestResource` like so:
+
+[source,java]
+----
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import java.util.Collections;
+import java.util.Map;
+
+public class MockAuthorizationServerTestResource implements QuarkusTestResourceLifecycleManager {  // <1>
+
+    private WireMockServer wireMockServer;
+
+    @Override
+    public Map<String, String> start() {
+        wireMockServer = new WireMockServer();
+        wireMockServer.start(); // <2>
+
+        // define the mock for the introspect endpoint
+        WireMock.stubFor(WireMock.post("/introspect").willReturn(WireMock.aResponse() // <3>
+                .withBody(
+                        "{\"active\":true,\"scope\":\"Echoer\",\"username\":null,\"iat\":1562315654,\"exp\":1562317454,\"expires_in\":1458,\"client_id\":\"my_client_id\"}")));
+
+
+        return Collections.singletonMap("quarkus.oauth2.introspection-url", wireMockServer.baseUrl() + "/introspect"); // <4>
+    }
+
+    @Override
+    public void stop() {
+        if (null != wireMockServer) {
+            wireMockServer.stop();  // <5>
+        }
+    }
+}
+----
+
+<1> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
+<2> Launch Wiremock.
+<3> Configure Wiremock to stub the calls to `/introspect` by returning an OAuth2 introspect response. You need to customize this line to return what's needed for your application (at least the scope property as roles are derived from the scope).
+<4> As the `start` method returns configuration that applies for tests, we set the `quarkus.oauth2.introspection-url` property that controls the URL of the introspect endpoint used by the OAuth2 extension.
+<5> When all tests have finished, shutdown Wiremock.
+
+
+Your test class needs to be annotated like with `@QuarkusTestResource(MockAuthorizationServerTestResource.class)` to use this `QuarkusTestResourceLifecycleManager`.
+
+Below is an example of a test that uses the `MockAuthorizationServerTestResource`.
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(MockAuthorizationServerTestResource.class) // <1>
+class TokenSecuredResourceTest {
+    // use whatever token you want as the mock OAuth server will accept all tokens
+    private static final String BEARER_TOKEN = "337aab0f-b547-489b-9dbd-a54dc7bdf20d"; // <2>
+
+    @Test
+    void testPermitAll() {
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN) // <3>
+                .get("/secured/permit-all")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello"));
+    }
+
+    @Test
+    void testRolesAllowed() {
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .get("/secured/roles-allowed")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello"));
+    }
+}
+----
+
+<1> Use the previously created `MockAuthorizationServerTestResource` as a Quarkus test resource.
+<2> Define whatever token you want, it will not be validated by the OAuth2 mock authorization server.
+<3> Use this token inside the `Authorization` header to trigger OAuth2 authentication.
+
+
+[WARNING]
+====
+`@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
+====

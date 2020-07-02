@@ -1,0 +1,41 @@
+name: Quarkus Documentation CI
+
+on:
+  push:
+    paths:
+      - 'docs/src/main/asciidoc/**'
+  pull_request:
+    paths:
+      - 'docs/src/main/asciidoc/**'
+
+
+jobs:
+  build-doc:
+    name: "Documentation Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up JDK 11
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        with:
+          java-version: 11
+      - name: Compute cache restore key
+        # Always recompute on a push so that the maven repo doesnt grow indefinitely with old versions
+        run: |
+          if ${{ github.event_name == 'pull_request' }}; then echo "::set-env name=COMPUTED_RESTORE_KEY::q2maven-"; fi
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: n1hility/cache@v2
+        with:
+          path: ~/.m2/repository
+          # Improves the reusability of the cache to limit key changes
+          key: q2maven-${{ hashFiles('bom/runtime/pom.xml') }}
+          restore-keys: ${{ env.COMPUTED_RESTORE_KEY }}
+          restore-only: ${{ github.event_name == 'pull_request' }}
+      - name: Build
+        run: |
+          mvn -e -B clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs

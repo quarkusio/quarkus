@@ -10,6 +10,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
@@ -47,6 +48,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
@@ -75,7 +77,7 @@ public class QuartzScheduler implements Scheduler {
     }
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config,
-            SchedulerRuntimeConfig schedulerRuntimeConfig) {
+            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent) {
         enabled = schedulerRuntimeConfig.enabled;
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
@@ -117,7 +119,7 @@ public class QuartzScheduler implements Scheduler {
                         }
                         ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
                         if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
-                            invoker = new SkipConcurrentExecutionInvoker(invoker);
+                            invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
                         }
                         invokers.put(identity, invoker);
 

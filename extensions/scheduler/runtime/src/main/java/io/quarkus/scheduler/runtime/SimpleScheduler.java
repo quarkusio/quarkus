@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Typed;
 import javax.inject.Singleton;
@@ -36,6 +37,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.SkippedExecution;
 import io.quarkus.scheduler.Trigger;
 
 @Typed(Scheduler.class)
@@ -53,7 +55,8 @@ public class SimpleScheduler implements Scheduler {
     private final List<ScheduledTask> scheduledTasks;
     private final boolean enabled;
 
-    public SimpleScheduler(SchedulerContext context, Config config, SchedulerRuntimeConfig schedulerRuntimeConfig) {
+    public SimpleScheduler(SchedulerContext context, Config config, SchedulerRuntimeConfig schedulerRuntimeConfig,
+            Event<SkippedExecution> skippedExecutionEvent) {
         this.running = true;
         this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ArrayList<>();
@@ -84,7 +87,7 @@ public class SimpleScheduler implements Scheduler {
                             config);
                     ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
                     if (scheduled.concurrentExecution() == ConcurrentExecution.SKIP) {
-                        invoker = new SkipConcurrentExecutionInvoker(invoker);
+                        invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
                     }
                     scheduledTasks.add(new ScheduledTask(trigger, invoker));
                 }

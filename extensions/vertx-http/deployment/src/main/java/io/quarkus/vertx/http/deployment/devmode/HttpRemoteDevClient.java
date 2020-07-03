@@ -183,6 +183,11 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                             sendData(entry, sessionId);
                         }
                         for (String file : sync.getRemovedFiles()) {
+                            if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
+                                    || !file.contains("/")) {
+                                //we have some filters, for files that we don't want to delete
+                                continue;
+                            }
                             log.info("deleting " + file);
                             connection = (HttpURLConnection) new URL(url + "/" + file).openConnection();
                             connection.setRequestMethod("DELETE");

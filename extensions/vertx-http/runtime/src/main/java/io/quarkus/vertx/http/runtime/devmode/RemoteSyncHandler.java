@@ -199,7 +199,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {
-                hotReplacementContext.updateFile(event.path(), buffer.getBytes());
+                try {
+                    hotReplacementContext.updateFile(event.path(), buffer.getBytes());
+                } catch (Exception e) {
+                    log.error("Failed to update file", e);
+                }
                 event.response().end();
             }
         }).exceptionHandler(new Handler<Throwable>() {

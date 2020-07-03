@@ -209,8 +209,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
             for (Map.Entry<String, String> remaining : ourHashes.entrySet()) {
-                log.info("Deleting removed file " + remaining.getKey());
-                Files.deleteIfExists(applicationRoot.resolve(remaining.getKey()));
+                String file = remaining.getKey();
+                if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
+                        || !file.contains("/")) {
+                    //we have some filters, for files that we don't want to delete
+                    continue;
+                }
+                log.info("Deleting removed file " + file);
+                Files.deleteIfExists(applicationRoot.resolve(file));
             }
             return ret;
         } catch (IOException e) {

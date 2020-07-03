@@ -44,6 +44,10 @@ public class ConcurrentExecutionTest {
 
         @Scheduled(every = "1s", concurrentExecution = SKIP)
         void nonconcurrent() throws InterruptedException {
+            if (LATCH.getCount() == 0) {
+                // we are already done with our test, don't increment the counter anymore
+                return;
+            }
             COUNTER.incrementAndGet();
             if (!LATCH.await(5, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("");

@@ -4,26 +4,51 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
 import javax.inject.Singleton;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.*;
-import io.quarkus.arc.deployment.*;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
-import io.quarkus.arc.processor.*;
+import io.quarkus.arc.processor.AnnotationStore;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -35,7 +60,16 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
-import io.quarkus.gizmo.*;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -44,10 +78,16 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
-import io.quarkus.vertx.web.runtime.*;
+import io.quarkus.vertx.web.runtime.RouteHandler;
+import io.quarkus.vertx.web.runtime.RouteMatcher;
+import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
+import io.quarkus.vertx.web.runtime.VertxWebRecorder;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -63,9 +103,18 @@ class VertxWebProcessor {
     private static final DotName RX_ROUTING_CONTEXT = DotName
             .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
     private static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
+    private static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
+    private static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
+    private static final DotName RX_HTTP_SERVER_REQUEST = DotName
+            .createSimple(io.vertx.reactivex.core.http.HttpServerRequest.class.getName());
+    private static final DotName RX_HTTP_SERVER_RESPONSE = DotName
+            .createSimple(io.vertx.reactivex.core.http.HttpServerResponse.class.getName());
+    private static final DotName UNI = DotName.createSimple(Uni.class.getName());
+    private static final DotName MULTI = DotName.createSimple(Multi.class.getName());
+
     private static final String HANDLER_SUFFIX = "_RouteHandler";
-    private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE };
-    private static final DotName[] ROUTE_FILTER_TYPES = { ROUTING_CONTEXT };
+    private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE,
+            HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, RX_HTTP_SERVER_REQUEST, RX_HTTP_SERVER_RESPONSE };
 
     private static final String VALUE_PATH = "path";
     private static final String VALUE_REGEX = "regex";
@@ -75,32 +124,6 @@ class VertxWebProcessor {
     private static final String VALUE_ORDER = "order";
     private static final String SLASH = "/";
 
-    private static final MethodDescriptor ARC_CONTAINER = MethodDescriptor
-            .ofMethod(Arc.class, "container", ArcContainer.class);
-    private static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor
-            .ofMethod(ArcContainer.class,
-                    "getActiveContext", InjectableContext.class, Class.class);
-    private static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
-            InjectableBean.class, String.class);
-    private static final MethodDescriptor BEAN_GET_SCOPE = MethodDescriptor.ofMethod(InjectableBean.class, "getScope",
-            Class.class);
-    private static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
-            Contextual.class,
-            CreationalContext.class);
-    private static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor
-            .ofMethod(Context.class, "get", Object.class,
-                    Contextual.class);
-    private static final MethodDescriptor INJECTABLE_REF_PROVIDER_GET = MethodDescriptor.ofMethod(
-            InjectableReferenceProvider.class,
-            "get", Object.class,
-            CreationalContext.class);
-    private static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor
-            .ofMethod(InjectableBean.class, "destroy",
-                    void.class, Object.class,
-                    CreationalContext.class);
-    static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
-    public static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.VERTX_WEB);
@@ -108,9 +131,9 @@ class VertxWebProcessor {
 
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE)));
-        unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTES)));
-        unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE_FILTER)));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTE));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTES));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTE_FILTER));
     }
 
     @BuildStep
@@ -154,7 +177,7 @@ class VertxWebProcessor {
                                         "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
                                         method, bean))));
                     } else {
-                        validateRouteMethod(bean, method, ROUTE_FILTER_TYPES);
+                        validateRouteFilterMethod(bean, method);
                         routeFilterBusinessMethods
                                 .produce(new AnnotatedRouteFilterBuildItem(bean, method, filterAnnotation));
                         LOGGER.debugf("Found route filter business method %s declared on %s", method, bean);
@@ -328,31 +351,48 @@ class VertxWebProcessor {
         });
     }
 
+    private void validateRouteFilterMethod(BeanInfo bean, MethodInfo method) {
+        if (!method.returnType().kind().equals(Type.Kind.VOID)) {
+            throw new IllegalStateException(
+                    String.format("Route filter method must return void [method: %s, bean: %s]", method, bean));
+        }
+        List<Type> params = method.parameters();
+        if (params.size() != 1 || !params.get(0).name().equals(ROUTING_CONTEXT)) {
+            throw new IllegalStateException(String.format(
+                    "Route filter method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
+                    ROUTING_CONTEXT, params, method, bean));
+        }
+    }
+
     private void validateRouteMethod(BeanInfo bean, MethodInfo method, DotName[] validParamTypes) {
-        if (method.returnType().name().equals(DOTNAME_UNI)) {
-            List<Type> types = method.returnType().asParameterizedType().arguments();
-            if (types.isEmpty()) {
+        List<Type> params = method.parameters();
+        if (params.isEmpty()) {
+            if (method.returnType().kind() == Kind.VOID && params.isEmpty()) {
+                throw new IllegalStateException(String.format(
+                        "Route method that returns void must accept at least one parameter of the following types %s [method: %s, bean: %s]",
+                        Arrays.toString(validParamTypes), method, bean));
+            }
+        } else {
+            if ((method.returnType().name().equals(UNI) || method.returnType().name().equals(MULTI))
+                    && method.returnType().kind() == Kind.CLASS) {
                 throw new IllegalStateException(
                         String.format(
-                                "Route handler business returning a `Uni` must have a generic parameter [method: %s, bean: %s]",
+                                "Route business method returning a Uni/Multi must have a generic parameter [method: %s, bean: %s]",
                                 method, bean));
             }
-        }
-
-        List<Type> params = method.parameters();
-        boolean hasInvalidParam = true;
-        if (params.size() == 1) {
-            DotName paramTypeName = params.get(0).name();
-            for (DotName type : validParamTypes) {
-                if (type.equals(paramTypeName)) {
-                    hasInvalidParam = false;
+            boolean hasInvalidParam = true;
+            for (Type paramType : params) {
+                for (DotName type : validParamTypes) {
+                    if (type.equals(paramType.name())) {
+                        hasInvalidParam = false;
+                    }
                 }
             }
-        }
-        if (hasInvalidParam) {
-            throw new IllegalStateException(String.format(
-                    "Route business method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
-                    validParamTypes, params, method, bean));
+            if (hasInvalidParam) {
+                throw new IllegalStateException(String.format(
+                        "Route method must only accept arguments of types %s: %s [method: %s, bean: %s]",
+                        Arrays.toString(validParamTypes), params, method, bean));
+            }
         }
     }
 
@@ -404,21 +444,21 @@ class VertxWebProcessor {
             FieldCreator containerField) {
         MethodCreator constructor = invokerCreator.getMethodCreator("<init>", void.class);
         // Invoke super()
-        constructor.invokeSpecialMethod(OBJECT_CONSTRUCTOR, constructor.getThis());
+        constructor.invokeSpecialMethod(Methods.OBJECT_CONSTRUCTOR, constructor.getThis());
 
         ResultHandle containerHandle = constructor
-                .invokeStaticMethod(ARC_CONTAINER);
+                .invokeStaticMethod(Methods.ARC_CONTAINER);
         ResultHandle beanHandle = constructor.invokeInterfaceMethod(
-                ARC_CONTAINER_BEAN,
+                Methods.ARC_CONTAINER_BEAN,
                 containerHandle, constructor.load(bean.getIdentifier()));
         constructor.writeInstanceField(beanField.getFieldDescriptor(), constructor.getThis(), beanHandle);
         if (contextField != null) {
             constructor.writeInstanceField(contextField.getFieldDescriptor(), constructor.getThis(),
                     constructor.invokeInterfaceMethod(
-                            ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                            Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                             containerHandle, constructor
                                     .invokeInterfaceMethod(
-                                            BEAN_GET_SCOPE,
+                                            Methods.BEAN_GET_SCOPE,
                                             beanHandle)));
         } else {
             constructor.writeInstanceField(containerField.getFieldDescriptor(), constructor.getThis(), containerHandle);
@@ -441,7 +481,7 @@ class VertxWebProcessor {
                     invoke.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
                             beanHandle));
             invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(
-                    INJECTABLE_REF_PROVIDER_GET, beanHandle,
+                    Methods.INJECTABLE_REF_PROVIDER_GET, beanHandle,
                     creationlContextHandle));
         } else {
             ResultHandle contextInvokeHandle;
@@ -451,59 +491,47 @@ class VertxWebProcessor {
                 ResultHandle containerInvokeHandle = invoke.readInstanceField(containerField.getFieldDescriptor(),
                         invoke.getThis());
                 contextInvokeHandle = invoke.invokeInterfaceMethod(
-                        ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                        Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                         containerInvokeHandle, invoke
                                 .invokeInterfaceMethod(
-                                        BEAN_GET_SCOPE,
+                                        Methods.BEAN_GET_SCOPE,
                                         beanHandle));
                 invoke.ifNull(contextInvokeHandle).trueBranch().throwException(ContextNotActiveException.class,
                         "Context not active: " + bean.getScope().getDotName());
             }
             // First try to obtain the bean via Context.get(bean)
-            invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(CONTEXT_GET_IF_PRESENT, contextInvokeHandle,
+            invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(Methods.CONTEXT_GET_IF_PRESENT, contextInvokeHandle,
                     beanHandle));
             // If not present, try Context.get(bean,creationalContext)
             BytecodeCreator doesNotExist = invoke.ifNull(beanInstanceHandle).trueBranch();
             doesNotExist.assign(beanInstanceHandle,
-                    doesNotExist.invokeInterfaceMethod(CONTEXT_GET, contextInvokeHandle, beanHandle,
+                    doesNotExist.invokeInterfaceMethod(Methods.CONTEXT_GET, contextInvokeHandle, beanHandle,
                             doesNotExist.newInstance(
                                     MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
                                     beanHandle)));
         }
 
-        ResultHandle paramHandle;
-        MethodDescriptor methodDescriptor;
+        List<Type> parameters = method.parameters();
+        ResultHandle[] paramHandles = new ResultHandle[parameters.size()];
         String returnType = descriptor.getReturnType().name().toString();
+        String[] parameterTypes = new String[parameters.size()];
+        ResultHandle routingContext = invoke.getMethodParam(0);
 
-        // TODO Make Routing Context optional, allow injected Response and Request individually.
-        ResultHandle rc = invoke.getMethodParam(0);
-        if (method.parameters().get(0).name().equals(ROUTING_CONTEXT)) {
-            paramHandle = rc;
-            methodDescriptor = MethodDescriptor
-                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
-                            RoutingContext.class);
-        } else if (method.parameters().get(0).name().equals(RX_ROUTING_CONTEXT)) {
-            paramHandle = invoke.newInstance(
-                    MethodDescriptor
-                            .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
-                    rc);
-            methodDescriptor = MethodDescriptor
-                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
-                            io.vertx.reactivex.ext.web.RoutingContext.class);
-        } else {
-            paramHandle = invoke
-                    .newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
-                            rc);
-            methodDescriptor = MethodDescriptor
-                    .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType,
-                            RoutingExchange.class);
+        int idx = 0;
+        for (Type paramType : parameters) {
+            paramHandles[idx] = getParamHandle(paramType, routingContext, invoke);
+            parameterTypes[idx] = paramType.name().toString();
+            idx++;
         }
 
+        MethodDescriptor methodDescriptor = MethodDescriptor
+                .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType, parameterTypes);
+
         // Invoke the business method handler
-        ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandle);
+        ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
 
         // Get the response: HttpServerResponse response = rc.response()
-        ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, rc);
+        ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
         MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);
         if (descriptor.isReturningUni()) {
             // The method returns a Uni.
@@ -514,8 +542,8 @@ class VertxWebProcessor {
             // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
             // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
 
-            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, rc, end, response);
-            FunctionCreator failureCallback = getUniOnFailureCallback(invoke, rc);
+            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, response);
+            FunctionCreator failureCallback = getUniOnFailureCallback(invoke, routingContext);
 
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
@@ -525,16 +553,16 @@ class VertxWebProcessor {
             // 3 cases - regular multi vs. sse multi vs. json array multi, we need to check the type.
             BranchResult isItSSE = invoke.ifTrue(invoke.invokeStaticMethod(Methods.IS_SSE, res));
             BytecodeCreator isSSE = isItSSE.trueBranch();
-            handleSSEMulti(descriptor, isSSE, rc, res);
+            handleSSEMulti(descriptor, isSSE, routingContext, res);
             isSSE.close();
 
             BytecodeCreator isNotSSE = isItSSE.falseBranch();
             BranchResult isItJson = isNotSSE.ifTrue(isNotSSE.invokeStaticMethod(Methods.IS_JSON_ARRAY, res));
             BytecodeCreator isJson = isItJson.trueBranch();
-            handleJsonArrayMulti(descriptor, isJson, rc, res);
+            handleJsonArrayMulti(descriptor, isJson, routingContext, res);
             isJson.close();
             BytecodeCreator isRegular = isItJson.falseBranch();
-            handleRegularMulti(descriptor, isRegular, rc, res);
+            handleRegularMulti(descriptor, isRegular, routingContext, res);
             isRegular.close();
             isNotSSE.close();
 
@@ -550,10 +578,52 @@ class VertxWebProcessor {
 
         // Destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            invoke.invokeInterfaceMethod(INJECTABLE_BEAN_DESTROY, beanHandle,
+            invoke.invokeInterfaceMethod(Methods.INJECTABLE_BEAN_DESTROY, beanHandle,
                     beanInstanceHandle, creationlContextHandle);
         }
         invoke.returnValue(null);
+    }
+
+    private ResultHandle getParamHandle(Type paramType, ResultHandle routingContext, MethodCreator invoke) {
+        ResultHandle paramHandle;
+        if (paramType.name().equals(ROUTING_CONTEXT)) {
+            paramHandle = routingContext;
+        } else if (paramType.name().equals(RX_ROUTING_CONTEXT)) {
+            paramHandle = invoke.newInstance(
+                    MethodDescriptor
+                            .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
+                    routingContext);
+        } else if (paramType.name().equals(ROUTING_EXCHANGE)) {
+            paramHandle = invoke
+                    .newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
+                            routingContext);
+        } else if (paramType.name().equals(HTTP_SERVER_REQUEST)) {
+            paramHandle = invoke
+                    .invokeInterfaceMethod(Methods.REQUEST,
+                            routingContext);
+        } else if (paramType.name().equals(HTTP_SERVER_RESPONSE)) {
+            paramHandle = invoke
+                    .invokeInterfaceMethod(Methods.RESPONSE,
+                            routingContext);
+        } else if (paramType.name().equals(RX_HTTP_SERVER_REQUEST)) {
+            paramHandle = invoke.newInstance(
+                    MethodDescriptor
+                            .ofConstructor(io.vertx.reactivex.core.http.HttpServerRequest.class, HttpServerRequest.class),
+                    invoke
+                            .invokeInterfaceMethod(Methods.REQUEST,
+                                    routingContext));
+        } else if (paramType.name().equals(RX_HTTP_SERVER_RESPONSE)) {
+            paramHandle = invoke.newInstance(
+                    MethodDescriptor
+                            .ofConstructor(io.vertx.reactivex.core.http.HttpServerResponse.class, HttpServerResponse.class),
+                    invoke
+                            .invokeInterfaceMethod(Methods.RESPONSE,
+                                    routingContext));
+        } else {
+            // This should never happen because we validate the method earlier
+            throw new IllegalArgumentException("Unsupported parameter type: " + paramType);
+        }
+        return paramHandle;
     }
 
     private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,

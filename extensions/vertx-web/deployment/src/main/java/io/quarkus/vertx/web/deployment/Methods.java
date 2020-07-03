@@ -2,8 +2,17 @@ package io.quarkus.vertx.web.deployment;
 
 import java.util.function.Consumer;
 
+import javax.enterprise.context.spi.Context;
+import javax.enterprise.context.spi.Contextual;
+import javax.enterprise.context.spi.CreationalContext;
+
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -16,11 +25,12 @@ import io.smallrye.mutiny.groups.UniSubscribe;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
-public class Methods {
+class Methods {
 
     static final MethodDescriptor GET_HEADERS = MethodDescriptor
             .ofMethod(HttpServerResponse.class, "headers", MultiMap.class);
@@ -29,6 +39,8 @@ public class Methods {
     static final MethodDescriptor MULTIMAP_SET = MethodDescriptor
             .ofMethod(MultiMap.class, "set", MultiMap.class, String.class, String.class);
 
+    static final MethodDescriptor REQUEST = MethodDescriptor
+            .ofMethod(RoutingContext.class, "request", HttpServerRequest.class);
     static final MethodDescriptor RESPONSE = MethodDescriptor
             .ofMethod(RoutingContext.class, "response", HttpServerResponse.class);
 
@@ -99,6 +111,30 @@ public class Methods {
             .ofMethod(io.vertx.mutiny.core.buffer.Buffer.class, "getDelegate", Buffer.class);
     static final MethodDescriptor JSON_ENCODE = MethodDescriptor
             .ofMethod(Json.class, "encode", String.class, Object.class);
+    static final MethodDescriptor ARC_CONTAINER = MethodDescriptor
+            .ofMethod(Arc.class, "container", ArcContainer.class);
+    static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor
+            .ofMethod(ArcContainer.class,
+                    "getActiveContext", InjectableContext.class, Class.class);
+    static final MethodDescriptor ARC_CONTAINER_BEAN = MethodDescriptor.ofMethod(ArcContainer.class, "bean",
+            InjectableBean.class, String.class);
+    static final MethodDescriptor BEAN_GET_SCOPE = MethodDescriptor.ofMethod(InjectableBean.class, "getScope",
+            Class.class);
+    static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
+            Contextual.class,
+            CreationalContext.class);
+    static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor
+            .ofMethod(Context.class, "get", Object.class,
+                    Contextual.class);
+    static final MethodDescriptor INJECTABLE_REF_PROVIDER_GET = MethodDescriptor.ofMethod(
+            InjectableReferenceProvider.class,
+            "get", Object.class,
+            CreationalContext.class);
+    static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor
+            .ofMethod(InjectableBean.class, "destroy",
+                    void.class, Object.class,
+                    CreationalContext.class);
+    static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
     private Methods() {
         // Avoid direct instantiation
@@ -108,7 +144,7 @@ public class Methods {
         creator.invokeInterfaceMethod(FAIL, rc, exception);
     }
 
-    public static void returnAndClose(BytecodeCreator creator) {
+    static void returnAndClose(BytecodeCreator creator) {
         creator.returnValue(null);
         creator.close();
     }

@@ -66,12 +66,12 @@ public class MultiRouteTest {
         }
 
         @Route(path = "hellos")
-        Multi<String> hellos(RoutingContext context) {
+        Multi<String> hellos() {
             return Multi.createFrom().items("hello", "world", "!");
         }
 
         @Route(path = "no-hello")
-        Multi<String> noHello(RoutingContext context) {
+        Multi<String> noHello() {
             return Multi.createFrom().empty();
         }
 
@@ -139,7 +139,7 @@ public class MultiRouteTest {
         }
 
         @Route(path = "/null")
-        Multi<String> uniNull(RoutingContext context) {
+        Multi<String> uniNull() {
             return null;
         }
 

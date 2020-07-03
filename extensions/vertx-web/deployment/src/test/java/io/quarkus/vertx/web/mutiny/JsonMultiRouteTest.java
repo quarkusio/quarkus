@@ -82,7 +82,7 @@ public class JsonMultiRouteTest {
         }
 
         @Route(path = "hello-and-fail")
-        Multi<String> helloAndFail(RoutingContext context) {
+        Multi<String> helloAndFail() {
             return ReactiveRoutes.asJsonArray(Multi.createBy().concatenating().streams(
                     Multi.createFrom().item("Hello"),
                     Multi.createFrom().failure(new IOException("boom"))));
@@ -101,7 +101,7 @@ public class JsonMultiRouteTest {
         }
 
         @Route(path = "/people")
-        Multi<Person> people(RoutingContext context) {
+        Multi<Person> people() {
             return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
                     new Person("superman", 1),
                     new Person("batman", 2),

@@ -55,6 +55,10 @@ public interface QuarkusTestProfile {
         private Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private Map<String, String> args;
 
+        public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz) {
+            this(clazz, Collections.emptyMap());
+        }
+
         public TestResourceEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args) {
             this.clazz = clazz;
             this.args = args;

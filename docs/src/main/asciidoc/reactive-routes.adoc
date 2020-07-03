@@ -163,6 +163,221 @@ public class SimpleRoutes {
 ----
 <1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used. The `produces` value is used for content-based routing for all routes where `Route#produces()` is empty.
 
+=== Returning Unis
+
+In a reactive route, you can return a `Uni` directly:
+
+[source,java]
+----
+@Route(path = "/hello")
+Uni<String> hello(RoutingContext context) {
+    return Uni.createFrom().item("Hello world!");
+}
+
+@Route(path = "/person")
+Uni<Person> getPerson(RoutingContext context) {
+    return Uni.createFrom().item(() -> new Person("neo", 12345));
+}
+----
+
+Returning `Unis` is convenient when using a reactive client:
+
+[source,java]
+----
+@Route(path = "/mail")
+Uni<Void> sendEmail(RoutingContext context) {
+    return mailer.send(...);
+}
+----
+
+The item produced by the returned `Uni` can be:
+
+* a string - written into the HTTP response directly
+* a buffer - written into the HTTP response directly
+* an object - written into the HTTP response after having been encoded into JSON.
+The `content-type` header is set to `application/json` if not already set.
+
+If the returned `Uni` produces a failure (or is `null`), an HTTP 500 response is written.
+
+Returning a `Uni<Void>` produces a 204 response (no content).
+
+=== Returning results
+
+You can also return a result directly:
+
+[source, java]
+----
+@Route(path = "/hello")
+String helloSync(RoutingContext context) {
+    return "Hello world";
+}
+----
+
+Be aware, the processing must be **non-blocking** as reactive routes are invoked on the IO Thread.
+Otherwise, use the `blocking` attribute of the `@Route` annotation.
+
+The method can return:
+
+* a string - written into the HTTP response directly
+* a buffer - written into the HTTP response directly
+* an object - written into the HTTP response after having been encoded into JSON.
+The `content-type` header is set to `application/json` if not already set.
+
+=== Returning Multis
+
+A reactive route can return a `Multi`.
+The items are written one by one, in the response.
+The response `Transfer-Encoding` header is set to `chunked`.
+
+[source, java]
+----
+@Route(path = "/hello")
+Multi<String> hellos(RoutingContext context) {
+    return Multi.createFrom().items("hello", "world", "!");  // <1>
+}
+----
+1. Produces `helloworld!`
+
+The method can return:
+
+* a `Multi<String>` - the items are written one by one (one per _chunk_) in the response.
+* a `Multi<Buffer>` - the buffers are written one by one (one per _chunk_) without any processing.
+* a `Multi<Object>` - the items are encoded to JSON written one by one in the response.
+
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return Multi.createFrom().items(
+            new Person("superman", 1),
+            new Person("batman", 2),
+            new Person("spiderman", 3));
+}
+----
+
+Ths previous snippet produces:
+
+[source, json]
+----
+{"name":"superman", "id": 1} // chunk 1
+{"name":"batman", "id": 2} // chunk 2
+{"name":"spiderman", "id": 3} // chunk 3
+----
+
+=== Streaming JSON Array items
+
+You can return a `Multi` to produce a JSON Array, where every item is an item from this array.
+The response is written item by item to the client.
+The `content-type` is set to `application/json` if not set already.
+
+To use this feature, you need to wrap the returned `Multi` using `io.quarkus.vertx.web.ReactiveRoutes.asJsonArray`:
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
+            new Person("superman", 1),
+            new Person("batman", 2),
+            new Person("spiderman", 3)));
+}
+----
+
+Ths previous snippet produces:
+
+[source, json]
+----
+[
+  {"name":"superman", "id": 1} // chunk 1
+  ,{"name":"batman", "id": 2} // chunk 2
+  ,{"name":"spiderman", "id": 3} // chunk 3
+]
+----
+
+Only `Multi<String>`, `Multi<Object>` and `Multi<Void>` can be written into the JSON Array.
+Using a `Multi<Void>` produces an empty array.
+You cannot use `Multi<Buffer>`.
+If you need to use `Buffer`, transform the content into a JSON or String representation first.
+
+=== Event Stream and Server-Sent Event support
+
+You can return a `Multi` to produce an event source (stream of server sent events).
+To enable this feature, you need to wrap the returned `Multi` using `io.quarkus.vertx.web.ReactiveRoutes.asEventStream`:
+
+[source, java]
+----
+@Route(path = "/people")
+Multi<Person> people(RoutingContext context) {
+    return ReactiveRoutes.asEventStream(Multi.createFrom().items(
+            new Person("superman", 1),
+            new Person("batman", 2),
+            new Person("spiderman", 3)));
+}
+----
+
+This method would produce:
+
+[source, text]
+----
+data: {"name":"superman", "id": 1}
+id: 0
+
+data: {"name":"batman", "id": 2}
+id: 1
+
+data: {"name":"spiderman", "id": 3}
+id: 2
+
+----
+
+You can also implement the `io.quarkus.vertx.web.ReactiveRoutes.ServerSentEvent` interface to customize the `event` and `id` section of the server sent event:
+
+[source, java]
+----
+class PersonEvent implements ReactiveRoutes.ServerSentEvent<Person> {
+    public String name;
+    public int id;
+
+    public PersonEvent(String name, int id) {
+        this.name = name;
+        this.id = id;
+    }
+
+    @Override
+    public Person data() {
+        return new Person(name, id); // Will be JSON encoded
+    }
+
+    @Override
+    public long id() {
+        return id;
+    }
+
+    @Override
+    public String event() {
+        return "person";
+    }
+}
+----
+
+Using a `Multi<PersonEvent>` (wrapped using `io.quarkus.vertx.web.ReactiveRoutes.asEventStream`) would produce:
+
+[source, text]
+----
+event: person
+data: {"name":"superman", "id": 1}
+id: 1
+
+event: person
+data: {"name":"batman", "id": 2}
+id: 2
+
+event: person
+data: {"name":"spiderman", "id": 3}
+id: 3
+
+----
 
 == Using the Vert.x Web Router
 

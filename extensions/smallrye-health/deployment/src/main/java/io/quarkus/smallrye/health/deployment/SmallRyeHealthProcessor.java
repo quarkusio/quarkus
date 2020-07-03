@@ -37,7 +37,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -123,12 +122,12 @@ class SmallRyeHealthProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
-    void build(SmallRyeHealthRecorder recorder, RecorderContext recorderContext,
+    void build(SmallRyeHealthRecorder recorder,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            LaunchModeBuildItem launchModeBuildItem) throws IOException {
+            LaunchModeBuildItem launchModeBuildItem) throws IOException, ClassNotFoundException {
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_HEALTH));
 
@@ -165,8 +164,10 @@ class SmallRyeHealthProcessor {
                     String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
         }
 
-        recorder.registerHealthCheckResponseProvider(
-                (Class<? extends HealthCheckResponseProvider>) recorderContext.classProxy(providers.iterator().next()));
+        final String provider = providers.iterator().next();
+        final Class<? extends HealthCheckResponseProvider> responseProvider = (Class<? extends HealthCheckResponseProvider>) Class
+                .forName(provider, true, Thread.currentThread().getContextClassLoader());
+        recorder.registerHealthCheckResponseProvider(responseProvider);
     }
 
     @BuildStep

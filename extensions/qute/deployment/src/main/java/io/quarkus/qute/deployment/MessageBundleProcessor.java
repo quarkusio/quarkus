@@ -52,7 +52,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -233,14 +232,15 @@ public class MessageBundleProcessor {
 
     @Record(value = STATIC_INIT)
     @BuildStep
-    void initBundleContext(RecorderContext context, MessageBundleRecorder recorder,
+    void initBundleContext(MessageBundleRecorder recorder,
             List<MessageBundleMethodBuildItem> messageBundleMethods,
             List<MessageBundleBuildItem> bundles,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) throws ClassNotFoundException {
 
         Map<String, Map<String, Class<?>>> bundleInterfaces = new HashMap<>();
         for (MessageBundleBuildItem bundle : bundles) {
-            Class<?> bundleClass = context.classProxy(bundle.getDefaultBundleInterface().toString());
+            final Class<?> bundleClass = Class.forName(bundle.getDefaultBundleInterface().toString(), true,
+                    Thread.currentThread().getContextClassLoader());
             Map<String, Class<?>> localeToInterface = new HashMap<>();
             localeToInterface.put(MessageBundles.DEFAULT_LOCALE,
                     bundleClass);

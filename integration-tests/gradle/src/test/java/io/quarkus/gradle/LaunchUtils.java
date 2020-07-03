@@ -5,10 +5,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.utilities.JavaBinFinder;
 
 public class LaunchUtils {
+    private static final Logger log = Logger.getLogger(LaunchUtils.class);
 
     protected static Process launch(Path jar, File output) throws IOException {
         List<String> commands = new ArrayList<>();
@@ -19,6 +23,19 @@ public class LaunchUtils {
         processBuilder.redirectOutput(output);
         processBuilder.redirectError(output);
         return processBuilder.start();
+    }
+
+    public static void dumpFileContentOnFailure(final Callable<Void> operation, final File logFile,
+            final Class<? extends Throwable> failureType) throws Exception {
+
+        try {
+            operation.call();
+        } catch (Throwable t) {
+            log.error("Dumping logs that were generated in " + logFile + " for an operation that resulted in "
+                    + t.getClass().getName() + ":", t);
+
+            throw t;
+        }
     }
 
 }

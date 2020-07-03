@@ -206,12 +206,14 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public long count() {
-        if (AbstractJpaOperations.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a count operation on a named query");
-        }
-
         if (count == null) {
-            Query countQuery = em.createQuery(countQuery());
+            String selectQuery = query;
+            if (AbstractJpaOperations.isNamedQuery(query)) {
+                org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
+                selectQuery = q.getQueryString();
+            }
+
+            Query countQuery = em.createQuery(countQuery(selectQuery));
             if (paramsArrayOrMap instanceof Map)
                 AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
@@ -223,13 +225,13 @@ public class CommonPanacheQueryImpl<Entity> {
         return count;
     }
 
-    private String countQuery() {
+    private String countQuery(String selectQuery) {
         if (countQuery != null) {
             return countQuery;
         }
 
         // try to generate a good count query from the existing query
-        Matcher selectMatcher = SELECT_PATTERN.matcher(query);
+        Matcher selectMatcher = SELECT_PATTERN.matcher(selectQuery);
         String countQuery;
         if (selectMatcher.matches()) {
             // this one cannot be null
@@ -239,17 +241,17 @@ public class CommonPanacheQueryImpl<Entity> {
                 String secondSelection = selectMatcher.group(2);
                 // we can only count distinct single columns
                 if (secondSelection != null && !secondSelection.trim().isEmpty()) {
-                    throw new PanacheQueryException("Count query not supported for select query: " + query);
+                    throw new PanacheQueryException("Count query not supported for select query: " + selectQuery);
                 }
                 countQuery = "SELECT COUNT(" + firstSelection + ") " + selectMatcher.group(3);
             } else {
                 // it's not distinct, forget the column list
                 countQuery = "SELECT COUNT(*) " + selectMatcher.group(3);
             }
-        } else if (FROM_PATTERN.matcher(query).matches()) {
-            countQuery = "SELECT COUNT(*) " + query;
+        } else if (FROM_PATTERN.matcher(selectQuery).matches()) {
+            countQuery = "SELECT COUNT(*) " + selectQuery;
         } else {
-            throw new PanacheQueryException("Count query not supported for select query: " + query);
+            throw new PanacheQueryException("Count query not supported for select query: " + selectQuery);
         }
 
         // remove the order by clause

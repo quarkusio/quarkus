@@ -259,6 +259,10 @@ public class ResteasyServerCommonProcessor {
                 String className = implementor.name().toString();
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
                 scannedResources.putIfAbsent(implementor.name(), implementor);
+
+                if (!implementor.hasNoArgsConstructor()) {
+                    withoutDefaultCtor.put(implementor.name(), implementor);
+                }
             }
         }
 
@@ -576,6 +580,7 @@ public class ResteasyServerCommonProcessor {
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
         allowedAnnotationPrefixes.add(packageName(ResteasyDotNames.PATH));
         allowedAnnotationPrefixes.add("kotlin"); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
+        allowedAnnotationPrefixes.add("lombok"); // same for lombok
         allowedAnnotationPrefixes.add("io.quarkus.security"); // same for the security annotations
         allowedAnnotationPrefixes.add("javax.annotation.security");
         allowedAnnotationPrefixes.add("jakarta.annotation.security");

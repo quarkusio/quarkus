@@ -7,7 +7,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -131,4 +134,10 @@ public class MojoTestBase {
             throw new IllegalArgumentException("Cannot read the pom.xml file", e);
         }
     }
+
+    public static List<File> getFilesEndingWith(File dir, String suffix) {
+        final File[] files = dir.listFiles((d, name) -> name.endsWith(suffix));
+        return files != null ? Arrays.asList(files) : Collections.emptyList();
+    }
+
 }

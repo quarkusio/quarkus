@@ -149,18 +149,23 @@ public class BuildMojo extends AbstractMojo {
         try {
 
             final Properties projectProperties = project.getProperties();
-            final Properties realProperties = new Properties();
+            final Properties effectiveProperties = new Properties();
+            // quarkus. properties > ignoredEntries in pom.xml
+            if (ignoredEntries != null && ignoredEntries.length > 0) {
+                String joinedEntries = String.join(",", ignoredEntries);
+                effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+            }
             for (String name : projectProperties.stringPropertyNames()) {
                 if (name.startsWith("quarkus.")) {
-                    realProperties.setProperty(name, projectProperties.getProperty(name));
+                    effectiveProperties.setProperty(name, projectProperties.getProperty(name));
                 }
             }
             if (uberJar && System.getProperty(QUARKUS_PACKAGE_UBER_JAR) == null) {
                 System.setProperty(QUARKUS_PACKAGE_UBER_JAR, "true");
                 clear = true;
             }
-            realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
-            realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
+            effectiveProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
+            effectiveProperties.putIfAbsent("quarkus.application.version", project.getVersion());
 
             MavenArtifactResolver resolver = MavenArtifactResolver.builder()
                     .setWorkspaceDiscovery(false)
@@ -192,7 +197,7 @@ public class BuildMojo extends AbstractMojo {
                     .setAppArtifact(appArtifact)
                     .setMavenArtifactResolver(resolver)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())
-                    .setBuildSystemProperties(realProperties)
+                    .setBuildSystemProperties(effectiveProperties)
                     .setLocalProjectDiscovery(false)
                     .setProjectRoot(project.getBasedir().toPath())
                     .setBaseName(finalName)

@@ -20,6 +20,9 @@ public class RestEasyDevModeTestCase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(PostResource.class)
                     .addClass(GreetingResource.class)
+                    .addClass(InterfaceResource.class)
+                    .addClass(InterfaceResourceImpl.class)
+                    .addClass(Service.class)
                     .addAsResource("config-test.properties", "application.properties"));
 
     @Test
@@ -53,5 +56,12 @@ public class RestEasyDevModeTestCase {
         RestAssured.when().get("/greeting").then()
                 .statusCode(200)
                 .body(is("hi from dev mode"));
+    }
+
+    @Test
+    public void testInterfaceImplementation() {
+        RestAssured.when().get("/inter/hello").then()
+                .statusCode(200)
+                .body(is("hello from impl"));
     }
 }

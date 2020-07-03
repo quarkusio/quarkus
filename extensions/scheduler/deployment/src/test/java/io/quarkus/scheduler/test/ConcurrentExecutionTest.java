@@ -10,12 +10,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.test.QuarkusUnitTest;
 
+@Disabled("The test is unreliable. Needs investigation.")
 public class ConcurrentExecutionTest {
 
     @RegisterExtension
@@ -46,7 +48,7 @@ public class ConcurrentExecutionTest {
         void nonconcurrent() throws InterruptedException {
             COUNTER.incrementAndGet();
             if (!LATCH.await(5, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("");
+                throw new IllegalStateException();
             }
         }
     }

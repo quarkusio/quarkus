@@ -407,21 +407,25 @@ public class DevMojo extends AbstractMojo {
      */
     private void handleResources() throws MojoExecutionException {
         List<Resource> resources = project.getResources();
-        if (!resources.isEmpty()) {
-            Plugin resourcesPlugin = project.getPlugin(ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_RESOURCES_PLUGIN);
-            MojoExecutor.executeMojo(
-                    MojoExecutor.plugin(
-                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
-                            MojoExecutor.artifactId(MAVEN_RESOURCES_PLUGIN),
-                            MojoExecutor.version(resourcesPlugin.getVersion()),
-                            resourcesPlugin.getDependencies()),
-                    MojoExecutor.goal("resources"),
-                    getPluginConfig(resourcesPlugin),
-                    MojoExecutor.executionEnvironment(
-                            project,
-                            session,
-                            pluginManager));
+        if (resources.isEmpty()) {
+            return;
         }
+        Plugin resourcesPlugin = project.getPlugin(ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_RESOURCES_PLUGIN);
+        if (resourcesPlugin == null) {
+            return;
+        }
+        MojoExecutor.executeMojo(
+                MojoExecutor.plugin(
+                        MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
+                        MojoExecutor.artifactId(MAVEN_RESOURCES_PLUGIN),
+                        MojoExecutor.version(resourcesPlugin.getVersion()),
+                        resourcesPlugin.getDependencies()),
+                MojoExecutor.goal("resources"),
+                getPluginConfig(resourcesPlugin),
+                MojoExecutor.executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
     }
 
     private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {

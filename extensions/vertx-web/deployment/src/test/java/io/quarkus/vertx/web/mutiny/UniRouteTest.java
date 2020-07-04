@@ -72,7 +72,7 @@ public class UniRouteTest {
         }
 
         @Route(path = "hello-on-pool")
-        Uni<String> helloOnPool(RoutingContext context) {
+        Uni<String> helloOnPool() {
             return Uni.createFrom().item("Pool")
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
@@ -94,7 +94,7 @@ public class UniRouteTest {
         }
 
         @Route(path = "void")
-        Uni<Void> uniOfVoid(RoutingContext context) {
+        Uni<Void> uniOfVoid() {
             return Uni.createFrom().nullItem();
         }
 

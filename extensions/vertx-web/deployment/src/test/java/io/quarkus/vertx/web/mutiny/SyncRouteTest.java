@@ -52,7 +52,7 @@ public class SyncRouteTest {
     static class SimpleBean {
 
         @Route(path = "hello-sync")
-        String helloSync(RoutingContext context) {
+        String helloSync() {
             return "Sync Hello world";
         }
 
@@ -62,7 +62,7 @@ public class SyncRouteTest {
         }
 
         @Route(path = "hello-buffer-rx-sync")
-        io.vertx.reactivex.core.buffer.Buffer helloRxBufferSync(RoutingContext context) {
+        io.vertx.reactivex.core.buffer.Buffer helloRxBufferSync() {
             return io.vertx.reactivex.core.buffer.Buffer.buffer("Sync RX Buffer");
         }
 
@@ -77,7 +77,7 @@ public class SyncRouteTest {
         }
 
         @Route(path = "person-sync", produces = "application/json")
-        Person getPerson(RoutingContext context) {
+        Person getPerson() {
             return new Person("neo", 12345);
         }
 

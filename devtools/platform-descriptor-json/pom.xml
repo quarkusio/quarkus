@@ -81,6 +81,7 @@
                             <executable>${gradle-wrapper.path}/${gradle.executable}</executable>
                             <arguments>
                                 <argument>wrapper</argument>
+                                <argument>--no-daemon</argument>
                                 <argument>--gradle-version</argument>
                                 <argument>${gradle-wrapper.version}</argument>
                             </arguments>

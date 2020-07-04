@@ -496,7 +496,6 @@ jobs:
             test-modules: >
               infinispan-cache-jpa
               infinispan-client
-              infinispan-embedded
               cache
           - category: HTTP
             timeout: 55

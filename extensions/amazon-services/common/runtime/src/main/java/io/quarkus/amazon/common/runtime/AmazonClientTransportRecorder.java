@@ -154,7 +154,7 @@ public class AmazonClientTransportRecorder {
                     String.format("quarkus.%s.async-client.http2.max-streams may not be negative.", extension));
         }
 
-        if (config.http2.initialWindowSize.isPresent() && config.http2.initialWindowSize.get() <= 0) {
+        if (config.http2.initialWindowSize.isPresent() && config.http2.initialWindowSize.getAsInt() <= 0) {
             throw new RuntimeConfigurationError(
                     String.format("quarkus.%s.async-client.http2.initial-window-size may not be negative.", extension));
         }
@@ -165,7 +165,7 @@ public class AmazonClientTransportRecorder {
                             extension));
         }
         if (config.eventLoop.override) {
-            if (config.eventLoop.numberOfThreads.isPresent() && config.eventLoop.numberOfThreads.get() <= 0) {
+            if (config.eventLoop.numberOfThreads.isPresent() && config.eventLoop.numberOfThreads.getAsInt() <= 0) {
                 throw new RuntimeConfigurationError(
                         String.format("quarkus.%s.async-client.event-loop.number-of-threads may not be negative or zero.",
                                 extension));

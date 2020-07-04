@@ -633,7 +633,8 @@ class KubernetesProcessor {
         session.resources().decorate(KUBERNETES,
                 new ApplyServiceTypeDecorator(kubernetesName, kubernetesConfig.getServiceType().name()));
         if ((kubernetesConfig.getServiceType() == ServiceType.NodePort) && kubernetesConfig.nodePort.isPresent()) {
-            session.resources().decorate(KUBERNETES, new AddNodePortDecorator(openshiftName, kubernetesConfig.nodePort.get()));
+            session.resources().decorate(KUBERNETES,
+                    new AddNodePortDecorator(openshiftName, kubernetesConfig.nodePort.getAsInt()));
         }
         session.resources().decorate(MINIKUBE,
                 new ApplyServiceTypeDecorator(kubernetesName, ServiceType.NodePort.name()));
@@ -643,7 +644,8 @@ class KubernetesProcessor {
         session.resources().decorate(OPENSHIFT,
                 new ApplyServiceTypeDecorator(openshiftName, openshiftConfig.getServiceType().name()));
         if ((openshiftConfig.getServiceType() == ServiceType.NodePort) && openshiftConfig.nodePort.isPresent()) {
-            session.resources().decorate(OPENSHIFT, new AddNodePortDecorator(openshiftName, openshiftConfig.nodePort.get()));
+            session.resources().decorate(OPENSHIFT,
+                    new AddNodePortDecorator(openshiftName, openshiftConfig.nodePort.getAsInt()));
         }
 
         session.resources().decorate(KNATIVE,

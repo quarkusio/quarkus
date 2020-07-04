@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -618,7 +619,7 @@ public class OidcTenantConfig {
          * number of seconds.
          */
         @ConfigItem
-        public Optional<Integer> lifespanGrace = Optional.empty();
+        public OptionalInt lifespanGrace = OptionalInt.empty();
 
         /**
          * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
@@ -660,12 +661,12 @@ public class OidcTenantConfig {
             this.audience = Optional.of(audience);
         }
 
-        public Optional<Integer> getLifespanGrace() {
+        public OptionalInt getLifespanGrace() {
             return lifespanGrace;
         }
 
         public void setLifespanGrace(int lifespanGrace) {
-            this.lifespanGrace = Optional.of(lifespanGrace);
+            this.lifespanGrace = OptionalInt.of(lifespanGrace);
         }
 
         public Optional<String> getPrincipalClaim() {

@@ -89,7 +89,7 @@ public class OidcRecorder {
 
         if (oidcConfig.getToken().getLifespanGrace().isPresent()) {
             JWTOptions jwtOptions = new JWTOptions();
-            jwtOptions.setLeeway(oidcConfig.getToken().getLifespanGrace().get());
+            jwtOptions.setLeeway(oidcConfig.getToken().getLifespanGrace().getAsInt());
             options.setJWTOptions(jwtOptions);
         }
 

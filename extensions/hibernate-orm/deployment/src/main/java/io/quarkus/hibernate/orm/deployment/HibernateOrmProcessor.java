@@ -680,11 +680,11 @@ public final class HibernateOrmProcessor {
 
                 hibernateConfig.jdbc.statementFetchSize.ifPresent(
                         fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
-                                fetchSize.toString()));
+                                String.valueOf(fetchSize)));
 
                 hibernateConfig.jdbc.statementBatchSize.ifPresent(
                         fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
-                                fetchSize.toString()));
+                                String.valueOf(fetchSize)));
 
                 // Logging
                 if (hibernateConfig.log.sql) {

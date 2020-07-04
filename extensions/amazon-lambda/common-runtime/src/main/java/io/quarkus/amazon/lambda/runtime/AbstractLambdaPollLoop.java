@@ -7,6 +7,7 @@ import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -113,7 +114,7 @@ public abstract class AbstractLambdaPollLoop {
                     } catch (Exception ex) {
                         log.error("Failed to report init error", ex);
                     } finally {
-                        //our main loop is done, time to shutdown
+                        // our main loop is done, time to shutdown
                         Application app = Application.currentApplication();
                         if (app != null) {
                             app.stop();
@@ -189,12 +190,15 @@ public abstract class AbstractLambdaPollLoop {
     }
 
     boolean abortGracefully(Exception ex) {
-        // if we are running in test mode, then don't output stack trace for socket errors
+        // if we are running in test mode, or native mode outside of the lambda container, then don't output stack trace for socket errors
 
-        boolean graceful = (ex instanceof SocketException || ex instanceof ConnectException)
-                && System.getProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API) != null;
+        boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
+        boolean testEnv = System.getProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API) != null;
+        boolean graceful = ((ex instanceof SocketException || ex instanceof ConnectException) && testEnv)
+                || (ex instanceof UnknownHostException && !lambdaEnv);
+
         if (graceful)
-            log.warn("Aborting lambda poll loop");
+            log.warn("Aborting lambda poll loop: " + (!lambdaEnv ? "no lambda container found" : "test mode"));
         return graceful;
     }
 

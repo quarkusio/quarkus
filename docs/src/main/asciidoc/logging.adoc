@@ -133,7 +133,7 @@ The presence of this extension will, by default, replace the output format confi
 This means that the format string and the color settings (if any) will be ignored.  The other console configuration items
 (including those controlling asynchronous logging and the log level) will continue to be applied.
 
-For some, it will make sense to use logging that is humanly readable (unstructured) in dev mode and JSON logging (structured) in production mode. This can be achieved using different profiles, as shown in the following configuration. 
+For some, it will make sense to use logging that is humanly readable (unstructured) in dev mode and JSON logging (structured) in production mode. This can be achieved using different profiles, as shown in the following configuration.
 
 .Disable JSON logging in application.properties for dev and test mode
 [source, properties]
@@ -216,7 +216,7 @@ If you want to send your logs to a centralized tool like Graylog, Logstash or Fl
 == How to Configure Logging for `@QuarkusTest`
 
 If you want to configure logging for your `@QuarkusTest`, don't forget to set up the `maven-surefire-plugin` accordingly.
-In particular, you need to set the appropriate `LogManager` using the `java.util.logging.manager` system property.  
+In particular, you need to set the appropriate `LogManager` using the `java.util.logging.manager` system property.
 
 .Example Configuration
 [source, xml]
@@ -250,6 +250,73 @@ test {
 ----
 
 See also: <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` from an IDE>>
+
+[[logging-adapters]]
+== Logging Adapters
+
+Quarkus relies on the JBoss Logging library for all the logging requirements.
+
+If you are using libraries that have dependencies on other logging libraries such as Apache Commons Logging, Log4j or Slf4j, you need to exclude them from the dependencies and use one of the adapters provided by JBoss Logging.
+
+This is especially important when building native executables as you could encounter issues similar to the following when compiling the native executable:
+
+[source]
+----
+Caused by java.lang.ClassNotFoundException: org.apache.commons.logging.impl.LogFactoryImpl
+----
+
+This is due to the logging implementation not being embarked in the the native executable.
+Using the JBoss Logging adapters will solve this problem.
+
+These adapters are available for most of the common Open Source logging components, such as Apache Commons Logging:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>commons-logging-jboss-logging</artifactId>
+</dependency>
+----
+
+JDK Logging:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>jboss-logging-jdk</artifactId>
+</dependency>
+----
+
+Log4j:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>jboss-logging-log4j</artifactId>
+</dependency>
+----
+
+Log4j2:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>log4j2-jboss-logmanager</artifactId>
+</dependency>
+----
+
+And Slf4j:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.jboss.slf4j</groupId>
+    <artifactId>slf4j-jboss-logging</artifactId>
+</dependency>
+----
 
 [[loggingConfigurationReference]]
 == Logging configuration reference

@@ -817,4 +817,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         // test that we don't get multiple instances of a resource when loading from the ClassLoader
         assertThat(DevModeTestUtils.getHttpResponse("/cp/resourcesCount")).isEqualTo("1");
     }
+
+    @Test
+    public void testThatDependencyInParentIsEvaluated() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/multimodule-parent-dep");
+        runAndCheck();
+    }
 }

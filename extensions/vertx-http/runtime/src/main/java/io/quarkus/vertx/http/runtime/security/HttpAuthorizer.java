@@ -13,6 +13,7 @@ import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -30,6 +31,9 @@ public class HttpAuthorizer {
 
     @Inject
     IdentityProviderManager identityProviderManager;
+
+    @Inject
+    AuthorizationController controller;
 
     final List<HttpSecurityPolicy> policies;
 
@@ -87,6 +91,10 @@ public class HttpAuthorizer {
      *
      */
     public void checkPermission(RoutingContext routingContext) {
+        if (!controller.isAuthorizationEnabled()) {
+            routingContext.next();
+            return;
+        }
         //check their permissions
         doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
                 policies);

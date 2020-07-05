@@ -7,6 +7,7 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -19,8 +20,15 @@ public class AuthenticatedInterceptor {
     @Inject
     SecurityHandler handler;
 
+    @Inject
+    AuthorizationController controller;
+
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        return handler.handle(ic);
+        if (controller.isAuthorizationEnabled()) {
+            return handler.handle(ic);
+        } else {
+            return ic.proceed();
+        }
     }
 }

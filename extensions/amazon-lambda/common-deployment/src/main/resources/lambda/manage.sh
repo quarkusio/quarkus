@@ -26,7 +26,7 @@ function cmd_invoke() {
   echo Invoking function
   set -x
   aws lambda invoke response.txt \
-    --cli-binary-format raw-in-base64-out
+    --cli-binary-format raw-in-base64-out \
     --function-name ${FUNCTION_NAME} \
     --payload file://payload.json \
     --log-type Tail \

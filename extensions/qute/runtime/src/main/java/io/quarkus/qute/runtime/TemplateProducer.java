@@ -19,7 +19,6 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
@@ -29,6 +28,7 @@ import io.quarkus.qute.TemplateInstanceBase;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.smallrye.mutiny.Multi;
 
 @Singleton
 public class TemplateProducer {
@@ -154,8 +154,8 @@ public class TemplateProducer {
         }
 
         @Override
-        public Publisher<String> publisher() {
-            return templateInstance().publisher();
+        public Multi<String> createMulti() {
+            return templateInstance().createMulti();
         }
 
         @Override

@@ -20,8 +20,8 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.reactivestreams</groupId>
-            <artifactId>reactive-streams</artifactId>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

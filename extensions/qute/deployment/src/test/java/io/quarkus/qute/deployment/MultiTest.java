@@ -1,7 +1,6 @@
 package io.quarkus.qute.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -13,14 +12,13 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Multi;
 
-public class PublisherTest {
+public class MultiTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -33,11 +31,10 @@ public class PublisherTest {
     Template foo;
 
     @Test
-    public void testTemplateData() {
-        Publisher<String> publisher = foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).publisher();
-        assertTrue(publisher instanceof Multi);
-        assertEquals("123.4563 is not 123.46", Multi.createFrom().publisher(publisher)
+    public void testCreateMulti() {
+        Multi<String> multi = foo.data("roundingMode", RoundingMode.HALF_UP)
+                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).createMulti();
+        assertEquals("123.4563 is not 123.46", multi
                 .collectItems().in(StringBuffer::new, StringBuffer::append)
                 .onItem().apply(StringBuffer::toString)
                 .await().indefinitely());

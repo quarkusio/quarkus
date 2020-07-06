@@ -71,7 +71,6 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.qute.Engine;
@@ -81,7 +80,6 @@ import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
-import io.quarkus.qute.PublisherFactory;
 import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
@@ -99,7 +97,6 @@ import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
 import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
-import io.quarkus.qute.mutiny.MutinyPublisherFactory;
 import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
@@ -852,11 +849,6 @@ public class QuteProcessor {
         }
         LOGGER.debugf("Template variants found: %s", baseToVariants);
         return new TemplateVariantsBuildItem(baseToVariants);
-    }
-
-    @BuildStep
-    ServiceProviderBuildItem registerPublisherFactory() {
-        return new ServiceProviderBuildItem(PublisherFactory.class.getName(), MutinyPublisherFactory.class.getName());
     }
 
     @BuildStep

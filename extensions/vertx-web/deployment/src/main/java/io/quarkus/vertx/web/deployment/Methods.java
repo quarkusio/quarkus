@@ -19,6 +19,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.vertx.web.runtime.MultiJsonArraySupport;
 import io.quarkus.vertx.web.runtime.MultiSseSupport;
 import io.quarkus.vertx.web.runtime.MultiSupport;
+import io.quarkus.vertx.web.runtime.RouteHandlers;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
@@ -135,6 +136,9 @@ class Methods {
                     void.class, Object.class,
                     CreationalContext.class);
     static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
+
+    static final MethodDescriptor ROUTE_HANDLERS_SET_CONTENT_TYPE = MethodDescriptor
+            .ofMethod(RouteHandlers.class, "setContentType", void.class, RoutingContext.class);
 
     private Methods() {
         // Avoid direct instantiation

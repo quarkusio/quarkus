@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
@@ -58,6 +59,8 @@ public class DefaultTenantConfigResolver {
 
         if (config == null) {
             config = getTenantConfigFromTenantResolver(context);
+        } else if (create && config.auth == null && !config.oidcConfig.getPublicKey().isPresent()) {
+            throw new OIDCException("OIDC IDP connection must be available");
         }
 
         return config;
@@ -93,17 +96,15 @@ public class DefaultTenantConfigResolver {
             if (context.get(CURRENT_TENANT_CONFIG) != null) {
                 tenantConfig = context.get(CURRENT_TENANT_CONFIG);
             } else {
-                OidcTenantConfig newTenantConfig = this.tenantConfigResolver.get().resolve(context);
-                if (newTenantConfig != null && !newTenantConfig.tenantEnabled) {
-                    newTenantConfig = null;
+                tenantConfig = this.tenantConfigResolver.get().resolve(context);
+                if (tenantConfig != null) {
+                    context.put(CURRENT_TENANT_CONFIG, tenantConfig);
                 }
-                tenantConfig = newTenantConfig;
-                context.put(CURRENT_TENANT_CONFIG, tenantConfig);
             }
 
             if (tenantConfig != null) {
                 String tenantId = tenantConfig.getTenantId()
-                        .orElseThrow(() -> new IllegalStateException("You must provide a tenant id"));
+                        .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
                 TenantConfigContext tenantContext = dynamicTenantsConfig.get(tenantId);
 
                 if (tenantContext == null) {

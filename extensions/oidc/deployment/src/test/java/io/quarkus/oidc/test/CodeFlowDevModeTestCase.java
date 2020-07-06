@@ -25,6 +25,7 @@ public class CodeFlowDevModeTestCase {
 
     private static Class<?>[] testClasses = {
             ProtectedResource.class,
+            UnprotectedResource.class,
             CustomTenantConfigResolver.class
     };
 
@@ -40,20 +41,24 @@ public class CodeFlowDevModeTestCase {
         useTenantConfigResolver();
 
         try (final WebClient webClient = createWebClient()) {
+
             // Default tenant is disabled and client-id is wrong
+            HtmlPage page = webClient.getPage("http://localhost:8080/unprotected");
+            assertEquals("unprotected", page.getBody().asText());
+
             try {
-                webClient.getPage("http://localhost:8080/web-app");
+                webClient.getPage("http://localhost:8080/protected");
                 fail("Exception is expected because the tenant is disabled and invalid client_id is used");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Quarkus
-                assertEquals(500, ex.getStatusCode());
+                assertEquals(401, ex.getStatusCode());
             }
 
             // Enable the default tenant
             test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
             // Default tenant is enabled, client-id is wrong
             try {
-                webClient.getPage("http://localhost:8080/web-app");
+                webClient.getPage("http://localhost:8080/protected");
                 fail("Exception is expected because the tenant is disabled and invalid client_id is used");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Keycloak
@@ -64,7 +69,7 @@ public class CodeFlowDevModeTestCase {
             // Now set the correct client-id
             test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "client-dev-mode"));
 
-            HtmlPage page = webClient.getPage("http://localhost:8080/web-app");
+            page = webClient.getPage("http://localhost:8080/protected");
 
             assertEquals("Log in to devmode", page.getTitleText());
 
@@ -82,7 +87,7 @@ public class CodeFlowDevModeTestCase {
 
     private void useTenantConfigResolver() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8080/web-app/tenant/tenant-config-resolver");
+            HtmlPage page = webClient.getPage("http://localhost:8080/protected/tenant/tenant-config-resolver");
 
             assertEquals("Log in to devmode", page.getTitleText());
 

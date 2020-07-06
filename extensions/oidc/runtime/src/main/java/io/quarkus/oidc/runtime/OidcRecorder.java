@@ -68,13 +68,12 @@ public class OidcRecorder {
     }
 
     private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {
-        if (!oidcConfig.tenantEnabled) {
-            LOG.debugf("%s tenant configuration is disabled", tenantId);
-            return null;
-        }
-
         if (!oidcConfig.tenantId.isPresent()) {
             oidcConfig.tenantId = Optional.of(tenantId);
+        }
+        if (!oidcConfig.tenantEnabled) {
+            LOG.debugf("%s tenant configuration is disabled", tenantId);
+            return new TenantConfigContext(null, oidcConfig);
         }
 
         OAuth2ClientOptions options = new OAuth2ClientOptions();

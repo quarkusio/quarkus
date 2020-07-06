@@ -74,6 +74,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Keycloak extension (`quarkus-keycloak`),
  * the Kubernetes client extension (`quarkus-kubernetes-client`),
  * the Mailer extension (`quarkus-mailer`),
+ * the Redis client extension (`quarkus-redis-client`),
  * the MongoDB extension (`quarkus-mongodb-client`),
  * the Neo4j extension (`quarkus-neo4j`),
  * the OAuth2 extension (`quarkus-elytron-security-oauth2`),

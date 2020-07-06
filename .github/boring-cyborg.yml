@@ -287,3 +287,6 @@ labelPRBasedOnFilePath:
         - integration-tests/vertx/**/*
         - integration-tests/vertx-graphql/**/*
         - integration-tests/vertx-http/**/*
+    area/redis:
+        - extensions/redis-client/**/*
+        - integration-tests/redis-client/**/*

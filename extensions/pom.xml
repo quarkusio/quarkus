@@ -76,6 +76,7 @@
         <module>reactive-mysql-client</module>
         <module>mailer</module>
         <module>grpc</module>
+        <module>redis-client</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>

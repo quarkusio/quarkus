@@ -21,6 +21,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-descriptor-json</artifactId>
             <version>${project.version}</version>
@@ -65,7 +70,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <configuration>
-                     <escapeString>\</escapeString>
+                    <escapeString>\</escapeString>
                 </configuration>
             </plugin>
             <plugin>

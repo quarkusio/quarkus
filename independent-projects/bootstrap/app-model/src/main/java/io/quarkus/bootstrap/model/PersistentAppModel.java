@@ -25,10 +25,12 @@ public class PersistentAppModel implements Serializable {
     private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
     private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
     private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
+    private final String userProvidersDirectory;
 
     public PersistentAppModel(String baseName, Map<AppArtifactKey, List<String>> paths, AppModel appModel,
-            String appArchivePath) {
+            String userProvidersDirectory, String appArchivePath) {
         this.baseName = baseName;
+        this.userProvidersDirectory = userProvidersDirectory;
         appArtifact = new SerializedDep(appModel.getAppArtifact(), paths);
         appArtifact.paths = Collections.singletonList(appArchivePath);
         for (AppDependency i : appModel.getDeploymentDependencies()) {
@@ -43,6 +45,10 @@ public class PersistentAppModel implements Serializable {
         localProjectArtifacts.addAll(appModel.getLocalProjectArtifacts());
         parentFirstArtifacts.addAll(appModel.getParentFirstArtifacts());
         lesserPriorityArtifacts.addAll(appModel.getLesserPriorityArtifacts());
+    }
+
+    public String getUserProvidersDirectory() {
+        return userProvidersDirectory;
     }
 
     public AppModel getAppModel(Path root) {

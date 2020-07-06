@@ -865,10 +865,15 @@ public class VertxHttpRecorder {
                             clearHttpProperty = true;
                             schema = "http";
                         }
-                        System.setProperty(
-                                launchMode == LaunchMode.TEST ? "quarkus." + schema + ".test-port"
-                                        : "quarkus." + schema + ".port",
-                                String.valueOf(actualPort));
+                        String portPropertyValue = String.valueOf(actualPort);
+                        String portPropertyName = (launchMode == LaunchMode.TEST ? "quarkus." + schema + ".test-port"
+                                : "quarkus." + schema + ".port");
+                        System.setProperty(portPropertyName, portPropertyValue);
+                        if (launchMode.isDevOrTest()) {
+                            // set the profile property as well to make sure we don't have any inconsistencies
+                            System.setProperty(propertyWithProfilePrefix(portPropertyName),
+                                    portPropertyValue);
+                        }
                         // Set in HttpOptions to output the port in the Timing class
                         options.setPort(actualPort);
                     }
@@ -882,10 +887,19 @@ public class VertxHttpRecorder {
         @Override
         public void stop(Future<Void> stopFuture) {
             if (clearHttpProperty) {
-                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port");
+                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port";
+                System.clearProperty(portPropertyName);
+                if (launchMode.isDevOrTest()) {
+                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                }
+
             }
             if (clearHttpsProperty) {
-                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port");
+                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port";
+                System.clearProperty(portPropertyName);
+                if (launchMode.isDevOrTest()) {
+                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                }
             }
 
             final AtomicInteger remainingCount = new AtomicInteger(0);
@@ -914,6 +928,10 @@ public class VertxHttpRecorder {
             if (domainSocketServer != null) {
                 domainSocketServer.close(handleClose);
             }
+        }
+
+        private String propertyWithProfilePrefix(String portPropertyName) {
+            return "%" + launchMode.getDefaultProfile() + "." + portPropertyName;
         }
     }
 

@@ -530,10 +530,13 @@ class VertxWebProcessor {
         // Invoke the business method handler
         ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
 
+        // If no content-type header is set then try to use the most acceptable content type
+        invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext);
+
         // Get the response: HttpServerResponse response = rc.response()
-        ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
         MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);
         if (descriptor.isReturningUni()) {
+            ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
             // The method returns a Uni.
             // We subscribe to this Uni and write the provided item in the HTTP response
             // If the method returned null, we fail
@@ -568,7 +571,7 @@ class VertxWebProcessor {
 
         } else if (descriptor.getContentType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
-
+            ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
             // If the method returned null, we fail
             // If the method returns string or buffer, the response.end method is used to write the response
             // If the method returns an object, the result is mapped to JSON and written into the response

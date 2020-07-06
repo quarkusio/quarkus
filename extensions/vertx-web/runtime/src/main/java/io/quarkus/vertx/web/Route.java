@@ -10,6 +10,7 @@ import io.quarkus.vertx.web.Route.Routes;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * This annotation can be used to configure a reactive route in a declarative way.
@@ -74,8 +75,11 @@ public @interface Route {
 
     /**
      * Used for content-based routing.
+     * <p>
+     * If no {@code Content-Type} header is set then try to use the most acceptable content type.
      * 
      * @see io.vertx.ext.web.Route#produces(String)
+     * @see RoutingContext#getAcceptableContentType()
      * @return the produced content types
      */
     String[] produces() default {};

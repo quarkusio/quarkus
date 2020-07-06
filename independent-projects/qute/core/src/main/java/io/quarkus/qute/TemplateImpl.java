@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.smallrye.mutiny.Multi;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -9,7 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import org.reactivestreams.Publisher;
 
 class TemplateImpl implements Template {
 
@@ -68,12 +68,15 @@ class TemplateImpl implements Template {
         }
 
         @Override
-        public Publisher<String> publisher() {
-            PublisherFactory factory = engine.getPublisherFactory();
-            if (factory == null) {
-                throw new UnsupportedOperationException();
-            }
-            return factory.createPublisher(this);
+        public Multi<String> createMulti() {
+            return Multi.createFrom().emitter(emitter -> consume(emitter::emit)
+                    .whenComplete((r, f) -> {
+                        if (f == null) {
+                            emitter.complete();
+                        } else {
+                            emitter.fail(f);
+                        }
+                    }));
         }
 
         @Override

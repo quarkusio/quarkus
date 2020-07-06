@@ -105,15 +105,24 @@ The `@Route` annotation is repeatable and so you can declare several routes for 
 
 [source,java]
 ----
-@Route(path = "/first")
+@Route(path = "/first") <1>
 @Route(path = "/second")
 public void route(RoutingContext rc) {
     // ...
 }
 ----
+<1> Each route can use different paths, methods...
 
-Each route can use different paths, methods...
+If no content-type header is set then we will try to use the most acceptable content type as defined by `io.vertx.ext.web.RoutingContext.getAcceptableContentType()`.
 
+[source,java]
+----
+@Route(path = "/person", produces = "text/html") <1>
+String person() {
+    // ...
+}
+----
+<1> If the `accept` header matches `text/html` we set the content type automatically.
 
 === Handling conflicting routes
 

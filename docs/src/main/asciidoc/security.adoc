@@ -411,3 +411,50 @@ This will allow you to propagate the identity throughout the reactive callbacks.
 are using an executor that is capable of propagating the identity (e.g. no `CompletableFuture.supplyAsync`),
 to make sure that quarkus can propagate it. For more information see the
 link:context-propagation[Context Propagation Guide].
+
+== Testing Security
+
+Quarkus provides explicit support for testing with different users, and with the security subsystem disabled. To use
+this you must include the `quarkus-test-security` artifact:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-security</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This artifact provides the `io.quarkus.test.security.TestSecurity` annotation, that can be applied to test methods and
+test classes to control the security context that the test is run with. This allows you to do two things, you can disable
+authorization so tests can access secured endpoints without needing to be authenticated, and you can specify the identity
+that you want the tests to run under.
+
+A test that runs with authorization disabled can just set the enabled property to false:
+
+[source,java]
+----
+@Test
+@TestSecurity(authorizationEnabled = false)
+void someTestMethod() {
+...
+}
+----
+
+This will disable all access checks, which allows the test to access secured endpoints without needing to authenticate.
+
+You can also use this to configure the current user that the test will run as:
+
+[source,java]
+----
+@Test
+@TestSecurity(user = "testUser", roles = {"admin", "user"})
+void someTestMethod() {
+...
+}
+----
+
+This will run the test with an identity with the given username and roles. Note that these can be combined, so you can
+disable authorisation and also provide an identity to run the test under, which can be userful if the endpoint expects an
+identity to be present.

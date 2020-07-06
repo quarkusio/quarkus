@@ -43,11 +43,15 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
             if (authenticator != null) {
                 ChallengeData challengeData = authenticator.getChallenge(context)
                         .await().indefinitely();
-                Response.ResponseBuilder status = Response.status(challengeData.status);
-                if (challengeData.headerName != null) {
-                    status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                if (challengeData != null) {
+                    Response.ResponseBuilder status = Response.status(challengeData.status);
+                    if (challengeData.headerName != null) {
+                        status.header(challengeData.headerName.toString(), challengeData.headerContent);
+                    }
+                    return status.build();
+                } else {
+                    return Response.status(401).build();
                 }
-                return status.build();
             }
         }
         return Response.status(401).entity("Not authorized").build();

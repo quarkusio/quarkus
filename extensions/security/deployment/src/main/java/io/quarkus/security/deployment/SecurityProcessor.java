@@ -63,6 +63,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 
 public class SecurityProcessor {
 
@@ -81,6 +82,11 @@ public class SecurityProcessor {
             jcaProviders.produce(new JCAProviderBuildItem(providerName));
             log.debugf("Added providerName: %s", providerName);
         }
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem authorizationController() {
+        return AdditionalBeanBuildItem.builder().addBeanClass(AuthorizationController.class).build();
     }
 
     /**

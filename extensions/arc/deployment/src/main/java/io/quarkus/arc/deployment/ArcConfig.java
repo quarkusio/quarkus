@@ -59,6 +59,13 @@ public class ArcConfig {
      * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
      * can be created properly. If the value is set to false, then an exception is thrown at build time indicating that a
      * subclass/proxy could not be created.
+     *
+     * Quarkus performs the following transformations when this setting is enabled:
+     * <ul>
+     * <li>Remove 'final' modifier from classes and methods when a proxy is required.
+     * <li>Create a no-args constructor if needed.
+     * <li>Makes private no-args constructors package-private if necessary.
+     * </ul
      */
     @ConfigItem(defaultValue = "true")
     public boolean transformUnproxyableClasses;

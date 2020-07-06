@@ -387,12 +387,7 @@ public class ArcProcessor {
             configurator.getValues().forEach(ObserverConfigurator::done);
         }
 
-        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new Consumer<BytecodeTransformer>() {
-            @Override
-            public void accept(BytecodeTransformer t) {
-                bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
-            }
-        };
+        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
         observerRegistrationPhase.getBeanProcessor().initialize(bytecodeTransformerConsumer);
         return new ValidationPhaseBuildItem(observerRegistrationPhase.getBeanProcessor().validate(bytecodeTransformerConsumer),
                 observerRegistrationPhase.getBeanProcessor());
@@ -410,7 +405,8 @@ public class ArcProcessor {
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem,
-            BuildProducer<GeneratedResourceBuildItem> generatedResource) throws Exception {
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -426,6 +422,8 @@ public class ArcProcessor {
             liveReloadBuildItem.setContextObject(ExistingClasses.class, existingClasses);
         }
 
+        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
+
         long start = System.currentTimeMillis();
         List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {
             @Override
@@ -437,7 +435,7 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
-        }, existingClasses.existingClasses);
+        }, existingClasses.existingClasses, bytecodeTransformerConsumer);
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
                 case JAVA_CLASS:
@@ -602,5 +600,19 @@ public class ArcProcessor {
      */
     static class ExistingClasses {
         Set<String> existingClasses = new HashSet<>();
+    }
+
+    private static class BytecodeTransformerConsumer implements Consumer<BytecodeTransformer> {
+
+        private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer;
+
+        public BytecodeTransformerConsumer(BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) {
+            this.bytecodeTransformer = bytecodeTransformer;
+        }
+
+        @Override
+        public void accept(BytecodeTransformer t) {
+            bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
+        }
     }
 }

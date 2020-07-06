@@ -58,11 +58,12 @@ final class Methods {
         return (method.flags() & SYNTHETIC) != 0;
     }
 
-    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<Methods.MethodKey, MethodInfo> methods) {
+    static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
+            Set<NameAndDescriptor> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
         // TODO support interfaces default methods
         if (classInfo != null) {
             for (MethodInfo method : classInfo.methods()) {
-                if (skipForClientProxy(method)) {
+                if (skipForClientProxy(method, transformUnproxyableClasses, methodsFromWhichToRemoveFinal)) {
                     continue;
                 }
                 methods.computeIfAbsent(new Methods.MethodKey(method), key -> {
@@ -82,19 +83,22 @@ final class Methods {
             for (Type interfaceType : classInfo.interfaceTypes()) {
                 ClassInfo interfaceClassInfo = getClassByName(index, interfaceType.name());
                 if (interfaceClassInfo != null) {
-                    addDelegatingMethods(index, interfaceClassInfo, methods);
+                    addDelegatingMethods(index, interfaceClassInfo, methods, methodsFromWhichToRemoveFinal,
+                            transformUnproxyableClasses);
                 }
             }
             if (classInfo.superClassType() != null) {
                 ClassInfo superClassInfo = getClassByName(index, classInfo.superName());
                 if (superClassInfo != null) {
-                    addDelegatingMethods(index, superClassInfo, methods);
+                    addDelegatingMethods(index, superClassInfo, methods, methodsFromWhichToRemoveFinal,
+                            transformUnproxyableClasses);
                 }
             }
         }
     }
 
-    private static boolean skipForClientProxy(MethodInfo method) {
+    private static boolean skipForClientProxy(MethodInfo method, boolean transformUnproxyableClasses,
+            Set<NameAndDescriptor> methodsFromWhichToRemoveFinal) {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
@@ -108,6 +112,11 @@ final class Methods {
         if (Modifier.isFinal(method.flags())) {
             String className = method.declaringClass().name().toString();
             if (!className.startsWith("java.")) {
+                if (transformUnproxyableClasses && (methodsFromWhichToRemoveFinal != null)) {
+                    methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                    return false;
+                }
+
                 LOGGER.warn(String.format(
                         "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
                         className, method.name()));
@@ -161,23 +170,8 @@ final class Methods {
         }
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
             bytecodeTransformerConsumer.accept(
-                    new BytecodeTransformer(classInfo.name().toString(), new BiFunction<String, ClassVisitor, ClassVisitor>() {
-                        @Override
-                        public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                                @Override
-                                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-                                        String[] exceptions) {
-                                    if (methodsFromWhichToRemoveFinal.contains(new NameAndDescriptor(name, descriptor))) {
-                                        access = access & (~Opcodes.ACC_FINAL);
-                                        LOGGER.debug("final modifier removed from method " + name + " of class "
-                                                + classInfo.name().toString());
-                                    }
-                                    return super.visitMethod(access, name, descriptor, signature, exceptions);
-                                }
-                            };
-                        }
-                    }));
+                    new BytecodeTransformer(classInfo.name().toString(),
+                            new RemoveFinalFromMethod(classInfo.name().toString(), methodsFromWhichToRemoveFinal)));
         }
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
@@ -197,7 +191,7 @@ final class Methods {
         return finalMethodsFoundAndNotChanged;
     }
 
-    private static class NameAndDescriptor {
+    static class NameAndDescriptor {
         private final String name;
         private final String descriptor;
 
@@ -346,6 +340,32 @@ final class Methods {
             case WILDCARD_TYPE:
             default:
                 return DotNames.OBJECT;
+        }
+    }
+
+    static class RemoveFinalFromMethod implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+        private final String classToTransform;
+        private final Set<NameAndDescriptor> methodsFromWhichToRemoveFinal;
+
+        public RemoveFinalFromMethod(String classToTransform, Set<NameAndDescriptor> methodsFromWhichToRemoveFinal) {
+            this.classToTransform = classToTransform;
+            this.methodsFromWhichToRemoveFinal = methodsFromWhichToRemoveFinal;
+        }
+
+        @Override
+        public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                        String[] exceptions) {
+                    if (methodsFromWhichToRemoveFinal.contains(new NameAndDescriptor(name, descriptor))) {
+                        access = access & (~Opcodes.ACC_FINAL);
+                        LOGGER.debug("final modifier removed from method " + name + " of class " + classToTransform);
+                    }
+                    return super.visitMethod(access, name, descriptor, signature, exceptions);
+                }
+            };
         }
     }
 

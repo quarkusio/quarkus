@@ -647,7 +647,15 @@ class Services {
 * Private static methods are never intercepted
 * `InvocationContext#getTarget()` returns `null` for obvious reasons; therefore not all existing interceptors may behave correctly when intercepting static methods
 +
-NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly. 
+NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly.
+
+=== Ability to handle 'final' classes and methods
+
+In normal CDI, classes that are marked as `final` and / or have `final` methods are not eligible for proxy creation,
+which in turn means that interceptors and normal scoped beans don't work properly.
+This situation is very common when trying to use CDI with alternative JVM languages like Kotlin where classes and methods are `final` by default.
+
+Quarkus however, can overcome these limitations when `quarkus.arc.transform-unproxyable-classes` is set to `true` (which is the default value).
 
 == Build Time Extension Points
 

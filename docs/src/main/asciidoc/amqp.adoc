@@ -231,7 +231,6 @@ amqp-password=quarkus
 # Configure the AMQP connector to write to the `prices` address
 mp.messaging.outgoing.generated-price.connector=smallrye-amqp
 mp.messaging.outgoing.generated-price.address=prices
-mp.messaging.outgoing.generated-price.durable=true
 
 # Configure the AMQP connector to read from the `prices` queue
 mp.messaging.incoming.prices.connector=smallrye-amqp

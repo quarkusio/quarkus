@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>quarkus-qute-parent</artifactId>
+        <artifactId>quarkus-jberet-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
@@ -28,6 +28,14 @@
             <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-context-propagation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonb</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jberet</groupId>
             <artifactId>jberet-core</artifactId>
         </dependency>
@@ -35,17 +43,16 @@
             <groupId>jakarta.batch</groupId>
             <artifactId>jakarta.batch-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+        </dependency>
 
         <!-- TODO, jberet should NOT depend on these -->
         <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-security-manager</artifactId>
             <version>1.1.2.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling</artifactId>
-            <version>2.0.6.Final</version>
         </dependency>
     </dependencies>
 

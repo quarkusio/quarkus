@@ -1,0 +1,18 @@
+<job id="decision-job" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+  <step id="decision-step-1" next="decider">
+    <batchlet ref="decisionBatchletFirst"/>
+  </step>
+
+  <decision id="decider" ref="decider">
+    <next on="proceed" to="decision-step-3"/>
+    <stop on="exit" exit-status="exit"/>
+  </decision>
+
+  <step id="decision-step-2">
+    <batchlet ref="decisionBatchletSecond"/>
+  </step>
+
+  <step id="decision-step-3">
+    <batchlet ref="decisionBatchletThird"/>
+  </step>
+</job>

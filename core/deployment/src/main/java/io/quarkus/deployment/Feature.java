@@ -41,6 +41,7 @@ public enum Feature {
     INFINISPAN_CLIENT,
     INFINISPAN_EMBEDDED,
     JAEGER,
+    JBERET,
     JDBC_DB2,
     JDBC_DERBY,
     JDBC_H2,

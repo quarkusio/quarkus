@@ -1,0 +1,26 @@
+<job id="partition-job" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+  <step id="partition-step" >
+    <chunk item-count="3">
+      <reader ref="partitionItemReader">
+        <properties>
+          <property name="start" value="#{partitionPlan['start']}"  />
+          <property name="end" value="#{partitionPlan['end']}"  />
+        </properties>
+      </reader>
+      <processor ref="partitionItemProcessor"/>
+      <writer ref="partitionItemWriter"/>
+    </chunk>
+    <partition>
+      <plan partitions="2">
+        <properties partition="0">
+          <property name="start" value="1"/>
+          <property name="end" value="10"/>
+        </properties>
+        <properties partition="1">
+          <property name="start" value="11"/>
+          <property name="end" value="20"/>
+        </properties>
+      </plan>
+    </partition>
+  </step>
+</job>

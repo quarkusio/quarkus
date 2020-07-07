@@ -1,9 +1,0 @@
-<job id="dummy-batchlet" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0"> 
-    <step id="dummy-batchlet-step"> 
-        <batchlet ref="dummyBatchlet">
-            <properties>
-                <property name="name" value="#{jobParameters['name']}"/>
-            </properties>
-        </batchlet>
-    </step> 
-</job>

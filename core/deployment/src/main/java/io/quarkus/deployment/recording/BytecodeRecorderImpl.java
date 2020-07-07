@@ -1118,6 +1118,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
             nonDefaultConstructorHandles = new DeferredParameter[params.size()];
             for (int i = 0; i < params.size(); i++) {
                 Object obj = params.get(i);
+
+                // TODO - If the obj retrieved from the param list is a Collection (but not the param itself) then this doesn't work, since the Collection is not serialized.
                 nonDefaultConstructorHandles[i] = loadObjectInstance(obj, existing,
                         nonDefaultConstructorHolder.constructor.getParameterTypes()[count++]);
             }

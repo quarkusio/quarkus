@@ -1,0 +1,17 @@
+<job id="split-job" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+  <split id="split" next="split-step-3">
+    <flow id="split-flow-1">
+      <step id="split-step-1">
+        <batchlet ref="splitBatchletFirst"/>
+      </step>
+    </flow>
+    <flow id="split-flow-2">
+      <step id="split-step-2">
+        <batchlet ref="splitBatchletSecond"/>
+      </step>
+    </flow>
+  </split>
+  <step id="split-step-3">
+    <batchlet ref="splitBatchletThird"/>
+  </step>
+</job>

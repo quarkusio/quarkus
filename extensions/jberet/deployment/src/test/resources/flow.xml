@@ -1,0 +1,16 @@
+<job id="flow-job" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+  <flow id="flow" next="flow-step-3">
+    <step id="flow-step-1" next="flow-step-2">
+      <batchlet ref="flowBatchletFirst"/>
+    </step>
+    <step id="flow-step-2" >
+      <chunk item-count="3">
+        <reader ref="flowReader"/>
+        <writer ref="flowWriter"/>
+      </chunk>
+    </step>
+  </flow>
+  <step id="flow-step-3" >
+    <batchlet ref="flowBatchletSecond"/>
+  </step>
+</job>

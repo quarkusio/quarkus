@@ -1,0 +1,19 @@
+<job id="listeners-job" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+  <listeners>
+    <listener ref="jobListener"/>
+  </listeners>
+  <step id="step" >
+    <listeners>
+      <listener ref="stepListener"/>
+      <listener ref="chunkListener"/>
+      <listener ref="itemReadListener"/>
+      <listener ref="itemProcessListener"/>
+      <listener ref="itemWriteListener"/>
+    </listeners>
+    <chunk item-count="3">
+      <reader ref="listenerItemReader"/>
+      <processor ref="listenerItemProcessor"/>
+      <writer ref="listenerItemWriter"/>
+    </chunk>
+  </step>
+</job>

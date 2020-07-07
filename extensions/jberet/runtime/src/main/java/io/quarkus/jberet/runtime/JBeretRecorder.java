@@ -1,36 +1,28 @@
 package io.quarkus.jberet.runtime;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.List;
 
+import javax.transaction.TransactionManager;
+
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.jberet.job.model.Job;
 import org.jberet.spi.JobOperatorContext;
-import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JBeretRecorder {
+    public void registerJobs(List<Job> jobs) {
+        JBeretDataHolder.registerJobs(jobs);
+    }
 
-    private static final Logger log = Logger.getLogger("io.quarkus.jberet");
+    public void initJobOperator(BeanContainer beanContainer) {
+        ManagedExecutor managedExecutor = beanContainer.instance(ManagedExecutor.class);
+        TransactionManager transactionManager = beanContainer.instance(TransactionManager.class);
 
-    public QuarkusJobOperator createJobOperator() {
-        QuarkusJobOperator operator = new QuarkusJobOperator();
+        QuarkusJobOperator operator = new QuarkusJobOperator(managedExecutor, transactionManager, JBeretDataHolder.getJobs());
         JobOperatorContext operatorContext = JobOperatorContext.create(operator);
         JobOperatorContext.setJobOperatorContextSelector(() -> operatorContext);
-        return operator;
-    }
-
-    public void jobDefinition(QuarkusJobOperator operator, Job job) {
-        operator.getJobDefinitionRepository().addJobDefinition(job.getJobXmlName(), job);
-    }
-
-    public void createExecutor(Integer maximumPoolSize, ShutdownContext shutdownContext) {
-        // FIXME: how to properly create the executor?
-        ExecutorService executor = Executors.newFixedThreadPool(maximumPoolSize);
-        JBeretExecutorHolder.set(executor);
-        shutdownContext.addShutdownTask(executor::shutdownNow);
-        ((QuarkusJobOperator) JobOperatorContext.getJobOperatorContext().getJobOperator()).initialize();
     }
 }

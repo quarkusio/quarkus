@@ -3,6 +3,10 @@
   title: "(?i).*lambda.*"
   description: "(?i).*lambda.*"
   notify: [patriot1burke]
+- labels: [area/persistence]
+  title: "(?i).*DB2.*"
+  description: "(?si).*DB2.*"
+  notify: [aguibert]
 - labels: [area/funqy]
   title: "(?i).*funqy.*"
   description: "(?i).*funqy.*"

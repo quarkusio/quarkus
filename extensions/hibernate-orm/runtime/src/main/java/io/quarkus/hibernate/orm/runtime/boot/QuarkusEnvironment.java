@@ -17,8 +17,6 @@ import org.jboss.logging.Logger;
  */
 public class QuarkusEnvironment {
 
-    private static final CoreMessageLogger LOG = Logger.getMessageLogger(CoreMessageLogger.class, Environment.class.getName());
-
     private static final Map GLOBAL_INITIAL_PROPERTIES;
 
     static {
@@ -30,6 +28,7 @@ public class QuarkusEnvironment {
         if (classLoader != null) {
             InputStream stream = classLoader.getResourceAsStream("/hibernate.properties");
             if (stream != null) {
+                final CoreMessageLogger LOG = Logger.getMessageLogger(CoreMessageLogger.class, Environment.class.getName());
                 LOG.warnf(
                         "Resource /hibernate.properties was found. This configuration source is deprecated and will be removed in a future version of Quarkus, "
                                 +
@@ -50,7 +49,6 @@ public class QuarkusEnvironment {
                 }
                 GLOBAL_INITIAL_PROPERTIES = p;
             } else {
-                LOG.propertiesNotFound();
                 GLOBAL_INITIAL_PROPERTIES = new HashMap();
             }
         } else {

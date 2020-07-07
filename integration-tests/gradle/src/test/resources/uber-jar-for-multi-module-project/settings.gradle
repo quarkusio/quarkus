@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+rootProject.name = 'uber-jar-multi-module-test'
+
+include ':common'
+include ':application'
+

@@ -17,10 +17,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
@@ -373,6 +375,10 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
+        } finally {
+            if (nativeConfig.debug.enabled) {
+                removeJarSourcesFromLib(outputTargetBuildItem);
+            }
         }
     }
 
@@ -382,7 +388,6 @@ public class NativeImageBuildStep {
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
 
-        log.info("Copy jar sources");
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
@@ -405,12 +410,22 @@ public class NativeImageBuildStep {
         }
     }
 
-    static Path toJarSource(Path path) {
+    private static Path toJarSource(Path path) {
         final Path parent = path.getParent();
         final String fileName = path.getFileName().toString();
         final int extensionIndex = fileName.lastIndexOf('.');
         final String sourcesFileName = String.format("%s-sources.jar", fileName.substring(0, extensionIndex));
         return parent.resolve(sourcesFileName);
+    }
+
+    private void removeJarSourcesFromLib(OutputTargetBuildItem outputTargetBuildItem) {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
+            .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
+        Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
+
+        final File[] jarSources = libDir.toFile()
+            .listFiles((file, name) -> name.endsWith("-sources.jar"));
+        Stream.of(Objects.requireNonNull(jarSources)).forEach(File::delete);
     }
 
     private void handleAdditionalProperties(NativeConfig nativeConfig, List<String> command, boolean isContainerBuild,

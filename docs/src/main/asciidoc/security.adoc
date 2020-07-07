@@ -412,6 +412,7 @@ are using an executor that is capable of propagating the identity (e.g. no `Comp
 to make sure that quarkus can propagate it. For more information see the
 link:context-propagation[Context Propagation Guide].
 
+[#testing-security]
 == Testing Security
 
 Quarkus provides explicit support for testing with different users, and with the security subsystem disabled. To use
@@ -456,5 +457,16 @@ void someTestMethod() {
 ----
 
 This will run the test with an identity with the given username and roles. Note that these can be combined, so you can
-disable authorisation and also provide an identity to run the test under, which can be userful if the endpoint expects an
+disable authorization while also providing an identity to run the test under, which can be useful if the endpoint expects an
 identity to be present.
+
+[WARNING]
+====
+The feature is only available for `@QuarkusTest` and will **not** work on a `@NativeImageTest`.
+====
+
+=== Mixing security tests
+
+If it becomes necessary to test security features using both `@TestSecurity` and Basic Auth (which is the fallback auth
+mechanism when none is defined), then Basic Auth needs to be enabled explicitly,
+for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.auth.basic=true`.

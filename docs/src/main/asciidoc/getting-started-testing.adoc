@@ -698,6 +698,10 @@ public class GreetingResourceTest {
 
 If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the link:hibernate-orm-panache#mocking[Hibernate ORM with Panache Mocking] and link:mongodb-panache#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
 
+== Testing Security
+
+If you are using Quarkus Security, check out the link:security.adoc#testing-security[Testing Security] section for information on how to easily test security features of the application.
+
 [#quarkus-test-resource]
 == Starting services before the Quarkus application starts
 

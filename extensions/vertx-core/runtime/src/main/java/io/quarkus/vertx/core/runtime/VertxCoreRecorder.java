@@ -49,14 +49,39 @@ public class VertxCoreRecorder {
 
     public Supplier<Vertx> configureVertx(VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers) {
-        vertx = new VertxSupplier(config, customizers);
         if (launchMode != LaunchMode.DEVELOPMENT) {
+            vertx = new VertxSupplier(config, customizers);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
                 @Override
                 public void run() {
                     destroy();
+                }
+            });
+        } else {
+            if (vertx == null) {
+                vertx = new VertxSupplier(config, customizers);
+            } else if (vertx.v != null) {
+                tryCleanTccl(vertx.v);
+            }
+            shutdown.addLastShutdownTask(new Runnable() {
+                @Override
+                public void run() {
+                    CountDownLatch latch = new CountDownLatch(1);
+                    if (vertx.v != null) {
+                        vertx.v.eventBus().close(new Handler<AsyncResult<Void>>() {
+                            @Override
+                            public void handle(AsyncResult<Void> event) {
+                                vertx.v.eventBus().start(new Handler<AsyncResult<Void>>() {
+                                    @Override
+                                    public void handle(AsyncResult<Void> event) {
+                                        latch.countDown();
+                                    }
+                                });
+                            }
+                        });
+                    }
                 }
             });
         }
@@ -268,7 +293,8 @@ public class VertxCoreRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return ((VertxImpl) vertx.get()).getAcceptorEventLoopGroup();
+                vertx.get();
+                return ((VertxImpl) vertx.v).getAcceptorEventLoopGroup();
             }
         };
     }

@@ -102,12 +102,14 @@ public class DevModeMain implements Closeable {
 
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
                     .setApplicationRoot(appRoots.build())
-                    .setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath())
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
                     .setBaseName(context.getBaseName())
                     .setMode(context.getMode());
+            if (context.getDevModeRunnerJarFile() != null) {
+                bootstrapBuilder.setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath());
+            }
             if (context.getProjectDir() != null) {
                 bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
             } else {

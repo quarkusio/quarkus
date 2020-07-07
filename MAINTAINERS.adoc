@@ -1,0 +1,252 @@
+Below is the list of maintainers for each Quarkus extension hosted in the main repository.
+
+If you think some information is outdated, either provide a pull request or send an email to the `quarkus-dev` mailing list.
+
+[cols=2*,options="header"]
+|===
+|Extension
+|Maintainers
+
+|Agroal
+|https://github.com/gsmet[Guillaume Smet], https://github.com/barreiro[Luis Barreiro]
+
+|Amazon DynamoDB
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Lambda
+|https://github.com/patriot1burke[Bill Burke], https://github.com/evanchooly[Justin Lee]
+
+|ArC
+|https://github.com/mkouba[Martin Kouba], https://github.com/manovotn[Matěj Novotný]
+
+|Artemis (Core and JMS)
+|https://github.com/middagj[Jacob Middag]
+
+|Azure Functions HTTP
+|https://github.com/patriot1burke[Bill Burke]
+
+|Cache
+|https://github.com/gwenneg[Gwenneg Lepage]
+
+|Caffeine
+|https://github.com/galderz[Galder Zamarreño], https://github.com/wburns[William Burns]
+
+|Elasticsearch REST Client
+|https://github.com/gsmet[Guillaume Smet]
+
+|Elytron Security
+|https://github.com/sberyozkin[Sergey Beryozkin]
+
+|Elytron Security - OAuth2
+|https://github.com/loicmathieu[Loïc Mathieu]
+
+|Elytron Security - JDBC
+|https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/danielpetisme[Daniel Pétisme]
+
+|Elytron Security - Properties files
+|https://github.com/stuartwdouglas[Stuart Douglas]
+
+|Flyway
+|https://github.com/gastaldi[George Gastaldi]
+
+|Hibernate ORM
+|https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+
+|Hibernate ORM with Panache
+|https://github.com/FroMage[Stéphane Épardaud]
+
+|Hibernate Search
+|https://github.com/gsmet[Guillaume Smet]
+
+|Hibernate Validator
+|https://github.com/gsmet[Guillaume Smet]
+
+|Infinispan Client
+|https://github.com/wburns[William Burns], https://github.com/karesti[Katia Aresti]
+
+|Jackson
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
+
+|Jaeger
+|https://github.com/objectiser[Gary Brown]
+
+|JAXB
+|https://github.com/gsmet[Guillaume Smet]
+
+|JDBC - H2
+|https://github.com/Sanne[Sanne Grinovero]
+
+|JDBC - MariaDB
+|https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+
+|JDBC - MySQL
+|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+
+|JDBC - PostgreSQL
+|https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+
+|JDBC - SQL Server
+|https://github.com/Sanne[Sanne Grinovero]
+
+|JGit
+|https://github.com/gastaldi[George Gastaldi]
+
+|JSch
+|https://github.com/gastaldi[George Gastaldi]
+
+|JSON-B
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
+
+|JSON-P
+|https://github.com/gsmet[Guillaume Smet]
+
+|Kafka Client
+|https://github.com/cescoffier[Clément Escoffier]
+
+|Kafka Streams
+|https://github.com/gunnarmorling[Gunnar Morling]
+
+|Kogito
+|https://github.com/mariofusco[Mario Fusco], https://github.com/cristianonicolai[Cristiano Nicolai]
+
+|Kotlin
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Kubernetes
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/iocanel[Ioannis Canellos]
+
+|Kubernetes Client
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/gastaldi[George Gastaldi]
+
+|Mailer
+|https://github.com/cescoffier[Clément Escoffier]
+
+|MongoDB client
+|https://github.com/cescoffier[Clément Escoffier]
+
+|MongoDB with Panache
+|https://github.com/loicmathieu[Loïc Mathieu]
+
+|Narayana JTA
+|https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]
+
+|Narayana STM
+|https://github.com/mmusgrov[Michael Musgrove]
+
+|Neo4j
+|https://github.com/michael-simons[Michael Simons]
+
+|Netty
+|https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/cescoffier[Clément Escoffier]
+
+|OIDC (OpenID Connect)
+|https://github.com/sberyozkin[Sergey Beryozkin], https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/pedroigor[Pedro Igor]
+
+|Qute (Templates)
+|https://github.com/mkouba[Martin Kouba]
+
+|Reactive Messaging
+|https://github.com/cescoffier[Clément Escoffier]
+
+|Reactive MySQL Client
+|https://github.com/tsegismont[Thomas Ségismont]
+
+|Reactive PG Client
+|https://github.com/tsegismont[Thomas Ségismont]
+
+|Reactive Streams Operators
+|https://github.com/cescoffier[Clément Escoffier]
+
+|REST Client
+|https://github.com/phillip-kruger[Phillip Kruger], https://github.com/asoldano[Alessio Soldano], https://github.com/ronsigal[Ron Sigal]
+
+|RESTEasy
+|https://github.com/patriot1burke[Bill Burke]
+
+|RESTEasy - Common
+|https://github.com/patriot1burke[Bill Burke], https://github.com/gsmet[Guillaume Smet]
+
+|RESTEasy - JAXB
+|https://github.com/gsmet[Guillaume Smet]
+
+|RESTEasy - Jackson
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
+
+|RESTEasy - JSON-B
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/gsmet[Guillaume Smet]
+
+|Scala
+|TODO
+
+|Scheduler
+|https://github.com/mkouba[Martin Kouba]
+
+|SmallRye Context Propagation
+|https://github.com/FroMage[Stéphane Épardaud], https://github.com/manovotn[Matěj Novotný]
+
+|SmallRye Fault Tolerance
+|https://github.com/Ladicek[Ladislav Thon], https://github.com/jmartisk[Jan Martiska], https://github.com/michalszynkiewicz[Michal Szynkiewicz]
+
+|SmallRye Health
+|https://github.com/antoinesd[Antoine Sabot-Durand], https://github.com/jmartisk[Jan Martiska]
+
+|SmallRye JWT
+|https://github.com/sberyozkin[Sergey Beryozkin], https://github.com/radcortez[Roberto Cortez]
+
+|SmallRye Metrics
+|https://github.com/jmartisk[Jan Martiska]
+
+|SmallRye OpenAPI
+|https://github.com/phillip-kruger[Phillip Kruger], https://github.com/radcortez[Roberto Cortez], https://github.com/EricWittmann[Eric Wittmann]
+
+|SmallRye OpenTracing
+|https://github.com/pavolloffay[Pavol Loffay], https://github.com/Ladicek[Ladislav Thon]
+
+|SmallRye Reactive Messaging
+|https://github.com/cescoffier[Clément Escoffier]
+
+|SmallRye Reactive Messaging - AMQP
+|https://github.com/cescoffier[Clément Escoffier]
+
+|SmallRye Reactive Messaging - Kafka
+|https://github.com/cescoffier[Clément Escoffier]
+
+|SmallRye Reactive Messaging - MQTT
+|https://github.com/cescoffier[Clément Escoffier], https://github.com/michalszynkiewicz[Michał Szynkiewicz]
+
+|Spring DI
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Data JPA
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Web
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Swagger UI
+|https://github.com/stuartwdouglas[Stuart Douglas]
+
+|Tika
+|https://github.com/sberyozkin[Sergey Beryozkin]
+
+|Undertow
+|https://github.com/stuartwdouglas[Stuart Douglas]
+
+|Undertow Websockets
+|https://github.com/stuartwdouglas[Stuart Douglas]
+
+|Vault
+|https://github.com/vsevel[Vincent Sevel]
+
+|Vert.x Core
+|https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/cescoffier[Clément Escoffier]
+
+|Vert.x HTTP
+|https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/cescoffier[Clément Escoffier]
+
+|Vert.x
+|https://github.com/cescoffier[Clément Escoffier]
+
+|Vert.x Web
+|https://github.com/cescoffier[Clément Escoffier]
+|===

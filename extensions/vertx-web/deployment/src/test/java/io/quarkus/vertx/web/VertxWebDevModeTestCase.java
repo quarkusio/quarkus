@@ -16,7 +16,7 @@ public class VertxWebDevModeTestCase {
     @RegisterExtension
     static QuarkusDevModeTest runner = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestRoute.class));
+                    .addClasses(DevModeRoute.class));
 
     @Test
     public void testRunningInDevMode() {
@@ -26,7 +26,7 @@ public class VertxWebDevModeTestCase {
                 .then().statusCode(200)
                 .body(Matchers.equalTo("test route"));
 
-        runner.modifySourceFile(TestRoute.class, new Function<String, String>() {
+        runner.modifySourceFile(DevModeRoute.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replace("test route", "new code");
@@ -39,6 +39,10 @@ public class VertxWebDevModeTestCase {
                     .then().statusCode(200)
                     .body(Matchers.equalTo("new code"));
         }
+        RestAssured.given()
+                .get("/assert")
+                .then().statusCode(200)
+                .body(Matchers.equalTo("OK"));
     }
 
 }

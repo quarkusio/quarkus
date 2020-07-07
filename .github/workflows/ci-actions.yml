@@ -325,8 +325,7 @@ jobs:
     name: Windows JDK 11 JVM Gradle Tests
     needs: build-jdk11
     runs-on: windows-latest
-    timeout-minutes: 60
-
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 11
@@ -344,6 +343,7 @@ jobs:
         run: tar -xzf maven-repo.tgz -C ~
       - name: Build with Gradle
         uses: eskatos/gradle-command-action@v1
+        timeout-minutes: 60
         env:
           GRADLE_OPTS: -Xmx1408m
         with:

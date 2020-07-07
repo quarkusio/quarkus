@@ -29,21 +29,33 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
-        return isWebApp(context) ? codeAuth.authenticate(context, identityProviderManager, resolver)
+        TenantConfigContext tenantContext = resolve(context);
+        if (tenantContext.oidcConfig.tenantEnabled == false) {
+            return Uni.createFrom().nullItem();
+        }
+        return isWebApp(tenantContext) ? codeAuth.authenticate(context, identityProviderManager, resolver)
                 : bearerAuth.authenticate(context, identityProviderManager, resolver);
     }
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        return isWebApp(context) ? codeAuth.getChallenge(context, resolver)
+        TenantConfigContext tenantContext = resolve(context);
+        if (tenantContext.oidcConfig.tenantEnabled == false) {
+            return Uni.createFrom().nullItem();
+        }
+        return isWebApp(tenantContext) ? codeAuth.getChallenge(context, resolver)
                 : bearerAuth.getChallenge(context, resolver);
     }
 
-    private boolean isWebApp(RoutingContext context) {
+    private TenantConfigContext resolve(RoutingContext context) {
         TenantConfigContext tenantContext = resolver.resolve(context, false);
         if (tenantContext == null) {
             throw new OIDCException("Tenant configuration context has not been resolved");
         }
+        return tenantContext;
+    }
+
+    private boolean isWebApp(TenantConfigContext tenantContext) {
         return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
     }
 

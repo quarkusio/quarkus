@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
@@ -47,12 +47,12 @@ public class QuarkusEnvironment {
                         LOG.unableToCloseStreamError(ioe);
                     }
                 }
-                GLOBAL_INITIAL_PROPERTIES = p;
+                GLOBAL_INITIAL_PROPERTIES = Collections.unmodifiableMap(p);
             } else {
-                GLOBAL_INITIAL_PROPERTIES = new HashMap();
+                GLOBAL_INITIAL_PROPERTIES = Collections.EMPTY_MAP;
             }
         } else {
-            GLOBAL_INITIAL_PROPERTIES = new HashMap();
+            GLOBAL_INITIAL_PROPERTIES = Collections.EMPTY_MAP;
         }
     }
 

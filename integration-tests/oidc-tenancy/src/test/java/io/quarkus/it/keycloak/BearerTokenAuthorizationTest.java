@@ -137,6 +137,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testSimpleOidcJwtWithJwkRefresh() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().get("/oidc/introspection-status").then().body(equalTo("false"));
         RestAssured.when().get("/oidc/rotate-status").then().body(equalTo("false"));
         // Quarkus OIDC is initialized with JWK set with kid '1' as part of the discovery process
@@ -189,6 +190,21 @@ public class BearerTokenAuthorizationTest {
         // and once during the 1st request with a token kid '2', follow up requests must've been blocked due to the interval
         // restrictions
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("2"));
+    }
+
+    @Test
+    public void testSimpleOidcNoDiscovery() {
+        RestAssured.when().post("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/introspection-status").then().body(equalTo("false"));
+        RestAssured.when().get("/oidc/rotate-status").then().body(equalTo("false"));
+
+        // Quarkus OIDC is initialized with JWK set with kid '1' as part of the initialization process
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("1"))
+                .when().get("/tenant/tenant-oidc-no-discovery/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-oidc-no-discovery:alice"));
+        RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("1"));
     }
 
     private String getAccessToken(String userName, String clientId) {

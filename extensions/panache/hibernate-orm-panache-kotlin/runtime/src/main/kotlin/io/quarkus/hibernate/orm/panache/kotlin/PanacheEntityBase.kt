@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.panache.kotlin
 import com.fasterxml.jackson.annotation.JsonIgnore
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations
 import javax.json.bind.annotation.JsonbTransient
+import javax.persistence.EntityManager
 
 /**
  * Represents an entity. If your Hibernate entities extend this class they gain auto-generated accessors
@@ -13,6 +14,16 @@ import javax.json.bind.annotation.JsonbTransient
  * @see PanacheEntity
  */
 interface PanacheEntityBase {
+
+    // Operations
+
+    /**
+     * Returns the default [EntityManager] for extra operations (eg. CriteriaQueries)
+     *
+     * @return the default [EntityManager]
+     */
+    fun entityManager(): EntityManager = JpaOperations.getEntityManager()
+
     /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to
      * its persistent fields will be automatically committed to the database at transaction

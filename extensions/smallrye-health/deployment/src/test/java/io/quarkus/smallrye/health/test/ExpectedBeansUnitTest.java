@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.health.HealthGroup;
 import io.smallrye.health.SmallRyeHealthReporter;
+import io.smallrye.health.api.HealthGroup;
 
 public class ExpectedBeansUnitTest {
 

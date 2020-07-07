@@ -192,6 +192,11 @@ quarkusDev {
 }
 ----
 
+[TIP]
+====
+By default, the `quarkusDev` task uses `compileJava` compiler options. These can be overridden by setting the `compilerArgs` property in the task.
+====
+
 === Remote Development Mode
 
 It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)

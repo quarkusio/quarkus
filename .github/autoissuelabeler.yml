@@ -3,6 +3,10 @@
   title: "(?i).*lambda.*"
   description: "(?i).*lambda.*"
   notify: [patriot1burke]
+- labels: [area/persistence]
+  title: "(?i).*DB2.*"
+  description: "(?si).*DB2.*"
+  notify: [aguibert]
 - labels: [area/funqy]
   title: "(?i).*funqy.*"
   description: "(?i).*funqy.*"
@@ -16,6 +20,10 @@
 - labels: [area/maven]
   title: "(?i).*maven.*"
   notify: [quarkusio/devtools]
+- labels: [area/hibernate-reactive, area/persistence]
+  title: "(?i).*hibernate reactive.*"
+  description: "(?i).*hibernate reactive.*"
+  notify: [aguibert,gavinking,Sanne]
 - labels: [area/hibernate-orm, area/persistence]
   expression: |
               title_description.matches("(?is).*hibernate.*") 

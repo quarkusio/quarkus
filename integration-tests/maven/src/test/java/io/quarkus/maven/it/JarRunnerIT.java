@@ -93,12 +93,22 @@ public class JarRunnerIT extends MojoTestBase {
 
     @Test
     public void testThatMutableFastJarWorks() throws Exception {
-        File testDir = initProject("projects/classic", "projects/project-classic-console-output-mutable-fast-jar");
+        assertThatMutableFastJarWorks("providers", "providers");
+    }
+
+    @Test
+    public void testThatMutableFastJarWorksProvidersDirOutsideOutputDir() throws Exception {
+        assertThatMutableFastJarWorks("outsidedir", ".." + File.separator + "providers");
+    }
+
+    private void assertThatMutableFastJarWorks(String targetDirSuffix, String providersDir) throws Exception {
+        File testDir = initProject("projects/classic",
+                "projects/project-classic-console-output-mutable-fast-jar" + targetDirSuffix);
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running
                 .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar",
-                        "-Dquarkus.package.user-providers-directory=providers"), Collections.emptyMap());
+                        "-Dquarkus.package.user-providers-directory=" + providersDir), Collections.emptyMap());
 
         await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
@@ -113,7 +123,7 @@ public class JarRunnerIT extends MojoTestBase {
         Assertions.assertTrue(Files.exists(jar));
 
         Path providers = testDir.toPath().toAbsolutePath()
-                .resolve(Paths.get("target/quarkus-app/providers"));
+                .resolve(Paths.get("target/quarkus-app/" + providersDir));
         Assertions.assertTrue(Files.exists(providers));
 
         File output = new File(testDir, "target/output.log");

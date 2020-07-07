@@ -193,7 +193,7 @@
         <grpc.version>1.29.0</grpc.version>
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
 
-        <picocli.version>4.3.2</picocli.version>
+        <picocli.version>4.4.0</picocli.version>
         <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
         <google-cloud-functions.version>1.0.1</google-cloud-functions.version>
         <commons-compress.version>1.20</commons-compress.version>

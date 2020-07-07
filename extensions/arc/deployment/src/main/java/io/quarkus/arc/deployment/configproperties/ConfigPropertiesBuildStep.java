@@ -1,5 +1,8 @@
 package io.quarkus.arc.deployment.configproperties;
 
+import static io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties;
+import static io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties;
+
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +24,7 @@ import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.configproperties.InterfaceConfigPropertiesUtil.GeneratedClass;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -134,13 +138,17 @@ public class ConfigPropertiesBuildStep {
                  * The generated producer bean simply needs to return an instance of the generated class
                  */
 
-                String generatedClassName = InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
+                Map<DotName, GeneratedClass> interfaceToGeneratedClass = new HashMap<>();
+                generateImplementationForInterfaceConfigProperties(
                         classInfo, nonBeansClassOutput, combinedIndex.getIndex(), configPropertiesMetadata.getPrefix(),
-                        configPropertiesMetadata.getNamingStrategy(), defaultConfigValues, configProperties);
-                InterfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(producerClassCreator,
-                        classInfo.name(), configPropertiesMetadata.getPrefix(), configPropertiesMetadata.isNeedsQualifier(),
-                        generatedClassName);
-
+                        configPropertiesMetadata.getNamingStrategy(), defaultConfigValues, configProperties,
+                        interfaceToGeneratedClass);
+                for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
+                    addProducerMethodForInterfaceConfigProperties(entry.getKey(),
+                            configPropertiesMetadata.getPrefix(), configPropertiesMetadata.isNeedsQualifier(),
+                            producerClassCreator,
+                            entry.getValue());
+                }
             } else {
                 /*
                  * In this case the producer method contains all the logic to instantiate the config class

@@ -449,10 +449,10 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 60
+            timeout: 65
             test-modules: >
-              elasticsearch-lowlevel
-              elasticsearch-highlevel
+              elasticsearch-rest-client
+              elasticsearch-rest-high-level-client
               jpa-postgresql
               hibernate-search-elasticsearch
               narayana-stm

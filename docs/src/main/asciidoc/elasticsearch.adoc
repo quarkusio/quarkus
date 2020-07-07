@@ -7,11 +7,11 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :extension-status: preview
 
-Elasticsearch is a well known full text search engine and NoSQL Database that is widely used.
+Elasticsearch is a well known full text search engine and NoSQL datastore that is widely used.
 
 In this guide, we will see how you can get your REST services to use Elasticsearch.
 
-Quarkus provides two ways to access Elasticsearch: via the `RestClient` or via the `RestHighLevelClient` we will call them
+Quarkus provides two ways to access Elasticsearch: via the lower level `RestClient` or via the `RestHighLevelClient` we will call them
 the low level and the high level client.
 
 include::./status-include.adoc[]
@@ -41,9 +41,9 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution for the low level client is located in the `elasticsearch-low-level-client-quickstart` {quickstarts-tree-url}/elasticsearch-low-level-client-quickstart[directory].
+The solution for the low level client is located in the `elasticsearch-rest-client-quickstart` {quickstarts-tree-url}/elasticsearch-rest-client-quickstart[directory].
 
-The solution for the high level client is located in the `elasticsearch-high-level-client-quickstart` {quickstarts-tree-url}/elasticsearch-high-level-client-quickstart[directory].
+The solution for the high level client is located in the `elasticsearch-rest-high-level-client-quickstart` {quickstarts-tree-url}/elasticsearch-rest-high-level-client-quickstart[directory].
 
 == Creating the Maven project
 
@@ -56,20 +56,42 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=elasticsearch-quickstart \
     -DclassName="org.acme.elasticsearch.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jackson,elasticsearch-low-level-client"
+    -Dextensions="resteasy-jackson,elasticsearch-rest-client"
 cd elasticsearch-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, and the Elasticsearch lowl level client extensions.
-After this, the quarkus-elasticsearch-low-level-client extension has been added to your `pom.xml`.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson, and the Elasticsearch low level client extensions.
+After this, the `quarkus-elasticsearch-rest-client` extension has been added to your `pom.xml`.
 
-If you want to use the high level client instead, replace the `elasticsearch-low-level-client` by the `elasticsearch-high-level-client`.
+If you want to use the high level client instead, replace the `elasticsearch-rest-client` by the `elasticsearch-rest-high-level-client`.
 
 [NOTE]
 ====
 We use the `resteasy-jackson` extension here and not the JSON-B variant because we will use the Vert.X `JsonObject` helper
 to serialize/de-serialize our objects to/from Elasticsearch and it uses Jackson under the hood.
 ====
+
+If you don’t want to generate a new project, add the dependency in your pom.xml.
+
+For the Elasticsearch low level client, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elasticsearch-rest-client</artifactId>
+</dependency>
+----
+
+For the Elasticsearch high level client, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elasticsearch-rest-high-level-client</artifactId>
+</dependency>
+----
 
 
 == Creating your first JSON REST service
@@ -91,8 +113,8 @@ public class Fruit {
 
 Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
 
-Now create a `org.acme.elasticsearch.FruitService` that will be the business layer of our application and store/load the fruits from the Elasticsearch database.
-Here we use the low level client, if you want to use the high level client instead follow the instruction in the link:#using-the-high-level-rest-client[Using the High Level Rest Client] instead.
+Now create a `org.acme.elasticsearch.FruitService` that will be the business layer of our application and store/load the fruits from the Elasticsearch instance.
+Here we use the low level client, if you want to use the high level client instead follow the instructions in the link:#using-the-high-level-rest-client[Using the High Level Rest Client] paragraph instead.
 
 [source,java]
 ----
@@ -152,7 +174,6 @@ public class FruitService {
         request.setJsonEntity(query);
         Response response = restClient.performRequest(request);
         String responseBody = EntityUtils.toString(response.getEntity());
-        System.out.println(responseBody);
 
         JsonObject json = new JsonObject(responseBody);
         JsonArray hits = json.getJsonObject("hits").getJsonArray("hits");
@@ -169,11 +190,11 @@ public class FruitService {
 
 In this example you can note the following:
 
-1. We inject an Elasticsearch low level `RestClient` inside the service.
+1. We inject an Elasticsearch low level `RestClient` into our service.
 2. We create an Elasticsearch request.
-3. We use Vert.X `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize to JSON.
+3. We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize to JSON.
 4. We send the request (indexing request here) to Elasticsearch.
-5. In order to deserialize the object from Elasticsearch, we again use Vert.X `JsonObject`.
+5. In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
 
 Now, edit the `org.acme.elasticsearch.FruitResource` class as follows:
 
@@ -233,22 +254,22 @@ In this example, we are using a single instance running on localhost:
 
 [source,properties]
 ----
-# configure the mongoDB client for a single instance on localhost
+# configure the Elasticsearch client for a single instance on localhost
 quarkus.elasticsearch.hosts = localhost:9200
 ----
 
-If you need more configuration properties, there is a full list at the end of this guide.
+If you need a more advanced configuration, you can find the comprehensive list of supported configuration properties at the end of this guide.
 
 
 == Running an Elasticsearch
 As by default, the Elasticsearch client is configured to access a local Elasticsearch on port 9200 (the default Elasticsearch port),
-if you have a local running database on this port, there is nothing more to do before being able to test it!
+if you have a local running instance on this port, there is nothing more to do before being able to test it!
 
-If you want to use Docker to run an Elasticsearch database, you can use the following command to launch one:
-[source,shell]
+If you want to use Docker to run an Elasticsearch instance, you can use the following command to launch one:
+[source,shell,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
-       --rm -p 9200:9200 docker.elastic.co/elasticsearch/elasticsearch-oss:7.6.0
+       --rm -p 9200:9200 docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
 ----
 
 == Creating a frontend
@@ -259,17 +280,17 @@ In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` fi
 
 You can now interact with your REST service:
 
-* start Quarkus with `./mvnw compile quarkus:dev`
+* start Quarkus with `./mvnw quarkus:dev`
 * open a browser to `http://localhost:8080/fruits.html`
 * add new fruits to the list via the 'Add fruit' form
 * search for fruits by name or color via the 'Search Fruit' form
 
 == Using the High Level Rest Client
 
-Quarkus provide support for the Elasticsearch High Level RestClient but keep in mind that it comes with some caveats:
+Quarkus provides support for the Elasticsearch High Level REST Client but keep in mind that it comes with some caveats:
 
-- It contains a lot of dependencies, which didn't fit well inside Quarkus philosophy.
-- It is tied to a certain version of the Elasticsearch server: you cannot use a High Level RestClient version 7 to access a server version 6.
+- It drags a lot of dependencies - especially Lucene -, which doesn't fit well with Quarkus philosophy. The Elasticsearch team is aware of this issue and it might improve sometime in the future.
+- It is tied to a certain version of the Elasticsearch server: you cannot use a High Level REST Client version 7 to access a server version 6.
 
 Here is a version of the `FruitService` using the high level client instead of the low level one.
 
@@ -351,17 +372,17 @@ In this example you can note the following:
 
 1. We inject an Elasticsearch `RestHighLevelClient` inside the service.
 2. We create an Elasticsearch index request.
-3. We use Vert.X `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize to JSON.
+3. We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize to JSON.
 4. We send the request to Elasticsearch.
-5. In order to deserialize the object from Elasticsearch, we again use Vert.X `JsonObject`.
+5. In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
 
 == Hibernate Search Elasticsearch
 
-Quarkus support Hibernate Search with Elasticsearch via the `hibernate-search-elasticsearch` extension.
+Quarkus supports Hibernate Search with Elasticsearch via the `hibernate-search-elasticsearch` extension.
 
-Hibernate Search Elasticsearch allow to synchronize your JPA entities to an Elasticsearch and offer a way to query your Elasticsearch cluster using the Hibernate Search API.
+Hibernate Search Elasticsearch allows to synchronize your JPA entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
 
-If you're interested in it, you can read the link:hibernate-search-elasticsearch[Hibernate Search Elasticsearch guide].
+If you're interested in it, you can read the link:hibernate-search-elasticsearch[Hibernate Search with Elasticsearch guide].
 
 == Cluster Health Check
 
@@ -371,7 +392,7 @@ to validate the health of the cluster.
 So when you access the `/health/ready` endpoint of your application you will have information about the cluster status.
 It uses the cluster health endpoint, the check will be down if the status of the cluster is **red**, or the cluster is not available.
 
-This behavior can be disabled by setting the `quarkus.elasticsarch.health.enabled` property to `false` in your `application.properties`.
+This behavior can be disabled by setting the `quarkus.elasticsearch.health.enabled` property to `false` in your `application.properties`.
 
 == Building a native executable
 
@@ -385,7 +406,7 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 
 == Conclusion
 
-Accessing an Elasticsearch database from a low level or a high level Client is easy with Quarkus as it provides configuration and native support for it.
+Accessing an Elasticsearch cluster from a low level or a high level Client is easy with Quarkus as it provides easy configuration, CDI integration and native support for it.
 
 == Configuration Reference
 

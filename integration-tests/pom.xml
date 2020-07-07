@@ -123,8 +123,8 @@
         <module>webjars-locator</module>
         <module>devmode</module>
         <module>ide-launcher</module>
-        <module>elasticsearch-lowlevel</module>
-        <module>elasticsearch-highlevel</module>
+        <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

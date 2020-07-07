@@ -460,6 +460,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elasticsearch-rest-client-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elasticsearch-rest-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -470,22 +480,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elasticsearch-low-level-client</artifactId>
+                <artifactId>quarkus-elasticsearch-rest-high-level-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elasticsearch-low-level-client-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elasticsearch-high-level-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elasticsearch-high-level-client-deployment</artifactId>
+                <artifactId>quarkus-elasticsearch-rest-high-level-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

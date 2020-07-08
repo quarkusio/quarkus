@@ -326,4 +326,12 @@ public class KnativeConfig implements PlatformConfiguration {
     public EnvVarsConfig getEnv() {
         return env;
     }
+
+    /**
+     * Whether or not this service is cluster-local.
+     * Cluster local services are not exposed to the outside world.
+     */
+    @ConfigItem
+    public boolean clusterLocal;
+
 }

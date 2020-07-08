@@ -24,7 +24,7 @@ public class TestTrustedIdentityProvider implements IdentityProvider<TrustedAuth
     @Override
     public Uni<SecurityIdentity> authenticate(TrustedAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        TestIdentityController.TestIdentity ident = TestIdentityController.idenitities.get(request.getPrincipal());
+        TestIdentityController.TestIdentity ident = TestIdentityController.identities.get(request.getPrincipal());
         if (ident == null) {
             return Uni.createFrom().optional(Optional.empty());
         }

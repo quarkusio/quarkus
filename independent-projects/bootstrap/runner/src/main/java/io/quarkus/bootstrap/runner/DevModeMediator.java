@@ -25,7 +25,7 @@ public class DevModeMediator {
 
     static void doDevMode(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
-        Path deploymentClassPath = appRoot.resolve("lib/deployment/deployment-class-path.dat");
+        Path deploymentClassPath = appRoot.resolve(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT);
         Closeable closeable = doStart(appRoot, deploymentClassPath);
         Timer timer = new Timer("Classpath Change Timer", false);
         timer.schedule(new ChangeDetector(appRoot, deploymentClassPath, closeable), 1000, 1000);

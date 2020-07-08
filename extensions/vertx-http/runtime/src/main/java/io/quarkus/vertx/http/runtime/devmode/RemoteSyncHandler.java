@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.jboss.logging.Logger;
 
@@ -142,6 +143,10 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                                 }
                                 event.response().end();
                             }
+                        } catch (RejectedExecutionException e) {
+                            //everything is shut down
+                            //likely in the middle of a restart
+                            event.connection().close();
                         } catch (Exception e) {
                             log.error("Connect failed", e);
                             event.response().setStatusCode(500).end();
@@ -233,5 +238,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             return true;
         }
         return false;
+    }
+
+    public void close() {
+        synchronized (RemoteSyncHandler.class) {
+            RemoteSyncHandler.class.notifyAll();
+        }
     }
 }

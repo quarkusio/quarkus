@@ -16,6 +16,7 @@ import java.util.List;
 public class QuarkusEntryPoint {
 
     public static final String QUARKUS_APPLICATION_DAT = "quarkus/quarkus-application.dat";
+    public static final String LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT = "lib/deployment/deployment-class-path.dat";
 
     public static void main(String... args) throws Throwable {
         System.setProperty("java.util.logging.manager", org.jboss.logmanager.LogManager.class.getName());
@@ -52,7 +53,7 @@ public class QuarkusEntryPoint {
     private static void doReaugment(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         try (ObjectInputStream in = new ObjectInputStream(
-                Files.newInputStream(appRoot.resolve("lib/deployment/deployment-class-path.dat")))) {
+                Files.newInputStream(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT)))) {
             List<String> paths = (List<String>) in.readObject();
             //yuck, should use runner class loader
             URLClassLoader loader = new URLClassLoader(paths.stream().map((s) -> {

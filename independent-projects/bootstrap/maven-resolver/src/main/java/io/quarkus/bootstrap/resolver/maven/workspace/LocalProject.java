@@ -10,11 +10,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Resource;
@@ -329,43 +326,6 @@ public class LocalProject {
 
     public AppArtifact getAppArtifact(String extension) {
         return new AppArtifact(groupId, artifactId, "", extension, version);
-    }
-
-    public List<LocalProject> getSelfWithLocalDeps() {
-        if (workspace == null) {
-            return Collections.singletonList(this);
-        }
-        final List<LocalProject> ordered = new ArrayList<>();
-        collectSelfWithLocalDeps(this, new HashSet<>(), ordered);
-        return ordered;
-    }
-
-    private static void collectSelfWithLocalDeps(LocalProject project, Set<AppArtifactKey> addedDeps,
-            List<LocalProject> ordered) {
-        if (!project.modules.isEmpty()) {
-            for (LocalProject module : project.modules) {
-                collectSelfWithLocalDeps(module, addedDeps, ordered);
-            }
-        }
-        for (Dependency dep : project.getRawModel().getDependencies()) {
-            if ("test".equals(dep.getScope())) {
-                continue;
-            }
-            final AppArtifactKey depKey = project.getKey(dep);
-            final LocalProject localDep = project.workspace.getProject(depKey);
-            if (localDep == null || addedDeps.contains(depKey)) {
-                continue;
-            }
-            collectSelfWithLocalDeps(localDep, addedDeps, ordered);
-        }
-        if (addedDeps.add(project.getKey())) {
-            ordered.add(project);
-        }
-    }
-
-    private AppArtifactKey getKey(Dependency dep) {
-        return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(),
-                dep.getArtifactId());
     }
 
     private Path resolveRelativeToBaseDir(String path, String defaultPath) {

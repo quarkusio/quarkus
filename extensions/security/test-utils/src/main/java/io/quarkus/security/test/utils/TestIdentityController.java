@@ -8,16 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TestIdentityController {
 
-    public static final Map<String, TestIdentity> idenitities = new ConcurrentHashMap<>();
+    public static final Map<String, TestIdentity> identities = new ConcurrentHashMap<>();
 
     public static Builder resetRoles() {
-        idenitities.clear();
+        identities.clear();
         return new Builder();
     }
 
     public static class Builder {
         public Builder add(String username, String password, String... roles) {
-            idenitities.put(username, new TestIdentity(username, password, roles));
+            identities.put(username, new TestIdentity(username, password, roles));
             return this;
         }
     }

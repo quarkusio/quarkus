@@ -73,14 +73,9 @@ class EvaluatorImpl implements Evaluator {
             // The last part - no need to compose
             return resolve(evalContext, resolvers.iterator());
         } else {
+            // Next part - no need to try the parent context/outer scope
             return resolve(evalContext, resolvers.iterator())
-                    .thenCompose(r -> {
-                        if (parts.hasNext()) {
-                            return resolveReference(tryParent, r, parts, resolutionContext);
-                        } else {
-                            return CompletableFuture.completedFuture(r);
-                        }
-                    });
+                    .thenCompose(r -> resolveReference(false, r, parts, resolutionContext));
         }
     }
 

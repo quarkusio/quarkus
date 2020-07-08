@@ -56,6 +56,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
+import io.dekorate.kubernetes.config.LabelBuilder;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
@@ -306,6 +307,8 @@ class KubernetesProcessor {
         applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
                 determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
 
+        applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
+
         //apply build item configurations to the dekorate session.
         applyBuildItems(session,
                 applicationInfo,
@@ -487,6 +490,16 @@ class KubernetesProcessor {
         session.resources().decorate(target, new RemoveOptionalFromConfigMapEnvSourceDecorator());
         session.resources().decorate(target, new RemoveOptionalFromSecretKeySelectorDecorator());
         session.resources().decorate(target, new RemoveOptionalFromConfigMapKeySelectorDecorator());
+    }
+
+    private void applyKnativeConfig(Session session, Project project, String name, KnativeConfig config) {
+        if (config.clusterLocal) {
+            session.resources().decorate(KNATIVE, new AddLabelDecorator(name,
+                    new LabelBuilder()
+                            .withKey("serving.knative.dev/visibility")
+                            .withValue("cluster-local")
+                            .build()));
+        }
     }
 
     /**

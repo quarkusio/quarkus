@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
@@ -27,6 +28,15 @@ import io.quarkus.panache.common.impl.GenerateBridge;
 public interface PanacheRepositoryBase<Entity, Id> {
 
     // Operations
+
+    /**
+     * Returns the default {@link EntityManager} for extra operations (eg. CriteriaQueries)
+     *
+     * @return the default {@link EntityManager}
+     */
+    default EntityManager entityManager() {
+        return JpaOperations.getEntityManager();
+    }
 
     /**
      * Persist the given entity in the database, if not already persisted.

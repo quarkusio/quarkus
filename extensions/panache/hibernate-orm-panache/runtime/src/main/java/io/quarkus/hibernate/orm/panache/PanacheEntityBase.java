@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.json.bind.annotation.JsonbTransient;
+import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.Transient;
 
@@ -30,6 +31,15 @@ import io.quarkus.panache.common.impl.GenerateBridge;
 public abstract class PanacheEntityBase {
 
     // Operations
+
+    /**
+     * Returns the default {@link EntityManager} for extra operations (eg. CriteriaQueries)
+     *
+     * @return the default {@link EntityManager}
+     */
+    protected EntityManager entityManager() {
+        return JpaOperations.getEntityManager();
+    }
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.

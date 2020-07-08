@@ -209,6 +209,19 @@ Applications and components may use any of the following APIs for logging, and t
 * https://www.slf4j.org/[SLF4J]
 * https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 
+If you want to use log4j2, you need to use the `log4j2-jboss-logmanager` to route log4j2 logs to `jboss-logmanager`. +
+You will then be able to use the log4j2 API inside your code and configure your logger via your `application.properties`.
+
+[code,xml]
+----
+    <dependency>
+      <groupId>org.jboss.logmanager</groupId>
+      <artifactId>log4j2-jboss-logmanager</artifactId>
+    </dependency>
+----
+
+WARNING: do not include any log4j2 dependencies, the `log4j2-jboss-logmanager` library include what's needed to use log4j2.
+
 == Centralized Log Management
 
 If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].

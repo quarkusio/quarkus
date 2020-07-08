@@ -74,6 +74,7 @@ public class OidcResource {
         // This is done to test that an asynchronous JWK refresh call done by Vertx Auth is effective.
         return "{" +
                 "   \"active\": " + introspection + "," +
+                "   \"scope\": \"user\"," +
                 "   \"username\": \"alice\"" +
                 "  }";
     }

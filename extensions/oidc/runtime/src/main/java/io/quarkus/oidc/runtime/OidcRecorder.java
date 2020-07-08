@@ -15,6 +15,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Credentials;
 import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
+import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -128,6 +129,24 @@ public class OidcRecorder {
                     "Use only 'credentials.secret' or 'credentials.client-secret' or 'credentials.jwt.secret' property");
         }
 
+        if (ApplicationType.SERVICE.equals(oidcConfig.applicationType)) {
+            if (oidcConfig.token.refreshExpired) {
+                throw new RuntimeException(
+                        "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
+            if (oidcConfig.logout.path.isPresent()) {
+                throw new RuntimeException(
+                        "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
+            if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() != Source.accesstoken) {
+                throw new RuntimeException(
+                        "The 'roles.source' property can only be set to 'accesstoken' for " + ApplicationType.SERVICE
+                                + " application types");
+            }
+        }
+
         // TODO: The workaround to support client_secret_post is added below and have to be removed once
         // it is supported again in VertX OAuth2.
         if (creds.secret.isPresent() || creds.clientSecret.value.isPresent()
@@ -174,28 +193,6 @@ public class OidcRecorder {
 
                 auth = cf.join();
 
-                if (!ApplicationType.WEB_APP.equals(oidcConfig.applicationType)) {
-                    if (oidcConfig.token.refreshExpired) {
-                        throw new RuntimeException(
-                                "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
-                                        + " application types");
-                    }
-                    if (oidcConfig.logout.path.isPresent()) {
-                        throw new RuntimeException(
-                                "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
-                                        + " application types");
-                    }
-                }
-
-                String endSessionEndpoint = OAuth2AuthProviderImpl.class.cast(auth).getConfig().getLogoutPath();
-
-                if (oidcConfig.logout.path.isPresent()) {
-                    if (!oidcConfig.endSessionPath.isPresent() && endSessionEndpoint == null) {
-                        throw new RuntimeException(
-                                "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint");
-                    }
-                }
-
                 break;
             } catch (Throwable throwable) {
                 while (throwable instanceof CompletionException && throwable.getCause() != null) {
@@ -216,6 +213,16 @@ public class OidcRecorder {
                 }
             }
         }
+
+        String endSessionEndpoint = OAuth2AuthProviderImpl.class.cast(auth).getConfig().getLogoutPath();
+
+        if (oidcConfig.logout.path.isPresent()) {
+            if (!oidcConfig.endSessionPath.isPresent() && endSessionEndpoint == null) {
+                throw new RuntimeException(
+                        "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint");
+            }
+        }
+
         auth.missingKeyHandler(new JwkSetRefreshHandler(auth, oidcConfig.token.forcedJwkRefreshInterval));
         return new TenantConfigContext(auth, oidcConfig);
     }

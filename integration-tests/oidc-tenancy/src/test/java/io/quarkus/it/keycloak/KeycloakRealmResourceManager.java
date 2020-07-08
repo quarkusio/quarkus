@@ -94,6 +94,9 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         client.setDefaultRoles(new String[] { "role-" + clientId });
         if (clientId.startsWith("quarkus-app-webapp")) {
             client.setRedirectUris(Arrays.asList("*"));
+        }
+        if (clientId.equals("quarkus-app-webapp")) {
+            // This instructs Keycloak to include the roles with the ID token too
             client.setDefaultClientScopes(Arrays.asList("microprofile-jwt"));
         }
         return client;

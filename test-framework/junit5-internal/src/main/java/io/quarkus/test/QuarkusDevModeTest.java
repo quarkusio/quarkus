@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
@@ -277,24 +279,31 @@ public class QuarkusDevModeTest
     }
 
     private static void setDevModeRunnerJarFile(final DevModeContext context) {
+        handleSurefire(context);
+        if (context.getDevModeRunnerJarFile() == null) {
+            handleIntelliJ(context);
+        }
+    }
+
+    /*
+     * See https://github.com/quarkusio/quarkus/issues/6280
+     * Maven surefire plugin launches the (forked) JVM for tests using a "surefirebooter" jar file.
+     * This jar file's name starts with the prefix "surefirebooter" and ends with the extension ".jar".
+     * The jar is launched using "java -jar .../surefirebooter*.jar ..." semantics. This jar has a
+     * MANIFEST which contains "Class-Path" entries. These entries trigger a bug in the JDK code
+     * https://bugs.openjdk.java.net/browse/JDK-8232170 which causes hot deployment related logic in Quarkus
+     * to fail in dev mode.
+     * The goal in this next section is to narrow down to this specific surefirebooter*.jar which was used to launch
+     * the tests and mark it as the "dev mode runner jar" (through DevModeContext#setDevModeRunnerJarFile),
+     * so that programmatic compilation of code (during hot deployment) doesn't run into issues noted in
+     * https://bugs.openjdk.java.net/browse/JDK-8232170.
+     * In reality the surefirebooter*.jar isn't really a "dev mode runner jar" (i.e. it's not the -dev.jar that
+     * Quarkus generates), but it's fine to mark it as such to get past this issue. This is more of a workaround
+     * on top of another workaround. In the medium/long term the actual JDK issue fix will make its way into
+     * almost all prominently used Java versions.
+     */
+    private static void handleSurefire(DevModeContext context) {
         try {
-            /*
-             * See https://github.com/quarkusio/quarkus/issues/6280
-             * Maven surefire plugin launches the (forked) JVM for tests using a "surefirebooter" jar file.
-             * This jar file's name starts with the prefix "surefirebooter" and ends with the extension ".jar".
-             * The jar is launched using "java -jar .../surefirebooter*.jar ..." semantics. This jar has a
-             * MANIFEST which contains "Class-Path" entries. These entries trigger a bug in the JDK code
-             * https://bugs.openjdk.java.net/browse/JDK-8232170 which causes hot deployment related logic in Quarkus
-             * to fail in dev mode.
-             * The goal in this next section is to narrow down to this specific surefirebooter*.jar which was used to launch
-             * the tests and mark it as the "dev mode runner jar" (through DevModeContext#setDevModeRunnerJarFile),
-             * so that programmatic compilation of code (during hot deployment) doesn't run into issues noted in
-             * https://bugs.openjdk.java.net/browse/JDK-8232170.
-             * In reality the surefirebooter*.jar isn't really a "dev mode runner jar" (i.e. it's not the -dev.jar that
-             * Quarkus generates), but it's fine to mark it as such to get past this issue. This is more of a workaround
-             * on top of another workaround. In the medium/long term the actual JDK issue fix will make its way into
-             * almost all prominently used Java versions.
-             */
             final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
             while (manifests.hasMoreElements()) {
                 final URL url = manifests.nextElement();
@@ -328,9 +337,38 @@ public class QuarkusDevModeTest
                     break;
                 }
             }
-        } catch (Throwable t) {
-            // ignore and move on
-            return;
+        } catch (Throwable ignored) {
+
+        }
+    }
+
+    /*
+     * IntelliJ does not create a special jar when running the tests but instead sets up the classpath and uses
+     * the main class com.intellij.rt.junit.JUnitStarter from idea_rt.jar.
+     * To make DevModeMain happy in this case, all we need to do here is create a dummy jar file in the proper directory
+     */
+    private static void handleIntelliJ(DevModeContext context) {
+        try {
+            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+            while (manifests.hasMoreElements()) {
+                final URL url = manifests.nextElement();
+                if (!url.getPath().contains("idea_rt.jar")) {
+                    continue;
+                }
+
+                Path intelliJPath = Paths.get(context.getApplicationRoot().getClassesPath()).getParent().resolve("intellij");
+                Path dummyJar = intelliJPath.resolve("dummy.jar");
+
+                // create the empty dummy jar
+                try (FileSystem out = ZipUtils.newZip(dummyJar)) {
+
+                }
+
+                context.setDevModeRunnerJarFile(dummyJar.toFile());
+                break;
+            }
+        } catch (Throwable ignored) {
+
         }
     }
 

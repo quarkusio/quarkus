@@ -94,7 +94,8 @@ public class LoggingSetupRecorder {
         final Map<String, CleanupFilterConfig> filters = config.filters;
         List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
         for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
-            filterElements.add(new LogCleanupFilterElement(entry.getKey(), entry.getValue().ifStartsWith));
+            filterElements.add(
+                    new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel, entry.getValue().ifStartsWith));
         }
 
         final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());

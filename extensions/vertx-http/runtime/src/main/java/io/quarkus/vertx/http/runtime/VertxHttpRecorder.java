@@ -188,15 +188,10 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue,
-            final LaunchMode launchMode, final ShutdownContext shutdownContext) {
+    public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue) {
 
         Vertx vertx = vertxRuntimeValue.get();
         Router router = Router.router(vertx);
-        if (hotReplacementHandler != null) {
-            router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
-        }
-
         return new RuntimeValue<>(router);
     }
 
@@ -260,7 +255,7 @@ public class VertxHttpRecorder {
         if (requireBodyHandler) {
             //if this is set then everything needs the body handler installed
             //TODO: config etc
-            router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+            router.route().order(Integer.MIN_VALUE + 1).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext routingContext) {
                     routingContext.request().resume();
@@ -302,14 +297,14 @@ public class VertxHttpRecorder {
         Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
-                router.route().order(-1).handler(hotReplacementHandler);
+                router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
             }
             root = router;
         } else {
             Router mainRouter = Router.router(vertx.get());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
-                mainRouter.route().order(-1).handler(hotReplacementHandler);
+                mainRouter.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
             }
             root = mainRouter;
         }

@@ -65,6 +65,18 @@
 - labels: [env/windows]
   title: "(?i).*windows.*"
   description: "(?i).*windows.*"
+- labels: [area/kubernetes]
+  title: "(?i).*kubernetes.*"
+  description: "(?i).*kubernetes.*"
+  notify: [geoand]
+- labels: [area/kubernetes]
+  title: "(?i).*minikube.*"
+  description: "(?i).*minikube.*"
+  notify: [geoand]
+- labels: [area/kubernetes]
+  title: "(?i).*openshift.*"
+  description: "(?i).*openshift.*"
+  notify: [geoand]
 - labels: [area/container-image]
   title: "(?i).*jib.*"
   description: "(?i).*jib.*"

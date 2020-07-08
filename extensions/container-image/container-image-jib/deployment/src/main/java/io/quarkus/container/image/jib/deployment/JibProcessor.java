@@ -250,7 +250,7 @@ public class JibProcessor {
     private JibContainerBuilder createContainerBuilderFromFastJar(JibConfig jibConfig,
             JarBuildItem sourceJarBuildItem,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
-        Path componentsPath = sourceJarBuildItem.getPath().getParent().getParent();
+        Path componentsPath = sourceJarBuildItem.getPath().getParent();
 
         AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
 

@@ -54,9 +54,9 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.smallrye.health.HealthGroup;
-import io.smallrye.health.HealthGroups;
 import io.smallrye.health.SmallRyeHealthReporter;
+import io.smallrye.health.api.HealthGroup;
+import io.smallrye.health.api.HealthGroups;
 
 class SmallRyeHealthProcessor {
 

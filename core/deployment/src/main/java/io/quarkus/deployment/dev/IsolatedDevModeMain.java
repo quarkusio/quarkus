@@ -114,8 +114,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }
                             runtimeUpdatesProcessor.startupFailed();
                         } catch (Exception e) {
-                            t.addSuppressed(new RuntimeException("Failed to recover after failed start", e));
-                            throw new RuntimeException(t);
+                            close();
+                            log.error("Failed to recover after failed start", e);
+                            //this is the end of the road, we just exit
+                            //generally we only hit this if something is already listening on the HTTP port
+                            //or the system config is so broken we can't start HTTP
+                            System.exit(1);
                         }
                     }
                 }

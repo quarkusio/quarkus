@@ -333,6 +333,9 @@ public class DevMojo extends AbstractMojo {
                 if (System.currentTimeMillis() > nextCheck) {
                     nextCheck = System.currentTimeMillis() + 100;
                     if (!runner.process.isAlive()) {
+                        if (runner.process.exitValue() != 0) {
+                            throw new MojoExecutionException("Dev mode process did not complete successfully");
+                        }
                         return;
                     }
                     final Set<Path> changed = new HashSet<>();

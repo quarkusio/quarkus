@@ -10,7 +10,6 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -34,25 +33,22 @@ public class VertxProducer {
 
     private static final Logger LOGGER = Logger.getLogger(VertxProducer.class);
 
-    @Inject
-    Vertx vertx;
-
     @Singleton
     @Produces
-    public EventBus eventbus() {
+    public EventBus eventbus(Vertx vertx) {
         return vertx.eventBus();
     }
 
     @Singleton
     @Produces
-    public io.vertx.mutiny.core.Vertx mutiny() {
+    public io.vertx.mutiny.core.Vertx mutiny(Vertx vertx) {
         return io.vertx.mutiny.core.Vertx.newInstance(vertx);
     }
 
     @Singleton
     @Produces
     @Deprecated
-    public io.vertx.axle.core.Vertx axle() {
+    public io.vertx.axle.core.Vertx axle(Vertx vertx) {
         LOGGER.warn(
                 "`io.vertx.axle.core.Vertx` is deprecated and will be removed in a future version - it is "
                         + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
@@ -62,7 +58,7 @@ public class VertxProducer {
     @Singleton
     @Produces
     @Deprecated
-    public io.vertx.reactivex.core.Vertx rx() {
+    public io.vertx.reactivex.core.Vertx rx(Vertx vertx) {
         LOGGER.warn(
                 "`io.vertx.reactivex.core.Vertx` is deprecated  and will be removed in a future version - it is "
                         + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
@@ -102,8 +98,7 @@ public class VertxProducer {
      * @param event
      * @param beanManager
      */
-    void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event,
-            BeanManager beanManager, io.vertx.mutiny.core.Vertx mutiny) {
+    void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event, BeanManager beanManager) {
         // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id 
         Set<Bean<?>> beans = beanManager.getBeans(AbstractVerticle.class, Any.Literal.INSTANCE);
         Context applicationContext = beanManager.getContext(ApplicationScoped.class);
@@ -115,6 +110,8 @@ public class VertxProducer {
                     // Only existing instances are considered
                     try {
                         AbstractVerticle verticle = (AbstractVerticle) instance;
+                        io.vertx.mutiny.core.Vertx mutiny = beanManager.createInstance()
+                                .select(io.vertx.mutiny.core.Vertx.class).get();
                         mutiny.undeploy(verticle.deploymentID()).await().indefinitely();
                         LOGGER.debugf("Undeployed verticle: %s", instance.getClass());
                     } catch (Exception e) {

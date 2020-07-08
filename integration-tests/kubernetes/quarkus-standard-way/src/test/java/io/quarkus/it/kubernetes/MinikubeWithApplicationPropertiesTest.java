@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
@@ -42,6 +43,11 @@ public class MinikubeWithApplicationPropertiesTest {
 
         assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
+                assertThat(d.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo("minikube-with-application-properties");
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                    assertThat(m.getAnnotations()).contains(entry("bar", "baz"));
+                });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);

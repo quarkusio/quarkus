@@ -184,6 +184,7 @@ class KubernetesProcessor {
             Optional<MetricsConfigurationBuildItem> metricsConfiguration, List<KubernetesPortBuildItem> kubernetesPorts) {
         List<KubernetesAnnotationBuildItem> result = new ArrayList<KubernetesAnnotationBuildItem>();
         addAnnotations(kubernetesConfig, KUBERNETES, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(kubernetesConfig, MINIKUBE, metricsConfiguration, kubernetesPorts, result);
         addAnnotations(openshiftConfig, OPENSHIFT, metricsConfiguration, kubernetesPorts, result);
         addAnnotations(knativeConfig, KNATIVE, metricsConfiguration, kubernetesPorts, result);
         return result;
@@ -211,6 +212,7 @@ class KubernetesProcessor {
             BuildProducer<ContainerImageLabelBuildItem> containerImageLabelsProducer) {
         kubernetesConfig.labels.forEach((k, v) -> {
             kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
+            kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, MINIKUBE));
             containerImageLabelsProducer.produce(new ContainerImageLabelBuildItem(k, v));
         });
         openshiftConfig.labels.forEach((k, v) -> {

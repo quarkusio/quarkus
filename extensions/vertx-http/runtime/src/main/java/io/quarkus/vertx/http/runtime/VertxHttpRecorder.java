@@ -109,6 +109,7 @@ public class VertxHttpRecorder {
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
     private static volatile HotReplacementContext hotReplacementContext;
+    private static volatile RemoteSyncHandler remoteSyncHandler;
 
     private static volatile Runnable closeTask;
 
@@ -123,7 +124,14 @@ public class VertxHttpRecorder {
             //as the underlying handler has not had a chance to install a read handler yet
             //and data that arrives while the blocking task is being processed will be lost
             httpServerRequest.pause();
-            rootHandler.handle(httpServerRequest);
+            Handler<HttpServerRequest> rh = VertxHttpRecorder.rootHandler;
+            if (rh != null) {
+                rh.handle(httpServerRequest);
+            } else {
+                //very rare race condition, that can happen when dev mode is shutting down
+                httpServerRequest.resume();
+                httpServerRequest.response().setStatusCode(503).end();
+            }
         }
     };
 
@@ -374,7 +382,7 @@ public class VertxHttpRecorder {
             });
         }
         if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password.isPresent()) {
-            root = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
+            root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
         }
         rootHandler = root;
     }
@@ -457,6 +465,10 @@ public class VertxHttpRecorder {
                             }
                         }
                         closeTask = null;
+                        if (remoteSyncHandler != null) {
+                            remoteSyncHandler.close();
+                            remoteSyncHandler = null;
+                        }
                     }
                 }
             };

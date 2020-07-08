@@ -71,9 +71,9 @@ public class HttpRemoteDevClient implements RemoteDevClient {
         //this file needs to be sent last
         //if it is modified it will trigger a reload
         //and we need the rest of the app to be present
-        byte[] lastFile = data.remove(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
+        byte[] lastFile = data.remove(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT);
         if (lastFile != null) {
-            data.put(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT, lastFile);
+            data.put(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT, lastFile);
         }
 
         for (Map.Entry<String, byte[]> entry : data.entrySet()) {

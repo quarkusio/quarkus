@@ -23,6 +23,8 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -789,6 +791,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
     }
 
+    @DisabledOnOs(OS.WINDOWS) // need to figure this out...
     @Test
     public void testResourcesFromClasspath() throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath");

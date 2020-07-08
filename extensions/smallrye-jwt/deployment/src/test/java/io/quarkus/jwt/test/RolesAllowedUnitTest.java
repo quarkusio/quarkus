@@ -170,8 +170,6 @@ public class RolesAllowedUnitTest {
                 .get("/endp/echo2").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
-        String replyString = response.body().asString();
-        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**
@@ -245,8 +243,6 @@ public class RolesAllowedUnitTest {
                 .get("/endp/echo").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
-        String replyString = response.body().asString();
-        Assertions.assertEquals("Forbidden", replyString);
     }
 
     /**

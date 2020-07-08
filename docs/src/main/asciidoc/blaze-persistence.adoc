@@ -16,6 +16,8 @@ queries which are then transformed to optimized queries that only fetch the data
 The same DTO definitions can further be used for applying database updates, leading to a great reduction in boilerplate
 code and removing the need for object mapping tools.
 
+include::./platform-include.adoc[]
+
 == Setting up and configuring Blaze-Persistence
 
 The extension comes with default producers for `CriteriaBuilderFactory` and `EntityViewManager` that work out of the

@@ -215,6 +215,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         this.resolvedVersion = resolvedVersion;
     }
 
+    LocalProject getCurrentProject() {
+        return currentProject;
+    }
+
     void setCurrentProject(LocalProject currentProject) {
         this.currentProject = currentProject;
     }

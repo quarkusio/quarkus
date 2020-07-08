@@ -25,9 +25,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
@@ -70,9 +72,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
      *
      * @param bean
      * @param beanClassName Fully qualified class name
+     * @param bytecodeTransformerConsumer
+     * @param transformUnproxyableClasses whether or not unproxyable classes should be transformed
      * @return a collection of resources
      */
-    Collection<Resource> generate(BeanInfo bean, String beanClassName) {
+    Collection<Resource> generate(BeanInfo bean, String beanClassName,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
@@ -127,7 +132,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             implementMockMethods(clientProxy);
         }
 
-        for (MethodInfo method : getDelegatingMethods(bean)) {
+        for (MethodInfo method : getDelegatingMethods(bean, bytecodeTransformerConsumer, transformUnproxyableClasses)) {
 
             MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
@@ -302,23 +307,35 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.returnValue(creator.readInstanceField(beanField, creator.getThis()));
     }
 
-    Collection<MethodInfo> getDelegatingMethods(BeanInfo bean) {
+    Collection<MethodInfo> getDelegatingMethods(BeanInfo bean, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean transformUnproxyableClasses) {
         Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
 
         if (bean.isClassBean()) {
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getTarget().get().asClass(),
-                    methods);
+            Set<Methods.NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
+            ClassInfo classInfo = bean.getTarget().get().asClass();
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), classInfo,
+                    methods, methodsFromWhichToRemoveFinal, transformUnproxyableClasses);
+            if (!methodsFromWhichToRemoveFinal.isEmpty()) {
+                String className = classInfo.name().toString();
+                bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
+                        new Methods.RemoveFinalFromMethod(className, methodsFromWhichToRemoveFinal)));
+            }
         } else if (bean.isProducerMethod()) {
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(), producerMethod.returnType());
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, methods);
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, methods, null,
+                    transformUnproxyableClasses);
         } else if (bean.isProducerField()) {
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(bean.getDeployment().getIndex(), producerField.type());
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, methods);
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, methods, null,
+                    transformUnproxyableClasses);
         } else if (bean.isSynthetic()) {
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getImplClazz(), methods);
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getImplClazz(), methods, null,
+                    transformUnproxyableClasses);
         }
+
         return methods.values();
     }
 

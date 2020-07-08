@@ -38,7 +38,7 @@ import org.jboss.logging.Logger;
  * <li>{@link #initialize(Consumer)}</li>
  * <li>{@link #validate(Consumer)}</li>
  * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
- * <li>{@link #generateResources(ReflectionRegistration, Set)}</li>
+ * <li>{@link #generateResources(ReflectionRegistration, Set, Consumer)}</li>
  * </ol>
  */
 public class BeanProcessor {
@@ -64,6 +64,7 @@ public class BeanProcessor {
     private final BeanDeployment beanDeployment;
     private final boolean generateSources;
     private final boolean allowMocking;
+    private final boolean transformUnproxyableClasses;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
     // Note that we do create annotation literals for all annotations for an injection point that resolves to a @Dependent bean that injects the InjectionPoint metadata
@@ -79,6 +80,7 @@ public class BeanProcessor {
         this.annotationLiterals = new AnnotationLiteralProcessor(builder.sharedAnnotationLiterals, applicationClassPredicate);
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
+        this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
@@ -133,7 +135,8 @@ public class BeanProcessor {
         BeanDeployment.processErrors(validationContext.getDeploymentProblems());
     }
 
-    public List<Resource> generateResources(ReflectionRegistration reflectionRegistration, Set<String> existingClasses)
+    public List<Resource> generateResources(ReflectionRegistration reflectionRegistration, Set<String> existingClasses,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer)
             throws IOException {
         if (reflectionRegistration == null) {
             reflectionRegistration = this.reflectionRegistration;
@@ -174,7 +177,8 @@ public class BeanProcessor {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
                         resources.addAll(
-                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName()));
+                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(),
+                                        bytecodeTransformerConsumer, transformUnproxyableClasses));
                     }
                     if (bean.isSubclassRequired()) {
                         resources.addAll(
@@ -234,7 +238,7 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer);
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null, new HashSet<>());
+        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer);
         return beanDeployment;
     }
 

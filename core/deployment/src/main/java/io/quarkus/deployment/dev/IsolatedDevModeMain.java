@@ -41,7 +41,7 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
 public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
-    private static final Logger log = Logger.getLogger(DevModeMain.class);
+    private static final Logger log = Logger.getLogger(IsolatedDevModeMain.class);
     public static final String APP_ROOT = "app-root";
 
     private volatile DevModeContext context;
@@ -101,7 +101,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 } else {
                     //we need to set this here, while we still have the correct TCCL
                     //this is so the config is still valid, and we can read HTTP config from application.properties
-                    log.error("Failed to start Quarkus", t);
                     log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
                     if (runtimeUpdatesProcessor != null) {
                         Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
@@ -142,6 +141,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             } catch (Throwable t) {
                 deploymentProblem = t;
                 log.error("Failed to start quarkus", t);
+                Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                LoggingSetupRecorder.handleFailedStart();
             }
         } finally {
             restarting = false;

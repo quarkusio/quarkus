@@ -14,7 +14,6 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.websocket.WebSocketOpenEndpoint;
@@ -105,7 +104,6 @@ public class WebsocketTestCase {
     }
 
     @Test
-    @Disabled("test disabled as the message handler may be registered after the messages being sent.")
     public void testSendMessageOnOpen() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();

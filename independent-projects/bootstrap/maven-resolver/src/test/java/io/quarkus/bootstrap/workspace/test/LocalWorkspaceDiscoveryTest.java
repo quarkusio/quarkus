@@ -117,6 +117,78 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void loadWorkspaceFromRootDirWithParentInChildDir() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+        final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("acme", project.getArtifactId());
+        assertWorkspaceWithParentInChildDir(project);
+    }
+
+    @Test
+    public void loadWorkspaceFromModuleDirWithParentInChildDir() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-parent-is-not-root-dir/acme-application");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+        final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("acme-application", project.getArtifactId());
+        assertWorkspaceWithParentInChildDir(project);
+    }
+
+    private void assertWorkspaceWithParentInChildDir(final LocalProject project) {
+        final LocalWorkspace workspace = project.getWorkspace();
+        assertNotNull(workspace.getProject("org.acme", "acme"));
+        assertNotNull(workspace.getProject("org.acme", "acme-parent"));
+        assertNotNull(workspace.getProject("org.acme", "acme-dependencies"));
+        assertNotNull(workspace.getProject("org.acme", "acme-backend"));
+        assertNotNull(workspace.getProject("org.acme", "acme-backend-rest-api"));
+        assertNotNull(workspace.getProject("org.acme", "acme-application"));
+        assertEquals(6, workspace.getProjects().size());
+    }
+
+    @Test
+    public void loadWorkspaceWithAlternatePomDefaultPom() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-alternate-pom/root/module1");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+        final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("root-module1", project.getArtifactId());
+        final LocalWorkspace workspace = project.getWorkspace();
+        assertNotNull(workspace.getProject("org.acme", "root"));
+        assertNotNull(workspace.getProject("org.acme", "root-module1"));
+        assertNull(workspace.getProject("org.acme", "root-module2"));
+        assertNotNull(workspace.getProject("org.acme", "root-submodule"));
+        assertEquals(3, workspace.getProjects().size());
+    }
+
+    @Test
+    public void loadWorkspaceWithAlternatePom() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-alternate-pom/root/module1/pom2.xml");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+        final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("root-module1", project.getArtifactId());
+        final LocalWorkspace workspace = project.getWorkspace();
+        assertNotNull(workspace.getProject("org.acme", "root"));
+        assertNotNull(workspace.getProject("org.acme", "root-module1"));
+        assertNotNull(workspace.getProject("org.acme", "root-module2"));
+        assertNull(workspace.getProject("org.acme", "root-submodule"));
+        assertEquals(3, workspace.getProjects().size());
+    }
+
+    @Test
     public void loadIndependentProjectInTheWorkspaceTree() throws Exception {
         final LocalProject project = LocalProject
                 .loadWorkspace(workDir.resolve("root").resolve("independent").resolve("target").resolve("classes"));

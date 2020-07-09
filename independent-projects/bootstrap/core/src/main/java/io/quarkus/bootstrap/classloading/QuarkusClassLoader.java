@@ -667,6 +667,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    public ClassLoader parent() {
+        return parent;
+    }
+
     static final class ClassLoaderState {
 
         final Map<String, ClassPathElement[]> loadableResources;

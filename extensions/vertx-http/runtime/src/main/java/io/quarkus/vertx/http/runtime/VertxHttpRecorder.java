@@ -607,6 +607,7 @@ public class VertxHttpRecorder {
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         serverOptions.setTcpCork(httpConfiguration.tcpCork);
         serverOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
+        serverOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
 
         return serverOptions;
     }
@@ -700,6 +701,7 @@ public class VertxHttpRecorder {
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         options.setTcpCork(httpConfiguration.tcpCork);
         options.setTcpFastOpen(httpConfiguration.tcpFastOpen);
+        options.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         return options;
     }
 

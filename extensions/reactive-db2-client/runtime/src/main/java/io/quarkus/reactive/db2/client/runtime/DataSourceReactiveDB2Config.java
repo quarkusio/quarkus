@@ -15,4 +15,10 @@ public class DataSourceReactiveDB2Config {
     @ConfigItem
     public Optional<Boolean> cachePreparedStatements;
 
+    /**
+     * Whether SSL/TLS is enabled.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean ssl;
+
 }

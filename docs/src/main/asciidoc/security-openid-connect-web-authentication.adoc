@@ -283,6 +283,31 @@ If only the access token contains the roles and this access token is not meant t
 
 If UserInfo is the source of the roles then set `quarkus.oidc.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
+== Single Page Applications
+
+Please check if implementing SPAs the way it is suggested in the link:security-openid-connect#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
+
+If you do prefer to use SPA and `XMLHttpRequest`(XHR) with Quarkus `web-app` applications then please be aware that OpenId Connect Providers may not support CORS for Authorization endpoints where the users
+ are authenticated after a redirect from Quarkus which will lead to the authentication failures if the Quarkus `web-app` application and OpenId Connect Provider are hosted on the different HTTP domains/ports.
+
+In such cases one needs to set the `quarkus.oidc.authentication.xhr-auto-redirect` property to `false` which will instruct Quarkus to return a `499` status code and `WWW-Authenticate` header with the `OIDC` value and the browser script needs to be updated to set "X-Requested-With" header with the `XMLHttpRequest` value and reload the last requested page in case of `499`, for example:
+
+[source,javascript]
+----
+Future<void> callQuarkusService() async {
+    Map<String, String> headers = Map.fromEntries([MapEntry("X-Requested-With", "XMLHttpRequest")]);
+
+    await http
+        .get("https://localhost:443/serviceCall")
+        .then((response) {
+            if (response.statusCode == 499) {
+                window.location.assign(https://localhost.com:443/serviceCall);
+            }
+         });
+  }
+----
+
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

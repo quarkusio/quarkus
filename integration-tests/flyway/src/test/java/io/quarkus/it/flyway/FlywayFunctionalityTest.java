@@ -21,7 +21,7 @@ public class FlywayFunctionalityTest {
     @Test
     @DisplayName("Migrates a schema correctly using second instance of Flyway")
     public void testMultipleFlywayQuarkusFunctionality() {
-        when().get("/flyway/multiple-flyway-migratation").then().body(is("1.0.0"));
+        when().get("/flyway/multiple-flyway-migration").then().body(is("1.0.0"));
     }
 
     @Test
@@ -30,4 +30,9 @@ public class FlywayFunctionalityTest {
         when().get("/flyway/placeholders").then().body("foo", is("bar"));
     }
 
+    @Test
+    @DisplayName("Returns whether the createSchemas flag is used or not")
+    public void testCreateSchemasDefaultIsTrue() {
+        when().get("/flyway/create-schemas").then().body(is("true"));
+    }
 }

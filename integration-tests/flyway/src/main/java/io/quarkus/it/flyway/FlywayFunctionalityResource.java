@@ -36,8 +36,8 @@ public class FlywayFunctionalityResource {
     }
 
     @GET
-    @Path("multiple-flyway-migratation")
-    public String doMigratationOfSecondDataSource() {
+    @Path("multiple-flyway-migration")
+    public String doMigrationOfSecondDataSource() {
         flyway2.migrate();
         MigrationVersion version = Objects.requireNonNull(flyway2.info().current().getVersion(),
                 "Version is null! Migration was not applied for second datasource");
@@ -50,4 +50,9 @@ public class FlywayFunctionalityResource {
         return flyway.getConfiguration().getPlaceholders();
     }
 
+    @GET
+    @Path("create-schemas")
+    public boolean returnCreateSchema() {
+        return flyway.getConfiguration().getCreateSchemas();
+    }
 }

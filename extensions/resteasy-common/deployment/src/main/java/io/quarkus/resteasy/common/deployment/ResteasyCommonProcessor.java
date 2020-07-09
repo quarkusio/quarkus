@@ -183,7 +183,7 @@ public class ResteasyCommonProcessor {
             String needsMutinyClasses = mutinySupportNeeded(indexBuildItem);
             if (needsMutinyClasses != null) {
                 LOGGER.warn(
-                        "Quarkus detected the need for Mutiny reactive programming support, however the quarkus-resteasy-mutiny extension"
+                        "Quarkus detected the need for Mutiny reactive programming support, however the quarkus-resteasy-mutiny extension "
                                 + "was not present. Reactive REST endpoints in your application that return Uni or Multi " +
                                 "will not function as you expect until you add this extension. Endpoints that need Mutiny are: "
                                 + needsMutinyClasses);

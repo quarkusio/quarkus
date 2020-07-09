@@ -222,15 +222,16 @@ public class SecurityProcessor {
             Map<DotName, ClassInfo> additionalSecuredClasses, boolean denyUnannotated) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
+        Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
         Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> result = new HashMap<>(gatherSecurityAnnotations(
-                index, DotNames.ROLES_ALLOWED, methodToInstanceCollector,
+                index, DotNames.ROLES_ALLOWED, methodToInstanceCollector, classAnnotations,
                 (instance -> rolesAllowedSecurityCheck(instance.value().asStringArray()))));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector,
+        result.putAll(gatherSecurityAnnotations(index, DotNames.PERMIT_ALL, methodToInstanceCollector, classAnnotations,
                 (instance -> permitAllSecurityCheck())));
-        result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector,
+        result.putAll(gatherSecurityAnnotations(index, DotNames.AUTHENTICATED, methodToInstanceCollector, classAnnotations,
                 (instance -> authenticatedSecurityCheck())));
 
-        result.putAll(gatherSecurityAnnotations(index, DotNames.DENY_ALL, methodToInstanceCollector,
+        result.putAll(gatherSecurityAnnotations(index, DotNames.DENY_ALL, methodToInstanceCollector, classAnnotations,
                 (instance -> denyAllSecurityCheck())));
 
         /*
@@ -285,6 +286,7 @@ public class SecurityProcessor {
     private Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> gatherSecurityAnnotations(
             IndexView index, DotName dotName,
             Map<MethodInfo, AnnotationInstance> alreadyCheckedMethods,
+            Map<ClassInfo, AnnotationInstance> classLevelAnnotations,
             Function<AnnotationInstance, Function<BytecodeCreator, ResultHandle>> securityCheckInstanceCreator) {
 
         Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> result = new HashMap<>();
@@ -308,16 +310,22 @@ public class SecurityProcessor {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
                 List<MethodInfo> methods = target.asClass().methods();
-                for (MethodInfo methodInfo : methods) {
-                    AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
-                    if ((alreadyExistingInstance == null)) {
-                        result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
-                    } else if (alreadyExistingInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
-                        throw new IllegalStateException(
-                                "Class " + methodInfo.declaringClass() + " is annotated with multiple security annotations");
+                AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
+                if (existingClassInstance == null) {
+                    classLevelAnnotations.put(target.asClass(), instance);
+                    for (MethodInfo methodInfo : methods) {
+                        AnnotationInstance alreadyExistingInstance = alreadyCheckedMethods.get(methodInfo);
+                        if ((alreadyExistingInstance == null)) {
+                            result.put(methodInfo, securityCheckInstanceCreator.apply(instance));
+                        }
                     }
+                } else {
+                    throw new IllegalStateException(
+                            "Class " + target.asClass() + " is annotated with multiple security annotations " + instance.name()
+                                    + " and " + existingClassInstance.name());
                 }
             }
+
         }
 
         return result;

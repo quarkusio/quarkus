@@ -100,6 +100,7 @@
         <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
+        <module>mybatis</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>avro</module>

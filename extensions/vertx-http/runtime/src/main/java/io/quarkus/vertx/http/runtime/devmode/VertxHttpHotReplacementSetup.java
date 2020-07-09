@@ -40,10 +40,13 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.next();
             return;
         }
+        ClassLoader current = Thread.currentThread().getContextClassLoader();
         ConnectionBase connectionBase = (ConnectionBase) routingContext.request().connection();
         connectionBase.getContext().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
+                //the blocking pool may have a stale TCCL
+                Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
                 synchronized (this) {
                     if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {

@@ -297,14 +297,29 @@ public class VertxHttpRecorder {
         Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
-                router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
+                //recorders are always executed in the current CL
+                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+                router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        Thread.currentThread().setContextClassLoader(currentCl);
+                        hotReplacementHandler.handle(event);
+                    }
+                });
             }
             root = router;
         } else {
             Router mainRouter = Router.router(vertx.get());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
-                mainRouter.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
+                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+                mainRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        Thread.currentThread().setContextClassLoader(currentCl);
+                        hotReplacementHandler.handle(event);
+                    }
+                });
             }
             root = mainRouter;
         }

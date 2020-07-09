@@ -37,7 +37,10 @@ public abstract class PanacheEntityBase {
      *
      * @return the default {@link EntityManager}
      */
-    protected EntityManager entityManager() {
+    @JsonbTransient
+    // @JsonIgnore is here to avoid serialization of this property with jackson
+    @JsonIgnore
+    public EntityManager getEntityManager() {
         return JpaOperations.getEntityManager();
     }
 

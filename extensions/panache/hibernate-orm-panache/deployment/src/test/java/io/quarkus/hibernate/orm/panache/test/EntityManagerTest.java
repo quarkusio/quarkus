@@ -20,7 +20,7 @@ public class EntityManagerTest {
     @Test
     void entityManagerShouldExist() {
         MyEntity entity = new MyEntity();
-        assertNotNull(entity.entityManager());
+        assertNotNull(entity.getEntityManager());
     }
 
 }

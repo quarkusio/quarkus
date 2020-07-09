@@ -34,7 +34,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      *
      * @return the default {@link EntityManager}
      */
-    default EntityManager entityManager() {
+    default EntityManager getEntityManager() {
         return JpaOperations.getEntityManager();
     }
 

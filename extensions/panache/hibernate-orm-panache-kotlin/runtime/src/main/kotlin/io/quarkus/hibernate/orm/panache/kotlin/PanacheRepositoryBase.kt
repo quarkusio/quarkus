@@ -22,7 +22,7 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
      *
      * @return the default [EntityManager]
      */
-    fun entityManager(): EntityManager = JpaOperations.getEntityManager()
+    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager()
 
     /**
      * Persist the given entity in the database, if not already persisted.

@@ -18,7 +18,6 @@ public class VertxEventBusProducer {
     Vertx vertx;
 
     public void register(@Observes StartupEvent ev) {
-        // Don't use rc.vertx() as it would be the RestEasy instance
         router.get("/").handler(rc -> vertx.eventBus().<String> request("my-address", "", m -> {
             if (m.failed()) {
                 rc.response().end("failed");

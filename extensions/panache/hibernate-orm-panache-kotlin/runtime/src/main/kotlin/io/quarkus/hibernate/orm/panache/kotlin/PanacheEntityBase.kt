@@ -22,7 +22,9 @@ interface PanacheEntityBase {
      *
      * @return the default [EntityManager]
      */
-    fun entityManager(): EntityManager = JpaOperations.getEntityManager()
+    @JsonbTransient
+    @JsonIgnore
+    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager()
 
     /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to

@@ -1,5 +1,6 @@
 package io.quarkus.vertx.web.deployment;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.spi.Context;
@@ -29,6 +30,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 class Methods {
@@ -42,6 +45,21 @@ class Methods {
 
     static final MethodDescriptor REQUEST = MethodDescriptor
             .ofMethod(RoutingContext.class, "request", HttpServerRequest.class);
+    static final MethodDescriptor REQUEST_GET_PARAM = MethodDescriptor
+            .ofMethod(HttpServerRequest.class, "getParam", String.class, String.class);
+    static final MethodDescriptor REQUEST_GET_HEADER = MethodDescriptor
+            .ofMethod(HttpServerRequest.class, "getHeader", String.class, String.class);
+    static final MethodDescriptor GET_BODY = MethodDescriptor
+            .ofMethod(RoutingContext.class, "getBody", Buffer.class);
+    static final MethodDescriptor GET_BODY_AS_STRING = MethodDescriptor
+            .ofMethod(RoutingContext.class, "getBodyAsString", String.class);
+    static final MethodDescriptor GET_BODY_AS_JSON = MethodDescriptor
+            .ofMethod(RoutingContext.class, "getBodyAsJson", JsonObject.class);
+    static final MethodDescriptor GET_BODY_AS_JSON_ARRAY = MethodDescriptor
+            .ofMethod(RoutingContext.class, "getBodyAsJsonArray", JsonArray.class);
+    static final MethodDescriptor JSON_OBJECT_MAP_TO = MethodDescriptor
+            .ofMethod(JsonObject.class, "mapTo", Object.class, Class.class);
+
     static final MethodDescriptor RESPONSE = MethodDescriptor
             .ofMethod(RoutingContext.class, "response", HttpServerResponse.class);
 
@@ -139,6 +157,9 @@ class Methods {
 
     static final MethodDescriptor ROUTE_HANDLERS_SET_CONTENT_TYPE = MethodDescriptor
             .ofMethod(RouteHandlers.class, "setContentType", void.class, RoutingContext.class);
+
+    static final MethodDescriptor OPTIONAL_OF_NULLABLE = MethodDescriptor
+            .ofMethod(Optional.class, "ofNullable", Optional.class, Object.class);
 
     private Methods() {
         // Avoid direct instantiation

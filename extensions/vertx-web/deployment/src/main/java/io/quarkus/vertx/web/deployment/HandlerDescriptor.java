@@ -4,8 +4,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
 /**
@@ -13,8 +11,6 @@ import io.vertx.core.buffer.Buffer;
  */
 public class HandlerDescriptor {
 
-    private static final DotName DOT_NAME_UNI = DotName.createSimple(Uni.class.getName());
-    private static final DotName DOT_NAME_MULTI = DotName.createSimple(Multi.class.getName());
     private final MethodInfo method;
 
     public HandlerDescriptor(MethodInfo method) {
@@ -30,11 +26,11 @@ public class HandlerDescriptor {
     }
 
     public boolean isReturningUni() {
-        return method.returnType().name().equals(DOT_NAME_UNI);
+        return method.returnType().name().equals(DotNames.UNI);
     }
 
     public boolean isReturningMulti() {
-        return method.returnType().name().equals(DOT_NAME_MULTI);
+        return method.returnType().name().equals(DotNames.MULTI);
     }
 
     public Type getContentType() {
@@ -55,7 +51,7 @@ public class HandlerDescriptor {
         if (type == null) {
             return false;
         }
-        return type.name().equals(DotName.createSimple(String.class.getName()));
+        return type.name().equals(io.quarkus.arc.processor.DotNames.STRING);
     }
 
     public boolean isContentTypeBuffer() {
@@ -63,7 +59,7 @@ public class HandlerDescriptor {
         if (type == null) {
             return false;
         }
-        return type.name().equals(DotName.createSimple(Buffer.class.getName()));
+        return type.name().equals(DotNames.BUFFER);
     }
 
     public boolean isContentTypeRxBuffer() {

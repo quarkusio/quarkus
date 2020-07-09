@@ -51,6 +51,7 @@
         <module>hibernate-reactive-postgresql</module>
         <module>hibernate-search-elasticsearch</module>
         <module>hibernate-tenancy</module>
+        <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
         <module>vertx</module>
         <module>spring-di</module>

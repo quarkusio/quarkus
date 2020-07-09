@@ -437,6 +437,7 @@ jobs:
               flyway
               hibernate-orm-panache
               hibernate-orm-panache-kotlin
+              hibernate-orm-envers
               liquibase
           - category: Data4
             neo4j: "true"

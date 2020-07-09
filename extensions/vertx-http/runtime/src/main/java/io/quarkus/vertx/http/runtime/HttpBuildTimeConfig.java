@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.vertx.http.runtime.logging.RequestLoggerConfig;
 import io.vertx.core.http.ClientAuth;
 
 @ConfigRoot(name = "http", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -35,4 +36,6 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "/quarkus")
     public String consolePath;
+
+    public RequestLoggerConfig requestLogger;
 }

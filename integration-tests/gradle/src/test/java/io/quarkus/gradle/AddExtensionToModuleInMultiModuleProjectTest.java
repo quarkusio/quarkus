@@ -28,6 +28,9 @@ public class AddExtensionToModuleInMultiModuleProjectTest extends QuarkusGradleW
         final Path appBuild = projectDir.toPath().resolve("application").resolve("build.gradle");
         assertThat(appBuild).exists();
         assertThat(readFile(appBuild)).contains("implementation 'io.quarkus:quarkus-hibernate-orm'");
+
+        runGradleWrapper(projectDir, ":application:removeExtension", "--extensions=hibernate-orm");
+        assertThat(readFile(appBuild)).doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
     }
 
     private static String readFile(Path file) throws IOException {

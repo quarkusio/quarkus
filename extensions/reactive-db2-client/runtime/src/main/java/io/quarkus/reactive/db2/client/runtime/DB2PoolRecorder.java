@@ -5,6 +5,8 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
@@ -20,6 +22,8 @@ import io.vertx.sqlclient.PoolOptions;
 
 @Recorder
 public class DB2PoolRecorder {
+
+    private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
 
     public RuntimeValue<DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -103,7 +107,11 @@ public class DB2PoolRecorder {
         }
 
         if (dataSourceReactiveDB2Config.cachePreparedStatements.isPresent()) {
+            log.warn(
+                    "datasource.reactive.db2.cache-prepared-statements is deprecated, use datasource.reactive.cache-prepared-statements instead");
             connectOptions.setCachePreparedStatements(dataSourceReactiveDB2Config.cachePreparedStatements.get());
+        } else {
+            connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
         }
 
         return connectOptions;

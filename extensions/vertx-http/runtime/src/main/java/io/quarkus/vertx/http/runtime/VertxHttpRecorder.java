@@ -436,6 +436,7 @@ public class VertxHttpRecorder {
         try {
 
             String deploymentId = futureResult.get();
+            VertxCoreRecorder.setWebDeploymentId(deploymentId);
             closeTask = new Runnable() {
                 @Override
                 public synchronized void run() {

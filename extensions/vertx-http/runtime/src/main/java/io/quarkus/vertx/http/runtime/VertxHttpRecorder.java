@@ -160,9 +160,15 @@ public class VertxHttpRecorder {
             // the server start to fail
             hotReplacementHandler = prevHotReplacementHandler;
         }
-        VertxConfiguration vertxConfiguration = new VertxConfiguration();
-        ConfigInstantiator.handleObject(vertxConfiguration);
-        Vertx vertx = VertxCoreRecorder.initialize(vertxConfiguration, null);
+        Supplier<Vertx> supplier = VertxCoreRecorder.getVertx();
+        Vertx vertx;
+        if (supplier == null) {
+            VertxConfiguration vertxConfiguration = new VertxConfiguration();
+            ConfigInstantiator.handleObject(vertxConfiguration);
+            vertx = VertxCoreRecorder.initialize(vertxConfiguration, null);
+        } else {
+            vertx = supplier.get();
+        }
 
         try {
             HttpBuildTimeConfig buildConfig = new HttpBuildTimeConfig();

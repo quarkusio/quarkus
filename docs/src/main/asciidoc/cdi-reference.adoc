@@ -195,6 +195,7 @@ public class CounterBean {
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
+* `@Interceptors` is not supported
 
 [[nonstandard_features]]
 == Non-standard Features

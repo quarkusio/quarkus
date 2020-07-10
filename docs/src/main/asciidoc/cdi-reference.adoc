@@ -15,6 +15,8 @@ Quarkus DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
+TIP: If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] first. 
+
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
 [[bean_discovery]]
@@ -194,6 +196,7 @@ public class CounterBean {
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
 
+[[nonstandard_features]]
 == Non-standard Features
 
 === Eager Instantiation of Beans
@@ -657,6 +660,7 @@ This situation is very common when trying to use CDI with alternative JVM langua
 
 Quarkus however, can overcome these limitations when `quarkus.arc.transform-unproxyable-classes` is set to `true` (which is the default value).
 
+[[build_time_apis]]
 == Build Time Extension Points
 
 [[portable_extensions]]

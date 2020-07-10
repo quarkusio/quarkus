@@ -137,7 +137,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public String uri() {
         if (!modified) {
-            return delegate.uri();
+            return forwardedParser.uri();
         }
         return uri;
     }

@@ -52,6 +52,7 @@ class ForwardedParser {
     private String host;
     private int port = -1;
     private String scheme;
+    private String uri;
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
@@ -93,11 +94,19 @@ class ForwardedParser {
         return remoteAddress;
     }
 
+    String uri() {
+        if (!calculated)
+            calculate();
+
+        return uri;
+    }
+
     private void calculate() {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
         setHostAndPort(delegate.host(), port);
+        uri = delegate.uri();
 
         String forwardedSsl = delegate.getHeader(X_FORWARDED_SSL);
         boolean isForwardedSslOn = forwardedSsl != null && forwardedSsl.equalsIgnoreCase("on");
@@ -140,6 +149,13 @@ class ForwardedParser {
                 }
             }
 
+            if (forwardingProxyOptions.enableForwardedPrefix) {
+                String prefixHeader = delegate.getHeader(forwardingProxyOptions.forwardedPrefixHeader);
+                if (prefixHeader != null) {
+                    uri = appendPrefixToUri(prefixHeader, uri);
+                }
+            }
+
             String portHeader = delegate.getHeader(X_FORWARDED_PORT);
             if (portHeader != null) {
                 port = parsePort(portHeader.split(",")[0], port);
@@ -157,7 +173,8 @@ class ForwardedParser {
 
         host = host + (port >= 0 ? ":" + port : "");
         delegate.headers().set(HttpHeaders.HOST, host);
-        absoluteURI = scheme + "://" + host + delegate.uri();
+        absoluteURI = scheme + "://" + host + uri;
+        log.debug("Recalculated absoluteURI to " + absoluteURI);
     }
 
     private void setHostAndPort(String hostToParse, int defaultPort) {
@@ -191,5 +208,30 @@ class ForwardedParser {
             log.error("Failed to parse a port from \"forwarded\"-type headers.");
             return defaultPort;
         }
+    }
+
+    private String appendPrefixToUri(String prefix, String uri) {
+        String parsed = stripSlashes(prefix);
+        return parsed.isEmpty() ? uri : '/' + parsed + uri;
+    }
+
+    private String stripSlashes(String uri) {
+        String result;
+        if (!uri.isEmpty()) {
+            int beginIndex = 0;
+            if (uri.startsWith("/")) {
+                beginIndex = 1;
+            }
+
+            int endIndex = uri.length();
+            if (uri.endsWith("/") && uri.length() > 1) {
+                endIndex = uri.length() - 1;
+            }
+            result = uri.substring(beginIndex, endIndex);
+        } else {
+            result = uri;
+        }
+
+        return result;
     }
 }

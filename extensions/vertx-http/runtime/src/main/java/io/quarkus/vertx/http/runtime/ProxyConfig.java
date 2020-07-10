@@ -34,4 +34,15 @@ public class ProxyConfig {
     @ConfigItem(defaultValue = "X-Forwarded-Host")
     public String forwardedHostHeader;
 
+    /**
+     * Enable prefix the received request's path with a forwarded prefix header.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableForwardedPrefix;
+
+    /**
+     * Configure the forwarded prefix header to be used if prefixing enabled.
+     */
+    @ConfigItem(defaultValue = "X-Forwarded-Prefix")
+    public String forwardedPrefixHeader;
 }

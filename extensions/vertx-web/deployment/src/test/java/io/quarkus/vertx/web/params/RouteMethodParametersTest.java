@@ -3,9 +3,12 @@ package io.quarkus.vertx.web.params;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -41,7 +44,13 @@ public class RouteMethodParametersTest {
         when().get("/hello-response-nonvoid?name=foo").then().statusCode(200).body(is("Hello foo!"));
         when().get("/hello-all").then().statusCode(200).body(is("ok"));
         when().get("/hello-params?name=foo&identifier=10").then().statusCode(200).body(is("Hello foo! Your id is 10"));
+        when().get("/hello/42?name=foo&identifier=10").then().statusCode(200)
+                .body(is("Hello 42! Your name is foo and id is 10"));
+        when().get("/hello-multiple-params?id=foo&id=10").then().statusCode(200)
+                .body(is("foo,10"));
         given().header("My-Header", "fooooo").get("/hello-header").then().statusCode(200).body(is("fooooo"));
+        given().header("My-Header", "fooooo").header("My-Header", "baaar").get("/hello-multiple-headers").then().statusCode(200)
+                .body(is("fooooo,baaar"));
         given().contentType("application/json").body("{\"name\":\"Eleven\"}")
                 .post("/hello-body").then().statusCode(200).body("name", is("Eleven"))
                 .body("id", is(11));
@@ -101,9 +110,25 @@ public class RouteMethodParametersTest {
             return "Hello " + name.orElse("world") + "! Your id is " + id;
         }
 
+        @Route(path = "hello/:id")
+        String helloPathParam(@Param String id, @Param String name, @Param String identifier) {
+            return "Hello " + id + "! Your name is " + name + " and id is " + identifier;
+        }
+
         @Route
-        String helloHeader(@Header("My-Header") String header) {
-            return header;
+        String helloMultipleParams(@Param("id") List<String> ids) {
+            return ids.stream().collect(Collectors.joining(","));
+        }
+
+        @Route
+        String helloHeader(@Header("My-Header") String myHeader, @Header Optional<String> missingHeader) {
+            assertFalse(missingHeader.isPresent());
+            return myHeader;
+        }
+
+        @Route
+        String helloMultipleHeaders(@Header("My-Header") List<String> headers) {
+            return headers.stream().collect(Collectors.joining(","));
         }
 
         @Route(produces = "application/json")

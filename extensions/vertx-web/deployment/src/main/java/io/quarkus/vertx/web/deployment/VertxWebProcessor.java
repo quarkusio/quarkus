@@ -988,6 +988,8 @@ class VertxWebProcessor {
         injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
                 .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
                         new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .matchType(ParameterizedType.create(DotNames.LIST,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
                 .requireAnnotations(PARAM)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
@@ -1001,22 +1003,35 @@ class VertxWebProcessor {
                             paramName = method.parameterName(position);
                         }
                         if (paramName == null) {
-                            throw new IllegalStateException(
-                                    "Unable to determine the parameter name at position " + position + " in method " + method);
+                            throw parameterNameNotAvailable(position, method);
                         }
-                        // routingContext.request().getParam(paramName)
-                        ResultHandle paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_PARAM, invoke
-                                .invokeInterfaceMethod(Methods.REQUEST,
-                                        routingContext),
-                                invoke.load(paramName));
-                        if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
-                            paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                        ResultHandle paramHandle;
+                        if (paramType.name().equals(DotNames.LIST)) {
+                            // routingContext.request().params().getAll(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                                    invoke.invokeInterfaceMethod(Methods.REQUEST_PARAMS, invoke
+                                            .invokeInterfaceMethod(Methods.REQUEST,
+                                                    routingContext)),
+                                    invoke.load(paramName));
+                        } else {
+                            // routingContext.request().getParam(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_PARAM, invoke
+                                    .invokeInterfaceMethod(Methods.REQUEST,
+                                            routingContext),
+                                    invoke.load(paramName));
+                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
+                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                            }
                         }
                         return paramHandle;
                     }
                 }).build());
 
         injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .matchType(ParameterizedType.create(DotNames.LIST,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
                 .requireAnnotations(DotNames.HEADER)
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
@@ -1030,16 +1045,26 @@ class VertxWebProcessor {
                             paramName = method.parameterName(position);
                         }
                         if (paramName == null) {
-                            throw new IllegalStateException(
-                                    "Unable to determine the parameter name at position " + position + " in method " + method);
+                            throw parameterNameNotAvailable(position, method);
                         }
-                        // routingContext.request().getHeader(paramName)
-                        ResultHandle paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_HEADER, invoke
-                                .invokeInterfaceMethod(Methods.REQUEST,
-                                        routingContext),
-                                invoke.load(paramName));
-                        if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
-                            paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                        ResultHandle paramHandle;
+                        if (paramType.name().equals(DotNames.LIST)) {
+                            // routingContext.request().headers().getAll(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                                    invoke.invokeInterfaceMethod(Methods.REQUEST_HEADERS, invoke
+                                            .invokeInterfaceMethod(Methods.REQUEST,
+                                                    routingContext)),
+                                    invoke.load(paramName));
+                        } else {
+                            // routingContext.request().getHeader(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_HEADER, invoke
+                                    .invokeInterfaceMethod(Methods.REQUEST,
+                                            routingContext),
+                                    invoke.load(paramName));
+                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
+                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                            }
+
                         }
                         return paramHandle;
                     }
@@ -1090,6 +1115,13 @@ class VertxWebProcessor {
                         }).build());
 
         return injectors;
+    }
+
+    private static IllegalStateException parameterNameNotAvailable(int position, MethodInfo method) {
+        return new IllegalStateException("Unable to determine the name of the parameter at position " + position + " in method "
+                + method.declaringClass().name() + "#" + method.name()
+                + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or specify the appropriate annotation value");
+
     }
 
     static class ParameterInjector {

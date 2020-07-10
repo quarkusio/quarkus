@@ -196,8 +196,18 @@ A route method can accept arguments of the following types:
 * `io.vertx.reactivex.core.http.HttpServerRequest`
 * `io.vertx.reactivex.core.http.HttpServerResponse`
 
-Furhtermore, it is possible to inject the `HttpServerRequest` parameters into a method parameter with type `java.lang.String`/`java.util.Optional<String>` and annotated with `@io.quarkus.vertx.web.Param`:
+Furthermore, it is possible to inject the `HttpServerRequest` parameters into a method parameter annotated with `@io.quarkus.vertx.web.Param`:
 
+[options="header",cols="1,1"]
+|===
+|Parameter Type   | Obtained via  
+//-------------
+|`java.lang.String`   |`routingContext.request().getParam()`   
+|`java.util.Optional<String>`   |`routingContext.request().getParam()`   
+|`java.util.List<String>`   |`routingContext.request().params().getAll()`
+|===
+
+.Request Parameter Example
 [source,java]
 ----
 @Route
@@ -206,8 +216,18 @@ String hello(@Param Optional<String> name) {
 }
 ----
 
-The `HttpServerRequest` headers can be injected into a method parameter with type `java.lang.String`/`java.util.Optional<String>` and annotated with `@io.quarkus.vertx.web.Header`: 
+The `HttpServerRequest` headers can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Header`: 
 
+[options="header",cols="1,1"]
+|===
+|Parameter Type   | Obtained via  
+//-------------
+|`java.lang.String`   |`routingContext.request().getHeader()`   
+|`java.util.Optional<String>`   |`routingContext.request().getHeader()`   
+|`java.util.List<String>`   |`routingContext.request().headers().getAll()`
+|===
+
+.Request Header Example
 [source,java]
 ----
 @Route
@@ -229,6 +249,7 @@ The request body can be injected into a method parameter annotated with `@io.qua
 |any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`   
 |===
 
+.Request Body Example
 [source,java]
 ----
 @Route(produces = "application/json")

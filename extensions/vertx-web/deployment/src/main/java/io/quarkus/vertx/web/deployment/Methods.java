@@ -1,5 +1,6 @@
 package io.quarkus.vertx.web.deployment;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -42,6 +43,8 @@ class Methods {
             .ofMethod(MultiMap.class, "get", String.class, String.class);
     static final MethodDescriptor MULTIMAP_SET = MethodDescriptor
             .ofMethod(MultiMap.class, "set", MultiMap.class, String.class, String.class);
+    static final MethodDescriptor MULTIMAP_GET_ALL = MethodDescriptor
+            .ofMethod(MultiMap.class, "getAll", List.class, String.class);
 
     static final MethodDescriptor REQUEST = MethodDescriptor
             .ofMethod(RoutingContext.class, "request", HttpServerRequest.class);
@@ -59,6 +62,10 @@ class Methods {
             .ofMethod(RoutingContext.class, "getBodyAsJsonArray", JsonArray.class);
     static final MethodDescriptor JSON_OBJECT_MAP_TO = MethodDescriptor
             .ofMethod(JsonObject.class, "mapTo", Object.class, Class.class);
+    static final MethodDescriptor REQUEST_PARAMS = MethodDescriptor
+            .ofMethod(HttpServerRequest.class, "params", MultiMap.class);
+    static final MethodDescriptor REQUEST_HEADERS = MethodDescriptor
+            .ofMethod(HttpServerRequest.class, "headers", MultiMap.class);
 
     static final MethodDescriptor RESPONSE = MethodDescriptor
             .ofMethod(RoutingContext.class, "response", HttpServerResponse.class);

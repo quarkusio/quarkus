@@ -1,5 +1,7 @@
 package io.quarkus.vertx.web.deployment;
 
+import java.util.List;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.vertx.web.Body;
@@ -42,5 +44,6 @@ final class DotNames {
     static final DotName ROUTE = DotName.createSimple(Route.class.getName());
     static final DotName JSON_OBJECT = DotName.createSimple(JsonObject.class.getName());
     static final DotName JSON_ARRAY = DotName.createSimple(JsonArray.class.getName());
+    static final DotName LIST = DotName.createSimple(List.class.getName());
 
 }

@@ -179,7 +179,7 @@ public class TaskBean {
     }
     
     // A new instance of MyJob is created by Quartz for every job execution
-    static class MyJob implements Job {
+    public static class MyJob implements Job {
     
        public void execute(JobExecutionContext context) throws JobExecutionException {
           Arc.container().instance(TaskBean.class).get(). performTask(); <3>

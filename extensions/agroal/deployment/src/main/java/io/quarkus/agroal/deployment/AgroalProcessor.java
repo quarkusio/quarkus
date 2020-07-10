@@ -260,22 +260,6 @@ class AgroalProcessor {
         }
     }
 
-    @BuildStep
-    void configureDataSources(BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig) {
-        if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
-            // No datasource has been configured so bail out
-            return;
-        }
-
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
-            jdbcDataSource.produce(new JdbcDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
-                    aggregatedBuildTimeConfigBuildItem.getResolvedDbKind(),
-                    DataSourceUtil.isDefault(aggregatedBuildTimeConfigBuildItem.getName())));
-        }
-    }
-
     private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,

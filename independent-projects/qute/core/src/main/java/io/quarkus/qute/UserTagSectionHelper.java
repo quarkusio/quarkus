@@ -13,6 +13,8 @@ public class UserTagSectionHelper implements SectionHelper {
 
     private static final String IT = "it";
 
+    private static final String NESTED = "nested";
+
     private final Supplier<Template> templateSupplier;
     private final Map<String, Expression> parameters;
 
@@ -28,8 +30,27 @@ public class UserTagSectionHelper implements SectionHelper {
             if (t1 != null) {
                 result.completeExceptionally(t1);
             } else {
-                // Execute the template with the params as the root context object
+
                 try {
+
+                    // Execute nested code for later usage in the user tag
+                    CompletableFuture<ResultNode> nestedResult = new CompletableFuture<>();
+                    context.execute(context.resolutionContext().createChild(r1, null)).whenComplete((r2, t2) -> {
+                        if (t2 != null) {
+                            result.completeExceptionally(t2);
+                        } else {
+                            nestedResult.complete(r2);
+                        }
+                    });
+                    if (result.isCompletedExceptionally()) {
+                        return;
+                    }
+
+                    StringBuilder sb = new StringBuilder();
+                    nestedResult.get().process((s) -> sb.append(s));
+                    r1.put(NESTED, sb.toString());
+
+                    // Execute the template with the params as the root context object
                     TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
                     tagTemplate.root.resolve(context.resolutionContext().createChild(r1, null))
                             .whenComplete((r2, t2) -> {

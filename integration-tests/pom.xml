@@ -31,6 +31,7 @@
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
+        <module>kafka-avro</module>
         <module>kafka-streams</module>
         <module>jpa</module>
         <module>jpa-db2</module>

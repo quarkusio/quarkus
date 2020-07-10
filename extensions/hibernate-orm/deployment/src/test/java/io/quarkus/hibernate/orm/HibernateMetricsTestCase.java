@@ -56,8 +56,10 @@ public class HibernateMetricsTestCase {
     @Test
     @Transactional
     public void testMetrics() {
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.queries.executed"));
-        assertEquals(0L, getCounterValueOrNull("hibernate-orm.entities.inserted"));
+        assertEquals(0L, getCounterValueOrNull("hibernate-orm.queries.executed",
+                new Tag("entityManagerFactory", "default")));
+        assertEquals(0L, getCounterValueOrNull("hibernate-orm.entities.inserted",
+                new Tag("entityManagerFactory", "default")));
         Arc.container().requestContext().activate();
         try {
             DummyEntity entity = new DummyEntity();
@@ -65,8 +67,10 @@ public class HibernateMetricsTestCase {
             em.persist(entity);
             em.flush();
             em.createQuery("from DummyEntity e").getResultList();
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.queries.executed"));
-            assertEquals(1L, getCounterValueOrNull("hibernate-orm.entities.inserted"));
+            assertEquals(1L, getCounterValueOrNull("hibernate-orm.queries.executed",
+                    new Tag("entityManagerFactory", "default")));
+            assertEquals(1L, getCounterValueOrNull("hibernate-orm.entities.inserted",
+                    new Tag("entityManagerFactory", "default")));
         } finally {
             Arc.container().requestContext().terminate();
         }

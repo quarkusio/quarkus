@@ -53,4 +53,11 @@ public class PostResource {
     public List<PostComment> findByPostId(@PathParam("id") Long id) {
         return postCommentRepository.findByPostId(id);
     }
+
+    @GET
+    @Produces("application/json")
+    @Path("/postComment/all")
+    public List<PostComment> findAll() {
+        return postCommentRepository.findAll();
+    }
 }

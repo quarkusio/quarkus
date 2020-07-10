@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -312,6 +313,15 @@ public class SmallRyeOpenApiProcessor {
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
         String defaultPath = config.getValue("quarkus.http.root-path", String.class);
+
+        Optional<String> resteasyPath = config.getOptionalValue("quarkus.resteasy.path", String.class);
+        if (resteasyPath.isPresent()) {
+            if (defaultPath == null || defaultPath.equals("/")) {
+                defaultPath = resteasyPath.get();
+            } else {
+                defaultPath += resteasyPath.get();
+            }
+        }
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
         // Add RestEasy if jaxrs

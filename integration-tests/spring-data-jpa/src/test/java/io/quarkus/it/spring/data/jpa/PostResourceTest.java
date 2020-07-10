@@ -61,4 +61,11 @@ public class PostResourceTest {
                 .statusCode(200)
                 .body("size()", is(0));
     }
+
+    @Test
+    void testAllPostComment() {
+        when().get("/post/postComment/all").then()
+                .statusCode(200)
+                .body("size()", is(2));
+    }
 }

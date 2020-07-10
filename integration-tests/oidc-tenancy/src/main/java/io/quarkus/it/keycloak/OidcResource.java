@@ -67,6 +67,13 @@ public class OidcResource {
     }
 
     @POST
+    @Path("jwk-endpoint-call-count")
+    public int resetJwkEndpointCallCount() {
+        jwkEndpointCallCount = 0;
+        return jwkEndpointCallCount;
+    }
+
+    @POST
     @Produces("application/json")
     @Path("introspect")
     public String introspect() {

@@ -33,15 +33,8 @@ public class OidcTenantConfig {
     public ApplicationType applicationType;
 
     /**
-     * The maximum amount of time the adapter will try connecting to the currently unavailable OIDC server for.
-     * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
-     */
-    @ConfigItem
-    public Optional<Duration> connectionDelay = Optional.empty();
-
-    /**
      * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
-     * OIDC discovery endpoint will be called by appending a '/.well-known/openid-configuration' path segment to this URL.
+     * OIDC discovery endpoint will be called by default by appending a '.well-known/openid-configuration' path to this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
      * 'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.
      */
@@ -49,25 +42,77 @@ public class OidcTenantConfig {
     public Optional<String> authServerUrl = Optional.empty();
 
     /**
-     * Relative path of the RFC7662 introspection service.
+     * Enables OIDC discovery.
+     * If the discovery is disabled then the following properties must be configured:
+     * - 'authorization-path' and 'token-path' for the 'web-app' applications
+     * - 'jwks-path' or 'introspection-path' for both the 'web-app' and 'service' applications
+     * <p>
+     * 'web-app' applications may also have 'user-info-path' and 'end-session-path' properties configured.
      */
+    @ConfigItem(defaultValue = "true")
+    public boolean discoveryEnabled = true;
 
+    /**
+     * Relative path of the OIDC authorization endpoint which authenticates the users.
+     * This property must be set for the 'web-app' applications if OIDC discovery is disabled.
+     * This property will be ignored if the discovery is enabled.
+     */
+    @ConfigItem
+    public Optional<String> authorizationPath = Optional.empty();
+
+    /**
+     * Relative path of the OIDC token endpoint which issues ID, access and refresh tokens.
+     * This property must be set for the 'web-app' applications if OIDC discovery is disabled.
+     * This property will be ignored if the discovery is enabled.
+     */
+    @ConfigItem
+    public Optional<String> tokenPath = Optional.empty();
+
+    /**
+     * Relative path of the OIDC userinfo endpoint.
+     * This property must only be set for the 'web-app' applications if OIDC discovery is disabled
+     * and 'authentication.user-info-required' property is enabled.
+     * This property will be ignored if the discovery is enabled.
+     */
+    @ConfigItem
+    public Optional<String> userInfoPath = Optional.empty();
+
+    /**
+     * Relative path of the OIDC RFC7662 introspection endpoint which can introspect both opaque and JWT tokens.
+     * This property must be set if OIDC discovery is disabled and 1) the opaque bearer access tokens have to be verified
+     * or 2) JWT tokens have to be verified while the cached JWK verification set with no matching JWK is being refreshed.
+     * This property will be ignored if the discovery is enabled.
+     */
     @ConfigItem
     public Optional<String> introspectionPath = Optional.empty();
 
     /**
-     * Relative path of the OIDC service returning a JWK set.
+     * Relative path of the OIDC JWKS endpoint which returns a JSON Web Key Verification Set.
+     * This property should be set if OIDC discovery is disabled and the local JWT verification is required.
+     * This property will be ignored if the discovery is enabled.
      */
     @ConfigItem
     public Optional<String> jwksPath = Optional.empty();
 
     /**
      * Relative path of the OIDC end_session_endpoint.
+     * This property must be set if OIDC discovery is disabled and RP Initiated Logout support for the 'web-app' applications is
+     * required.
+     * This property will be ignored if the discovery is enabled.
      */
     @ConfigItem
     public Optional<String> endSessionPath = Optional.empty();
+
+    /**
+     * The maximum amount of time the adapter will try connecting to the currently unavailable OIDC server for.
+     * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
+     */
+    @ConfigItem
+    public Optional<Duration> connectionDelay = Optional.empty();
+
     /**
      * Public key for the local JWT token verification.
+     * OIDC server connection will not be created when this property is set.
      */
     @ConfigItem
     public Optional<String> publicKey = Optional.empty();
@@ -200,6 +245,30 @@ public class OidcTenantConfig {
         this.authServerUrl = Optional.of(authServerUrl);
     }
 
+    public Optional<String> getAuthorizationPath() {
+        return authorizationPath;
+    }
+
+    public void setAuthorizationPath(String authorizationPath) {
+        this.authorizationPath = Optional.of(authorizationPath);
+    }
+
+    public Optional<String> getTokenPath() {
+        return tokenPath;
+    }
+
+    public void setTokenPath(String tokenPath) {
+        this.tokenPath = Optional.of(tokenPath);
+    }
+
+    public Optional<String> getUserInfoPath() {
+        return userInfoPath;
+    }
+
+    public void setUserInfoPath(String userInfoPath) {
+        this.userInfoPath = Optional.of(userInfoPath);
+    }
+
     public Optional<String> getIntrospectionPath() {
         return introspectionPath;
     }
@@ -278,6 +347,22 @@ public class OidcTenantConfig {
 
     public void setTenantId(String tenantId) {
         this.tenantId = Optional.of(tenantId);
+    }
+
+    public boolean isTenantEnabled() {
+        return tenantEnabled;
+    }
+
+    public void setTenantEnabled(boolean enabled) {
+        this.tenantEnabled = enabled;
+    }
+
+    public boolean isDiscoveryEnabled() {
+        return discoveryEnabled;
+    }
+
+    public void setDiscoveryEnabled(boolean enabled) {
+        this.discoveryEnabled = enabled;
     }
 
     public Proxy getProxy() {

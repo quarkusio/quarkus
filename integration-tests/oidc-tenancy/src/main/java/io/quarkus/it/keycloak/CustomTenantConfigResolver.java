@@ -24,12 +24,21 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             OidcTenantConfig config = new OidcTenantConfig();
             config.setTenantId("tenant-oidc");
             String uri = context.request().absoluteURI();
-            String keycloakUri = path.contains("tenant-opaque")
+            String authServerUri = path.contains("tenant-opaque")
                     ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
                     : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
-            config.setAuthServerUrl(keycloakUri);
+            config.setAuthServerUrl(authServerUri);
             config.setClientId("client");
-            config.getCredentials().setSecret("secret");
+            return config;
+        } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("tenant-oidc-no-discovery");
+            String uri = context.request().absoluteURI();
+            String authServerUri = uri.replace("/tenant/tenant-oidc-no-discovery/api/user", "/oidc");
+            config.setAuthServerUrl(authServerUri);
+            config.setDiscoveryEnabled(false);
+            config.setJwksPath("jwks");
+            config.setClientId("client");
             return config;
         }
         return null;

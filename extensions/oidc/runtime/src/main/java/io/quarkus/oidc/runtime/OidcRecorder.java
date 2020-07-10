@@ -3,8 +3,8 @@ package io.quarkus.oidc.runtime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -19,6 +19,8 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -109,14 +111,41 @@ public class OidcRecorder {
             authServerUrl = authServerUrl.substring(0, authServerUrl.length() - 1);
         }
         options.setSite(authServerUrl);
-        // RFC7662 introspection service address
-        if (oidcConfig.getIntrospectionPath().isPresent()) {
-            options.setIntrospectionPath(oidcConfig.getIntrospectionPath().get());
-        }
 
-        // RFC7662 JWKS service address
-        if (oidcConfig.getJwksPath().isPresent()) {
-            options.setJwkPath(oidcConfig.getJwksPath().get());
+        if (!oidcConfig.discoveryEnabled) {
+            if (ApplicationType.WEB_APP.equals(oidcConfig.applicationType)) {
+                if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
+                    throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
+                            + "set when the discovery is disabled.");
+                }
+                // These endpoints can only be used with the code flow
+                if (oidcConfig.getAuthorizationPath().isPresent()) {
+                    options.setAuthorizationPath(authServerUrl + prependSlash(oidcConfig.getAuthorizationPath().get()));
+                }
+
+                if (oidcConfig.getTokenPath().isPresent()) {
+                    options.setTokenPath(authServerUrl + prependSlash(oidcConfig.getTokenPath().get()));
+                }
+
+                if (oidcConfig.getUserInfoPath().isPresent()) {
+                    options.setUserInfoPath(authServerUrl + prependSlash(oidcConfig.getUserInfoPath().get()));
+                }
+            }
+
+            // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
+            if (!oidcConfig.jwksPath.isPresent() && !oidcConfig.introspectionPath.isPresent()) {
+                throw new OIDCException(
+                        "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.");
+            }
+
+            if (oidcConfig.getIntrospectionPath().isPresent()) {
+                options.setIntrospectionPath(authServerUrl + prependSlash(oidcConfig.getIntrospectionPath().get()));
+            }
+
+            if (oidcConfig.getJwksPath().isPresent()) {
+                options.setJwkPath(authServerUrl + prependSlash(oidcConfig.getJwksPath().get()));
+            }
+
         }
 
         Credentials creds = oidcConfig.getCredentials();
@@ -179,19 +208,11 @@ public class OidcRecorder {
         OAuth2Auth auth = null;
         for (long i = 0; i < connectionRetryCount; i++) {
             try {
-                CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
-                KeycloakAuth.discover(vertx, options, new Handler<AsyncResult<OAuth2Auth>>() {
-                    @Override
-                    public void handle(AsyncResult<OAuth2Auth> event) {
-                        if (event.failed()) {
-                            cf.completeExceptionally(toOidcException(event.cause()));
-                        } else {
-                            cf.complete(event.result());
-                        }
-                    }
-                });
-
-                auth = cf.join();
+                if (oidcConfig.discoveryEnabled) {
+                    auth = discoverOidcEndpoints(vertx, options);
+                } else {
+                    auth = setOidcEndpoints(vertx, options);
+                }
 
                 break;
             } catch (Throwable throwable) {
@@ -227,8 +248,50 @@ public class OidcRecorder {
         return new TenantConfigContext(auth, oidcConfig);
     }
 
+    private static String prependSlash(String path) {
+        return !path.startsWith("/") ? "/" + path : path;
+    }
+
+    private static OAuth2Auth discoverOidcEndpoints(Vertx vertx, OAuth2ClientOptions options) {
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OAuth2Auth>>() {
+            public void accept(UniEmitter<? super OAuth2Auth> uniEmitter) {
+                KeycloakAuth.discover(vertx, options, new Handler<AsyncResult<OAuth2Auth>>() {
+                    @Override
+                    public void handle(AsyncResult<OAuth2Auth> event) {
+                        if (event.failed()) {
+                            uniEmitter.fail(toOidcException(event.cause()));
+                        } else {
+                            uniEmitter.complete(event.result());
+                        }
+                    }
+                });
+            }
+        }).await().indefinitely();
+    }
+
+    private static OAuth2Auth setOidcEndpoints(Vertx vertx, OAuth2ClientOptions options) {
+        if (options.getJwkPath() != null) {
+            return Uni.createFrom().emitter(new Consumer<UniEmitter<? super OAuth2Auth>>() {
+                @SuppressWarnings("deprecation")
+                @Override
+                public void accept(UniEmitter<? super OAuth2Auth> uniEmitter) {
+                    OAuth2Auth auth = OAuth2Auth.create(vertx, options);
+                    auth.loadJWK(res -> {
+                        if (res.failed()) {
+                            uniEmitter.fail(toOidcException(res.cause()));
+                        }
+                        uniEmitter.complete(auth);
+                    });
+                }
+            }).await().indefinitely();
+        } else {
+            return OAuth2Auth.create(vertx, options);
+        }
+    }
+
     @SuppressWarnings("deprecation")
-    private TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options, OidcTenantConfig oidcConfig) {
+    private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options,
+            OidcTenantConfig oidcConfig) {
         if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }

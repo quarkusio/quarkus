@@ -1,7 +1,10 @@
 package io.quarkus.qrs.runtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.ws.rs.core.MediaType;
@@ -52,7 +55,8 @@ public class QrsRecorder {
     }
 
     public Handler<RoutingContext> handler(List<ResourceClass> resourceClasses) {
-        List<RequestMapper.RequestPath<RuntimeResource>> templates = new ArrayList<>();
+        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
+        Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
         for (ResourceClass clazz : resourceClasses) {
             for (ResourceMethod method : clazz.getMethods()) {
                 List<RestHandler> handlers = new ArrayList<>();
@@ -68,10 +72,22 @@ public class QrsRecorder {
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()), method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()), invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                         loadClass(method.getReturnType()));
-                templates.add(new RequestMapper.RequestPath<>(resource.getPath(), resource));
+                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
+                if (list == null) {
+                    templates.put(method.getMethod(), list = new ArrayList<>());
+                }
+                list.add(new RequestMapper.RequestPath<>(resource.getPath(), resource));
             }
         }
-        return new QrsInitialHandler(new RequestMapper<>(templates));
+        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod=templates.remove(null);
+        if (nullMethod == null) {
+            nullMethod = Collections.emptyList();
+        }
+        for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : templates.entrySet()) {
+            i.getValue().addAll(nullMethod);
+            mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
+        }
+        return new QrsInitialHandler(mappersByMethod);
     }
 
     private static Class<?> loadClass(String name) {

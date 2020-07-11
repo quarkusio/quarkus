@@ -38,7 +38,7 @@ public class ResourceMethod {
 
     private String returnType;
 
-    private String[] parameters;
+    private MethodParameter[] parameters;
 
     public boolean isResourceLocator() {
         return method == null;
@@ -98,11 +98,11 @@ public class ResourceMethod {
         return this;
     }
 
-    public String[] getParameters() {
+    public MethodParameter[] getParameters() {
         return parameters;
     }
 
-    public ResourceMethod setParameters(String[] parameters) {
+    public ResourceMethod setParameters(MethodParameter[] parameters) {
         this.parameters = parameters;
         return this;
     }
@@ -115,4 +115,19 @@ public class ResourceMethod {
         this.invoker = invoker;
         return this;
     }
+
+    public static class MethodParameter {
+        public final String name;
+        public final String type;
+        public final ParameterType parameterType;
+
+        public MethodParameter(String name, String type, ParameterType parameterType) {
+            this.name = name;
+            this.type = type;
+            this.parameterType = parameterType;
+        }
+    }
+
+
+
 }

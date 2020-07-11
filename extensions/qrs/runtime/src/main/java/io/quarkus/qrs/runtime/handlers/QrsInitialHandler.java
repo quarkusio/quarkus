@@ -6,16 +6,23 @@ import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+import java.util.Map;
+
 public class QrsInitialHandler implements Handler<RoutingContext> {
 
-    final RequestMapper<RuntimeResource> mapper;
+    //TODO: this by method approach does not work for sub resource locators
+    final Map<String, RequestMapper<RuntimeResource>> mappers;
 
-    public QrsInitialHandler(RequestMapper<RuntimeResource> mapper) {
-        this.mapper = mapper;
+    public QrsInitialHandler(Map<String, RequestMapper<RuntimeResource>> mappers) {
+        this.mappers = mappers;
     }
 
     @Override
     public void handle(RoutingContext event) {
+        RequestMapper<RuntimeResource> mapper = mappers.get(event.request().method().name());
+        if (mapper == null) {
+            return;
+        }
         RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(event.normalisedPath());
         if (target == null) {
             event.next();

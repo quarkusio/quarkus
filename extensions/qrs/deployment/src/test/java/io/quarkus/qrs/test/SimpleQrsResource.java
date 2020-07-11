@@ -12,6 +12,12 @@ public class SimpleQrsResource {
         return "GET";
     }
 
+    @GET
+    @Path("{id}")
+    public String get(String id) {
+        return "GET:" + id;
+    }
+
     @POST
     public String post() {
         return "POST";

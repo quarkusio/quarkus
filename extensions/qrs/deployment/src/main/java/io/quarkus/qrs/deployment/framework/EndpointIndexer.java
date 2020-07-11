@@ -8,15 +8,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
-import io.quarkus.arc.processor.DotNames;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -65,7 +66,7 @@ public class EndpointIndexer {
             if (foundMethods != null) {
                 for (AnnotationInstance annotation : foundMethods) {
                     MethodInfo info = annotation.target().asMethod();
-                    String descriptor = AsmUtil.getDescriptor(info, s -> null);
+                    String descriptor = info.name() + ":" + AsmUtil.getDescriptor(info, s -> null);
                     if (seenMethods.contains(descriptor)) {
                         continue;
                     }
@@ -86,7 +87,15 @@ public class EndpointIndexer {
                             .setPath(methodPath)
                             .setConsumes(consumes)
                             .setName(info.name())
-                            .setParameters(info.parameters().stream().map(s -> s.asClassType().toString()).toArray(String[]::new))
+                            .setParameters(info.parameters().stream().map(new Function<Type, ResourceMethod.MethodParameter>() {
+                                @Override
+                                public ResourceMethod.MethodParameter apply(Type type) {
+                                    String paramType = type.asClassType().name().toString();
+                                    info.annotations()
+
+                                    return null;
+                                }
+                            }).toArray(ResourceMethod.MethodParameter[]::new))
                             .setReturnType(info.returnType().asClassType().toString())
                             .setProduces(produces);
 
@@ -117,7 +126,7 @@ public class EndpointIndexer {
             }
         }
         DotName superClassName = currentClassInfo.superName();
-        if ( superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
+        if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
                     generatedClassBuildItemBuildProducer, recorder));

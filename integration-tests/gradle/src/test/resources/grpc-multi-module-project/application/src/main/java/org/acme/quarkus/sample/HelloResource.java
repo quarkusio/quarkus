@@ -6,7 +6,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import examples.MutinyGreeterGrpc;
+import devmodetest.v1.Devmodetest;
 
 import org.acme.common.CommonBean;
 
@@ -19,8 +19,8 @@ public class HelloResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        // just to check if the class is available
-        MutinyGreeterGrpc.MutinyGreeterStub stub;
-        return "hello " + common.getName();
+        Integer number = Devmodetest.DevModeResponse.Status.TEST_ONE.getNumber();
+        // return a thing from proto file (for devmode test)
+        return "hello " + number;
     }
 }

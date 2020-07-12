@@ -73,25 +73,6 @@
                     <escapeString>\</escapeString>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
-                <version>${project.version}</version>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>validate-extensions-json</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                            <jsonGroupId>io.quarkus</jsonGroupId>
-                            <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
-                            <jsonVersion>${project.version}</jsonVersion>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -170,6 +151,37 @@
                         </configuration>
                     </plugin>
 
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>platform-descriptor-tests</id>
+            <activation>
+                <property>
+                    <name>!no-descriptor-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
+                        <version>${project.version}</version>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>validate-extensions-json</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skipTests}</skip>
+                                    <jsonGroupId>io.quarkus</jsonGroupId>
+                                    <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
+                                    <jsonVersion>${project.version}</jsonVersion>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
         </profile>

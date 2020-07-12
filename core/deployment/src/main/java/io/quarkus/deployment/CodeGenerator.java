@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import io.quarkus.bootstrap.model.AppModel;
@@ -17,18 +18,17 @@ public class CodeGenerator {
     // used by Gradle
     @SuppressWarnings("unused")
     public static void initAndRun(ClassLoader classLoader,
-            Path sourceParentDir, Path generatedSourcesDir, Path buildDir,
+            Set<Path> sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar,
             AppModel appModel) throws CodeGenException {
-        List<CodeGenData> generators = init(classLoader, sourceParentDir, generatedSourcesDir, buildDir, sourceRegistrar);
+        List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
             trigger(classLoader, generator, appModel);
         }
-
     }
 
     public static List<CodeGenData> init(ClassLoader deploymentClassLoader,
-            Path sourceParentDir,
+            Set<Path> sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
             Consumer<Path> sourceRegistrar) throws CodeGenException {
@@ -36,6 +36,7 @@ public class CodeGenerator {
             List<CodeGenData> result = new ArrayList<>();
             Class<? extends CodeGenProvider> codeGenProviderClass;
             try {
+                //noinspection unchecked
                 codeGenProviderClass = (Class<? extends CodeGenProvider>) deploymentClassLoader
                         .loadClass(CodeGenProvider.class.getName());
             } catch (ClassNotFoundException e) {
@@ -43,7 +44,10 @@ public class CodeGenerator {
             }
             for (CodeGenProvider provider : ServiceLoader.load(codeGenProviderClass)) {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
-                result.add(new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
+                for (Path sourceParentDir : sourceParentDirs) {
+                    result.add(
+                            new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
+                }
             }
 
             return result;

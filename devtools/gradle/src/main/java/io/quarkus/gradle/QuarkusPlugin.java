@@ -1,10 +1,12 @@
 package io.quarkus.gradle;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
@@ -134,12 +136,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                         quarkusPrepareTests.setSourceRegistrar(compileTestJavaTask::source);
                     }
 
-                    Path projectPath = project.getProjectDir().toPath();
-                    quarkusPrepare.setSourcesDirectory(projectPath.resolve("src").resolve("main"));
-                    quarkusPrepareTests.setSourcesDirectory(projectPath.resolve("src").resolve("test"));
-
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
+                    // TODO quarkusDev needs to depend on quarkusPrepare for code gen reload #10631
+                    // TODO but it causes strange failures on other gradle tests
                     quarkusDev.dependsOn(classesTask, resourcesTask);
                     quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
                     quarkusBuild.dependsOn(classesTask, resourcesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
@@ -149,6 +149,9 @@ public class QuarkusPlugin implements Plugin<Project> {
                     SourceSet nativeTestSourceSet = sourceSets.create(NATIVE_TEST_SOURCE_SET_NAME);
                     SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                     SourceSet testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME);
+
+                    quarkusPrepare.setSourcesDirectories(getSourcesParents(mainSourceSet));
+                    quarkusPrepareTests.setSourcesDirectories(getSourcesParents(testSourceSet));
 
                     nativeTestSourceSet.setCompileClasspath(
                             nativeTestSourceSet.getCompileClasspath()
@@ -174,6 +177,14 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.withType(Test.class).forEach(configureTestTask);
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
                 });
+    }
+
+    private Set<Path> getSourcesParents(SourceSet mainSourceSet) {
+        Set<File> srcDirs = mainSourceSet.getJava().getSrcDirs();
+        return srcDirs.stream()
+                .map(File::toPath)
+                .map(Path::getParent)
+                .collect(Collectors.toSet());
     }
 
     private void verifyGradleVersion() {

@@ -1,6 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -9,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
@@ -28,9 +28,9 @@ import io.quarkus.deployment.CodeGenerator;
 public class QuarkusPrepare extends QuarkusTask {
 
     public static final String INIT_AND_RUN = "initAndRun";
-    private Path sourcesDirectory;
+    private Set<Path> sourcesDirectories;
     private Consumer<Path> sourceRegistrar;
-    private boolean test = false; // mstodo test task!!!
+    private boolean test = false;
 
     public QuarkusPrepare() {
         super("Quarkus performs pre-build preparations, such as sources generation");
@@ -42,8 +42,6 @@ public class QuarkusPrepare extends QuarkusTask {
 
         final AppArtifact appArtifact = extension().getAppArtifact();
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
-        File fakeAppArtifact = getTemporaryDirFactory().create();
-        appArtifact.setPath(fakeAppArtifact.toPath());
 
         final AppModelResolver modelResolver = extension().getAppModelResolver();
 
@@ -76,8 +74,8 @@ public class QuarkusPrepare extends QuarkusTask {
                     throw new GradleException("Failed to create quarkus-generated-sources");
                 }
 
-                getLogger().info("Will trigger preparing sources for source directory: {} buildDir: {}",
-                        sourcesDirectory.toAbsolutePath(), getProject().getBuildDir().getAbsolutePath());
+                getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
+                        sourcesDirectories, getProject().getBuildDir().getAbsolutePath());
                 QuarkusClassLoader deploymentClassLoader = appCreationContext.createDeploymentClassLoader();
 
                 Class<?> codeGenerator = deploymentClassLoader.loadClass(CodeGenerator.class.getName());
@@ -89,7 +87,7 @@ public class QuarkusPrepare extends QuarkusTask {
                 }
 
                 initAndRun.get().invoke(null, deploymentClassLoader,
-                        sourcesDirectory,
+                        sourcesDirectories,
                         paths.iterator().next(),
                         buildDir,
                         sourceRegistrar,
@@ -100,8 +98,8 @@ public class QuarkusPrepare extends QuarkusTask {
         }
     }
 
-    public void setSourcesDirectory(Path sourcesDirectory) {
-        this.sourcesDirectory = sourcesDirectory;
+    public void setSourcesDirectories(Set<Path> sourcesDirectories) {
+        this.sourcesDirectories = sourcesDirectories;
     }
 
     public void setSourceRegistrar(Consumer<Path> sourceRegistrar) {

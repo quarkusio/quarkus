@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
@@ -69,7 +70,7 @@ public class CodeGenMojo extends AbstractMojo {
             return;
         }
         if (skipSourceGeneration) {
-            getLog().info("Skipping Quarkus build");
+            getLog().info("Skipping quarkus:" + (test ? "prepare-tests" : "prepare") + " (Quarkus code generation)");
             return;
         }
 
@@ -109,7 +110,7 @@ public class CodeGenMojo extends AbstractMojo {
 
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             List<CodeGenData> codeGens = CodeGenerator.init(deploymentClassLoader,
-                    sourcesDir,
+                    Collections.singleton(sourcesDir),
                     generatedSourcesDir,
                     buildDir.toPath(),
                     sourceRegistrar);

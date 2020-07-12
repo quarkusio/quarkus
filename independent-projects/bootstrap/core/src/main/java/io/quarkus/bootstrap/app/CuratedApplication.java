@@ -8,7 +8,6 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -303,9 +302,5 @@ public class CuratedApplication implements Serializable, Closeable {
         if (baseRuntimeClassLoader != null) {
             baseRuntimeClassLoader.close();
         }
-    }
-
-    public AppModelResolver getAppModelResolver() {
-        return quarkusBootstrap.getAppModelResolver();
     }
 }

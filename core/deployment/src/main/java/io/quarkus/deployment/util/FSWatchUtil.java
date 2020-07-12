@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -18,15 +20,23 @@ public class FSWatchUtil {
 
     private static final Logger log = Logger.getLogger(FSWatchUtil.class);
 
+    private static final List<ExecutorService> executors = new ArrayList<>();
+
     /**
      * in a loop, checks for modifications in the files
      * 
      * @param watchers list of {@link Watcher}s
      */
     public static void observe(Collection<Watcher> watchers,
-            long intervalMs) throws InterruptedException {
-        Map<Path, Long> lastModified = new HashMap<>();
+            long intervalMs) {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.execute(
+                () -> doObserve(watchers, intervalMs));
+        executors.add(executorService);
+    }
 
+    private static void doObserve(Collection<Watcher> watchers, long intervalMs) {
+        Map<Path, Long> lastModified = new HashMap<>();
         long lastCheck = 0;
         // we're assuming no changes between the compilation and first execution, so don't trigger the watcher on first run
         boolean firstRun = true;
@@ -34,7 +44,8 @@ public class FSWatchUtil {
         while (true) {
             for (Watcher watcher : watchers) {
                 try {
-                    List<Path> matchingPaths = Files.walk(watcher.rootPath)
+                    Path rootPath = watcher.rootPath;
+                    List<Path> matchingPaths = Files.walk(rootPath)
                             .filter(path -> FilenameUtils.getExtension(path.toString()).equals(watcher.fileExtension))
                             .collect(Collectors.toList());
                     List<Path> changedFiles = new ArrayList<>();
@@ -50,18 +61,27 @@ public class FSWatchUtil {
                         watcher.action.accept(changedFiles);
                     }
                 } catch (IOException e) {
-                    log.warn("Failed checking for code gen source modifications", e);
+                    log.debug("Failed checking for code gen source modifications", e);
                 }
             }
 
             long toSleep = intervalMs - (System.currentTimeMillis() - lastCheck);
             if (toSleep > 0) {
-                //noinspection BusyWait
-                Thread.sleep(toSleep);
+                try {
+                    //noinspection BusyWait
+                    Thread.sleep(toSleep);
+                } catch (InterruptedException e) {
+                    log.debug("Watching for code gen interrupted");
+                }
             }
             lastCheck = System.currentTimeMillis();
             firstRun = false;
         }
+    }
+
+    public static void shutdown() {
+        executors.forEach(ExecutorService::shutdown);
+        executors.clear();
     }
 
     public static class Watcher {

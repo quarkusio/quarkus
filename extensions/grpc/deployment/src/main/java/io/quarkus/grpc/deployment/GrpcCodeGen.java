@@ -82,7 +82,8 @@ public class GrpcCodeGen implements CodeGenProvider {
                             .start();
                     int resultCode = process.waitFor();
                     if (resultCode != 0) {
-                        throw new CodeGenException("Failed to generate Java classes from proto file: " + protoFiles);
+                        throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
+                                " to " + outDir.toAbsolutePath().toString());
                     }
                     return true;
                 }
@@ -164,7 +165,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private static Path prepareQuarkusGrpcExecutable(AppModel appModel, Path buildDir) throws CodeGenException {
-        Path pluginPath = findArtifactPath(appModel, "io.quarkus", "quarkus-grpc-protoc-plugin", "", "jar");
+        Path pluginPath = findArtifactPath(appModel, "io.quarkus", "quarkus-grpc-protoc-plugin", "shaded", "jar");
         if (pluginPath == null) {
             throw new CodeGenException("Failed to find Quarkus gRPC protoc plugin among dependencies");
         }
@@ -172,7 +173,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         if (OS.determineOS() != OS.WINDOWS) {
             return writeScript(buildDir, pluginPath, "#!/bin/sh\n", ".sh");
         } else {
-            return writeScript(buildDir, pluginPath, "", ".cmd");
+            return writeScript(buildDir, pluginPath, "@echo off\r\n", ".cmd");
         }
     }
 

@@ -113,4 +113,11 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Map<String, String> placeholders = Collections.emptyMap();
+
+    /**
+     * Whether Flyway should attempt to create the schemas specified in the schemas property
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean createSchemas;
+
 }

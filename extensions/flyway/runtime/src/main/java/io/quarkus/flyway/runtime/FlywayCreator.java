@@ -49,6 +49,7 @@ class FlywayCreator {
             configure.baselineDescription(flywayRuntimeConfig.baselineDescription.get());
         }
         configure.placeholders(flywayRuntimeConfig.placeholders);
+        configure.createSchemas(flywayRuntimeConfig.createSchemas);
 
         /*
          * Ensure that no classpath scanning takes place by setting the ClassProvider and the ResourceProvider

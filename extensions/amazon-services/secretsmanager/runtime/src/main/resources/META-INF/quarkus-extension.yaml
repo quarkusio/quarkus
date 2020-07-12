@@ -1,0 +1,11 @@
+---
+name: "Amazon Secrets Manager"
+metadata:
+  keywords:
+    - "secretsmanager"
+    - "aws"
+    - "amazon"
+  guide: "https://quarkus.io/guides/amazon-secretsmanager"
+  categories:
+    - "data"
+  status: "preview"

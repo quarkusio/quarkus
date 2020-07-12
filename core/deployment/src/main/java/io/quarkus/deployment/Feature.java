@@ -17,6 +17,7 @@ public enum Feature {
     AMAZON_SQS,
     AMAZON_SES,
     AMAZON_KMS,
+    AMAZON_SECRETS_MANAGER,
     ARTEMIS_CORE,
     ARTEMIS_JMS,
     CACHE,

@@ -22,5 +22,6 @@
         <module>sqs</module>
         <module>ses</module>
         <module>kms</module>
+        <module>secretsmanager</module>
     </modules>
 </project>

@@ -527,6 +527,23 @@ public class S3AsyncClientResource extends CommonResource {
 }
 ----
 
+You need the RESTEasy Mutiny support for asynchronous programming. Add the dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
+----
+
 And add the Netty HTTP client dependency to the `pom.xml`:
 
 [source,xml]

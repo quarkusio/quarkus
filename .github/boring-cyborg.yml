@@ -84,7 +84,7 @@ labelPRBasedOnFilePath:
     area/core:
         - core/**/*
     area/dependencies:
-        - .dependabot/config.yml
+        - .github/dependabot.yml
         - bom/**/*
         - build-parent/**/*
     area/devtools:

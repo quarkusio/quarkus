@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
@@ -171,7 +172,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "${my.prop}");
 
-            assertEquals("1", config.getRawValue("my.prop"));
+            assertThrows(IllegalArgumentException.class, () -> config.getRawValue("my.prop"));
         } finally {
             System.clearProperty("quarkus-profile");
             System.clearProperty("my.prop");

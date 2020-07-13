@@ -51,7 +51,7 @@ public class HibernateReactiveTestEndpoint {
         return mutinySession
                 .flatMap(session -> {
                     return populateDB()
-                            .onItem().produceUni(junk -> session.find(GuineaPig.class, expectedPig.getId()));
+                            .then(() -> session.find(GuineaPig.class, expectedPig.getId()));
                 });
     }
 

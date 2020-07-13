@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -45,6 +46,13 @@ public class MutinyMailerImpl implements ReactiveMailer {
     @Inject
     MailerSupport mailerSupport;
 
+    private static final Function<List<?>, Void> ignore = new Function<List<?>, Void>() {
+        @Override
+        public Void apply(List<?> results) {
+            return null;
+        }
+    };;
+
     @Override
     public Uni<Void> send(Mail... mails) {
         if (mails == null) {
@@ -52,12 +60,21 @@ public class MutinyMailerImpl implements ReactiveMailer {
         }
 
         List<Uni<Void>> unis = stream(mails)
-                .map(mail -> toMailMessage(mail)
-                        .onItem().produceUni(mailMessage -> send(mail, mailMessage)))
+                .map(new Function<Mail, Uni<Void>>() {
+                    @Override
+                    public Uni<Void> apply(Mail mail) {
+                        return MutinyMailerImpl.this.toMailMessage(mail)
+                                .chain(new Function<MailMessage, Uni<? extends Void>>() {
+                                    @Override
+                                    public Uni<? extends Void> apply(MailMessage mailMessage) {
+                                        return send(mail, mailMessage);
+                                    }
+                                });
+                    }
+                })
                 .collect(Collectors.toList());
 
-        return Uni.combine().all().unis(unis).combinedWith(results -> null);
-
+        return Uni.combine().all().unis(unis).combinedWith(ignore);
     }
 
     private Uni<Void> send(Mail mail, MailMessage message) {
@@ -146,7 +163,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
         }
 
         return getAttachmentStream(vertx, attachment)
-                .onItem().apply(attach::setData);
+                .onItem().transform(attach::setData);
     }
 
     public static Uni<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {

@@ -336,13 +336,13 @@ public class ReactiveMongoOperations {
 
     public static Uni<Object> findById(Class<?> entityClass, Object id) {
         Uni<Optional> optionalEntity = findByIdOptional(entityClass, id);
-        return optionalEntity.onItem().apply(optional -> optional.orElse(null));
+        return optionalEntity.onItem().transform(optional -> optional.orElse(null));
     }
 
     public static Uni<Optional> findByIdOptional(Class<?> entityClass, Object id) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.find(new Document(ID, id)).collectItems().first()
-                .onItem().apply(Optional::ofNullable);
+                .onItem().transform(Optional::ofNullable);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {

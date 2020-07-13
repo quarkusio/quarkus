@@ -71,8 +71,8 @@ class AttachmentTest {
     @Test
     void testAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain");
         assertThat(attachment.getFile()).isNull();
@@ -110,8 +110,8 @@ class AttachmentTest {
     @Test
     void testInlineAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", "<my-id>");
         assertThat(attachment.getFile()).isNull();
@@ -129,8 +129,8 @@ class AttachmentTest {
     @Test
     void testAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
@@ -155,8 +155,8 @@ class AttachmentTest {
     @Test
     void testInlineAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().produceMulti(af -> af.toMulti()
-                        .onItem().produceIterable(this::getBytes).concatenate());
+                .onItem().transformToMulti(af -> af.toMulti()
+                        .onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_INLINE);

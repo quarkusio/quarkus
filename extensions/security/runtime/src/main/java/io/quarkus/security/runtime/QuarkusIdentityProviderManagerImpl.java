@@ -137,7 +137,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
         IdentityProvider<T> current = providers.get(pos);
         Uni<SecurityIdentity> cs = current.authenticate(request, context)
-                .onItem().produceUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+                .onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {
@@ -146,7 +146,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                         return handleProvider(pos + 1, providers, request, context);
                     }
                 });
-        return cs.flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+        return cs.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                 return handleIdentityFromProvider(0, securityIdentity, context);

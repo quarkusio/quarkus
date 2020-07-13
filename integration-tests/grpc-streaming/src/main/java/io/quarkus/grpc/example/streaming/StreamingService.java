@@ -35,6 +35,6 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
                 .map(Item::getValue)
                 .map(Long::parseLong)
                 .onItem().scan(() -> 0L, Long::sum)
-                .onItem().apply(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+                .onItem().transform(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 }

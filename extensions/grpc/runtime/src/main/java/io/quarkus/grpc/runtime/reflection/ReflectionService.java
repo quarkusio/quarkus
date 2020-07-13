@@ -35,7 +35,7 @@ public class ReflectionService extends MutinyServerReflectionGrpc.ServerReflecti
     @Override
     public Multi<ServerReflectionResponse> serverReflectionInfo(Multi<ServerReflectionRequest> request) {
         return request
-                .onItem().apply(new Function<ServerReflectionRequest, ServerReflectionResponse>() {
+                .onItem().transform(new Function<ServerReflectionRequest, ServerReflectionResponse>() {
                     @Override
                     public ServerReflectionResponse apply(ServerReflectionRequest req) {
                         switch (req.getMessageRequestCase()) {

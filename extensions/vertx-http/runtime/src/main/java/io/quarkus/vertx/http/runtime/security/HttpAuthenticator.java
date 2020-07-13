@@ -100,7 +100,7 @@ public class HttpAuthenticator {
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+            result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
                 @Override
                 public Uni<SecurityIdentity> apply(SecurityIdentity data) {
                     if (data != null) {
@@ -121,7 +121,7 @@ public class HttpAuthenticator {
         Uni<Boolean> result = mechanisms[0].sendChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<Boolean, Uni<? extends Boolean>>() {
+            result = result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
                 @Override
                 public Uni<? extends Boolean> apply(Boolean authDone) {
                     if (authDone) {
@@ -131,7 +131,7 @@ public class HttpAuthenticator {
                 }
             });
         }
-        return result.onItem().produceUni(new Function<Boolean, Uni<? extends Boolean>>() {
+        return result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
             @Override
             public Uni<? extends Boolean> apply(Boolean authDone) {
                 if (!authDone) {
@@ -147,7 +147,7 @@ public class HttpAuthenticator {
         Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<ChallengeData, Uni<? extends ChallengeData>>() {
+            result = result.onItem().transformToUni(new Function<ChallengeData, Uni<? extends ChallengeData>>() {
                 @Override
                 public Uni<? extends ChallengeData> apply(ChallengeData data) {
                     if (data != null) {

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.Service;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -44,6 +45,7 @@ public class BasicOpenshiftTest {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic-openshift");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
+                assertThat(m.getNamespace()).isNull();
             });
             assertThat(h).extracting("spec").extracting("replicas").isEqualTo(1);
             assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
@@ -54,6 +56,14 @@ public class BasicOpenshiftTest {
                                             "/deployments/basic-openshift-runner.jar"));
                         });
                     });
+        });
+
+        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+            assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getNamespace()).isNull();
+                });
+            });
         });
     }
 }

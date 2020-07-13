@@ -16,6 +16,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getVersion();
 
+    Optional<String> getNamespace();
+
     Map<String, String> getLabels();
 
     Map<String, String> getAnnotations();

@@ -30,7 +30,6 @@ import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -68,9 +67,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.typeTriggers = typeTriggers;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
-        Instance<IdentityProviderManager> identityProviderManager = CDI.current().select(IdentityProviderManager.class);
         this.currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
-
     }
 
     private boolean checkHttpMethod(RoutingContext routingContext, FunctionInvoker invoker) {
@@ -293,13 +290,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                         responseEvent.put("id", getResponseId());
                                         responseEvent.put("specversion", "1.0");
                                         responseEvent.put("source",
-                                                (String) targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
+                                                targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
                                         responseEvent.put("type",
-                                                (String) targetInvoker.getBindingContext().get(RESPONSE_TYPE));
+                                                targetInvoker.getBindingContext().get(RESPONSE_TYPE));
                                         responseEvent.put("datacontenttype", "application/json");
                                         responseEvent.put("data", obj);
-                                        ObjectWriter writer = (ObjectWriter) targetInvoker.getBindingContext()
-                                                .get(ObjectWriter.class.getName());
                                         try {
                                             httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
                                         } catch (JsonProcessingException e) {

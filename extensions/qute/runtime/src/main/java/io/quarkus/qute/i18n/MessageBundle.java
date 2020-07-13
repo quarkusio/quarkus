@@ -12,12 +12,14 @@ import java.lang.annotation.Target;
  * Each method represents a single message:
  * 
  * <pre>
+ * <code>
  * &#64;MessageBundle
  * interface MyBundle {
  * 
  *     &#64;Message("Hello {name}!")
  *     String hello_world(String name);
  * }
+ * </code>
  * </pre>
  */
 @Retention(RUNTIME)

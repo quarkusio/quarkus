@@ -256,6 +256,8 @@ public class MainClassBuildStep {
                 startupContext, mv.getMethodParam(0));
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
+        ResultHandle activeProfile = mv
+                .invokeStaticMethod(ofMethod(ProfileManager.class, "getActiveProfile", String.class));
 
         tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
@@ -274,8 +276,6 @@ public class MainClassBuildStep {
             featureNames.add(feature.getName());
         }
         ResultHandle featuresHandle = tryBlock.load(featureNames.stream().sorted().collect(Collectors.joining(", ")));
-        ResultHandle activeProfile = tryBlock
-                .invokeStaticMethod(ofMethod(ProfileManager.class, "getActiveProfile", String.class));
         tryBlock.invokeStaticMethod(
                 ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, String.class,
                         String.class, boolean.class),
@@ -286,9 +286,9 @@ public class MainClassBuildStep {
                 activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
         cb = tryBlock.addCatch(Throwable.class);
-        cb.invokeVirtualMethod(ofMethod(Logger.class, "error", void.class, Object.class, Throwable.class),
-                cb.readStaticField(logField.getFieldDescriptor()), cb.load("Failed to start application"),
-                cb.getCaughtException());
+        cb.invokeVirtualMethod(ofMethod(Logger.class, "errorv", void.class, Throwable.class, String.class, Object.class),
+                cb.readStaticField(logField.getFieldDescriptor()), cb.getCaughtException(),
+                cb.load("Failed to start application (with profile {0})"), activeProfile);
 
         // an exception was thrown before logging was actually setup, we simply dump everything to the console
         ResultHandle delayedHandler = cb

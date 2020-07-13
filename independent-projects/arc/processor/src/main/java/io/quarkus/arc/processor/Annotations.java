@@ -4,7 +4,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -112,8 +114,21 @@ public final class Annotations {
      */
     public static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method,
             int position) {
+        return getParameterAnnotations(beanDeployment::getAnnotations, method, position);
+    }
+
+    /**
+     * 
+     * @param transformedAnnotations
+     * @param method
+     * @param position
+     * @return the parameter annotations for the given position
+     */
+    public static Set<AnnotationInstance> getParameterAnnotations(
+            Function<AnnotationTarget, Collection<AnnotationInstance>> transformedAnnotations, MethodInfo method,
+            int position) {
         Set<AnnotationInstance> annotations = new HashSet<>();
-        for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
+        for (AnnotationInstance annotation : transformedAnnotations.apply(method)) {
             if (Kind.METHOD_PARAMETER == annotation.target().kind()
                     && annotation.target().asMethodParameter().position() == position) {
                 annotations.add(annotation);

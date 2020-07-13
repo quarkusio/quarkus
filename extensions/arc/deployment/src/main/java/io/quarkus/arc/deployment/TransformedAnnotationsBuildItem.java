@@ -15,7 +15,8 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * 
  * @see AnnotationsTransformer
  */
-public final class TransformedAnnotationsBuildItem extends SimpleBuildItem {
+public final class TransformedAnnotationsBuildItem extends SimpleBuildItem
+        implements Function<AnnotationTarget, Collection<AnnotationInstance>> {
 
     private final Function<AnnotationTarget, Collection<AnnotationInstance>> fun;
 
@@ -24,6 +25,11 @@ public final class TransformedAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
+        return fun.apply(target);
+    }
+
+    @Override
+    public Collection<AnnotationInstance> apply(AnnotationTarget target) {
         return fun.apply(target);
     }
 

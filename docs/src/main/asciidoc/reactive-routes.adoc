@@ -180,10 +180,13 @@ public class SimpleRoutes {
 <2> The value of `produces()` is used for content-based routing for all routes where `Route#produces()` is empty.
 
 
-=== Reactive Route Methods
+== Reactive Route Methods
 
 A route method must be a non-private non-static method of a CDI bean.
-The annotated method can accept arguments of the following types: 
+If the annotated method returns `void` then it has to accept at least one argument - see the supported types below. 
+If the annotated method does not return `void` then the arguments are optional.
+
+A route method can accept arguments of the following types: 
 
 * `io.vertx.ext.web.RoutingContext`
 * `io.vertx.reactivex.ext.web.RoutingContext`
@@ -193,10 +196,70 @@ The annotated method can accept arguments of the following types:
 * `io.vertx.reactivex.core.http.HttpServerRequest`
 * `io.vertx.reactivex.core.http.HttpServerResponse`
 
-If the annotated method returns `void` then it has to accept at least one argument. 
-If the annotated method does not return `void` then the arguments are optional.
+Furthermore, it is possible to inject the `HttpServerRequest` parameters into a method parameter annotated with `@io.quarkus.vertx.web.Param`:
 
-==== Returning Unis
+[options="header",cols="1,1"]
+|===
+|Parameter Type   | Obtained via  
+//-------------
+|`java.lang.String`   |`routingContext.request().getParam()`   
+|`java.util.Optional<String>`   |`routingContext.request().getParam()`   
+|`java.util.List<String>`   |`routingContext.request().params().getAll()`
+|===
+
+.Request Parameter Example
+[source,java]
+----
+@Route
+String hello(@Param Optional<String> name) {
+   return "Hello " + name.orElse("world");
+}
+----
+
+The `HttpServerRequest` headers can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Header`: 
+
+[options="header",cols="1,1"]
+|===
+|Parameter Type   | Obtained via  
+//-------------
+|`java.lang.String`   |`routingContext.request().getHeader()`   
+|`java.util.Optional<String>`   |`routingContext.request().getHeader()`   
+|`java.util.List<String>`   |`routingContext.request().headers().getAll()`
+|===
+
+.Request Header Example
+[source,java]
+----
+@Route
+String helloFromHeader(@Header("My-Header") String header) {
+   return header;
+}
+----
+
+The request body can be injected into a method parameter annotated with `@io.quarkus.vertx.web.Body`.
+
+[options="header",cols="1,1"]
+|===
+|Parameter Type   | Obtained via  
+//-------------
+|`java.lang.String`   |`routingContext.getBodyAsString()`   
+|`io.vertx.core.buffer.Buffer`   |`routingContext.getBody()`   
+|`io.vertx.core.json.JsonObject`   |`routingContext.getBodyAsJson()`   
+|`io.vertx.core.json.JsonArray`   |`routingContext.getBodyAsJsonArray()`   
+|any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`   
+|===
+
+.Request Body Example
+[source,java]
+----
+@Route(produces = "application/json")
+Person createPerson(@Body Person person, @Param("id") Optional<String> primaryKey) {
+  person.setId(primaryKey.map(Integer::valueOf).orElse(42));
+  return person;
+}
+----
+
+=== Returning Unis
 
 In a reactive route, you can return a `Uni` directly:
 
@@ -234,7 +297,7 @@ If the returned `Uni` produces a failure (or is `null`), an HTTP 500 response is
 
 Returning a `Uni<Void>` produces a 204 response (no content).
 
-==== Returning results
+=== Returning results
 
 You can also return a result directly:
 
@@ -256,7 +319,7 @@ The method can return:
 * an object - written into the HTTP response after having been encoded into JSON.
 The `content-type` header is set to `application/json` if not already set.
 
-==== Returning Multis
+=== Returning Multis
 
 A reactive route can return a `Multi`.
 The items are written one by one, in the response.
@@ -298,7 +361,7 @@ Ths previous snippet produces:
 {"name":"spiderman", "id": 3} // chunk 3
 ----
 
-==== Streaming JSON Array items
+=== Streaming JSON Array items
 
 You can return a `Multi` to produce a JSON Array, where every item is an item from this array.
 The response is written item by item to the client.
@@ -333,7 +396,7 @@ Using a `Multi<Void>` produces an empty array.
 You cannot use `Multi<Buffer>`.
 If you need to use `Buffer`, transform the content into a JSON or String representation first.
 
-==== Event Stream and Server-Sent Event support
+=== Event Stream and Server-Sent Event support
 
 You can return a `Multi` to produce an event source (stream of server sent events).
 To enable this feature, you need to wrap the returned `Multi` using `io.quarkus.vertx.web.ReactiveRoutes.asEventStream`:

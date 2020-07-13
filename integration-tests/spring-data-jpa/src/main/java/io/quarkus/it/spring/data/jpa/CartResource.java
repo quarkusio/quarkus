@@ -1,0 +1,73 @@
+package io.quarkus.it.spring.data.jpa;
+
+import static io.quarkus.it.spring.data.jpa.CartStatus.CANCELED;
+
+import java.util.List;
+
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+
+@Path("/cart")
+@Produces("application/json")
+public class CartResource {
+
+    private final CartRepository cartRepository;
+    private final CustomerRepository customerRepository;
+
+    public CartResource(CartRepository cartRepository, CustomerRepository customerRepository) {
+        this.cartRepository = cartRepository;
+        this.customerRepository = customerRepository;
+    }
+
+    @GET
+    public List<Cart> findAll() {
+        return this.cartRepository.findAll();
+    }
+
+    @GET
+    @Path("/active")
+    public List<Cart> findAllActiveCarts() {
+        return this.cartRepository.findByStatus(CartStatus.NEW);
+    }
+
+    @GET
+    @Path("/customer/{id}")
+    public Cart getActiveCartForCustomer(@PathParam("id") Long customerId) {
+        return this.cartRepository.findByStatusAndCustomerId(CartStatus.NEW, customerId);
+    }
+
+    @GET
+    @Path("/{id}")
+    public Cart findById(@PathParam("id") Long id) {
+        return this.cartRepository.findById(id).orElse(null);
+    }
+
+    @POST
+    @Path("/customer/{id}")
+    public Cart create(@PathParam("id") Long customerId) {
+        if (this.getActiveCartForCustomer(customerId) == null) {
+            Customer customer = this.customerRepository.findById(customerId)
+                    .orElseThrow(() -> new IllegalStateException("The Customer does not exist!"));
+
+            Cart cart = new Cart(customer, CartStatus.NEW);
+
+            return this.cartRepository.save(cart);
+        } else {
+            throw new IllegalStateException("There is already an active cart");
+        }
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("id") Long id) {
+        Cart cart = this.cartRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Cannot find Cart with id " + id));
+
+        cart.setStatus(CANCELED);
+        this.cartRepository.save(cart);
+    }
+}

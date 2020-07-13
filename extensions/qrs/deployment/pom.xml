@@ -65,6 +65,10 @@
             <artifactId>quarkus-security-test-utils</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonb-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

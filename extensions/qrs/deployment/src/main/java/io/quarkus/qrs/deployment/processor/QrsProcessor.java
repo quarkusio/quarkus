@@ -20,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.qrs.deployment.framework.EndpointIndexer;
@@ -36,11 +37,11 @@ public class QrsProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     public FilterBuildItem setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            QrsRecorder recorder) {
+            QrsRecorder recorder, ExecutorBuildItem executorBuildItem) {
         Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(QrsDotNames.PATH);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
@@ -69,7 +70,7 @@ public class QrsProcessor {
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder));
         }
 
-        return new FilterBuildItem(recorder.handler(resourceClasses), 10);
+        return new FilterBuildItem(recorder.handler(resourceClasses, executorBuildItem.getExecutorProxy()), 10);
     }
 
 }

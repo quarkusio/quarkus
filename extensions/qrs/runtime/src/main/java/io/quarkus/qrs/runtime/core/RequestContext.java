@@ -8,6 +8,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
 import io.vertx.core.AsyncResult;

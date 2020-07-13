@@ -10,7 +10,9 @@ import java.util.function.Predicate;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
@@ -19,12 +21,15 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.qrs.Blocking;
 
 public final class QrsDotNames {
 
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
+    public static final DotName PATH_PARAM = DotName.createSimple(PathParam.class.getName());
+    public static final DotName QUERY_PARAM = DotName.createSimple(QueryParam.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
     public static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
     public static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());
@@ -36,6 +41,7 @@ public final class QrsDotNames {
     public static final DotName PATH = DotName.createSimple(Path.class.getName());
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
+    public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName CONFIG_PROPERTY = DotName
             .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INSTANCE = DotName

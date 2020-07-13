@@ -2,6 +2,9 @@ package io.quarkus.qrs.runtime.model;
 
 import java.util.function.Supplier;
 
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
+
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
 /**
@@ -24,13 +27,13 @@ public class ResourceMethod {
      * The value of the {@link javax.ws.rs.Produces} annotation, if none is specified on the method
      * then this represents the value inherited from the class level, or null if not specified.
      */
-    private String produces;
+    private String[] produces;
 
     /**
      * The value of the {@link javax.ws.rs.Consumes} annotation, if none is specified on the method
      * then this represents the value inherited from the class level, or null if not specified.
      */
-    private String consumes;
+    private String[] consumes;
 
     private Supplier<EndpointInvoker> invoker;
 
@@ -39,6 +42,12 @@ public class ResourceMethod {
     private String returnType;
 
     private MethodParameter[] parameters;
+
+    private boolean blocking;
+
+    //TODO: fix this
+    private MessageBodyWriter<?> writer;
+    private MessageBodyReader<?> reader;
 
     public boolean isResourceLocator() {
         return method == null;
@@ -62,20 +71,20 @@ public class ResourceMethod {
         return this;
     }
 
-    public String getProduces() {
+    public String[] getProduces() {
         return produces;
     }
 
-    public ResourceMethod setProduces(String produces) {
+    public ResourceMethod setProduces(String[] produces) {
         this.produces = produces;
         return this;
     }
 
-    public String getConsumes() {
+    public String[] getConsumes() {
         return consumes;
     }
 
-    public ResourceMethod setConsumes(String consumes) {
+    public ResourceMethod setConsumes(String[] consumes) {
         this.consumes = consumes;
         return this;
     }
@@ -116,18 +125,12 @@ public class ResourceMethod {
         return this;
     }
 
-    public static class MethodParameter {
-        public final String name;
-        public final String type;
-        public final ParameterType parameterType;
-
-        public MethodParameter(String name, String type, ParameterType parameterType) {
-            this.name = name;
-            this.type = type;
-            this.parameterType = parameterType;
-        }
+    public boolean isBlocking() {
+        return blocking;
     }
 
-
-
+    public ResourceMethod setBlocking(boolean blocking) {
+        this.blocking = blocking;
+        return this;
+    }
 }

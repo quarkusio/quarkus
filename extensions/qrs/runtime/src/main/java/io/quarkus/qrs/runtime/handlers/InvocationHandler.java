@@ -1,7 +1,6 @@
 package io.quarkus.qrs.runtime.handlers;
 
 import io.quarkus.qrs.runtime.core.RequestContext;
-import io.quarkus.qrs.runtime.core.RestHandler;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
 public class InvocationHandler implements RestHandler {

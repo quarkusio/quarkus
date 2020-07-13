@@ -1,16 +1,72 @@
 package io.quarkus.qrs.runtime.core;
 
+import java.util.function.BiConsumer;
+
 public interface ParameterExtractor {
 
     /**
      * Extracts a parameter from the request.
      *
-     * If this returns a {@link java.util.concurrent.CompletionStage} then the value will be the result of the
-     * stage at the time it completes.
+     * If this returns a {@link ParameterCallback} then the value must be obtained from the listener
      *
-     * @param context
-     * @return
      */
     Object extractParameter(RequestContext context);
+
+    /**
+     * listener class that is used to provide async method parameters.
+     * 
+     * This is very simple to reduce the number of required allocations.
+     */
+    public class ParameterCallback {
+
+        private Object result;
+        private Exception failure;
+        private BiConsumer<Object, Exception> listener;
+
+        public void setListener(BiConsumer<Object, Exception> listener) {
+            Object result;
+            Exception failure;
+            synchronized (this) {
+                if (this.listener != null) {
+                    throw new RuntimeException("Listener already set");
+                }
+                result = this.result;
+                failure = this.failure;
+                this.listener = listener;
+            }
+            if (result != null || failure != null) {
+                listener.accept(result, failure);
+            }
+        }
+
+        public void setResult(Object result) {
+            BiConsumer<Object, Exception> listener;
+            synchronized (this) {
+                if (this.result != null || this.failure != null) {
+                    throw new RuntimeException("Callback already completed result:" + result + " failure:" + failure);
+                }
+                listener = this.listener;
+                this.result = result;
+            }
+            if (listener != null) {
+                listener.accept(result, null);
+            }
+        }
+
+        public void setFailure(Exception failure) {
+            BiConsumer<Object, Exception> listener;
+            synchronized (this) {
+                if (this.result != null || this.failure != null) {
+                    throw new RuntimeException("Callback already completed result:" + result + " failure:" + failure);
+                }
+                listener = this.listener;
+                this.failure = failure;
+            }
+            if (listener != null) {
+                listener.accept(null, failure);
+            }
+        }
+
+    }
 
 }

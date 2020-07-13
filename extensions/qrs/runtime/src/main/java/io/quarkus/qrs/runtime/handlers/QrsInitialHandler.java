@@ -1,12 +1,12 @@
 package io.quarkus.qrs.runtime.handlers;
 
+import java.util.Map;
+
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
-
-import java.util.Map;
 
 public class QrsInitialHandler implements Handler<RoutingContext> {
 

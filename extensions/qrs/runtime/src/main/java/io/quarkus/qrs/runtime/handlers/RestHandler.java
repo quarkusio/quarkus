@@ -1,4 +1,6 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.handlers;
+
+import io.quarkus.qrs.runtime.core.RequestContext;
 
 public interface RestHandler {
 

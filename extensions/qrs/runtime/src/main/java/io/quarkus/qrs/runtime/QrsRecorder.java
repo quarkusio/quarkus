@@ -5,20 +5,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcEndpointFactory;
-import io.quarkus.qrs.runtime.core.RestHandler;
+import io.quarkus.qrs.runtime.core.PathParamExtractor;
+import io.quarkus.qrs.runtime.core.QueryParamExtractor;
+import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
+import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
+import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
+import io.quarkus.qrs.runtime.model.MethodParameter;
+import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
@@ -54,7 +61,7 @@ public class QrsRecorder {
         };
     }
 
-    public Handler<RoutingContext> handler(List<ResourceClass> resourceClasses) {
+    public Handler<RoutingContext> handler(List<ResourceClass> resourceClasses, Executor blockingExecutor) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
         Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
         for (ResourceClass clazz : resourceClasses) {
@@ -62,14 +69,27 @@ public class QrsRecorder {
                 List<RestHandler> handlers = new ArrayList<>();
                 EndpointInvoker invoker = method.getInvoker().get();
                 handlers.add(new InstanceHandler(clazz.getFactory()));
-                handlers.add(new InvocationHandler(invoker));
-                handlers.add(new ResponseHandler());
                 Class<?>[] parameterTypes = new Class[method.getParameters().length];
                 for (int i = 0; i < method.getParameters().length; ++i) {
-                    parameterTypes[i] = loadClass(method.getParameters()[i]);
+                    parameterTypes[i] = loadClass(method.getParameters()[i].type);
                 }
+                MethodParameter[] parameters = method.getParameters();
+                for (int i = 0; i < parameters.length; i++) {
+                    MethodParameter param = parameters[i];
+                    if (param.parameterType == ParameterType.PATH) {
+                        handlers.add(new ParameterHandler(i, new PathParamExtractor(param.name), null));
+                    } else {
+                        handlers.add(new ParameterHandler(i, new QueryParamExtractor(param.name, true), null));
+                    }
+                }
+                if (method.isBlocking()) {
+                    handlers.add(new BlockingHandler(blockingExecutor));
+                }
+                handlers.add(new InvocationHandler(invoker));
+                handlers.add(new ResponseHandler());
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
-                        method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()), method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()), invoker,
+                        method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
+                        method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]), invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                         loadClass(method.getReturnType()));
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
@@ -79,7 +99,7 @@ public class QrsRecorder {
                 list.add(new RequestMapper.RequestPath<>(resource.getPath(), resource));
             }
         }
-        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod=templates.remove(null);
+        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.remove(null);
         if (nullMethod == null) {
             nullMethod = Collections.emptyList();
         }

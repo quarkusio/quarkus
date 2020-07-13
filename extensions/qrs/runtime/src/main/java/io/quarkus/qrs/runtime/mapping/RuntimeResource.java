@@ -2,7 +2,7 @@ package io.quarkus.qrs.runtime.mapping;
 
 import javax.ws.rs.core.MediaType;
 
-import io.quarkus.qrs.runtime.core.RestHandler;
+import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 

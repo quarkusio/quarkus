@@ -1,7 +1,10 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.handlers;
 
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
+
+import io.quarkus.qrs.runtime.core.ParameterConverter;
+import io.quarkus.qrs.runtime.core.ParameterExtractor;
+import io.quarkus.qrs.runtime.core.RequestContext;
 
 public class ParameterHandler implements RestHandler {
 
@@ -18,18 +21,17 @@ public class ParameterHandler implements RestHandler {
     @Override
     public void handle(RequestContext requestContext) {
         Object result = extractor.extractParameter(requestContext);
-        if (result instanceof CompletionStage<?>) {
+        if (result instanceof ParameterExtractor.ParameterCallback) {
             requestContext.suspend();
-            ((CompletionStage<?>) result).handle(new BiFunction<Object, Throwable, Object>() {
+            ((ParameterExtractor.ParameterCallback) result).setListener(new BiConsumer<Object, Exception>() {
                 @Override
-                public Object apply(Object o, Throwable throwable) {
+                public void accept(Object o, Exception throwable) {
                     if (throwable != null) {
                         requestContext.resume(throwable);
                     } else {
                         handleResult(o, requestContext);
                         requestContext.resume();
                     }
-                    return null;
                 }
             });
         } else {

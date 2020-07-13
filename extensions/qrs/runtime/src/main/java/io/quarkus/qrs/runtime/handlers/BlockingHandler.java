@@ -1,6 +1,8 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.handlers;
 
 import java.util.concurrent.Executor;
+
+import io.quarkus.qrs.runtime.core.RequestContext;
 
 public class BlockingHandler implements RestHandler {
 

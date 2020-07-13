@@ -137,6 +137,8 @@ update_configs:
       - match:
           dependency_name: "org.mockito:mockito-core"
       - match:
+          dependency_name: "org.mockito:mockito-junit-jupiter"
+      - match:
           dependency_name: "org.awaitility:awaitility"
       # Maven plugins
       - match:

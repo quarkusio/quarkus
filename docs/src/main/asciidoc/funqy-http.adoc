@@ -21,6 +21,14 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 
+WARNING: Funqy HTTP allows you to invoke functions over HTTP, it is not meant for handling generic
+HTTP requests. The only part of the request that Funqy HTTP exposes is the request body which is
+passed in as input to the function. The path, query parameters and headers are all ignored. If you
+want do serverless HTTP (e.g. using AWS API gateway to serve HTTP requests with lambda) then you do
+not want Funqy HTTP. Instead you should install the relevant extension for the provider you are using
+(e.g. `amazon-lambda-http`) which integrates with the standard Quarkus HTTP API's (RESTEasy, Vert.x HTTP,
+reactive routes etc). For more details consult the guide for your cloud provider.
+
 == The Quickstart
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].

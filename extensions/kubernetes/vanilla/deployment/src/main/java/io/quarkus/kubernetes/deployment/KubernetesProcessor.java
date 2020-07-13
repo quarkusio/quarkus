@@ -51,6 +51,17 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionReader;
 import io.dekorate.SessionWriter;
+import io.dekorate.knative.decorator.ApplyGlobalAutoscalingClassDecorator;
+import io.dekorate.knative.decorator.ApplyGlobalContainerConcurrencyDecorator;
+import io.dekorate.knative.decorator.ApplyGlobalRequestsPerSecondTargetDecorator;
+import io.dekorate.knative.decorator.ApplyGlobalTargetUtilizationDecorator;
+import io.dekorate.knative.decorator.ApplyLocalAutoscalingClassDecorator;
+import io.dekorate.knative.decorator.ApplyLocalAutoscalingMetricDecorator;
+import io.dekorate.knative.decorator.ApplyLocalAutoscalingTargetDecorator;
+import io.dekorate.knative.decorator.ApplyLocalContainerConcurrencyDecorator;
+import io.dekorate.knative.decorator.ApplyLocalTargetUtilizationPercentageDecorator;
+import io.dekorate.knative.decorator.ApplyMaxScaleDecorator;
+import io.dekorate.knative.decorator.ApplyMinScaleDecorator;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.Annotation;
@@ -63,6 +74,8 @@ import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
+import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
@@ -499,6 +512,56 @@ class KubernetesProcessor {
                             .withKey("serving.knative.dev/visibility")
                             .withValue("cluster-local")
                             .build()));
+        }
+
+        config.minScale.ifPresent(min -> session.resources().decorate(KNATIVE, new ApplyMinScaleDecorator(name, min)));
+
+        config.maxScale.ifPresent(max -> session.resources().decorate(KNATIVE, new ApplyMaxScaleDecorator(name, max)));
+
+        config.revisionAutoScaling.autoScalerClass.map(AutoScalerClassConverter::convert)
+                .ifPresent(a -> session.resources().decorate(KNATIVE, new ApplyLocalAutoscalingClassDecorator(name, a)));
+
+        config.revisionAutoScaling.metric.map(AutoScalingMetricConverter::convert)
+                .ifPresent(m -> session.resources().decorate(KNATIVE, new ApplyLocalAutoscalingMetricDecorator(name, m)));
+
+        config.revisionAutoScaling.containerConcurrency
+                .ifPresent(c -> session.resources().decorate(KNATIVE, new ApplyLocalContainerConcurrencyDecorator(name, c)));
+
+        config.revisionAutoScaling.targetUtilizationPercentage
+                .ifPresent(t -> session.resources().decorate(KNATIVE,
+                        new ApplyLocalTargetUtilizationPercentageDecorator(name, t)));
+        config.revisionAutoScaling.target
+                .ifPresent(t -> session.resources().decorate(KNATIVE, new ApplyLocalAutoscalingTargetDecorator(name, t)));
+
+        config.globalAutoScaling.autoScalerClass
+                .map(AutoScalerClassConverter::convert)
+                .ifPresent(a -> {
+                    session.resources().decorate(new AddConfigMapResourceProvidingDecorator("config-autoscaler"));
+                    session.resources().decorate(new ApplyGlobalAutoscalingClassDecorator(a));
+                });
+
+        config.globalAutoScaling.containerConcurrency
+                .ifPresent(c -> {
+                    session.resources().decorate(new AddConfigMapResourceProvidingDecorator("config-defaults"));
+                    session.resources().decorate(new ApplyGlobalContainerConcurrencyDecorator(c));
+                });
+
+        config.globalAutoScaling.requestsPerSecond
+                .ifPresent(r -> {
+                    session.resources().decorate(new AddConfigMapResourceProvidingDecorator("config-autoscaler"));
+                    session.resources().decorate(new ApplyGlobalRequestsPerSecondTargetDecorator(r));
+                });
+
+        config.globalAutoScaling.targetUtilizationPercentage
+                .ifPresent(t -> {
+                    session.resources().decorate(new AddConfigMapResourceProvidingDecorator("config-autoscaler"));
+                    session.resources().decorate(new ApplyGlobalTargetUtilizationDecorator(t));
+                });
+
+        if (!config.scaleToZeroEnabled) {
+            session.resources().decorate(new AddConfigMapResourceProvidingDecorator("config-autoscaler"));
+            session.resources().decorate(new AddConfigMapDataDecorator("config-autoscaler", "enable-scale-to-zero",
+                    String.valueOf(config.scaleToZeroEnabled)));
         }
     }
 

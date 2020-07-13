@@ -95,9 +95,9 @@ public class QuarkusTestExtension
     private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
-    private static List<Object> beforeAllCallbacks = new ArrayList<>();
-    private static List<Object> beforeEachCallbacks = new ArrayList<>();
-    private static List<Object> afterEachCallbacks = new ArrayList<>();
+    private static List<Object> beforeAllCallbacks;
+    private static List<Object> beforeEachCallbacks;
+    private static List<Object> afterEachCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
 
@@ -259,6 +259,13 @@ public class QuarkusTestExtension
     }
 
     private void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
+        // make sure that we start over everytime we populate the callbacks
+        // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
+        quarkusTestMethodContextClass = null;
+        beforeAllCallbacks = new ArrayList<>();
+        beforeEachCallbacks = new ArrayList<>();
+        afterEachCallbacks = new ArrayList<>();
+
         ServiceLoader<?> quarkusTestBeforeAllLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestBeforeAllCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestBeforeAllCallback : quarkusTestBeforeAllLoader) {
@@ -329,14 +336,45 @@ public class QuarkusTestExtension
         }
     }
 
+    // We need the usual ClassLoader hacks in order to present the callbacks with the proper test object and context
     private Map.Entry<Class<?>, ?> createQuarkusTestMethodContextTuple(ExtensionContext context) throws Exception {
+        ClassLoader classLoader = runningQuarkusApplication.getClassLoader();
         if (quarkusTestMethodContextClass == null) {
-            quarkusTestMethodContextClass = Class.forName(QuarkusTestMethodContext.class.getName(), true,
-                    runningQuarkusApplication.getClassLoader());
+            quarkusTestMethodContextClass = Class.forName(QuarkusTestMethodContext.class.getName(), true, classLoader);
         }
+
+        Method originalTestMethod = context.getRequiredTestMethod();
+        Class<?>[] originalParameterTypes = originalTestMethod.getParameterTypes();
+        Method actualTestMethod = null;
+
+        // go up the class hierarchy to fetch the proper test method
+        Class<?> c = actualTestClass;
+        List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+        for (Class<?> type : originalParameterTypes) {
+            if (type.isPrimitive()) {
+                parameterTypesFromTccl.add(type);
+            } else {
+                parameterTypesFromTccl
+                        .add(Class.forName(type.getName(), true, classLoader));
+            }
+        }
+        Class<?>[] parameterTypes = parameterTypesFromTccl.toArray(new Class[0]);
+        while (c != Object.class) {
+            try {
+                actualTestMethod = c.getDeclaredMethod(originalTestMethod.getName(), parameterTypes);
+                break;
+            } catch (NoSuchMethodException ignored) {
+
+            }
+            c = c.getSuperclass();
+        }
+        if (actualTestMethod == null) {
+            throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
+        }
+
         Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, Method.class);
         return new AbstractMap.SimpleEntry<>(quarkusTestMethodContextClass,
-                constructor.newInstance(actualTestInstance, context.getRequiredTestMethod()));
+                constructor.newInstance(actualTestInstance, actualTestMethod));
     }
 
     private boolean isNativeTest(ExtensionContext context) {

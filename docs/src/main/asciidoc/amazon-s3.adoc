@@ -516,7 +516,7 @@ public class S3AsyncClientResource extends CommonResource {
                 .build();
 
         return Uni.createFrom().completionStage(() -> s3.listObjects(listRequest))
-                .onItem().apply(result -> toFileItems(result));
+                .onItem().transform(result -> toFileItems(result));
     }
 
     private List<FileObject> toFileItems(ListObjectsResponse objects) {

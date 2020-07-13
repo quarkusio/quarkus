@@ -177,7 +177,7 @@ vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
 
 // Mutiny Vert.x:
 vertx.fileSystem().readFile("lorem-ipsum.txt")
-    .onItem().apply(buffer -> buffer.toString("UTF-8"))
+    .onItem().transform(buffer -> buffer.toString("UTF-8"))
     .subscribe()
     .with(
             content -> System.out.println("Content: " + content),
@@ -268,7 +268,7 @@ public class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
     public Uni<String> doSomethingAsync() {
         return vertx.fileSystem().readFile("/META-INF/resources/lorem.txt")
-                .onItem().apply(b -> b.toString("UTF-8"));
+                .onItem().transform(b -> b.toString("UTF-8"));
     }
 }
 ----
@@ -535,7 +535,7 @@ public class ResourceUsingWebClient {
     public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
         return client.get("/api/fruit/" + name)
                 .send()
-                .onItem().apply(resp -> {
+                .onItem().transform(resp -> {
                     if (resp.statusCode() == 200) {
                         return resp.bodyAsJsonObject();
                     } else {

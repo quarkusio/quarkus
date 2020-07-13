@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-      time: "08:00"
+      time: "21:00"
       timezone: Europe/Paris
     open-pull-requests-limit: 3
     labels:
@@ -112,6 +112,8 @@ updates:
     directory: "/integration-tests/gradle"
     schedule:
       interval: daily
+      time: "21:00"
+      timezone: Europe/Paris
     open-pull-requests-limit: 3
     labels:
       - area/dependencies
@@ -120,6 +122,8 @@ updates:
     directory: "/devtools/gradle"
     schedule:
       interval: daily
+      time: "21:00"
+      timezone: Europe/Paris
     open-pull-requests-limit: 3
     labels:
       - area/dependencies

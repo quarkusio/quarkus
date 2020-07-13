@@ -3,16 +3,18 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect to Protect Web Applications
+= Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow.
 
 include::./attributes.adoc[]
+:toc:
 
-This guide demonstrates how to use the OpenID Connect Extension to protect your application using Quarkus, where authentication and authorization are based on tokens issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+This guide demonstrates how to use Quarkus OpenID Connect Extension to protect your Quarkus HTTP endpoints using OpenId Connect Authorization Code Flow supported by OpenId Connect compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
-The extension allows you to easily enable authentication to your web application based on the Authorization Code Flow so that your users are redirected to a
-OpenID Connect Provider (e.g.: Keycloak) to authenticate and, once the authentication is complete, return back to your application.
+The extension allows to easily authenticate the users of your web application by redirecting them to the OpenID Connect Provider (e.g.: Keycloak) to login and, once the authentication is complete, return them back with the code confirming the successful authentication. The extension will request ID and access tokens from the OpenID Connect Provider using an authorization code grant and verify these tokens in order to authorize an access to the application.
 
-We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extension.
+Please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide if you need to protect your applications using Bearer Token Authorization.
+
+Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
 == Prerequisites
 
@@ -265,6 +267,21 @@ public class ProtectedResource {
 Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`.
 
 Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
+== User Info
+
+Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+This will make an `io.quarkus.oidc.UserInfo` (which is a simple `javax.json.JsonObject` wrapper) object accessible as a SecurityIdentity `userinfo` attribute.
+
+== Token Claims And SecurityIdentity Roles
+
+The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the link:security-openid-connect#token-claims-and-securityidentity-roles[bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
+
+Note if you use Keycloak then you should set a Microprofile JWT client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
+
+If only the access token contains the roles and this access token is not meant to be propagated to the downstream endpoints then set `quarkus.oidc.roles.source=accesstoken`.
+
+If UserInfo is the source of the roles then set `quarkus.oidc.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 == Configuration Reference
 

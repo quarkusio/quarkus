@@ -39,7 +39,7 @@ public class MutinyCodecTest {
     @Test
     public void testWithGenericCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane"))
-                .onItem().apply(Message::body)
+                .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello bob morane");
     }
@@ -47,7 +47,7 @@ public class MutinyCodecTest {
     @Test
     public void testWithUserCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit"))
-                .onItem().apply(Message::body)
+                .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
     }
@@ -55,7 +55,7 @@ public class MutinyCodecTest {
     @Test
     public void testWithUserCodecNonLocal() {
         Greeting hello = vertx.eventBus().<Greeting> request("nl-pet", new Pet("neo", "rabbit"))
-                .onItem().apply(Message::body)
+                .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Non Local Hello NEO");
     }

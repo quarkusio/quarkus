@@ -55,7 +55,7 @@ public class MutinyResource {
     @GET
     public Uni<String> failingBecauseOfApplicationCode() {
         return Uni.createFrom().item("not ok")
-                .onItem().apply(s -> {
+                .onItem().transform(s -> {
                     throw new IllegalStateException("BOOM!");
                 });
     }

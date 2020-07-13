@@ -68,7 +68,7 @@ public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase
                 .map(r -> r.getPayload().getBody().toStringUtf8())
                 .map(String::toUpperCase)
                 .collectItems().asList()
-                .onItem().produceMulti(s -> Multi.createFrom().iterable(s))
+                .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
 

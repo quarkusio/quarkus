@@ -34,7 +34,7 @@ public class VerticleDeploymentTest {
     @Test
     public void test() {
         String s = vertx.eventBus().<String> request("foo", "anyone?")
-                .onItem().apply(Message::body)
+                .onItem().transform(Message::body)
                 .await().indefinitely();
         assertThat(s).isEqualTo("hello");
 
@@ -45,7 +45,7 @@ public class VerticleDeploymentTest {
 
         // Handled by MyUndeployedVerticle
         assertThat(vertx.eventBus().<String> request("bravo", "anyone?")
-                .onItem().apply(Message::body)
+                .onItem().transform(Message::body)
                 .await().indefinitely()).isEqualTo("hello from bravo");
 
         // Undeploy MyUndeployedVerticle manually

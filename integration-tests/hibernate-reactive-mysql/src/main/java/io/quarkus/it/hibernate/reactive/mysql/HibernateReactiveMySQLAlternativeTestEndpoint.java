@@ -45,7 +45,7 @@ public class HibernateReactiveMySQLAlternativeTestEndpoint {
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
+                .then(() -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
     }
 
     @GET
@@ -53,26 +53,26 @@ public class HibernateReactiveMySQLAlternativeTestEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactivePersist() {
         return mutinySession.persist(new GuineaPig(10, "Tulip"))
-                .onItem().produceUni(s -> s.flush())
-                .onItem().produceUni(junk -> selectNameFromId(10));
+                .chain(s -> s.flush())
+                .then(() -> selectNameFromId(10));
     }
 
     @GET
     @Path("/reactiveRemoveTransientEntity")
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().apply(name -> {
+                .then(() -> selectNameFromId(5))
+                .map(name -> {
                     if (name == null) {
                         throw new AssertionError("Database was not populated properly");
                     }
                     return name;
                 })
-                .onItem().produceUni(junk -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                .onItem().produceUni(aloi -> mutinySession.remove(aloi))
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().ifNotNull().apply(result -> result)
+                .then(() -> mutinySession.merge(new GuineaPig(5, "Aloi")))
+                .chain(aloi -> mutinySession.remove(aloi))
+                .then(() -> mutinySession.flush())
+                .then(() -> selectNameFromId(5))
+                .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
     }
 
@@ -80,11 +80,11 @@ public class HibernateReactiveMySQLAlternativeTestEndpoint {
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, 5))
-                .onItem().produceUni(aloi -> mutinySession.remove(aloi))
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().ifNotNull().apply(result -> result)
+                .then(() -> mutinySession.find(GuineaPig.class, 5))
+                .chain(aloi -> mutinySession.remove(aloi))
+                .then(() -> mutinySession.flush())
+                .then(() -> selectNameFromId(5))
+                .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
     }
 
@@ -93,16 +93,16 @@ public class HibernateReactiveMySQLAlternativeTestEndpoint {
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, 5))
-                .onItem().apply(pig -> {
+                .then(() -> mutinySession.find(GuineaPig.class, 5))
+                .map(pig -> {
                     if (NEW_NAME.equals(pig.getName())) {
                         throw new AssertionError("Pig already had name " + NEW_NAME);
                     }
                     pig.setName(NEW_NAME);
                     return pig;
                 })
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5));
+                .then(() -> mutinySession.flush())
+                .then(() -> selectNameFromId(5));
     }
 
     private Uni<RowSet<Row>> populateDB() {

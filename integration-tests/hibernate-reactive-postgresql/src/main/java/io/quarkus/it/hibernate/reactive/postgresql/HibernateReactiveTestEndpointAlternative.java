@@ -45,33 +45,33 @@ public class HibernateReactiveTestEndpointAlternative {
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
+                .onItem().transformToUni(junk -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
     }
 
     @GET
     @Path("/reactivePersist")
     public Uni<String> reactivePersist() {
         return mutinySession.persist(new GuineaPig(10, "Tulip"))
-                .onItem().produceUni(s -> s.flush())
-                .onItem().produceUni(junk -> selectNameFromId(10));
+                .onItem().transformToUni(s -> s.flush())
+                .onItem().transformToUni(junk -> selectNameFromId(10));
     }
 
     @GET
     @Path("/reactiveRemoveTransientEntity")
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().apply(name -> {
+                .onItem().transformToUni(junk -> selectNameFromId(5))
+                .onItem().transform(name -> {
                     if (name == null) {
                         throw new AssertionError("Database was not populated properly");
                     }
                     return name;
                 })
-                .onItem().produceUni(junk -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                .onItem().produceUni(aloi -> mutinySession.remove(aloi))
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().ifNotNull().apply(result -> result)
+                .onItem().transformToUni(junk -> mutinySession.merge(new GuineaPig(5, "Aloi")))
+                .onItem().transformToUni(aloi -> mutinySession.remove(aloi))
+                .onItem().transformToUni(junk -> mutinySession.flush())
+                .onItem().transformToUni(junk -> selectNameFromId(5))
+                .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
     }
 
@@ -79,11 +79,11 @@ public class HibernateReactiveTestEndpointAlternative {
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, 5))
-                .onItem().produceUni(aloi -> mutinySession.remove(aloi))
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5))
-                .onItem().ifNotNull().apply(result -> result)
+                .onItem().transformToUni(junk -> mutinySession.find(GuineaPig.class, 5))
+                .onItem().transformToUni(aloi -> mutinySession.remove(aloi))
+                .onItem().transformToUni(junk -> mutinySession.flush())
+                .onItem().transformToUni(junk -> selectNameFromId(5))
+                .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
     }
 
@@ -92,16 +92,16 @@ public class HibernateReactiveTestEndpointAlternative {
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()
-                .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, 5))
-                .onItem().apply(pig -> {
+                .onItem().transformToUni(junk -> mutinySession.find(GuineaPig.class, 5))
+                .onItem().transform(pig -> {
                     if (NEW_NAME.equals(pig.getName())) {
                         throw new AssertionError("Pig already had name " + NEW_NAME);
                     }
                     pig.setName(NEW_NAME);
                     return pig;
                 })
-                .onItem().produceUni(junk -> mutinySession.flush())
-                .onItem().produceUni(junk -> selectNameFromId(5));
+                .onItem().transformToUni(junk -> mutinySession.flush())
+                .onItem().transformToUni(junk -> selectNameFromId(5));
     }
 
     private Uni<RowSet<Row>> populateDB() {

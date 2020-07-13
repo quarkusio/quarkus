@@ -36,7 +36,7 @@ public class MultiTest {
                 .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).createMulti();
         assertEquals("123.4563 is not 123.46", multi
                 .collectItems().in(StringBuffer::new, StringBuffer::append)
-                .onItem().apply(StringBuffer::toString)
+                .onItem().transform(StringBuffer::toString)
                 .await().indefinitely());
     }
 

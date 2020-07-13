@@ -119,7 +119,7 @@ public class FunctionInvoker {
         try {
             Object result = method.invoke(target, args);
             if (isAsync()) {
-                response.setOutput(((Uni<?>) result).onFailure().apply(t -> new ApplicationException(t)));
+                response.setOutput(((Uni<?>) result).onFailure().transform(t -> new ApplicationException(t)));
             } else {
                 response.setOutput(Uni.createFrom().item(result));
             }

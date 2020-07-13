@@ -62,7 +62,7 @@ public class MutinyContextEndpoint {
         CompletableFuture<String> ret = all.completedFuture("OK");
         return Uni.createFrom().completionStage(ret)
                 .emitOn(Infrastructure.getDefaultExecutor())
-                .onItem().apply(s -> {
+                .onItem().transform(s -> {
                     Assertions.assertNotNull(uriInfo.getAbsolutePath());
                     try {
                         Assertions.assertTrue(
@@ -79,7 +79,7 @@ public class MutinyContextEndpoint {
     public Uni<String> resteasyContextPropagation(@Context UriInfo uriInfo) {
         return Uni.createFrom().item("OK")
                 .emitOn(Infrastructure.getDefaultExecutor())
-                .onItem().apply(s -> {
+                .onItem().transform(s -> {
                     Assertions.assertNotNull(uriInfo.getAbsolutePath());
                     try {
                         Assertions.assertTrue(
@@ -97,7 +97,7 @@ public class MutinyContextEndpoint {
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
         return Uni.createFrom().completionStage(ret)
                 .emitOn(executor)
-                .onItem().apply(s -> {
+                .onItem().transform(s -> {
                     uriInfo.getAbsolutePath();
                     return s;
                 });

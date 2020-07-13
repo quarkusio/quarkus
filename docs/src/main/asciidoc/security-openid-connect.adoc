@@ -3,18 +3,18 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization
+= Quarkus - Using OpenID Connect to Protect Service Applications
 
 include::./attributes.adoc[]
-:toc:
+:extension-status: preview
 
-This guide demonstrates how to use Quarkus OpenID Connect Extension to protect your JAX-RS applications using Bearer Token Authorization where Bearer Tokens are issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+This guide demonstrates how your Quarkus application can use an OpenID Connect Adapter to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
-Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a Bearer Token which provides valuable information to determine the subject of the call as well as whether or not an HTTP resource can be accessed.
+Bearer Token Authorization is the process of authorizing HTTP requests based on the existence and validity of a bearer token representing a subject and his access context, where the token provides valuable information to determine the subject of the call as well whether or not a HTTP resource can be accessed.
 
-Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize the users using OpenId Connect Authorization Code Flow.
+We are going to give you a guideline on how to use OpenId Connect and OAuth 2.0 in your JAX-RS applications using the Quarkus OpenID Connect Extension.
 
-Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
+include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -328,24 +328,6 @@ export access_token=$(\
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
  )
 ----
-
-== Token Claims And SecurityIdentity Roles
-
-SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
-
-* If `quarkus.oidc.roles.role-claim-path` property is set and a matching array or string claim is found then the roles are extracted from this claim.
-  For example, `customroles`, `customroles/array`, `scope`, `"http://namespace-qualified-custom-claim"/roles`, `"http://namespace-qualified-roles"`, etc.
-* If `groups` claim is available then its value is used
-* If `realm_access/roles` or `resource_access/client_id/roles` (where `client_id` is the value of the `quarkus.oidc.client-id` property) claim is available then its value is used.
-  This check supports the tokens issued by Keycloak
-
-If the token is opaque (binary) then a `scope` property from the remote token introspection response will be used.
-
-Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
-
-== Configuration Reference
-
-include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]
 
 == References
 

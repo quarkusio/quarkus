@@ -6,15 +6,13 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 = Quarkus - Using OpenID Connect Multi-Tenancy
 
 include::./attributes.adoc[]
-:toc:
+:extension-status: preview
 
 This guide demonstrates how your OpenID Connect application can support multi-tenancy so that you can serve multiple tenants from a single application. Tenants can be distinct realms or security domains within the same OpenID Provider or even distinct OpenID Providers.
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-Please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide if you need to authorize a tenant using Bearer Token Authorization.
-
-Please read the link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide if you need to authenticate and authorize a tenant using OpenId Connect Authorization Code Flow.
+include::./status-include.adoc[]
 
 == Prerequisites
 

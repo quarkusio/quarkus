@@ -47,6 +47,7 @@ public class MinikubeWithApplicationPropertiesTest {
                     assertThat(m.getName()).isEqualTo("minikube-with-application-properties");
                     assertThat(m.getLabels()).contains(entry("foo", "bar"));
                     assertThat(m.getAnnotations()).contains(entry("bar", "baz"));
+                    assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -64,6 +65,10 @@ public class MinikubeWithApplicationPropertiesTest {
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getNamespace()).isEqualTo("applications");
+                });
+
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
                     assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {

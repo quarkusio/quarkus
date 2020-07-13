@@ -415,27 +415,11 @@ class KubernetesProcessor {
             session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
         }
 
-        ScmInfo scm = project.getScmInfo();
-        String vcsUrl = scm != null ? scm.getUrl() : null;
-        String commitId = scm != null ? scm.getCommit() : null;
-
-        //Dekorate uses its own annotations. Let's replace them with the quarkus ones.
-        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.VCS_URL));
-        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID));
-        //Add quarkus vcs annotations
-        if (commitId != null) {
-            session.resources().decorate(target,
-                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId)));
-        }
-        if (vcsUrl != null) {
-            session.resources().decorate(target,
-                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl)));
+        if (config.getNamespace().isPresent()) {
+            session.resources().decorate(target, new AddNamespaceDecorator(config.getNamespace().get()));
         }
 
-        if (config.isAddBuildTimestamp()) {
-            session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
-                    now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")))));
-        }
+        applyAnnotations(session, project, target, config, now);
 
         config.getWorkingDir().ifPresent(w -> {
             session.resources().decorate(target, new ApplyWorkingDirDecorator(name, w));
@@ -503,6 +487,31 @@ class KubernetesProcessor {
         session.resources().decorate(target, new RemoveOptionalFromConfigMapEnvSourceDecorator());
         session.resources().decorate(target, new RemoveOptionalFromSecretKeySelectorDecorator());
         session.resources().decorate(target, new RemoveOptionalFromConfigMapKeySelectorDecorator());
+    }
+
+    private void applyAnnotations(Session session, Project project, String target, PlatformConfiguration config,
+            ZonedDateTime now) {
+        ScmInfo scm = project.getScmInfo();
+        String vcsUrl = scm != null ? scm.getUrl() : null;
+        String commitId = scm != null ? scm.getCommit() : null;
+
+        //Dekorate uses its own annotations. Let's replace them with the quarkus ones.
+        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.VCS_URL));
+        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID));
+        //Add quarkus vcs annotations
+        if (commitId != null) {
+            session.resources().decorate(target,
+                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId)));
+        }
+        if (vcsUrl != null) {
+            session.resources().decorate(target,
+                    new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl)));
+        }
+
+        if (config.isAddBuildTimestamp()) {
+            session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
+                    now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")))));
+        }
     }
 
     private void applyKnativeConfig(Session session, Project project, String name, KnativeConfig config) {

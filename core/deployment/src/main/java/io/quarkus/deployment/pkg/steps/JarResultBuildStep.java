@@ -175,6 +175,12 @@ public class JarResultBuildStep {
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
         }
+        if (!(packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
+                packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))
+                && packageConfig.uberJar) {
+            throw new RuntimeException(
+                    "Cannot set quarkus.package.uber-jar=true and quarkus.package.type, if you want an uber-jar set quarkus.package.type=uber-jar.");
+        }
 
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar
                 || packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR)) {

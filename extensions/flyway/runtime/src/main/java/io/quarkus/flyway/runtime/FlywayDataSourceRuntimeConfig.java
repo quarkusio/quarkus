@@ -120,4 +120,16 @@ public final class FlywayDataSourceRuntimeConfig {
     @ConfigItem(defaultValue = "true")
     public boolean createSchemas;
 
+    /**
+     * Prefix of every placeholder (default: ${ )
+     */
+    @ConfigItem
+    public Optional<String> placeholderPrefix = Optional.empty();
+
+    /**
+     * Suffix of every placeholder (default: } )
+     */
+    @ConfigItem
+    public Optional<String> placeholderSuffix = Optional.empty();
+
 }

@@ -401,12 +401,14 @@ public class NativeImageBuildStep {
                         // Do we need to handle transformed classes?
                         // Their bytecode might have been modified but is there source for such modification?
                         final Path jarSourceDep = toJarSource(resolvedDep);
-                        final String fileName = depArtifact.getGroupId() + "." + jarSourceDep.getFileName();
-                        final Path targetPath = libDir.resolve(fileName);
-                        try {
-                            Files.copy(jarSourceDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Unable to copy from " + resolvedDep + " to " + targetPath);
+                        if (jarSourceDep.toFile().exists()) {
+                            final String fileName = depArtifact.getGroupId() + "." + jarSourceDep.getFileName();
+                            final Path targetPath = libDir.resolve(fileName);
+                            try {
+                                Files.copy(jarSourceDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                throw new RuntimeException("Unable to copy from " + jarSourceDep + " to " + targetPath, e);
+                            }
                         }
                     }
                 }

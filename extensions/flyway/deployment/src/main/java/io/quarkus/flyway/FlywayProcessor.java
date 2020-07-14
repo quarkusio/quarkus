@@ -12,7 +12,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ class FlywayProcessor {
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
-        List<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
+        Collection<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
         Set<Class<?>> javaMigrationClasses = new HashSet<>();
@@ -196,15 +195,19 @@ class FlywayProcessor {
         return migrationLocations;
     }
 
-    private List<String> discoverApplicationMigrations(Collection<String> locations) throws IOException, URISyntaxException {
+    private Collection<String> discoverApplicationMigrations(Collection<String> locations)
+            throws IOException, URISyntaxException {
         try {
-            List<String> applicationMigrationResources = new ArrayList<>();
+            LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
             // Locations can be a comma separated list
             for (String location : locations) {
                 // Strip any 'classpath:' protocol prefixes because they are assumed
                 // but not recognized by ClassLoader.getResources()
                 if (location != null && location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
                     location = location.substring(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL.length() + 1);
+                    if (location.startsWith("/")) {
+                        location = location.substring(1);
+                    }
                 }
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
                 while (migrations.hasMoreElements()) {

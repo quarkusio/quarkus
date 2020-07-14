@@ -816,10 +816,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         RunningInvoker invoker = new RunningInvoker(testDir, false);
 
         // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
-        invoker.execute(Collections.singletonList("install"), Collections.emptyMap());
         MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
                 Collections.emptyMap());
         assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExecutionException()).isNull();
         assertThat(installInvocation.getExitCode()).isEqualTo(0);
 
         // run dev mode from the runner module

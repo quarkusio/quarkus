@@ -50,8 +50,7 @@
         <module>independent-projects/qute</module>
 
         <!-- BOMs and parent POM -->
-        <module>bom/runtime</module>
-        <module>bom/deployment</module>
+        <module>bom/application</module>
         <module>bom/test</module>
         <module>build-parent</module>
 

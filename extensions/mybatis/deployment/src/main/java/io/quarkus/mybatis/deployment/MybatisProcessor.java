@@ -7,6 +7,10 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
+import org.apache.ibatis.logging.log4j.Log4jImpl;
+import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
+import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -22,6 +26,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.mybatis.runtime.MyBatisProducers;
 import io.quarkus.mybatis.runtime.MyBatisRecorder;
@@ -39,14 +45,24 @@ class MybatisProcessor {
     }
 
     @BuildStep
-    void addMyBatisMappers(BuildProducer<MyBatisMapperBuildItem> mappers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            CombinedIndexBuildItem indexBuildItem) {
+    void runtimeInitialzed(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(Log4jImpl.class.getName()));
+    }
+
+    @BuildStep
+    void reflectiveClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                ProxyFactory.class,
+                XMLLanguageDriver.class,
+                RawLanguageDriver.class));
+    }
+
+    @BuildStep
+    void addMyBatisMappers(BuildProducer<MyBatisMapperBuildItem> mappers, CombinedIndexBuildItem indexBuildItem) {
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(MYBATIS_MAPPER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 DotName dotName = i.target().asClass().name();
                 mappers.produce(new MyBatisMapperBuildItem(dotName));
-                additionalBeans.produce(new AdditionalBeanBuildItem(dotName.toString()));
             }
         }
     }
@@ -63,7 +79,7 @@ class MybatisProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem,
             MyBatisRecorder recorder) {
         List<String> mappers = myBatisMapperBuildItems
-                .stream().map(m -> m.getDotName().toString()).collect(Collectors.toList());
+                .stream().map(m -> m.getMapperName().toString()).collect(Collectors.toList());
 
         String dataSourceName;
         if (myBatisRuntimeConfig.dataSource.isPresent()) {
@@ -109,11 +125,11 @@ class MybatisProcessor {
 
         for (MyBatisMapperBuildItem i : myBatisMapperBuildItems) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(i.getDotName())
+                    .configure(i.getMapperName())
                     .scope(Singleton.class)
                     .setRuntimeInit()
                     .unremovable()
-                    .supplier(recorder.MyBatisMapperSupplier(i.getDotName().toString(),
+                    .supplier(recorder.MyBatisMapperSupplier(i.getMapperName().toString(),
                             sqlSessionManagerBuildItem.getSqlSessionManager()));
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());
         }

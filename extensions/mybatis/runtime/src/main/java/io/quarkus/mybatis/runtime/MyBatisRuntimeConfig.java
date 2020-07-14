@@ -12,13 +12,13 @@ public class MyBatisRuntimeConfig {
      * MyBatis environment id
      */
     @ConfigItem(defaultValue = "quarkus")
-    public String environment = "quarkus";
+    public String environment;
 
     /**
      * MyBatis transaction factory
      */
     @ConfigItem(defaultValue = "MANAGED")
-    public String transactionFactory = "MANAGED";
+    public String transactionFactory;
 
     /**
      * MyBatis data source
@@ -29,6 +29,6 @@ public class MyBatisRuntimeConfig {
     /**
      * MyBatis initial sql
      */
-    @ConfigItem(name = "initialSql")
+    @ConfigItem(name = "initial-sql")
     public Optional<String> initialSql;
 }

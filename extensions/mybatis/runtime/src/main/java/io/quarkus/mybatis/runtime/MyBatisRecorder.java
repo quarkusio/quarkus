@@ -46,7 +46,7 @@ public class MyBatisRecorder {
             try {
                 configuration.addMapper(Resources.classForName(mapper));
             } catch (ClassNotFoundException e) {
-
+                LOG.debug("Can not find the mapper class " + mapper);
             }
         }
 

@@ -88,6 +88,7 @@
         <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
+        <module>mybatis</module>
         <module>jackson</module>
         <module>jsonb</module>
         <module>resteasy-jackson</module>

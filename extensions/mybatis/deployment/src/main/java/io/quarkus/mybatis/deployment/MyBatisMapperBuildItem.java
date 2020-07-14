@@ -5,13 +5,13 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.MultiBuildItem;
 
 public final class MyBatisMapperBuildItem extends MultiBuildItem {
-    private final DotName dotName;
+    private final DotName mapperName;
 
-    public MyBatisMapperBuildItem(DotName dotName) {
-        this.dotName = dotName;
+    public MyBatisMapperBuildItem(DotName mapperName) {
+        this.mapperName = mapperName;
     }
 
-    public DotName getDotName() {
-        return dotName;
+    public DotName getMapperName() {
+        return mapperName;
     }
 }

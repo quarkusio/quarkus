@@ -39,4 +39,9 @@ public class SimpleQrsTestCase {
         RestAssured.get("/simple/person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
     }
+    @Test
+    public void testBlocking() {
+        RestAssured.get("/simple/blocking")
+                .then().body(Matchers.equalTo("true"));
+    }
 }

@@ -1,5 +1,8 @@
 package io.quarkus.qrs.test;
 
+import io.quarkus.qrs.Blocking;
+import io.quarkus.runtime.BlockingOperationControl;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -34,5 +37,12 @@ public class SimpleQrsResource {
         person.setFirst("Bob");
         person.setLast("Builder");
         return person;
+    }
+
+    @GET
+    @Path("/blocking")
+    @Blocking
+    public String blocking() {
+        return String.valueOf(BlockingOperationControl.isBlockingAllowed());
     }
 }

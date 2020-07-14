@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 
 import javax.ws.rs.core.UriInfo;
 
+import io.vertx.core.net.impl.ConnectionBase;
 import org.jboss.logging.Logger;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
@@ -79,6 +80,7 @@ public class RequestContext implements Runnable, Closeable {
         } else {
             suspended = false;
             if (executor == null) {
+                ((ConnectionBase)context.request().connection()).getContext().nettyEventLoop().execute(this);
                 run();
             } else {
                 executor.execute(this);
@@ -94,8 +96,9 @@ public class RequestContext implements Runnable, Closeable {
                 handleException(throwable);
                 return;
             }
-            for (; position < handlers.length; ++position) {
+            while (position < handlers.length) {
                 handlers[position].handle(this);
+                ++position;
                 if (suspended) {
                     Executor exec = null;
                     synchronized (this) {

@@ -15,7 +15,7 @@ public class FlywayFunctionalityTest {
     @Test
     @DisplayName("Migrates a schema correctly using integrated instance")
     public void testFlywayQuarkusFunctionality() {
-        when().get("/flyway/migrate").then().body(is("1.0.1"));
+        when().get("/flyway/migrate").then().body(is("1.0.2"));
     }
 
     @Test

@@ -93,7 +93,7 @@ must be set, as the default version does not support Junit 5:
 </plugin>
 ----
 
-We also set the `java.util.logging` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
+We also set the `java.util.logging.manager` system property to make sure tests will use the correct logmanager and `maven.home` to ensure that custom configuration
 from `${maven.home}/conf/settings.xml` is applied (if any).
 
 The project should also contain a simple test:

@@ -1,14 +1,15 @@
+
 package io.quarkus.container.image.jib.deployment;
 
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 
-public class JibBuild implements BooleanSupplier {
+public class JibBuildEnabled implements BooleanSupplier {
 
     private final ContainerImageConfig containerImageConfig;
 
-    public JibBuild(ContainerImageConfig containerImageConfig) {
+    JibBuildEnabled(ContainerImageConfig containerImageConfig) {
         this.containerImageConfig = containerImageConfig;
     }
 

@@ -70,6 +70,13 @@ public class ContainerImageConfig {
     public boolean push;
 
     /**
+     * The name of the container image extension to use (e.g. docker, jib, s2i).
+     * The option will be used in case multiple extensions are present.
+     */
+    @ConfigItem
+    public Optional<String> builder;
+
+    /**
      * Since user.name which is default value can be uppercase and uppercase values are not allowed
      * in the repository part of image references, we need to make the username lowercase.
      *

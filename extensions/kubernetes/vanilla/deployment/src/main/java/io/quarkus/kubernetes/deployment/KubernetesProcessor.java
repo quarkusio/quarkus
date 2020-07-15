@@ -65,7 +65,9 @@ import io.dekorate.knative.decorator.ApplyMinScaleDecorator;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.Annotation;
+import io.dekorate.kubernetes.config.Configurator;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.ImageConfigurationFluent;
 import io.dekorate.kubernetes.config.Label;
 import io.dekorate.kubernetes.config.LabelBuilder;
 import io.dekorate.kubernetes.config.PortBuilder;
@@ -103,6 +105,7 @@ import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
+import io.dekorate.s2i.config.S2iBuildConfigFluent;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Maps;
@@ -321,7 +324,32 @@ class KubernetesProcessor {
                 determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
 
         applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
+        //When S2i is disabled we need to pass that information to dekorate.
+        //Also we need to make sure that the alternatives (instances of ImageConfiguration)
+        //are properly configured.
+        if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
+            session.configurators().add(new Configurator<ImageConfigurationFluent<?>>() {
+                @Override
+                public void visit(ImageConfigurationFluent<?> image) {
+                    containerImage.ifPresent(i -> {
+                        String group = ImageUtil.getRepository(i.getImage()).split("/")[0];
+                        image.withGroup(group);
+                        i.getRegistry().ifPresent(r -> {
+                            image.withRegistry(r);
+                        });
+                    });
+                }
+            });
 
+            //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
+            session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
+            session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
+                @Override
+                public void visit(S2iBuildConfigFluent<?> s2i) {
+                    s2i.withEnabled(false);
+                }
+            });
+        }
         //apply build item configurations to the dekorate session.
         applyBuildItems(session,
                 applicationInfo,

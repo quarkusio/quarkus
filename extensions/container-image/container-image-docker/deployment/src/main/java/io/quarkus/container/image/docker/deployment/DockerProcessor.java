@@ -43,20 +43,20 @@ import io.quarkus.deployment.util.ExecUtil;
 public class DockerProcessor {
 
     private static final Logger log = Logger.getLogger(DockerProcessor.class);
-    private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
     private static final String DOCKERFILE_FAST_JAR = "Dockerfile.fast-jar";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
     public static final String DOCKER_BINARY_NAME = "docker";
+    public static final String DOCKER = "docker";
 
     private final DockerWorking dockerWorking = new DockerWorking();
 
-    @BuildStep
+    @BuildStep(onlyIf = DockerBuild.class)
     public CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_DOCKER);
     }
 
-    @BuildStep(onlyIf = { IsNormal.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormal.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
     public void dockerBuildFromJar(DockerConfig dockerConfig,
             ContainerImageConfig containerImageConfig, // TODO: use to check whether we need to also push to registry
             OutputTargetBuildItem out,
@@ -89,7 +89,7 @@ public class DockerProcessor {
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, DockerBuild.class })
     public void dockerBuildFromNativeImage(DockerConfig dockerConfig,
             ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImage,

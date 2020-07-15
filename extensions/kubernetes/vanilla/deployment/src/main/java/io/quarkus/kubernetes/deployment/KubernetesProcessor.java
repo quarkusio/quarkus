@@ -169,10 +169,10 @@ class KubernetesProcessor {
         List<KubernetesDeploymentTargetBuildItem> mergedDeploymentTargets = mergeList(allDeploymentTargets);
         Collections.sort(mergedDeploymentTargets);
 
-        List<EnabledKubernetesDeploymentTargetsBuildItem.Entry> entries = new ArrayList<>(mergedDeploymentTargets.size());
+        List<DeploymentTargetEntry> entries = new ArrayList<>(mergedDeploymentTargets.size());
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
-                entries.add(new EnabledKubernetesDeploymentTargetsBuildItem.Entry(deploymentTarget.getName(),
+                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
                         deploymentTarget.getKind(), deploymentTarget.getPriority()));
             }
         }
@@ -270,7 +270,7 @@ class KubernetesProcessor {
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
-                .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName)
+                .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
         Path artifactPath = outputTarget.getOutputDirectory().resolve(
@@ -283,7 +283,7 @@ class KubernetesProcessor {
         final SessionReader sessionReader = new SimpleFileReader(
                 project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
                         .getEntriesSortedByPriority().stream()
-                        .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName).collect(Collectors.toSet()));
+                        .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
         sessionWriter.setProject(project);
         final Session session = Session.getSession(new NoopLogger());
         session.setWriter(sessionWriter);

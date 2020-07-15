@@ -184,6 +184,8 @@ not set.
 |quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
 |quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
 This value will be returned in a `Access-Control-Max-Age` response header.
+|quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code
+when the request’s credentials mode Request.credentials is “include”
 |===
 
 
@@ -199,6 +201,7 @@ quarkus.http.cors.methods=GET,PUT,POST
 quarkus.http.cors.headers=X-Custom
 quarkus.http.cors.exposed-headers=Content-Disposition
 quarkus.http.cors.access-control-max-age=24H
+quarkus.http.cors.access-control-allow-credentials=true
 ----
 
 == HTTP Limits Configuration
@@ -266,4 +269,3 @@ link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-
 === web.xml
 
 If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
-

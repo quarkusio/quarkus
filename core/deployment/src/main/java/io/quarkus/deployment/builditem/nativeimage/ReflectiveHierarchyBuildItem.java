@@ -32,9 +32,9 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     private final Type type;
-    private IndexView index;
+    private final IndexView index;
     private final Predicate<DotName> ignorePredicate;
-    private String source;
+    private final String source;
 
     public ReflectiveHierarchyBuildItem(Type type) {
         this(type, DefaultIgnorePredicate.INSTANCE);

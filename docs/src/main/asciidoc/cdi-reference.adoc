@@ -702,6 +702,7 @@ void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceA
 }
 ----
 
+[[additional_beans]]
 === Additional Beans
 
 `AdditionalBeanBuildItem` is used to specify additional bean classes to be analyzed during discovery.
@@ -719,6 +720,7 @@ List<AdditionalBeanBuildItem> additionalBeans() {
 
 NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is removable by default. See also <<remove_unused_beans>>.
 
+[[synthetic_beans]]
 === Synthetic Beans
 
 Sometimes it is very useful to be able to register a synthetic bean.

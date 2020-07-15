@@ -47,6 +47,7 @@
         <graal-sdk.version>20.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <smallrye-common.version>1.1.0</smallrye-common.version>
     </properties>
     <modules>
         <module>app-model</module>
@@ -337,7 +338,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-io</artifactId>
+                <version>${smallrye-common.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>

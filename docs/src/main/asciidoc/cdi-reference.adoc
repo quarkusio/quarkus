@@ -702,6 +702,7 @@ void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceA
 }
 ----
 
+[[additional_beans]]
 === Additional Beans
 
 `AdditionalBeanBuildItem` is used to specify additional bean classes to be analyzed during discovery.
@@ -719,12 +720,20 @@ List<AdditionalBeanBuildItem> additionalBeans() {
 
 NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is removable by default. See also <<remove_unused_beans>>.
 
+[[synthetic_beans]]
 === Synthetic Beans
 
-Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
-In CDI, this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In Quarkus, we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+Sometimes it is very useful to be able to register a synthetic bean.
+Bean attributes of a synthetic bean are not derived from a java class, method or field.
+Instead, the attributes are specified by an extension.
+In CDI, this could be achieved using the `AfterBeanDiscovery.addBean()` methods.
+In Quarkus, there are three ways to register a synthetic bean.
 
+==== `BeanRegistrarBuildItem`
+
+A build step can produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+
+.`BeanRegistrarBuildItem` Example
 [source,java]
 ----
 @BuildStep
@@ -743,9 +752,12 @@ NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore ther
 
 TIP: You can easily filter all class-based beans via the convenient `BeanStream` returned from the `RegistrationContext.beans()` method.
 
-If an extension needs to produce other build items during the "bean registration" phase it should use the `BeanRegistrationPhaseBuildItem` instead.
+==== `BeanRegistrationPhaseBuildItem`
+
+If a build step *needs to produce other build items during the registration* it should use the `BeanRegistrationPhaseBuildItem`.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
 
+.`BeanRegistrationPhaseBuildItem` Example
 [source,java]
 ----
 @BuildStep
@@ -757,7 +769,24 @@ void syntheticBean(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
 }
 ----
 
-NOTE: See `BeanRegistrationPhaseBuildItem` javadoc for more information.
+NOTE: See the `BeanRegistrationPhaseBuildItem` javadoc for more information.
+
+==== `SyntheticBeanBuildItem`
+
+Finally, a build step can produce a `SyntheticBeanBuildItem` to register a synthetic bean whose instance can be easily *produced through a <<writing-extensions.adoc#bytecode-recording,recorder>>*.
+The extended `BeanConfigurator` accepts either a `io.quarkus.runtime.RuntimeValue` or a `java.util.function.Supplier`.
+
+.`SyntheticBeanBuildItem` Example
+[source,java]
+----
+@BuildStep
+@Record(STATIC_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .runtimeValue(recorder.createFoo())
+                .done();
+}
+----
 
 
 === Annotation Transformations

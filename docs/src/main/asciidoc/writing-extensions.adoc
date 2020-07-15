@@ -80,14 +80,94 @@ TODO: Describe where Substitutions and recorders should live
 
 === Expose your components via CDI
 
-Since CDI is the central programming model when it comes to component composition, frameworks should expose producers that are easily consumable by user applications. +
+Since CDI is the central programming model when it comes to component composition, frameworks and extensions should expose their components as beans that are easily consumable by user applications.
 For example, Hibernate ORM exposes `EntityManagerFactory` and `EntityManager` beans, the connection pool exposes `DataSource` beans etc.
-An extension must generate these bean definitions at build time.
+Extensions must register these bean definitions at build time.
+
+==== Beans backed by classes
+
+An extension can produce an <<cdi-reference.adoc#additional_beans,`AdditionalBeanBuildItem`>> to instruct the container to read a bean definition from a class as if it was part of the original application:
+
+.Bean Class Registered by `AdditionalBeanBuildItem`
+[source%nowrap,java]
+----
+@ApplicationScoped <1>
+public class Echo {
+
+   public String echo(String val) {
+      return val;
+   }
+}
+----
+<1> If a bean registered by an `AdditionalBeanBuildItem` does not specify a scope then `@Dependent` is assumed. 
+
+All other beans can inject such a bean:
+
+.Bean Injecting a Bean Produced by an `AdditionalBeanBuildItem`
+[source%nowrap,java]
+----
+@Path("/hello")
+public class ExampleResource {
+
+    @Inject
+    Echo echo;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello(String foo) {
+        return echo.echo(foo);
+    }
+}
+----
+
+And vice versa - the extension bean can inject application beans and beans provided by other extensions:
+
+.Extension Bean Injection Example
+[source%nowrap,java]
+----
+@ApplicationScoped
+public class Echo {
+
+    @Inject
+    DataSource dataSource;  <1>
+
+    @Inject
+    Instance<List<String>> listsOfStrings; <2>
+    
+    //...
+}
+----
+<1> Inject a bean provided by other extension.
+<2> Inject all beans matching the type `List<String>`.
+
+[[bean_init]]
+==== Bean initialization
+
+Some components may require additional initialization based on information collected during augmentation.
+The most straightforward solution is to obtain a bean instance and call a method directly from a build step.
+However, it is _illegal_ to obtain a bean instance during the augmentation phase.
+The reason is that the CDI container is not started yet.
+It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>. 
+
+TIP: `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` config roots can be injected in any bean. `RUN_TIME` config roots should only be injected after the bootstrap though.
+
+It is possible to invoke a bean method from a <<bytecode-recording,recorder method>> though.
+If you need to access a bean in a `@Record(STATIC_INIT)` build step then is must either depend on the `BeanContainerBuildItem` or wrap the logic in a `BeanContainerListenerBuildItem`.
+The reason is simple - we need to make sure the CDI container is fully initialized and started.
+However, it is safe to expect that the CDI container is fully initialized and running in a `@Record(RUNTIME_INIT)` build step.
+You can obtain a reference to the container via `CDI.current()` or Quarkus-specific `Arc.container()`.
+
+IMPORTANT: Don't forget to make sure the bean state guarantees the visibility, e.g. via the `volatile` keyword.
+
+NOTE: There is one significant drawback of this "late initialization" approach. 
+An _uninitialized_ bean may be accessed by other extensions or application components that are instantiated during bootstrap. 
+We'll cover a more robust solution in the <<synthetic_beans>>.
+
+==== Default beans
 
 A very useful pattern of creating such beans but also giving application code the ability to easily override some of the beans with custom implementations, is to use
-the `@DefaultBean` that Quarkus provides. This is best explained with an example.
-
-==== Example CDI configuration using @DefaultBean
+the `@DefaultBean` that Quarkus provides. 
+This is best explained with an example.
 
 Let us assume that the Quarkus extension needs to provide a `Tracer` bean which application code is meant to inject into its own beans.
 
@@ -179,6 +259,50 @@ class MyParser extends Parser {
 <2> Enables the alternative. The priority could be any number to override the default bean but if there are multiple alternatives the highest priority wins.
 
 NOTE: CDI alternatives are only considered during injection and type-safe resolution. For example the default implementation would still receive observer notifications.
+
+[[synthetic_beans]]
+==== Synthetic beans
+
+Sometimes it is very useful to be able to register a synthetic bean.
+Bean attributes of a synthetic bean are not derived from a java class, method or field.
+Instead, the attributes are specified by an extension.
+
+NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported. 
+In other words, it's up to the extension to provide all required services to a synthetic bean instance.
+
+There are several ways to register a <<cdi-reference.adoc#synthetic_beans,synthetic bean>> in Quarkus.
+In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>). 
+
+The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
+
+* whose instance can be easily produced through a <<bytecode-recording,recorder>>, 
+* to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly. 
+
+.Instance Produced Through Recorder
+[source%nowrap,java]
+----
+@BuildStep
+@Record(STATIC_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .runtimeValue(recorder.createFoo("parameters are recorder in the bytecode")) <1>
+                .done();
+}
+----
+<1> The string value is recorded in the bytecode and used to initialize the instance of `Foo`.
+
+."Context" Holder
+[source%nowrap,java]
+----
+@BuildStep
+@Record(STATIC_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(TestContext.class).scope(Singleton.class)
+                .runtimeValue(recorder.createContext("parameters are recorder in the bytecode")) <1>
+                .done();
+}
+----
+<1> The "real" components can inject the `TestContext` directly.
 
 === Some types of extensions
 

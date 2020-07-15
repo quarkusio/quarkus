@@ -82,10 +82,10 @@ public class Timing {
         String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
         if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
-            logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
+            logger.infof("Quarkus %s %s started in %s s. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
                     httpServerInfo);
         } else {
-            logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
+            logger.infof("%s %s %s (powered by Quarkus %s) started in %s s. %s", name, version, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, httpServerInfo);
         }
         logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
@@ -97,7 +97,7 @@ public class Timing {
         final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("%s stopped in %ss",
+        logger.infof("%s stopped in %s s",
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
                 secondsRepresentation);
         bootStopTime = -1;

@@ -50,6 +50,24 @@ Add the following dependencies to your project:
 </dependencies>
 ----
 
+The use in native images requires a dependency on the entity view annotation processor that may be extracted into a separate `native` profile:
+
+[source,xml]
+----
+<profiles>
+    <profile>
+        <id>native</id>
+        <dependencies>
+            <dependency>
+                <groupId>com.blazebit</groupId>
+                <artifactId>blaze-persistence-entity-view-processor</artifactId>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </profile>
+</profiles>
+----
+
 A `CriteriaBuilderFactory` and an `EntityViewManager` will be created based on the configured `EntityManagerFactory` as provided by the link:{quarkus-home-url}/guides/hibernate-orm[Hibernate-ORM extension].
 
 You can then access these beans via injection:

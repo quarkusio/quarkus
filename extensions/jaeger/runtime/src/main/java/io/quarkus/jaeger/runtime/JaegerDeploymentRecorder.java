@@ -24,15 +24,17 @@ public class JaegerDeploymentRecorder {
         jaegerVersion = version;
     }
 
-    synchronized public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+    /* RUNTIME_INIT */
+    public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
         registerTracer(jaeger, appConfig, new NoopMetricsFactory());
     }
 
-    synchronized public void registerTracerWithMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
-        registerTracer(jaeger, appConfig, new QuarkusJaegerMetricsFactory());
+    /* RUNTIME_INIT */
+    public void registerTracerWithMpMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMpMetricsFactory());
     }
 
-    private void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
+    private synchronized void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
                 jaeger.serviceName = appConfig.name;

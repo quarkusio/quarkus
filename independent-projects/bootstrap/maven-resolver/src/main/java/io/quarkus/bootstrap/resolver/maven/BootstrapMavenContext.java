@@ -87,6 +87,7 @@ public class BootstrapMavenContext {
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
     private static final String MAVEN_PROJECTBASEDIR = "MAVEN_PROJECTBASEDIR";
+    private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String userHome = PropertyUtils.getUserHome();
@@ -145,7 +146,11 @@ public class BootstrapMavenContext {
         }
         userSettings = config.userSettings == null
                 ? resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
-                        () -> new File(userMavenConfigurationHome, SETTINGS_XML))
+                        () -> {
+                            final String quarkusMavenSettings = PropertyUtils.getProperty(MAVEN_SETTINGS);
+                            return quarkusMavenSettings == null ? new File(userMavenConfigurationHome, SETTINGS_XML)
+                                    : new File(quarkusMavenSettings);
+                        })
                 : config.userSettings;
         globalSettings = resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_GLOBAL_SETTINGS),
                 () -> {

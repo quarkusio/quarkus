@@ -68,9 +68,6 @@
         <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
         <module>devtools</module>
 
-        <!-- Integration Tests -->
-        <module>integration-tests</module>
-
         <!-- Misc. -->
         <module>docs</module>
     </modules>
@@ -114,6 +111,19 @@
             <build>
                 <defaultGoal>clean install</defaultGoal>
             </build>
+        </profile>
+        <profile>
+            <id>it</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <!-- Integration Tests -->
+                <module>integration-tests</module>
+            </modules>
         </profile>
         <profile>
             <id>release</id>

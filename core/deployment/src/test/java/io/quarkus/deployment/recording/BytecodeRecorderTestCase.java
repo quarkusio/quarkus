@@ -250,6 +250,16 @@ public class BytecodeRecorderTestCase {
     }
 
     @Test
+    public void testRecordableConstructor() throws Exception {
+        runTest(generator -> {
+            TestConstructorBean bean = new TestConstructorBean("John", "Citizen");
+            bean.setAge(30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new TestConstructorBean("John", "Citizen").setAge(30));
+    }
+
+    @Test
     public void testRecordingProxyToStringNotNull() {
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl generator = new BytecodeRecorderImpl(tcl, false, TEST_CLASS);

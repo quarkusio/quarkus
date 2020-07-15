@@ -3,16 +3,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-elasticsearch-rest-client-parent</artifactId>
+        <artifactId>quarkus-elasticsearch-rest-client-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-elasticsearch-rest-client</artifactId>
-    <name>Quarkus - Elasticsearch REST client - Runtime</name>
-    <description>Elasticsearch REST client</description>
+    <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
+    <name>Quarkus - Elasticsearch REST client common - Runtime</name>
+    <description>Elasticsearch REST client common</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

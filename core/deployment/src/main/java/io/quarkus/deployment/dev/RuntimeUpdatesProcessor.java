@@ -171,7 +171,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
         if (restartNeeded) {
             restartCallback.accept(filesChanged);
-            log.infof("Hot replace total time: %ss ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
+            log.infof("Hot replace total time: %s s ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             return true;
         } else if (!filesChanged.isEmpty()) {
             for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
@@ -181,7 +181,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     log.error("Changed files consumer failed", t);
                 }
             }
-            log.infof("Files changed but restart not needed - notified extensions in: %ss ",
+            log.infof("Files changed but restart not needed - notified extensions in: %s s ",
                     Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
         }
         return false;

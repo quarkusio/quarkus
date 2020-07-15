@@ -35,4 +35,11 @@ public class FlywayFunctionalityTest {
     public void testCreateSchemasDefaultIsTrue() {
         when().get("/flyway/create-schemas").then().body(is("true"));
     }
+
+    @Test
+    @DisplayName("Verify placeholder replacement")
+    public void testPlaceholdersPrefixSuffix() {
+        when().get("/flyway/title").then().body(is("1.0.1 REPLACED"));
+    }
+
 }

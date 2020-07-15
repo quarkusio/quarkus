@@ -207,6 +207,8 @@ class MyJobs {
 }
 ----
 
+NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz.adoc#quartz-configuration-reference,Quartz Configuration Reference>>.
+
 == Scheduled Methods and Testing
 
 It is often desirable to disable the scheduler when running the tests.

@@ -424,10 +424,12 @@ public class QuarkusDev extends QuarkusTask {
         SourceSetContainer sourceSets = javaConvention.getSourceSets();
         SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Set<String> sourcePaths = new HashSet<>();
+        Set<String> sourceParentPaths = new HashSet<>();
 
         for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
             if (sourceDir.exists()) {
                 sourcePaths.add(sourceDir.getAbsolutePath());
+                sourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath().toString());
             }
         }
         //TODO: multiple resource directories
@@ -457,7 +459,10 @@ public class QuarkusDev extends QuarkusTask {
                 sourcePaths,
                 classesDir,
                 resourcesSrcDir.getAbsolutePath(),
-                resourcesOutputPath);
+                resourcesOutputPath,
+                sourceParentPaths,
+                project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
+                project.getBuildDir().toString());
         if (root) {
             context.setApplicationRoot(wsModuleInfo);
         } else {

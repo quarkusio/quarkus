@@ -45,6 +45,8 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                 project.getDir().toAbsolutePath().toString(),
                 Collections.singleton(project.getSourcesSourcesDir().toAbsolutePath().toString()),
                 project.getClassesDir().toAbsolutePath().toString(),
-                project.getResourcesSourcesDir().toAbsolutePath().toString());
+                project.getResourcesSourcesDir().toAbsolutePath().toString(),
+                project.getSourcesDir().toString(), project.getCodeGenOutputDir().toString(),
+                project.getOutputDir().toString());
     }
 }

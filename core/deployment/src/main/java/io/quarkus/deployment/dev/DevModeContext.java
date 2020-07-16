@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev;
 import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -231,14 +232,22 @@ public class DevModeContext implements Serializable {
         private final String classesPath;
         private final String resourcePath;
         private final String resourcesOutputPath;
+        private final String preBuildOutputDir;
+        private final Set<String> sourceParents;
+        private final String targetDir;
 
         public ModuleInfo(AppArtifactKey appArtifactKey,
                 String name,
                 String projectDirectory,
                 Set<String> sourcePaths,
                 String classesPath,
-                String resourcePath) {
-            this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
+                String resourcePath,
+                String sourceParent,
+                String preBuildOutputDir,
+                String targetDir) {
+            this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath,
+                    Collections.singleton(sourceParent),
+                    preBuildOutputDir, targetDir);
         }
 
         public ModuleInfo(
@@ -247,7 +256,10 @@ public class DevModeContext implements Serializable {
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath,
-                String resourceOutputPath) {
+                String resourceOutputPath,
+                Set<String> sourceParents,
+                String preBuildOutputDir,
+                String targetDir) {
             this.appArtifactKey = appArtifactKey;
             this.name = name;
             this.projectDirectory = projectDirectory;
@@ -255,6 +267,9 @@ public class DevModeContext implements Serializable {
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
             this.resourcesOutputPath = resourceOutputPath;
+            this.sourceParents = sourceParents;
+            this.preBuildOutputDir = preBuildOutputDir;
+            this.targetDir = targetDir;
         }
 
         public String getName() {
@@ -269,8 +284,14 @@ public class DevModeContext implements Serializable {
             return Collections.unmodifiableSet(sourcePaths);
         }
 
+        public Set<String> getSourceParents() {
+            return sourceParents;
+        }
+
         public void addSourcePaths(Collection<String> additionalPaths) {
-            additionalPaths.stream().map(p -> projectDirectory + File.separator + p).forEach(sourcePaths::add);
+            additionalPaths.stream()
+                    .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
+                    .forEach(sourcePaths::add);
         }
 
         public String getClassesPath() {
@@ -283,6 +304,14 @@ public class DevModeContext implements Serializable {
 
         public String getResourcesOutputPath() {
             return resourcesOutputPath;
+        }
+
+        public String getPreBuildOutputDir() {
+            return preBuildOutputDir;
+        }
+
+        public String getTargetDir() {
+            return targetDir;
         }
 
         public AppArtifactKey getAppArtifactKey() {

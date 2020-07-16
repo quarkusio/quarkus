@@ -12,14 +12,17 @@ import org.jboss.logging.Logger;
 
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
+import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyChannelProvider;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -27,6 +30,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
@@ -80,10 +84,18 @@ public class GrpcServerProcessor {
             ShutdownContextBuildItem shutdown, List<BindableServiceBuildItem> bindables,
             VertxBuildItem vertx) {
         if (!bindables.isEmpty()) {
-            recorder.initializeGrpcServer(vertx.getVertx(), config);
+            recorder.initializeGrpcServer(vertx.getVertx(), config, shutdown);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void definializeGrpcFieldsForDevMode(BuildProducer<BytecodeTransformerBuildItem> transformers) {
+        transformers.produce(new BytecodeTransformerBuildItem("io.grpc.internal.InternalHandlerRegistry",
+                new FieldDefinalizingVisitor("services", "methods")));
+        transformers.produce(new BytecodeTransformerBuildItem(ServerImpl.class.getName(),
+                new FieldDefinalizingVisitor("interceptors")));
     }
 
     @BuildStep

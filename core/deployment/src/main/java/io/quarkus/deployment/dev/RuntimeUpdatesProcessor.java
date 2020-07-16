@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
@@ -536,5 +537,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void close() throws IOException {
         compiler.close();
+        FSWatchUtil.shutdown();
     }
 }

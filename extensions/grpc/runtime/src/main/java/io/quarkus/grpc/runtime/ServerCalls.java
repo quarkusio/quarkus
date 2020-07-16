@@ -12,6 +12,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 
 public class ServerCalls {
+    private static StreamCollector streamCollector = StreamCollector.NO_OP;
 
     private ServerCalls() {
     }
@@ -40,6 +41,7 @@ public class ServerCalls {
 
     public static <I, O> void oneToMany(I request, StreamObserver<O> response, Function<I, Multi<O>> implementation) {
         try {
+            streamCollector.add(response);
             implementation.apply(request)
                     .subscribe().with(
                             new Consumer<O>() {
@@ -51,17 +53,17 @@ public class ServerCalls {
                             new Consumer<Throwable>() {
                                 @Override
                                 public void accept(Throwable throwable) {
-                                    response.onError(throwable);
+                                    onError(response, throwable);
                                 }
                             },
                             new Runnable() {
                                 @Override
                                 public void run() {
-                                    response.onCompleted();
+                                    onCompleted(response);
                                 }
                             });
         } catch (Throwable throwable) {
-            response.onError(toStatusFailure(throwable));
+            onError(response, toStatusFailure(throwable));
         }
     }
 
@@ -70,19 +72,21 @@ public class ServerCalls {
         try {
             UnicastProcessor<I> input = UnicastProcessor.create();
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
+            streamCollector.add(response);
+
             Uni<O> uni = implementation.apply(input);
             uni.subscribe().with(
                     new Consumer<O>() {
                         @Override
                         public void accept(O item) {
                             response.onNext(item);
-                            response.onCompleted();
+                            onCompleted(response);
                         }
                     },
                     new Consumer<Throwable>() {
                         @Override
                         public void accept(Throwable failure) {
-                            response.onError(toStatusFailure(failure));
+                            onError(response, toStatusFailure(failure));
                         }
                     });
             return pump;
@@ -95,6 +99,7 @@ public class ServerCalls {
     public static <I, O> StreamObserver<I> manyToMany(StreamObserver<O> response,
             Function<Multi<I>, Multi<O>> implementation) {
         try {
+            streamCollector.add(response);
             UnicastProcessor<I> input = UnicastProcessor.create();
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
             Multi<O> uni = implementation.apply(input);
@@ -108,24 +113,34 @@ public class ServerCalls {
                     new Consumer<Throwable>() {
                         @Override
                         public void accept(Throwable failure) {
-                            response.onError(toStatusFailure(failure));
+                            onError(response, toStatusFailure(failure));
                         }
                     },
                     new Runnable() {
                         @Override
                         public void run() {
-                            response.onCompleted();
+                            onCompleted(response);
                         }
                     });
             return pump;
         } catch (Throwable throwable) {
-            response.onError(toStatusFailure(throwable));
+            onError(response, toStatusFailure(throwable));
             return null;
         }
     }
 
+    private static <O> void onCompleted(StreamObserver<O> response) {
+        response.onCompleted();
+        streamCollector.remove(response);
+    }
+
+    private static <O> void onError(StreamObserver<O> response, Throwable error) {
+        response.onError(error);
+        streamCollector.remove(response);
+    }
+
     private static <I> StreamObserver<I> getStreamObserverFeedingProcessor(UnicastProcessor<I> input) {
-        return new StreamObserver<I>() {
+        StreamObserver<I> result = new StreamObserver<I>() {
             @Override
             public void onNext(I i) {
                 input.onNext(i);
@@ -134,13 +149,19 @@ public class ServerCalls {
             @Override
             public void onError(Throwable throwable) {
                 input.onError(throwable);
+                streamCollector.remove(this);
             }
 
             @Override
             public void onCompleted() {
                 input.onComplete();
+                streamCollector.remove(this);
             }
         };
+
+        streamCollector.add(result);
+
+        return result;
     }
 
     private static Throwable toStatusFailure(Throwable throwable) {
@@ -158,5 +179,14 @@ public class ServerCalls {
                     .withDescription(desc)
                     .asException();
         }
+    }
+
+    // for dev mode only!
+    public static void setStreamCollector(StreamCollector collector) {
+        streamCollector = collector;
+    }
+
+    public static StreamCollector getStreamCollector() {
+        return streamCollector;
     }
 }

@@ -1,5 +1,8 @@
 package io.quarkus.deployment.dev;
 
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import static java.util.Collections.singleton;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -7,7 +10,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +24,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
@@ -32,7 +41,10 @@ import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -56,7 +68,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private static volatile boolean firstStartCompleted;
     private static final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-    private synchronized void firstStart() {
+    private synchronized void firstStart(QuarkusClassLoader deploymentClassLoader, List<CodeGenData> codeGens) {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
@@ -92,6 +104,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }
                         });
+
+                startCodeGenWatcher(deploymentClassLoader, codeGens);
+
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
@@ -127,6 +142,36 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
+
+    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens) {
+
+        Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
+        for (CodeGenData codeGen : codeGens) {
+            watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
+                    modifiedPaths -> {
+                        try {
+                            CodeGenerator.trigger(classLoader,
+                                    codeGen,
+                                    curatedApplication.getAppModel());
+                        } catch (Exception any) {
+                            log.warn("Code generation failed", any);
+                        }
+                    }));
+        }
+        FSWatchUtil.observe(watchers, 500);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<Path> getModifiedPaths(WatchKey key, CodeGenData codeGenData) {
+        List<WatchEvent<?>> watchEvents = key.pollEvents();
+        String extension = codeGenData.provider.inputExtension();
+        return watchEvents.stream()
+                .filter(e -> e.kind() != OVERFLOW)
+                .map(e -> (WatchEvent<Path>) e)
+                .map(WatchEvent::context)
+                .filter(p -> extension.equals(FilenameUtils.getExtension(p.toString())))
+                .collect(Collectors.toSet());
     }
 
     public synchronized void restartApp(Set<String> changedResources) {
@@ -293,12 +338,26 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
                     }));
+            List<CodeGenData> codeGens = new ArrayList<>();
+            QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+
+            for (DevModeContext.ModuleInfo module : context.getAllModules()) {
+                if (module.getSourceParents() != null) { // it's null for remote dev
+                    codeGens.addAll(
+                            CodeGenerator.init(
+                                    deploymentClassLoader,
+                                    module.getSourceParents().stream().map(Paths::get).collect(Collectors.toSet()),
+                                    Paths.get(module.getPreBuildOutputDir()),
+                                    Paths.get(module.getTargetDir()),
+                                    sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
+                }
+            }
             runtimeUpdatesProcessor = setupRuntimeCompilation(context, (Path) o2.get(APP_ROOT));
             if (runtimeUpdatesProcessor != null) {
                 runtimeUpdatesProcessor.checkForFileChange();
                 runtimeUpdatesProcessor.checkForChangedClasses();
             }
-            firstStart();
+            firstStart(deploymentClassLoader, codeGens);
 
             //        doStart(false, Collections.emptySet());
             if (deploymentProblem != null || runtimeUpdatesProcessor.getCompileProblem() != null) {

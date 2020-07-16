@@ -81,7 +81,9 @@ public class DevModeTask {
 
                 DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo(dep.getKey(), dep.getArtifactId(), null,
                         Collections.emptySet(),
-                        moduleClasses.toAbsolutePath().toString(), null, moduleClasses.toAbsolutePath().toString());
+                        moduleClasses.toAbsolutePath().toString(), null, moduleClasses.toAbsolutePath().toString(),
+                        // the last three params are for code generation, in remote dev it happens on the "dev" side
+                        null, null, null);
 
                 if (appArtifact) {
                     context.setApplicationRoot(module);

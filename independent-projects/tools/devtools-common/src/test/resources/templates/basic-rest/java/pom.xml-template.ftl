@@ -62,6 +62,8 @@
                     <execution>
                         <goals>
                             <goal>build</goal>
+                            <goal>prepare</goal>
+                            <goal>prepare-tests</goal>
                         </goals>
                     </execution>
                 </executions>

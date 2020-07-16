@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterAll;
@@ -48,5 +49,18 @@ public class DirectoryClassPathElementTestCase {
         ClassPathResource res = f.getResource("foo/sub.txt");
         Assertions.assertNotNull(res);
         Assertions.assertEquals("subdir file", new String(res.getData(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testInvalidPath() {
+        final String invalidPath;
+        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
+            invalidPath = "D:\\*";
+        } else {
+            invalidPath = "hello\u0000world";
+        }
+        final DirectoryClassPathElement classPathElement = new DirectoryClassPathElement(root);
+        final ClassPathResource resource = classPathElement.getResource(invalidPath);
+        Assertions.assertNull(resource, "DirectoryClassPathElement wasn't expected to return a resource for an invalid path");
     }
 }

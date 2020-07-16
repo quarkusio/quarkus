@@ -732,6 +732,8 @@ Most IDEs offer the possibility to run a selected class as JUnit test directly. 
 
 * `maven.home` (only if there are any custom settings in `${maven.home}/conf/settings.mxl`, see link:maven-tooling[Maven Guide])
 
+* `maven.settings` (in case a custom version of `settings.xml` file should be used for the tests)
+
 === Eclipse separate JRE definition
 
 Copy your current "Installed JRE" definition into a new one, where you will add the properties as a new VM arguments:

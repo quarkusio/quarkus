@@ -40,7 +40,6 @@ import org.apache.kafka.streams.processor.StateRestoreListener;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ShutdownEvent;
-import io.quarkus.runtime.StartupEvent;
 
 /**
  * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer
@@ -189,46 +188,6 @@ public class KafkaStreamsTopologyManager {
                 .collect(Collectors.joining(","));
     }
 
-    void onStart(@Observes StartupEvent ev) {
-        if (executor == null) {
-            return;
-        }
-
-        String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
-
-        Properties streamsProperties = getStreamsProperties(properties, bootstrapServersConfig, runtimeConfig);
-
-        if (kafkaClientSupplier.isUnsatisfied()) {
-            streams = new KafkaStreams(topology.get(), streamsProperties);
-        } else {
-            streams = new KafkaStreams(topology.get(), streamsProperties, kafkaClientSupplier.get());
-        }
-
-        if (!stateListener.isUnsatisfied()) {
-            streams.setStateListener(stateListener.get());
-        }
-        if (!globalStateRestoreListener.isUnsatisfied()) {
-            streams.setGlobalStateRestoreListener(globalStateRestoreListener.get());
-        }
-
-        adminClientConfig = getAdminClientConfig(streamsProperties);
-
-        executor.execute(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-                LOGGER.debug("Starting Kafka Streams pipeline");
-                streams.start();
-            }
-        });
-    }
-
     void onStop(@Observes ShutdownEvent ev) {
         if (streams != null) {
             LOGGER.debug("Stopping Kafka Streams pipeline");
@@ -239,6 +198,46 @@ public class KafkaStreamsTopologyManager {
     @Produces
     @Singleton
     public KafkaStreams getStreams() {
+        if (topology.isUnsatisfied()) {
+            throw new IllegalStateException("No Topology producer has been defined");
+        }
+
+        if (streams == null) {
+            String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
+
+            Properties streamsProperties = getStreamsProperties(properties, bootstrapServersConfig, runtimeConfig);
+
+            if (kafkaClientSupplier.isUnsatisfied()) {
+                streams = new KafkaStreams(topology.get(), streamsProperties);
+            } else {
+                streams = new KafkaStreams(topology.get(), streamsProperties, kafkaClientSupplier.get());
+            }
+
+            if (!stateListener.isUnsatisfied()) {
+                streams.setStateListener(stateListener.get());
+            }
+            if (!globalStateRestoreListener.isUnsatisfied()) {
+                streams.setGlobalStateRestoreListener(globalStateRestoreListener.get());
+            }
+
+            adminClientConfig = getAdminClientConfig(streamsProperties);
+
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics());
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    LOGGER.debug("Starting Kafka Streams pipeline");
+                    streams.start();
+                }
+            });
+        }
+
         return streams;
     }
 

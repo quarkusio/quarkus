@@ -56,6 +56,7 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -257,6 +258,7 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
@@ -266,7 +268,7 @@ public class SmallRyeOpenApiProcessor {
         OpenAPI annotationModel;
 
         if (shouldScanAnnotations(capabilities)) {
-            annotationModel = generateAnnotationModel(index, capabilities, resteasyJaxrsConfig);
+            annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, resteasyJaxrsConfig);
         } else {
             annotationModel = null;
         }
@@ -311,6 +313,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities,
+            HttpRootPathBuildItem httpRootPathBuildItem,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
@@ -325,7 +328,7 @@ public class SmallRyeOpenApiProcessor {
         if (resteasyJaxrsConfig.isPresent()) {
             defaultPath = resteasyJaxrsConfig.get().getRootPath();
         } else {
-            defaultPath = config.getValue("quarkus.http.root-path", String.class);
+            defaultPath = httpRootPathBuildItem.getRootPath();
         }
         if (defaultPath != null && !"/".equals(defaultPath)) {
             extensions.add(new CustomPathExtension(defaultPath));

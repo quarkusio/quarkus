@@ -41,6 +41,7 @@
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>2.0</microprofile-rest-client.version>
         <microprofile-jwt.version>1.2</microprofile-jwt.version>
+        <microprofile-lra.version>1.0</microprofile-lra.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
         <smallrye-config.version>2.4.3</smallrye-config.version>
         <smallrye-health.version>3.1.1</smallrye-health.version>
@@ -1453,6 +1454,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-narayana-jta-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-narayana-lra</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-narayana-lra-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3966,6 +3977,52 @@
             <dependency>
                 <groupId>org.jboss.narayana.stm</groupId>
                 <artifactId>stm</artifactId>
+                <version>${narayana.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.narayana.rts</groupId>
+                <artifactId>lra-coordinator-jar</artifactId>
+                <version>${narayana.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.spec.javax.servlet</groupId>
+                        <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.narayana.rts</groupId>
+                <artifactId>narayana-lra</artifactId>
+                <version>${narayana.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.narayana.rts</groupId>
+                        <artifactId>narayana-lra</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.narayana.rts</groupId>
+                        <artifactId>lra-service-base</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.narayana.rts</groupId>
+                <artifactId>lra-service-base</artifactId>
+                <version>${narayana.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.narayana.rts</groupId>
+                <artifactId>lra-proxy-api</artifactId>
                 <version>${narayana.version}</version>
             </dependency>
             <dependency>

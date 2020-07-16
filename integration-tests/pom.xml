@@ -138,6 +138,7 @@
         <module>mongodb-rest-data-panache</module>
         <module>narayana-stm</module>
         <module>narayana-jta</module>
+        <module>narayana-lra</module>
         <module>elytron-security-jdbc</module>
         <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>

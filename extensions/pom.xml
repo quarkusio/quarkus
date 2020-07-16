@@ -78,6 +78,7 @@
         <!-- Data access and validation -->
         <module>narayana-jta</module>
         <module>narayana-stm</module>
+        <module>narayana-lra</module>
         <module>datasource</module>
         <module>agroal</module>
         <module>jdbc</module>

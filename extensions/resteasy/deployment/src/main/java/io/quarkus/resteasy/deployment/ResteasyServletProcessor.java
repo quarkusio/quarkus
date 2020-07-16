@@ -49,11 +49,18 @@ public class ResteasyServletProcessor {
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
 
     @BuildStep
-    public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig, HttpRootPathBuildItem httpRootPathBuildItem) {
+    public void jaxrsConfig(
+            Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyJaxrsConfigBuildItem> deprecatedResteasyJaxrsConfig,
+            BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            resteasyJaxrsConfig.produce(
-                    new ResteasyJaxrsConfigBuildItem(httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath())));
+            String rootPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getRootPath());
+            String defaultPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath());
+
+            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
+            resteasyJaxrsConfig
+                    .produce(new io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
         }
     }
 

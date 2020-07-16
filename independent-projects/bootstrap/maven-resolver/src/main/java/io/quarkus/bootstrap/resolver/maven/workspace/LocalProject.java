@@ -305,8 +305,7 @@ public class LocalProject {
     }
 
     public Path getSourcesDir() {
-        final String srcDir = rawModel.getBuild() == null ? null : rawModel.getBuild().getSourceDirectory();
-        return resolveRelativeToBaseDir(srcDir, "src/main/");
+        return getSourcesSourcesDir().getParent();
     }
 
     public Path getResourcesSourcesDir() {

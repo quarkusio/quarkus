@@ -23,6 +23,7 @@
 
     <modules>
         <module>funqy-amazon-lambda</module>
+        <module>funqy-google-cloud-functions</module>
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>

@@ -203,3 +203,8 @@ java -jar java-function-invoker-1.0.0-beta1.jar \
 ----
 
 Your endpoints will be available on http://localhost:8080.
+
+== What's next?
+
+You can use our link:funqy-gcp-functions[Google Cloud Functions Funqy binding] to use Funqy,
+a provider agnostic function as a service framework, that allow to deploy HTTP function or Background function to Google Cloud.

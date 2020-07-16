@@ -65,6 +65,7 @@ public class SecretsManagerProcessor extends AbstractAmazonServiceProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(AWSSecretsManagerProcessor.class)
+                .addBeanClass(AWSSecretsManagerReader.class)
                 .build());
     }
 

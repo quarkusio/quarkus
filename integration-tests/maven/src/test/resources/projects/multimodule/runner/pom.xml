@@ -76,6 +76,13 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>${native.surefire.skip}</skipTests>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
                         <version>${quarkus-plugin.version}</version>

@@ -65,6 +65,13 @@ public class SecretsManagerProcessor extends AbstractAmazonServiceProcessor {
     }
 
     @BuildStep
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
+        buildProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(SecretsManagerProcessor.class)
+                .build());
+    }
+
+    @BuildStep
     void setup(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<FeatureBuildItem> feature,

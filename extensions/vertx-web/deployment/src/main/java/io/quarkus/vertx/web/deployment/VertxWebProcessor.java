@@ -202,11 +202,6 @@ class VertxWebProcessor {
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
 
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
-            String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
-                    businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
-            Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
-
             AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
             String pathPrefix = null;
             String[] baseProduces = null;
@@ -227,7 +222,22 @@ class VertxWebProcessor {
                 }
             }
 
+            // Route annotations with the same values share a single handler instance
+            // @Route string value -> handler
+            Map<String, Handler<RoutingContext>> routeHandlers = new HashMap<>();
+
             for (AnnotationInstance route : businessMethod.getRoutes()) {
+                String routeString = route.toString(true);
+                Handler<RoutingContext> routeHandler = routeHandlers.get(routeString);
+                if (routeHandler == null) {
+                    String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
+                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
+                            routeString);
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+                    routeHandler = recorder.createHandler(handlerClass);
+                    routeHandlers.put(routeString, routeHandler);
+                }
+
                 AnnotationValue regexValue = route.value(VALUE_REGEX);
                 AnnotationValue pathValue = route.value(VALUE_PATH);
                 AnnotationValue orderValue = route.valueWithDefault(index, VALUE_ORDER);
@@ -296,13 +306,14 @@ class VertxWebProcessor {
                             throw new IllegalStateException("Unkown type " + typeString);
                     }
                 }
-                routeProducer.produce(new RouteBuildItem(routeFunction, routingHandler, handlerType));
+                routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
             }
         }
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(new HandlerDescriptor(filterMethod.getMethod()),
-                    filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations);
+                    filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
+                    filterMethod.getRouteFilter().toString(true));
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -393,7 +404,7 @@ class VertxWebProcessor {
     }
 
     private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput,
-            TransformedAnnotationsBuildItem transformedAnnotations) {
+            TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix) {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -410,7 +421,7 @@ class VertxWebProcessor {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + HANDLER_SUFFIX + "_" + method.name() + "_"
-                + HashUtil.sha1(sigBuilder.toString());
+                + HashUtil.sha1(sigBuilder.toString() + hashSuffix);
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(RouteHandler.class).build();

@@ -4,36 +4,34 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import io.vertx.core.buffer.Buffer;
-
 /**
  * Describe a request handler.
  */
-public class HandlerDescriptor {
+class HandlerDescriptor {
 
     private final MethodInfo method;
 
-    public HandlerDescriptor(MethodInfo method) {
+    HandlerDescriptor(MethodInfo method) {
         this.method = method;
     }
 
-    public Type getReturnType() {
+    Type getReturnType() {
         return method.returnType();
     }
 
-    public boolean isReturningVoid() {
+    boolean isReturningVoid() {
         return method.returnType().kind().equals(Type.Kind.VOID);
     }
 
-    public boolean isReturningUni() {
+    boolean isReturningUni() {
         return method.returnType().name().equals(DotNames.UNI);
     }
 
-    public boolean isReturningMulti() {
+    boolean isReturningMulti() {
         return method.returnType().name().equals(DotNames.MULTI);
     }
 
-    public Type getContentType() {
+    Type getContentType() {
         if (isReturningVoid()) {
             return null;
         }
@@ -46,7 +44,7 @@ public class HandlerDescriptor {
         return getReturnType();
     }
 
-    public boolean isContentTypeString() {
+    boolean isContentTypeString() {
         Type type = getContentType();
         if (type == null) {
             return false;
@@ -54,7 +52,7 @@ public class HandlerDescriptor {
         return type.name().equals(io.quarkus.arc.processor.DotNames.STRING);
     }
 
-    public boolean isContentTypeBuffer() {
+    boolean isContentTypeBuffer() {
         Type type = getContentType();
         if (type == null) {
             return false;
@@ -62,7 +60,7 @@ public class HandlerDescriptor {
         return type.name().equals(DotNames.BUFFER);
     }
 
-    public boolean isContentTypeRxBuffer() {
+    boolean isContentTypeRxBuffer() {
         Type type = getContentType();
         if (type == null) {
             return false;
@@ -71,7 +69,7 @@ public class HandlerDescriptor {
                 .equals(DotName.createSimple(io.vertx.reactivex.core.buffer.Buffer.class.getName()));
     }
 
-    public boolean isContentTypeMutinyBuffer() {
+    boolean isContentTypeMutinyBuffer() {
         Type type = getContentType();
         if (type == null) {
             return false;

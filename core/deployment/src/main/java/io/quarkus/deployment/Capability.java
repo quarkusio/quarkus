@@ -21,6 +21,7 @@ public enum Capability {
      * Java Transaction API (JTA)
      */
     TRANSACTIONS,
+    LRA,
     JACKSON,
     JSONB,
     REST_JACKSON,

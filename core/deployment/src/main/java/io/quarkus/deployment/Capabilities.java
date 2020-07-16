@@ -22,6 +22,8 @@ public final class Capabilities extends SimpleBuildItem {
     @Deprecated
     public static final String TRANSACTIONS = Capability.TRANSACTIONS.getName();
     @Deprecated
+    public static final String LRA = Capability.LRA.getName();
+    @Deprecated
     public static final String JACKSON = Capability.JACKSON.getName();
     @Deprecated
     public static final String JSONB = Capability.JSONB.getName();

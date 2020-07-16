@@ -33,6 +33,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -296,8 +297,8 @@ public class SmallRyeOpenApiProcessor {
         }
 
         // Only scan if either JaxRS or Spring is used
-        boolean isJaxrs = capabilities.isCapabilityPresent(Capabilities.RESTEASY);
-        boolean isSpring = capabilities.isCapabilityPresent(Capabilities.SPRING_WEB);
+        boolean isJaxrs = capabilities.isPresent(Capability.RESTEASY);
+        boolean isSpring = capabilities.isPresent(Capability.SPRING_WEB);
         return isJaxrs || isSpring;
     }
 
@@ -319,8 +320,8 @@ public class SmallRyeOpenApiProcessor {
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
-        // Add RestEasy if jaxrs
-        if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
+        // Add the RESTEasy extension if the capability is present
+        if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
 

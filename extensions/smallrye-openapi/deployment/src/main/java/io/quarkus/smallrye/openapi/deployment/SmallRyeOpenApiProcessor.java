@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +50,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
@@ -254,7 +256,8 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
-            Capabilities capabilities) throws Exception {
+            Capabilities capabilities,
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
@@ -263,7 +266,7 @@ public class SmallRyeOpenApiProcessor {
         OpenAPI annotationModel;
 
         if (shouldScanAnnotations(capabilities)) {
-            annotationModel = generateAnnotationModel(index, capabilities);
+            annotationModel = generateAnnotationModel(index, capabilities, resteasyJaxrsConfig);
         } else {
             annotationModel = null;
         }
@@ -307,21 +310,27 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities) {
+    private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities,
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-
-        String defaultPath = config.getValue("quarkus.http.root-path", String.class);
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
         // Add RestEasy if jaxrs
         if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
-        // Add path if not null
-        if (defaultPath != null) {
+
+        String defaultPath;
+        if (resteasyJaxrsConfig.isPresent()) {
+            defaultPath = resteasyJaxrsConfig.get().getRootPath();
+        } else {
+            defaultPath = config.getValue("quarkus.http.root-path", String.class);
+        }
+        if (defaultPath != null && !"/".equals(defaultPath)) {
             extensions.add(new CustomPathExtension(defaultPath));
         }
+
         return new OpenApiAnnotationScanner(openApiConfig, indexView, extensions).scan();
     }
 

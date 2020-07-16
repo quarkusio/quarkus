@@ -12,10 +12,7 @@ import io.quarkus.amazon.common.deployment.AmazonClientInterceptorsPathBuildItem
 import io.quarkus.amazon.common.deployment.AmazonClientTransportsBuildItem;
 import io.quarkus.amazon.common.runtime.AmazonClientRecorder;
 import io.quarkus.amazon.common.runtime.AmazonClientTransportRecorder;
-import io.quarkus.amazon.secretsmanager.runtime.SecretsManagerBuildTimeConfig;
-import io.quarkus.amazon.secretsmanager.runtime.SecretsManagerClientProducer;
-import io.quarkus.amazon.secretsmanager.runtime.SecretsManagerConfig;
-import io.quarkus.amazon.secretsmanager.runtime.SecretsManagerRecorder;
+import io.quarkus.amazon.secretsmanager.runtime.*;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -67,7 +64,7 @@ public class SecretsManagerProcessor extends AbstractAmazonServiceProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(SecretsManagerProcessor.class)
+                .addBeanClass(AWSSecretsManagerProcessor.class)
                 .build());
     }
 

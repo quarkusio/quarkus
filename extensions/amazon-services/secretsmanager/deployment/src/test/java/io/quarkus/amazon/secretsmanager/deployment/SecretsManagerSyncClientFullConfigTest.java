@@ -24,7 +24,6 @@ public class SecretsManagerSyncClientFullConfigTest {
 
     final static String SECRET_ID = "someSecretId";
     @AWSSecretsManager(SECRET_ID)
-    @Inject
     String secretId;
 
     @RegisterExtension

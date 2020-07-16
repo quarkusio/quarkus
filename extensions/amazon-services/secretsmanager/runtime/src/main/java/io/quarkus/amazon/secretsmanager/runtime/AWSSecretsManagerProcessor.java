@@ -13,7 +13,7 @@ public class AWSSecretsManagerProcessor {
 
     @Produces
     @AWSSecretsManager("")
-    String getStringValue(InjectionPoint ip) {
+    String getStringValue(InjectionPoint ip) throws Exception {
         final String secretId = ip.getAnnotated().getAnnotation(AWSSecretsManager.class).value();
         return reader.getSecret(secretId);
     }

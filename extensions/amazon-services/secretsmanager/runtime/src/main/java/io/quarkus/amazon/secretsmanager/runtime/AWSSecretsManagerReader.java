@@ -1,5 +1,7 @@
 package io.quarkus.amazon.secretsmanager.runtime;
 
+import java.util.Base64;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -12,24 +14,19 @@ public class AWSSecretsManagerReader {
     @Inject
     SecretsManagerClient client;
 
-    public String getSecret(final String key) {
+    public String getSecret(final String key) throws Exception {
         final GetSecretValueRequest getSecretValueRequest = GetSecretValueRequest
                 .builder()
                 .secretId(key)
                 .build();
-        GetSecretValueResponse secretValueResponse;
-        try {
-            secretValueResponse = client.getSecretValue(getSecretValueRequest);
-        } catch (DecryptionFailureException e) {
-            throw new RuntimeException("Secrets Manager can't decrypt.");
-        } catch (InternalServiceErrorException e) {
-            throw new RuntimeException("An error occurred on the server side.");
-        } catch (InvalidRequestException e) {
-            throw new RuntimeException(
-                    "You provided a parameter value that is not valid for the current state of the resource.");
-        } catch (ResourceNotFoundException e) {
-            throw new RuntimeException("We can't find the resource that you asked for: " + key);
+        GetSecretValueResponse secretValueResponse = client.getSecretValue(getSecretValueRequest);
+
+        String secret;
+        if (secretValueResponse.secretString() != null) {
+            secret = secretValueResponse.secretString();
+        } else {
+            secret = new String(Base64.getMimeDecoder().decode(secretValueResponse.secretBinary().asByteArray()));
         }
-        return secretValueResponse.secretString();
+        return secret;
     }
 }

@@ -33,6 +33,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- transitive dependency from jaeger-thrift, consider removing once we move to jaeger 1.x -->
+        <dependency>
+            <groupId>jakarta.activation</groupId>
+            <artifactId>jakarta.activation-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>

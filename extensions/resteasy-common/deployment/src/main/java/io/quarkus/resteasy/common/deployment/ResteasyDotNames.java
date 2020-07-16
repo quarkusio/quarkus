@@ -63,19 +63,23 @@ public final class ResteasyDotNames {
     private static class IgnoreForReflectionPredicate implements Predicate<DotName> {
 
         @Override
-        public boolean test(DotName name) {
-            return ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name)
-                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(name);
+        public boolean test(DotName dotName) {
+            if (ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(dotName)
+                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(dotName)) {
+                return true;
+            }
+            String name = dotName.toString();
+            for (String packageName : PACKAGES_IGNORED_FOR_REFLECTION) {
+                if (name.startsWith(packageName)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
-            // javax.json
-            DotName.createSimple("javax.json.JsonObject"),
-            DotName.createSimple("javax.json.JsonArray"),
-            DotName.createSimple("javax.json.JsonValue"),
-
             // Jackson
             DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),
 
@@ -95,4 +99,8 @@ public final class ResteasyDotNames {
             // Vert-x
             DotName.createSimple("io.vertx.core.json.JsonArray"),
             DotName.createSimple("io.vertx.core.json.JsonObject")));
+
+    private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
+            "javax.json."
+    };
 }

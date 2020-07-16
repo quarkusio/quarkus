@@ -740,8 +740,9 @@ public class ResteasyServerCommonProcessor {
         // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
         // It might be needed for serialization.
         for (DotName annotationType : annotations) {
-            scanMethodParameters(annotationType, reflectiveHierarchy, index);
-            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex);
+            Set<AnnotationInstance> processedAnnotations = new HashSet<>();
+            scanMethods(annotationType, reflectiveHierarchy, beanArchiveIndex, processedAnnotations);
+            scanMethods(annotationType, reflectiveHierarchy, index, processedAnnotations);
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
@@ -749,14 +750,18 @@ public class ResteasyServerCommonProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
     }
 
-    private static void scanMethodParameters(DotName annotationType,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index) {
+    private static void scanMethods(DotName annotationType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index,
+            Set<AnnotationInstance> processedAnnotations) {
         Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
         for (AnnotationInstance instance : instances) {
             if (instance.target().kind() != Kind.METHOD) {
                 continue;
             }
-
+            if (processedAnnotations.contains(instance)) {
+                continue;
+            }
+            processedAnnotations.add(instance);
             MethodInfo method = instance.target().asMethod();
             String source = method.declaringClass() + "[" + method + "]";
 

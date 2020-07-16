@@ -29,6 +29,8 @@ public interface Capability {
      */
     String TRANSACTIONS = QUARKUS_PREFIX + "transactions";
 
+    String LRA = QUARKUS_PREFIX + "lra.participant";
+
     String JACKSON = QUARKUS_PREFIX + "jackson";
 
     String JSONB = QUARKUS_PREFIX + "jsonb";

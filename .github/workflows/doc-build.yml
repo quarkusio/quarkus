@@ -38,4 +38,7 @@ jobs:
           restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: |
-          mvn -e -B clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs
+          mvn -Dquickly
+      - name: Build Docs
+        run: |
+          mvn -e -B clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs -Ddocumentation-pdf

@@ -35,9 +35,9 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>20.1.0</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
-        <axle-client.version>0.0.16</axle-client.version>
-        <mutiny-client.version>0.0.16</mutiny-client.version>
-        <vertx.version>3.9.1</vertx.version>
+        <axle-client.version>1.1.0</axle-client.version>
+        <mutiny-client.version>1.1.0</mutiny-client.version>
+        <vertx.version>3.9.2</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.30</freemarker.version>

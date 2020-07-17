@@ -44,7 +44,6 @@ public class QuarkusPrepare extends QuarkusTask {
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
 
         final AppModelResolver modelResolver = extension().getAppModelResolver();
-
         final Properties realProperties = getBuildSystemProperties(appArtifact);
 
         Path buildDir = getProject().getBuildDir().toPath();

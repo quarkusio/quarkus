@@ -44,6 +44,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -79,6 +80,7 @@ import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
 import io.quarkus.qute.i18n.MessageBundles;
+import io.quarkus.qute.i18n.MessageParam;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
 import io.quarkus.runtime.util.StringUtil;
 
@@ -92,6 +94,7 @@ public class MessageBundleProcessor {
 
     static final DotName BUNDLE = DotName.createSimple(MessageBundle.class.getName());
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
+    static final DotName MESSAGE_PARAM = DotName.createSimple(MessageParam.class.getName());
     static final DotName LOCALIZED = DotName.createSimple(Localized.class.getName());
 
     static final MethodDescriptor TEMPLATE_INSTANCE = MethodDescriptor.ofMethod(Template.class, "instance",
@@ -275,7 +278,7 @@ public class MessageBundleProcessor {
                 Set<String> usedParamNames = new HashSet<>();
                 // All top-level expressions without namespace map to a param
                 Set<String> paramNames = IntStream.range(0, messageBundleMethod.getMethod().parameters().size())
-                        .mapToObj(idx -> messageBundleMethod.getMethod().parameterName(idx)).collect(Collectors.toSet());
+                        .mapToObj(idx -> getParameterName(messageBundleMethod.getMethod(), idx)).collect(Collectors.toSet());
                 for (Expression expression : analysis.expressions) {
                     if (expression.isLiteral() || expression.hasNamespace()) {
                         continue;
@@ -533,6 +536,11 @@ public class MessageBundleProcessor {
         Map<String, MethodInfo> keyMap = new HashMap<>();
 
         for (MethodInfo method : bundleInterface.methods()) {
+            if (!method.returnType().name().equals(DotNames.STRING)) {
+                throw new MessageBundleException(
+                        String.format("A message bundle interface method must return java.lang.String on %s: %s",
+                                bundleInterface, method));
+            }
             LOGGER.debugf("Found message bundle method %s on %s", method, bundleInterface);
 
             MethodCreator bundleMethod = bundleCreator.getMethodCreator(MethodDescriptor.of(method));
@@ -552,7 +560,8 @@ public class MessageBundleProcessor {
 
             if (messageAnnotation == null) {
                 throw new MessageBundleException(
-                        "A message bundle interface method must be annotated with @Message: " + method);
+                        "A message bundle interface method must be annotated with @Message: " +
+                                bundleInterface.name() + "#" + method.name());
             }
 
             String key = getKey(method, messageAnnotation, defaultKeyValue);
@@ -595,11 +604,7 @@ public class MessageBundleProcessor {
                     int i = 0;
                     Iterator<Type> it = paramTypes.iterator();
                     while (it.hasNext()) {
-                        String name = method.parameterName(i);
-                        if (name == null) {
-                            // TODO should we just log a warning and use arg0 etc.?
-                            throw new MessageBundleException("Null param name for index " + i + ": " + method);
-                        }
+                        String name = getParameterName(method, i);
                         bundleMethod.invokeInterfaceMethod(TEMPLATE_INSTANCE_DATA, templateInstance,
                                 bundleMethod.load(name), bundleMethod.getMethodParam(i));
                         i++;
@@ -616,6 +621,27 @@ public class MessageBundleProcessor {
 
         bundleCreator.close();
         return generatedName.replace('/', '.');
+    }
+
+    private String getParameterName(MethodInfo method, int position) {
+        String name = method.parameterName(position);
+        AnnotationInstance paramAnnotation = Annotations
+                .find(Annotations.getParameterAnnotations(method.annotations()).stream()
+                        .filter(a -> a.target().asMethodParameter().position() == position).collect(Collectors.toList()),
+                        MESSAGE_PARAM);
+        if (paramAnnotation != null) {
+            AnnotationValue paramAnnotationValue = paramAnnotation.value();
+            if (paramAnnotationValue != null && !paramAnnotationValue.asString().equals(Message.ELEMENT_NAME)) {
+                name = paramAnnotationValue.asString();
+            }
+        }
+        if (name == null) {
+            throw new MessageBundleException("Unable to determine the name of the parameter at position " + position
+                    + " in method "
+                    + method.declaringClass().name() + "#" + method.name()
+                    + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or use @MessageParam to specify the value");
+        }
+        return name;
     }
 
     private void implementResolve(String defaultBundleImpl, ClassCreator bundleCreator, Map<String, MethodInfo> keyMap) {

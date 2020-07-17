@@ -7,6 +7,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
+ * Identifies a message bundle method.
+ * <p>
+ * Each method of a message bundle interface annotated with {@link MessageBundle} must be annotated with this annotation.
  * 
  * @see MessageBundle
  */

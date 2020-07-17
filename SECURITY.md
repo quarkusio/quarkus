@@ -1,5 +1,8 @@
 <!-- content also visible in quarkusio/security
      copy changes there too -->
+
+The canonical version of this document is hosted on the Quarkus website at [Quarkus security](https://quarkus.io/security/).
+
 # Security policy
 
 The Quarkus team and community take all security bugs very seriously.

@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.util.HashUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -26,6 +28,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
 
     public static final String APPLICATION_QUARKUS = "application/quarkus-live-reload";
     public static final String QUARKUS_SESSION = "X-Quarkus-Session";
+    public static final String QUARKUS_SESSION_COUNT = "X-Quarkus-Count";
     public static final String CONNECT = "/connect";
     public static final String DEV = "/dev";
 
@@ -36,6 +39,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     //all these are static to allow the handler to be recreated on hot reload
     //which makes lifecycle management a lot easier
     static volatile String currentSession;
+    //incrementing counter to prevent replay attacks
+    static volatile int currentSessionCounter;
     static volatile long currentSessionTimeout;
     static volatile Throwable remoteProblem;
     static boolean checkForChanges;
@@ -74,15 +79,10 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         long time = System.currentTimeMillis();
         if (time > currentSessionTimeout) {
             currentSession = null;
+            currentSessionCounter = 0;
         }
         final String type = event.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (APPLICATION_QUARKUS.equals(type)) {
-            String rp = event.headers().get(QUARKUS_PASSWORD);
-            if (!password.equals(rp)) {
-                log.error("Incorrect password");
-                event.response().setStatusCode(401).end();
-                return;
-            }
             currentSessionTimeout = time + 60000;
             ExecutorRecorder.getCurrent().execute(new Runnable() {
                 @Override
@@ -115,11 +115,12 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     private void handleDev(HttpServerRequest event) {
-        if (checkSession(event))
-            return;
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer b) {
+                if (checkSession(event, b.getBytes())) {
+                    return;
+                }
                 ExecutorRecorder.getCurrent().execute(new Runnable() {
                     @Override
                     public void run() {
@@ -169,10 +170,20 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             @Override
             public void handle(Buffer b) {
                 try {
+
+                    String rp = event.headers().get(QUARKUS_PASSWORD);
+                    String bodyHash = HashUtil.sha256(b.getBytes());
+                    String compare = HashUtil.sha256(bodyHash + password);
+                    if (!compare.equals(rp)) {
+                        log.error("Incorrect password");
+                        event.response().setStatusCode(401).end();
+                        return;
+                    }
                     SecureRandom r = new SecureRandom();
-                    byte[] sessionId = new byte[20];
+                    byte[] sessionId = new byte[40];
                     r.nextBytes(sessionId);
                     currentSession = Base64.getEncoder().encodeToString(sessionId);
+                    currentSessionCounter = 0;
                     RemoteDevState state = (RemoteDevState) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
                             .readObject();
                     remoteProblem = state.getAugmentProblem();
@@ -199,11 +210,12 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     private void handlePut(HttpServerRequest event) {
-        if (checkSession(event))
-            return;
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {
+                if (checkSession(event, buffer.getBytes())) {
+                    return;
+                }
                 try {
                     hotReplacementContext.updateFile(event.path(), buffer.getBytes());
                 } catch (Exception e) {
@@ -222,19 +234,42 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     private void handleDelete(HttpServerRequest event) {
-        if (checkSession(event))
+        if (checkSession(event, event.path().getBytes(StandardCharsets.UTF_8)))
             return;
         hotReplacementContext.updateFile(event.path(), null);
         event.response().end();
     }
 
-    private boolean checkSession(HttpServerRequest event) {
+    private boolean checkSession(HttpServerRequest event, byte[] data) {
         String ses = event.headers().get(QUARKUS_SESSION);
-        if (!Objects.equals(ses, currentSession)) {
+        String sessionCount = event.headers().get(QUARKUS_SESSION_COUNT);
+        if (sessionCount == null) {
+            log.error("No session count provided");
+            //not really sure what status code makes sense here
+            //Non-Authoritative Information seems as good as any
+            event.response().setStatusCode(203).end();
+            return true;
+        }
+        int sc = Integer.parseInt(sessionCount);
+        if (!Objects.equals(ses, currentSession) ||
+                sc <= currentSessionCounter) {
             log.error("Invalid session");
             //not really sure what status code makes sense here
             //Non-Authoritative Information seems as good as any
             event.response().setStatusCode(203).end();
+            return true;
+        }
+        currentSessionCounter = sc;
+
+        String dataHash = "";
+        if (data != null) {
+            dataHash = HashUtil.sha256(data);
+        }
+        String rp = event.headers().get(QUARKUS_PASSWORD);
+        String compare = HashUtil.sha256(dataHash + ses + sc + password);
+        if (!compare.equals(rp)) {
+            log.error("Incorrect password");
+            event.response().setStatusCode(401).end();
             return true;
         }
         return false;

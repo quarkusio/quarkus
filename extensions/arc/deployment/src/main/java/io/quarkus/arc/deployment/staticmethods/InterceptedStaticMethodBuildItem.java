@@ -9,7 +9,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.deployment.util.HashUtil;
+import io.quarkus.runtime.util.HashUtil;
 
 /**
  * Represents an intercepted static method.

@@ -38,11 +38,11 @@ import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.quarkus.runtime.util.HashUtil;
 
 /**
  * The main entry point for the local (developer side) of remote dev mode

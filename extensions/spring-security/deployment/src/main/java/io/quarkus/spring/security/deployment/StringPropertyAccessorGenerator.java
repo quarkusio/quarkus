@@ -10,13 +10,13 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.security.runtime.interceptor.accessor.StringPropertyAccessor;
 
 final class StringPropertyAccessorGenerator {

@@ -10,7 +10,6 @@ import javax.ws.rs.core.Context;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.rest.data.panache.deployment.methods.AddMethodImplementor;
@@ -26,6 +25,7 @@ import io.quarkus.rest.data.panache.deployment.methods.hal.UpdateHalMethodImplem
 import io.quarkus.rest.data.panache.deployment.methods.internal.IsPagedMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesAccessor;
+import io.quarkus.runtime.util.HashUtil;
 
 class RestDataResourceImplementor {
 

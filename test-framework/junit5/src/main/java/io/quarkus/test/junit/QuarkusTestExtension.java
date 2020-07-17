@@ -669,8 +669,8 @@ public class QuarkusTestExtension
                         newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
                                 parameterTypesFromTccl.toArray(new Class[0]));
                         break;
-                    } catch (NoSuchMethodException e) {
-                        //ignore
+                    } catch (NoSuchMethodException ignored) {
+
                     }
                 }
                 c = c.getSuperclass();

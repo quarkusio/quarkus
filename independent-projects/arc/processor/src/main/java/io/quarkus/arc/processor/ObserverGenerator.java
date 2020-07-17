@@ -33,6 +33,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -103,7 +105,10 @@ public class ObserverGenerator extends AbstractGenerator {
 
         StringBuilder sigBuilder = new StringBuilder();
         if (observer.isSynthetic()) {
-            // This is not unique but best effort
+            // If a unique id is not specified then the signature is not unique but the best effort
+            if (observer.getId() != null) {
+                sigBuilder.append(observer.getId());
+            }
             sigBuilder.append(observer.getObservedType().toString()).append(observer.getQualifiers().toString())
                     .append(observer.isAsync()).append(observer.getPriority()).append(observer.getTransactionPhase());
         } else {
@@ -134,7 +139,22 @@ public class ObserverGenerator extends AbstractGenerator {
             targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
         }
         String generatedName = generatedNameFromTarget(targetPackage, baseName.toString(), "");
+
+        Optional<Entry<ObserverInfo, String>> generatedClass = observerToGeneratedName.entrySet().stream()
+                .filter(e -> e.getValue().equals(generatedName)).findAny();
+
         observerToGeneratedName.put(observer, generatedName);
+        if (generatedClass.isPresent()) {
+            if (observer.isSynthetic()) {
+                throw new IllegalStateException(
+                        "A synthetic observer with the generated class name " + generatedName + " already exists for "
+                                + generatedClass.get().getKey());
+            } else {
+                // Inherited observer methods share the same generated class
+                return Collections.emptyList();
+            }
+        }
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }

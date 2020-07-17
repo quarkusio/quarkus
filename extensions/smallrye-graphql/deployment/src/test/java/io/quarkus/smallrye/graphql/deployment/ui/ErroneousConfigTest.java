@@ -19,7 +19,7 @@ public class ErroneousConfigTest {
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.root-path-ui=/\n"), "application.properties"));
 
     @Test
-    public void shouldNotStartApplicationIfSwaggerPathIsASlash() {
+    public void shouldNotStartApplicationIfUIPathIsASlash() {
         Assertions.fail();
     }
 }

@@ -53,6 +53,7 @@ public class OpenApiHandler implements Handler<RoutingContext> {
         if (event.request().method().equals(HttpMethod.OPTIONS)) {
             addCorsResponseHeaders(event.response());
             event.response().headers().set("Allow", ALLOWED_METHODS);
+            event.next();
         } else {
             HttpServerRequest req = event.request();
             HttpServerResponse resp = event.response();

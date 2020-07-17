@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
@@ -167,6 +168,54 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testAlternatePom() throws Exception {
+        testDir = initProject("projects/classic", "projects/project-classic-alternate-pom");
+
+        File pom = new File(testDir, "pom.xml");
+        if (!pom.exists()) {
+            throw new IllegalStateException("Failed to locate project's pom.xml at " + pom);
+        }
+        final String alternatePomName = "alternate-pom.xml";
+        File alternatePom = new File(testDir, alternatePomName);
+        if (alternatePom.exists()) {
+            alternatePom.delete();
+        }
+        pom.renameTo(alternatePom);
+        if (pom.exists()) {
+            throw new IllegalStateException(pom + " was expected to be renamed to " + alternatePom);
+        }
+        runAndCheck("-f", alternatePomName);
+
+        // Edit a Java file too
+        final File javaSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(javaSource, Collections.singletonMap("return \"hello\";", "return \"hello " + uuid + "\";"));
+
+        // edit the application.properties too
+        final File applicationProps = new File(testDir, "src/main/resources/application.properties");
+        filter(applicationProps, Collections.singletonMap("greeting=bonjour", "greeting=" + uuid + ""));
+
+        // Now edit the pom.xml to trigger the dev mode restart
+        filter(alternatePom, Collections.singletonMap("<!-- insert test dependencies here -->",
+                "        <dependency>\n" +
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
+                        "        </dependency>"));
+
+        // Wait until we get the updated responses
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("hello " + uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greeting").contains(uuid));
+
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnPomChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-pom-change");
         runAndCheck();
@@ -189,6 +238,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
         testDir = initProject("projects/multimodule", "projects/multimodule-with-deps");
         runAndCheck();
+
+        // test that we don't get multiple instances of a resource when loading from the ClassLoader
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/resourcesCount").equals("1"));
 
         // Edit the "Hello" message.
         File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
@@ -732,5 +787,31 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         runAndCheck("-Dquarkus.enforceBuildGoal=false");
 
         assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
+    }
+
+    @Test
+    public void testResourcesFromClasspath() throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath");
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+
+        // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
+        invoker.execute(Collections.singletonList("install"), Collections.emptyMap());
+        MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
+                Collections.emptyMap());
+        assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExitCode()).isEqualTo(0);
+
+        // run dev mode from the runner module
+        testDir = testDir.toPath().resolve("runner").toFile();
+        run(true);
+
+        // make sure the application starts
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(20, TimeUnit.SECONDS)
+                .until(() -> DevModeTestUtils.getHttpResponse("/cp/hello").equals("hello"));
+
+        // test that we don't get multiple instances of a resource when loading from the ClassLoader
+        assertThat(DevModeTestUtils.getHttpResponse("/cp/resourcesCount")).isEqualTo("1");
     }
 }

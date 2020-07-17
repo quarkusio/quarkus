@@ -357,7 +357,6 @@
                                             <exclude>io.netty:netty-all</exclude>
                                             <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
                                             <exclude>log4j:log4j</exclude>
-                                            <exclude>org.apache.logging.log4j:log4j-api</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-core</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
                                             <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->

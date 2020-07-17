@@ -109,6 +109,7 @@ public class VertxHttpRecorder {
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
     private static volatile HotReplacementContext hotReplacementContext;
+    private static volatile RemoteSyncHandler remoteSyncHandler;
 
     private static volatile Runnable closeTask;
 
@@ -123,7 +124,14 @@ public class VertxHttpRecorder {
             //as the underlying handler has not had a chance to install a read handler yet
             //and data that arrives while the blocking task is being processed will be lost
             httpServerRequest.pause();
-            rootHandler.handle(httpServerRequest);
+            Handler<HttpServerRequest> rh = VertxHttpRecorder.rootHandler;
+            if (rh != null) {
+                rh.handle(httpServerRequest);
+            } else {
+                //very rare race condition, that can happen when dev mode is shutting down
+                httpServerRequest.resume();
+                httpServerRequest.response().setStatusCode(503).end();
+            }
         }
     };
 
@@ -180,15 +188,10 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue,
-            final LaunchMode launchMode, final ShutdownContext shutdownContext) {
+    public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue) {
 
         Vertx vertx = vertxRuntimeValue.get();
         Router router = Router.router(vertx);
-        if (hotReplacementHandler != null) {
-            router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
-        }
-
         return new RuntimeValue<>(router);
     }
 
@@ -252,7 +255,7 @@ public class VertxHttpRecorder {
         if (requireBodyHandler) {
             //if this is set then everything needs the body handler installed
             //TODO: config etc
-            router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+            router.route().order(Integer.MIN_VALUE + 1).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext routingContext) {
                     routingContext.request().resume();
@@ -294,14 +297,29 @@ public class VertxHttpRecorder {
         Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
-                router.route().order(-1).handler(hotReplacementHandler);
+                //recorders are always executed in the current CL
+                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+                router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        Thread.currentThread().setContextClassLoader(currentCl);
+                        hotReplacementHandler.handle(event);
+                    }
+                });
             }
             root = router;
         } else {
             Router mainRouter = Router.router(vertx.get());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
-                mainRouter.route().order(-1).handler(hotReplacementHandler);
+                ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
+                mainRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext event) {
+                        Thread.currentThread().setContextClassLoader(currentCl);
+                        hotReplacementHandler.handle(event);
+                    }
+                });
             }
             root = mainRouter;
         }
@@ -374,7 +392,7 @@ public class VertxHttpRecorder {
             });
         }
         if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password.isPresent()) {
-            root = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
+            root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password.get(), root, hotReplacementContext);
         }
         rootHandler = root;
     }
@@ -433,6 +451,7 @@ public class VertxHttpRecorder {
         try {
 
             String deploymentId = futureResult.get();
+            VertxCoreRecorder.setWebDeploymentId(deploymentId);
             closeTask = new Runnable() {
                 @Override
                 public synchronized void run() {
@@ -457,6 +476,10 @@ public class VertxHttpRecorder {
                             }
                         }
                         closeTask = null;
+                        if (remoteSyncHandler != null) {
+                            remoteSyncHandler.close();
+                            remoteSyncHandler = null;
+                        }
                     }
                 }
             };
@@ -865,10 +888,15 @@ public class VertxHttpRecorder {
                             clearHttpProperty = true;
                             schema = "http";
                         }
-                        System.setProperty(
-                                launchMode == LaunchMode.TEST ? "quarkus." + schema + ".test-port"
-                                        : "quarkus." + schema + ".port",
-                                String.valueOf(actualPort));
+                        String portPropertyValue = String.valueOf(actualPort);
+                        String portPropertyName = (launchMode == LaunchMode.TEST ? "quarkus." + schema + ".test-port"
+                                : "quarkus." + schema + ".port");
+                        System.setProperty(portPropertyName, portPropertyValue);
+                        if (launchMode.isDevOrTest()) {
+                            // set the profile property as well to make sure we don't have any inconsistencies
+                            System.setProperty(propertyWithProfilePrefix(portPropertyName),
+                                    portPropertyValue);
+                        }
                         // Set in HttpOptions to output the port in the Timing class
                         options.setPort(actualPort);
                     }
@@ -882,10 +910,19 @@ public class VertxHttpRecorder {
         @Override
         public void stop(Future<Void> stopFuture) {
             if (clearHttpProperty) {
-                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port");
+                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port";
+                System.clearProperty(portPropertyName);
+                if (launchMode.isDevOrTest()) {
+                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                }
+
             }
             if (clearHttpsProperty) {
-                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port");
+                String portPropertyName = launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port";
+                System.clearProperty(portPropertyName);
+                if (launchMode.isDevOrTest()) {
+                    System.clearProperty(propertyWithProfilePrefix(portPropertyName));
+                }
             }
 
             final AtomicInteger remainingCount = new AtomicInteger(0);
@@ -914,6 +951,10 @@ public class VertxHttpRecorder {
             if (domainSocketServer != null) {
                 domainSocketServer.close(handleClose);
             }
+        }
+
+        private String propertyWithProfilePrefix(String portPropertyName) {
+            return "%" + launchMode.getDefaultProfile() + "." + portPropertyName;
         }
     }
 

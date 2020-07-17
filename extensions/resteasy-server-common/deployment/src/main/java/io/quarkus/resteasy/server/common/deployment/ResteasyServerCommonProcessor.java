@@ -207,22 +207,26 @@ public class ResteasyServerCommonProcessor {
             return;
         }
 
+        final String rootPath;
         final String path;
         final String appClass;
         if (!applicationPaths.isEmpty()) {
             AnnotationInstance applicationPath = applicationPaths.iterator().next();
+            rootPath = "/";
             path = applicationPath.value().asString();
             appClass = applicationPath.target().asClass().name().toString();
         } else {
             if (resteasyServletMappingBuildItem.isPresent()) {
                 if (resteasyServletMappingBuildItem.get().getPath().endsWith("/*")) {
-                    path = resteasyServletMappingBuildItem.get().getPath().substring(0,
+                    rootPath = resteasyServletMappingBuildItem.get().getPath().substring(0,
                             resteasyServletMappingBuildItem.get().getPath().length() - 1);
                 } else {
-                    path = resteasyServletMappingBuildItem.get().getPath();
+                    rootPath = resteasyServletMappingBuildItem.get().getPath();
                 }
+                path = rootPath;
                 appClass = null;
             } else {
+                rootPath = resteasyConfig.path;
                 path = resteasyConfig.path;
                 appClass = null;
             }
@@ -259,6 +263,10 @@ public class ResteasyServerCommonProcessor {
                 String className = implementor.name().toString();
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
                 scannedResources.putIfAbsent(implementor.name(), implementor);
+
+                if (!implementor.hasNoArgsConstructor()) {
+                    withoutDefaultCtor.put(implementor.name(), implementor);
+                }
             }
         }
 
@@ -320,7 +328,7 @@ public class ResteasyServerCommonProcessor {
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());
 
-        resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+        resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(rootPath, path, resteasyInitParameters));
 
         Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
                 .collect(Collectors.toSet());
@@ -576,6 +584,7 @@ public class ResteasyServerCommonProcessor {
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
         allowedAnnotationPrefixes.add(packageName(ResteasyDotNames.PATH));
         allowedAnnotationPrefixes.add("kotlin"); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
+        allowedAnnotationPrefixes.add("lombok"); // same for lombok
         allowedAnnotationPrefixes.add("io.quarkus.security"); // same for the security annotations
         allowedAnnotationPrefixes.add("javax.annotation.security");
         allowedAnnotationPrefixes.add("jakarta.annotation.security");
@@ -735,8 +744,9 @@ public class ResteasyServerCommonProcessor {
         // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
         // It might be needed for serialization.
         for (DotName annotationType : annotations) {
-            scanMethodParameters(annotationType, reflectiveHierarchy, index);
-            scanMethodParameters(annotationType, reflectiveHierarchy, beanArchiveIndex);
+            Set<AnnotationInstance> processedAnnotations = new HashSet<>();
+            scanMethods(annotationType, reflectiveHierarchy, beanArchiveIndex, processedAnnotations);
+            scanMethods(annotationType, reflectiveHierarchy, index, processedAnnotations);
         }
 
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
@@ -744,14 +754,18 @@ public class ResteasyServerCommonProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
     }
 
-    private static void scanMethodParameters(DotName annotationType,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index) {
+    private static void scanMethods(DotName annotationType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, IndexView index,
+            Set<AnnotationInstance> processedAnnotations) {
         Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
         for (AnnotationInstance instance : instances) {
             if (instance.target().kind() != Kind.METHOD) {
                 continue;
             }
-
+            if (processedAnnotations.contains(instance)) {
+                continue;
+            }
+            processedAnnotations.add(instance);
             MethodInfo method = instance.target().asMethod();
             String source = method.declaringClass() + "[" + method + "]";
 

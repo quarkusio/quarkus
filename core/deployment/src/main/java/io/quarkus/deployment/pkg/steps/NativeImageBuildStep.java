@@ -174,6 +174,7 @@ public class NativeImageBuildStep {
             Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
                     .redirectErrorStream(true)
                     .start();
+            versionProcess.waitFor();
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
                 graalVMVersion = reader.lines().filter((l) -> l.startsWith("GraalVM Version")).findFirst();
@@ -223,7 +224,11 @@ public class NativeImageBuildStep {
                 }
             }
             command.add("-J-Duser.language=" + System.getProperty("user.language"));
-            command.add("-J-Dfile.encoding=" + System.getProperty("file.encoding"));
+            // Native image runtime uses the host's (i.e. build time) value of file.encoding
+            // system property. We intentionally default this to UTF-8 to avoid platform specific
+            // defaults to be picked up which can then result in inconsistent behaviour in the
+            // generated native application
+            command.add("-J-Dfile.encoding=UTF-8");
 
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;

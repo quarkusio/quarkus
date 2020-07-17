@@ -7,6 +7,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
@@ -39,9 +40,13 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.next();
             return;
         }
-        routingContext.vertx().executeBlocking(new Handler<Promise<Boolean>>() {
+        ClassLoader current = Thread.currentThread().getContextClassLoader();
+        ConnectionBase connectionBase = (ConnectionBase) routingContext.request().connection();
+        connectionBase.getContext().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
+                //the blocking pool may have a stale TCCL
+                Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
                 synchronized (this) {
                     if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {

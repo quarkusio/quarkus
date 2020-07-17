@@ -11,8 +11,17 @@ public class DataSourceReactiveDB2Config {
 
     /**
      * Whether prepared statements should be cached on the client side.
+     * 
+     * @deprecated use {@code datasource.reactive.cache-prepared-statements} instead.
      */
     @ConfigItem
+    @Deprecated
     public Optional<Boolean> cachePreparedStatements;
+
+    /**
+     * Whether SSL/TLS is enabled.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean ssl;
 
 }

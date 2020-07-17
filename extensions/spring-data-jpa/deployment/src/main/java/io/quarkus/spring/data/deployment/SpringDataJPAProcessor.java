@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -92,13 +94,36 @@ public class SpringDataJPAProcessor {
 
         detectAndLogSpecificSpringPropertiesIfExist();
 
-        IndexView indexIndex = index.getIndex();
-        List<ClassInfo> interfacesExtendingCrudRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
-                indexIndex);
+        IndexView indexView = index.getIndex();
+        List<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
+                indexView);
 
-        removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
+        addRepositoryDefinitionInstances(indexView, interfacesExtendingRepository);
+
+        removeNoRepositoryBeanClasses(interfacesExtendingRepository);
         implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
-                interfacesExtendingCrudRepository, indexIndex);
+                interfacesExtendingRepository, indexView);
+    }
+
+    // classes annotated with @RepositoryDefinition behave exactly as if they extended Repository
+    private void addRepositoryDefinitionInstances(IndexView indexView, List<ClassInfo> interfacesExtendingRepository) {
+        Collection<AnnotationInstance> repositoryDefinitions = indexView
+                .getAnnotations(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
+        for (AnnotationInstance repositoryDefinition : repositoryDefinitions) {
+            AnnotationTarget target = repositoryDefinition.target();
+            if (target.kind() != AnnotationTarget.Kind.CLASS) {
+                continue;
+            }
+            ClassInfo classInfo = target.asClass();
+            Set<DotName> supportedRepositories = DotNames.SUPPORTED_REPOSITORIES;
+            for (DotName supportedRepository : supportedRepositories) {
+                if (classInfo.interfaceNames().contains(supportedRepository)) {
+                    throw new IllegalArgumentException("Class " + classInfo.name()
+                            + " which is annotated with @RepositoryDefinition cannot also extend " + supportedRepository);
+                }
+            }
+            interfacesExtendingRepository.add(classInfo);
+        }
     }
 
     private void detectAndLogSpecificSpringPropertiesIfExist() {
@@ -156,8 +181,8 @@ public class SpringDataJPAProcessor {
         }
     }
 
-    private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingCrudRepository) {
-        Iterator<ClassInfo> iterator = interfacesExtendingCrudRepository.iterator();
+    private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingRepository) {
+        Iterator<ClassInfo> iterator = interfacesExtendingRepository.iterator();
         while (iterator.hasNext()) {
             ClassInfo next = iterator.next();
             if (next.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {

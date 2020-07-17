@@ -35,5 +35,8 @@ public class OpenApiDefaultPathTestCase {
                 .body("openapi", Matchers.startsWith("3.0"))
                 .body("info.title", Matchers.equalTo("Generated API"))
                 .body("paths", Matchers.hasKey("/resource"));
+        RestAssured.given()
+                .when().options(OPEN_API_PATH)
+                .then().header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
     }
 }

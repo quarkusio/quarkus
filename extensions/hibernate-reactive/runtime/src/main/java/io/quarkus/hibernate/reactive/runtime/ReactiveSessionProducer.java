@@ -48,4 +48,29 @@ public class ReactiveSessionProducer {
         reactiveSession.subscribe().with(Mutiny.Session::close);
     }
 
+    @Produces
+    @RequestScoped
+    @DefaultBean
+    public Stage.Session createStageSession() {
+        return reactiveSessionFactory.createSession();
+    }
+
+    @Produces
+    @RequestScoped
+    @DefaultBean
+    public Mutiny.Session createMutinySession() {
+        return mutinySessionFactory.createSession();
+    }
+
+    public void disposeStageSession(@Disposes Stage.Session reactiveSession) {
+        if (reactiveSession != null) {
+            reactiveSession.close();
+        }
+    }
+
+    public void disposeMutinySession(@Disposes Mutiny.Session reactiveSession) {
+        if (reactiveSession != null) {
+            reactiveSession.close();
+        }
+    }
 }

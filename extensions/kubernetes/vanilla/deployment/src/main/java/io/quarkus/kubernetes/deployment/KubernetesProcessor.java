@@ -56,6 +56,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
+import io.dekorate.kubernetes.config.LabelBuilder;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
@@ -107,7 +108,17 @@ import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.kubernetes.spi.*;
+import io.quarkus.kubernetes.deployment.Annotations.Prometheus;
+import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 
 class KubernetesProcessor {
 
@@ -158,10 +169,10 @@ class KubernetesProcessor {
         List<KubernetesDeploymentTargetBuildItem> mergedDeploymentTargets = mergeList(allDeploymentTargets);
         Collections.sort(mergedDeploymentTargets);
 
-        List<EnabledKubernetesDeploymentTargetsBuildItem.Entry> entries = new ArrayList<>(mergedDeploymentTargets.size());
+        List<DeploymentTargetEntry> entries = new ArrayList<>(mergedDeploymentTargets.size());
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
-                entries.add(new EnabledKubernetesDeploymentTargetsBuildItem.Entry(deploymentTarget.getName(),
+                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
                         deploymentTarget.getKind(), deploymentTarget.getPriority()));
             }
         }
@@ -170,12 +181,29 @@ class KubernetesProcessor {
 
     @BuildStep
     public List<KubernetesAnnotationBuildItem> createAnnotations(KubernetesConfig kubernetesConfig,
-            OpenshiftConfig openshiftConfig, KnativeConfig knativeConfig) {
-        List<KubernetesAnnotationBuildItem> items = new ArrayList<KubernetesAnnotationBuildItem>();
-        kubernetesConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, KUBERNETES)));
-        openshiftConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, OPENSHIFT)));
-        knativeConfig.annotations.forEach((k, v) -> items.add(new KubernetesAnnotationBuildItem(k, v, KNATIVE)));
-        return items;
+            OpenshiftConfig openshiftConfig, KnativeConfig knativeConfig,
+            Optional<MetricsConfigurationBuildItem> metricsConfiguration, List<KubernetesPortBuildItem> kubernetesPorts) {
+        List<KubernetesAnnotationBuildItem> result = new ArrayList<KubernetesAnnotationBuildItem>();
+        addAnnotations(kubernetesConfig, KUBERNETES, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(kubernetesConfig, MINIKUBE, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(openshiftConfig, OPENSHIFT, metricsConfiguration, kubernetesPorts, result);
+        addAnnotations(knativeConfig, KNATIVE, metricsConfiguration, kubernetesPorts, result);
+        return result;
+    }
+
+    private void addAnnotations(PlatformConfiguration config, String target,
+            Optional<MetricsConfigurationBuildItem> metricsConfigurationBuildItem,
+            List<KubernetesPortBuildItem> kubernetesPorts,
+            List<KubernetesAnnotationBuildItem> result) {
+        for (Map.Entry<String, String> entry : config.getAnnotations().entrySet()) {
+            result.add(new KubernetesAnnotationBuildItem(entry.getKey(), entry.getValue(), target));
+        }
+        if (metricsConfigurationBuildItem.isPresent() && !kubernetesPorts.isEmpty()) {
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.SCRAPE, "true", target));
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.PATH, metricsConfigurationBuildItem.get().getPath(),
+                    target));
+            result.add(new KubernetesAnnotationBuildItem(Prometheus.PORT, "" + kubernetesPorts.get(0).getPort(), target));
+        }
     }
 
     @BuildStep
@@ -185,6 +213,7 @@ class KubernetesProcessor {
             BuildProducer<ContainerImageLabelBuildItem> containerImageLabelsProducer) {
         kubernetesConfig.labels.forEach((k, v) -> {
             kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
+            kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, MINIKUBE));
             containerImageLabelsProducer.produce(new ContainerImageLabelBuildItem(k, v));
         });
         openshiftConfig.labels.forEach((k, v) -> {
@@ -241,7 +270,7 @@ class KubernetesProcessor {
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
-                .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName)
+                .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
         Path artifactPath = outputTarget.getOutputDirectory().resolve(
@@ -254,7 +283,7 @@ class KubernetesProcessor {
         final SessionReader sessionReader = new SimpleFileReader(
                 project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
                         .getEntriesSortedByPriority().stream()
-                        .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName).collect(Collectors.toSet()));
+                        .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
         sessionWriter.setProject(project);
         final Session session = Session.getSession(new NoopLogger());
         session.setWriter(sessionWriter);
@@ -277,6 +306,8 @@ class KubernetesProcessor {
                 determineImagePullPolicy(openshiftConfig, needToForceUpdateImagePullPolicy));
         applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
                 determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
+
+        applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
 
         //apply build item configurations to the dekorate session.
         applyBuildItems(session,
@@ -459,6 +490,16 @@ class KubernetesProcessor {
         session.resources().decorate(target, new RemoveOptionalFromConfigMapEnvSourceDecorator());
         session.resources().decorate(target, new RemoveOptionalFromSecretKeySelectorDecorator());
         session.resources().decorate(target, new RemoveOptionalFromConfigMapKeySelectorDecorator());
+    }
+
+    private void applyKnativeConfig(Session session, Project project, String name, KnativeConfig config) {
+        if (config.clusterLocal) {
+            session.resources().decorate(KNATIVE, new AddLabelDecorator(name,
+                    new LabelBuilder()
+                            .withKey("serving.knative.dev/visibility")
+                            .withValue("cluster-local")
+                            .build()));
+        }
     }
 
     /**

@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +33,7 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -49,11 +51,13 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -254,7 +258,9 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
-            Capabilities capabilities) throws Exception {
+            Capabilities capabilities,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_OPENAPI));
@@ -263,7 +269,7 @@ public class SmallRyeOpenApiProcessor {
         OpenAPI annotationModel;
 
         if (shouldScanAnnotations(capabilities)) {
-            annotationModel = generateAnnotationModel(index, capabilities);
+            annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, resteasyJaxrsConfig);
         } else {
             annotationModel = null;
         }
@@ -291,8 +297,8 @@ public class SmallRyeOpenApiProcessor {
         }
 
         // Only scan if either JaxRS or Spring is used
-        boolean isJaxrs = capabilities.isCapabilityPresent(Capabilities.RESTEASY);
-        boolean isSpring = capabilities.isCapabilityPresent(Capabilities.SPRING_WEB);
+        boolean isJaxrs = capabilities.isPresent(Capability.RESTEASY);
+        boolean isSpring = capabilities.isPresent(Capability.SPRING_WEB);
         return isJaxrs || isSpring;
     }
 
@@ -307,21 +313,28 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities) {
+    private OpenAPI generateAnnotationModel(IndexView indexView, Capabilities capabilities,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
-        String defaultPath = config.getValue("quarkus.http.root-path", String.class);
-
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
-        // Add RestEasy if jaxrs
-        if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
+        // Add the RESTEasy extension if the capability is present
+        if (capabilities.isPresent(Capability.RESTEASY)) {
             extensions.add(new RESTEasyExtension(indexView));
         }
-        // Add path if not null
-        if (defaultPath != null) {
+
+        String defaultPath;
+        if (resteasyJaxrsConfig.isPresent()) {
+            defaultPath = resteasyJaxrsConfig.get().getRootPath();
+        } else {
+            defaultPath = httpRootPathBuildItem.getRootPath();
+        }
+        if (defaultPath != null && !"/".equals(defaultPath)) {
             extensions.add(new CustomPathExtension(defaultPath));
         }
+
         return new OpenApiAnnotationScanner(openApiConfig, indexView, extensions).scan();
     }
 

@@ -49,11 +49,29 @@ public class KubernetesDeployer {
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
     @BuildStep(onlyIf = IsNormal.class)
-    public void deploy(KubernetesClientBuildItem kubernetesClient,
-            ContainerImageInfoBuildItem containerImageInfo,
+    public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets,
-            OutputTargetBuildItem outputTarget,
             Capabilities capabilities,
+            BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget) {
+
+        Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
+                .getActiveContainerImageCapability(capabilities);
+
+        if (!activeContainerImageCapability.isPresent()) {
+            // we can't thrown an exception here, because it could prevent the Kubernetes resources from being generated
+            return;
+        }
+
+        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(
+                containerImageInfo, targets, activeContainerImageCapability.get());
+        selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    public void deploy(KubernetesClientBuildItem kubernetesClient,
+            Capabilities capabilities,
+            Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
+            OutputTargetBuildItem outputTarget,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
@@ -62,21 +80,21 @@ public class KubernetesDeployer {
             return;
         }
 
-        Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
-                .getActiveContainerImageCapability(capabilities);
+        if (!selectedDeploymentTarget.isPresent()) {
 
-        if (!activeContainerImageCapability.isPresent()) {
-            throw new RuntimeException(
-                    "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
-                            + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
+            if (!ContainerImageCapabilitiesUtil
+                    .getActiveContainerImageCapability(capabilities).isPresent()) {
+                throw new RuntimeException(
+                        "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
+                                + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
+            }
+
+            return;
         }
-
-        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget = determineDeploymentTarget(
-                containerImageInfo, targets, activeContainerImageCapability.get());
 
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
         deploymentResult
-                .produce(deploy(selectedTarget, client, outputTarget.getOutputDirectory()));
+                .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory()));
     }
 
     /**
@@ -90,10 +108,10 @@ public class KubernetesDeployer {
      *
      * If the user specifies deployment targets, pick the first one
      */
-    private EnabledKubernetesDeploymentTargetsBuildItem.Entry determineDeploymentTarget(
+    private DeploymentTargetEntry determineDeploymentTarget(
             ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability) {
-        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget;
+        final DeploymentTargetEntry selectedTarget;
 
         boolean checkForMissingRegistry = true;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
@@ -139,7 +157,7 @@ public class KubernetesDeployer {
         return deploymentTargets.stream().filter(d -> name.equals(d.getName())).findFirst();
     }
 
-    private DeploymentResultBuildItem deploy(EnabledKubernetesDeploymentTargetsBuildItem.Entry deploymentTarget,
+    private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
             KubernetesClient client, Path outputDir) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()

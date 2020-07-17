@@ -84,12 +84,22 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-s3-quickstart \
     -DclassName="org.acme.s3.S3SyncClientResource" \
     -Dpath="/s3" \
-    -Dextensions="resteasy-jsonb,multipart-provider,amazon-s3"
+    -Dextensions="resteasy-jsonb,amazon-s3"
 cd amazon-s3-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS and S3 Client extensions.
 After this, the `amazon-s3` extension has been added to your `pom.xml`.
+
+Then, we'll add the following dependency to support `multipart/form-data` requests:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.jboss.resteasy</groupId>
+    <artifactId>resteasy-multipart-provider</artifactId>
+</dependency>
+----
 
 == Setting up the model
 
@@ -515,6 +525,23 @@ public class S3AsyncClientResource extends CommonResource {
                 .map(FileObject::from).collect(Collectors.toList());
     }
 }
+----
+
+You need the RESTEasy Mutiny support for asynchronous programming. Add the dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
 ----
 
 And add the Netty HTTP client dependency to the `pom.xml`:

@@ -209,7 +209,7 @@ The following properties are supported.
 |===
 |Property Name|Default|Description
 |quarkus.http.limits.max-body-size| `10240K` |The maximum size of request body.
-|quarkus.http.limits.max-header-size|`2OK`|The maximum length of all headers.
+|quarkus.http.limits.max-header-size|`20K`|The maximum length of all headers.
 |===
 
 [NOTE]
@@ -221,25 +221,7 @@ If no unit suffix is given, bytes are assumed.
 * `quarkus.http.limits.max-header-size`
 ====
 
-== Servlet Config
-
-To use Servlet you need to explicitly include `quarkus-undertow`:
-
-[source, xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-undertow</artifactId>
-</dependency>
-----
-
-=== undertow-handlers.conf
-
-You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
-in the `META-INF` directory of your application jar. This file contains handlers defined using the
-link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
-
-=== Configuring HTTP Access Logs
+== Configuring HTTP Access Logs
 
 You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
 either logging to the standard JBoss logging output, or logging to a dedicated file.
@@ -278,6 +260,24 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Request header                                                               |          | `%{i,request_header_name}`
 |Response header                                                              |          | `%{o,response_header_name}`
 |===
+
+== Servlet Config
+
+To use Servlet you need to explicitly include `quarkus-undertow`:
+
+[source, xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-undertow</artifactId>
+</dependency>
+----
+
+=== undertow-handlers.conf
+
+You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
+in the `META-INF` directory of your application jar. This file contains handlers defined using the
+link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
 === web.xml
 

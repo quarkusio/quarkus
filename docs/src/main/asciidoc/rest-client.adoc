@@ -422,6 +422,25 @@ public class CountriesResource {
 The previous snippet uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
 ====
 
+When returning a `Uni`, every _subscription_ invokes the remote service.
+It means you can re-send the request by re-subscribing on the `Uni`, or use a `retry` as follow:
+
+[source, java]
+----
+
+@Inject @RestClient CountriesResource service;
+
+// ...
+
+service.nameAsync("Greece")
+   .onFailure().retry().atMost(10);
+
+----
+
+If you use a `CompletionStage`, you would need to call the service's method to retry.
+This difference comes from the laziness aspect of Mutiny and its subscription protocol.
+More details about this can be found in https://smallrye.io/smallrye-mutiny/#_uni_and_multi[the Mutiny documentation].
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

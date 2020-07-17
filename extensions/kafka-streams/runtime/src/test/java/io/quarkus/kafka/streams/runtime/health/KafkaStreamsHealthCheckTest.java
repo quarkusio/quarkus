@@ -27,7 +27,6 @@ public class KafkaStreamsHealthCheckTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        Mockito.when(manager.getStreams()).thenReturn(streams);
     }
 
     @Test

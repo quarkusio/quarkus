@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.cache.impl.PerpetualCache;
 import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
 import org.apache.ibatis.logging.log4j.Log4jImpl;
 import org.apache.ibatis.scripting.defaults.RawLanguageDriver;
@@ -26,6 +27,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -55,14 +58,22 @@ class MybatisProcessor {
                 ProxyFactory.class,
                 XMLLanguageDriver.class,
                 RawLanguageDriver.class));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
+                PerpetualCache.class));
     }
 
     @BuildStep
-    void addMyBatisMappers(BuildProducer<MyBatisMapperBuildItem> mappers, CombinedIndexBuildItem indexBuildItem) {
+    void addMyBatisMappers(BuildProducer<MyBatisMapperBuildItem> mappers,
+            BuildProducer<ReflectiveClassBuildItem> reflective,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
+            CombinedIndexBuildItem indexBuildItem) {
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(MYBATIS_MAPPER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 DotName dotName = i.target().asClass().name();
                 mappers.produce(new MyBatisMapperBuildItem(dotName));
+                reflective.produce(new ReflectiveClassBuildItem(true, false, dotName.toString()));
+                proxy.produce(new NativeImageProxyDefinitionBuildItem(dotName.toString()));
             }
         }
     }
@@ -70,6 +81,13 @@ class MybatisProcessor {
     @BuildStep
     void unremovableBeans(BuildProducer<AdditionalBeanBuildItem> beanProducer) {
         beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(MyBatisProducers.class));
+    }
+
+    @BuildStep
+    void initalSql(BuildProducer<NativeImageResourceBuildItem> resource, MyBatisRuntimeConfig config) {
+        if (config.initialSql.isPresent()) {
+            resource.produce(new NativeImageResourceBuildItem(config.initialSql.get()));
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

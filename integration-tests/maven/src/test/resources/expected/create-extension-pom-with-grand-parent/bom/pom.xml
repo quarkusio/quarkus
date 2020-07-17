@@ -6,13 +6,23 @@
         <groupId>org.acme</groupId>
         <artifactId>grand-parent</artifactId>
         <version>0.1-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>runtime-bom</artifactId>
+    <artifactId>bom</artifactId>
     <packaging>pom</packaging>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>myproject-with-grand-parent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>myproject-with-grand-parent-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

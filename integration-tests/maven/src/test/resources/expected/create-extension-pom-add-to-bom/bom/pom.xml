@@ -6,9 +6,9 @@
         <groupId>org.acme</groupId>
         <artifactId>grand-parent</artifactId>
         <version>0.1-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <artifactId>runtime-bom</artifactId>
+    <artifactId>bom</artifactId>
     <packaging>pom</packaging>
 
     <dependencyManagement>
@@ -27,6 +27,11 @@
                 <groupId>org.acme</groupId>
                 <artifactId>acme-add-to-bom</artifactId>
                 <version>${acme.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>my-project-add-to-bom-deployment</artifactId>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

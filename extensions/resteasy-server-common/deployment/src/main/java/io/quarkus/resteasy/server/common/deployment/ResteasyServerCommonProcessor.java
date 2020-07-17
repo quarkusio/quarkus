@@ -207,22 +207,26 @@ public class ResteasyServerCommonProcessor {
             return;
         }
 
+        final String rootPath;
         final String path;
         final String appClass;
         if (!applicationPaths.isEmpty()) {
             AnnotationInstance applicationPath = applicationPaths.iterator().next();
+            rootPath = "/";
             path = applicationPath.value().asString();
             appClass = applicationPath.target().asClass().name().toString();
         } else {
             if (resteasyServletMappingBuildItem.isPresent()) {
                 if (resteasyServletMappingBuildItem.get().getPath().endsWith("/*")) {
-                    path = resteasyServletMappingBuildItem.get().getPath().substring(0,
+                    rootPath = resteasyServletMappingBuildItem.get().getPath().substring(0,
                             resteasyServletMappingBuildItem.get().getPath().length() - 1);
                 } else {
-                    path = resteasyServletMappingBuildItem.get().getPath();
+                    rootPath = resteasyServletMappingBuildItem.get().getPath();
                 }
+                path = rootPath;
                 appClass = null;
             } else {
+                rootPath = resteasyConfig.path;
                 path = resteasyConfig.path;
                 appClass = null;
             }
@@ -324,7 +328,7 @@ public class ResteasyServerCommonProcessor {
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());
 
-        resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(path, resteasyInitParameters));
+        resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(rootPath, path, resteasyInitParameters));
 
         Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
                 .collect(Collectors.toSet());

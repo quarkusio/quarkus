@@ -115,12 +115,12 @@ import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
@@ -134,6 +134,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesLabelBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
 
 class KubernetesProcessor {
@@ -251,7 +252,7 @@ class KubernetesProcessor {
         return items;
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             PackageConfig packageConfig,
@@ -259,6 +260,7 @@ class KubernetesProcessor {
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
             Capabilities capabilities,
+            LaunchModeBuildItem launchMode,
             List<KubernetesAnnotationBuildItem> kubernetesAnnotations,
             List<KubernetesLabelBuildItem> kubernetesLabels,
             List<KubernetesEnvBuildItem> kubernetesEnvs,
@@ -271,6 +273,10 @@ class KubernetesProcessor {
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPath,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
+
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            return;
+        }
 
         if (kubernetesPorts.isEmpty()) {
             log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
@@ -301,7 +307,14 @@ class KubernetesProcessor {
                         .getEntriesSortedByPriority().stream()
                         .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
         sessionWriter.setProject(project);
+
+        if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {
+            // needed for a fresh run
+            Session.clearSession();
+        }
+
         final Session session = Session.getSession(new NoopLogger());
+
         session.setWriter(sessionWriter);
         session.setReader(sessionReader);
 

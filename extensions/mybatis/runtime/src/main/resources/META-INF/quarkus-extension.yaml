@@ -6,4 +6,4 @@ metadata:
   guide: "https://quarkus.io/guides/mybatis"
   categories:
   - "data"
-  status: "stable"
+  status: "preview"

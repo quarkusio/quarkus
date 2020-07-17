@@ -1,0 +1,271 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Using MyBatis
+include::./attributes.adoc[]
+:extension-status: preview
+
+This guide demonstrates how your Quarkus application can use the link:https://mybatis.org/mybatis-3/[MyBatis] to support the custom SQL, stored procedures and advanced mappings.
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+* A running Mysql Database server
+* GraalVM, or Docker, installed if you want to run in native mode.
+
+== Architecture
+
+The application built in this guide is quite simple: the user can get, add and remove a record through the RESTful API by using the MyBatis Mapper.
+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=mybatis-quickstart \
+    -Dextensions="mybatis,resteay-jackson,jdbc-mysql"
+cd mybatis-quickstart
+----
+This command generates a Maven project, with its pom.xml importing the quarkus-mybatis extension.
+
+If you already have your Quarkus project configured, you can add the `mybatis` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="mybatis"
+----
+
+This will add the following to your `pom.xml`:
+
+[source]
+----
+<dependency>
+    <groupId>org.amqphub.quarkus</groupId>
+    <artifactId>quarkus-mybatis</artifactId>
+</dependency>
+----
+
+== Creating the User POJO
+We are going to create a `User` POJO to access to the data in the backend mysql server.
+Create the `src/main/java/org/acme/mybatis/User.java` file, with the following content:
+
+[source, java]
+----
+package org.acme.mybatis;
+
+public class User {
+    private Integer id;
+    private String name;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+----
+
+== Creating the User Mapper
+We are going to create a `UserMapper` class which will use the MyBatis annotations to inject the SQL.
+Create the `src/main/java/org/acme/mybatis/UserMapper.java` file, with the following content:
+
+[source, java]
+----
+package org.acme.mybatis;
+
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+@Mapper
+public interface UserMapper {
+
+    @Select("SELECT * FROM USERS WHERE id = #{id}")
+    User getUser(Integer id); // <1>
+
+    @Insert("INSERT INTO USERS (id, name) VALUES (#{id}, #{name})")
+    Integer createUser(@Param("id") Integer id, @Param("name") String name); // <2>
+
+    @Delete("DELETE FROM USERS WHERE id = #{id}")
+    Integer removeUser(Integer id); // <3>
+}
+----
+
+1. Get a user from the database.
+2. Insert a user into the database. We should use the `@Param` to bind the parameters.
+3. Delete a user from the databse.
+
+== Createing the MyBatisResource to handle the requests
+We are going to create a `MyBatisResource` class which will handle all the requests to create, query or remove the data
+from the database.
+
+[source, java]
+----
+package org.acme.mybatis;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/mybatis")
+public class MyBatisResource {
+
+    @Inject
+    UserMapper userMapper; // <1>
+
+    @Path("/user/{id}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public User getUser(@PathParam("id") Integer id) {
+        return userMapper.getUser(id);
+    }
+
+    @Path("/user")
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Integer createUser(@FormParam("id") Integer id, @FormParam("name") String name) {
+        return userMapper.createUser(id, name);
+    }
+
+    @Path("/user/{id}")
+    @DELETE
+    @Produces(MediaType.TEXT_PLAIN)
+    public Integer removeUser(@PathParam("id") Integer id) {
+        return userMapper.removeUser(id);
+    }
+}
+----
+1. It uses the UserMapper which should be injected by the Quarkus to access the database.
+
+== Configure the properties
+
+We need to config the datasource used to connect to the database and the mybatis will choose the default one. Also you
+can use ```quarkus.mybatis.datasource``` for the specific database.
+
+[source]
+----
+quarkus.datasource.db-kind=mysql
+quarkus.datasource.username=<db user>
+
+quarkus.datasource.jdbc.url=jdbc:mysql://localhost/test  #<1>
+quarkus.mybatis.initial-sql=insert.sql  #<2>
+----
+
+1. The datasource used by the mybatis to connect the database.
+2. The SQL file which should be executed just after the application is started.
+
+We could keep the following content in the `insert.sql` to add some data:
+[source, sql]
+----
+DROP TABLE IF EXISTS USERS;
+
+CREATE TABLE USERS (
+    id integer not null primary key,
+    name varchar(80) not null
+);
+
+INSERT INTO USERS (id, name) values(1, 'Test User1');
+INSERT INTO USERS (id, name) values(2, 'Test User2');
+INSERT INTO USERS (id, name) values(3, 'Test User3');
+----
+
+== Running with the JVM mode
+At first, you should make sure the Mysql Server is running and the `test` database has been created.
+Then, you just need to run:
+
+[source, shell]
+----
+./mvnw compile quarkus:dev
+----
+
+You can get the user by using the following command:
+
+[source, shell]
+----
+curl http://localhost:8080/mybatis/user/1
+----
+
+Or create a new user:
+
+[source, shell]
+----
+curl -X POST http://localhost:8080/mybatis/user -d 'id=4&name=test'
+----
+
+Or remove a user:
+
+[source, shell]
+----
+curl -X DELETE http://localhost:8080/mybatis/user/1
+----
+
+== Running Native
+You have to add the `--report-unsupported-elements-at-runtime` option when buiding the native image now.
+So add the following content with the native profile in the `pom.xml`:
+
+[source, xml]
+----
+<profile>
+    <id>native</id>
+    <properties>
+        <quarkus.native.additional-build-args>
+            --report-unsupported-elements-at-runtime
+        </quarkus.native.additional-build-args>
+    </properties>
+</profile>
+----
+
+You can build the native executable with:
+
+[source, shell]
+----
+./mvnw package -Pnative
+----
+
+and then run with:
+
+[source, shell]
+----
+./target/mybatis-quickstart-1.0-SNAPSHOT-runner
+----
+
+== Configuration References
+include::{generated-dir}/config/quarkus-mybatis.adoc[opts=optional, leveloffset=+1]

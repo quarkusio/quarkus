@@ -633,12 +633,12 @@ Let's suppose we have a template called `itemDetail.html`:
 ----
 {#if showImage} <1>
   {it.image} <2>
-  {nested} <3>
+  {nested-content} <3>
 {/if}
 ----
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
-<3> (optional) `nested` is a special key that will be replaced by the content of the tag.
+<3> (optional) `nested-content` is a special key that will be replaced by the content of the tag.
 
 Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
 
@@ -660,13 +660,13 @@ We can include the tag like this:
   <li>
   {#itemDetail item showImage=true} <1>
     = <b>{item.name}</b> <2>
-  {/#itemDetail}
+  {/itemDetail}
   </li>
 {/for}
 </ul>
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
-<2> Tag content injected using the `nested` key in the tag template.
+<2> Tag content injected using the `nested-content` key in the tag template.
 
 === Engine Configuration
 

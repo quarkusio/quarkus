@@ -1,6 +1,5 @@
 package io.quarkus.deployment.dev;
 
-import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import static java.util.Collections.singleton;
 
 import java.io.ByteArrayInputStream;
@@ -11,8 +10,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,7 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FilenameUtils;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
@@ -160,18 +156,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     }));
         }
         FSWatchUtil.observe(watchers, 500);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Set<Path> getModifiedPaths(WatchKey key, CodeGenData codeGenData) {
-        List<WatchEvent<?>> watchEvents = key.pollEvents();
-        String extension = codeGenData.provider.inputExtension();
-        return watchEvents.stream()
-                .filter(e -> e.kind() != OVERFLOW)
-                .map(e -> (WatchEvent<Path>) e)
-                .map(WatchEvent::context)
-                .filter(p -> extension.equals(FilenameUtils.getExtension(p.toString())))
-                .collect(Collectors.toSet());
     }
 
     public synchronized void restartApp(Set<String> changedResources) {

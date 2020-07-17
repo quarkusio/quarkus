@@ -27,6 +27,10 @@
             <artifactId>quarkus-narayana-lra</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

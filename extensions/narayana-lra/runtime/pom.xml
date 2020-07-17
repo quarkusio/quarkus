@@ -40,6 +40,10 @@
                     <groupId>org.osgi</groupId>
                     <artifactId>org.osgi.annotation.versioning</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -74,6 +78,12 @@
             <artifactId>lra-proxy-api</artifactId>
             <version>${narayana.version}</version>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- end JAXRS LRA filters -->
     </dependencies>

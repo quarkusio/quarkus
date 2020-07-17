@@ -42,7 +42,7 @@
         <smallrye-jwt.version>2.1.2</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.13</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
-        <smallrye-converter-api.version>1.0.13</smallrye-converter-api.version>
+        <smallrye-converter-api.version>1.1.0</smallrye-converter-api.version>
         <smallrye-reactive-messaging.version>2.1.1</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.28.0</swagger-ui.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>

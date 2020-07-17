@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -71,6 +72,7 @@ import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.LookupService;
+import io.smallrye.graphql.spi.SchemaBuildingExtensionService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -129,6 +131,15 @@ public class SmallRyeGraphQLProcessor {
                 lookupService);
         serviceProvider.produce(
                 new ServiceProviderBuildItem(LookupService.class.getName(), lookupImplementations.toArray(new String[0])));
+
+        // Schema Extension Service (We use the one from the CDI Module)
+        String schemaExtensionService = SPI_PATH + SchemaBuildingExtensionService.class.getName();
+        Set<String> schemaExtensionImplementations = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                schemaExtensionService);
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SchemaBuildingExtensionService.class.getName(),
+                        schemaExtensionImplementations.toArray(new String[0])));
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -307,9 +318,9 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    private Set<String> getFieldClassNames(Set<Field> fields) {
+    private Set<String> getFieldClassNames(Map<String, Field> fields) {
         Set<String> classes = new HashSet<>();
-        for (Field field : fields) {
+        for (Field field : fields.values()) {
             classes.add(field.getReference().getClassName());
         }
         return classes;

@@ -5,6 +5,8 @@ import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildK
 import java.io.IOException;
 import java.util.Properties;
 
+import javax.inject.Singleton;
+
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
@@ -17,7 +19,7 @@ import org.rocksdb.Status;
 import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -30,9 +32,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
-import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
+import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
@@ -140,24 +143,28 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode) {
+    void processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         Properties kafkaStreamsProperties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
-        return new BeanContainerListenerBuildItem(recorder.configure(kafkaStreamsProperties));
+
+        // create KafkaStreamsSupport as a synthetic bean
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(KafkaStreamsSupport.class)
+                .scope(Singleton.class)
+                .supplier(recorder.kafkaStreamsSupportSupplier(kafkaStreamsProperties))
+                .done());
+
+        // make the producer an unremoveable bean
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(KafkaStreamsProducer.class).setUnremovable().build());
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void configureAndLoadRocksDb(KafkaStreamsRecorder recorder, KafkaStreamsRuntimeConfig runtimeConfig) {
+    void loadRocksDb(KafkaStreamsRecorder recorder, KafkaStreamsRuntimeConfig runtimeConfig) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         recorder.loadRocksDb();
-
-        recorder.configureRuntimeProperties(runtimeConfig);
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(KafkaStreamsTopologyManager.class);
     }
 
     @BuildStep

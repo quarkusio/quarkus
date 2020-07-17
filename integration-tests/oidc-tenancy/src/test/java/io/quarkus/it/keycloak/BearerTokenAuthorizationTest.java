@@ -103,11 +103,11 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(200)
                 .body(equalTo("tenant-b:alice"));
 
-        // should give a 403 given that access token from issuer b can not access tenant c
+        // should give a 401 given that access token from issuer b can not access tenant c
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
                 .when().get("/tenant/tenant-c/api/user")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
     }
 
     @Test
@@ -118,11 +118,11 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(200)
                 .body(equalTo("tenant-d:alice"));
 
-        // should give a 403 given that access token from issuer b can not access tenant c
+        // should give a 401 given that access token from issuer b can not access tenant c
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
                 .when().get("/tenant/tenant-d/api/user")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
     }
 
     @Test
@@ -164,11 +164,11 @@ public class BearerTokenAuthorizationTest {
                 .body(equalTo("tenant-oidc:alice"));
 
         // Get a token with kid '3' - it can only be verified via the introspection fallback since OIDC returns JWK set with kid '2'
-        // 403 since the introspection is not enabled
+        // 401 since the introspection is not enabled
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("3"))
                 .when().get("/tenant/tenant-oidc/api/user")
                 .then()
-                .statusCode(403);
+                .statusCode(401);
 
         // Enable introspection
         RestAssured.when().post("/oidc/introspection").then().body(equalTo("true"));

@@ -1,6 +1,7 @@
 package io.quarkus.it.keycloak;
 
 import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getAccessToken;
+import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getRefreshToken;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -78,6 +79,14 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceWithRefreshToken() {
+        RestAssured.given().auth().oauth2(getRefreshToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testPermissionHttpInformationProvider() {
         RestAssured.given().auth().oauth2(getAccessToken("alice"))
                 .when().get("/api/permission/http-cip")
@@ -119,6 +128,6 @@ public class BearerTokenAuthorizationTest {
                 .pollDelay(3, TimeUnit.SECONDS)
                 .atMost(5, TimeUnit.SECONDS).until(
                         () -> RestAssured.given().auth().oauth2(token).when()
-                                .get("/api/users/me").thenReturn().statusCode() == 403);
+                                .get("/api/users/me").thenReturn().statusCode() == 401);
     }
 }

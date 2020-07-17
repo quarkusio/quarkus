@@ -15,8 +15,6 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     private static final String BEARER = "Bearer";
     protected static final ChallengeData UNAUTHORIZED_CHALLENGE = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
             null, null);
-    protected static final ChallengeData FORBIDDEN_CHALLENGE = new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null,
-            null);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager,
@@ -31,13 +29,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
-        String bearerToken = extractBearerToken(context);
-
-        if (bearerToken == null) {
-            return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
-        }
-
-        return Uni.createFrom().item(FORBIDDEN_CHALLENGE);
+        return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
     }
 
     private String extractBearerToken(RoutingContext context) {

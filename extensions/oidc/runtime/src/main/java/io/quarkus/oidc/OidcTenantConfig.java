@@ -769,6 +769,12 @@ public class OidcTenantConfig {
         public Optional<List<String>> audience = Optional.empty();
 
         /**
+         * Expected token type
+         */
+        @ConfigItem
+        public Optional<String> tokenType = Optional.empty();
+
+        /**
          * Life span grace period in seconds.
          * When checking token expiry, current time is allowed to be later than token expiration time by at most the configured
          * number of seconds.
@@ -848,6 +854,14 @@ public class OidcTenantConfig {
 
         public void setForcedJwkRefreshInterval(Duration forcedJwkRefreshInterval) {
             this.forcedJwkRefreshInterval = forcedJwkRefreshInterval;
+        }
+
+        public Optional<String> getTokenType() {
+            return tokenType;
+        }
+
+        public void setTokenType(String tokenType) {
+            this.tokenType = Optional.of(tokenType);
         }
     }
 

@@ -27,6 +27,41 @@ import io.vertx.core.json.JsonObject;
 public class OidcUtilsTest {
 
     @Test
+    public void testCorrectTokenType() throws Exception {
+        OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
+        tokenClaims.setTokenType("access_token");
+        JsonObject json = new JsonObject();
+        json.put("typ", "access_token");
+        OidcUtils.validatePrimaryJwtTokenType(tokenClaims, json);
+    }
+
+    @Test
+    public void testWrongTokenType() throws Exception {
+        OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
+        tokenClaims.setTokenType("access_token");
+        JsonObject json = new JsonObject();
+        json.put("typ", "refresh_token");
+        try {
+            OidcUtils.validatePrimaryJwtTokenType(tokenClaims, json);
+            fail("Exception expected: wrong token type");
+        } catch (OIDCException ex) {
+            // expected
+        }
+    }
+
+    @Test
+    public void testKeycloakRefreshTokenType() throws Exception {
+        JsonObject json = new JsonObject();
+        json.put("typ", "Refresh");
+        try {
+            OidcUtils.validatePrimaryJwtTokenType(new OidcTenantConfig.Token(), json);
+            fail("Exception expected: wrong token type");
+        } catch (OIDCException ex) {
+            // expected
+        }
+    }
+
+    @Test
     public void testTokenWithCorrectIssuer() throws Exception {
         OidcTenantConfig.Token tokenClaims = OidcTenantConfig.Token.fromIssuer("https://server.example.com");
         InputStream is = getClass().getResourceAsStream("/tokenIssuer.json");

@@ -81,9 +81,7 @@ import io.vertx.ext.web.RoutingContext;
  * We scan all annotations and build the model during build.
  */
 public class SmallRyeGraphQLProcessor {
-    private static final Logger log = Logger.getLogger(SmallRyeGraphQLProcessor.class);
-
-    private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class.getName());
+    private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class);
     private static final String SCHEMA_PATH = "/schema.graphql";
     private static final String SPI_PATH = "META-INF/services/";
 
@@ -180,7 +178,7 @@ public class SmallRyeGraphQLProcessor {
                         new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricRegistries")));
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
-                log.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
+                LOG.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
                         "dependency is not present.");
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
             }

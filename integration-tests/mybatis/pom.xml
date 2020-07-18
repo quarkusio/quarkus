@@ -76,7 +76,7 @@
             </activation>
             <properties>
                 <quarkus.native.additional-build-args>--report-unsupported-elements-at-runtime</quarkus.native.additional-build-args>
-	    </properties>
+            </properties>
             <build>
                 <plugins>
                     <plugin>

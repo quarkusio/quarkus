@@ -9,8 +9,10 @@ import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.Email;
 
+import org.springframework.data.domain.Persistable;
+
 @Entity
-public class Customer extends AbstractEntity {
+public class Customer extends AbstractEntity implements Persistable<Long> {
 
     @Column(name = "first_name")
     private String firstName;
@@ -43,6 +45,11 @@ public class Customer extends AbstractEntity {
         this.telephone = telephone;
         this.carts = carts;
         this.enabled = enabled;
+    }
+
+    @Override
+    public boolean isNew() {
+        return id == null;
     }
 
     public String getFirstName() {

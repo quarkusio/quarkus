@@ -3,9 +3,9 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>\${groupId}</groupId>
-    <artifactId>\${artifactId}</artifactId>
-    <version>\${version}</version>
+    <groupId>${groupId}</groupId>
+    <artifactId>${artifactId}</artifactId>
+    <version>${version}</version>
     <properties>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>

@@ -15,22 +15,6 @@
     <packaging>maven-archetype</packaging>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>archetype-resources/pom.xml</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>archetype-resources/pom.xml</exclude>
-                </excludes>
-            </resource>
-        </resources>
         <extensions>
             <extension>
                 <groupId>org.apache.maven.archetype</groupId>
@@ -38,29 +22,5 @@
                 <version>3.0.1</version>
             </extension>
         </extensions>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.1.0</version>
-                    <configuration>
-                        <escapeString>\</escapeString>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-archetype-plugin</artifactId>
-                    <version>3.0.1</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>integration-test</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 </project>

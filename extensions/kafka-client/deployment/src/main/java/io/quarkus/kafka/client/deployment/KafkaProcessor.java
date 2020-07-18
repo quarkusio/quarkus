@@ -49,6 +49,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
@@ -100,6 +101,7 @@ public class KafkaProcessor {
 
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             Capabilities capabilities) {
         final Set<DotName> toRegister = new HashSet<>();
 
@@ -139,6 +141,71 @@ public class KafkaProcessor {
         // classes needed to perform reflection on DirectByteBuffer - only really needed for Java 8
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
+
+        // Avro - for both Confluent and Apicurio
+        try {
+            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer");
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, false,
+                            "io.confluent.kafka.serializers.KafkaAvroDeserializer",
+                            "io.confluent.kafka.serializers.KafkaAvroSerializer"));
+
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, false,
+                            "io.confluent.kafka.serializers.subject.TopicNameStrategy",
+                            "io.confluent.kafka.serializers.subject.TopicRecordNameStrategy",
+                            "io.confluent.kafka.serializers.subject.RecordNameStrategy"));
+
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, false,
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.ErrorMessage",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.Schema",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.Config",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaReference",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaString",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.SchemaTypeConverter",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.ServerClusterId",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.SujectVersion"));
+
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, false,
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.CompatibilityCheckResponse",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ConfigUpdateRequest",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeGetResponse",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.ModeUpdateRequest",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.RegisterSchemaRequest",
+                            "io.confluent.kafka.schemaregistry.client.rest.entities.requests.RegisterSchemaResponse"));
+        } catch (ClassNotFoundException e) {
+            //ignore, Confluent Avro is not in the classpath
+        }
+
+        try {
+            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer");
+            reflectiveClass.produce(
+                    new ReflectiveClassBuildItem(true, true, false,
+                            "io.apicurio.registry.utils.serde.AvroKafkaDeserializer",
+                            "io.apicurio.registry.utils.serde.AvroKafkaSerializer"));
+
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, false,
+                    "io.apicurio.registry.utils.serde.avro.ReflectAvroDatumProvider",
+                    "io.apicurio.registry.utils.serde.strategy.AutoRegisterIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.CachedSchemaIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.FindBySchemaIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.FindLatestIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.RecordIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.SimpleTopicIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.TopicIdStrategy",
+                    "io.apicurio.registry.utils.serde.strategy.TopicRecordIdStrategy"));
+
+            // Apicurio uses dynamic proxies, register them
+            proxies.produce(new NativeImageProxyDefinitionBuildItem("io.apicurio.registry.client.RegistryService",
+                    "java.lang.AutoCloseable"));
+
+        } catch (ClassNotFoundException e) {
+            //ignore, Apicurio Avro is not in the classpath
+        }
+
     }
 
     @BuildStep

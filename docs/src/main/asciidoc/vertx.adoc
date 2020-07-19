@@ -581,7 +581,7 @@ Then, create the native executable with:
 
 == Deploying verticles
 
-https://vertx.io/docs/vertx-core/java/#_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
+link:https://vertx.io/docs/vertx-core/java/#\_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
 This model does not claim to be a strict actor-model implementation, but it does share similarities especially with respect to concurrency, scaling and deployment.
 To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
 

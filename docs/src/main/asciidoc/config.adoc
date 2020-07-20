@@ -308,6 +308,8 @@ public class GreetingConfiguration {
 }
 ----
 
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension needs to be present.
+
 If the validation fails with the given configuration, the application will fail to start and indicate the corresponding validation errors in the log.
 
 In the case of an interface being annotated with `@ConfigProperties`, the interface is allowed to extend other interfaces and methods from

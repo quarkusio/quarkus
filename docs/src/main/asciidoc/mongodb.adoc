@@ -5,13 +5,10 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Using the MongoDB Client
 include::./attributes.adoc[]
-:extension-status: preview
 
 MongoDB is a well known NoSQL Database that is widely used.
 
 In this guide, we see how you can get your REST services to use the MongoDB database.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 

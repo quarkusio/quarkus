@@ -21,7 +21,7 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.version}</version>
+                <version>\${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -38,7 +38,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
+                <version>\${quarkus.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -49,15 +49,15 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${compiler-plugin.version}</version>
+                <version>\${compiler-plugin.version}</version>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+                <version>\${surefire-plugin.version}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
+                        <maven.home>\${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -76,7 +76,7 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${quarkus.version}</version>
+                        <version>\${quarkus.version}</version>
                         <executions>
                             <execution>
                                 <goals>

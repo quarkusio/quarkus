@@ -39,7 +39,7 @@ public final class SectionBlock {
      */
     List<TemplateNode> nodes;
 
-    public SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
+    SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
             Map<String, Expression> expressions,
             List<TemplateNode> nodes) {
         this.origin = origin;
@@ -48,6 +48,10 @@ public final class SectionBlock {
         this.parameters = parameters;
         this.expressions = expressions;
         this.nodes = ImmutableList.copyOf(nodes);
+    }
+
+    public boolean isEmpty() {
+        return nodes.isEmpty();
     }
 
     Set<Expression> getExpressions() {

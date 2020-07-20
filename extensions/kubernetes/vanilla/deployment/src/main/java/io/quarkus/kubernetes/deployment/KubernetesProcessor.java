@@ -822,8 +822,10 @@ class KubernetesProcessor {
         handleLivenessProbe(name, target, livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
         handleReadinessProbe(name, target, readinessProbe, kubernetesHealthReadinessPathBuildItem,
                 session);
-        session.resources().decorate(target,
-                new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
+
+        //For knative we want the port to be null
+        String port = KNATIVE.equals(target) ? null : String.valueOf(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT));
+        session.resources().decorate(target, new ApplyHttpGetActionPortDecorator(port));
     }
 
     private void handleLivenessProbe(String name, String target, ProbeConfig livenessProbe,

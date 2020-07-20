@@ -2,6 +2,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
@@ -168,7 +169,11 @@ public class KubernetesDeployer {
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             distinct(list.getItems()).forEach(i -> {
-                client.resource(i).inNamespace(namespace).createOrReplace();
+                if (KNATIVE.equals(deploymentTarget.getName().toLowerCase())) {
+                    client.resource(i).inNamespace(namespace).deletingExisting().createOrReplace();
+                } else {
+                    client.resource(i).inNamespace(namespace).createOrReplace();
+                }
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 

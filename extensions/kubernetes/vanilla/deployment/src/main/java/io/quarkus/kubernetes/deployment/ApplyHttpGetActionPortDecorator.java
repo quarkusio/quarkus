@@ -12,9 +12,9 @@ import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 
 public class ApplyHttpGetActionPortDecorator extends ApplicationContainerDecorator<HTTPGetActionFluent<?>> {
 
-    private final int port;
+    private final String port;
 
-    public ApplyHttpGetActionPortDecorator(int port) {
+    public ApplyHttpGetActionPortDecorator(String port) {
         super(ANY, ANY); //We need to apply this to all deployments and all containers.
         this.port = port;
     }

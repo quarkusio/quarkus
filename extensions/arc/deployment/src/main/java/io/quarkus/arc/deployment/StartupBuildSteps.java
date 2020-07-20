@@ -5,6 +5,7 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
@@ -97,6 +98,11 @@ public class StartupBuildSteps {
         ObserverConfigurator configurator = observerRegistrationPhase.getContext().configure()
                 .beanClass(bean.getBeanClass())
                 .observedType(StartupEvent.class);
+        if (startup.target().kind() == Kind.METHOD) {
+            configurator.id(startup.target().asMethod().toString());
+        } else if (startup.target().kind() == Kind.FIELD) {
+            configurator.id(startup.target().asField().name());
+        }
         AnnotationValue priority = startup.value();
         if (priority != null) {
             configurator.priority(priority.asInt());

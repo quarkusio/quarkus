@@ -970,7 +970,8 @@ public class BeanDeployment {
     }
 
     private void addSyntheticObserver(ObserverConfigurator configurator) {
-        observers.add(ObserverInfo.create(this, configurator.beanClass, null, null, null, null, configurator.observedType,
+        observers.add(ObserverInfo.create(configurator.id, this, configurator.beanClass, null, null, null, null,
+                configurator.observedType,
                 configurator.observedQualifiers,
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,

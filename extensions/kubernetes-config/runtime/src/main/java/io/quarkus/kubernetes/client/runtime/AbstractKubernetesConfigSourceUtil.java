@@ -30,7 +30,7 @@ abstract class AbstractKubernetesConfigSourceUtil {
     abstract ConfigSource createYamlConfigSource(String kubernetesConfigSourceName, String fileName, String input, int ordinal);
 
     /**
-     * Returns a list of {@code ConfigSource} for the literal data that is contained in the ConfigMap
+     * Returns a list of {@code ConfigSource} for the literal data that is contained in the ConfigMap/Secret
      * and for the application.{properties|yaml|yml} files that might be contained in it as well
      *
      * All the {@code ConfigSource} objects use the same ordinal which is higher than the ordinal
@@ -69,6 +69,9 @@ abstract class AbstractKubernetesConfigSourceUtil {
                             + " '" + kubernetesConfigSourceName + "'");
                 }
                 result.add(createYamlConfigSource(kubernetesConfigSourceName, fileName, rawFileData, ORDINAL));
+            } else {
+                // TODO all keys named `*.{properties,yml,yaml}` are categorized as file sources,
+                //  but here, we only look for `application.{properties,yml,yaml}`
             }
         }
 

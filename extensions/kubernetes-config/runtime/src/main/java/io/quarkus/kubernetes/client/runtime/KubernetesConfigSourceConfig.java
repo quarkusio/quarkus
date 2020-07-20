@@ -29,7 +29,13 @@ public class KubernetesConfigSourceConfig {
     public Optional<List<String>> configMaps;
 
     /**
-     * Namespace to look for config maps. If this is not specified, then the namespace configured in the kubectl config context
+     * Secrets to look for in the namespace that the Kubernetes Client has been configured for
+     */
+    @ConfigItem
+    public Optional<List<String>> secrets;
+
+    /**
+     * Namespace to look for config maps and secrets. If this is not specified, then the namespace configured in the kubectl config context
      * is used. If the value is specified and the namespace doesn't exist, the application will fail to start.
      */
     @ConfigItem

@@ -9,6 +9,7 @@ import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 class KubernetesConfigSourceProvider implements ConfigSourceProvider {
@@ -19,24 +20,30 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
     private final KubernetesClient client;
 
     private final ConfigMapConfigSourceUtil configMapConfigSourceUtil;
+    private final SecretConfigSourceUtil secretConfigSourceUtil;
 
     public KubernetesConfigSourceProvider(KubernetesConfigSourceConfig config, KubernetesClient client) {
         this.config = config;
         this.client = client;
 
         this.configMapConfigSourceUtil = new ConfigMapConfigSourceUtil();
+        this.secretConfigSourceUtil = new SecretConfigSourceUtil();
     }
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        if (!config.configMaps.isPresent()) {
-            log.debug("No ConfigMaps were configured for config source lookup");
+        if (!config.configMaps.isPresent() && !config.secrets.isPresent()) {
+            log.debug("No ConfigMaps or Secrets were configured for config source lookup");
             return Collections.emptyList();
         }
 
         List<ConfigSource> result = new ArrayList<>();
         if (config.configMaps.isPresent()) {
             result.addAll(getConfigMapConfigSources(config.configMaps.get()));
+        }
+        if (config.secrets.isPresent()) {
+            // TODO generate a role with permissions to read secrets, and a role binding for that role
+            result.addAll(getSecretConfigSources(config.secrets.get()));
         }
         return result;
     }
@@ -70,7 +77,40 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
             }
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Unable to obtain configuration for ConfigMap objects for Kubernetes API Server at: "
+            throw new RuntimeException("Unable to obtain configuration for ConfigMap objects from Kubernetes API Server at: "
+                    + client.getConfiguration().getMasterUrl(), e);
+        }
+    }
+
+    private List<ConfigSource> getSecretConfigSources(List<String> secretNames) {
+        List<ConfigSource> result = new ArrayList<>(secretNames.size());
+
+        try {
+            for (String secretName : secretNames) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Attempting to read Secret " + secretName);
+                }
+                Secret secret;
+                String namespace;
+                if (config.namespace.isPresent()) {
+                    namespace = config.namespace.get();
+                    secret = client.secrets().inNamespace(namespace).withName(secretName).get();
+                } else {
+                    namespace = client.getNamespace();
+                    secret = client.secrets().withName(secretName).get();
+                }
+                if (secret == null) {
+                    logMissingOrFail(secretName, namespace, "Secret", config.failOnMissingConfig);
+                } else {
+                    result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData()));
+                    if (log.isDebugEnabled()) {
+                        log.debug("Done reading Secret " + secret);
+                    }
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to obtain configuration for Secret objects from Kubernetes API Server at: "
                     + client.getConfiguration().getMasterUrl(), e);
         }
     }
@@ -79,7 +119,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         String message = type + " '" + name + "' not found";
         if (namespace == null) {
             message = message
-                    + ". No Kubernetes namespace was set (most likely because the application is running outside the Kubernetes cluster). Consider setting 'quarkus.kubernetes-client.namespace=my-namespace' to specify the namespace in which to look up the ConfigMap";
+                    + ". No Kubernetes namespace was set (most likely because the application is running outside the Kubernetes cluster). Consider setting 'quarkus.kubernetes-client.namespace=my-namespace' to specify the namespace in which to look up the " + type;
         } else {
             message = message + " in namespace '" + namespace + "'";
         }

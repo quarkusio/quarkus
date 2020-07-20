@@ -12,6 +12,7 @@ import org.mockito.internal.invocation.RealMethod;
 import org.mockito.internal.util.MockUtil;
 import org.mockito.invocation.MockHandler;
 import org.mockito.mock.MockCreationSettings;
+import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 
 public class PanacheMock {
@@ -107,4 +108,35 @@ public class PanacheMock {
 
     }
 
+    public static PanacheStubber doAnswer(Answer answer) {
+        return new PanacheStubber(Mockito.doAnswer(answer));
+    }
+
+    public static PanacheStubber doCallRealMethod() {
+        return new PanacheStubber(Mockito.doCallRealMethod());
+    }
+
+    public static PanacheStubber doNothing() {
+        return new PanacheStubber(Mockito.doNothing());
+    }
+
+    public static PanacheStubber doReturn(Object objectToBeReturned) {
+        return new PanacheStubber(Mockito.doReturn(objectToBeReturned));
+    }
+
+    public static PanacheStubber doReturn(Object objectToBeReturned, Object... toBeReturnedNext) {
+        return new PanacheStubber(Mockito.doReturn(objectToBeReturned, toBeReturnedNext));
+    }
+
+    public static PanacheStubber doThrow(Class<? extends Throwable> toBeThrown) {
+        return new PanacheStubber(Mockito.doThrow(toBeThrown));
+    }
+
+    public static PanacheStubber doThrow(Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... toBeThrownNext) {
+        return new PanacheStubber(Mockito.doThrow(toBeThrown, toBeThrownNext));
+    }
+
+    public static PanacheStubber doThrow(Throwable... toBeThrown) {
+        return new PanacheStubber(Mockito.doThrow(toBeThrown));
+    }
 }

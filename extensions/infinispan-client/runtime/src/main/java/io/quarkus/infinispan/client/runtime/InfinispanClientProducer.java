@@ -187,7 +187,7 @@ public class InfinispanClientProducer {
         infinispanClientRuntimeConfig.saslMechanism
                 .ifPresent(v -> properties.put(ConfigurationProperties.SASL_MECHANISM, v));
 
-        infinispanClientRuntimeConfig.trustStoreFileName
+        infinispanClientRuntimeConfig.trustStore
                 .ifPresent(v -> properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, v));
 
         infinispanClientRuntimeConfig.trustStorePassword

@@ -76,7 +76,7 @@ public class InfinispanClientRuntimeConfig {
      * Sets the trust store path
      */
     @ConfigItem
-    Optional<String> trustStoreFileName;
+    Optional<String> trustStore;
 
     /**
      * Sets the trust store password

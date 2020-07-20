@@ -38,21 +38,11 @@ public interface ExtensionManager {
     }
 
     /**
-     * Check that the Quarkus Platform bom is defined in the project.
-     * The Quarkus Platform Bom role is to define version to use for Quarkus extensions.
-     *
-     * @return true if it's defined, false else
-     * @throws IOException if a problem occurs while reading the project build file(s)
-     */
-    boolean hasQuarkusPlatformBom() throws IOException;
-
-    /**
      * This is going to install/add all the specified extensions to the project build file(s).
      *
      * <pre>
-     *   - If the project Quarkus platform bom is not defined, an {@link IllegalStateException} will be thrown
      *   - Extensions which are already installed will ALWAYS be skipped whatever the specified version
-     *   - The provided version will be used wasn't already installed
+     *   - The provided version will be used if it wasn't already installed
      * </pre>
      *
      * @param coords the list of {@link AppArtifactCoords} for the extensions to install

@@ -98,13 +98,6 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     @Override
-    protected boolean containsBOM(String groupId, String artifactId) throws IOException {
-        String buildContent = getModel().getBuildContent();
-        return buildContent.contains("enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:")
-                || buildContent.contains("enforcedPlatform(\"" + groupId + ":" + artifactId + ":");
-    }
-
-    @Override
     public String getProperty(String propertyName) throws IOException {
         final String property = getModel().getPropertiesContent().getProperty(propertyName);
         if (property != null || getModel().getRootPropertiesContent() == null) {

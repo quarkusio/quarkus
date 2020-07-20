@@ -68,22 +68,6 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    protected boolean containsBOM(String groupId, String artifactId) throws IOException {
-        if (getModel() == null || getModel().getDependencyManagement() == null) {
-            return false;
-        }
-        List<Dependency> dependencies = getModel().getDependencyManagement().getDependencies();
-        return dependencies.stream()
-                // Find bom
-                .filter(dependency -> "import".equals(dependency.getScope()))
-                .filter(dependency -> "pom".equals(dependency.getType()))
-                // Does it matches the bom artifact name
-                .anyMatch(dependency -> dependency.getArtifactId()
-                        .equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
-                        && dependency.getGroupId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_VALUE));
-    }
-
-    @Override
     protected void refreshData() {
         this.modelRef.set(null);
     }

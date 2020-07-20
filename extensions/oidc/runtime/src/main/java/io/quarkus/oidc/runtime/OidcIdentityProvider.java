@@ -114,6 +114,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     userInfo = getUserInfo(event.result(), (String) vertxContext.get("access_token"));
                                 }
                                 if (tokenJson != null) {
+                                    OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
                                     JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
                                             userInfo);
                                     try {

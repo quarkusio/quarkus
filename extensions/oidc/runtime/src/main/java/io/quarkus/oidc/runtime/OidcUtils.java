@@ -191,4 +191,16 @@ public final class OidcUtils {
             builder.addAttribute("userinfo", new UserInfo(userInfo.encode()));
         }
     }
+
+    public static void validatePrimaryJwtTokenType(OidcTenantConfig.Token tokenConfig, JsonObject tokenJson) {
+        if (tokenJson.containsKey("typ")) {
+            String type = tokenJson.getString("typ");
+            if (tokenConfig.getTokenType().isPresent() && !tokenConfig.getTokenType().get().equals(type)) {
+                throw new OIDCException("Invalid token type");
+            } else if ("Refresh".equals(type)) {
+                // At least check it is not a refresh token issued by Keycloak
+                throw new OIDCException("Refresh token can only be used with the refresh token grant");
+            }
+        }
+    }
 }

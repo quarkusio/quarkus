@@ -223,6 +223,21 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
         public String encode() {
             return null;
         }
+
+        @Override
+        public CookieSameSite getSameSite() {
+            return null;
+        }
+
+        @Override
+        public boolean isSecure() {
+            return false;
+        }
+
+        @Override
+        public boolean isHttpOnly() {
+            return false;
+        }
     }
 
 }

@@ -283,6 +283,12 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
                     dependency.addPath(resourcesDir);
                 }
             }
+            for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
+                    .getOutputs().getFiles()) {
+                if (outputDir.exists()) {
+                    dependency.addPath(outputDir);
+                }
+            }
         }
         return dependency;
     }

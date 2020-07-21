@@ -267,6 +267,11 @@ public class QuarkusPlugin implements Plugin<Project> {
             if (resourcesTask != null) {
                 quarkusDev.dependsOn(resourcesTask);
             }
+            final Task resourcesTaskJandex = dep.getTasks().findByName("jandex");
+            if (resourcesTaskJandex != null) {
+                quarkusDev.dependsOn(resourcesTaskJandex);
+            }
+
         }
 
         final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);

@@ -12,6 +12,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcEndpointFactory;
+import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
 import io.quarkus.qrs.runtime.core.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
@@ -76,10 +77,16 @@ public class QrsRecorder {
                 MethodParameter[] parameters = method.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
                     MethodParameter param = parameters[i];
-                    if (param.parameterType == ParameterType.PATH) {
+                    switch(param.parameterType) {
+                    case HEADER:
+                        handlers.add(new ParameterHandler(i, new HeaderParamExtractor(param.name, true), null));
+                        break;
+                    case PATH:
                         handlers.add(new ParameterHandler(i, new PathParamExtractor(param.name), null));
-                    } else {
+                        break;
+                    default:
                         handlers.add(new ParameterHandler(i, new QueryParamExtractor(param.name, true), null));
+                        break;
                     }
                 }
                 if (method.isBlocking()) {

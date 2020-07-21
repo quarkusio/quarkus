@@ -35,6 +35,15 @@ public class SimpleQrsTestCase {
     }
 
     @Test
+    public void testParams() {
+        RestAssured.with()
+            .queryParam("q", "qv")
+            .header("h", "hv")
+            .get("/simple/params/pv")
+            .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv"));
+    }
+
+    @Test
     public void testJson() {
         RestAssured.get("/simple/person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));

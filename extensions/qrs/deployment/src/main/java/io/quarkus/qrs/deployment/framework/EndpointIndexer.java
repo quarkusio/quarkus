@@ -102,15 +102,19 @@ public class EndpointIndexer {
                         String name = null;
                         AnnotationInstance pathParam = anns.get(QrsDotNames.PATH_PARAM);
                         AnnotationInstance queryParam = anns.get(QUERY_PARAM);
+                        AnnotationInstance headerParam = anns.get(QrsDotNames.HEADER_PARAM);
                         ParameterType type;
-                        if (pathParam != null && queryParam != null) {
-                            throw new RuntimeException("Cannot have both @PathParam and @QueryParam on " + info);
+                        if (moreThanOne(pathParam, queryParam, headerParam)) {
+                            throw new RuntimeException("Cannot have more than one of @PathParam, @QueryParam, @HeaderParam on " + info);
                         } else if (pathParam != null) {
                             name = pathParam.value().asString();
                             type = ParameterType.PATH;
                         } else if (queryParam != null) {
                             name = queryParam.value().asString();
                             type = ParameterType.QUERY;
+                        } else if (headerParam != null) {
+                            name = headerParam.value().asString();
+                            type = ParameterType.HEADER;
                         } else {
                             throw new RuntimeException("Not implemented yet " + info);
                         }
@@ -163,6 +167,18 @@ public class EndpointIndexer {
                     generatedClassBuildItemBuildProducer, recorder));
         }
         return ret;
+    }
+
+    private static boolean moreThanOne(AnnotationInstance... annotations) {
+        boolean oneNonNull = false;
+        for (AnnotationInstance annotation : annotations) {
+            if(annotation != null) {
+                if(oneNonNull)
+                    return true;
+                oneNonNull = true;
+            }
+        }
+        return false;
     }
 
     private static String[] readStringArrayValue(AnnotationInstance annotation, String[] defaultValue) {

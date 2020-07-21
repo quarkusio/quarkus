@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -30,6 +31,7 @@ public final class QrsDotNames {
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
     public static final DotName PATH_PARAM = DotName.createSimple(PathParam.class.getName());
     public static final DotName QUERY_PARAM = DotName.createSimple(QueryParam.class.getName());
+    public static final DotName HEADER_PARAM = DotName.createSimple(HeaderParam.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
     public static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
     public static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());

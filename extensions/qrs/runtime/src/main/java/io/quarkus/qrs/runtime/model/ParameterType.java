@@ -4,5 +4,6 @@ public enum ParameterType {
 
     PATH,
     QUERY,
+    HEADER,
     BODY
 }

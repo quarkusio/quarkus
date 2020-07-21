@@ -138,12 +138,29 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return performCodeFlow(identityProviderManager, context, resolver);
     }
 
+    private boolean isXHR(RoutingContext context) {
+        return "XMLHttpRequest".equals(context.request().getHeader("X-Requested-With"));
+    }
+
+    // This test determines if the default behavior of returning a 302 should go forward
+    // The only case that shouldn't return a 302 is if the call is a XHR and the 
+    // user has set the auto direct application property to false indicating that
+    // the client application will manually handle the redirect to account for SPA behavior
+    private boolean shouldAutoRedirect(TenantConfigContext configContext, RoutingContext context) {
+        return isXHR(context) ? configContext.oidcConfig.authentication.xhrAutoRedirect : true;
+    }
+
     public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
 
         TenantConfigContext configContext = resolver.resolve(context, true);
         removeCookie(context, configContext, getSessionCookieName(configContext));
 
-        ChallengeData challenge;
+        if (!shouldAutoRedirect(configContext, context)) {
+            // If the client (usually an SPA) wants to handle the redirect manually, then
+            // return status code 499 and WWW-Authenticate header with the 'OIDC' value.
+            return Uni.createFrom().item(new ChallengeData(499, "WWW-Authenticate", "OIDC"));
+        }
+
         JsonObject params = new JsonObject();
 
         // scope
@@ -168,10 +185,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
         }
 
-        challenge = new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
-                configContext.auth.authorizeURL(params));
-
-        return Uni.createFrom().item(challenge);
+        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
+                configContext.auth.authorizeURL(params)));
     }
 
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,

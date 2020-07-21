@@ -343,6 +343,55 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 
+[[oidc-single-page-applications]]
+== Single Page Applications
+
+Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenId Connect provider to acquire a bearer token and use it
+to access Quarkus `service` applications.
+
+For example, here is how you can use `keycloak.js` to authenticate the users and refresh the expired tokens from the SPA:
+
+[source,html]
+----
+<html>
+<head>
+    <title>keycloak-spa</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="http://localhost:8180/auth/js/keycloak.js"></script>
+    <script>
+        var keycloak = new Keycloak();
+        keycloak.init({onLoad: 'login-required'}).success(function () {
+            console.log('User is now authenticated.');
+        }).error(function () {
+            window.location.reload();
+        });
+        function makeAjaxRequest() {
+            axios.get("/api/hello", {
+                headers: {
+                    'Authorization': 'Bearer ' + keycloak.token
+                }
+            })
+            .then( function (response) {
+                console.log("Response: ", response.status);
+            }).catch(function (error) {
+                console.log('refreshing');
+                keycloak.updateToken(5).then(function () {
+                    console.log('Token refreshed');
+                }).catch(function () {
+                    console.log('Failed to refresh token');
+                    window.location.reload();
+                });
+            });
+    }
+    </script>
+</head>
+<body>
+    <button onclick="makeAjaxRequest()">Request</button>
+</body>
+</html>
+----
+
+
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]

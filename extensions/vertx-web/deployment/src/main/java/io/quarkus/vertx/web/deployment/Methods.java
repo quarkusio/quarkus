@@ -172,10 +172,6 @@ class Methods {
         // Avoid direct instantiation
     }
 
-    static void fail(BytecodeCreator creator, ResultHandle rc, ResultHandle exception) {
-        creator.invokeInterfaceMethod(FAIL, rc, exception);
-    }
-
     static void returnAndClose(BytecodeCreator creator) {
         creator.returnValue(null);
         creator.close();

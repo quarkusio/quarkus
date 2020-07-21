@@ -26,6 +26,47 @@ import io.vertx.ext.web.RoutingContext;
  * <li>{@code io.vertx.reactivex.core.http.HttpServerRequest}</li>
  * <li>{@code io.vertx.reactivex.core.http.HttpServerResponse}</li>
  * </ul>
+ * Furthermore, it is possible to inject the request parameters into a method parameter annotated with
+ * {@link io.quarkus.vertx.web.Param}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *      {@literal @Route}
+ *      String hello({@literal @Param Optional<String>} name) {
+ *         return "Hello " + name.orElse("world");
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
+ * The request headers can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Header}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *     {@literal @Route}
+ *     String helloFromHeader({@literal @Header("My-Header")} String header) {
+ *         return "Hello " + header;
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
+ * The request body can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Body}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *     {@literal @Route(produces = "application/json")}
+ *     Person updatePerson({@literal @Body} Person person) {
+ *        person.setName("Bob");
+ *        return person;
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
  * If the annotated method returns {@code void} then it has to accept at least one argument.
  * If the annotated method does not return {@code void} then the arguments are optional.
  * <p>

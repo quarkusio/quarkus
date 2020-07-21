@@ -84,6 +84,7 @@ import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RouteMatcher;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
+import io.quarkus.vertx.web.runtime.UniFailureCallback;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
@@ -557,11 +558,11 @@ class VertxWebProcessor {
             // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
 
             FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, response);
-            FunctionCreator failureCallback = getUniOnFailureCallback(invoke, routingContext);
+            ResultHandle failureCallback = getUniOnFailureCallback(invoke, routingContext);
 
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
-                    failureCallback.getInstance());
+                    failureCallback);
         } else if (descriptor.isReturningMulti()) {
 
             // 3 cases - regular multi vs. sse multi vs. json array multi, we need to check the type.
@@ -756,23 +757,10 @@ class VertxWebProcessor {
         return callback;
     }
 
-    /**
-     * Generates the following function:
-     *
-     * <pre>
-     *     throwable -> rc.fail(throwable);
-     * </pre>
-     *
-     * @param writer the bytecode writer
-     * @param rc the reference to the RoutingContext variable
-     * @return the function creator.
-     */
-    private FunctionCreator getUniOnFailureCallback(MethodCreator writer, ResultHandle rc) {
-        FunctionCreator callback = writer.createFunction(Consumer.class);
-        BytecodeCreator creator = callback.getBytecode();
-        Methods.fail(creator, rc, creator.getMethodParam(0));
-        Methods.returnAndClose(creator);
-        return callback;
+    private ResultHandle getUniOnFailureCallback(MethodCreator writer, ResultHandle routingContext) {
+        // new UniFailureCallback(ctx)
+        return writer.newInstance(MethodDescriptor.ofConstructor(UniFailureCallback.class, RoutingContext.class),
+                routingContext);
     }
 
     private ResultHandle getContentToWrite(HandlerDescriptor descriptor, ResultHandle response, ResultHandle res,
@@ -1119,9 +1107,17 @@ class VertxWebProcessor {
                             public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                                     ResultHandle routingContext,
                                     MethodCreator invoke, int position) {
-                                return invoke.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
-                                        invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON, routingContext),
-                                        invoke.loadClass(paramType.name().toString()));
+                                AssignableResultHandle ret = invoke.createVariable(Object.class);
+                                ResultHandle bodyAsJson = invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON,
+                                        routingContext);
+                                BranchResult bodyIfNotNull = invoke.ifNotNull(bodyAsJson);
+                                BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
+                                bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
+                                        bodyAsJson,
+                                        invoke.loadClass(paramType.name().toString())));
+                                BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
+                                bodyNull.assign(ret, bodyNull.loadNull());
+                                return ret;
                             }
                         }).build());
 

@@ -33,7 +33,7 @@ dependencies {
     implementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
 
-    testImplementation 'org.mockito:mockito-core:3.4.3'
+    testImplementation 'org.mockito:mockito-core:3.4.4'
     testImplementation 'org.assertj:assertj-core:3.16.1'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
     testImplementation 'org.awaitility:awaitility:4.0.3'

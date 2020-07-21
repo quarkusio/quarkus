@@ -1,11 +1,6 @@
 package io.quarkus.mongodb.panache.reactive.runtime;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,7 +12,6 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.client.model.InsertOneModel;
@@ -29,9 +23,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.config.MongoEntityConfigProvider;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
-import io.quarkus.mongodb.panache.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -43,9 +37,6 @@ import io.smallrye.mutiny.Uni;
 public class ReactiveMongoOperations {
     private static final Logger LOGGER = Logger.getLogger(ReactiveMongoOperations.class);
     public static final String ID = "_id";
-    public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
-
-    private static volatile String defaultDatabaseName;
 
     //
     // Instance methods
@@ -299,24 +290,9 @@ public class ReactiveMongoOperations {
     }
 
     private static ReactiveMongoDatabase mongoDatabase(MongoEntity entity) {
+        String databaseName = MongoEntityConfigProvider.getMongoDatabaseName(entity);
         ReactiveMongoClient mongoClient = mongoClient(entity);
-        if (entity != null && !entity.database().isEmpty()) {
-            return mongoClient.getDatabase(entity.database());
-        }
-        String databaseName = getDefaultDatabaseName();
         return mongoClient.getDatabase(databaseName);
-    }
-
-    private static String getDefaultDatabaseName() {
-        if (defaultDatabaseName == null) {
-            synchronized (MongoOperations.class) {
-                if (defaultDatabaseName == null) {
-                    defaultDatabaseName = ConfigProvider.getConfig()
-                            .getValue(MONGODB_DATABASE, String.class);
-                }
-            }
-        }
-        return defaultDatabaseName;
     }
 
     private static ReactiveMongoClient mongoClient(MongoEntity entity) {

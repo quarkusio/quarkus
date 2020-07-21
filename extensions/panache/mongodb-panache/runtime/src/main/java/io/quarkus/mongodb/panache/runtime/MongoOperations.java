@@ -1,11 +1,6 @@
 package io.quarkus.mongodb.panache.runtime;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,7 +12,6 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.client.MongoClient;
@@ -35,15 +29,13 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.config.MongoEntityConfigProvider;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 public class MongoOperations {
     private static final Logger LOGGER = Logger.getLogger(MongoOperations.class);
     public static final String ID = "_id";
-    public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
-
-    private static volatile String defaultDatabaseName;
 
     //
     // Instance methods
@@ -275,24 +267,9 @@ public class MongoOperations {
     }
 
     private static MongoDatabase mongoDatabase(MongoEntity entity) {
+        String databaseName = MongoEntityConfigProvider.getMongoDatabaseName(entity);
         MongoClient mongoClient = mongoClient(entity);
-        if (entity != null && !entity.database().isEmpty()) {
-            return mongoClient.getDatabase(entity.database());
-        }
-        String databaseName = getDefaultDatabaseName();
         return mongoClient.getDatabase(databaseName);
-    }
-
-    private static String getDefaultDatabaseName() {
-        if (defaultDatabaseName == null) {
-            synchronized (MongoOperations.class) {
-                if (defaultDatabaseName == null) {
-                    defaultDatabaseName = ConfigProvider.getConfig()
-                            .getValue(MONGODB_DATABASE, String.class);
-                }
-            }
-        }
-        return defaultDatabaseName;
     }
 
     private static MongoClient mongoClient(MongoEntity entity) {

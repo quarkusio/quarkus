@@ -330,6 +330,18 @@ that will validate each datasources: link:datasource#datasource-health-check[Dat
 
 You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
+== Health UI 
+
+NOTE: Experimental - not included in the MicroProfile specification
+
+`health-ui` allows you to see your Health Checks in a Web GUI.
+
+The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by default in dev and test modes, but it can also be explicitly configured for production mode as well.
+
+`health-ui` can be accessed from http://localhost:8080/health-ui/ .
+
+image:health-ui-screenshot01.png[alt=Health UI]
+
 == Conclusion
 
 MicroProfile Health provides a way for your application to distribute information 

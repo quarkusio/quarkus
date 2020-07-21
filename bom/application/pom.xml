@@ -33,7 +33,7 @@
         <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>1.4.1</microprofile-rest-client.version>
         <smallrye-config.version>1.8.4</smallrye-config.version>
-        <smallrye-health.version>2.2.2</smallrye-health.version>
+        <smallrye-health.version>2.2.3</smallrye-health.version>
         <smallrye-metrics.version>2.4.2</smallrye-metrics.version>
         <smallrye-open-api.version>2.0.3</smallrye-open-api.version>
         <smallrye-graphql.version>1.0.5</smallrye-graphql.version>
@@ -2379,6 +2379,16 @@
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-health</artifactId>
+                <version>${smallrye-health.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-health-ui</artifactId>
+                <version>${smallrye-health.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-health-provided-checks</artifactId>
                 <version>${smallrye-health.version}</version>
             </dependency>
             <dependency>

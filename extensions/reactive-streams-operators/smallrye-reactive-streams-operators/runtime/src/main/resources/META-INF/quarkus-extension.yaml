@@ -1,6 +1,9 @@
 ---
+#  This extension is deprecated and the upstream project is now in maintenance-only mode
+#  It is recommended to use the quarkus-mutiny-reactive-streams-operators extension instead
 name: "SmallRye Reactive Streams Operators"
 metadata:
+  unlisted: true
   keywords:
   - "smallrye-reactive-streams-operators"
   - "smallrye-reactive-streams"
@@ -9,3 +12,4 @@ metadata:
   categories:
   - "reactive"
   status: "stable"
+

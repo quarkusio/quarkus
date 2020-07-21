@@ -63,7 +63,6 @@ updates:
       - dependency-name: io.smallrye.config:smallrye-config
       - dependency-name: io.smallrye.reactive:mutiny
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging
-      - dependency-name: io.smallrye.reactive:smallrye-reactive-streams-operators
       # Swagger-UI
       - dependency-name: org.webjars:swagger-ui
       # Tika

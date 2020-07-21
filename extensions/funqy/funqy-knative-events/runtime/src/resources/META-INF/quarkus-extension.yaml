@@ -1,0 +1,12 @@
+---
+name: "Funqy Knative Events Binding"
+metadata:
+  keywords:
+    - "knative"
+    - "function"
+    - "funqy"
+    - "cloud event"
+  categories:
+    - "cloud"
+  guide: "https://quarkus.io/guides/funqy-knative-events"
+  status: "experimental"

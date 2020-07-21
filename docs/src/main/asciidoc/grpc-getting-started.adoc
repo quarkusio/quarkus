@@ -15,87 +15,32 @@ The default configuration is enough, but you can also select some extensions if 
 
 == Configuring your project
 
-Edit the `pom.xml` file to add the quarkus gRPC extension dependency and the JSR 305 (just under `<dependencies>`):
+Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom.xml`:
 
-[source, xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-grpc</artifactId>
-</dependency>
-----
-
-In the `<properties>` section, define the 2 following properties:
-
-[source, xml, subs="verbatim,attributes"]
-----
-<grpc.version>{grpc-version}</grpc.version>
-<protoc.version>{protoc-version}</protoc.version>
-----
-
-They configure the gRPC version and the `protoc` version.
-
-Finally, add to the `build` section the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration.
-
-[source, xml, subs="verbatim,attributes"]
+[source,xml]
 ----
 <build>
-    <extensions>
-        <extension>
-            <groupId>kr.motd.maven</groupId>
-            <artifactId>os-maven-plugin</artifactId>
-            <version>{os-maven-plugin-version}</version>
-        </extension>
-    </extensions>
-
     <plugins>
         <plugin>
-            <groupId>org.xolstice.maven.plugins</groupId>
-            <artifactId>protobuf-maven-plugin</artifactId>      // <1>
-            <version>{protobuf-maven-plugin-version}</version>
-            <configuration>
-                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact> // <2>
-                <pluginId>grpc-java</pluginId>
-                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
-                <protocPlugins>
-                    <protocPlugin>
-                        <id>quarkus-grpc-protoc-plugin</id>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-                        <version>{quarkus-version}</version>
-                        <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
-                    </protocPlugin>
-                </protocPlugins>
-            </configuration>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
             <executions>
                 <execution>
-                    <id>compile</id>
                     <goals>
-                        <goal>compile</goal>
-                        <goal>compile-custom</goal>
-                    </goals>
-                </execution>
-                <execution>
-                    <id>test-compile</id>
-                    <goals>
-                        <goal>test-compile</goal>
-                        <goal>test-compile-custom</goal>
+                        <goal>prepare</goal>
+                        <goal>build</goal>
                     </goals>
                 </execution>
             </executions>
         </plugin>
-
-        <!-- ... -->
     </plugins>
 </build>
 ----
-1. The `protobuf-maven-plugin` that generates stub classes from your gRPC service definition (`proto` files).
-2. The class generation uses a tool named `protoc`, which is OS-specific.
-That's why we use the `os-maven-plugin` to target the executable compatible with the operating system.
-
-NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.
 
 With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
+`quarkus-maven-plugin` will generate Java files from your `proto` files.
+Alternatively, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
+
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
 
@@ -287,14 +232,15 @@ public class ExampleResource {
     }
 }
 ----
-1. Inject the service and configure its name. This name is used in the application configuration
+
+1. Inject the service and configure its name.This name is used in the application configuration
 2. Use the _blocking_ stub (also a generated class)
 3. Invoke the service
 
 We need to configure the application to indicate where is the `hello` service.
 In the `src/main/resources/application.properties` file, add the following property:
 
-[source, text]
+[source,text]
 ----
 quarkus.grpc.clients.hello.host=localhost
 ----
@@ -308,3 +254,88 @@ Then, open http://localhost:8080/hello/quarkus in a browser, and you should get 
 
 Like any other Quarkus applications, you can package it with: `mvn package`.
 You can also package the application into a native executable with: `mvn package -Pnative`.
+
+== Generating Java files from proto with protobuf-maven-plugin
+
+Alternatively to using Quarkus code generation to generate stubs for `proto` files, you can also use
+`protobuf-maven-plugin` for this purpose.
+To do it, edit the `pom.xml` file to add the quarkus gRPC extension dependency and the JSR 305 (just under `<dependencies>`):
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-grpc</artifactId>
+</dependency>
+----
+
+In the `<properties>` section, define the 2 following properties:
+
+[source,xml,subs="verbatim,attributes"]
+----
+<grpc.version>{grpc-version}</grpc.version>
+<protoc.version>{protoc-version}</protoc.version>
+----
+
+They configure the gRPC version and the `protoc` version.
+
+Finally, add to the `build` section the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration.
+
+[source,xml,subs="verbatim,attributes"]
+----
+<build>
+    <extensions>
+        <extension>
+            <groupId>kr.motd.maven</groupId>
+            <artifactId>os-maven-plugin</artifactId>
+            <version>${os-maven-plugin-version}</version>
+        </extension>
+    </extensions>
+
+    <plugins>
+        <plugin>
+            <groupId>org.xolstice.maven.plugins</groupId>
+            <artifactId>protobuf-maven-plugin</artifactId>      // <1>
+            <version>${protobuf-maven-plugin-version}</version>
+            <configuration>
+                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact> // <2>
+                <pluginId>grpc-java</pluginId>
+                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                <protocPlugins>
+                    <protocPlugin>
+                        <id>quarkus-grpc-protoc-plugin</id>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                        <version>{quarkus-version}</version>
+                        <mainClass>io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator</mainClass>
+                    </protocPlugin>
+                </protocPlugins>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>compile</id>
+                    <goals>
+                        <goal>compile</goal>
+                        <goal>compile-custom</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>test-compile</id>
+                    <goals>
+                        <goal>test-compile</goal>
+                        <goal>test-compile-custom</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+
+        <!-- ... -->
+    </plugins>
+</build>
+----
+
+1. The `protobuf-maven-plugin` that generates stub classes from your gRPC service definition (`proto` files).
+2. The class generation uses a tool named `protoc`, which is OS-specific.
+That's why we use the `os-maven-plugin` to target the executable compatible with the operating system.
+
+NOTE: This configuration instructs the `protobuf-maven-plugin` to generate the default gRPC classes and classes using Mutiny to fit with the Quarkus development experience.

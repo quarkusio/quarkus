@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands;
 
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -217,11 +218,11 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     private void hasDependency(T project, String groupId, String artifactId, String version) {
-        Assertions.assertTrue(countDependencyOccurrences(project, groupId, artifactId, version) > 0);
+        assertThat(countDependencyOccurrences(project, groupId, artifactId, version)).isNotZero();
     }
 
     private void doesNotHaveDependency(T project, String artifactId) {
-        Assertions.assertTrue(countDependencyOccurrences(project, getPluginGroupId(), artifactId, null) == 0);
+        assertThat(countDependencyOccurrences(project, getPluginGroupId(), artifactId, null)).isZero();
     }
 
     protected abstract T createProject() throws IOException, QuarkusCommandException;

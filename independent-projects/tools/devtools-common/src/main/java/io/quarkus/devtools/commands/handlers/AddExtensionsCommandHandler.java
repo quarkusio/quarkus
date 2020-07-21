@@ -1,19 +1,19 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.commands.AddExtensions.EXTENSION_MANAGER;
-import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.ExtensionManager.InstallResult;
 import io.quarkus.platform.tools.ConsoleMessageFormats;
+import io.quarkus.registry.DefaultExtensionRegistry;
+import io.quarkus.registry.ExtensionRegistry;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -29,12 +29,18 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             return QuarkusCommandOutcome.success().setValue(AddExtensions.OUTCOME_UPDATED, false);
         }
 
-        final List<AppArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
+        ExtensionRegistry extensionRegistry = invocation.getValue(AddExtensions.EXTENSION_REGISTRY);
+        if (extensionRegistry == null) {
+            extensionRegistry = DefaultExtensionRegistry.fromPlatform(invocation.getPlatformDescriptor());
+        }
+        String quarkusVersion = invocation.getPlatformDescriptor().getQuarkusVersion();
+        ExtensionInstallPlan extensionInstallPlan = extensionRegistry.planInstallation(quarkusVersion, extensionsQuery);
+
         final ExtensionManager extensionManager = invocation.getValue(EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
         try {
-            if (extensionsToAdd != null) {
-                final InstallResult result = extensionManager.install(extensionsToAdd);
+            if (extensionInstallPlan.isNotEmpty()) {
+                final InstallResult result = extensionManager.install(extensionInstallPlan);
                 result.getInstalled()
                         .forEach(a -> invocation.log()
                                 .info(ConsoleMessageFormats.ok("Extension " + a.getGroupId() + ":" + a.getArtifactId())

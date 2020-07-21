@@ -3,11 +3,12 @@ package io.quarkus.maven;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -18,9 +19,12 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactResult;
 
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
@@ -75,7 +79,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                     .setRemoteRepositories(repos).build();
             if (project.getFile() != null) {
                 final List<Artifact> descrArtifactList = new ArrayList<>(2);
-                for (Dependency dep : getManagedDependencies()) {
+                for (Dependency dep : getManagedDependencies(mvn)) {
                     if ((dep.getScope() == null || !dep.getScope().equals("import"))
                             && (dep.getType() == null || !dep.getType().equals("pom"))) {
                         continue;
@@ -164,9 +168,36 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         return expr;
     }
 
-    private List<Dependency> getManagedDependencies() throws IOException {
-        final DependencyManagement managed = project.getModel().getDependencyManagement();
-        return managed != null ? managed.getDependencies()
-                : Collections.emptyList();
+    private List<Dependency> getManagedDependencies(MavenArtifactResolver resolver) throws IOException {
+        List<Dependency> managedDependencies = new ArrayList<>();
+        Model model = project.getOriginalModel();
+        DependencyManagement managed = model.getDependencyManagement();
+        if (managed != null) {
+            managedDependencies.addAll(managed.getDependencies());
+        }
+        Parent parent;
+        while ((parent = model.getParent()) != null) {
+            try {
+                ArtifactResult result = resolver.resolve(new DefaultArtifact(
+                        parent.getGroupId(),
+                        parent.getArtifactId(),
+                        "pom",
+                        ModelUtils.resolveVersion(parent.getVersion(), model)));
+                model = ModelUtils.readModel(result.getArtifact().getFile().toPath());
+                managed = model.getDependencyManagement();
+                if (managed != null) {
+                    // Alexey Loubyansky: In Maven whatever is imported first has a priority
+                    // So to match the maven way, we should be reading the root parent first
+                    managedDependencies.addAll(0, managed.getDependencies());
+                }
+            } catch (BootstrapMavenException e) {
+                // ignore
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Error while resolving descriptor", e);
+                }
+                break;
+            }
+        }
+        return managedDependencies;
     }
 }

@@ -11,11 +11,9 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 // We keep it here to take advantage of the abstract tests
 public abstract class AbstractGradleBuildFile extends BuildFile {
@@ -24,28 +22,27 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     private static final String SETTINGS_GRADLE_PATH = "settings.gradle";
     private static final String GRADLE_PROPERTIES_PATH = "gradle.properties";
 
-    private final Optional<Path> rootProjectPath;
+    private final Path rootProjectPath;
 
     private AtomicReference<Model> modelReference = new AtomicReference<>();
 
     public AbstractGradleBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectDirPath, platformDescriptor);
-        this.rootProjectPath = Optional.empty();
+        this(projectDirPath, platformDescriptor, null);
     }
 
     public AbstractGradleBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor,
             Path rootProjectPath) {
         super(projectDirPath, platformDescriptor);
-        this.rootProjectPath = Optional.ofNullable(rootProjectPath);
+        this.rootProjectPath = rootProjectPath;
     }
 
     @Override
     public void writeToDisk() throws IOException {
-        if (rootProjectPath.isPresent()) {
-            Files.write(rootProjectPath.get().resolve(SETTINGS_GRADLE_PATH), getModel().getRootSettingsContent().getBytes());
+        if (rootProjectPath != null) {
+            Files.write(rootProjectPath.resolve(SETTINGS_GRADLE_PATH), getModel().getRootSettingsContent().getBytes());
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                 getModel().getRootPropertiesContent().store(out, "Gradle properties");
-                Files.write(rootProjectPath.get().resolve(GRADLE_PROPERTIES_PATH),
+                Files.write(rootProjectPath.resolve(GRADLE_PROPERTIES_PATH),
                         out.toByteArray());
             }
         } else {
@@ -59,32 +56,45 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     @Override
-    protected void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException {
-        addDependencyInModel(getModel(), coords);
+    protected boolean addDependency(AppArtifactCoords coords, boolean managed) {
+        return addDependencyInModel(getModel(), coords, managed);
     }
 
-    static void addDependencyInModel(Model model, AppArtifactCoords coords) throws IOException {
-        StringBuilder newBuildContent = new StringBuilder();
-        readLineByLine(model.getBuildContent(), currentLine -> {
-            newBuildContent.append(currentLine).append(System.lineSeparator());
-            if (currentLine.startsWith("dependencies {")) {
-                newBuildContent.append("    implementation '")
-                        .append(coords.getGroupId())
-                        .append(":")
-                        .append(coords.getArtifactId());
-                if (coords.getVersion() != null && !coords.getVersion().isEmpty()) {
-                    newBuildContent.append(":")
-                            .append(coords.getVersion());
-                }
-                newBuildContent.append("'")
-                        .append(System.lineSeparator());
+    static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
+        StringBuilder newDependency = new StringBuilder()
+                .append("    implementation '")
+                .append(coords.getGroupId())
+                .append(":")
+                .append(coords.getArtifactId());
+        if (!managed &&
+                (coords.getVersion() != null && !coords.getVersion().isEmpty())) {
+            newDependency.append(":").append(coords.getVersion());
+        }
+        newDependency.append("'").append(System.lineSeparator());
+        String newDependencyString = newDependency.toString();
+        StringBuilder buildContent = new StringBuilder(model.getBuildContent());
+        boolean changed = false;
+        if (buildContent.indexOf(newDependencyString) == -1) {
+            changed = true;
+            // Add dependency after "dependencies {"
+            int indexOfDeps = buildContent.indexOf("dependencies {");
+            if (indexOfDeps > -1) {
+                // The line below fails on Windows if System.lineSeparator() is used
+                int nextLine = buildContent.indexOf("\n", indexOfDeps) + 1;
+                buildContent.insert(nextLine, newDependencyString);
+            } else {
+                // if no "dependencies {" found, add one
+                buildContent.append("dependencies {").append(System.lineSeparator())
+                        .append(newDependencyString)
+                        .append("}").append(System.lineSeparator());
             }
-        });
-        model.setBuildContent(newBuildContent.toString());
+            model.setBuildContent(buildContent.toString());
+        }
+        return changed;
     }
 
     @Override
-    protected void removeDependencyFromBuildFile(AppArtifactKey key) throws IOException {
+    protected void removeDependency(AppArtifactKey key) {
         StringBuilder newBuildContent = new StringBuilder();
         Scanner scanner = new Scanner(getModel().getBuildContent());
         while (scanner.hasNextLine()) {
@@ -98,7 +108,7 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     @Override
-    public String getProperty(String propertyName) throws IOException {
+    public String getProperty(String propertyName) {
         final String property = getModel().getPropertiesContent().getProperty(propertyName);
         if (property != null || getModel().getRootPropertiesContent() == null) {
             return property;
@@ -111,7 +121,7 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
         return BuildTool.GRADLE;
     }
 
-    private Model getModel() throws IOException {
+    private Model getModel() {
         return modelReference.updateAndGet(model -> {
             if (model == null) {
                 try {
@@ -130,17 +140,18 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     private boolean hasRootProjectFile(final String fileName) throws IOException {
-        if (!rootProjectPath.isPresent()) {
+        if (rootProjectPath == null) {
             return false;
         }
-        final Path filePath = rootProjectPath.get().resolve(fileName);
+        final Path filePath = rootProjectPath.resolve(fileName);
         return Files.exists(filePath);
     }
 
     private byte[] readRootProjectFile(final String fileName) throws IOException {
-        final Path filePath = rootProjectPath
-                .orElseThrow(() -> new IllegalStateException("There is no rootProject defined in this GradleBuildFile"))
-                .resolve(fileName);
+        if (rootProjectPath == null) {
+            throw new IllegalStateException("There is no rootProject defined in this GradleBuildFile");
+        }
+        final Path filePath = rootProjectPath.resolve(fileName);
         return Files.readAllBytes(filePath);
     }
 
@@ -176,16 +187,6 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
 
     protected String getBuildContent() throws IOException {
         return getModel().getBuildContent();
-    }
-
-    private static void readLineByLine(String content, Consumer<String> lineConsumer) {
-        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)),
-                StandardCharsets.UTF_8.name())) {
-            while (scanner.hasNextLine()) {
-                String currentLine = scanner.nextLine();
-                lineConsumer.accept(currentLine);
-            }
-        }
     }
 
     static class Model {

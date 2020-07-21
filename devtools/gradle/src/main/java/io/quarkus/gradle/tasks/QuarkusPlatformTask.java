@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,4 +80,13 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     protected QuarkusProject getQuarkusProject() {
         return QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor(), getGradleBuildFile());
     }
+
+    protected static URL toURL(String url) {
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            throw new GradleException("Malformed URL:" + url, e);
+        }
+    }
+
 }

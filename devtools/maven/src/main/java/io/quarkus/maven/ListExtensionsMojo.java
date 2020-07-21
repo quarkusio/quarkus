@@ -1,5 +1,8 @@
 package io.quarkus.maven;
 
+import java.net.URL;
+import java.util.List;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -7,6 +10,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**
  * List the available extensions.
@@ -36,14 +40,23 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
     @Parameter(property = "searchPattern", alias = "quarkus.extension.searchPattern")
     protected String searchPattern;
 
+    /**
+     * The extension registry URLs
+     */
+    @Parameter(property = "registry", alias = "quarkus.extension.registry")
+    List<URL> registries;
+
     @Override
     public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log) throws MojoExecutionException {
         try {
-            new ListExtensions(quarkusProject)
+            ListExtensions listExtensions = new ListExtensions(quarkusProject)
                     .all(all)
                     .format(format)
-                    .search(searchPattern)
-                    .execute();
+                    .search(searchPattern);
+            if (registries != null && !registries.isEmpty()) {
+                listExtensions.extensionRegistry(DefaultExtensionRegistry.fromURLs(registries));
+            }
+            listExtensions.execute();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to list extensions", e);
         }

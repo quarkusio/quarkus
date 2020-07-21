@@ -52,6 +52,21 @@ public interface ExtensionManager {
     InstallResult install(Collection<AppArtifactCoords> coords) throws IOException;
 
     /**
+     * This is going to install/add all the specified extensions to the project build file(s).
+     *
+     * <pre>
+     *   - If the project Quarkus platform bom is not defined, an {@link IllegalStateException} will be thrown
+     *   - Extensions which are already installed will ALWAYS be skipped whatever the specified version
+     *   - The provided version will be used if wasn't already installed
+     * </pre>
+     *
+     * @param request the list of {@link AppArtifactCoords} for the extensions to install
+     * @return the {@link InstallResult}
+     * @throws IOException if a problem occurs while reading/writing the project build file(s)
+     */
+    InstallResult install(ExtensionInstallPlan request) throws IOException;
+
+    /**
      * This is going to uninstall/remove all the specified extensions from the project build file(s).
      *
      * This is ignoring the {@link Extension} version

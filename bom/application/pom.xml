@@ -132,7 +132,7 @@
         <axle-client.version>1.1.0</axle-client.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <zookeeper.version>3.6.1</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.9</scala.version>
         <tika.version>1.22</tika.version>

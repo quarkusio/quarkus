@@ -1,10 +1,11 @@
 package io.quarkus.qrs.runtime.mapping;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class URITemplate {
+public class URITemplate implements Dumpable {
 
     public final String template;
 
@@ -126,7 +127,7 @@ public class URITemplate {
         CUSTOM_REGEX
     }
 
-    public class TemplateComponent {
+    public class TemplateComponent implements Dumpable {
 
         /**
          * The type of component.
@@ -154,6 +155,46 @@ public class URITemplate {
             this.name = name;
             this.pattern = pattern;
         }
+        
+        @Override
+        public String toString() {
+            return "TemplateComponent{ name: "+name+", type: "+type+", literalText: "+literalText+", pattern: "+pattern+"}";
+        }
+        
+        @Override
+        public void dump(int level) {
+            indent(level);
+            System.err.println("TemplateComponent");
+            indent(level+1);
+            System.err.println("name: "+name);
+            indent(level+1);
+            System.err.println("type: "+type);
+            indent(level+1);
+            System.err.println("literalText: "+literalText);
+            indent(level+1);
+            System.err.println("pattern: "+pattern);
+        }
     }
 
+    @Override
+    public String toString() {
+        return "URITemplate{ stem: "+stem+", template: "+template+", literalCharacterCount: "+literalCharacterCount+", components: "+Arrays.toString(components)+" }";
+    }
+    
+    @Override
+    public void dump(int level) {
+        indent(level);
+        System.err.println("URITemplate");
+        indent(level+1);
+        System.err.println("stem: "+stem);
+        indent(level+1);
+        System.err.println("template: "+template);
+        indent(level+1);
+        System.err.println("literalCharacterCount: "+literalCharacterCount);
+        indent(level+1);
+        System.err.println("components: ");
+        for (TemplateComponent component : components) {
+            component.dump(level+2);
+        }
+    }
 }

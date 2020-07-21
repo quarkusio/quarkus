@@ -83,13 +83,29 @@ public class RequestMapper<T> {
         return null;
     }
 
-    public static class RequestPath<T> {
+    public static class RequestPath<T> implements Dumpable {
         public final URITemplate template;
         public final T value;
 
         public RequestPath(URITemplate template, T value) {
             this.template = template;
             this.value = value;
+        }
+        
+        @Override
+        public String toString() {
+            return "RequestPath{ value: "+value+", template: "+template+" }";
+        }
+
+        @Override
+        public void dump(int level) {
+            indent(level);
+            System.err.println("RequestPath:");
+            indent(level+1);
+            System.err.println("value: "+value);
+            indent(level+1);
+            System.err.println("template: ");
+            template.dump(level+2);
         }
     }
 
@@ -103,6 +119,15 @@ public class RequestMapper<T> {
             this.value = value;
             this.pathParamValues = pathParamValues;
         }
+
+        @Override
+        public String toString() {
+            return "RequestMatch{ value: "+value+", template: "+template+", pathParamValues: "+pathParamValues+" }";
+        }
+}
+
+    public void dump() {
+        this.requestPaths.dump(0);
     }
 
 }

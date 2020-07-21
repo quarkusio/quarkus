@@ -12,6 +12,7 @@ public class RequestMapperTestCase {
     public void testPathMapper() {
 
         RequestMapper<String> mapper = mapper("/id", "/id/{param}", "/bar/{p1}/{p2}", "/bar/{p1}");
+        mapper.dump();
 
         RequestMapper.RequestMatch<String> result = mapper.map("/bar/34/44");
         Assertions.assertEquals("/bar/{p1}/{p2}", result.value);

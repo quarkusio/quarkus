@@ -1,11 +1,15 @@
 package io.quarkus.qrs.runtime.mapping;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import io.quarkus.qrs.runtime.mapping.SubstringMap.SubstringMatch;
 
 /**
  * Handler that dispatches to a given handler based of a prefix match of the path.
@@ -17,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author Stuart Douglas
  */
-public class PathMatcher<T> {
+public class PathMatcher<T> implements Dumpable {
 
     private static final String STRING_PATH_SEPARATOR = "/";
 
@@ -227,6 +231,33 @@ public class PathMatcher<T> {
 
         public T getValue() {
             return value;
+        }
+    }
+
+    @Override
+    public void dump(int level) {
+        System.err.println("Paths: "+paths.size());
+        for (String key : paths.keys()) {
+            System.err.println(" "+key+": ");
+            SubstringMatch<T> match = paths.get(key);
+            System.err.println("  matchKey: "+match.getKey());
+            System.err.println("  matchValue: ");
+            dumpValue(match.getValue(), 3);
+        }
+        System.err.println("Exact path matches: "+exactPathMatches.size());
+        for (Entry<String, T> entry : exactPathMatches.entrySet()) {
+            System.err.println(" "+entry.getKey()+": ");
+            dumpValue(entry.getValue(), 2);
+        }
+        System.err.println("Default handler: "+defaultHandler);
+    }
+
+    private void dumpValue(T value, int level) {
+        if(value instanceof List) {
+            for(Object x : (List)value) {
+                if(x instanceof Dumpable)
+                    ((Dumpable) x).dump(level);
+            }
         }
     }
 

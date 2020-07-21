@@ -21,6 +21,10 @@ public class SubstringMap<V> {
 
     private volatile Object[] table = new Object[16];
     private int size;
+    
+    public int size() {
+        return size;
+    }
 
     public SubstringMatch<V> get(String key, int length) {
         return get(key, length, false);
@@ -221,6 +225,11 @@ public class SubstringMap<V> {
 
         public V getValue() {
             return value;
+        }
+        
+        @Override
+        public String toString() {
+            return "SubstringMatch{ key: "+key+", value: "+value+" }";
         }
     }
 }

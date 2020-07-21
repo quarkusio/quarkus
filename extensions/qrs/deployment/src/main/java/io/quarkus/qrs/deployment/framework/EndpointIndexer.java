@@ -103,9 +103,10 @@ public class EndpointIndexer {
                         AnnotationInstance pathParam = anns.get(QrsDotNames.PATH_PARAM);
                         AnnotationInstance queryParam = anns.get(QUERY_PARAM);
                         AnnotationInstance headerParam = anns.get(QrsDotNames.HEADER_PARAM);
+                        AnnotationInstance formParam = anns.get(QrsDotNames.FORM_PARAM);
                         ParameterType type;
-                        if (moreThanOne(pathParam, queryParam, headerParam)) {
-                            throw new RuntimeException("Cannot have more than one of @PathParam, @QueryParam, @HeaderParam on " + info);
+                        if (moreThanOne(pathParam, queryParam, headerParam, formParam)) {
+                            throw new RuntimeException("Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam on " + info);
                         } else if (pathParam != null) {
                             name = pathParam.value().asString();
                             type = ParameterType.PATH;
@@ -115,6 +116,9 @@ public class EndpointIndexer {
                         } else if (headerParam != null) {
                             name = headerParam.value().asString();
                             type = ParameterType.HEADER;
+                        } else if (formParam != null) {
+                            name = formParam.value().asString();
+                            type = ParameterType.FORM;
                         } else {
                             throw new RuntimeException("Not implemented yet " + info);
                         }

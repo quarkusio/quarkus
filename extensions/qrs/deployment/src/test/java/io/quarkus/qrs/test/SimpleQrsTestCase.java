@@ -39,8 +39,9 @@ public class SimpleQrsTestCase {
         RestAssured.with()
             .queryParam("q", "qv")
             .header("h", "hv")
-            .get("/simple/params/pv")
-            .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv"));
+            .formParam("f", "fv")
+            .post("/simple/params/pv")
+            .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv, f: fv"));
     }
 
     @Test

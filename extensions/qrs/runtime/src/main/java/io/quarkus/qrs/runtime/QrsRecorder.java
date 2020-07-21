@@ -12,7 +12,9 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcEndpointFactory;
+import io.quarkus.qrs.runtime.core.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
+import io.quarkus.qrs.runtime.core.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
@@ -20,6 +22,7 @@ import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
+import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
@@ -74,20 +77,33 @@ public class QrsRecorder {
                 for (int i = 0; i < method.getParameters().length; ++i) {
                     parameterTypes[i] = loadClass(method.getParameters()[i].type);
                 }
+                // some parameters need the body to be read
                 MethodParameter[] parameters = method.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
                     MethodParameter param = parameters[i];
-                    switch(param.parameterType) {
-                    case HEADER:
-                        handlers.add(new ParameterHandler(i, new HeaderParamExtractor(param.name, true), null));
-                        break;
-                    case PATH:
-                        handlers.add(new ParameterHandler(i, new PathParamExtractor(param.name), null));
-                        break;
-                    default:
-                        handlers.add(new ParameterHandler(i, new QueryParamExtractor(param.name, true), null));
+                    if(param.parameterType == ParameterType.FORM) {
+                        handlers.add(new ReadBodyHandler());
                         break;
                     }
+                }
+                for (int i = 0; i < parameters.length; i++) {
+                    MethodParameter param = parameters[i];
+                    ParameterExtractor extractor;
+                    switch(param.parameterType) {
+                    case HEADER:
+                        extractor = new HeaderParamExtractor(param.name, true);
+                        break;
+                    case FORM:
+                        extractor = new FormParamExtractor(param.name, true);
+                        break;
+                    case PATH:
+                        extractor = new PathParamExtractor(param.name);
+                        break;
+                    default:
+                        extractor = new QueryParamExtractor(param.name, true);
+                        break;
+                    }
+                    handlers.add(new ParameterHandler(i, extractor, null));
                 }
                 if (method.isBlocking()) {
                     handlers.add(new BlockingHandler(blockingExecutor));

@@ -4,6 +4,11 @@ import java.util.Map;
 
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigData;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthListRolesResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthReadRoleResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthRoleData;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
@@ -14,6 +19,9 @@ import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
+import io.quarkus.vault.runtime.client.dto.sys.VaultListPolicyResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultWrapResult;
@@ -41,6 +49,18 @@ public interface VaultClient {
     VaultUserPassAuth loginUserPass(String user, String password);
 
     VaultKubernetesAuth loginKubernetes(String role, String jwt);
+
+    void createKubernetesAuthRole(String token, String name, VaultKubernetesAuthRoleData body);
+
+    VaultKubernetesAuthReadRoleResult getVaultKubernetesAuthRole(String token, String name);
+
+    VaultKubernetesAuthListRolesResult listKubernetesAuthRoles(String token);
+
+    void deleteKubernetesAuthRoles(String token, String name);
+
+    void configureKubernetesAuth(String token, VaultKubernetesAuthConfigData config);
+
+    VaultKubernetesAuthConfigResult readKubernetesAuthConfig(String token);
 
     VaultAppRoleAuth loginAppRole(String roleId, String secretId);
 
@@ -101,4 +121,13 @@ public interface VaultClient {
     VaultWrapResult wrap(String token, long ttl, Object object);
 
     <T> T unwrap(String wrappingToken, Class<T> resultClass);
+
+    VaultPolicyResult getPolicy(String token, String name);
+
+    void createUpdatePolicy(String token, String name, VaultPolicyBody body);
+
+    VaultListPolicyResult listPolicies(String token);
+
+    void deletePolicy(String token, String name);
+
 }

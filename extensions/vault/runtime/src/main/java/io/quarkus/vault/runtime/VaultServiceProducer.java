@@ -42,6 +42,12 @@ public class VaultServiceProducer {
 
     @Produces
     @ApplicationScoped
+    public VaultKubernetesAuthManager createVaultKubernetesAuthManager() {
+        return VaultManager.getInstance().getVaultKubernetesAuthManager();
+    }
+
+    @Produces
+    @ApplicationScoped
     @Named("vault-credentials-provider")
     public CredentialsProvider createCredentialsProvider() {
         return VaultManager.getInstance().getVaultCredentialsProvider();

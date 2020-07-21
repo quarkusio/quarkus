@@ -40,7 +40,7 @@ However, local instance of SES is only mocks the SES APIs without the actual ema
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-ses 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-ses -p 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
 This starts a SES instance that is accessible on port `8012`.
 

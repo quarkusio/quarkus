@@ -32,6 +32,8 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 public class ResteasyBuiltinsProcessor {
 
@@ -102,11 +104,21 @@ public class ResteasyBuiltinsProcessor {
             ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
         List<String> endpoints = displayableEndpoints
                 .stream()
-                .map(displayableAdditionalBuildItem -> displayableAdditionalBuildItem.getEndpoint()
-                        .substring(1))
+                .map(displayableAdditionalBuildItem -> displayableAdditionalBuildItem.getEndpoint())
                 .sorted()
                 .collect(Collectors.toList());
 
         recorder.setAdditionalEndpoints(endpoints);
+    }
+
+    @Record(STATIC_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void addReactiveRoutesExceptionMapper(List<RouteDescriptionBuildItem> routeDescriptions,
+            ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
+        List<RouteDescription> reactiveRoutes = new ArrayList<>();
+        for (RouteDescriptionBuildItem description : routeDescriptions) {
+            reactiveRoutes.add(description.getDescription());
+        }
+        recorder.setReactiveRoutes(reactiveRoutes);
     }
 }

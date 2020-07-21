@@ -1,5 +1,6 @@
 package io.quarkus.vertx.web.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.vertx.web.deployment.DotNames.PARAM;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
@@ -50,14 +52,18 @@ import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -71,10 +77,15 @@ import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
@@ -84,6 +95,7 @@ import io.quarkus.vertx.web.runtime.RouteMatcher;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.UniFailureCallback;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
+import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -195,7 +207,9 @@ class VertxWebProcessor {
             List<RequireBodyHandlerBuildItem> bodyHandlerRequired,
             BeanArchiveIndexBuildItem beanArchive,
             TransformedAnnotationsBuildItem transformedAnnotations,
-            ShutdownContextBuildItem shutdown) throws IOException {
+            ShutdownContextBuildItem shutdown,
+            LaunchModeBuildItem launchMode,
+            BuildProducer<RouteDescriptionBuildItem> descriptions) throws IOException {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         IndexView index = beanArchive.getIndex();
@@ -309,6 +323,19 @@ class VertxWebProcessor {
                     }
                 }
                 routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
+
+                if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+                    if (methods.length == 0) {
+                        // No explicit method declared - match all methods
+                        methods = HttpMethod.values();
+                    }
+                    descriptions.produce(new RouteDescriptionBuildItem(
+                            businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
+                                    + businessMethod.getMethod().name() + "()",
+                            regex != null ? regex : path,
+                            Arrays.stream(methods).map(Object::toString).collect(Collectors.joining(", ")), produces,
+                            consumes));
+                }
             }
         }
 
@@ -326,6 +353,21 @@ class VertxWebProcessor {
         detectConflictingRoutes(matchers);
 
         recorder.clearCacheOnShutdown(shutdown);
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(RUNTIME_INIT)
+    void routeNotFound(Capabilities capabilities, ResourceNotFoundRecorder recorder, VertxWebRouterBuildItem router,
+            List<RouteDescriptionBuildItem> descriptions,
+            HttpRootPathBuildItem httpRoot,
+            List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoints) {
+        if (capabilities.isMissing(Capability.RESTEASY)) {
+            // Register a special error handler if JAX-RS not available
+            recorder.registerNotFoundHandler(router.getRouter(), httpRoot.getRootPath(),
+                    descriptions.stream().map(RouteDescriptionBuildItem::getDescription).collect(Collectors.toList()),
+                    additionalEndpoints.stream().map(NotFoundPageDisplayableEndpointBuildItem::getEndpoint)
+                            .collect(Collectors.toList()));
+        }
     }
 
     @BuildStep

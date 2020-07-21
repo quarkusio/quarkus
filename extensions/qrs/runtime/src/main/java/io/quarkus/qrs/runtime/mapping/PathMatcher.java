@@ -73,6 +73,17 @@ public class PathMatcher<T> {
                         return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
                     }
                 }
+                // it's also possible that we're looking up /foo/bar/gee and have a current path of /foo/bar/ which
+                // is an acceptable prefix
+                if(pathLength > 0) {
+                    c = path.charAt(pathLength - 1);
+                    if (c == '/') {
+                        SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
+                        if (next != null) {
+                            return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
+                        }
+                    }
+                }
             }
         }
         return new PathMatch<>("", path, defaultHandler);

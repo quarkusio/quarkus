@@ -136,7 +136,7 @@ final class Beans {
             if (alternativePriority == null) {
                 // after all attempts, priority is still null, bean will be ignored
                 LOGGER.infof(
-                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
                         beanClass.name());
                 return null;
             }

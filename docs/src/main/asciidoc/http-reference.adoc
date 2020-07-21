@@ -242,6 +242,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |SSL cypher                                                                   |          | `%{SSL_CIPHER}`
 |SSL client certificate                                                       |          | `%{SSL_CLIENT_CERT}`
 |SSL session id                                                               |          | `%{SSL_SESSION_ID}`
+|All request headers                                                          |          | `%{ALL_REQUEST_HEADERS}`
 |Cookie value                                                                 |          | `%{c,cookie_name}`
 |Query parameter                                                              |          | `%{q,query_param_name}`
 |Request header                                                               |          | `%{i,request_header_name}`

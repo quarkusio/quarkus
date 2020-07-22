@@ -58,7 +58,6 @@
         <module>devtools-common</module>
         <module>utilities</module>
         <module>platform-descriptor-resolver-json</module>
-        <module>registry-descriptor-resolver</module>
     </modules>
     <dependencyManagement>
         <dependencies>

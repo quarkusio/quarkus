@@ -1,11 +1,6 @@
 package io.quarkus.resteasy.runtime.standalone;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -16,12 +11,9 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
-import io.quarkus.vertx.http.runtime.ThreadLocalHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.StaticHandler;
 
 /**
  * Provides the runtime methods to bootstrap Resteasy in standalone mode.
@@ -70,30 +62,18 @@ public class ResteasyStandaloneRecorder {
         }
     };
 
-    private static volatile List<Path> hotDeploymentResourcePaths;
-
-    public static void setHotDeploymentResources(List<Path> resources) {
-        hotDeploymentResourcePaths = resources;
-    }
-
     private static ResteasyDeployment deployment;
-    private static Set<String> knownPaths;
     private static String contextPath;
 
-    public void staticInit(ResteasyDeployment dep, String path, Set<String> known) {
+    public void staticInit(ResteasyDeployment dep, String path) {
         if (dep != null) {
             deployment = dep;
             deployment.start();
         }
-        knownPaths = known;
         contextPath = path;
     }
 
-    public Consumer<Route> start(Supplier<Vertx> vertx,
-            ShutdownContext shutdown,
-            BeanContainer beanContainer,
-            boolean isVirtual, boolean isDefaultResourcesPath,
-            Executor executor, HttpConfiguration httpConfiguration) {
+    public void start(ShutdownContext shutdown, boolean isVirtual) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -104,64 +84,6 @@ public class ResteasyStandaloneRecorder {
             }
         });
         useDirect = !isVirtual;
-        List<Handler<RoutingContext>> handlers = new ArrayList<>();
-
-        if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
-            for (Path resourcePath : hotDeploymentResourcePaths) {
-                String root = resourcePath.toAbsolutePath().toString();
-                ThreadLocalHandler staticHandler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-                    @Override
-                    public Handler<RoutingContext> get() {
-                        StaticHandler staticHandler = StaticHandler.create();
-                        staticHandler.setCachingEnabled(false);
-                        staticHandler.setAllowRootFileSystemAccess(true);
-                        staticHandler.setWebRoot(root);
-                        staticHandler.setDefaultContentEncoding("UTF-8");
-                        return staticHandler;
-                    }
-                });
-                handlers.add(event -> {
-                    try {
-                        staticHandler.handle(event);
-                    } catch (Exception e) {
-                        // on Windows, the drive in file path screws up cache lookup
-                        // so just punt to next handler
-                        event.next();
-                    }
-                });
-            }
-        }
-        if (!knownPaths.isEmpty()) {
-            ThreadLocalHandler staticHandler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-                @Override
-                public Handler<RoutingContext> get() {
-                    return StaticHandler.create(META_INF_RESOURCES)
-                            .setDefaultContentEncoding("UTF-8");
-                }
-            });
-            handlers.add(ctx -> {
-                String rel = ctx.mountPoint() == null ? ctx.normalisedPath()
-                        : ctx.normalisedPath().substring(ctx.mountPoint().length());
-                if (knownPaths.contains(rel)) {
-                    staticHandler.handle(ctx);
-                } else {
-                    ctx.next();
-                }
-            });
-        }
-
-        if (deployment != null && isDefaultResourcesPath) {
-            handlers.add(vertxRequestHandler(vertx, beanContainer, executor, httpConfiguration));
-        }
-        return new Consumer<Route>() {
-
-            @Override
-            public void accept(Route route) {
-                for (Handler<RoutingContext> i : handlers) {
-                    route.handler(i);
-                }
-            }
-        };
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,

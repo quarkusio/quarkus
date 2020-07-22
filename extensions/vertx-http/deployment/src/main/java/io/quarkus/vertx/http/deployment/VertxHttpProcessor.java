@@ -136,7 +136,7 @@ class VertxHttpProcessor {
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
             ExecutorBuildItem executorBuildItem)
             throws BuildException, IOException {
-        HttpRemoteDevClientProvider.liveReloadConfig = lrc;
+
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
             defaultRoute = Optional.empty();
@@ -149,6 +149,7 @@ class VertxHttpProcessor {
             }
         }
 
+        HttpRemoteDevClientProvider.liveReloadConfig = lrc;
         GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
         shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
 

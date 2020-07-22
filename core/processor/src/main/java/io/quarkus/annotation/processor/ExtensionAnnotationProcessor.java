@@ -78,7 +78,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
-    private final boolean generateDocs = !Boolean.getBoolean("skipDocs");
+    private final boolean generateDocs = !(Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly"));
 
     public ExtensionAnnotationProcessor() {
     }

@@ -28,7 +28,11 @@ _All under ONE framework._
 ## Getting Started
 
 * [Documentation](https://quarkus.io)
+* [Wiki](https://github.com/quarkusio/quarkus/wiki)
 
+## Release Planning
+
+Interested on when the next release is coming? Check our [release planning](https://github.com/quarkusio/quarkus/wiki/Release-Planning) document for details
 
 ## How to build Quarkus
 

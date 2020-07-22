@@ -476,27 +476,28 @@ final class Beans {
         List<BeanInfo> resolved = deployment.getBeanResolver().resolve(injectionPoint.getTypeAndQualifiers());
         BeanInfo selected = null;
         if (resolved.isEmpty()) {
+            List<BeanInfo> typeMatching = deployment.getBeanResolver().findTypeMatching(injectionPoint.getRequiredType());
+
             StringBuilder message = new StringBuilder("Unsatisfied dependency for type ");
-            message.append(injectionPoint.getRequiredType());
-            message.append(" and qualifiers ");
-            message.append(injectionPoint.getRequiredQualifiers());
-            message.append("\n\t- java member: ");
-            message.append(injectionPoint.getTargetInfo());
-            message.append("\n\t- declared on ");
-            message.append(target);
+            addStandardErroneousDependencyMessage(target, injectionPoint, message);
+            if (!typeMatching.isEmpty()) {
+                message.append("\n\tThe following beans match by type, but none have matching qualifiers:");
+                for (BeanInfo beanInfo : typeMatching) {
+                    message.append("\n\t\t- ");
+                    message.append("Bean [class=");
+                    message.append(beanInfo.getImplClazz());
+                    message.append(", qualifiers=");
+                    message.append(beanInfo.getQualifiers());
+                    message.append("]");
+                }
+            }
             errors.add(new UnsatisfiedResolutionException(message.toString()));
         } else if (resolved.size() > 1) {
             // Try to resolve the ambiguity
             selected = resolveAmbiguity(resolved);
             if (selected == null) {
                 StringBuilder message = new StringBuilder("Ambiguous dependencies for type ");
-                message.append(injectionPoint.getRequiredType());
-                message.append(" and qualifiers ");
-                message.append(injectionPoint.getRequiredQualifiers());
-                message.append("\n\t- java member: ");
-                message.append(injectionPoint.getTargetInfo());
-                message.append("\n\t- declared on ");
-                message.append(target);
+                addStandardErroneousDependencyMessage(target, injectionPoint, message);
                 message.append("\n\t- available beans:\n\t\t- ");
                 message.append(resolved.stream().map(Object::toString).collect(Collectors.joining("\n\t\t- ")));
                 errors.add(new AmbiguousResolutionException(message.toString()));
@@ -507,6 +508,17 @@ final class Beans {
         if (selected != null) {
             injectionPoint.resolve(selected);
         }
+    }
+
+    private static void addStandardErroneousDependencyMessage(InjectionTargetInfo target, InjectionPointInfo injectionPoint,
+            StringBuilder message) {
+        message.append(injectionPoint.getRequiredType());
+        message.append(" and qualifiers ");
+        message.append(injectionPoint.getRequiredQualifiers());
+        message.append("\n\t- java member: ");
+        message.append(injectionPoint.getTargetInfo());
+        message.append("\n\t- declared on ");
+        message.append(target);
     }
 
     static BeanInfo resolveAmbiguity(List<BeanInfo> resolved) {

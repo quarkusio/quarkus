@@ -72,6 +72,16 @@ class BeanResolver {
         return resolved.isEmpty() ? Collections.emptyList() : resolved;
     }
 
+    List<BeanInfo> findTypeMatching(Type type) {
+        List<BeanInfo> resolved = new ArrayList<>();
+        for (BeanInfo b : beanDeployment.getBeans()) {
+            if (Beans.matchesType(b, type)) {
+                resolved.add(b);
+            }
+        }
+        return resolved.isEmpty() ? Collections.emptyList() : resolved;
+    }
+
     boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.box(requiredType), Types.box(beanType));
     }

@@ -922,6 +922,11 @@ public class DevMojo extends AbstractMojo {
             if (project == null) {
                 continue;
             }
+            if (!project.getVersion().equals(a.getVersion())) {
+                getLog().warn(depKey + " is excluded from live coding since the application depends on version "
+                        + a.getVersion() + " while the version present in the workspace is " + project.getVersion());
+                continue;
+            }
             if (project.getClassesDir() != null &&
             //if this project also contains Quarkus extensions we do no want to include these in the discovery
             //a bit of an edge case, but if you try and include a sample project with your extension you will

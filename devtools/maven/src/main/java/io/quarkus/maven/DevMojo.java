@@ -506,13 +506,11 @@ public class DevMojo extends AbstractMojo {
 
         String projectDirectory = null;
         Set<String> sourcePaths = null;
-        Set<String> sourceGenPaths = null;
         String classesPath = null;
         String resourcePath = null;
 
         final MavenProject mavenProject = session.getProjectMap().get(
                 String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
-
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
             Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
@@ -530,7 +528,6 @@ public class DevMojo extends AbstractMojo {
                     .map(src -> src.toAbsolutePath().toString())
                     .collect(Collectors.toSet());
         }
-
         Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
 
         Path classesDir = localProject.getClassesDir();
@@ -542,7 +539,8 @@ public class DevMojo extends AbstractMojo {
             resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
         }
 
-        Path targetDir = Paths.get(project.getBuild().getOutputDirectory()).getParent();
+        Path targetDir = Paths.get(project.getBuild().getDirectory());
+
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(localProject.getKey(),
                 localProject.getArtifactId(),
                 projectDirectory,
@@ -674,15 +672,14 @@ public class DevMojo extends AbstractMojo {
             }
 
             setKotlinSpecificFlags(devModeContext);
-            final LocalProject localProject;
             if (noDeps) {
-                localProject = LocalProject.load(project.getModel().getPomFile().toPath());
+                final LocalProject localProject = LocalProject.load(project.getModel().getPomFile().toPath());
                 addProject(devModeContext, localProject, true);
                 pomFiles.add(localProject.getRawModel().getPomFile().toPath());
                 devModeContext.getLocalArtifacts()
                         .add(new AppArtifactKey(localProject.getGroupId(), localProject.getArtifactId(), null, "jar"));
             } else {
-                localProject = LocalProject.loadWorkspace(project.getModel().getPomFile().toPath());
+                final LocalProject localProject = LocalProject.loadWorkspace(project.getModel().getPomFile().toPath());
                 for (LocalProject project : filterExtensionDependencies(localProject)) {
                     addProject(devModeContext, project, project == localProject);
                     pomFiles.add(project.getRawModel().getPomFile().toPath());

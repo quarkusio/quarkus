@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.jaxrs;
 
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Link;
@@ -9,7 +9,8 @@ import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.qrs.runtime.headers.MediaTypeHeaderDelegate;
 
-public class QrsProviderFactory extends RuntimeDelegate {
+public class QrsRuntimeDelegate extends RuntimeDelegate {
+
     @Override
     public UriBuilder createUriBuilder() {
         return null;

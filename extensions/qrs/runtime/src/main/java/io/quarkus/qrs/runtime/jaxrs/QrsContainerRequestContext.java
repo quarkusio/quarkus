@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.jaxrs;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -16,6 +16,8 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
+
+import io.quarkus.qrs.runtime.core.RequestContext;
 
 public class QrsContainerRequestContext implements ContainerRequestContext {
 

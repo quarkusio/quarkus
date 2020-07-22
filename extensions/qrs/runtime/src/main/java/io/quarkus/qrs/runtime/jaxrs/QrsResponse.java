@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.jaxrs;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;

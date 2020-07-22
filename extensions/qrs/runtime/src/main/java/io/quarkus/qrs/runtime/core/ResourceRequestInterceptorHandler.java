@@ -7,6 +7,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
 import io.quarkus.qrs.runtime.spi.EndpointFactory.EndpointInstance;

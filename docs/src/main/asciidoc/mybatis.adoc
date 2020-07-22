@@ -58,7 +58,7 @@ This will add the following to your `pom.xml`:
 [source]
 ----
 <dependency>
-    <groupId>org.amqphub.quarkus</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-mybatis</artifactId>
 </dependency>
 ----

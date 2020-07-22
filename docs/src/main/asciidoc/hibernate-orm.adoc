@@ -660,9 +660,9 @@ CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In t
 # Disable generation
 quarkus.hibernate-orm.database.generation=none
 
-# Enable SCHEMA approach and use default schema
+# Enable SCHEMA approach and use default datasource
 quarkus.hibernate-orm.multitenant=SCHEMA
-# You could use a non-default schema by using the following setting 
+# You could use a non-default datasource by using the following setting 
 # quarkus.hibernate-orm.multitenant-schema-datasource=other
 
 # The default data source used for all tenant schemas

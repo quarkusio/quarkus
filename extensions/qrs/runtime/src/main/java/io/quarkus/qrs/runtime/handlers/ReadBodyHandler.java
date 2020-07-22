@@ -3,12 +3,11 @@ package io.quarkus.qrs.runtime.handlers;
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.vertx.core.http.HttpServerRequest;
 
-
 public class ReadBodyHandler implements RestHandler {
 
     // FIXME: we should be able to use this, but I couldn't figure out how:
     // every time I try to forward to it, I end up with a 404
-//    BodyHandler bodyHandler = BodyHandler.create();
+    //    BodyHandler bodyHandler = BodyHandler.create();
 
     @Override
     public void handle(RequestContext requestContext) throws Exception {

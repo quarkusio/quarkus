@@ -6,7 +6,6 @@ import java.util.concurrent.Executor;
 
 import javax.ws.rs.core.UriInfo;
 
-import io.vertx.core.net.impl.ConnectionBase;
 import org.jboss.logging.Logger;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
@@ -14,6 +13,7 @@ import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class RequestContext implements Runnable, Closeable {
@@ -80,7 +80,7 @@ public class RequestContext implements Runnable, Closeable {
         } else {
             suspended = false;
             if (executor == null) {
-                ((ConnectionBase)context.request().connection()).getContext().nettyEventLoop().execute(this);
+                ((ConnectionBase) context.request().connection()).getContext().nettyEventLoop().execute(this);
                 run();
             } else {
                 executor.execute(this);

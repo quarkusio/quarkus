@@ -34,43 +34,43 @@ public class SimpleQrsTestCase {
                 .then().body(Matchers.equalTo("POST"));
 
         RestAssured.get("/missing")
-        .then().statusCode(404);
+                .then().statusCode(404);
 
         RestAssured.post("/missing")
-        .then().statusCode(404);
+                .then().statusCode(404);
 
         RestAssured.delete("/missing")
-        .then().statusCode(404);
+                .then().statusCode(404);
 
         System.err.println("DEL");
         RestAssured.delete("/simple")
-            .then().body(Matchers.equalTo("DELETE"));
+                .then().body(Matchers.equalTo("DELETE"));
 
         System.err.println("PUT");
         RestAssured.put("/simple")
-            .then().body(Matchers.equalTo("PUT"));
+                .then().body(Matchers.equalTo("PUT"));
 
         System.err.println("HEAD");
         RestAssured.head("/simple")
-            .then().header("Stef", "head");
+                .then().header("Stef", "head");
 
         System.err.println("OPTIONS");
         RestAssured.options("/simple")
-        .then().body(Matchers.equalTo("OPTIONS"));
+                .then().body(Matchers.equalTo("OPTIONS"));
 
         System.err.println("PATCH");
         RestAssured.patch("/simple")
-        .then().body(Matchers.equalTo("PATCH"));
+                .then().body(Matchers.equalTo("PATCH"));
     }
 
     @Test
     public void testParams() {
         RestAssured.with()
-            .queryParam("q", "qv")
-            .header("h", "hv")
-            .formParam("f", "fv")
-            .post("/simple/params/pv")
-            .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv, f: fv"));
+                .queryParam("q", "qv")
+                .header("h", "hv")
+                .formParam("f", "fv")
+                .post("/simple/params/pv")
+                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv, f: fv"));
     }
 
     @Test
@@ -78,6 +78,7 @@ public class SimpleQrsTestCase {
         RestAssured.get("/simple/person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
     }
+
     @Test
     public void testBlocking() {
         RestAssured.get("/simple/blocking")

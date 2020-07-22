@@ -79,7 +79,7 @@ public class PathMatcher<T> implements Dumpable {
                 }
                 // it's also possible that we're looking up /foo/bar/gee and have a current path of /foo/bar/ which
                 // is an acceptable prefix
-                if(pathLength > 0) {
+                if (pathLength > 0) {
                     c = path.charAt(pathLength - 1);
                     if (c == '/') {
                         SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
@@ -236,26 +236,26 @@ public class PathMatcher<T> implements Dumpable {
 
     @Override
     public void dump(int level) {
-        System.err.println("Paths: "+paths.size());
+        System.err.println("Paths: " + paths.size());
         for (String key : paths.keys()) {
-            System.err.println(" "+key+": ");
+            System.err.println(" " + key + ": ");
             SubstringMatch<T> match = paths.get(key);
-            System.err.println("  matchKey: "+match.getKey());
+            System.err.println("  matchKey: " + match.getKey());
             System.err.println("  matchValue: ");
             dumpValue(match.getValue(), 3);
         }
-        System.err.println("Exact path matches: "+exactPathMatches.size());
+        System.err.println("Exact path matches: " + exactPathMatches.size());
         for (Entry<String, T> entry : exactPathMatches.entrySet()) {
-            System.err.println(" "+entry.getKey()+": ");
+            System.err.println(" " + entry.getKey() + ": ");
             dumpValue(entry.getValue(), 2);
         }
-        System.err.println("Default handler: "+defaultHandler);
+        System.err.println("Default handler: " + defaultHandler);
     }
 
     private void dumpValue(T value, int level) {
-        if(value instanceof List) {
-            for(Object x : (List)value) {
-                if(x instanceof Dumpable)
+        if (value instanceof List) {
+            for (Object x : (List) value) {
+                if (x instanceof Dumpable)
                     ((Dumpable) x).dump(level);
             }
         }

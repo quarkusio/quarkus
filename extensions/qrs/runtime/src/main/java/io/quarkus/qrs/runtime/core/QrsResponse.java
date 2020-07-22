@@ -36,7 +36,7 @@ class QrsResponse extends Response {
 
     @Override
     public StatusType getStatusInfo() {
-        if(statusType == null) {
+        if (statusType == null) {
             statusType = new QrsStatusType(status, reasonPhrase);
         }
         return statusType;
@@ -172,7 +172,7 @@ class QrsResponse extends Response {
     @Override
     public MultivaluedMap<String, String> getStringHeaders() {
         // FIXME: is this mutable?
-        if(stringHeaders == null) {
+        if (stringHeaders == null) {
             stringHeaders = new MultivaluedHashMap<>();
             for (Entry<String, List<Object>> entry : headers.entrySet()) {
                 List<String> stringValues = new ArrayList<>(entry.getValue().size());
@@ -183,7 +183,7 @@ class QrsResponse extends Response {
                 stringHeaders.put(entry.getKey(), stringValues);
             }
         }
-        
+
         return stringHeaders;
     }
 

@@ -81,7 +81,7 @@ public class QrsRecorder {
                 MethodParameter[] parameters = method.getParameters();
                 for (int i = 0; i < parameters.length; i++) {
                     MethodParameter param = parameters[i];
-                    if(param.parameterType == ParameterType.FORM) {
+                    if (param.parameterType == ParameterType.FORM) {
                         handlers.add(new ReadBodyHandler());
                         break;
                     }
@@ -89,19 +89,19 @@ public class QrsRecorder {
                 for (int i = 0; i < parameters.length; i++) {
                     MethodParameter param = parameters[i];
                     ParameterExtractor extractor;
-                    switch(param.parameterType) {
-                    case HEADER:
-                        extractor = new HeaderParamExtractor(param.name, true);
-                        break;
-                    case FORM:
-                        extractor = new FormParamExtractor(param.name, true);
-                        break;
-                    case PATH:
-                        extractor = new PathParamExtractor(param.name);
-                        break;
-                    default:
-                        extractor = new QueryParamExtractor(param.name, true);
-                        break;
+                    switch (param.parameterType) {
+                        case HEADER:
+                            extractor = new HeaderParamExtractor(param.name, true);
+                            break;
+                        case FORM:
+                            extractor = new FormParamExtractor(param.name, true);
+                            break;
+                        case PATH:
+                            extractor = new PathParamExtractor(param.name);
+                            break;
+                        default:
+                            extractor = new QueryParamExtractor(param.name, true);
+                            break;
                     }
                     handlers.add(new ParameterHandler(i, extractor, null));
                 }

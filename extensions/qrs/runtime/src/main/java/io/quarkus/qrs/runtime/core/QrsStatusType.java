@@ -3,7 +3,7 @@ package io.quarkus.qrs.runtime.core;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;
 
-public class QrsStatusType implements StatusType{
+public class QrsStatusType implements StatusType {
 
     private String reasonPhrase;
     private int status;

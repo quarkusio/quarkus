@@ -155,46 +155,48 @@ public class URITemplate implements Dumpable {
             this.name = name;
             this.pattern = pattern;
         }
-        
+
         @Override
         public String toString() {
-            return "TemplateComponent{ name: "+name+", type: "+type+", literalText: "+literalText+", pattern: "+pattern+"}";
+            return "TemplateComponent{ name: " + name + ", type: " + type + ", literalText: " + literalText + ", pattern: "
+                    + pattern + "}";
         }
-        
+
         @Override
         public void dump(int level) {
             indent(level);
             System.err.println("TemplateComponent");
-            indent(level+1);
-            System.err.println("name: "+name);
-            indent(level+1);
-            System.err.println("type: "+type);
-            indent(level+1);
-            System.err.println("literalText: "+literalText);
-            indent(level+1);
-            System.err.println("pattern: "+pattern);
+            indent(level + 1);
+            System.err.println("name: " + name);
+            indent(level + 1);
+            System.err.println("type: " + type);
+            indent(level + 1);
+            System.err.println("literalText: " + literalText);
+            indent(level + 1);
+            System.err.println("pattern: " + pattern);
         }
     }
 
     @Override
     public String toString() {
-        return "URITemplate{ stem: "+stem+", template: "+template+", literalCharacterCount: "+literalCharacterCount+", components: "+Arrays.toString(components)+" }";
+        return "URITemplate{ stem: " + stem + ", template: " + template + ", literalCharacterCount: " + literalCharacterCount
+                + ", components: " + Arrays.toString(components) + " }";
     }
-    
+
     @Override
     public void dump(int level) {
         indent(level);
         System.err.println("URITemplate");
-        indent(level+1);
-        System.err.println("stem: "+stem);
-        indent(level+1);
-        System.err.println("template: "+template);
-        indent(level+1);
-        System.err.println("literalCharacterCount: "+literalCharacterCount);
-        indent(level+1);
+        indent(level + 1);
+        System.err.println("stem: " + stem);
+        indent(level + 1);
+        System.err.println("template: " + template);
+        indent(level + 1);
+        System.err.println("literalCharacterCount: " + literalCharacterCount);
+        indent(level + 1);
         System.err.println("components: ");
         for (TemplateComponent component : components) {
-            component.dump(level+2);
+            component.dump(level + 2);
         }
     }
 }

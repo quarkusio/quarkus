@@ -18,7 +18,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
-
 public class QrsResponseBuilder extends ResponseBuilder {
 
     private int status;
@@ -32,7 +31,8 @@ public class QrsResponseBuilder extends ResponseBuilder {
         response.status = status;
         response.reasonPhrase = reasonPhrase;
         response.entity = entity;
-        response.headers = new MultivaluedHashMap<>(headers);
+        response.headers = new MultivaluedHashMap<>();
+        response.headers.putAll(headers);
         return response;
     }
 
@@ -42,7 +42,8 @@ public class QrsResponseBuilder extends ResponseBuilder {
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
-        responseBuilder.headers = new MultivaluedHashMap<>(headers);
+        responseBuilder.headers = new MultivaluedHashMap<>();
+        responseBuilder.headers.putAll(headers);
         return responseBuilder;
     }
 

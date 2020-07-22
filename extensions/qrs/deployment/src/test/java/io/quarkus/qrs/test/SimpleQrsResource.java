@@ -13,8 +13,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -37,11 +35,11 @@ public class SimpleQrsResource {
 
     @POST
     @Path("params/{p}")
-    public String params(@PathParam("p") String p, 
-                         @QueryParam("q") String q,
-                         @HeaderParam("h") String h,
-                         @FormParam("f") String f) {
-        return "params: p: " + p+", q: "+q+", h: "+h+", f: "+f;
+    public String params(@PathParam("p") String p,
+            @QueryParam("q") String q,
+            @HeaderParam("h") String h,
+            @FormParam("f") String f) {
+        return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f;
     }
 
     @POST
@@ -58,7 +56,7 @@ public class SimpleQrsResource {
     public String put() {
         return "PUT";
     }
-    
+
     @PATCH
     public String patch() {
         return "PATCH";

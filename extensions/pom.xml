@@ -90,7 +90,9 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
         <module>jsch</module>
         <module>jgit</module>
         <module>kafka-client</module>

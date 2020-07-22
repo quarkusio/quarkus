@@ -618,9 +618,9 @@ We need a PostgreSQL instance and an Elasticsearch cluster.
 
 Let's use Docker to start one of each:
 
-[source, shell]
+[source, shell,subs=attributes+]
 ----
-docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+docker run -it --rm=true --name elasticsearch_quarkus_test -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:{elasticsearch-version}
 ----
 
 [source, shell]

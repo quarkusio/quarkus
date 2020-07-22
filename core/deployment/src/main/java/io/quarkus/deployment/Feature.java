@@ -4,7 +4,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 /**
  * Represents a feature provided by a core extension.
- * 
+ *
  * @see FeatureBuildItem
  */
 public enum Feature {
@@ -23,7 +23,9 @@ public enum Feature {
     CDI,
     CONFIG_YAML,
     CONSUL_CONFIG,
+    ELASTICSEARCH_REST_CLIENT_COMMON,
     ELASTICSEARCH_REST_CLIENT,
+    ELASTICSEARCH_REST_HIGH_LEVEL_CLIENT,
     FLYWAY,
     GRPC_CLIENT,
     GRPC_SERVER,

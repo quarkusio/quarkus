@@ -1,5 +1,5 @@
 ---
-name: "Elasticsearch REST Client"
+name: "Elasticsearch REST Client Common"
 metadata:
   keywords:
   - "search"

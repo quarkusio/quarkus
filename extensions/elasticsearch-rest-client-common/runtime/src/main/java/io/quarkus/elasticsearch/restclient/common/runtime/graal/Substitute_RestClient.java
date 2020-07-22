@@ -1,4 +1,4 @@
-package io.quarkus.elasticsearch.restclient.runtime.graal;
+package io.quarkus.elasticsearch.restclient.common.runtime.graal;
 
 import java.util.ArrayList;
 import java.util.Collection;

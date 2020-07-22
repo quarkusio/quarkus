@@ -451,14 +451,20 @@ jobs:
               hibernate-orm-rest-data-panache
           - category: Data5
             postgres: "true"
-            timeout: 60
+            timeout: 65
             test-modules: >
               jpa-postgresql
-              hibernate-search-elasticsearch
               narayana-stm
               narayana-jta
               reactive-pg-client
               hibernate-reactive-postgresql
+          - category: Data6
+            postgres: "true"
+            timeout: 40
+            test-modules: >
+              elasticsearch-rest-client
+              elasticsearch-rest-high-level-client
+              hibernate-search-elasticsearch
           - category: Amazon
             amazonServices: "true"
             timeout: 45

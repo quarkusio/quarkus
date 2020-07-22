@@ -16,6 +16,9 @@ import java.util.Map;
  * Note that when using these with QuarkusUnitTest (rather than @QuarkusTest) they run
  * before the ClassLoader has been setup. This means injection may not work
  * as expected.
+ * <p>
+ * Due to the very early execution in the test setup lifecycle, logging does <b>not</b>
+ * work in such a manager.
  */
 public interface QuarkusTestResourceLifecycleManager {
 
@@ -52,7 +55,7 @@ public interface QuarkusTestResourceLifecycleManager {
     /**
      * If multiple Test Resources are specified,
      * this control the order of which they will be executed.
-     * 
+     *
      * @return The order to be executed. The larger the number, the later the Resource is invoked.
      */
     default int order() {

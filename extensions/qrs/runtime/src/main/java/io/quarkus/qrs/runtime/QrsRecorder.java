@@ -165,6 +165,6 @@ public class QrsRecorder {
 
     public void registerExceptionMapper(ExceptionMapping exceptionMapping, String string,
             ResourceExceptionMapper<Throwable> mapper) {
-        exceptionMapping.addExceptionMapper(string, mapper);
+        exceptionMapping.addExceptionMapper(loadClass(string), mapper);
     }
 }

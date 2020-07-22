@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
@@ -40,6 +41,7 @@ public class RequestContext implements Runnable, Closeable {
     private volatile Executor executor;
     private int position;
     private Throwable throwable;
+    private QrsHttpHeaders httpHeaders;
 
     public RequestContext(RoutingContext context, RuntimeResource target) {
         this.context = context;
@@ -128,6 +130,13 @@ public class RequestContext implements Runnable, Closeable {
 
     public UriInfo getUriInfo() {
         return uriInfo;
+    }
+
+    public HttpHeaders getHttpHeaders() {
+        if (httpHeaders == null) {
+            httpHeaders = new QrsHttpHeaders(context.request().headers());
+        }
+        return httpHeaders;
     }
 
     public RoutingContext getContext() {

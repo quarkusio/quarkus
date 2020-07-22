@@ -27,6 +27,8 @@ import io.quarkus.qrs.deployment.framework.EndpointIndexer;
 import io.quarkus.qrs.deployment.framework.QrsDotNames;
 import io.quarkus.qrs.runtime.QrsRecorder;
 import io.quarkus.qrs.runtime.model.ResourceClass;
+import io.quarkus.qrs.runtime.model.ResourceInterceptors;
+import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 public class QrsProcessor {
@@ -43,6 +45,8 @@ public class QrsProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             QrsRecorder recorder, ExecutorBuildItem executorBuildItem) {
         Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(QrsDotNames.PATH);
+        Collection<ClassInfo> containerRequestFilters = beanArchiveIndexBuildItem.getIndex()
+                .getAllKnownImplementors(QrsDotNames.CONTAINER_REQUEST_FILTER);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
@@ -70,7 +74,17 @@ public class QrsProcessor {
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder));
         }
 
-        return new FilterBuildItem(recorder.handler(resourceClasses, executorBuildItem.getExecutorProxy()), 10);
+        ResourceInterceptors interceptors = new ResourceInterceptors();
+        for (ClassInfo filterClass : containerRequestFilters) {
+            if (filterClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
+                ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
+                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                interceptors.addRequestInterceptor(interceptor);
+            }
+        }
+
+        return new FilterBuildItem(recorder.handler(interceptors, resourceClasses, executorBuildItem.getExecutorProxy()), 10);
     }
 
 }

@@ -19,7 +19,7 @@ public class SimpleQrsTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SimpleQrsResource.class, Person.class);
+                            .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class);
                 }
             });
 
@@ -42,23 +42,18 @@ public class SimpleQrsTestCase {
         RestAssured.delete("/missing")
                 .then().statusCode(404);
 
-        System.err.println("DEL");
         RestAssured.delete("/simple")
                 .then().body(Matchers.equalTo("DELETE"));
 
-        System.err.println("PUT");
         RestAssured.put("/simple")
                 .then().body(Matchers.equalTo("PUT"));
 
-        System.err.println("HEAD");
         RestAssured.head("/simple")
                 .then().header("Stef", "head");
 
-        System.err.println("OPTIONS");
         RestAssured.options("/simple")
                 .then().body(Matchers.equalTo("OPTIONS"));
 
-        System.err.println("PATCH");
         RestAssured.patch("/simple")
                 .then().body(Matchers.equalTo("PATCH"));
     }
@@ -83,5 +78,11 @@ public class SimpleQrsTestCase {
     public void testBlocking() {
         RestAssured.get("/simple/blocking")
                 .then().body(Matchers.equalTo("true"));
+    }
+
+    @Test
+    public void testFilters() {
+        RestAssured.get("/simple/filters")
+                .then().body(Matchers.equalTo("filter-ok"));
     }
 }

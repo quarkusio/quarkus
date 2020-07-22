@@ -7,4 +7,5 @@ public enum ParameterType {
     HEADER,
     FORM,
     BODY,
+    CONTEXT,
 }

@@ -12,11 +12,13 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcEndpointFactory;
+import io.quarkus.qrs.runtime.core.ContextParamExtractor;
 import io.quarkus.qrs.runtime.core.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
 import io.quarkus.qrs.runtime.core.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
+import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
@@ -31,7 +33,9 @@ import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.model.MethodParameter;
 import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
+import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
+import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.spi.EndpointFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
@@ -42,12 +46,8 @@ import io.vertx.ext.web.RoutingContext;
 public class QrsRecorder {
 
     public EndpointFactory factory(String targetClass, BeanContainer beanContainer) {
-        try {
-            return new ArcEndpointFactory(Class.forName(targetClass, false, Thread.currentThread().getContextClassLoader()),
-                    beanContainer);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Cannot load JAX-RS endpoint class", e);
-        }
+        return new ArcEndpointFactory(loadClass(targetClass),
+                beanContainer);
     }
 
     public Supplier<EndpointInvoker> invoker(String baseName) {
@@ -55,9 +55,8 @@ public class QrsRecorder {
             @Override
             public EndpointInvoker get() {
                 try {
-                    return (EndpointInvoker) Class.forName(baseName, false, Thread.currentThread().getContextClassLoader())
-                            .newInstance();
-                } catch (Exception e) {
+                    return (EndpointInvoker) loadClass(baseName).newInstance();
+                } catch (IllegalAccessException | InstantiationException e) {
                     throw new RuntimeException("Unable to generate endpoint invoker", e);
                 }
 
@@ -65,12 +64,19 @@ public class QrsRecorder {
         };
     }
 
-    public Handler<RoutingContext> handler(List<ResourceClass> resourceClasses, Executor blockingExecutor) {
+    public Handler<RoutingContext> handler(ResourceInterceptors interceptors, List<ResourceClass> resourceClasses,
+            Executor blockingExecutor) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
         Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
         for (ResourceClass clazz : resourceClasses) {
             for (ResourceMethod method : clazz.getMethods()) {
                 List<RestHandler> handlers = new ArrayList<>();
+
+                List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
+                if (!requestInterceptors.isEmpty()) {
+                    handlers.add(new ResourceRequestInterceptorHandler(requestInterceptors));
+                }
+
                 EndpointInvoker invoker = method.getInvoker().get();
                 handlers.add(new InstanceHandler(clazz.getFactory()));
                 Class<?>[] parameterTypes = new Class[method.getParameters().length];
@@ -98,6 +104,9 @@ public class QrsRecorder {
                             break;
                         case PATH:
                             extractor = new PathParamExtractor(param.name);
+                            break;
+                        case CONTEXT:
+                            extractor = new ContextParamExtractor(param.type);
                             break;
                         default:
                             extractor = new QueryParamExtractor(param.name, true);

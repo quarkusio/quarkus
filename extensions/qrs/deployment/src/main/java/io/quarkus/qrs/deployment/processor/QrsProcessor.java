@@ -13,6 +13,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -23,10 +24,13 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.qrs.deployment.framework.EndpointIndexer;
 import io.quarkus.qrs.deployment.framework.QrsDotNames;
 import io.quarkus.qrs.runtime.QrsRecorder;
+import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.model.ResourceClass;
+import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
@@ -50,6 +54,8 @@ public class QrsProcessor {
                 .getAllKnownImplementors(QrsDotNames.CONTAINER_REQUEST_FILTER);
         Collection<ClassInfo> containerResponseFilters = beanArchiveIndexBuildItem.getIndex()
                 .getAllKnownImplementors(QrsDotNames.CONTAINER_RESPONSE_FILTER);
+        Collection<ClassInfo> exceptionMappers = beanArchiveIndexBuildItem.getIndex()
+                .getAllKnownImplementors(QrsDotNames.EXCEPTION_MAPPER);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
@@ -95,7 +101,20 @@ public class QrsProcessor {
             }
         }
 
-        return new FilterBuildItem(recorder.handler(interceptors, resourceClasses, executorBuildItem.getExecutorProxy()), 10);
+        ExceptionMapping exceptionMapping = new ExceptionMapping();
+        for (ClassInfo mapperClass : exceptionMappers) {
+            if (mapperClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(), QrsDotNames.EXCEPTION_MAPPER,
+                        beanArchiveIndexBuildItem.getIndex());
+                ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
+                mapper.setFactory(recorder.factory(mapperClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                recorder.registerExceptionMapper(exceptionMapping, typeParameters.get(0).name().toString(), mapper);
+            }
+        }
+
+        return new FilterBuildItem(
+                recorder.handler(interceptors, exceptionMapping, resourceClasses, executorBuildItem.getExecutorProxy()), 10);
     }
 
 }

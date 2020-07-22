@@ -16,6 +16,9 @@
 - Feature/DynamicFeature
 - Header delegates
 - Exception mapping
+    - Base impl is in, but filters can't throw yet
+    - Make sure exception mapper can throw and get a 500
+    - Not sure how filters are supposed to interact with exception mapping
 - Content negociation
 - HEAD and OPTIONS are not implemented according to spec
 - Annotation inheritance

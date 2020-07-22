@@ -44,8 +44,9 @@ public class RequestContext implements Runnable, Closeable {
     private int position;
     private Throwable throwable;
     private QrsHttpHeaders httpHeaders;
+    private ExceptionMapping exceptionMapping;
 
-    public RequestContext(RoutingContext context, RuntimeResource target) {
+    public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping) {
         this.context = context;
         this.target = target;
         this.handlers = target.getHandlerChain();
@@ -56,6 +57,7 @@ public class RequestContext implements Runnable, Closeable {
                 close();
             }
         });
+        this.exceptionMapping = exceptionMapping;
     }
 
     public void suspend() {
@@ -230,9 +232,17 @@ public class RequestContext implements Runnable, Closeable {
         return throwable;
     }
 
+    /**
+     * ATM this can only be called by the InvocationHandler
+     */
     public RequestContext setThrowable(Throwable throwable) {
+        invokeExceptionMapper(throwable);
         this.throwable = throwable;
         return this;
+    }
+
+    private void invokeExceptionMapper(Throwable throwable) {
+        this.result = exceptionMapping.mapException(throwable, this);
     }
 
     private void handleException(Throwable throwable) {
@@ -242,6 +252,7 @@ public class RequestContext implements Runnable, Closeable {
 
     @Override
     public void close() {
+        // FIXME: close filter instances somehow?
         if (endpointInstance != null) {
             endpointInstance.close();
         }

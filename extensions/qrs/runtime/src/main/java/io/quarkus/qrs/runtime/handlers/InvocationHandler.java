@@ -1,5 +1,7 @@
 package io.quarkus.qrs.runtime.handlers;
 
+import javax.ws.rs.WebApplicationException;
+
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
@@ -12,7 +14,13 @@ public class InvocationHandler implements RestHandler {
 
     @Override
     public void handle(RequestContext requestContext) throws Exception {
-        Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
-        requestContext.setResult(result);
+        try {
+            Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
+            requestContext.setResult(result);
+        } catch (WebApplicationException x) {
+            requestContext.setResult(x.getResponse());
+        } catch (Throwable t) {
+            requestContext.setThrowable(t);
+        }
     }
 }

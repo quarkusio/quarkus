@@ -27,7 +27,8 @@ public class ResponseWriterHandler implements RestHandler {
         Response response = requestContext.getResponse();
         Object entity = response.getEntity();
         vertxResponse.setStatusCode(response.getStatus());
-        vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
+        if (response.getStatusInfo().getReasonPhrase() != null)
+            vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
         MultivaluedMap<String, String> headers = response.getStringHeaders();
         for (Entry<String, List<String>> entry : headers.entrySet()) {
             vertxResponse.putHeader(entry.getKey(), entry.getValue());

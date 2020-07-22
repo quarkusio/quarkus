@@ -13,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
 import io.quarkus.qrs.runtime.core.ContextParamExtractor;
+import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.core.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
 import io.quarkus.qrs.runtime.core.ParameterExtractor;
@@ -35,6 +36,7 @@ import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.model.MethodParameter;
 import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
+import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
@@ -67,7 +69,9 @@ public class QrsRecorder {
         };
     }
 
-    public Handler<RoutingContext> handler(ResourceInterceptors interceptors, List<ResourceClass> resourceClasses,
+    public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
+            ExceptionMapping exceptionMapping,
+            List<ResourceClass> resourceClasses,
             Executor blockingExecutor) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
         Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
@@ -147,7 +151,7 @@ public class QrsRecorder {
             i.getValue().addAll(nullMethod);
             mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
         }
-        return new QrsInitialHandler(mappersByMethod);
+        return new QrsInitialHandler(mappersByMethod, exceptionMapping);
     }
 
     @SuppressWarnings("unchecked")
@@ -157,5 +161,10 @@ public class QrsRecorder {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void registerExceptionMapper(ExceptionMapping exceptionMapping, String string,
+            ResourceExceptionMapper<Throwable> mapper) {
+        exceptionMapping.addExceptionMapper(string, mapper);
     }
 }

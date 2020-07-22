@@ -13,6 +13,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -95,5 +96,23 @@ public class SimpleQrsResource {
     @Path("filters")
     public Response filters(@Context HttpHeaders headers) {
         return Response.ok().header("filter", headers.getHeaderString("filter")).build();
+    }
+
+    @GET
+    @Path("mapped-exception")
+    public String mappedException() {
+        throw new TestException();
+    }
+
+    @GET
+    @Path("unknown-exception")
+    public String unknownException() {
+        throw new RuntimeException("OUCH");
+    }
+
+    @GET
+    @Path("web-application-exception")
+    public String webApplicationException() {
+        throw new WebApplicationException(Response.status(666).entity("OK").build());
     }
 }

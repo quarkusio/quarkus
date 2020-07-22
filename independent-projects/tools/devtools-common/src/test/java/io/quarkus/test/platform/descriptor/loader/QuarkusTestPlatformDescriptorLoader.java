@@ -15,6 +15,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import org.apache.maven.model.Dependency;
 
@@ -24,8 +25,13 @@ public class QuarkusTestPlatformDescriptorLoader
     private static final List<Extension> extensions = new ArrayList<>();
     private static final List<Dependency> bomDeps = new ArrayList<>();
     private static final Properties quarkusProps;
+
     private static final String quarkusVersion;
     private static final List<Category> categories = new ArrayList<>();
+
+    private String groupId = "io.quarkus";
+    private String artifactId = "quarkus-bom";
+    private String version;
 
     private static void addCategories() {
         addCategory("web", "Web");
@@ -96,6 +102,18 @@ public class QuarkusTestPlatformDescriptorLoader
         categories.add(cat);
     }
 
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     static {
         try {
             quarkusProps = loadStaticResource("quarkus.properties", is -> {
@@ -121,22 +139,22 @@ public class QuarkusTestPlatformDescriptorLoader
 
             @Override
             public String getBomGroupId() {
-                return "io.quarkus";
+                return groupId;
             }
 
             @Override
             public String getBomArtifactId() {
-                return "quarkus-bom";
+                return artifactId;
             }
 
             @Override
             public String getBomVersion() {
-                return quarkusVersion;
+                return Objects.toString(version, quarkusVersion);
             }
 
             @Override
             public String getQuarkusVersion() {
-                return quarkusVersion;
+                return Objects.toString(version, quarkusVersion);
             }
 
             @Override

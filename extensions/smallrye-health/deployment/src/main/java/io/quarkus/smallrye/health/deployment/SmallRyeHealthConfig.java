@@ -32,8 +32,7 @@ public class SmallRyeHealthConfig {
     String groupPath;
 
     /**
-     * Config group for all UI related options.
-     * Configuration properties for UI
+     * UI configuration
      */
     @ConfigItem
     @ConfigDocSection

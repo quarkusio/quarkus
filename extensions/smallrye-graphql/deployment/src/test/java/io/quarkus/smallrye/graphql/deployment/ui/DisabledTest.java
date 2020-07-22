@@ -14,7 +14,7 @@ public class DisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.enable-ui=false"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.ui.enable=false"), "application.properties"));
 
     @Test
     public void shouldUseDefaultConfig() {

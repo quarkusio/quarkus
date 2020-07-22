@@ -9,12 +9,12 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
-import io.quarkus.qrs.runtime.spi.EndpointFactory.EndpointInstance;
+import io.quarkus.qrs.runtime.spi.BeanFactory;
+import io.quarkus.qrs.runtime.spi.BeanFactory.BeanInstance;
 
 public class ResourceRequestInterceptorHandler implements RestHandler {
 
-    private List<EndpointFactory> interceptors;
+    private List<BeanFactory<ContainerRequestFilter>> interceptors;
 
     public ResourceRequestInterceptorHandler(List<ResourceRequestInterceptor> requestInterceptors) {
         this.interceptors = new ArrayList<>(requestInterceptors.size());
@@ -26,9 +26,9 @@ public class ResourceRequestInterceptorHandler implements RestHandler {
     @Override
     public void handle(RequestContext requestContext) throws Exception {
         ContainerRequestContext filterContext = new QrsContainerRequestContext(requestContext);
-        for (EndpointFactory interceptor : interceptors) {
-            EndpointInstance instance = interceptor.createInstance(requestContext);
-            ((ContainerRequestFilter) instance.getInstance()).filter(filterContext);
+        for (BeanFactory<ContainerRequestFilter> interceptor : interceptors) {
+            BeanInstance<ContainerRequestFilter> instance = interceptor.createInstance(requestContext);
+            instance.getInstance().filter(filterContext);
             // FIXME: check if aborted
         }
     }

@@ -2,21 +2,21 @@ package io.quarkus.qrs.runtime.spi;
 
 import io.quarkus.qrs.runtime.core.RequestContext;
 
-public interface EndpointFactory {
+public interface BeanFactory<T> {
 
     /**
      * Creates an endpoint instance outside the scope of a request
      */
-    EndpointInstance createInstance();
+    BeanInstance<T> createInstance();
 
     /**
      * Creates an endpoint instance inside the scope of a request
      */
-    EndpointInstance createInstance(RequestContext requestContext);
+    BeanInstance<T> createInstance(RequestContext requestContext);
 
-    interface EndpointInstance extends AutoCloseable {
+    interface BeanInstance<T> extends AutoCloseable {
 
-        Object getInstance();
+        T getInstance();
 
         void close();
     }

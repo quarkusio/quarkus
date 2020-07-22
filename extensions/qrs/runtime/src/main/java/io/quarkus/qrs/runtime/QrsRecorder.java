@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.qrs.runtime.core.ArcEndpointFactory;
+import io.quarkus.qrs.runtime.core.ArcBeanFactory;
 import io.quarkus.qrs.runtime.core.ContextParamExtractor;
 import io.quarkus.qrs.runtime.core.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
@@ -36,7 +36,7 @@ import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
+import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -45,8 +45,8 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class QrsRecorder {
 
-    public EndpointFactory factory(String targetClass, BeanContainer beanContainer) {
-        return new ArcEndpointFactory(loadClass(targetClass),
+    public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {
+        return new ArcBeanFactory<>(loadClass(targetClass),
                 beanContainer);
     }
 
@@ -142,9 +142,10 @@ public class QrsRecorder {
         return new QrsInitialHandler(mappersByMethod);
     }
 
-    private static Class<?> loadClass(String name) {
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> loadClass(String name) {
         try {
-            return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
+            return (Class<T>) Class.forName(name, false, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

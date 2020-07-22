@@ -3,7 +3,7 @@ package io.quarkus.qrs.runtime.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
+import io.quarkus.qrs.runtime.spi.BeanFactory;
 
 public class ResourceClass {
 
@@ -22,7 +22,7 @@ public class ResourceClass {
      */
     private final List<ResourceMethod> methods = new ArrayList<>();
 
-    private EndpointFactory factory;
+    private BeanFactory<Object> factory;
 
     public boolean isSubResource() {
         return path == null;
@@ -41,11 +41,11 @@ public class ResourceClass {
         return path;
     }
 
-    public EndpointFactory getFactory() {
+    public BeanFactory<Object> getFactory() {
         return factory;
     }
 
-    public ResourceClass setFactory(EndpointFactory factory) {
+    public ResourceClass setFactory(BeanFactory<Object> factory) {
         this.factory = factory;
         return this;
     }

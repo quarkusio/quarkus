@@ -12,7 +12,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
+import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -32,7 +32,7 @@ public class RequestContext implements Runnable, Closeable {
     /**
      * The endpoint to invoke
      */
-    private EndpointFactory.EndpointInstance endpointInstance;
+    private BeanFactory.BeanInstance<Object> endpointInstance;
     /**
      * The result of the invocation
      */
@@ -167,7 +167,7 @@ public class RequestContext implements Runnable, Closeable {
         return endpointInstance.getInstance();
     }
 
-    public RequestContext setEndpointInstance(EndpointFactory.EndpointInstance endpointInstance) {
+    public RequestContext setEndpointInstance(BeanFactory.BeanInstance<Object> endpointInstance) {
         this.endpointInstance = endpointInstance;
         return this;
     }

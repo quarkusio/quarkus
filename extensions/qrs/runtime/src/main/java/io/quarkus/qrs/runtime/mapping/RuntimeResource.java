@@ -3,7 +3,7 @@ package io.quarkus.qrs.runtime.mapping;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
+import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
 public class RuntimeResource {
@@ -13,14 +13,14 @@ public class RuntimeResource {
     private final MediaType produces;
     private final MediaType consumes;
     private final EndpointInvoker invoker;
-    private final EndpointFactory endpointFactory;
+    private final BeanFactory endpointFactory;
     private final RestHandler[] handlerChain;
     private final String method;
     private final Class<?>[] parameterTypes;
     private final Class<?> returnType;
 
     public RuntimeResource(String httpMethod, URITemplate path, MediaType produces, MediaType consumes, EndpointInvoker invoker,
-            EndpointFactory endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
+            BeanFactory endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
             Class<?> returnType) {
         this.httpMethod = httpMethod;
         this.path = path;
@@ -70,7 +70,7 @@ public class RuntimeResource {
         return invoker;
     }
 
-    public EndpointFactory getEndpointFactory() {
+    public BeanFactory getEndpointFactory() {
         return endpointFactory;
     }
 

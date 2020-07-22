@@ -1,16 +1,18 @@
 package io.quarkus.qrs.runtime.model;
 
-import io.quarkus.qrs.runtime.spi.EndpointFactory;
+import javax.ws.rs.container.ContainerRequestFilter;
+
+import io.quarkus.qrs.runtime.spi.BeanFactory;
 
 public class ResourceRequestInterceptor {
 
-    private EndpointFactory factory;
+    private BeanFactory<ContainerRequestFilter> factory;
 
-    public void setFactory(EndpointFactory factory) {
+    public void setFactory(BeanFactory<ContainerRequestFilter> factory) {
         this.factory = factory;
     }
 
-    public EndpointFactory getFactory() {
+    public BeanFactory<ContainerRequestFilter> getFactory() {
         return factory;
     }
 

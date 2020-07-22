@@ -7,6 +7,7 @@ import java.util.concurrent.Executor;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.logging.Logger;
 
@@ -45,8 +46,10 @@ public class RequestContext implements Runnable, Closeable {
     private Throwable throwable;
     private QrsHttpHeaders httpHeaders;
     private ExceptionMapping exceptionMapping;
+    private Serialisers serialisers;
 
-    public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping) {
+    public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping,
+            Serialisers serialisers) {
         this.context = context;
         this.target = target;
         this.handlers = target.getHandlerChain();
@@ -58,6 +61,7 @@ public class RequestContext implements Runnable, Closeable {
             }
         });
         this.exceptionMapping = exceptionMapping;
+        this.serialisers = serialisers;
     }
 
     public void suspend() {
@@ -260,5 +264,10 @@ public class RequestContext implements Runnable, Closeable {
 
     public Response getResponse() {
         return (Response) result;
+    }
+
+    public MessageBodyWriter<Object> getMessageBodyWriter() {
+        // FIXME: for some endpoints (no filter, easy content/return type) we could hardcode this and save the lookup
+        return (MessageBodyWriter<Object>) serialisers.findWriter(getResponse(), this);
     }
 }

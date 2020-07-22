@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -17,6 +19,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -29,11 +32,16 @@ import io.quarkus.qrs.deployment.framework.EndpointIndexer;
 import io.quarkus.qrs.deployment.framework.QrsDotNames;
 import io.quarkus.qrs.runtime.QrsRecorder;
 import io.quarkus.qrs.runtime.core.ExceptionMapping;
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
+import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
+import io.quarkus.qrs.runtime.model.ResourceWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyWriter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 
 public class QrsProcessor {
@@ -56,6 +64,10 @@ public class QrsProcessor {
                 .getAllKnownImplementors(QrsDotNames.CONTAINER_RESPONSE_FILTER);
         Collection<ClassInfo> exceptionMappers = beanArchiveIndexBuildItem.getIndex()
                 .getAllKnownImplementors(QrsDotNames.EXCEPTION_MAPPER);
+        Collection<ClassInfo> writers = beanArchiveIndexBuildItem.getIndex()
+                .getAllKnownImplementors(QrsDotNames.MESSAGE_BODY_WRITER);
+        Collection<ClassInfo> readers = beanArchiveIndexBuildItem.getIndex()
+                .getAllKnownImplementors(QrsDotNames.MESSAGE_BODY_READER);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
@@ -113,8 +125,45 @@ public class QrsProcessor {
             }
         }
 
+        Serialisers serialisers = new Serialisers();
+        for (ClassInfo writerClass : writers) {
+            if (writerClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
+                        QrsDotNames.MESSAGE_BODY_WRITER,
+                        beanArchiveIndexBuildItem.getIndex());
+                ResourceWriter<?> writer = new ResourceWriter<>();
+                writer.setFactory(recorder.factory(writerClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
+            }
+        }
+        for (ClassInfo readerClass : readers) {
+            if (readerClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
+                        QrsDotNames.MESSAGE_BODY_WRITER,
+                        beanArchiveIndexBuildItem.getIndex());
+                ResourceReader<?> reader = new ResourceReader<>();
+                reader.setFactory(recorder.factory(readerClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                recorder.registerReader(serialisers, typeParameters.get(0).name().toString(), reader);
+            }
+        }
+
+        // built-ins
+        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue());
+        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue());
+
         return new FilterBuildItem(
-                recorder.handler(interceptors, exceptionMapping, resourceClasses, executorBuildItem.getExecutorProxy()), 10);
+                recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses,
+                        executorBuildItem.getExecutorProxy()),
+                10);
+    }
+
+    private <T> void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
+            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer) {
+        ResourceWriter<Object> writer = new ResourceWriter<>();
+        writer.setFactory(recorder.factory(writerClass.getName().toString(), beanContainer));
+        recorder.registerWriter(serialisers, entityClass.getName(), writer);
     }
 
 }

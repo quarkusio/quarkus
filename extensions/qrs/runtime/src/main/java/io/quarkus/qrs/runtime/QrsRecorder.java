@@ -21,6 +21,7 @@ import io.quarkus.qrs.runtime.core.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
 import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.core.ResourceResponseInterceptorHandler;
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
@@ -39,8 +40,10 @@ import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
+import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
+import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
@@ -71,6 +74,7 @@ public class QrsRecorder {
 
     public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping,
+            Serialisers serialisers,
             List<ResourceClass> resourceClasses,
             Executor blockingExecutor) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
@@ -151,7 +155,7 @@ public class QrsRecorder {
             i.getValue().addAll(nullMethod);
             mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
         }
-        return new QrsInitialHandler(mappersByMethod, exceptionMapping);
+        return new QrsInitialHandler(mappersByMethod, exceptionMapping, serialisers);
     }
 
     @SuppressWarnings("unchecked")
@@ -166,5 +170,15 @@ public class QrsRecorder {
     public void registerExceptionMapper(ExceptionMapping exceptionMapping, String string,
             ResourceExceptionMapper<Throwable> mapper) {
         exceptionMapping.addExceptionMapper(loadClass(string), mapper);
+    }
+
+    public void registerWriter(Serialisers serialisers, String entityClassName,
+            ResourceWriter<?> writer) {
+        serialisers.addWriter(loadClass(entityClassName), writer);
+    }
+
+    public void registerReader(Serialisers serialisers, String entityClassName,
+            ResourceReader<?> reader) {
+        serialisers.addReader(loadClass(entityClassName), reader);
     }
 }

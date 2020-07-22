@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.providers.serialisers;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,16 +6,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 
-public class JSONBMessageBodyWriter implements MessageBodyWriter<Object> {
-
-    Jsonb json = JsonbBuilder.create();
+@Provider
+public class StringMessageBodyWriter implements MessageBodyWriter<String> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -23,12 +21,9 @@ public class JSONBMessageBodyWriter implements MessageBodyWriter<Object> {
     }
 
     @Override
-    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(String o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        if (o instanceof String) {
-            entityStream.write(((String) o).getBytes(StandardCharsets.UTF_8));
-            return;
-        }
-        json.toJson(o, type, entityStream);
+        // FIXME: use response encoding
+        entityStream.write(o.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -115,4 +115,10 @@ public class SimpleQrsResource {
     public String webApplicationException() {
         throw new WebApplicationException(Response.status(666).entity("OK").build());
     }
+
+    @GET
+    @Path("writer")
+    public TestClass writer() {
+        return new TestClass();
+    }
 }

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
@@ -244,5 +245,9 @@ public class RequestContext implements Runnable, Closeable {
         if (endpointInstance != null) {
             endpointInstance.close();
         }
+    }
+
+    public Response getResponse() {
+        return (Response) result;
     }
 }

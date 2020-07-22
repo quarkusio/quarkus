@@ -12,6 +12,7 @@ import java.util.Set;
 
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
@@ -20,7 +21,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
-class QrsResponse extends Response {
+public class QrsResponse extends Response {
 
     int status;
     String reasonPhrase;
@@ -88,8 +89,8 @@ class QrsResponse extends Response {
 
     @Override
     public MediaType getMediaType() {
-        // TODO Auto-generated method stub
-        return null;
+        String contentType = (String) headers.getFirst(HttpHeaders.CONTENT_TYPE);
+        return contentType != null ? MediaType.valueOf(contentType) : null;
     }
 
     @Override

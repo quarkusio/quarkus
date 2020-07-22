@@ -19,6 +19,7 @@ import io.quarkus.qrs.runtime.core.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
 import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
+import io.quarkus.qrs.runtime.core.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
@@ -26,6 +27,7 @@ import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
+import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
@@ -36,6 +38,7 @@ import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
+import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
@@ -119,6 +122,11 @@ public class QrsRecorder {
                 }
                 handlers.add(new InvocationHandler(invoker));
                 handlers.add(new ResponseHandler());
+                List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
+                if (!responseInterceptors.isEmpty()) {
+                    handlers.add(new ResourceResponseInterceptorHandler(responseInterceptors));
+                }
+                handlers.add(new ResponseWriterHandler());
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]), invoker,

@@ -93,7 +93,7 @@ public class SimpleQrsResource {
 
     @GET
     @Path("filters")
-    public String filters(@Context HttpHeaders headers) {
-        return headers.getHeaderString("filter");
+    public Response filters(@Context HttpHeaders headers) {
+        return Response.ok().header("filter", headers.getHeaderString("filter")).build();
     }
 }

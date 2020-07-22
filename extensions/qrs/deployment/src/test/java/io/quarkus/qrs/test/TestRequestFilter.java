@@ -11,7 +11,7 @@ public class TestRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        requestContext.getHeaders().add("filter", "filter-ok");
+        requestContext.getHeaders().add("filter", "request");
     }
 
 }

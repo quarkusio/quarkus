@@ -1,15 +1,18 @@
 package io.quarkus.qrs.test;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.http.Headers;
 
 public class SimpleQrsTestCase {
 
@@ -19,7 +22,8 @@ public class SimpleQrsTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class);
+                            .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class,
+                                    TestResponseFilter.class);
                 }
             });
 
@@ -82,7 +86,11 @@ public class SimpleQrsTestCase {
 
     @Test
     public void testFilters() {
-        RestAssured.get("/simple/filters")
-                .then().body(Matchers.equalTo("filter-ok"));
+        Headers headers = RestAssured.get("/simple/filters")
+                .then().extract().headers();
+        List<String> filters = headers.getValues("filter");
+        Assertions.assertEquals(2, filters.size());
+        Assertions.assertTrue(filters.contains("request"));
+        Assertions.assertTrue(filters.contains("response"));
     }
 }

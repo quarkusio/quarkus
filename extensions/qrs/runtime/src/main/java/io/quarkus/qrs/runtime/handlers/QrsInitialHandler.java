@@ -6,6 +6,7 @@ import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class QrsInitialHandler implements Handler<RoutingContext> {
@@ -21,6 +22,7 @@ public class QrsInitialHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext event) {
         RequestMapper<RuntimeResource> mapper = mappers.get(event.request().method().name());
         if (mapper == null) {
+            event.next();
             return;
         }
         RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(event.normalisedPath());

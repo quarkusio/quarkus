@@ -17,7 +17,7 @@ public class QrsProviderFactory extends RuntimeDelegate {
 
     @Override
     public Response.ResponseBuilder createResponseBuilder() {
-        return null;
+        return new QrsResponseBuilder();
     }
 
     @Override

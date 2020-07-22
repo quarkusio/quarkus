@@ -32,6 +32,35 @@ public class SimpleQrsTestCase {
 
         RestAssured.post("/simple")
                 .then().body(Matchers.equalTo("POST"));
+
+        RestAssured.get("/missing")
+        .then().statusCode(404);
+
+        RestAssured.post("/missing")
+        .then().statusCode(404);
+
+        RestAssured.delete("/missing")
+        .then().statusCode(404);
+
+        System.err.println("DEL");
+        RestAssured.delete("/simple")
+            .then().body(Matchers.equalTo("DELETE"));
+
+        System.err.println("PUT");
+        RestAssured.put("/simple")
+            .then().body(Matchers.equalTo("PUT"));
+
+        System.err.println("HEAD");
+        RestAssured.head("/simple")
+            .then().header("Stef", "head");
+
+        System.err.println("OPTIONS");
+        RestAssured.options("/simple")
+        .then().body(Matchers.equalTo("OPTIONS"));
+
+        System.err.println("PATCH");
+        RestAssured.patch("/simple")
+        .then().body(Matchers.equalTo("PATCH"));
     }
 
     @Test

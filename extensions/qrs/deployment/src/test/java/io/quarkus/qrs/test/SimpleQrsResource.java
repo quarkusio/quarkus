@@ -1,17 +1,25 @@
 package io.quarkus.qrs.test;
 
-import io.quarkus.qrs.Blocking;
-import io.quarkus.runtime.BlockingOperationControl;
-
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.OPTIONS;
+import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import io.quarkus.qrs.Blocking;
+import io.quarkus.runtime.BlockingOperationControl;
 
 @Path("/simple")
 public class SimpleQrsResource {
@@ -39,6 +47,31 @@ public class SimpleQrsResource {
     @POST
     public String post() {
         return "POST";
+    }
+
+    @DELETE
+    public String delete() {
+        return "DELETE";
+    }
+
+    @PUT
+    public String put() {
+        return "PUT";
+    }
+    
+    @PATCH
+    public String patch() {
+        return "PATCH";
+    }
+
+    @OPTIONS
+    public String options() {
+        return "OPTIONS";
+    }
+
+    @HEAD
+    public Response head() {
+        return Response.ok().header("Stef", "head").build();
     }
 
     @GET

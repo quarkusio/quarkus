@@ -138,9 +138,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
-                    // TODO quarkusDev needs to depend on quarkusPrepare for code gen reload #10631
-                    // TODO but it causes strange failures on other gradle tests
-                    quarkusDev.dependsOn(classesTask, resourcesTask);
+                    quarkusDev.dependsOn(classesTask, resourcesTask, quarkusPrepare);
                     quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
                     quarkusBuild.dependsOn(classesTask, resourcesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
 

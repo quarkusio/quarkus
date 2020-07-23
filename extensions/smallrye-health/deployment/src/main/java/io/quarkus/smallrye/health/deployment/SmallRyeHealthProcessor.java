@@ -28,6 +28,7 @@ import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -88,6 +89,7 @@ class SmallRyeHealthProcessor {
     private static final DotName READINESS = DotName.createSimple(Readiness.class.getName());
     private static final DotName HEALTH_GROUP = DotName.createSimple(HealthGroup.class.getName());
     private static final DotName HEALTH_GROUPS = DotName.createSimple(HealthGroups.class.getName());
+    private static final DotName JAX_RS_PATH = DotName.createSimple("javax.ws.rs.Path");
 
     // For the UI
     private static final String HEALTH_UI_WEBJAR_GROUP_ID = "io.smallrye";
@@ -176,6 +178,11 @@ class SmallRyeHealthProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex) {
         IndexView index = beanArchiveIndex.getIndex();
 
+        // log a warning if users try to use MP Health annotations with JAX-RS @Path
+        warnIfJaxRsPathUsed(index, LIVENESS);
+        warnIfJaxRsPathUsed(index, READINESS);
+        warnIfJaxRsPathUsed(index, HEALTH);
+
         // Register the health handler
         routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler(), HandlerType.BLOCKING));
 
@@ -212,6 +219,29 @@ class SmallRyeHealthProcessor {
             routes.produce(
                     new RouteBuildItem(health.rootPath + health.groupPath + "/" + healthGroup,
                             handler, HandlerType.BLOCKING));
+        }
+    }
+
+    private void warnIfJaxRsPathUsed(IndexView index, DotName healthAnnotation) {
+        Collection<AnnotationInstance> instances = index.getAnnotations(healthAnnotation);
+        for (AnnotationInstance instance : instances) {
+            boolean containsPath = false;
+
+            AnnotationTarget target = instance.target();
+            if (target.kind() == Kind.CLASS) {
+                if (target.asClass().classAnnotation(JAX_RS_PATH) != null) {
+                    containsPath = true;
+                }
+            } else if (target.kind() == Kind.METHOD) {
+                if (target.asMethod().hasAnnotation(JAX_RS_PATH)) {
+                    containsPath = true;
+                }
+            }
+            if (containsPath) {
+                LOG.warnv(
+                        "The use of @Path has no effect when @{0} is used and should therefore be removed. Offending target is {1}: {2}",
+                        healthAnnotation.withoutPackagePrefix(), target.kind(), target);
+            }
         }
     }
 

@@ -39,7 +39,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -246,7 +245,12 @@ class KubernetesProcessor {
     @BuildStep
     public List<KubernetesEnvBuildItem> createEnv(KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig) {
-        List<KubernetesEnvBuildItem> items = new LinkedList<>(kubernetesConfig.convertToBuildItems());
+
+        Collection<KubernetesEnvBuildItem> kubernetesEnvBuildItems = kubernetesConfig.convertToBuildItems();
+        List<KubernetesEnvBuildItem> items = new ArrayList<>(kubernetesEnvBuildItems);
+        for (KubernetesEnvBuildItem kubernetesEnvBuildItem : kubernetesEnvBuildItems) {
+            items.add(kubernetesEnvBuildItem.newWithTarget(MINIKUBE));
+        }
         items.addAll(openshiftConfig.convertToBuildItems());
         items.addAll(knativeConfig.convertToBuildItems());
         return items;

@@ -44,6 +44,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <!-- Override the transitive dependency to enforce dependency convergence -->
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-messaging-health</artifactId>
             <exclusions>

@@ -33,7 +33,7 @@ public class QuarkusPrepare extends QuarkusTask {
     private boolean test = false;
 
     public QuarkusPrepare() {
-        super("Quarkus performs pre-build preparations, such as sources generation");
+        super("Performs Quarkus pre-build preparations, such as sources generation");
     }
 
     @TaskAction

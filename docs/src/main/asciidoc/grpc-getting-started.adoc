@@ -15,6 +15,16 @@ The default configuration is enough, but you can also select some extensions if 
 
 == Configuring your project
 
+Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under `<dependencies>`):
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-grpc</artifactId>
+</dependency>
+----
+
 Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom.xml`:
 
 [source,xml]
@@ -39,7 +49,7 @@ Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom
 
 With this configuration, you can put your service and message definitions in the `src/main/proto` directory.
 `quarkus-maven-plugin` will generate Java files from your `proto` files.
-Alternatively, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
+Alternatively to using the `prepare` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files, more in <<Generating Java files from proto with protobuf-maven-plugin>>
 
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
@@ -258,18 +268,9 @@ You can also package the application into a native executable with: `mvn package
 == Generating Java files from proto with protobuf-maven-plugin
 
 Alternatively to using Quarkus code generation to generate stubs for `proto` files, you can also use
-`protobuf-maven-plugin` for this purpose.
-To do it, edit the `pom.xml` file to add the quarkus gRPC extension dependency and the JSR 305 (just under `<dependencies>`):
+`protobuf-maven-plugin`.
 
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-grpc</artifactId>
-</dependency>
-----
-
-In the `<properties>` section, define the 2 following properties:
+To do it, first define the 2 following properties in the `<properties>` section:
 
 [source,xml,subs="verbatim,attributes"]
 ----
@@ -279,7 +280,7 @@ In the `<properties>` section, define the 2 following properties:
 
 They configure the gRPC version and the `protoc` version.
 
-Finally, add to the `build` section the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration.
+Then, add to the `build` section the `os-maven-plugin` extension and the `protobuf-maven-plugin` configuration.
 
 [source,xml,subs="verbatim,attributes"]
 ----

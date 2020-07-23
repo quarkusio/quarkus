@@ -16,9 +16,9 @@ public interface CodeGenProvider {
     String providerId();
 
     /**
-     * File extensions that CodeGenProvider will generate code from
+     * File extension that CodeGenProvider will generate code from
      *
-     * @return collection of file extensions
+     * @return file extension
      */
     @NotNull
     String inputExtension();

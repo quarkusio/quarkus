@@ -13,6 +13,9 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
 
+/**
+ * A set of methods to initialize and execute {@link CodeGenProvider}s.
+ */
 public class CodeGenerator {
 
     // used by Gradle

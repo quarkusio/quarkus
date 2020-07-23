@@ -122,5 +122,8 @@ public class SimpleQrsTestCase {
                 .then().body(Matchers.equalTo("OK"));
         RestAssured.get("/simple/lookup-writer")
                 .then().body(Matchers.equalTo("OK"));
+
+        RestAssured.get("/simple/writer/vertx-buffer")
+                .then().body(Matchers.equalTo("VERTX-BUFFER"));
     }
 }

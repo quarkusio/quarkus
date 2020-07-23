@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response;
 import io.quarkus.qrs.Blocking;
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.vertx.core.buffer.Buffer;
 
 @Path("/simple")
 public class SimpleQrsResource {
@@ -143,5 +144,11 @@ public class SimpleQrsResource {
     @Path("lookup-writer")
     public Object slowWriter(@Context RequestContext context) {
         return context.getTarget().getBuildTimeWriter() == null ? "OK" : "FAIL";
+    }
+
+    @GET
+    @Path("writer/vertx-buffer")
+    public Buffer vertxBuffer(@Context RequestContext context) {
+        return Buffer.buffer(context.getTarget().getBuildTimeWriter() != null ? "VERTX-BUFFER" : "FAIL");
     }
 }

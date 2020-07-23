@@ -44,7 +44,9 @@ import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.vertx.core.buffer.Buffer;
 
 public class QrsProcessor {
 
@@ -157,6 +159,9 @@ public class QrsProcessor {
                 true);
         registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 false);
+        registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
+                beanContainerBuildItem.getValue(),
+                true);
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses,

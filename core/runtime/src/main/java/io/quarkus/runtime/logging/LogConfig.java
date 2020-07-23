@@ -17,23 +17,29 @@ public final class LogConfig {
     /**
      * The log level of the root category, which is used as the default log level for all categories.
      *
-     * In addition to the standard JDK log level JBoss Logging also adds the following:
+     * JBoss Logging supports Apache style log levels:
      *
-     * {@link org.jboss.logmanager.Level#FATAL}
-     * {@link org.jboss.logmanager.Level#ERROR}
-     * {@link org.jboss.logmanager.Level#WARN}
-     * {@link org.jboss.logmanager.Level#INFO}
-     * {@link org.jboss.logmanager.Level#DEBUG}
-     * {@link org.jboss.logmanager.Level#TRACE}
+     * * {@link org.jboss.logmanager.Level#FATAL}
+     * * {@link org.jboss.logmanager.Level#ERROR}
+     * * {@link org.jboss.logmanager.Level#WARN}
+     * * {@link org.jboss.logmanager.Level#INFO}
+     * * {@link org.jboss.logmanager.Level#DEBUG}
+     * * {@link org.jboss.logmanager.Level#TRACE}
      *
+     * In addition, it also supports the standard JDK log levels.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "INFO")
     public Level level;
 
     /**
      * The default minimum log level
+     * 
+     * @deprecated this functionality was never implemented, it may be deleted or implemented in a future release.
      */
     @ConfigItem(defaultValue = "INFO")
+    @Deprecated
     public Level minLevel;
 
     /**

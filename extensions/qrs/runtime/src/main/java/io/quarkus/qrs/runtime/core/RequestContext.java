@@ -93,7 +93,6 @@ public class RequestContext implements Runnable, Closeable {
             suspended = false;
             if (executor == null) {
                 ((ConnectionBase) context.request().connection()).getContext().nettyEventLoop().execute(this);
-                run();
             } else {
                 executor.execute(this);
             }

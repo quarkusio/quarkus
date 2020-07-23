@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -36,17 +35,11 @@ public class StaticResourcesRecorder {
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
-                ThreadLocalHandler staticHandler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-                    @Override
-                    public Handler<RoutingContext> get() {
-                        StaticHandler staticHandler = StaticHandler.create();
-                        staticHandler.setCachingEnabled(false);
-                        staticHandler.setAllowRootFileSystemAccess(true);
-                        staticHandler.setWebRoot(root);
-                        staticHandler.setDefaultContentEncoding("UTF-8");
-                        return staticHandler;
-                    }
-                });
+                StaticHandler staticHandler = StaticHandler.create();
+                staticHandler.setCachingEnabled(false);
+                staticHandler.setAllowRootFileSystemAccess(true);
+                staticHandler.setWebRoot(root);
+                staticHandler.setDefaultContentEncoding("UTF-8");
                 handlers.add(event -> {
                     try {
                         staticHandler.handle(event);
@@ -59,13 +52,7 @@ public class StaticResourcesRecorder {
             }
         }
         if (!knownPaths.isEmpty()) {
-            ThreadLocalHandler staticHandler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-                @Override
-                public Handler<RoutingContext> get() {
-                    return StaticHandler.create(META_INF_RESOURCES)
-                            .setDefaultContentEncoding("UTF-8");
-                }
-            });
+            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES).setDefaultContentEncoding("UTF-8");
             handlers.add(ctx -> {
                 String rel = ctx.mountPoint() == null ? ctx.normalisedPath()
                         : ctx.normalisedPath().substring(ctx.mountPoint().length());

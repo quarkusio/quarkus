@@ -136,13 +136,18 @@ public class BuildMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
 
+        if (skip) {
+            getLog().info("Skipping Quarkus build");
+            return;
+        }
         if (project.getPackaging().equals("pom")) {
             getLog().info("Type of the artifact is POM, skipping build goal");
             return;
         }
-        if (skip) {
-            getLog().info("Skipping Quarkus build");
-            return;
+        if (!project.getArtifact().getArtifactHandler().getExtension().equals("jar")) {
+            throw new MojoExecutionException(
+                    "The project artifact's extension is '" + project.getArtifact().getArtifactHandler().getExtension()
+                            + "' while this goal expects it be 'jar'");
         }
 
         boolean clear = false;

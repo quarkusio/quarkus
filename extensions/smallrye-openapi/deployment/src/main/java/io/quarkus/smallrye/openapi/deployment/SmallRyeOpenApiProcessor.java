@@ -71,9 +71,11 @@ import io.smallrye.openapi.runtime.io.OpenApiSerializer;
 import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 import io.smallrye.openapi.runtime.scanner.FilteredIndexView;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
+import io.smallrye.openapi.vertx.VertxConstants;
 
 /**
- * @author Ken Finnigan
+ * The main OpenAPI Processor. This will scan for JAX-RS, Spring and Vert.x Annotations, and, if any, add supplied schemas.
+ * The result is added to the deployable unit to be loaded at runtime.
  */
 public class SmallRyeOpenApiProcessor {
 
@@ -163,8 +165,9 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities) {
 
-        if (shouldScanAnnotations(capabilities)) {
-            FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
+        FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
+
+        if (shouldScanAnnotations(capabilities, index)) {
             // Generate reflection declaration from MP OpenAPI Schema definition
             // They are needed for serialization.
             Collection<AnnotationInstance> schemaAnnotationInstances = index.getAnnotations(OPENAPI_SCHEMA);
@@ -268,7 +271,7 @@ public class SmallRyeOpenApiProcessor {
 
         OpenAPI annotationModel;
 
-        if (shouldScanAnnotations(capabilities)) {
+        if (shouldScanAnnotations(capabilities, index)) {
             annotationModel = generateAnnotationModel(index, capabilities, httpRootPathBuildItem, resteasyJaxrsConfig);
         } else {
             annotationModel = null;
@@ -288,7 +291,7 @@ public class SmallRyeOpenApiProcessor {
                 "OpenAPI document initialized:");
     }
 
-    private boolean shouldScanAnnotations(Capabilities capabilities) {
+    private boolean shouldScanAnnotations(Capabilities capabilities, IndexView index) {
         // Disabled via config
         Config config = ConfigProvider.getConfig();
         boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
@@ -296,10 +299,19 @@ public class SmallRyeOpenApiProcessor {
             return false;
         }
 
-        // Only scan if either JaxRS or Spring is used
+        // Only scan if either JaxRS, Spring Web or Vert.x Web (with @Route) is used
         boolean isJaxrs = capabilities.isPresent(Capability.RESTEASY);
         boolean isSpring = capabilities.isPresent(Capability.SPRING_WEB);
-        return isJaxrs || isSpring;
+        boolean isVertx = isUsingVertxRoute(index);
+        return isJaxrs || isSpring || isVertx;
+    }
+
+    private boolean isUsingVertxRoute(IndexView index) {
+        if (!index.getAnnotations(VertxConstants.ROUTE).isEmpty()
+                || !index.getAnnotations(VertxConstants.ROUTE_BASE).isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
     private OpenAPI generateStaticModel(ApplicationArchivesBuildItem archivesBuildItem) throws IOException {

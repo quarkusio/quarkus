@@ -20,6 +20,7 @@ import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 
 public final class ListMethodImplementor extends StandardMethodImplementor {
 
@@ -28,6 +29,8 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
     private static final String REL = "list";
 
     private final PaginationImplementor paginationImplementor = new PaginationImplementor();
+
+    private final SortImplementor sortImplementor = new SortImplementor();
 
     /**
      * Implements {@link RestDataResource#list()}.
@@ -72,7 +75,7 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         ResultHandle uriInfo = getInstanceField(methodCreator, URI_INFO.getName(), URI_INFO.getType());
         BranchResult isPagedBranch = isPaged(methodCreator);
         returnPaged(isPagedBranch.trueBranch(), resourceInfo.getDataAccessImplementor(), uriInfo);
-        returnNotPaged(isPagedBranch.falseBranch(), resourceInfo.getDataAccessImplementor());
+        returnNotPaged(isPagedBranch.falseBranch(), resourceInfo.getDataAccessImplementor(), uriInfo);
         methodCreator.close();
     }
 
@@ -82,16 +85,18 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     private void returnPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
         ResultHandle page = paginationImplementor.getRequestPage(creator, uriInfo);
         ResultHandle pageCount = dataAccessImplementor.pageCount(creator, page);
         ResultHandle links = paginationImplementor.getLinks(creator, uriInfo, page, pageCount);
-        ResultHandle entities = dataAccessImplementor.findAll(creator, page);
+        ResultHandle entities = dataAccessImplementor.findAll(creator, page, sort);
 
         creator.returnValue(ResponseImplementor.ok(creator, entities, links));
     }
 
-    private void returnNotPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor) {
-        creator.returnValue(ResponseImplementor.ok(creator, dataAccessImplementor.listAll(creator)));
+    private void returnNotPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
+        creator.returnValue(ResponseImplementor.ok(creator, dataAccessImplementor.listAll(creator, sort)));
     }
 
     private BranchResult isPaged(MethodCreator creator) {

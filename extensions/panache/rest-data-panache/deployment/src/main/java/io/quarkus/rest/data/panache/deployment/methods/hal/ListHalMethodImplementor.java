@@ -23,6 +23,7 @@ import io.quarkus.rest.data.panache.deployment.methods.MethodMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 
 public final class ListHalMethodImplementor extends HalMethodImplementor {
@@ -30,6 +31,8 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
     private static final String NAME = "listHal";
 
     private final PaginationImplementor paginationImplementor = new PaginationImplementor();
+
+    private final SortImplementor sortImplementor = new SortImplementor();
 
     /**
      * Implements HAL version of {@link RestDataResource#list()}.
@@ -76,7 +79,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         ResultHandle uriInfo = getInstanceField(methodCreator, URI_INFO.getName(), URI_INFO.getType());
         BranchResult isPaged = methodCreator.ifTrue(methodCreator.invokeVirtualMethod(isPagedMethod, methodCreator.getThis()));
         returnPaged(isPaged.trueBranch(), resourceInfo, uriInfo);
-        returnNotPaged(isPaged.falseBranch(), resourceInfo);
+        returnNotPaged(isPaged.falseBranch(), resourceInfo, uriInfo);
         methodCreator.close();
     }
 
@@ -86,18 +89,20 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
     }
 
     private void returnPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
         ResultHandle page = paginationImplementor.getRequestPage(creator, uriInfo);
         ResultHandle pageCount = resourceInfo.getDataAccessImplementor().pageCount(creator, page);
         ResultHandle links = paginationImplementor.getLinks(creator, uriInfo, page, pageCount);
-        ResultHandle entities = resourceInfo.getDataAccessImplementor().findAll(creator, page);
+        ResultHandle entities = resourceInfo.getDataAccessImplementor().findAll(creator, page, sort);
         ResultHandle wrapper = wrapHalEntities(creator, entities, resourceInfo);
         creator.invokeVirtualMethod(ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
 
         creator.returnValue(ResponseImplementor.ok(creator, wrapper, links));
     }
 
-    private void returnNotPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo) {
-        ResultHandle entities = resourceInfo.getDataAccessImplementor().listAll(creator);
+    private void returnNotPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
+        ResultHandle entities = resourceInfo.getDataAccessImplementor().listAll(creator, sort);
         creator.returnValue(ResponseImplementor.ok(creator, wrapHalEntities(creator, entities, resourceInfo)));
     }
 }

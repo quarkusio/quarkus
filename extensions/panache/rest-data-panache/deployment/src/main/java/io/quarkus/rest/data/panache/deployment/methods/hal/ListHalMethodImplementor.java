@@ -1,6 +1,5 @@
 package io.quarkus.rest.data.panache.deployment.methods.hal;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.PrivateFields.URI_INFO;
 import static io.quarkus.rest.data.panache.deployment.PrivateMethods.IS_PAGED;
@@ -13,7 +12,6 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -30,6 +28,8 @@ import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 public final class ListHalMethodImplementor extends HalMethodImplementor {
 
     private static final String NAME = "listHal";
+
+    private final PaginationImplementor paginationImplementor = new PaginationImplementor();
 
     /**
      * Implements HAL version of {@link RestDataResource#list()}.
@@ -67,30 +67,28 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         MethodCreator methodCreator = classCreator.getMethodCreator(NAME, Response.class);
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo)));
+                propertiesAccessor.getPath(resourceInfo.getType(), getMethodMetadata(resourceInfo)));
         addProducesAnnotation(methodCreator, MethodImplementor.APPLICATION_HAL_JSON);
 
-        FieldDescriptor uriInfoField = of(methodCreator.getMethodDescriptor().getDeclaringClass(), URI_INFO.getName(),
-                URI_INFO.getType());
         MethodDescriptor isPagedMethod = ofMethod(methodCreator.getMethodDescriptor().getDeclaringClass(), IS_PAGED.getName(),
                 IS_PAGED.getType(), IS_PAGED.getParams());
 
+        ResultHandle uriInfo = getInstanceField(methodCreator, URI_INFO.getName(), URI_INFO.getType());
         BranchResult isPaged = methodCreator.ifTrue(methodCreator.invokeVirtualMethod(isPagedMethod, methodCreator.getThis()));
-        returnPaged(isPaged.trueBranch(), resourceInfo, uriInfoField);
+        returnPaged(isPaged.trueBranch(), resourceInfo, uriInfo);
         returnNotPaged(isPaged.falseBranch(), resourceInfo);
         methodCreator.close();
     }
 
     @Override
-    protected MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo) {
+    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
         return new MethodMetadata(ListMethodImplementor.NAME);
     }
 
-    private void returnPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, FieldDescriptor uriInfoField) {
-        ResultHandle uriInfo = creator.readInstanceField(uriInfoField, creator.getThis());
-        ResultHandle page = PaginationImplementor.getRequestPage(creator, uriInfo);
+    private void returnPaged(BytecodeCreator creator, RestDataResourceInfo resourceInfo, ResultHandle uriInfo) {
+        ResultHandle page = paginationImplementor.getRequestPage(creator, uriInfo);
         ResultHandle pageCount = resourceInfo.getDataAccessImplementor().pageCount(creator, page);
-        ResultHandle links = PaginationImplementor.getLinks(creator, uriInfo, page, pageCount);
+        ResultHandle links = paginationImplementor.getLinks(creator, uriInfo, page, pageCount);
         ResultHandle entities = resourceInfo.getDataAccessImplementor().findAll(creator, page);
         ResultHandle wrapper = wrapHalEntities(creator, entities, resourceInfo);
         creator.invokeVirtualMethod(ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);

@@ -23,7 +23,8 @@ public class SimpleQrsTestCase {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class,
-                                    TestResponseFilter.class, TestException.class, TestExceptionMapper.class,
+                                    TestResponseFilter.class, HelloService.class, TestException.class,
+                                    TestExceptionMapper.class,
                                     TestWriter.class, TestClass.class);
                 }
             });
@@ -61,6 +62,12 @@ public class SimpleQrsTestCase {
 
         RestAssured.patch("/simple")
                 .then().body(Matchers.equalTo("PATCH"));
+    }
+
+    @Test
+    public void testInjection() {
+        RestAssured.get("/simple/hello")
+                .then().body(Matchers.equalTo("Hello"));
     }
 
     @Test

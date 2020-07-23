@@ -1,5 +1,6 @@
 package io.quarkus.qrs.test;
 
+import javax.inject.Inject;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -25,9 +26,18 @@ import io.quarkus.runtime.BlockingOperationControl;
 @Path("/simple")
 public class SimpleQrsResource {
 
+    @Inject
+    HelloService service;
+
     @GET
     public String get() {
         return "GET";
+    }
+
+    @GET
+    @Path("/hello")
+    public String hello() {
+        return service.sayHello();
     }
 
     @GET

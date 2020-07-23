@@ -19,6 +19,8 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -166,4 +168,12 @@ public class QrsProcessor {
         recorder.registerWriter(serialisers, entityClass.getName(), writer);
     }
 
+    @BuildStep
+    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QrsDotNames.PATH, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QrsDotNames.APPLICATION_PATH,
+                        BuiltinScope.SINGLETON.getName()));
+    }
 }

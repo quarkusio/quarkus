@@ -6,9 +6,13 @@ import java.util.Map;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 
 public class ExceptionMapping {
+
+    private static final Logger log = Logger.getLogger(ExceptionMapping.class);
 
     private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
@@ -24,6 +28,7 @@ public class ExceptionMapping {
             klass = klass.getSuperclass();
         } while (klass != null);
 
+        log.error("Request failed ", throwable);
         // FIXME: configurable? stack trace?
         return Response.serverError().build();
     }

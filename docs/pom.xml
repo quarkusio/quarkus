@@ -115,8 +115,6 @@
 
                         <grpc-version>${grpc.version}</grpc-version>
                         <protoc-version>${protoc.version}</protoc-version>
-                        <os-maven-plugin-version>${os-maven-plugin.version}</os-maven-plugin-version>
-                        <protobuf-maven-plugin-version>${protobuf-maven-plugin.version}</protobuf-maven-plugin-version>
                         <elasticsearch-version>${elasticsearch-server.version}</elasticsearch-version>
 
                         <!-- Project website home page -->

@@ -62,13 +62,14 @@ public class GrpcCodeGen implements CodeGenProvider {
                         .filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".proto"))
                         .map(Path::toString)
+                        .map(this::escapeWhitespace)
                         .collect(Collectors.toList());
                 if (!protoFiles.isEmpty()) {
                     initExecutables(workDir, context.appModel());
 
                     List<String> command = new ArrayList<>();
                     command.addAll(asList(executables.protoc.toString(),
-                            "-I=" + protoDir.toString(),
+                            "-I=" + escapeWhitespace(protoDir.toString()),
                             "--plugin=protoc-gen-grpc=" + executables.grpc,
                             "--plugin=protoc-gen-q-grpc=" + executables.quarkusGrpc,
                             "--q-grpc_out=" + outDir,
@@ -92,6 +93,14 @@ public class GrpcCodeGen implements CodeGenProvider {
             throw new CodeGenException("Failed to generate java files from proto file in " + protoDir.toAbsolutePath(), e);
         }
         return false;
+    }
+
+    private String escapeWhitespace(String path) {
+        if (OS.determineOS() == OS.LINUX) {
+            return path.replaceAll(" ", "\\ ");
+        } else {
+            return path;
+        }
     }
 
     private void initExecutables(Path workDir, AppModel model) throws CodeGenException {
@@ -195,8 +204,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
-        writer.write(JavaBinFinder.findBin() + " -cp " +
-                pluginPath.toAbsolutePath().toString() + " " + quarkusProtocPluginMain);
+        writer.write(JavaBinFinder.findBin() + " -cp \"" +
+                pluginPath.toAbsolutePath().toString() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
     }
 

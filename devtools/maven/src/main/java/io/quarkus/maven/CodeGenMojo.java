@@ -33,7 +33,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.codegen.CodeGenData;
 
-@Mojo(name = "prepare", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "prepare", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class CodeGenMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.directory}")

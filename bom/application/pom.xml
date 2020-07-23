@@ -192,6 +192,8 @@
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.29.0</grpc.version>
         <grpc-jprotoc.version>1.0.1</grpc-jprotoc.version>
+        <protobuf-java.version>3.11.0</protobuf-java.version>
+        <protoc.version>3.11.4</protoc.version>
 
         <picocli.version>4.4.0</picocli.version>
         <org.eclipse.sisu.inject.version>0.3.4</org.eclipse.sisu.inject.version>
@@ -1221,6 +1223,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-grpc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-codegen</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-grpc-stubs</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4266,6 +4278,95 @@
                 <groupId>com.salesforce.servicelibs</groupId>
                 <artifactId>jprotoc</artifactId>
                 <version>${grpc-jprotoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf-java.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>linux-aarch_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>linux-x86_32</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>linux-x86_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>osx-x86_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>windows-x86_32</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>windows-x86_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>linux-aarch_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>linux-x86_32</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>linux-x86_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>osx-x86_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>windows-x86_32</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>windows-x86_64</classifier>
+                <version>${grpc.version}</version>
             </dependency>
 
             <!-- Picocli -->

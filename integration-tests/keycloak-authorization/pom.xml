@@ -168,7 +168,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <skipTests>${native.surefire.skip}</skipTests>
                             <systemPropertyVariables>
                                 <keycloak.url>${keycloak.url}</keycloak.url>
                             </systemPropertyVariables>

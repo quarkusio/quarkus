@@ -443,6 +443,63 @@ The last relevant property is `quarkus.vault.tls.skip-verify`, which allows to c
 but without checking the certificate authenticity. This may be convenient in development, but is strongly
 discouraged in production as it is not more secure than talking to Vault in plain HTTP.
 
+== Vault Provisioning
+
+Beside the typical client use cases, the Quarkus extension can be used to provision Vault as well, 
+for instance as part of a CD pipeline. Specific CDI beans support this scenario:
+
+* `VaultSystemBackendEngine`: create Vault Policies. See the https://www.vaultproject.io/api-docs/system/policy[Vault documentation].
+* `VaultKubernetesAuthService`. See the https://www.vaultproject.io/api-docs/auth/kubernetes[Vault documentation].
+** Configure the Kubernetes Auth Method (Kubernetes host, certificates, keys, ...)
+** Create Kubernetes Auth Roles (association between Kubernetes service accounts, Kubernetes namespaces and Vault policies)
+
+For instance:
+
+[source, java]
+----
+@Inject
+VaultSystemBackendEngine vaultSystemBackendEngine;
+
+@Inject
+VaultKubernetesAuthService vaultKubernetesAuthService;
+
+...
+
+  String rules = "path \"transit/*\" {\n" +
+          "  capabilities = [ \"create\", \"read\", \"update\" ]\n" +
+          "}";
+  String policyName = "sys-test-policy";
+  vaultSystemBackendEngine.createUpdatePolicy(policyName, rules);
+
+  String roleName = "test-auth-k8s";
+  List<String> boundServiceAccountNames = asList("vault-auth");
+  List<String> boundServiceAccountNamespaces = asList("default");
+  List<String> tokenPolicies = asList(policyName);
+
+  vaultKubernetesAuthService.createRole(roleName, new VaultKubernetesAuthRole()
+          .setBoundServiceAccountNames(boundServiceAccountNames)
+          .setBoundServiceAccountNamespaces(boundServiceAccountNamespaces)
+          .setTokenPolicies(tokenPolicies));
+
+----
+
+Like any client, a provisioning program would have to authenticate using one of the supported Auth methods, and get the appropriate grants through one or more policies. Example:
+
+[source]
+----
+# create Policies
+path "sys/policy/*" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+
+# create Kubernetes Auth Roles
+path "auth/kubernetes/role/*" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+----
+
+You should adjust to the minimal set of access rights depending on your specific use case.
+
 == Conclusion
 
 As a general matter, you should consider reading the extensive https://www.vaultproject.io/docs/[Vault documentation]

@@ -1,5 +1,7 @@
 package io.quarkus.vault;
 
+import java.util.List;
+
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.sys.VaultHealth;
 import io.quarkus.vault.sys.VaultHealthStatus;
@@ -47,4 +49,34 @@ public interface VaultSystemBackendEngine {
      * @return Vault Seal Status.
      */
     VaultSealStatus sealStatus();
+
+    /**
+     * Get the rules for the named policy.
+     * 
+     * @param name of the policy
+     * @return rules of named policy
+     */
+    String getPolicyRules(String name);
+
+    /**
+     * Create or update a policy.
+     *
+     * @param name policy name
+     * @param rules policy content
+     */
+    void createUpdatePolicy(String name, String rules);
+
+    /**
+     * Delete a policy by its name.
+     *
+     * @param name policy name
+     */
+    void deletePolicy(String name);
+
+    /**
+     * List existing policies.
+     * 
+     * @return a list of all policy names
+     */
+    List<String> getPolicies();
 }

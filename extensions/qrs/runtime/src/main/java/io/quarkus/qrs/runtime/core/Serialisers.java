@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.model.ResourceReader;
+import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 
 public class Serialisers {
@@ -47,5 +48,32 @@ public class Serialisers {
 
     public <T> void addReader(Class<T> entityClass, ResourceReader<T> reader) {
         readers.add(entityClass, reader);
+    }
+
+    public <T> ResourceWriter<T> findBuildTimeWriter(Class<T> entityType,
+            List<ResourceResponseInterceptor> responseInterceptors) {
+        if (entityType == Response.class)
+            return null;
+        for (ResourceResponseInterceptor responseInterceptor : responseInterceptors) {
+            if (!responseInterceptor.isWriterSafe())
+                return null;
+        }
+        Class<?> klass = entityType;
+        do {
+            List<ResourceWriter<?>> goodTypeWriters = writers.get(klass);
+            if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
+                // FIXME: spec says to use content type sorting too
+                for (ResourceWriter<?> goodTypeWriter : goodTypeWriters) {
+                    // FIXME: perhaps not optimise if we have more than one good writer?
+                    if (goodTypeWriter.isBuildTimeSelectable())
+                        return (ResourceWriter<T>) goodTypeWriter;
+                }
+                // no match, but we had entries, so let's not optimise
+            }
+            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
+            klass = klass.getSuperclass();
+        } while (klass != null);
+
+        return null;
     }
 }

@@ -15,6 +15,9 @@ public class ContextParamExtractor implements ParameterExtractor {
         if (type.equals(HttpHeaders.class.getName())) {
             return context.getHttpHeaders();
         }
+        if (type.equals(RequestContext.class.getName())) {
+            return context;
+        }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);
     }

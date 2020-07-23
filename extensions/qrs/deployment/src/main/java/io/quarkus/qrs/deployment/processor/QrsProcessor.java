@@ -111,6 +111,7 @@ public class QrsProcessor {
                 ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
+                interceptor.setWriterSafe(filterClass.classAnnotation(QrsDotNames.DOES_NOT_CHANGE_WRITER) != null);
                 interceptors.addResponseInterceptor(interceptor);
             }
         }
@@ -152,8 +153,10 @@ public class QrsProcessor {
         }
 
         // built-ins
-        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue());
-        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue());
+        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+                true);
+        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+                false);
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses,
@@ -162,9 +165,10 @@ public class QrsProcessor {
     }
 
     private <T> void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer) {
+            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer, boolean buildTimeSelectable) {
         ResourceWriter<Object> writer = new ResourceWriter<>();
         writer.setFactory(recorder.factory(writerClass.getName().toString(), beanContainer));
+        writer.setBuildTimeSelectable(buildTimeSelectable);
         recorder.registerWriter(serialisers, entityClass.getName(), writer);
     }
 

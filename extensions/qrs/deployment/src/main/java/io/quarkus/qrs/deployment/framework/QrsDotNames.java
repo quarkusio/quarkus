@@ -29,6 +29,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.qrs.Blocking;
+import io.quarkus.qrs.DoesNotChangeWriter;
 
 public final class QrsDotNames {
 
@@ -50,7 +51,6 @@ public final class QrsDotNames {
     public static final DotName PATH = DotName.createSimple(Path.class.getName());
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
-    public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName CONFIG_PROPERTY = DotName
             .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INSTANCE = DotName
@@ -60,6 +60,9 @@ public final class QrsDotNames {
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
+
+    public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    public static final DotName DOES_NOT_CHANGE_WRITER = DotName.createSimple(DoesNotChangeWriter.class.getName());
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));

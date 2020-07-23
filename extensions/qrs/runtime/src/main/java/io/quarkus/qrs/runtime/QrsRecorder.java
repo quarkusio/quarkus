@@ -135,11 +135,15 @@ public class QrsRecorder {
                     handlers.add(new ResourceResponseInterceptorHandler(responseInterceptors));
                 }
                 handlers.add(new ResponseWriterHandler());
+
+                Class<Object> returnType = loadClass(method.getReturnType());
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]), invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                        loadClass(method.getReturnType()));
+                        returnType,
+                        // FIXME: also depends on filters and content type
+                        serialisers.findBuildTimeWriter(returnType, responseInterceptors));
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
                 if (list == null) {
                     templates.put(method.getMethod(), list = new ArrayList<>());

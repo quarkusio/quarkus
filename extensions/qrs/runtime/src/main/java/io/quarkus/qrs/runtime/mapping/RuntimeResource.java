@@ -3,6 +3,7 @@ package io.quarkus.qrs.runtime.mapping;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
@@ -13,15 +14,16 @@ public class RuntimeResource {
     private final MediaType produces;
     private final MediaType consumes;
     private final EndpointInvoker invoker;
-    private final BeanFactory endpointFactory;
+    private final BeanFactory<Object> endpointFactory;
     private final RestHandler[] handlerChain;
     private final String method;
     private final Class<?>[] parameterTypes;
     private final Class<?> returnType;
+    private final ResourceWriter<Object> buildTimeWriter;
 
     public RuntimeResource(String httpMethod, URITemplate path, MediaType produces, MediaType consumes, EndpointInvoker invoker,
-            BeanFactory endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
-            Class<?> returnType) {
+            BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
+            Class<?> returnType, ResourceWriter<Object> buildTimeWriter) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
@@ -32,6 +34,7 @@ public class RuntimeResource {
         this.method = method;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
+        this.buildTimeWriter = buildTimeWriter;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -70,8 +73,16 @@ public class RuntimeResource {
         return invoker;
     }
 
-    public BeanFactory getEndpointFactory() {
+    public BeanFactory<Object> getEndpointFactory() {
         return endpointFactory;
     }
 
+    public ResourceWriter<Object> getBuildTimeWriter() {
+        return buildTimeWriter;
+    }
+
+    @Override
+    public String toString() {
+        return "RuntimeResource{ method: " + method + ", path: " + path + "}";
+    }
 }

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -14,6 +15,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
+import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -246,7 +248,11 @@ public class RequestContext implements Runnable, Closeable {
     }
 
     private void invokeExceptionMapper(Throwable throwable) {
-        this.result = exceptionMapping.mapException(throwable, this);
+        if (throwable instanceof WebApplicationException) {
+            this.result = ((WebApplicationException) throwable).getResponse();
+        } else {
+            this.result = exceptionMapping.mapException(throwable, this);
+        }
     }
 
     private void handleException(Throwable throwable) {
@@ -267,7 +273,12 @@ public class RequestContext implements Runnable, Closeable {
     }
 
     public MessageBodyWriter<Object> getMessageBodyWriter() {
-        // FIXME: for some endpoints (no filter, easy content/return type) we could hardcode this and save the lookup
+        // for some endpoints (no filter, easy content/return type) we can hardcode this and save the lookup
+        ResourceWriter<Object> buildTimeWriter = target.getBuildTimeWriter();
+        // no build-time writers for exception responses
+        if (throwable == null && buildTimeWriter != null) {
+            return buildTimeWriter.getFactory().createInstance(this).getInstance();
+        }
         return (MessageBodyWriter<Object>) serialisers.findWriter(getResponse(), this);
     }
 }

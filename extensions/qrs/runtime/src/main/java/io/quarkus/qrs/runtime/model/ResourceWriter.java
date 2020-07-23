@@ -7,6 +7,7 @@ import io.quarkus.qrs.runtime.spi.BeanFactory;
 public class ResourceWriter<T> {
 
     private BeanFactory<MessageBodyWriter<T>> factory;
+    private boolean buildTimeSelectable;
 
     public void setFactory(BeanFactory<MessageBodyWriter<T>> factory) {
         this.factory = factory;
@@ -16,4 +17,11 @@ public class ResourceWriter<T> {
         return factory;
     }
 
+    public boolean isBuildTimeSelectable() {
+        return buildTimeSelectable;
+    }
+
+    public void setBuildTimeSelectable(boolean buildTimeSelectable) {
+        this.buildTimeSelectable = buildTimeSelectable;
+    }
 }

@@ -45,6 +45,15 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("application.properties", encodeValue("secret.prop3=val3"))
                         .addToData("application.yaml", encodeValue("secret:\n  prop4: val4")).build())
                 .once();
+
+        mockServer.expect().get().withPath("/api/v1/namespaces/demo/secrets/s1")
+                .andReturn(200, secretBuilder("s1")
+                        .addToData("dummysecret", encodeValue("dummysecretFromDemo"))
+                        .addToData("secret.prop1", encodeValue("val1FromDemo"))
+                        .addToData("secret.prop2", encodeValue("val2FromDemo"))
+                        .addToData("application.properties", encodeValue("secret.prop3=val3FromDemo"))
+                        .addToData("application.yaml", encodeValue("secret:\n  prop4: val4FromDemo")).build())
+                .once();
     }
 
     private ConfigMapBuilder configMapBuilder(String name) {

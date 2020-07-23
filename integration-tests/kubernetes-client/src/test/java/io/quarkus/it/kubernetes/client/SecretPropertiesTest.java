@@ -21,7 +21,7 @@ public class SecretPropertiesTest {
         assertProperty("secretProp4", "val4");
     }
 
-    private void assertProperty(String propertyName, String expectedValue) {
+    public static void assertProperty(String propertyName, String expectedValue) {
         given()
                 .when().get("/secretProperties/" + propertyName)
                 .then()

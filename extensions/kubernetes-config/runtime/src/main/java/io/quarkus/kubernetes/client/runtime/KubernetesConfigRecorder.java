@@ -26,6 +26,17 @@ public class KubernetesConfigRecorder {
                 KubernetesClientUtils.createClient(clientConfig)));
     }
 
+    public void warnAboutSecrets(KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig) {
+        if (config.enabled
+                && config.secrets.isPresent()
+                && !config.secrets.get().isEmpty()
+                && !buildTimeConfig.secretsEnabled) {
+            log.warn("Configuration is read from Secrets " + config.secrets.get()
+                    + ", but quarkus.kubernetes-config.secrets.enabled is false."
+                    + " Check if your application's service account has enough permissions to read secrets.");
+        }
+    }
+
     private RuntimeValue<ConfigSourceProvider> emptyRuntimeValue() {
         return new RuntimeValue<>(new EmptyConfigSourceProvider());
     }

@@ -42,7 +42,6 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
             result.addAll(getConfigMapConfigSources(config.configMaps.get()));
         }
         if (config.secrets.isPresent()) {
-            // TODO generate a role with permissions to read secrets, and a role binding for that role
             result.addAll(getSecretConfigSources(config.secrets.get()));
         }
         return result;
@@ -119,7 +118,8 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         String message = type + " '" + name + "' not found";
         if (namespace == null) {
             message = message
-                    + ". No Kubernetes namespace was set (most likely because the application is running outside the Kubernetes cluster). Consider setting 'quarkus.kubernetes-client.namespace=my-namespace' to specify the namespace in which to look up the " + type;
+                    + ". No Kubernetes namespace was set (most likely because the application is running outside the Kubernetes cluster). Consider setting 'quarkus.kubernetes-client.namespace=my-namespace' to specify the namespace in which to look up the "
+                    + type;
         } else {
             message = message + " in namespace '" + namespace + "'";
         }

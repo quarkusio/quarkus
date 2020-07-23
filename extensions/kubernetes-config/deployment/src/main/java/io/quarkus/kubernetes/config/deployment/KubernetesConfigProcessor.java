@@ -1,5 +1,8 @@
 package io.quarkus.kubernetes.config.deployment;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.jboss.logmanager.Level;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -9,8 +12,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.KubernetesConfigBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigRecorder;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigSourceConfig;
+import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesConfigProcessor {
 
@@ -20,6 +26,25 @@ public class KubernetesConfigProcessor {
             KubernetesConfigSourceConfig config, KubernetesClientBuildConfig clientConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
                 recorder.configSources(config, clientConfig));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void handleAccessToSecrets(KubernetesConfigSourceConfig config,
+            KubernetesConfigBuildTimeConfig buildTimeConfig,
+            BuildProducer<KubernetesRoleBuildItem> roleProducer,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
+            KubernetesConfigRecorder recorder) {
+        if (buildTimeConfig.secretsEnabled) {
+            roleProducer.produce(new KubernetesRoleBuildItem("view-secrets", Collections.singletonList(
+                    new KubernetesRoleBuildItem.PolicyRule(
+                            Collections.singletonList(""),
+                            Collections.singletonList("secrets"),
+                            Arrays.asList("get", "list", "watch")))));
+            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view-secrets", false));
+        }
+
+        recorder.warnAboutSecrets(config, buildTimeConfig);
     }
 
     // done in order to ensure that http logs aren't shown by default which happens because of the interplay between

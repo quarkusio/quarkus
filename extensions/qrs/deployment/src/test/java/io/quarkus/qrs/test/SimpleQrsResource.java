@@ -1,5 +1,8 @@
 package io.quarkus.qrs.test;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import javax.inject.Inject;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -23,6 +26,7 @@ import javax.ws.rs.core.Response;
 import io.quarkus.qrs.Blocking;
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
 @Path("/simple")
@@ -150,5 +154,31 @@ public class SimpleQrsResource {
     @Path("writer/vertx-buffer")
     public Buffer vertxBuffer(@Context RequestContext context) {
         return Buffer.buffer(context.getTarget().getBuildTimeWriter() != null ? "VERTX-BUFFER" : "FAIL");
+    }
+
+    @GET
+    @Path("async/cs/ok")
+    public CompletionStage<String> asyncCompletionStageOK() {
+        return CompletableFuture.completedFuture("CS-OK");
+    }
+
+    @GET
+    @Path("async/cs/fail")
+    public CompletionStage<String> asyncCompletionStageFail() {
+        CompletableFuture<String> ret = new CompletableFuture<>();
+        ret.completeExceptionally(new TestException());
+        return ret;
+    }
+
+    @GET
+    @Path("async/uni/ok")
+    public Uni<String> asyncUniOK() {
+        return Uni.createFrom().item("UNI-OK");
+    }
+
+    @GET
+    @Path("async/uni/fail")
+    public Uni<String> asyncUniStageFail() {
+        return Uni.createFrom().failure(new TestException());
     }
 }

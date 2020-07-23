@@ -1,10 +1,13 @@
 package io.quarkus.qrs.runtime;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
@@ -23,6 +26,7 @@ import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.core.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
+import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
@@ -31,6 +35,7 @@ import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
@@ -47,6 +52,7 @@ import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -129,6 +135,9 @@ public class QrsRecorder {
                     handlers.add(new BlockingHandler(blockingExecutor));
                 }
                 handlers.add(new InvocationHandler(invoker));
+                // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
+                handlers.add(new CompletionStageResponseHandler());
+                handlers.add(new UniResponseHandler());
                 handlers.add(new ResponseHandler());
                 List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
                 if (!responseInterceptors.isEmpty()) {
@@ -136,14 +145,15 @@ public class QrsRecorder {
                 }
                 handlers.add(new ResponseWriterHandler());
 
-                Class<Object> returnType = loadClass(method.getReturnType());
+                Type returnType = TypeSignatureParser.parse(method.getReturnType());
+                Class<Object> returnClass = getReturnClass(returnType);
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]), invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                         returnType,
                         // FIXME: also depends on filters and content type
-                        serialisers.findBuildTimeWriter(returnType, responseInterceptors));
+                        serialisers.findBuildTimeWriter(returnClass, responseInterceptors));
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
                 if (list == null) {
                     templates.put(method.getMethod(), list = new ArrayList<>());
@@ -160,6 +170,22 @@ public class QrsRecorder {
             mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
         }
         return new QrsInitialHandler(mappersByMethod, exceptionMapping, serialisers);
+    }
+
+    private Class<Object> getReturnClass(Type returnType) {
+        if (returnType instanceof Class)
+            return (Class<Object>) returnType;
+        if (returnType instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType) returnType;
+            if (type.getRawType() == CompletionStage.class) {
+                return (Class<Object>) type.getActualTypeArguments()[0];
+            }
+            if (type.getRawType() == Uni.class) {
+                return (Class<Object>) type.getActualTypeArguments()[0];
+            }
+            return (Class<Object>) type.getRawType();
+        }
+        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }
 
     @SuppressWarnings("unchecked")

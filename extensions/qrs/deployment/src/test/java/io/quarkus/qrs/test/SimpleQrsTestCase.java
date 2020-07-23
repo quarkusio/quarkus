@@ -126,4 +126,18 @@ public class SimpleQrsTestCase {
         RestAssured.get("/simple/writer/vertx-buffer")
                 .then().body(Matchers.equalTo("VERTX-BUFFER"));
     }
+
+    @Test
+    public void testAsync() {
+        RestAssured.get("/simple/async/cs/ok")
+                .then().body(Matchers.equalTo("CS-OK"));
+        RestAssured.get("/simple/async/cs/fail")
+                .then().body(Matchers.equalTo("OK"))
+                .statusCode(666);
+        RestAssured.get("/simple/async/uni/ok")
+                .then().body(Matchers.equalTo("UNI-OK"));
+        RestAssured.get("/simple/async/uni/fail")
+                .then().body(Matchers.equalTo("OK"))
+                .statusCode(666);
+    }
 }

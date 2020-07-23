@@ -141,7 +141,8 @@ public class EndpointIndexer {
                             .setName(info.name())
                             .setBlocking(info.annotation(BLOCKING) != null)
                             .setParameters(methodParameters)
-                            .setReturnType(info.returnType().asClassType().toString())
+                            // FIXME: resolved arguments ?
+                            .setReturnType(AsmUtil.getSignature(info.returnType(), v -> null))
                             .setProduces(produces);
 
                     StringBuilder sigBuilder = new StringBuilder();

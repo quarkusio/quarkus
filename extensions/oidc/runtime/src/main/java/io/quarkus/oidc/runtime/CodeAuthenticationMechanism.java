@@ -303,7 +303,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
                                             uniEmitter.fail(new AuthenticationCompletionException());
                                         }
-                                        processSuccessfulAuthentication(context, configContext, result, identity);
+                                        processSuccessfulAuthentication(context, configContext, result,
+                                                result.opaqueRefreshToken(), identity);
 
                                         if (configContext.oidcConfig.authentication.isRemoveRedirectParameters()
                                                 && context.request().query() != null) {
@@ -348,15 +349,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
-            AccessToken result, SecurityIdentity securityIdentity) {
-
+            AccessToken result, String refreshToken, SecurityIdentity securityIdentity) {
         removeCookie(context, configContext, getSessionCookieName(configContext));
 
-        String cookieValue = new StringBuilder(result.opaqueIdToken())
-                .append(COOKIE_DELIM)
-                .append(result.opaqueAccessToken())
-                .append(COOKIE_DELIM)
-                .append(result.opaqueRefreshToken()).toString();
+        String cookieValue = result.opaqueIdToken() + COOKIE_DELIM
+                + result.opaqueAccessToken() + COOKIE_DELIM
+                + refreshToken;
 
         long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
@@ -470,8 +468,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             .subscribe().with(new Consumer<SecurityIdentity>() {
                                                 @Override
                                                 public void accept(SecurityIdentity identity) {
-                                                    // after a successful refresh, rebuild the identity and update the cookie 
-                                                    processSuccessfulAuthentication(context, configContext, token,
+                                                    // the refresh token might not have been send in the response again
+                                                    String refresh = token.opaqueRefreshToken() != null
+                                                            ? token.opaqueRefreshToken()
+                                                            : refreshToken;
+                                                    // after a successful refresh, rebuild the identity and update the cookie
+                                                    processSuccessfulAuthentication(context, configContext, token, refresh,
                                                             identity);
                                                     // update the token so that blocking threads get the latest one
                                                     emitter.complete(

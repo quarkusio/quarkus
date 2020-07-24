@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -462,9 +463,11 @@ public class QuarkusDevModeTest
     }
 
     void modifyFile(String name, Function<String, String> mutator, Path path) {
+        AtomicBoolean found = new AtomicBoolean(false);
         try (Stream<Path> sources = Files.walk(path)) {
             sources.forEach(s -> {
                 if (s.endsWith(name)) {
+                    found.set(true);
                     modifyPath(mutator, path, s);
                 }
             });
@@ -472,6 +475,9 @@ public class QuarkusDevModeTest
             throw new UncheckedIOException(e);
         }
 
+        if (!found.get()) {
+            throw new IllegalArgumentException("File " + name + " was not part of the test application");
+        }
     }
 
     private void modifyPath(Function<String, String> mutator, Path sourceDirectory, Path input) {

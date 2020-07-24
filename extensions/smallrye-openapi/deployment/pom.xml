@@ -51,6 +51,10 @@
       <artifactId>smallrye-open-api-spring</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.smallrye</groupId>
+      <artifactId>smallrye-open-api-vertx</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-deployment</artifactId>
       <scope>test</scope>
@@ -58,6 +62,11 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-spring-web-deployment</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-vertx-web-deployment</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

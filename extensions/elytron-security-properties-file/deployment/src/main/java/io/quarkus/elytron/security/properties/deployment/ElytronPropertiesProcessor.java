@@ -35,7 +35,6 @@ class ElytronPropertiesProcessor {
     private static final String ROLES_PREFIX = "quarkus.security.embedded.roles";
 
     SecurityUsersConfig propertiesConfig;
-    MPRealmRuntimeConfig runtimeConfig;
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -102,7 +101,8 @@ class ElytronPropertiesProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureMPRealmConfig(ElytronPropertiesFileRecorder recorder,
-            BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
+            BuildProducer<SecurityRealmBuildItem> securityRealm,
+            MPRealmRuntimeConfig runtimeConfig) throws Exception {
         if (propertiesConfig.embedded.enabled) {
             MPRealmConfig realmConfig = propertiesConfig.embedded;
             log.info("Configuring from MPRealmConfig");

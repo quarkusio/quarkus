@@ -35,7 +35,6 @@ import io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.ReadOptio
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -46,6 +45,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.util.HashUtil;
 
 final class ClassConfigPropertiesUtil {
 

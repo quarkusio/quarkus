@@ -13,6 +13,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 
+// NOTE: currently disabled to benchmark the vertx one
 @Provider
 public class JsonbMessageBodyWriter implements MessageBodyWriter<Object> {
 

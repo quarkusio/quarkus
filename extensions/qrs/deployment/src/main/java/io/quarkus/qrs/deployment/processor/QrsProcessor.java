@@ -44,9 +44,9 @@ import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyReader;
-import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.vertx.core.buffer.Buffer;
 
@@ -159,7 +159,9 @@ public class QrsProcessor {
         // built-ins
         registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 true);
-        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+        //        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+        //                false);
+        registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 false);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue());
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
@@ -193,6 +195,9 @@ public class QrsProcessor {
                 .produce(new BeanDefiningAnnotationBuildItem(QrsDotNames.PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(QrsDotNames.APPLICATION_PATH,
+                        BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations
+                .produce(new BeanDefiningAnnotationBuildItem(QrsDotNames.PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
     }
 }

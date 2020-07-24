@@ -7,10 +7,17 @@
     - Response
     - ContainerRequestContext
     - ContainerResponseContext
+- Proper handling of generics
+    - In entity return type
+    - For reader/writer selection
 - Async return types (single/stream)
+    - Preliminary support for CS/Uni, but hacked in and not pluggable
 - SSE
 - Async request/response interceptors
 - Custom reader/writer
+    - Some support for this
+    - No content type matching yet
+    - Writers should add ContentType headers
 - Reader/Writer interceptors
 - Async Reader/Writer and interceptors
 - Feature/DynamicFeature

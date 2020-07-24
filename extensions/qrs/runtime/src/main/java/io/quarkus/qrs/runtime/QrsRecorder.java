@@ -156,14 +156,15 @@ public class QrsRecorder {
                 handlers.add(new ResponseWriterHandler());
 
                 Type returnType = TypeSignatureParser.parse(method.getReturnType());
-                Class<Object> returnClass = getReturnClass(returnType);
+                Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
+                Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         consumesMediaType, invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                        returnType,
+                        nonAsyncReturnType,
                         // FIXME: also depends on filters and content type
-                        serialisers.findBuildTimeWriter(returnClass, responseInterceptors));
+                        serialisers.findBuildTimeWriter(rawNonAsyncReturnType, responseInterceptors));
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
                 if (list == null) {
                     templates.put(method.getMethod(), list = new ArrayList<>());
@@ -182,18 +183,28 @@ public class QrsRecorder {
         return new QrsInitialHandler(mappersByMethod, exceptionMapping, serialisers);
     }
 
-    private Class<Object> getReturnClass(Type returnType) {
+    private Class<?> getRawType(Type type) {
+        if (type instanceof Class)
+            return (Class<?>) type;
+        if (type instanceof ParameterizedType) {
+            ParameterizedType ptype = (ParameterizedType) type;
+            return (Class<?>) ptype.getRawType();
+        }
+        throw new UnsupportedOperationException("Endpoint return type not supported yet: " + type);
+    }
+
+    private Type getNonAsyncReturnType(Type returnType) {
         if (returnType instanceof Class)
-            return (Class<Object>) returnType;
+            return returnType;
         if (returnType instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType) returnType;
             if (type.getRawType() == CompletionStage.class) {
-                return (Class<Object>) type.getActualTypeArguments()[0];
+                return type.getActualTypeArguments()[0];
             }
             if (type.getRawType() == Uni.class) {
-                return (Class<Object>) type.getActualTypeArguments()[0];
+                return type.getActualTypeArguments()[0];
             }
-            return (Class<Object>) type.getRawType();
+            return returnType;
         }
         throw new UnsupportedOperationException("Endpoint return type not supported yet: " + returnType);
     }

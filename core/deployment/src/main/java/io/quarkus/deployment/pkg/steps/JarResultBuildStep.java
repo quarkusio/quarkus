@@ -139,6 +139,7 @@ public class JarResultBuildStep {
     public static final String APP = "app";
     public static final String QUARKUS = "quarkus";
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
+    public static final String RENAMED_JAR_EXTENSION = ".jar.original";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -257,7 +258,7 @@ public class JarResultBuildStep {
         final Path originalJar;
         if (Files.exists(standardJar)) {
             originalJar = outputTargetBuildItem.getOutputDirectory()
-                    .resolve(outputTargetBuildItem.getBaseName() + ".jar.original");
+                    .resolve(outputTargetBuildItem.getBaseName() + RENAMED_JAR_EXTENSION);
         } else {
             originalJar = null;
         }

@@ -414,4 +414,4 @@ Accessing an Elasticsearch cluster from a low level or a high level client is ea
 
 == Configuration Reference
 
-include::{generated-dir}/config/quarkus-elasticsearch-low-level-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-elasticsearch-restclient-lowlevel.adoc[opts=optional, leveloffset=+1]

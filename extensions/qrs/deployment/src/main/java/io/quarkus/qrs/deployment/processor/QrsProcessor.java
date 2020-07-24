@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -42,6 +43,7 @@ import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyReader;
 import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
@@ -145,7 +147,7 @@ public class QrsProcessor {
         for (ClassInfo readerClass : readers) {
             if (readerClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
-                        QrsDotNames.MESSAGE_BODY_WRITER,
+                        QrsDotNames.MESSAGE_BODY_READER,
                         beanArchiveIndexBuildItem.getIndex());
                 ResourceReader<?> reader = new ResourceReader<>();
                 reader.setFactory(recorder.factory(readerClass.name().toString(),
@@ -159,6 +161,7 @@ public class QrsProcessor {
                 true);
         registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 false);
+        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue());
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),
                 true);
@@ -172,9 +175,16 @@ public class QrsProcessor {
     private <T> void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
             Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer, boolean buildTimeSelectable) {
         ResourceWriter<Object> writer = new ResourceWriter<>();
-        writer.setFactory(recorder.factory(writerClass.getName().toString(), beanContainer));
+        writer.setFactory(recorder.factory(writerClass.getName(), beanContainer));
         writer.setBuildTimeSelectable(buildTimeSelectable);
         recorder.registerWriter(serialisers, entityClass.getName(), writer);
+    }
+
+    private <T> void registerReader(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
+            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer) {
+        ResourceReader<Object> reader = new ResourceReader<>();
+        reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
+        recorder.registerReader(serialisers, entityClass.getName(), reader);
     }
 
     @BuildStep

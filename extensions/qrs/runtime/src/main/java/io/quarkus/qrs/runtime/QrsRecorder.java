@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
+import io.quarkus.qrs.runtime.core.BodyParamExtractor;
 import io.quarkus.qrs.runtime.core.ContextParamExtractor;
 import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.core.FormParamExtractor;
@@ -88,6 +89,7 @@ public class QrsRecorder {
         for (ResourceClass clazz : resourceClasses) {
             for (ResourceMethod method : clazz.getMethods()) {
                 List<RestHandler> handlers = new ArrayList<>();
+                MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
                 List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
                 if (!requestInterceptors.isEmpty()) {
@@ -107,6 +109,8 @@ public class QrsRecorder {
                     if (param.parameterType == ParameterType.FORM) {
                         handlers.add(new ReadBodyHandler());
                         break;
+                    } else if (param.parameterType == ParameterType.BODY) {
+                        handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
                     }
                 }
                 for (int i = 0; i < parameters.length; i++) {
@@ -124,6 +128,12 @@ public class QrsRecorder {
                             break;
                         case CONTEXT:
                             extractor = new ContextParamExtractor(param.type);
+                            break;
+                        case QUERY:
+                            extractor = new QueryParamExtractor(param.name, true);
+                            break;
+                        case BODY:
+                            extractor = new BodyParamExtractor();
                             break;
                         default:
                             extractor = new QueryParamExtractor(param.name, true);
@@ -149,7 +159,7 @@ public class QrsRecorder {
                 Class<Object> returnClass = getReturnClass(returnType);
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
-                        method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]), invoker,
+                        consumesMediaType, invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                         returnType,
                         // FIXME: also depends on filters and content type

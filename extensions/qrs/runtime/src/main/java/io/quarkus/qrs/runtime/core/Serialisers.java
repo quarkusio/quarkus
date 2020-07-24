@@ -3,9 +3,11 @@ package io.quarkus.qrs.runtime.core;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.model.ResourceReader;
@@ -32,6 +34,30 @@ public class Serialisers {
                     // FIXME: those nulls
                     if (writer.isWriteable(response.getEntity().getClass(), null, null, response.getMediaType()))
                         return writer;
+                }
+                // not found any match, look up
+            }
+            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
+            klass = klass.getSuperclass();
+        } while (klass != null);
+
+        return null;
+    }
+
+    public MessageBodyReader<?> findReader(Class<?> targetType, MediaType mediaType, RequestContext requestContext) {
+        Class<?> klass = targetType;
+        do {
+            List<ResourceReader<?>> goodTypeReaders = readers.get(klass);
+            if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
+                List<MessageBodyReader<?>> readers = new ArrayList<>(goodTypeReaders.size());
+                for (ResourceReader<?> goodTypeReader : goodTypeReaders) {
+                    readers.add(goodTypeReader.getFactory().createInstance(requestContext).getInstance());
+                }
+                // FIXME: spec says to use content type sorting too
+                for (MessageBodyReader<?> reader : readers) {
+                    // FIXME: those nulls
+                    if (reader.isReadable(targetType, null, null, mediaType))
+                        return reader;
                 }
                 // not found any match, look up
             }

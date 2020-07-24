@@ -82,5 +82,4 @@ public class QrsHttpHeaders implements HttpHeaders {
         // TODO Auto-generated method stub
         return 0;
     }
-
 }

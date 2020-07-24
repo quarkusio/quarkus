@@ -84,6 +84,12 @@ public class SimpleQrsTestCase {
     public void testJson() {
         RestAssured.get("/simple/person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
+
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        RestAssured.with().body(person).post("/simple/person")
+                .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
     }
 
     @Test

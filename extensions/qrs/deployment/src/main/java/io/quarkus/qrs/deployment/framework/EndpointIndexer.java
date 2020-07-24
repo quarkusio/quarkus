@@ -26,7 +26,6 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
@@ -36,6 +35,7 @@ import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
+import io.quarkus.runtime.util.HashUtil;
 
 public class EndpointIndexer {
 
@@ -126,7 +126,7 @@ public class EndpointIndexer {
                             // no name required
                             type = ParameterType.CONTEXT;
                         } else {
-                            throw new RuntimeException("Not implemented yet " + info);
+                            type = ParameterType.BODY;
                         }
                         methodParameters[i] = new MethodParameter(name,
                                 info.parameters().get(i).asClassType().name().toString(), type);

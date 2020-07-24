@@ -49,6 +49,7 @@ public class RequestContext implements Runnable, Closeable {
     private QrsHttpHeaders httpHeaders;
     private ExceptionMapping exceptionMapping;
     private Serialisers serialisers;
+    private Object requestEntity;
 
     public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping,
             Serialisers serialisers) {
@@ -117,7 +118,6 @@ public class RequestContext implements Runnable, Closeable {
                             //resume happened in the meantime
                             suspended = false;
                             exec = this.executor;
-                            this.executor = null;
                         } else if (suspended) {
                             running = false;
                             return;
@@ -166,6 +166,15 @@ public class RequestContext implements Runnable, Closeable {
 
     public void setUriInfo(UriInfo uriInfo) {
         this.uriInfo = uriInfo;
+    }
+
+    public Object getRequestEntity() {
+        return requestEntity;
+    }
+
+    public RequestContext setRequestEntity(Object requestEntity) {
+        this.requestEntity = requestEntity;
+        return this;
     }
 
     public Object getEndpointInstance() {

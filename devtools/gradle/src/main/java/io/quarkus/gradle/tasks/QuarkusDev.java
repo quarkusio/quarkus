@@ -8,10 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -463,6 +461,7 @@ public class QuarkusDev extends QuarkusTask {
                 sourceParentPaths,
                 project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
                 project.getBuildDir().toString());
+
         if (root) {
             context.setApplicationRoot(wsModuleInfo);
         } else {
@@ -540,13 +539,4 @@ public class QuarkusDev extends QuarkusTask {
             classPathManifest.append(uri).append(" ");
         }
     }
-
-    private URL toUrl(URI uri) {
-        try {
-            return uri.toURL();
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException("Failed to convert URI to URL: " + uri, e);
-        }
-    }
-
 }

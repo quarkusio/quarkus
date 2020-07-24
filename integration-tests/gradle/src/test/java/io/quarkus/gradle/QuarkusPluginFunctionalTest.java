@@ -134,6 +134,15 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
         assertThat(runnerJar).exists();
     }
 
+    @Test
+    public void canRunTest() throws IOException, InterruptedException {
+        createProject(SourceType.JAVA);
+
+        BuildResult buildResult = runGradleWrapper(projectRoot, "test", "--stacktrace");
+
+        assertThat(buildResult.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+    }
+
     private void createProject(SourceType sourceType) throws IOException {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");

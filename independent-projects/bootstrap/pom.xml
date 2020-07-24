@@ -44,10 +44,12 @@
         <asm.version>8.0.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
+        <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
         <graal-sdk.version>20.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <smallrye-common.version>1.1.0</smallrye-common.version>
+        <gradle-tooling.version>6.5</gradle-tooling.version>
     </properties>
     <modules>
         <module>app-model</module>
@@ -55,6 +57,7 @@
         <module>core</module>
         <module>maven-plugin</module>
         <module>runner</module>
+        <module>gradle-resolver</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -98,6 +101,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -164,9 +172,23 @@
                         <groupId>org.checkerframework</groupId>
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
-
+            <dependency>
+                <groupId>org.gradle</groupId>
+                <artifactId>gradle-tooling-api</artifactId>
+                <version>${gradle-tooling.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>jakarta.annotation</groupId>
                 <artifactId>jakarta.annotation-api</artifactId>
@@ -305,6 +327,11 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>commons-logging-jboss-logging</artifactId>
                 <version>${commons-logging-jboss-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.slf4j</groupId>
+                <artifactId>slf4j-jboss-logging</artifactId>
+                <version>${slf4j-jboss-logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>
@@ -489,6 +516,14 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>gradle-dependencies</id>
+            <name>Gradle releases repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases</url>
+        </repository>
+    </repositories>
 
     <profiles>
         <profile>

@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
@@ -54,6 +55,10 @@ final class CommonQueryBinder {
         if (value instanceof Instant) {
             Instant dateValue = (Instant) value;
             return "ISODate('" + ISO_DATE_FORMATTER.format(dateValue.atZone(ZoneOffset.UTC)) + "')";
+        }
+        if (value instanceof UUID) {
+            UUID uuidValue = (UUID) value;
+            return "UUID('" + value.toString() + "')";
         }
         if (value instanceof ObjectId) {
             ObjectId objectId = (ObjectId) value;

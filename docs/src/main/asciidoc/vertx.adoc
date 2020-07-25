@@ -301,7 +301,7 @@ public class StreamingResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @Path("/{name}")
-    public Multi<String> greeting(@PathParam String name) {
+    public Multi<String> greeting(@PathParam("name") String name) {
         // TODO: create a Reactive Streams publisher or a Mutiny Multi
         return publisher;
     }
@@ -334,7 +334,7 @@ public class StreamingResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @Path("/{name}")
-    public Multi<String> greeting(@PathParam String name) {
+    public Multi<String> greeting(@PathParam("name") String name) {
         return vertx.periodicStream(2000).toMulti()
                 .map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
     }
@@ -415,13 +415,13 @@ public class VertxJsonResource {
 
     @GET
     @Path("{name}/object")
-    public JsonObject jsonObject(@PathParam String name) {
+    public JsonObject jsonObject(@PathParam("name") String name) {
         return new JsonObject().put("Hello", name);
     }
 
     @GET
     @Path("{name}/array")
-    public JsonArray jsonArray(@PathParam String name) {
+    public JsonArray jsonArray(@PathParam("name") String name) {
         return new JsonArray().add("Hello").add(name);
     }
 }

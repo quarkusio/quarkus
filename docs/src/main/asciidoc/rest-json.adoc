@@ -426,7 +426,7 @@ Then, your endpoint can return `Uni` or `Multi` instances:
 
 @GET
 @Path("/{name}")
-public Uni<Fruit> getOne(@PathParam String name) {
+public Uni<Fruit> getOne(@PathParam("name") String name) {
     return findByName(name);
 }
 

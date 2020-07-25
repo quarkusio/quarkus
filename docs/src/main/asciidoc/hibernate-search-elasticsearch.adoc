@@ -249,7 +249,7 @@ public class LibraryResource {
     @DELETE
     @Path("book/{id}")
     @Transactional
-    public void deleteBook(@PathParam Long id) {
+    public void deleteBook(@PathParam("id") Long id) {
         Book book = Book.findById(id);
         if (book != null) {
             book.author.books.remove(book);
@@ -272,7 +272,7 @@ public class LibraryResource {
     @Path("author/{id}")
     @Transactional
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public void updateAuthor(@PathParam Long id, @FormParam String firstName, @FormParam String lastName) {
+    public void updateAuthor(@PathParam("id") Long id, @FormParam String firstName, @FormParam String lastName) {
         Author author = Author.findById(id);
         if (author == null) {
             return;
@@ -285,7 +285,7 @@ public class LibraryResource {
     @DELETE
     @Path("author/{id}")
     @Transactional
-    public void deleteAuthor(@PathParam Long id) {
+    public void deleteAuthor(@PathParam("id") Long id) {
         Author author = Author.findById(id);
         if (author != null) {
             author.delete();

@@ -307,7 +307,7 @@ And in the JAX-RS resource:
 ----
 @GET
 @Path("{id}")
-public Uni<Response> getSingle(@PathParam Long id) {
+public Uni<Response> getSingle(@PathParam("id") Long id) {
     return Fruit.findById(client, id)
             .onItem().transform(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
             .onItem().transform(ResponseBuilder::build); // <2>
@@ -366,7 +366,7 @@ And to handle the HTTP `DELETE` method in the web resource:
 ----
 @DELETE
 @Path("{id}")
-public Uni<Response> delete(@PathParam Long id) {
+public Uni<Response> delete(@PathParam("id") Long id) {
     return Fruit.delete(client, id)
             .onItem().transform(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
             .onItem().transform(status -> Response.status(status).build());

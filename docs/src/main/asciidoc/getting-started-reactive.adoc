@@ -277,7 +277,7 @@ public class ReactiveGreetingResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/greeting/{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(@PathParam("name") String name) {
         return service.greeting(name);
     }
 
@@ -326,7 +326,7 @@ In the `ReactiveGreetingResource` add the following method:
 @GET
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/greeting/{count}/{name}")
-public Multi<String> greetings(@PathParam int count, @PathParam String name) {
+public Multi<String> greetings(@PathParam("count") int count, @PathParam("name") String name) {
   return service.greetings(count, name);
 }
 ----
@@ -349,7 +349,7 @@ We can also generate Server-Sent Event responses by returning a `Multi`:
 @Produces(MediaType.SERVER_SENT_EVENTS)
 @SseElementType(MediaType.TEXT_PLAIN)
 @Path("/stream/{count}/{name}")
-public Multi<String> greetingsAsStream(@PathParam int count, @PathParam String name) {
+public Multi<String> greetingsAsStream(@PathParam("count") int count, @PathParam("name") String name) {
     return service.greetings(count, name);
 }
 ----
@@ -557,7 +557,7 @@ public class FruitResource {
 
     @GET
     @Path("{id}")
-    public Uni<Response> getSingle(@PathParam Long id) {
+    public Uni<Response> getSingle(@PathParam("id") Long id) {
         return Fruit.findById(client, id)
                 .onItem().transform(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND))
                 .onItem().transform(ResponseBuilder::build);
@@ -572,7 +572,7 @@ public class FruitResource {
 
     @PUT
     @Path("{id}")
-    public Uni<Response> update(@PathParam Long id, Fruit fruit) {
+    public Uni<Response> update(@PathParam("id") Long id, Fruit fruit) {
         return fruit.update(client)
                 .onItem().transform(updated -> updated ? Status.OK : Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());
@@ -580,7 +580,7 @@ public class FruitResource {
 
     @DELETE
     @Path("{id}")
-    public Uni<Response> delete(@PathParam Long id) {
+    public Uni<Response> delete(@PathParam("id") Long id) {
         return Fruit.delete(client, id)
                 .onItem().transform(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
                 .onItem().transform(status -> Response.status(status).build());

@@ -227,7 +227,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(@PathParam("name") String name) {
         return bus.<String>request("greeting", name)        // <2>
                 .onItem().transform(Message::body);
     }
@@ -300,7 +300,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(@PathParam("name") String name) {
         return bus.<String>request("greeting", name)            // <1>
                 .onItem().transform(Message::body);            // <2>
     }
@@ -374,7 +374,7 @@ So you can exchange objects as follows:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(@PathParam("name") String name) {
     return bus.<String>request("greeting", new MyName(name))
         .onItem().transform(Message::body);
 }
@@ -392,7 +392,7 @@ If you want to use a specific codec, you need to explicitly set it on both ends:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(@PathParam("name") String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
         .onItem().transform(Message::body);

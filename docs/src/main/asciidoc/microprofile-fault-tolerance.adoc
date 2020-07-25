@@ -276,7 +276,7 @@ public class CoffeeResource {
     @GET
     @Path("/{id}/recommendations")
     @Timeout(250)
-    public List<Coffee> recommendations(@PathParam int id) {
+    public List<Coffee> recommendations(@PathParam("id") int id) {
         long started = System.currentTimeMillis();
         final long invocationNumber = counter.getAndIncrement();
 
@@ -326,7 +326,7 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 public class CoffeeResource {
     ...
     @Fallback(fallbackMethod = "fallbackRecommendations")
-    public List<Coffee> recommendations(@PathParam int id) {
+    public List<Coffee> recommendations(@PathParam("id") int id) {
         ...
     }
 
@@ -399,7 +399,7 @@ public class CoffeeResource {
     ...
     @Path("/{id}/availability")
     @GET
-    public Response availability(@PathParam int id) {
+    public Response availability(@PathParam("id") int id) {
         final Long invocationNumber = counter.getAndIncrement();
 
         Coffee coffee = coffeeRepository.getCoffeeById(id);

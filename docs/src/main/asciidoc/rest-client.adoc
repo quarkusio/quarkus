@@ -127,7 +127,7 @@ public interface CountriesService {
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    Set<Country> getByName(@PathParam String name);
+    Set<Country> getByName(@PathParam("name") String name);
 }
 ----
 
@@ -212,7 +212,7 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Set<Country> name(@PathParam String name) {
+    public Set<Country> name(@PathParam("name") String name) {
         return countriesService.getByName(name);
     }
 }
@@ -284,12 +284,12 @@ public interface CountriesService {
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    Set<Country> getByName(@PathParam String name);
+    Set<Country> getByName(@PathParam("name") String name);
 
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    CompletionStage<Set<Country>> getByNameAsync(@PathParam String name);
+    CompletionStage<Set<Country>> getByNameAsync(@PathParam("name") String name);
 }
 ----
 
@@ -321,14 +321,14 @@ public class CountriesResource {
     @GET
     @Path("/name/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Set<Country> name(@PathParam String name) {
+    public Set<Country> name(@PathParam("name") String name) {
         return countriesService.getByName(name);
     }
 
     @GET
     @Path("/name-async/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public CompletionStage<Set<Country>> nameAsync(@PathParam String name) {
+    public CompletionStage<Set<Country>> nameAsync(@PathParam("name") String name) {
         return countriesService.getByNameAsync(name);
     }
 }
@@ -376,7 +376,7 @@ public interface CountriesService {
     @GET
     @Path("/name/{name}")
     @Produces("application/json")
-    Uni<Set<Country>> getByNameAsUni(@PathParam String name);
+    Uni<Set<Country>> getByNameAsUni(@PathParam("name") String name);
 }
 ----
 
@@ -410,7 +410,7 @@ public class CountriesResource {
     @GET
     @Path("/name-uni/{name}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Uni<Set<Country>> nameAsync(@PathParam String name) {
+    public Uni<Set<Country>> nameAsync(@PathParam("name") String name) {
         return countriesService.getByNameAsUni(name);
     }
 }

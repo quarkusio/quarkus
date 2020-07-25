@@ -322,7 +322,24 @@ public class QuartzScheduler implements Scheduler {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".nonManagedTXDataSource", dataSource);
             }
         }
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_PLUGIN_PREFIX, buildTimeConfig.plugins));
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_JOB_LISTENER_PREFIX,
+                buildTimeConfig.jobListeners));
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_TRIGGER_LISTENER_PREFIX,
+                buildTimeConfig.triggerListeners));
 
+        return props;
+    }
+
+    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzAdditionalPropsConfig> config) {
+        Properties props = new Properties();
+        for (String key : config.keySet()) {
+            props.put(String.format("%s.%s.class", prefix, key), config.get(key).clazz);
+            for (String propsName : config.get(key).propsValue.keySet()) {
+                props.put(String.format("%s.%s.%s", prefix, key, propsName),
+                        config.get(key).propsValue.get(propsName));
+            }
+        }
         return props;
     }
 

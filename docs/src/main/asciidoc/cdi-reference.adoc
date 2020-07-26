@@ -661,6 +661,40 @@ This situation is very common when trying to use CDI with alternative JVM langua
 
 Quarkus however, can overcome these limitations when `quarkus.arc.transform-unproxyable-classes` is set to `true` (which is the default value).
 
+=== Container-managed Concurrency
+
+There is no standard concurrency control mechanism for CDI beans.
+Nevertheless, a bean instance can be shared and accessed concurrently from multiple threads.
+In that case it should be thread-safe.
+You can use standard Java constructs (`volatile`, `synchronized`, `ReadWriteLock`, etc.) or let the container control the concurrent access. 
+Quarkus provides `@io.quarkus.arc.Lock` and a built-in interceptor for this interceptor binding.
+Each interceptor instance associated with a contextual instance of an intercepted bean holds a separate `ReadWriteLock` with non-fair ordering policy.
+
+TIP: `io.quarkus.arc.Lock` is a regular interceptor binding and as such can be used for any bean with any scope. However, it is especially useful for "shared" scopes, e.g. `@Singleton` and `@ApplicationScoped`.
+
+.Container-managed Concurrency Example
+[source,java]
+----
+import io.quarkus.arc.Lock;
+
+@Lock <1>
+@ApplicationScoped
+class SharedService {
+
+  void addAmount(BigDecimal amout) {
+    // ...changes some internal state of the bean
+  }
+  
+  @Lock(value = Lock.Type.READ, time = 1, unit = TimeUnit.SECONDS) <2> <3>
+  BigDecimal getAmount() {
+    // ...it is safe to read the value concurrently
+  }
+}
+----
+<1> `@Lock` (which maps to `@Lock(Lock.Type.WRITE)`) declared on the class instructs the container to lock the bean instance for any invocation of any business method, i.e. the client has "exclusive access" and no concurrent invocations will be allowed.
+<2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`. 
+<3> You can also specify the "wait time". If it's not possible to acquire the lock in the given time a `LockException` is thrown.
+
 [[build_time_apis]]
 == Build Time Extension Points
 

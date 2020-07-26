@@ -9,8 +9,15 @@ public class BasicRoute implements Function<Router, Route> {
 
     private String path;
 
+    private Integer order;
+
     public BasicRoute(String path) {
+        this(path, null);
+    }
+
+    public BasicRoute(String path, Integer order) {
         this.path = path;
+        this.order = order;
     }
 
     public BasicRoute() {
@@ -24,8 +31,20 @@ public class BasicRoute implements Function<Router, Route> {
         this.path = path;
     }
 
+    public Integer getOrder() {
+        return order;
+    }
+
+    public void setOrder(Integer order) {
+        this.order = order;
+    }
+
     @Override
     public Route apply(Router router) {
-        return router.route(path);
+        Route route = router.route(path);
+        if (order != null) {
+            route.order(order);
+        }
+        return route;
     }
 }

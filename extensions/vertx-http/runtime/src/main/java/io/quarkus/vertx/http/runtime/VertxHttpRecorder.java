@@ -105,6 +105,9 @@ public class VertxHttpRecorder {
 
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
+    // We do not use Integer.MAX on purpose to allow advanced users to register a route AFTER the default route
+    public static final int DEFAULT_ROUTE_ORDER = 10_000;
+
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
@@ -252,7 +255,7 @@ public class VertxHttpRecorder {
         }
 
         if (defaultRouteHandler != null) {
-            defaultRouteHandler.accept(router.route().order(10_000));
+            defaultRouteHandler.accept(router.route().order(DEFAULT_ROUTE_ORDER));
         }
 
         container.instance(RouterProducer.class).initialize(router);

@@ -1,9 +1,6 @@
 package io.quarkus.swaggerui.runtime;
 
-import java.util.function.Supplier;
-
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.vertx.http.runtime.ThreadLocalHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
@@ -13,14 +10,9 @@ import io.vertx.ext.web.handler.StaticHandler;
 public class SwaggerUiRecorder {
     public Handler<RoutingContext> handler(String swaggerUiFinalDestination, String swaggerUiPath) {
 
-        Handler<RoutingContext> handler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-            @Override
-            public Handler<RoutingContext> get() {
-                return StaticHandler.create().setAllowRootFileSystemAccess(true)
-                        .setWebRoot(swaggerUiFinalDestination)
-                        .setDefaultContentEncoding("UTF-8");
-            }
-        });
+        StaticHandler staticHandler = StaticHandler.create().setAllowRootFileSystemAccess(true)
+                .setWebRoot(swaggerUiFinalDestination)
+                .setDefaultContentEncoding("UTF-8");
 
         return new Handler<RoutingContext>() {
             @Override
@@ -36,7 +28,7 @@ public class SwaggerUiRecorder {
                     return;
                 }
 
-                handler.handle(event);
+                staticHandler.handle(event);
             }
         };
     }

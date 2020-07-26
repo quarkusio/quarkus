@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.runtime.devmode;
+package io.quarkus.vertx.http.runtime.devmode;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,22 +7,20 @@ import java.util.List;
 
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
-import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
+import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
-public class ResteasyHotReplacementSetup implements HotReplacementSetup {
-
-    public static final String META_INF_RESOURCES = "META-INF/resources";
+public class StaticResourcesHotReplacementSetup implements HotReplacementSetup {
 
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         List<Path> resources = new ArrayList<>();
         for (Path resourceDir : context.getResourcesDir()) {
-            Path resource = resourceDir.resolve(META_INF_RESOURCES);
+            Path resource = resourceDir.resolve(StaticResourcesRecorder.META_INF_RESOURCES);
             if (Files.exists(resource)) {
                 resources.add(resource);
             }
         }
-        ResteasyStandaloneRecorder.setHotDeploymentResources(resources);
+        StaticResourcesRecorder.setHotDeploymentResources(resources);
     }
 
     @Override
@@ -31,6 +29,6 @@ public class ResteasyHotReplacementSetup implements HotReplacementSetup {
 
     @Override
     public void close() {
-        ResteasyStandaloneRecorder.setHotDeploymentResources(null);
+        StaticResourcesRecorder.setHotDeploymentResources(null);
     }
 }

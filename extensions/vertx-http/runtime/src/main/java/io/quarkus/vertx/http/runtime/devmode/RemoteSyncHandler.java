@@ -43,25 +43,18 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     static volatile int currentSessionCounter;
     static volatile long currentSessionTimeout;
     static volatile Throwable remoteProblem;
-    static boolean checkForChanges;
+    static volatile boolean checkForChanges;
 
     public RemoteSyncHandler(String password, Handler<HttpServerRequest> next, HotReplacementContext hotReplacementContext) {
         this.password = password;
         this.next = next;
         this.hotReplacementContext = hotReplacementContext;
-        hotReplacementContext.addPreScanStep(new Runnable() {
-            @Override
-            public void run() {
-                if (currentSession == null) {
-                    return;
-                }
-                doPreScan();
-            }
-        });
     }
 
-    private void doPreScan() {
-
+    public static void doPreScan() {
+        if (currentSession == null) {
+            return;
+        }
         synchronized (RemoteSyncHandler.class) {
             checkForChanges = true;
             //if there is a current dev request this will unblock it

@@ -177,11 +177,7 @@ public class VertxOutputStream extends AsyncOutputStream {
             if (!buffer.isWritable()) {
                 ByteBuf tmpBuf = buffer;
                 this.pooledBuffer = buffer = allocator.allocateBuffer();
-                ret = ret.thenCompose(v -> response.writeNonBlocking(tmpBuf, false)
-                        .whenComplete((v2, t) -> {
-                            if (t != null)
-                                tmpBuf.release();
-                        }));
+                ret = ret.thenCompose(v -> response.writeNonBlocking(tmpBuf, false));
             }
         }
         return ret.thenCompose(v -> asyncUpdateWritten(len));

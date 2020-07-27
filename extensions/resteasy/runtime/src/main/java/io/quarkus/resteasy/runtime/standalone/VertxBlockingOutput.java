@@ -106,16 +106,8 @@ public class VertxBlockingOutput implements VertxOutput {
         } else {
             request.response().write(buffer, handler(ret));
         }
-        return ret.handle((v, t) -> {
-            if (t != null) {
-                if (data != null && data.refCnt() > 0) {
-                    data.release();
-                }
-                rethrow(new IOException("Failed to write", t));
-            }
-
-            return v;
-        });
+        //no need to free 'data', the write will handle this
+        return ret;
     }
 
     private <T extends Throwable> void rethrow(Throwable x) throws T {

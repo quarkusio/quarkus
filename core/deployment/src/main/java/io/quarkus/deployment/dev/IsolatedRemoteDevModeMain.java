@@ -114,10 +114,9 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 compilationProviders.add(provider);
                 context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
             }
-            ClassLoaderCompiler compiler;
+            DevModeCompiler compiler;
             try {
-                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), curatedApplication,
-                        compilationProviders, context);
+                compiler = new DevModeCompiler(curatedApplication, compilationProviders, context);
             } catch (Exception e) {
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;

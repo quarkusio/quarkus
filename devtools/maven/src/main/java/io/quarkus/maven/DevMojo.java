@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -403,14 +405,16 @@ public class DevMojo extends AbstractMojo {
 
     private void triggerPrepare() throws MojoExecutionException {
         Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
-        MojoExecutor.executeMojo(
-                quarkusPlugin,
-                MojoExecutor.goal(QUARKUS_PREPARE_GOAL),
-                MojoExecutor.configuration(),
-                MojoExecutor.executionEnvironment(
-                        project,
-                        session,
-                        pluginManager));
+        if (quarkusPlugin != null) {
+            MojoExecutor.executeMojo(
+                    quarkusPlugin,
+                    MojoExecutor.goal(QUARKUS_PREPARE_GOAL),
+                    MojoExecutor.configuration(),
+                    MojoExecutor.executionEnvironment(
+                            project,
+                            session,
+                            pluginManager));
+        }
     }
 
     private void triggerCompile() throws MojoExecutionException {
@@ -549,7 +553,19 @@ public class DevMojo extends AbstractMojo {
                 resourcePath,
                 sourceParent.toAbsolutePath().toString(),
                 targetDir.resolve("generated-sources").toAbsolutePath().toString(),
-                targetDir.toAbsolutePath().toString());
+                targetDir.toAbsolutePath().toString(),
+                mavenProject == null ? null
+                        : mavenProject.getArtifacts().stream()
+                                .map(new Function<Artifact, AppArtifact>() {
+                                    @Override
+                                    public AppArtifact apply(Artifact artifact) {
+                                        AppArtifact appArtifact = new AppArtifact(artifact.getGroupId(),
+                                                artifact.getArtifactId(),
+                                                artifact.getClassifier(), artifact.getType(), artifact.getVersion());
+                                        appArtifact.setPath(artifact.getFile().toPath());
+                                        return appArtifact;
+                                    }
+                                }).collect(Collectors.toList()));
         if (root) {
             devModeContext.setApplicationRoot(moduleInfo);
         } else {

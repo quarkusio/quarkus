@@ -46,7 +46,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private final Path applicationRoot;
     private final DevModeContext context;
-    private final ClassLoaderCompiler compiler;
+    private final DevModeCompiler compiler;
     private final DevModeType devModeType;
     volatile Throwable compileProblem;
 
@@ -79,7 +79,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final Consumer<Set<String>> restartCallback;
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
 
-    public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, ClassLoaderCompiler compiler,
+    public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, DevModeCompiler compiler,
             DevModeType devModeType, Consumer<Set<String>> restartCallback,
             BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification) {
         this.applicationRoot = applicationRoot;

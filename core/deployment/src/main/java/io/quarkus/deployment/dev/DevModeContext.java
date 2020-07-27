@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 
 /**
@@ -235,6 +236,7 @@ public class DevModeContext implements Serializable {
         private final String preBuildOutputDir;
         private final Set<String> sourceParents;
         private final String targetDir;
+        private final List<AppArtifact> dependencies;
 
         public ModuleInfo(AppArtifactKey appArtifactKey,
                 String name,
@@ -244,10 +246,10 @@ public class DevModeContext implements Serializable {
                 String resourcePath,
                 String sourceParent,
                 String preBuildOutputDir,
-                String targetDir) {
+                String targetDir, List<AppArtifact> dependencies) {
             this(appArtifactKey, name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath,
                     Collections.singleton(sourceParent),
-                    preBuildOutputDir, targetDir);
+                    preBuildOutputDir, targetDir, dependencies);
         }
 
         public ModuleInfo(
@@ -259,7 +261,7 @@ public class DevModeContext implements Serializable {
                 String resourceOutputPath,
                 Set<String> sourceParents,
                 String preBuildOutputDir,
-                String targetDir) {
+                String targetDir, List<AppArtifact> dependencies) {
             this.appArtifactKey = appArtifactKey;
             this.name = name;
             this.projectDirectory = projectDirectory;
@@ -270,6 +272,7 @@ public class DevModeContext implements Serializable {
             this.sourceParents = sourceParents;
             this.preBuildOutputDir = preBuildOutputDir;
             this.targetDir = targetDir;
+            this.dependencies = dependencies;
         }
 
         public String getName() {
@@ -312,6 +315,10 @@ public class DevModeContext implements Serializable {
 
         public String getTargetDir() {
             return targetDir;
+        }
+
+        public List<AppArtifact> getDependencies() {
+            return dependencies;
         }
 
         public AppArtifactKey getAppArtifactKey() {

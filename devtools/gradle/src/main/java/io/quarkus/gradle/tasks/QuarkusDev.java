@@ -460,7 +460,7 @@ public class QuarkusDev extends QuarkusTask {
                 resourcesOutputPath,
                 sourceParentPaths,
                 project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
-                project.getBuildDir().toString());
+                project.getBuildDir().toString(), null);
 
         if (root) {
             context.setApplicationRoot(wsModuleInfo);

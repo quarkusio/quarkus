@@ -284,7 +284,7 @@ public class QuarkusDevModeTest
                             classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString(),
                             deploymentSourceParentPath.toAbsolutePath().toString(),
                             targetDir.resolve("generated-sources").toAbsolutePath().toString(),
-                            targetDir.toAbsolutePath().toString()));
+                            targetDir.toAbsolutePath().toString(), null));
 
             setDevModeRunnerJarFile(context);
             return context;

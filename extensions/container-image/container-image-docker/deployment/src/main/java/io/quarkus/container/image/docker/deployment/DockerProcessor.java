@@ -132,7 +132,7 @@ public class DockerProcessor {
             PackageConfig packageConfig) {
 
         DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, packageConfig, out);
-        String[] dockerArgs = getDockerArgs(image, dockerfilePaths, dockerConfig.buildArgs);
+        String[] dockerArgs = getDockerArgs(image, dockerfilePaths, dockerConfig);
         log.infof("Executing the following command to build docker image: '%s %s'", DOCKER_BINARY_NAME,
                 String.join(" ", dockerArgs));
         boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, DOCKER_BINARY_NAME, dockerArgs);
@@ -170,11 +170,18 @@ public class DockerProcessor {
         }
     }
 
-    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, Map<String, String> buildArgs) {
-        List<String> dockerArgs = new ArrayList<>(6 + buildArgs.size());
+    private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, DockerConfig dockerConfig) {
+        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
         dockerArgs.addAll(Arrays.asList("build", "-f", dockerfilePaths.getDockerfilePath().toAbsolutePath().toString()));
-        for (Map.Entry<String, String> entry : buildArgs.entrySet()) {
+        for (Map.Entry<String, String> entry : dockerConfig.buildArgs.entrySet()) {
             dockerArgs.addAll(Arrays.asList("--build-arg", entry.getKey() + "=" + entry.getValue()));
+        }
+        if (dockerConfig.cacheFrom.isPresent()) {
+            List<String> cacheFrom = dockerConfig.cacheFrom.get();
+            if (!cacheFrom.isEmpty()) {
+                dockerArgs.add("--cache-from");
+                dockerArgs.add(String.join(",", cacheFrom));
+            }
         }
         dockerArgs.addAll(Arrays.asList("-t", image));
         dockerArgs.add(dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());

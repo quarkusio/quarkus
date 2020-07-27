@@ -1,5 +1,6 @@
 package io.quarkus.container.image.docker.deployment;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,4 +34,10 @@ public class DockerConfig {
      */
     @ConfigItem
     public Map<String, String> buildArgs;
+
+    /**
+     * Images to consider as cache sources. Values are passed to {@code docker build} via the {@code cache-from} option
+     */
+    @ConfigItem
+    public Optional<List<String>> cacheFrom;
 }

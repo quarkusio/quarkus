@@ -6,8 +6,8 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "liquibase.util.StringUtils")
-final class SubstituteStringUtils {
+@TargetClass(className = "liquibase.util.StringUtil")
+final class SubstituteStringUtil {
 
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)

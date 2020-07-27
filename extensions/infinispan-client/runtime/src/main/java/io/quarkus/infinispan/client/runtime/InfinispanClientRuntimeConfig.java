@@ -72,6 +72,24 @@ public class InfinispanClientRuntimeConfig {
     @ConfigItem
     Optional<String> saslMechanism;
 
+    /**
+     * Sets the trust store path
+     */
+    @ConfigItem
+    Optional<String> trustStore;
+
+    /**
+     * Sets the trust store password
+     */
+    @ConfigItem
+    Optional<String> trustStorePassword;
+
+    /**
+     * Sets the trust store type
+     */
+    @ConfigItem
+    Optional<String> trustStoreType;
+
     @Override
     public String toString() {
         return "InfinispanClientRuntimeConfig{" +

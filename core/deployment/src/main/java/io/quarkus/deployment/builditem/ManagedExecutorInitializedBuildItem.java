@@ -37,6 +37,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
  * }
  * </pre>
  * </p>
+ * 
+ * @deprecated This build item should not be needed anymore and will be removed at some point after Quarkus 1.7.
  */
+@Deprecated
 public final class ManagedExecutorInitializedBuildItem extends SimpleBuildItem {
 }

@@ -63,6 +63,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -190,6 +191,7 @@ class VertxWebProcessor {
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<FilterBuildItem> filterProducer,
@@ -233,7 +235,7 @@ class VertxWebProcessor {
                 if (routeHandler == null) {
                     String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
-                            routeString);
+                            routeString, reflectiveHierarchy);
                     reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
                     routeHandler = recorder.createHandler(handlerClass);
                     routeHandlers.put(routeString, routeHandler);
@@ -314,7 +316,7 @@ class VertxWebProcessor {
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(new HandlerDescriptor(filterMethod.getMethod()),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
-                    filterMethod.getRouteFilter().toString(true));
+                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -405,7 +407,8 @@ class VertxWebProcessor {
     }
 
     private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput,
-            TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix) {
+            TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -442,7 +445,8 @@ class VertxWebProcessor {
         }
 
         implementConstructor(bean, invokerCreator, beanField, contextField, containerField);
-        implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField, transformedAnnotations);
+        implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField, transformedAnnotations,
+                reflectiveHierarchy);
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
@@ -477,7 +481,8 @@ class VertxWebProcessor {
 
     void implementInvoke(HandlerDescriptor descriptor, BeanInfo bean, MethodInfo method, ClassCreator invokerCreator,
             FieldCreator beanField, FieldCreator contextField, FieldCreator containerField,
-            TransformedAnnotationsBuildItem transformedAnnotations) {
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
         // The descriptor is: void invoke(RoutingContext rc)
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
@@ -531,7 +536,7 @@ class VertxWebProcessor {
             Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(transformedAnnotations, method, idx);
             // At this point we can be sure that a matching injector is available
             paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations).get(0).getResultHandle(method, paramType,
-                    paramAnnotations, routingContext, invoke, idx);
+                    paramAnnotations, routingContext, invoke, idx, reflectiveHierarchy);
             parameterTypes[idx] = paramType.name().toString();
             idx++;
         }
@@ -563,6 +568,9 @@ class VertxWebProcessor {
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
                     failureCallback);
+
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+
         } else if (descriptor.isReturningMulti()) {
 
             // 3 cases - regular multi vs. sse multi vs. json array multi, we need to check the type.
@@ -581,6 +589,8 @@ class VertxWebProcessor {
             isRegular.close();
             isNotSSE.close();
 
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+
         } else if (descriptor.getContentType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
             ResultHandle response = invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
@@ -589,6 +599,8 @@ class VertxWebProcessor {
             // If the method returns an object, the result is mapped to JSON and written into the response
             ResultHandle content = getContentToWrite(descriptor, response, res, invoke);
             invoke.invokeInterfaceMethod(end, response, content);
+
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
         }
 
         // Destroy dependent instance afterwards
@@ -597,6 +609,18 @@ class VertxWebProcessor {
                     beanInstanceHandle, creationlContextHandle);
         }
         invoke.returnValue(null);
+    }
+
+    private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays.asList(io.quarkus.arc.processor.DotNames.STRING,
+            DotNames.BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
+
+    private static void registerForReflection(Type contentType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+        if (TYPES_IGNORED_FOR_REFLECTION.contains(contentType.name())) {
+            return;
+        }
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(contentType,
+                ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.or(TYPES_IGNORED_FOR_REFLECTION::contains)));
     }
 
     private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
@@ -896,8 +920,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return routingContext;
                     }
                 }).build());
@@ -906,8 +930,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke.newInstance(
                                 MethodDescriptor
                                         .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
@@ -919,8 +943,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke
                                 .newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
                                         routingContext);
@@ -931,8 +955,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke
                                 .invokeInterfaceMethod(Methods.REQUEST,
                                         routingContext);
@@ -943,8 +967,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke
                                 .invokeInterfaceMethod(Methods.RESPONSE,
                                         routingContext);
@@ -955,8 +979,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke.newInstance(
                                 MethodDescriptor
                                         .ofConstructor(io.vertx.reactivex.core.http.HttpServerRequest.class,
@@ -972,8 +996,8 @@ class VertxWebProcessor {
                         .resultHandleProvider(new ResultHandleProvider() {
                             @Override
                             public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext,
-                                    MethodCreator invoke, int position) {
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                                 return invoke.newInstance(
                                         MethodDescriptor
                                                 .ofConstructor(io.vertx.reactivex.core.http.HttpServerResponse.class,
@@ -993,8 +1017,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         AnnotationValue paramAnnotationValue = Annotations
                                 .find(annotations, PARAM).value();
                         String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
@@ -1035,8 +1059,8 @@ class VertxWebProcessor {
                 .resultHandleProvider(new ResultHandleProvider() {
                     @Override
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                            ResultHandle routingContext,
-                            MethodCreator invoke, int position) {
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         AnnotationValue paramAnnotationValue = Annotations
                                 .find(annotations, DotNames.HEADER).value();
                         String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
@@ -1079,8 +1103,8 @@ class VertxWebProcessor {
                         .resultHandleProvider(new ResultHandleProvider() {
                             @Override
                             public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext,
-                                    MethodCreator invoke, int position) {
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                                 if (paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
                                     return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_STRING, routingContext);
                                 } else if (paramType.name().equals(DotNames.BUFFER)) {
@@ -1105,8 +1129,9 @@ class VertxWebProcessor {
                         .resultHandleProvider(new ResultHandleProvider() {
                             @Override
                             public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext,
-                                    MethodCreator invoke, int position) {
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                                registerForReflection(paramType, reflectiveHierarchy);
                                 AssignableResultHandle ret = invoke.createVariable(Object.class);
                                 ResultHandle bodyAsJson = invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON,
                                         routingContext);
@@ -1199,9 +1224,9 @@ class VertxWebProcessor {
         }
 
         ResultHandle getResultHandle(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                ResultHandle routingContext,
-                MethodCreator invoke, int position) {
-            return provider.get(method, paramType, annotations, routingContext, invoke, position);
+                ResultHandle routingContext, MethodCreator invoke, int position,
+                BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            return provider.get(method, paramType, annotations, routingContext, invoke, position, reflectiveHierarchy);
         }
 
         @Override
@@ -1265,7 +1290,8 @@ class VertxWebProcessor {
     interface ResultHandleProvider {
 
         ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                ResultHandle routingContext, MethodCreator invoke, int position);
+                ResultHandle routingContext, MethodCreator invoke, int position,
+                BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy);
 
     }
 

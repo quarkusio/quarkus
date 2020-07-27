@@ -56,6 +56,7 @@
         <module>hibernate-tenancy</module>
         <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
+        <module>vertx-web</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
@@ -129,7 +130,7 @@
         <module>ide-launcher</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
-
+        
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>
         <module>grpc-tls</module>

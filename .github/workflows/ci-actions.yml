@@ -511,12 +511,13 @@ jobs:
               infinispan-client
               cache
           - category: HTTP
-            timeout: 55
+            timeout: 60
             test-modules: >
               resteasy-jackson
               resteasy-mutiny
               vertx
               vertx-http
+              vertx-web
               vertx-graphql
               virtual-http
               rest-client

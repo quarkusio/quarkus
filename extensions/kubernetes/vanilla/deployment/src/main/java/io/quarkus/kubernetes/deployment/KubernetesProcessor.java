@@ -302,130 +302,138 @@ class KubernetesProcessor {
         Path artifactPath = outputTarget.getOutputDirectory().resolve(
                 String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix));
 
-        final Map<String, String> generatedResourcesMap;
-        // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-        Project project = createProject(applicationInfo, artifactPath);
-        final SessionWriter sessionWriter = new SimpleFileWriter(project, false);
-        final SessionReader sessionReader = new SimpleFileReader(
-                project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
-                        .getEntriesSortedByPriority().stream()
-                        .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
-        sessionWriter.setProject(project);
+        try {
+            final Map<String, String> generatedResourcesMap;
+            // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
+            Project project = createProject(applicationInfo, artifactPath);
+            final SessionWriter sessionWriter = new SimpleFileWriter(project, false);
+            final SessionReader sessionReader = new SimpleFileReader(
+                    project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
+                            .getEntriesSortedByPriority().stream()
+                            .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
+            sessionWriter.setProject(project);
 
-        if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {
-            // needed for a fresh run
-            Session.clearSession();
-        }
-
-        final Session session = Session.getSession(new NoopLogger());
-
-        session.setWriter(sessionWriter);
-        session.setReader(sessionReader);
-
-        session.feed(Maps.fromProperties(config));
-
-        //Apply configuration
-        applyGlobalConfig(session, kubernetesConfig);
-
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-
-        boolean needToForceUpdateImagePullPolicy = needToForceUpdateImagePullPolicy(deploymentTargets, containerImage,
-                capabilities);
-        applyConfig(session, project, KUBERNETES, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
-                now, determineImagePullPolicy(kubernetesConfig, needToForceUpdateImagePullPolicy));
-        applyConfig(session, project, MINIKUBE, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
-                now, ImagePullPolicy.IfNotPresent);
-        applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now,
-                determineImagePullPolicy(openshiftConfig, needToForceUpdateImagePullPolicy));
-        applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
-                determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
-
-        applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
-        //When S2i is disabled we need to pass that information to dekorate.
-        //Also we need to make sure that the alternatives (instances of ImageConfiguration)
-        //are properly configured.
-        if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
-            session.configurators().add(new Configurator<ImageConfigurationFluent<?>>() {
-                @Override
-                public void visit(ImageConfigurationFluent<?> image) {
-                    containerImage.ifPresent(i -> {
-                        String group = ImageUtil.getRepository(i.getImage()).split("/")[0];
-                        image.withGroup(group);
-                        i.getRegistry().ifPresent(r -> {
-                            image.withRegistry(r);
-                        });
-                    });
-                }
-            });
-
-            //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
-            session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
-            session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
-                @Override
-                public void visit(S2iBuildConfigFluent<?> s2i) {
-                    s2i.withEnabled(false);
-                }
-            });
-        }
-        //apply build item configurations to the dekorate session.
-        applyBuildItems(session,
-                applicationInfo,
-                kubernetesConfig,
-                openshiftConfig,
-                knativeConfig,
-                deploymentTargets,
-                kubernetesAnnotations,
-                kubernetesLabels,
-                kubernetesEnvs,
-                kubernetesRoles,
-                kubernetesPorts,
-                baseImage,
-                containerImage,
-                command,
-                kubernetesHealthLivenessPath,
-                kubernetesHealthReadinessPath);
-
-        // write the generated resources to the filesystem
-        generatedResourcesMap = session.close();
-
-        List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
-        for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
-            Path path = Paths.get(resourceEntry.getKey());
-            //We need to ignore the config yml
-            if (!path.toFile().getParentFile().getName().equals("dekorate")) {
-                continue;
+            if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {
+                // needed for a fresh run
+                Session.clearSession();
             }
-            String fileName = path.toFile().getName();
-            Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
-            String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
-            resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
-            if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
-                String target = fileName.substring(0, fileName.lastIndexOf("."));
-                if (!deploymentTargets.contains(target)) {
+            final Session session = Session.getSession(new NoopLogger());
+
+            session.setWriter(sessionWriter);
+            session.setReader(sessionReader);
+
+            session.feed(Maps.fromProperties(config));
+
+            //Apply configuration
+            applyGlobalConfig(session, kubernetesConfig);
+
+            ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+
+            boolean needToForceUpdateImagePullPolicy = needToForceUpdateImagePullPolicy(deploymentTargets, containerImage,
+                    capabilities);
+            applyConfig(session, project, KUBERNETES, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
+                    now, determineImagePullPolicy(kubernetesConfig, needToForceUpdateImagePullPolicy));
+            applyConfig(session, project, MINIKUBE, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
+                    now, ImagePullPolicy.IfNotPresent);
+            applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now,
+                    determineImagePullPolicy(openshiftConfig, needToForceUpdateImagePullPolicy));
+            applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
+                    determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
+
+            applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
+            //When S2i is disabled we need to pass that information to dekorate.
+            //Also we need to make sure that the alternatives (instances of ImageConfiguration)
+            //are properly configured.
+            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
+                session.configurators().add(new Configurator<ImageConfigurationFluent<?>>() {
+                    @Override
+                    public void visit(ImageConfigurationFluent<?> image) {
+                        containerImage.ifPresent(i -> {
+                            String group = ImageUtil.getRepository(i.getImage()).split("/")[0];
+                            image.withGroup(group);
+                            i.getRegistry().ifPresent(r -> {
+                                image.withRegistry(r);
+                            });
+                        });
+                    }
+                });
+
+                //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
+                session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
+                session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
+                    @Override
+                    public void visit(S2iBuildConfigFluent<?> s2i) {
+                        s2i.withEnabled(false);
+                    }
+                });
+            }
+            //apply build item configurations to the dekorate session.
+            applyBuildItems(session,
+                    applicationInfo,
+                    kubernetesConfig,
+                    openshiftConfig,
+                    knativeConfig,
+                    deploymentTargets,
+                    kubernetesAnnotations,
+                    kubernetesLabels,
+                    kubernetesEnvs,
+                    kubernetesRoles,
+                    kubernetesPorts,
+                    baseImage,
+                    containerImage,
+                    command,
+                    kubernetesHealthLivenessPath,
+                    kubernetesHealthReadinessPath);
+
+            // write the generated resources to the filesystem
+            generatedResourcesMap = session.close();
+
+            List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
+            for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
+                Path path = Paths.get(resourceEntry.getKey());
+                //We need to ignore the config yml
+                if (!path.toFile().getParentFile().getName().equals("dekorate")) {
                     continue;
                 }
+                String fileName = path.toFile().getName();
+                Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
+                String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
+
+                resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
+                if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
+                    String target = fileName.substring(0, fileName.lastIndexOf("."));
+                    if (!deploymentTargets.contains(target)) {
+                        continue;
+                    }
+                }
+
+                generatedFileNames.add(fileName);
+                generatedResourceProducer.produce(
+                        new GeneratedFileSystemResourceBuildItem(
+                                // we need to make sure we are only passing the relative path to the build item
+                                relativePath,
+                                resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
             }
 
-            generatedFileNames.add(fileName);
-            generatedResourceProducer.produce(
-                    new GeneratedFileSystemResourceBuildItem(
-                            // we need to make sure we are only passing the relative path to the build item
-                            relativePath,
-                            resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
-        }
-
-        if (!generatedFileNames.isEmpty()) {
-            log.infof("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
-                    outputTarget.getOutputDirectory() + File.separator + KUBERNETES);
-        }
-
-        try {
-            if (root != null && root.toFile().exists()) {
-                FileUtil.deleteDirectory(root);
+            if (!generatedFileNames.isEmpty()) {
+                log.infof("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
+                        outputTarget.getOutputDirectory() + File.separator + KUBERNETES);
             }
-        } catch (IOException e) {
-            log.debug("Unable to delete temporary directory " + root, e);
+
+            try {
+                if (root != null && root.toFile().exists()) {
+                    FileUtil.deleteDirectory(root);
+                }
+            } catch (IOException e) {
+                log.debug("Unable to delete temporary directory " + root, e);
+            }
+        } catch (Exception e) {
+            if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
+                throw e;
+            }
+
+            log.warn("Failed to generate Kubernetes resources", e);
         }
     }
 

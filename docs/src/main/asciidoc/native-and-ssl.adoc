@@ -190,6 +190,7 @@ will ensure that the certificates of `/tmp/mycerts` are baked into the native bi
 The file containing the custom TrustStore does *not* have to be present at runtime as its content has been baked into the native binary.
 ====
 
+[#working-with-containers]
 === Working with containers
 
 No special action needs to be taken when running the native binary in a container. If the native binary was properly built with the custom TrustStore

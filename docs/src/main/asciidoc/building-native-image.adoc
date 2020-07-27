@@ -298,19 +298,18 @@ failsafe.
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.
 
-== Creating a container
+[#container-runtime]
+== Creating a Linux executable without GraalVM installed
 
-IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker 
+IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker
 on Windows you should share your project's drive at Docker Desktop file share settings and restart Docker Desktop.
 
-You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
-However, in this guide we focus on creating a container image using the produced native executable.
+Quite often one only needs to create a native Linux executable for their Quarkus application (for example in order to run in a containerized environment) and would like to avoid
+the trouble of installing the proper GraalVM version in order to accomplish this task (for example, in CI environments it's common practice
+to install as little software as possible).
 
-image:containerization-process.png[Containerization Process]
-
-By default, the native executable is tailored for your operating system (Linux, macOS, Windows etc).
-Because the container may not use the same _executable_ format as the one produced by your operating system,
-we will instruct the Maven build to produce an executable from inside a container:
+To this end, Quarkus provides a very convenient way of creating a native Linux executable by leveraging a container runtime such as Docker or podman.
+The easiest way of accomplishing this task is to execute:
 
 [source, shell]
 ----
@@ -328,10 +327,40 @@ You can also select the container runtime to use with:
 ./mvnw package -Pnative -Dquarkus.native.container-runtime=podman
 ----
 
+
 These are normal Quarkus config properties, so if you always want to build in a container
-it is recommended you add these to your `application.properties` so you do not need to specify them every time.
+it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 
 ====
+
+== Creating a container
+
+=== Using the container-image extensions
+
+By far the easiest way to create a container-image from your Quarkus application is to leverage one of the container-image extensions.
+
+If one of those extensions is present, then creating a container image for the native executable is essentially a matter of executing a single command:
+
+[source, shell]
+----
+./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
+----
+
+* `quarkus.native.container-build=true` allows for creating a Linux executable without GraalVM being installed (and is only necessary if you don't have GraalVM installed locally or your local operating system is not Linux)
+* `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)
+
+See the link:container-image[Container Image guide] for more details.
+
+=== Manually
+
+You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
+However, in this section we focus on creating a container image using the produced native executable.
+
+image:containerization-process.png[Containerization Process]
+
+When using a local GraalVM installation, the native executable targets your local operating system (Linux, macOS, Windows etc).
+However, as a container may not use the same _executable_ format as the one produced by your operating system,
+we will instruct the Maven build to produce an executable by leveraging a container runtime (as described in <<#container-runtime,this section>>):
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a container.
@@ -375,9 +404,9 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ----
 
-NOTE: Interested by tiny Docker images, check the {quarkus-images-url}/master/distroless[distroless] version.
+NOTE: If you are interested in tiny Docker images, check the {quarkus-images-url}/master/distroless[distroless] version.
 
-== Creating a container with a multi-stage Docker build
+=== Using a multi-stage Docker build
 
 The previous section showed you how to build a native executable using Maven, but implicitly required that the proper GraalVM version be installed on the building machine (be it your local machine or your CI/CD infrastructure).
 
@@ -442,9 +471,9 @@ Please see link:native-and-ssl#working-with-containers[our Using SSL With Native
 ====
 
 [[configuration-reference]]
-== Configuring the Native Image
+== Configuring the Native Executable
 
-There are a lot of different configuration options that can affect how the native image is generated.
+There are a lot of different configuration options that can affect how the native executable is generated.
 These are provided in `application.properties` the same as any other config property.
 
 The properties are shown below:

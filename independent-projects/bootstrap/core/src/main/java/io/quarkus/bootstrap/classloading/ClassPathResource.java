@@ -30,4 +30,10 @@ public interface ClassPathResource {
      */
     byte[] getData();
 
+    /**
+     *
+     * @return <code>true</code> if the entry is a directory
+     */
+    boolean isDirectory();
+
 }

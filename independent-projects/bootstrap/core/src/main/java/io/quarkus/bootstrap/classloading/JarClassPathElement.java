@@ -105,6 +105,11 @@ public class JarClassPathElement implements ClassPathElement {
                                 }
                             });
                         }
+
+                        @Override
+                        public boolean isDirectory() {
+                            return res.getName().endsWith("/");
+                        }
                     };
                 }
                 return null;

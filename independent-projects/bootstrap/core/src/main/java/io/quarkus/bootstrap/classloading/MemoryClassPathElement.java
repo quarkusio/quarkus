@@ -79,6 +79,11 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
             public byte[] getData() {
                 return res;
             }
+
+            @Override
+            public boolean isDirectory() {
+                return false;
+            }
         };
     }
 

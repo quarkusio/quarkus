@@ -400,7 +400,7 @@ jobs:
       max-parallel: 8
       fail-fast: false
       matrix:
-        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Security3, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Misc4, Spring, gRPC]
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Data6, Security1, Security2, Security3, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Misc4, Spring, gRPC]
         include:
           - category: Main
             postgres: "true"

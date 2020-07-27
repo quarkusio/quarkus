@@ -27,8 +27,15 @@ To complete this guide, you need:
 
 == Solution
 
-This guide walks you through generating a sample project followed by creating multiple functions showing how to implements `HttpFunction`, `BackgroundFunction` and `RawBackgroundFunction` in Quarkus..
+This guide walks you through generating a sample project followed by creating multiple functions showing how to implement `HttpFunction`, `BackgroundFunction` and `RawBackgroundFunction` in Quarkus.
 Once built, you will be able to deploy the project to Google Cloud.
+
+If you don't want to follow all these steps, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `google-cloud-functions-quickstart` {quickstarts-tree-url}/google-cloud-functions-quickstart[directory].
+
 
 == Creating the Maven Deployment Project
 
@@ -44,6 +51,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -Dpath="/hello" \
     -Dextensions="google-cloud-functions"
 ----
+
+Now, let's remove what's not needed inside the generated application:
+
+- Remove the dependency `io.quarkus:quarkus-reasteasy` from your `pom.xml` file.
+- Remove the generated `org.acme.quickstart.GreetingResource` class.
+- Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
+- Remove the existing tests.
 
 == Login to Google Cloud
 
@@ -69,7 +83,7 @@ For this example project, we will create three functions, one `HttpFunction`, on
 
 The `quarkus-google-cloud-functions` extension scans your project for a class that directly implements the Google Cloud `HttpFunction`, `BackgroundFunction` or `RawBakgroundFunction` interface.
 It must find a class in your project that implements one of these interfaces or it will throw a build time failure.
-If it finds more than one function class, a build time exception will also be thrown.
+If it finds more than one function classes, a build time exception will also be thrown.
 
 Sometimes, though, you might have a few related functions that share code and creating multiple maven modules is just
 an overhead you don't want to do.  The extension allows you to bundle multiple functions in one
@@ -154,7 +168,7 @@ public class BackgroundFunctionStorageTest implements BackgroundFunction<Backgro
     @Override
     public void accept(StorageEvent event, Context context) throws Exception { // <5>
         System.out.println("Receive event: " + event);
-        System.out.println("Be polite, say" + greetingService.hello());
+        System.out.println("Be polite, say " + greetingService.hello());
     }
 
     //
@@ -192,7 +206,7 @@ public class RawBackgroundFunctionPubSubTest implements RawBackgroundFunction { 
     @Override
     public void accept(String event, Context context) throws Exception { // <5>
         System.out.println("PubSub event: " + event);
-        System.out.println("Be polite, say" + greetingService.hello());
+        System.out.println("Be polite, say " + greetingService.hello());
     }
 }
 ----
@@ -264,6 +278,15 @@ gcloud beta functions deploy quarkus-example-storage \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
+To trigger the event, you can send a file to the GCS `quarkus-hello` bucket or you can use gcloud to simulate one:
+
+[source]
+----
+gcloud functions call quarkus-example-storage  --data '{"name":"test.txt"}'
+----
+
+NOTE: `--data` contains the GCS event, it is a JSON document with the name of the file added to the bucket.
+
 === The RawBackgroundFunction
 
 This is an example command to deploy your `RawBackgroundFunction` to Google Cloud, as the function is triggered by a PubSub event,
@@ -280,6 +303,13 @@ gcloud beta functions deploy quarkus-example-pubsub \
 ====
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
+
+To trigger the event, you can send a file to the `hello_topic` topic of you can use gcloud to simulate one:
+
+[source]
+----
+gcloud functions call quarkus-example-pubsub --data '{"data":{"greeting":"world"}}'
+----
 
 == Testing locally
 

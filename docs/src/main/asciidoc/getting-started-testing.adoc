@@ -303,6 +303,43 @@ public class TestStereotypeTestCase {
 }
 ----
 
+== Enrichment via QuarkusTest*Callback
+
+Alternatively or additionally to an interceptor, you can enrich *all* your `@QuarkusTest` classes by implementing the following callback interfaces:
+
+* `io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback`
+* `io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback`
+* `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
+
+Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
+
+E.g. the following sample callback:
+[source,java]
+----
+package org.acme.getting.started.testing;
+
+import io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback;
+import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
+
+public class MyQuarkusTestBeforeEachCallback implements QuarkusTestBeforeEachCallback {
+
+    @Override
+    public void beforeEach(QuarkusTestMethodContext context) {
+        System.out.println("Executing " + context.getTestMethod());
+    }
+}
+----
+has to be registered via `src/main/resources/META-INF/services/io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback` as follows:
+[source]
+----
+org.acme.getting.started.testing.MyQuarkusTestBeforeEachCallback
+----
+
+TIP: It is possible to read annotations from the test class or method to control what the callback shall be doing.
+
+WARNING: While it is possible to use JUnit Jupiter callback interfaces like `BeforeEachCallback`, you might run into classloading issues because Quarkus has
+         to run tests in a custom classloader which JUnit is not aware of.
+
 [[testing_different_profiles]]
 == Testing Different Profiles
 

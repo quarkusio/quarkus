@@ -50,6 +50,9 @@
 - labels: [area/openapi]
   title: "(?i).*openapi.*"
   notify: [EricWittmann,MikeEdgar,phillip-kruger]
+- labels: [area/graphql]
+  title: "(?i).*graphql.*"
+  notify: [phillip-kruger,jmartisk]  
 - labels: [area/panache]
   title: "(?i).*panache.*"
   description: "(?i).*panache.*"

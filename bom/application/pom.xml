@@ -260,7 +260,7 @@
             <!-- Vert.x dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.vertx</groupId>
-                <artifactId>vertx-stack-depchain</artifactId>
+                <artifactId>vertx-dependencies</artifactId>
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>

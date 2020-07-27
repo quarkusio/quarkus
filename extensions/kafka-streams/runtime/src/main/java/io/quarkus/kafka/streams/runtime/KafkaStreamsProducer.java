@@ -94,7 +94,7 @@ public class KafkaStreamsProducer {
     @Singleton
     @Unremovable
     @Startup
-    public KafkaStreamsTopologyManager kafkaStreamsTopologyManage() {
+    public KafkaStreamsTopologyManager kafkaStreamsTopologyManager() {
         return kafkaStreamsTopologyManager;
     }
 

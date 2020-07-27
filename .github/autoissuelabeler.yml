@@ -40,6 +40,10 @@
   title: "(?i).*hibernate validator.*"
   description: "(?i).*hibernate validator.*"
   notify: [gsmet]
+- labels: [area/jaeger]
+  title: "(?i).*jaeger.*"
+  description: "(?i).*jaeger.*"
+  notify: [kenfinnigan,pavolloffay]
 - labels: [area/kotlin]
   title: "(?i).*kotlin.*"
   description: "(?i).*kotlin.*"
@@ -61,6 +65,18 @@
   title: "(?i).*qute.*"
   description: "(?i).*qute.*"
   notify: [mkouba]
+- labels: [area/reactive-messaging]
+  title: "(?i).*reactive messaging.*"
+  description: "(?i).*reactive messaging.*"
+  notify: [cescoffier,kenfinnigan,phillip-kruger]
+- labels: [area/rest-client]
+  title: "(?i).*rest client.*"
+  description: "(?i).*rest client.*"
+  notify: [phillip-kruger]
+- labels: [area/smallrye]
+  title: "(?i).*smallrye.*"
+  description: "(?i).*smallrye.*"
+  notify: [kenfinnigan,phillip-kruger,jmartisk,radcortez,Ladicek]
 - labels: [area/spring]
   title: "(?i).*spring.*"
   description: "(?i).*spring.*"

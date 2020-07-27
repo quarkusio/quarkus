@@ -108,6 +108,11 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
                         throw new RuntimeException("Unable to read " + file, e);
                     }
                 }
+
+                @Override
+                public boolean isDirectory() {
+                    return Files.isDirectory(file);
+                }
             };
         }
         return null;

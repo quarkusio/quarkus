@@ -47,12 +47,36 @@
   title: "(?i).*mongo.*"
   description: "(?i).*mongo.*"
   notify: [loicmathieu]
-- labels: [area/openapi]
+- labels: [area/openapi, area/smallrye]
   title: "(?i).*openapi.*"
   notify: [EricWittmann,MikeEdgar,phillip-kruger]
-- labels: [area/graphql]
+- labels: [area/graphql, area/smallrye]
   title: "(?i).*graphql.*"
-  notify: [phillip-kruger,jmartisk]  
+  notify: [phillip-kruger,jmartisk]
+- labels: [area/reactive-messaging, area/smallrye]
+  title: "(?i).*reactive.messaging.*"
+  notify: [kenfinnigan,cescoffier,phillip-kruger]
+- labels: [area/tracing, area/smallrye]
+  title: "(?i).*(trace|tracing|telemetry).*"
+  notify: [kenfinnigan,Ladicek]
+- labels: [area/config, area/smallrye]
+  title: "(?i).*config.*"
+  notify: [radcortez]
+- labels: [area/security, area/smallrye]
+  title: "(?i).*jwt.*"
+  notify: [radcortez]
+- labels: [area/metrics, area/smallrye]
+  title: "(?i).*metrics.*"
+  notify: [jmartisk]
+- labels: [area/health, area/smallrye]
+  title: "(?i).*health.*"
+  notify: [jmartisk,xstefank]
+- labels: [area/fault-tolerance, area/smallrye]
+  title: "(?i).*fault.tolerance.*"
+  notify: [Ladicek]
+- labels: [area/mutiny, area/smallrye]
+  title: "(?i).*mutiny.*"
+  notify: [cescoffier]
 - labels: [area/panache]
   title: "(?i).*panache.*"
   description: "(?i).*panache.*"

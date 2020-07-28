@@ -265,7 +265,7 @@ Let's see what happens if we start from one day in the future using the `http://
 You should get an answer two seconds later since two of the requested days were already loaded in the cache.
 
 You can also try calling the same URL with a different city and see the cache in action again.
-The first call will take six seconds and the following ones will be answered immediately.  
+The first call will take six seconds and the following ones will be answered immediately.
 
 Congratulations! You just added application data caching to your Quarkus application with a single line of code!
 
@@ -295,6 +295,12 @@ The lock timeout is disabled by default, meaning the lock is never interrupted.
 See the parameter Javadoc for more details.
 
 This annotation cannot be used on a method returning `void`.
+
+[NOTE]
+====
+Quarkus is able to also cache `null` values unlike the underlying Caffeine provider.
+See <<negative-cache,more on this topic below>>.
+====
 
 === @CacheInvalidate
 
@@ -484,5 +490,88 @@ public class CachedService {
     }
 }
 ----
-<1> This method can be used to force a refresh of the cache entry corresponding to the given key. 
+<1> This method can be used to force a refresh of the cache entry corresponding to the given key.
 <2> This method will invalidate all entries from the `foo` and `bar` caches with a single call.
+
+[#negative-cache]
+== Negative caching and nulls
+
+Sometimes one wants to cache the results of an (expensive) remote call.
+If the remote call fails, one may not want to cache the result or exception,
+but rather re-try the remote call on the next invocation.
+
+A simple approach could be to catch the exception and return `null`, so that the caller can
+act accordingly:
+
+.Sample code
+[souce,java]
+----
+    public void caller(int val) {
+
+        Integer result = callRemote(val);  //<1>
+        if (result == null) {
+            System.out.println("Result is " + result);
+        else {
+           System.out.println("Got an exception");
+        }
+    }
+
+    @CacheResult(name = "foo")
+    private Integer callRemote(int val)  {
+
+        try {
+            Integer val = remoteWebServer.getResult(val);  //<2>
+            return val;
+        } catch (Exception e) {
+            return null;  // <3>
+        }
+    }
+----
+<1> Call the method to call the remote
+<2> Do the remote call and return its result
+<3> Return in case of exception
+
+This approach has an unfortunate side effect: as we said before, Quarkus can also cache
+`null` values. Which means that the next call to `callRemote()` with the same parameter value
+will be answered out of the cache, returning `null` and no remote call will be done.
+This may be desired in some scenarios, but usually one wants to retry the remote call until it returns a result.
+
+=== Let exceptions bubble up
+
+To prevent the cache from caching (marker) results from a remote call, we need to let
+the exception bubble out of the called method and catch it at the caller side:
+
+.With Exception bubbling up
+[souce,java]
+----
+   public void caller(int val) {
+       try {
+           Integer result = callRemote(val);  //<1>
+           System.out.println("Result is " + result);
+       } catch (Exception e) {
+           System.out.println("Got an exception");
+   }
+
+   @CacheResult(name = "foo")
+   private Integer callRemote(int val) throws Exception { // <2>
+
+      Integer val = remoteWebServer.getResult(val);  //<3>
+      return val;
+
+   }
+----
+<1> Call the method to call the remote
+<2> Exceptions may bubble up
+<3> This can throw all kinds of remote exceptions
+
+When the call to the remote throws an exception, the cache does not store the result,
+so that a subsequent call to `callRemote()` with the same parameter value will not be
+answered out of the cache.
+It will instead result in another
+attempt to call the remote.
+
+The previous code example has the side-effect that the cache logs the thrown exception
+with a long stack trace to the console. This is done to inform developers that something
+exceptional has happened, but if you have a setup like above, you are already catching
+the exception and know what you are doing.
+

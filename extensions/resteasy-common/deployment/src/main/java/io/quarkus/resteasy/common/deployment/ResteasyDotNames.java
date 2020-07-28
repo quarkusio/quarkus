@@ -80,28 +80,19 @@ public final class ResteasyDotNames {
 
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
-            // Jackson
-            DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),
-
-            // JAX-RS
-            DotName.createSimple("javax.ws.rs.core.Response"),
-            DotName.createSimple("javax.ws.rs.core.Response.StatusType"),
-            DotName.createSimple("javax.ws.rs.container.AsyncResponse"),
-            DotName.createSimple("javax.ws.rs.core.StreamingOutput"),
-            DotName.createSimple("javax.ws.rs.core.Form"),
-            DotName.createSimple("javax.ws.rs.core.MultivaluedMap"),
-
-            // RESTEasy
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartOutput"),
-            DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput"),
-
-            // Vert-x
-            DotName.createSimple("io.vertx.core.json.JsonArray"),
-            DotName.createSimple("io.vertx.core.json.JsonObject")));
+    // Consider adding packages below instead if it makes more sense
+    ));
 
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
-            "javax.json."
+            // JSON-P
+            "javax.json.",
+            // Jackson
+            "com.fasterxml.jackson.databind.",
+            // JAX-RS
+            "javax.ws.rs.",
+            // RESTEasy
+            "org.jboss.resteasy.",
+            // Vert.x JSON layer
+            "io.vertx.core.json."
     };
 }

@@ -29,7 +29,7 @@ import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
-import io.quarkus.mongodb.panache.config.MongoEntityConfigProvider;
+import io.quarkus.mongodb.panache.config.MongoDatabaseNameHelper;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
@@ -267,7 +267,7 @@ public class MongoOperations {
     }
 
     private static MongoDatabase mongoDatabase(MongoEntity entity) {
-        String databaseName = MongoEntityConfigProvider.getMongoDatabaseName(entity);
+        String databaseName = MongoDatabaseNameHelper.getMongoDatabaseName(entity);
         MongoClient mongoClient = mongoClient(entity);
         return mongoClient.getDatabase(databaseName);
     }

@@ -23,7 +23,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
-import io.quarkus.mongodb.panache.config.MongoEntityConfigProvider;
+import io.quarkus.mongodb.panache.config.MongoDatabaseNameHelper;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -290,7 +290,7 @@ public class ReactiveMongoOperations {
     }
 
     private static ReactiveMongoDatabase mongoDatabase(MongoEntity entity) {
-        String databaseName = MongoEntityConfigProvider.getMongoDatabaseName(entity);
+        String databaseName = MongoDatabaseNameHelper.getMongoDatabaseName(entity);
         ReactiveMongoClient mongoClient = mongoClient(entity);
         return mongoClient.getDatabase(databaseName);
     }

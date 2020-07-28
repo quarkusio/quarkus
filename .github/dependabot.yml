@@ -108,6 +108,11 @@ updates:
       - dependency-name: com.github.ben-manes.caffeine:caffeine
       # Jackson
       - dependency-name: com.fasterxml.jackson:jackson-bom
+      # AWS
+      - dependency-name: software.amazon.awssdk:bom
+      - dependency-name: software.amazon.awssdk:apache-client
+      - dependency-name: com.amazon.alexa:ask-sdk
+      - dependency-name: com.amazon.alexa:ask-sdk-apache-client
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

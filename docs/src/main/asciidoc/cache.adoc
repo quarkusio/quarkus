@@ -327,6 +327,49 @@ method annotated with `@CacheResult` or `@CacheInvalidate`.
 
 This annotation is optional and should only be used when some of the method arguments are NOT part of the cache key.
 
+=== Composite cache key building logic
+
+When a cache key is built from several method arguments, whether they are explicitly identified with `@CacheKey` or not, the building logic depends on the order of these arguments in the method signature. On the other hand, the arguments names are not used at all and do not have any effect on the cache key.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheResult;
+
+@ApplicationScoped
+public class CachedService {
+
+    @CacheResult(cacheName = "foo")
+    public Object load(String keyElement1, Integer keyElement2) {
+        // Call expensive service here.
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate1(String keyElement2, Integer keyElement1) { <1>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate2(Integer keyElement2, String keyElement1) { <2>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate3(Object notPartOfTheKey, @CacheKey String keyElement1, @CacheKey Integer keyElement2) { <3>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate4(Object notPartOfTheKey, @CacheKey Integer keyElement2, @CacheKey String keyElement1) { <4>
+    }
+}
+----
+<1> Calling this method WILL invalidate values cached by the `load` method even if the key elements names have been swapped.
+<2> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
+<3> Calling this method WILL invalidate values cached by the `load` method because the key elements order is the same.
+<4> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
+
 == Configuring the underlying caching provider
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.
@@ -504,7 +547,7 @@ A simple approach could be to catch the exception and return `null`, so that the
 act accordingly:
 
 .Sample code
-[souce,java]
+[source,java]
 ----
     public void caller(int val) {
 
@@ -542,7 +585,7 @@ To prevent the cache from caching (marker) results from a remote call, we need t
 the exception bubble out of the called method and catch it at the caller side:
 
 .With Exception bubbling up
-[souce,java]
+[source,java]
 ----
    public void caller(int val) {
        try {

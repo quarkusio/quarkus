@@ -4258,11 +4258,6 @@
                 <artifactId>qute-generator</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus.qute</groupId>
-                <artifactId>qute-mutiny</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <!-- Jib -->
             <dependency>

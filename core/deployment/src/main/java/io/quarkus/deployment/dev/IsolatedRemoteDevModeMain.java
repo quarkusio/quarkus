@@ -38,6 +38,7 @@ import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
@@ -121,8 +122,10 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
+            //this is never the remote side
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(applicationRoot, context, compiler,
-                    this::regenerateApplication, new BiConsumer<DevModeContext.ModuleInfo, String>() {
+                    DevModeType.REMOTE_LOCAL_SIDE, this::regenerateApplication,
+                    new BiConsumer<DevModeContext.ModuleInfo, String>() {
                         @Override
                         public void accept(DevModeContext.ModuleInfo moduleInfo, String s) {
                             copiedStaticResources.computeIfAbsent(moduleInfo, ss -> new HashSet<>()).add(s);

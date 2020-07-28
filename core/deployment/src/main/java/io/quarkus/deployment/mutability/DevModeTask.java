@@ -32,6 +32,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedDevModeMain;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.dev.spi.DevModeType;
 
 @SuppressWarnings("Unused")
 public class DevModeTask {
@@ -65,6 +66,7 @@ public class DevModeTask {
             Map<String, Object> map = new HashMap<>();
             map.put(DevModeContext.class.getName(), context);
             map.put(IsolatedDevModeMain.APP_ROOT, appRoot);
+            map.put(DevModeType.class.getName(), DevModeType.REMOTE_SERVER_SIDE);
             return (Closeable) bootstrap.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(),
                     map);
 

@@ -27,6 +27,13 @@ public interface HotReplacementContext {
     boolean isTest();
 
     /**
+     * Will return true if this is the remote side of a remote dev session
+     * 
+     * @return
+     */
+    DevModeType getDevModeType();
+
+    /**
      *
      * @return {@code true} if a restart was performed, {@code false} otherwise
      * @throws Exception

@@ -4,7 +4,6 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.BytesOnlyMarshaller;
 import org.infinispan.commons.marshall.Marshaller;
 
-import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -15,11 +14,9 @@ import com.oracle.svm.core.annotate.TargetClass;
  */
 @TargetClass(ConfigurationBuilder.class)
 public final class SubstituteConfigurationBuilder {
-    @Alias
-    private Marshaller marshaller;
 
     @Substitute
-    private void handleNullMarshaller() {
-        marshaller = BytesOnlyMarshaller.INSTANCE;
+    private Marshaller handleNullMarshaller() {
+        return BytesOnlyMarshaller.INSTANCE;
     }
 }

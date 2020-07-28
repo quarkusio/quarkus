@@ -9,9 +9,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
-Undertow (servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
+Undertow (Servlet) or Vert.x Web, and make these microservices deployable to the Google Cloud Functions runtime.
 
-One Google Cloud Functions deployment can represent any number of JAX-RS, servlet, or Vert.x Web endpoints.
+One Google Cloud Functions deployment can represent any number of JAX-RS, Servlet, or Vert.x Web endpoints.
 
 As the Google Cloud Function Java engine is a new Beta feature of Google Cloud, this extension is flagged as experimental.
 
@@ -32,6 +32,12 @@ To complete this guide, you need:
 This guide walks you through generating a sample project followed by creating three HTTP endpoints
 written with JAX-RS APIs, Servlet APIs or Vert.x Web APIs. Once built, you will be able to deploy
 the project to Google Cloud.
+
+If you don't want to follow all these steps, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `google-cloud-functions-http-quickstart` {quickstarts-tree-url}/google-cloud-functions-http-quickstart[directory].
 
 == Creating the Maven Deployment Project
 

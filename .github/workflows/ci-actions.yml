@@ -12,7 +12,7 @@ on:
       - 'TROUBLESHOOTING.md'
       - 'SECURITY.md'
       - 'MAINTAINERS.adoc'
-      - 'DECISIONS.adoc',
+      - 'DECISIONS.adoc'
       - 'LICENSE.txt'
       - 'dco.txt'
       - '.github/ISSUE_TEMPLATE/**'

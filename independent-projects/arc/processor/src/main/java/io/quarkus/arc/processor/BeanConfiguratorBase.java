@@ -224,7 +224,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
             ResultHandle destoyerHandle = mc.newInstance(MethodDescriptor.ofConstructor(destroyerClazz));
             ResultHandle[] params = { mc.getMethodParam(0), mc.getMethodParam(1), paramsHandle };
             mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", Void.class, Object.class, CreationalContext.class,
+                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", void.class, Object.class, CreationalContext.class,
                             Map.class),
                     destoyerHandle, params);
             mc.returnValue(null);

@@ -112,3 +112,15 @@
   title: "(?i).*grpc.*"
   description: "(?i).*grpc.*"
   notify: [michalszynkiewicz,cescoffier]
+- labels: [area/scheduler]
+  title: "(?i).*schedule(r)?.*"
+  description: "(?i).*schedule(r)?.*"
+  notify: [mkouba]
+- labels: [area/scheduler]
+  title: "(?i).*quartz.*"
+  description: "(?i).*quartz.*"
+  notify: [mkouba,machi1990]
+- labels: [area/redis]
+  title: "(?i).*redis.*"
+  description: "(?i).*redis.*"
+  notify: [machi1990, gsmet, cescoffier]

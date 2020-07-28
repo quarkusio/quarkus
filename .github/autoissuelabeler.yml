@@ -51,12 +51,38 @@
   title: "(?i).*mongo.*"
   description: "(?i).*mongo.*"
   notify: [loicmathieu]
-- labels: [area/openapi]
+- labels: [area/openapi, area/smallrye]
   title: "(?i).*openapi.*"
+  description: "(?i).*openapi.*"
   notify: [EricWittmann,MikeEdgar,phillip-kruger]
-- labels: [area/graphql]
+- labels: [area/graphql, area/smallrye]
   title: "(?i).*graphql.*"
-  notify: [phillip-kruger,jmartisk]  
+  description: "(?i).*graphql.*"
+  notify: [phillip-kruger,jmartisk]
+- labels: [area/tracing, area/smallrye]
+  title: "(?i).*(trace|tracing|telemetry).*"
+  description: "(?i).*(trace|tracing|telemetry).*"
+  notify: [kenfinnigan,Ladicek]
+- labels: [area/security, area/smallrye]
+  title: "(?i).*jwt.*"
+  description: "(?i).*jwt.*"
+  notify: [radcortez]
+- labels: [area/metrics, area/smallrye]
+  title: "(?i).*metrics.*"
+  description: "(?i).*metrics.*"
+  notify: [jmartisk]
+- labels: [area/health, area/smallrye]
+  title: "(?i).*health.*"
+  description: "(?i).*health.*"
+  notify: [jmartisk,xstefank]
+- labels: [area/fault-tolerance, area/smallrye]
+  title: "(?i).*fault.tolerance.*"
+  description: "(?i).*fault.tolerance.*"
+  notify: [Ladicek]
+- labels: [area/mutiny, area/smallrye]
+  title: "(?i).*mutiny.*"
+  description: "(?i).*mutiny.*"
+  notify: [cescoffier]
 - labels: [area/panache]
   title: "(?i).*panache.*"
   description: "(?i).*panache.*"
@@ -65,13 +91,13 @@
   title: "(?i).*qute.*"
   description: "(?i).*qute.*"
   notify: [mkouba]
-- labels: [area/reactive-messaging]
-  title: "(?i).*reactive messaging.*"
-  description: "(?i).*reactive messaging.*"
+- labels: [area/reactive-messaging,area/smallrye]
+  title: "(?i).*reactive.messaging.*"
+  description: "(?i).*reactive.messaging.*"
   notify: [cescoffier,kenfinnigan,phillip-kruger]
 - labels: [area/rest-client]
-  title: "(?i).*rest client.*"
-  description: "(?i).*rest client.*"
+  title: "(?i).*rest.client.*"
+  description: "(?i).*rest.client.*"
   notify: [phillip-kruger]
 - labels: [area/smallrye]
   title: "(?i).*smallrye.*"

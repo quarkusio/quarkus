@@ -247,18 +247,6 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static Index handleFilePath(Path path) throws IOException {
-        Path existing = path.resolve(JANDEX_INDEX);
-        if (Files.exists(existing)) {
-            try (FileInputStream in = new FileInputStream(existing.toFile())) {
-                IndexReader reader = new IndexReader(in);
-                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                    LOGGER.warnf("Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency", path);
-                    return indexFilePath(path);
-                } else {
-                    return reader.read();
-                }
-            }
-        }
         return indexFilePath(path);
     }
 

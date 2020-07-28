@@ -3,13 +3,14 @@ package io.quarkus.elytron.security.runtime;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
  * }
  */
-@ConfigRoot(name = "security.users.embedded")
+@ConfigRoot(name = "security.users.embedded", phase = ConfigPhase.RUN_TIME)
 public class MPRealmRuntimeConfig {
 
     /**

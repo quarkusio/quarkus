@@ -232,14 +232,6 @@ class VertxWebProcessor {
             for (AnnotationInstance route : businessMethod.getRoutes()) {
                 String routeString = route.toString(true);
                 Handler<RoutingContext> routeHandler = routeHandlers.get(routeString);
-                if (routeHandler == null) {
-                    String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
-                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
-                            routeString, reflectiveHierarchy);
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
-                    routeHandler = recorder.createHandler(handlerClass);
-                    routeHandlers.put(routeString, routeHandler);
-                }
 
                 AnnotationValue regexValue = route.value(VALUE_REGEX);
                 AnnotationValue pathValue = route.value(VALUE_PATH);
@@ -252,6 +244,7 @@ class VertxWebProcessor {
                 String regex = null;
                 String[] produces = producesValue.asStringArray();
                 String[] consumes = consumesValue.asStringArray();
+
                 HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
                         .toArray(HttpMethod[]::new);
                 Integer order = orderValue.asInt();
@@ -287,6 +280,15 @@ class VertxWebProcessor {
                     consumes = baseConsumes;
                 }
 
+                if (routeHandler == null) {
+                    String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
+                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
+                            routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null);
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+                    routeHandler = recorder.createHandler(handlerClass);
+                    routeHandlers.put(routeString, routeHandler);
+                }
+
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
@@ -316,7 +318,7 @@ class VertxWebProcessor {
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(new HandlerDescriptor(filterMethod.getMethod()),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
-                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy);
+                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -408,7 +410,7 @@ class VertxWebProcessor {
 
     private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput,
             TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces) {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -446,7 +448,7 @@ class VertxWebProcessor {
 
         implementConstructor(bean, invokerCreator, beanField, contextField, containerField);
         implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField, transformedAnnotations,
-                reflectiveHierarchy);
+                reflectiveHierarchy, defaultProduces);
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
@@ -482,7 +484,7 @@ class VertxWebProcessor {
     void implementInvoke(HandlerDescriptor descriptor, BeanInfo bean, MethodInfo method, ClassCreator invokerCreator,
             FieldCreator beanField, FieldCreator contextField, FieldCreator containerField,
             TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces) {
         // The descriptor is: void invoke(RoutingContext rc)
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
@@ -544,11 +546,13 @@ class VertxWebProcessor {
         MethodDescriptor methodDescriptor = MethodDescriptor
                 .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType, parameterTypes);
 
+        // If no content-type header is set then try to use the most acceptable content type
+        // the business method can override this manually if required
+        invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext,
+                defaultProduces == null ? invoke.loadNull() : invoke.load(defaultProduces));
+
         // Invoke the business method handler
         ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
-
-        // If no content-type header is set then try to use the most acceptable content type
-        invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext);
 
         // Get the response: HttpServerResponse response = rc.response()
         MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);

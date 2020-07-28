@@ -110,7 +110,7 @@ public @interface Route {
     /**
      * If set to a positive number, it indicates the place of the route in the chain.
      * 
-     * @see io.vertx.ext.web.Route#order()
+     * @see io.vertx.ext.web.Route#order(int)
      */
     int order() default 0;
 
@@ -118,6 +118,9 @@ public @interface Route {
      * Used for content-based routing.
      * <p>
      * If no {@code Content-Type} header is set then try to use the most acceptable content type.
+     *
+     * If the request does not contain an 'Accept' header and no content type is explicitly set in the
+     * handler then the content type will be set to the first content type in the array.
      * 
      * @see io.vertx.ext.web.Route#produces(String)
      * @see RoutingContext#getAcceptableContentType()

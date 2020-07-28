@@ -16,7 +16,7 @@
   description: "(?i).*dev mode.*"
 - labels: [area/gradle]
   title: "(?i).*gradle.*"
-  notify: [quarkusio/devtools]
+  notify: [quarkusio/devtools,glefloch]
 - labels: [area/maven]
   title: "(?i).*maven.*"
   notify: [quarkusio/devtools]

@@ -346,6 +346,7 @@ $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
 ----
 
+[[integration-testing]]
 == Integration testing
 
 If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the

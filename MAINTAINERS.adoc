@@ -31,6 +31,15 @@ If you think some information is outdated, either provide a pull request or send
 |Caffeine
 |https://github.com/galderz[Galder Zamarreño], https://github.com/wburns[William Burns]
 
+|Consul Config
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Container Image Jib
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Container Image Docker
+|https://github.com/geoand[Georgios Andrianakis]
+
 |Elasticsearch REST Client
 |https://github.com/gsmet[Guillaume Smet]
 
@@ -47,7 +56,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/stuartwdouglas[Stuart Douglas]
 
 |Flyway
-|https://github.com/gastaldi[George Gastaldi]
+|https://github.com/gastaldi[George Gastaldi], https://github.com/geoand[Georgios Andrianakis]
 
 |Hibernate ORM
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
@@ -118,8 +127,14 @@ If you think some information is outdated, either provide a pull request or send
 |Kubernetes Client
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gastaldi[George Gastaldi]
 
+|Liquibase
+|https://github.com/andrejpetras[Andrej Petras], https://github.com/geoand[Georgios Andrianakis]
+
 |Mailer
 |https://github.com/cescoffier[Clément Escoffier]
+
+|Minikube
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/iocanel[Ioannis Canellos]
 
 |MongoDB client
 |https://github.com/cescoffier[Clément Escoffier]
@@ -141,6 +156,9 @@ If you think some information is outdated, either provide a pull request or send
 
 |OIDC (OpenID Connect)
 |https://github.com/sberyozkin[Sergey Beryozkin], https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/pedroigor[Pedro Igor]
+
+|OpenShift
+|https://github.com/iocanel[Ioannis Canellos], https://github.com/geoand[Georgios Andrianakis]
 
 |Qute (Templates)
 |https://github.com/mkouba[Martin Kouba]
@@ -217,11 +235,23 @@ If you think some information is outdated, either provide a pull request or send
 |SmallRye Reactive Messaging - MQTT
 |https://github.com/cescoffier[Clément Escoffier], https://github.com/michalszynkiewicz[Michał Szynkiewicz]
 
+|Spring Boot Properties
+|https://github.com/gytis[Gytis Trikleris]
+
+|Spring Cache
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Cloud Config Client
+|https://github.com/geoand[Georgios Andrianakis]
+
 |Spring DI
 |https://github.com/geoand[Georgios Andrianakis]
 
 |Spring Data JPA
 |https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Scheduled
+|https://github.com/aureamunoz[Aurea Munoz]
 
 |Spring Web
 |https://github.com/geoand[Georgios Andrianakis]

@@ -85,6 +85,7 @@ public final class ResteasyDotNames {
 
             // JAX-RS
             DotName.createSimple("javax.ws.rs.core.Response"),
+            DotName.createSimple("javax.ws.rs.core.Response.StatusType"),
             DotName.createSimple("javax.ws.rs.container.AsyncResponse"),
             DotName.createSimple("javax.ws.rs.core.StreamingOutput"),
             DotName.createSimple("javax.ws.rs.core.Form"),

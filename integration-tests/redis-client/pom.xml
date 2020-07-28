@@ -8,8 +8,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>redis-client-integration-test</artifactId>
-    <name>Quarkus - Redis Client - Integration Test</name>
+    <artifactId>quarkus-integration-test-redis-client</artifactId>
+    <name>Quarkus - Integration Tests - Redis Client</name>
 
     <properties>
         <redis.url>localhost:6379</redis.url>

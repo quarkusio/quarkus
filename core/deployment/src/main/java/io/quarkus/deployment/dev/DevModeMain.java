@@ -15,7 +15,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -29,6 +29,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.dev.spi.DevModeType;
 
 /**
  * The main entry point for the dev mojo execution
@@ -135,11 +136,15 @@ public class DevModeMain implements Closeable {
             Properties buildSystemProperties = new Properties();
             buildSystemProperties.putAll(context.getBuildSystemProperties());
             bootstrapBuilder.setBuildSystemProperties(buildSystemProperties);
+
+            Map<String, Object> map = new HashMap<>();
+            map.put(DevModeContext.class.getName(), context);
+            map.put(DevModeType.class.getName(), DevModeType.LOCAL);
             curatedApplication = bootstrapBuilder.setTest(context.isTest()).build().bootstrap();
             realCloseable = (Closeable) curatedApplication.runInAugmentClassLoader(
                     context.getAlternateEntryPoint() == null ? IsolatedDevModeMain.class.getName()
                             : context.getAlternateEntryPoint(),
-                    Collections.singletonMap(DevModeContext.class.getName(), context));
+                    map);
         } catch (Throwable t) {
             log.error("Quarkus dev mode failed to start", t);
             throw new RuntimeException(t);

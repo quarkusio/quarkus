@@ -178,6 +178,10 @@ on bare metal you can just set this via the `export QUARKUS_LAUNCH_DEVMODE=true`
 docker start the image with `-e QUARKUS_LAUNCH_DEVMODE=true`. When the application starts you should now see the following
 line in the logs: `Profile dev activated. Live Coding activated`.
 
+NOTE: The remote side does not need to include Maven or any other development tools. The normal `fast-jar` Dockerfile
+that is generated with a new Quarkus application is all you need. If you are using bare metal launch the Quarkus runner
+jar, do not attempt to run normal devmode.
+
 Now you need to connect your local agent to the remote host, using the `remote-dev` command:
 
 [source,shell]

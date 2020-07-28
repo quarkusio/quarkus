@@ -31,11 +31,11 @@
               !title_description.matches("(?is).*validator.*") 
   notify: [gsmet,Sanne]
 - labels: [area/hibernate-search]
-  expression: |
-              title_description.matches("(?is).*hibernate search.*") 
-              or
-              title_description.matches("(?is).*elasticsearch.*") 
+  expression: title_description.matches("(?is).*hibernate search.*") 
   notify: [gsmet,yrodiere]
+- labels: [area/elasticsearch]
+  expression: title_description.matches("(?is).*elasticsearch.*") 
+  notify: [gsmet,yrodiere,loicmathieu]
 - labels: [area/hibernate-validator]
   title: "(?i).*hibernate validator.*"
   description: "(?i).*hibernate validator.*"

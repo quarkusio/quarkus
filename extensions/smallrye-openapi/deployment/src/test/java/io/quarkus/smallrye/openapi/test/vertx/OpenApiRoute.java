@@ -11,7 +11,7 @@ import io.vertx.core.http.HttpMethod;
 @RouteBase(path = "resource", consumes = "application/json", produces = "application/json")
 public class OpenApiRoute {
 
-    @Route(methods = HttpMethod.GET)
+    @Route(path = "/", methods = HttpMethod.GET)
     public String root() {
         return "resource";
     }

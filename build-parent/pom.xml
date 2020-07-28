@@ -450,6 +450,12 @@
                     <version>3.1.0</version>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>com.github.alexcojocaru</groupId>
                     <artifactId>elasticsearch-maven-plugin</artifactId>
                     <version>${elasticsearch-maven-plugin.version}</version>
@@ -493,6 +499,7 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
+                            <parameters>true</parameters>
                         </configuration>
                     </plugin>
                 </plugins>

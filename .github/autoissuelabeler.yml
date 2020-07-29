@@ -150,3 +150,7 @@
   title: "(?i).*redis.*"
   description: "(?i).*redis.*"
   notify: [machi1990, gsmet, cescoffier]
+- labels: [area/config, area/smallrye]
+  title: "(?i).*config.*"
+  description: "(?i).*config.*"
+  notify: [radcortez]

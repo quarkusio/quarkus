@@ -267,5 +267,8 @@ and then run with:
 ./target/mybatis-quickstart-1.0-SNAPSHOT-runner
 ----
 
+== Using @CacheNamespace
+You have to set `readWrite=false` when building the native image since the `ObjectOutputStream.writeObject` has not been supported by Graal VM.
+
 == Configuration References
 include::{generated-dir}/config/quarkus-mybatis.adoc[opts=optional, leveloffset=+1]

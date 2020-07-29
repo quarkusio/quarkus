@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.cache.decorators.LruCache;
 import org.apache.ibatis.cache.impl.PerpetualCache;
 import org.apache.ibatis.javassist.util.proxy.ProxyFactory;
 import org.apache.ibatis.logging.log4j.Log4jImpl;
@@ -60,7 +61,7 @@ class MybatisProcessor {
                 RawLanguageDriver.class));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                PerpetualCache.class));
+                PerpetualCache.class, LruCache.class));
     }
 
     @BuildStep

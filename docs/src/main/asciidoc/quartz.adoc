@@ -82,6 +82,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[TIP]
+====
+To use a JDBC store, the `quarkus-agroal` extension, which provides the datasource support, is also required.
+====
+
 == Creating the Task Entity
 
 In the `org.acme.quartz` package, create the `Task` class, with the following content:

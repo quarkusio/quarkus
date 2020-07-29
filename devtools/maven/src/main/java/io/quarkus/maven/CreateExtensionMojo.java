@@ -54,7 +54,7 @@ import io.quarkus.maven.utilities.PomTransformer.Transformation;
 
 /**
  * Creates a triple of stub Maven modules (Parent, Runtime and Deployment) to implement a new
- * <a href="https://quarkus.io/guides/extension-authors-guide">Quarkus Extension</a>.
+ * <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a>.
  *
  * <h2>Adding into an established source tree</h2>
  * <p>

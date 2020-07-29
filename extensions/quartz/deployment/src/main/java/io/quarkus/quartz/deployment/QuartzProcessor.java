@@ -33,6 +33,7 @@ import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -75,13 +76,19 @@ public class QuartzProcessor {
 
     @BuildStep
     QuartzJDBCDriverDialectBuildItem driver(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            QuartzBuildTimeConfig config) {
+            QuartzBuildTimeConfig config,
+            Capabilities capabilities) {
         if (!config.storeType.isDbStore()) {
             if (config.clustered) {
                 throw new ConfigurationError("Clustered jobs configured with unsupported job store option");
             }
 
             return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
+        }
+
+        if (capabilities.isMissing(Capability.AGROAL)) {
+            throw new ConfigurationError(
+                    "The Agroal extension is missing and it is required when a Quartz JDBC store is used.");
         }
 
         Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
@@ -91,7 +98,7 @@ public class QuartzProcessor {
 
         if (!selectedJdbcDataSourceBuildItem.isPresent()) {
             String message = String.format(
-                    "JDBC Store configured but '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource-guide",
+                    "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
                     config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
             throw new ConfigurationError(message);
         }

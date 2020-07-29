@@ -163,7 +163,7 @@ class Methods {
     static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
     static final MethodDescriptor ROUTE_HANDLERS_SET_CONTENT_TYPE = MethodDescriptor
-            .ofMethod(RouteHandlers.class, "setContentType", void.class, RoutingContext.class);
+            .ofMethod(RouteHandlers.class, "setContentType", void.class, RoutingContext.class, String.class);
 
     static final MethodDescriptor OPTIONAL_OF_NULLABLE = MethodDescriptor
             .ofMethod(Optional.class, "ofNullable", Optional.class, Object.class);

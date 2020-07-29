@@ -74,6 +74,8 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>prepare</goal>
+                            <goal>prepare-tests</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>

@@ -1,5 +1,6 @@
 package io.quarkus.it.panache;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -174,6 +175,14 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug9036() {
         RestAssured.when().get("/test/9036").then().body(is("OK"));
+    }
+
+    @Test
+    public void testMetrics() {
+        RestAssured.when()
+                .get("/metrics")
+                .then()
+                .body(containsString("vendor_hibernate_orm_timestamps_cache_hits_total{entityManagerFactory=\"default\"}"));
     }
 
     @DisabledOnNativeImage

@@ -163,7 +163,7 @@ public class HibernateOrmConfig {
     public Optional<Boolean> statistics;
 
     /**
-     * Whether or not metrics are published in case the smallrye-metrics extension is present (default to false).
+     * Whether or not metrics are published if a metrics extension is enabled.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;

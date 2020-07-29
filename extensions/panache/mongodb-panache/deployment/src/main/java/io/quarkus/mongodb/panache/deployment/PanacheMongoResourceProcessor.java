@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.deployment;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,15 +14,14 @@ import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
-import com.mongodb.client.MongoClient;
-
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -35,6 +34,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -46,6 +46,9 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
+import io.quarkus.mongodb.deployment.MongoClientNameBuildItem;
+import io.quarkus.mongodb.deployment.MongoUnremovableClientsBuildItem;
+import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheMongoRecorder;
@@ -56,7 +59,6 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
-import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
@@ -73,6 +75,8 @@ public class PanacheMongoResourceProcessor {
     private static final DotName DOTNAME_PROJECTION_FOR = DotName.createSimple(ProjectionFor.class.getName());
     private static final DotName DOTNAME_BSON_PROPERTY = DotName.createSimple(BsonProperty.class.getName());
     private static final DotName DOTNAME_BSON_ID = DotName.createSimple(BsonId.class.getName());
+
+    private static final DotName DOTNAME_MONGO_ENTITY = DotName.createSimple(MongoEntity.class.getName());
 
     // reactive types (Mutiny)
     static final DotName DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE = DotName
@@ -129,12 +133,28 @@ public class PanacheMongoResourceProcessor {
     }
 
     @BuildStep
-    void unremoveableClients(BuildProducer<UnremovableBeanBuildItem> unremovable) {
-        unremovable.produce(
-                new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNamesExclusion(new HashSet<>(
-                                Arrays.asList(MongoClient.class.getName(), ReactiveMongoClient.class.getName())))));
+    void unremoveableClients(BuildProducer<MongoUnremovableClientsBuildItem> unremovable) {
+        unremovable.produce(new MongoUnremovableClientsBuildItem());
+    }
 
+    @BuildStep
+    public void mongoClientNames(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<MongoClientNameBuildItem> mongoClientName) {
+        Set<String> values = new HashSet<>();
+        IndexView indexView = applicationArchivesBuildItem.getRootArchive().getIndex();
+        Collection<AnnotationInstance> instances = indexView.getAnnotations(DOTNAME_MONGO_ENTITY);
+        for (AnnotationInstance annotation : instances) {
+            AnnotationValue clientName = annotation.value("clientName");
+            if ((clientName != null) && !clientName.asString().isEmpty()) {
+                values.add(clientName.asString());
+            }
+        }
+        for (String value : values) {
+            // we don't want the qualifier @MongoClientName qualifier added
+            // as these clients will only be looked up programmatically via name
+            // see MongoOperations#mongoClient
+            mongoClientName.produce(new MongoClientNameBuildItem(value, false));
+        }
     }
 
     @BuildStep

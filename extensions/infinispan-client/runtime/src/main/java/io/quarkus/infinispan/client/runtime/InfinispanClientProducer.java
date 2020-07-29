@@ -25,8 +25,8 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.marshall.Marshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.protostream.BaseMarshaller;
@@ -309,10 +309,10 @@ public class InfinispanClientProducer {
     }
 
     /**
-     * Retrieves the deprecated {@link Remote} annotation instance from the set
+     * Retrieves the deprecated {@link io.quarkus.infinispan.client.Remote} annotation instance from the set
      *
      * @param annotationSet the annotation set.
-     * @return the {@link Remote} annotation instance or {@code null} if not found.
+     * @return the {@link io.quarkus.infinispan.client.Remote} annotation instance or {@code null} if not found.
      */
     private io.quarkus.infinispan.client.Remote getRemoteAnnotation(Set<Annotation> annotationSet) {
         for (Annotation annotation : annotationSet) {

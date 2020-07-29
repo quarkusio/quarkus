@@ -20,7 +20,7 @@ import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.EnumMarshaller;

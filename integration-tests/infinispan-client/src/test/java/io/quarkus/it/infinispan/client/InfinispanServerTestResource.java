@@ -3,6 +3,7 @@ package io.quarkus.it.infinispan.client;
 import java.util.Collections;
 import java.util.Map;
 
+import org.infinispan.commons.dataconversion.MediaType;
 import org.infinispan.commons.test.TestResourceTracker;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
@@ -23,10 +24,14 @@ public class InfinispanServerTestResource implements QuarkusTestResourceLifecycl
     @Override
     public Map<String, String> start() {
         TestResourceTracker.setThreadTestName("InfinispanServer");
+        ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.encoding().mediaType(MediaType.APPLICATION_PROTOSTREAM_TYPE);
         EmbeddedCacheManager ecm = TestCacheManagerFactory.createCacheManager(
                 new GlobalConfigurationBuilder().nonClusteredDefault().defaultCacheName("default"),
-                new ConfigurationBuilder());
-        ecm.defineConfiguration("magazine", new ConfigurationBuilder().build());
+                configurationBuilder);
+
+        ecm.defineConfiguration("magazine", configurationBuilder.build());
+
         // Client connects to a non default port
         final HotRodServerConfigurationBuilder hotRodServerConfigurationBuilder = new HotRodServerConfigurationBuilder();
         hotRodServerConfigurationBuilder

@@ -24,7 +24,7 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <jaeger.version>0.34.3</jaeger.version>
-        <quarkus-http.version>3.0.12.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.13.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>

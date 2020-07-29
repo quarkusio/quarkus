@@ -39,11 +39,12 @@ public class TemplateProducer {
 
     private final Map<String, TemplateVariants> templateVariants;
 
-    TemplateProducer(Engine engine, QuteContext context) {
+    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes) {
         this.engine = engine;
         Map<String, TemplateVariants> templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : context.getVariants().entrySet()) {
-            TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue()), entry.getKey());
+            TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue(), contentTypes),
+                    entry.getKey());
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
@@ -206,32 +207,11 @@ public class TemplateProducer {
         }
     }
 
-    static String parseMediaType(String suffix) {
-        // TODO we need a proper way to parse the media type
-        if (suffix.equalsIgnoreCase(".html") || suffix.equalsIgnoreCase(".htm")) {
-            return Variant.TEXT_HTML;
-        } else if (suffix.equalsIgnoreCase(".xml")) {
-            return Variant.TEXT_XML;
-        } else if (suffix.equalsIgnoreCase(".txt")) {
-            return Variant.TEXT_PLAIN;
-        } else if (suffix.equalsIgnoreCase(".json")) {
-            return Variant.APPLICATION_JSON;
-        }
-        LOGGER.warn("Unknown media type for suffix: " + suffix);
-        return "application/octet-stream";
-    }
-
-    static String parseMediaType(String base, String variant) {
-        String suffix = variant.substring(base.length());
-        return parseMediaType(suffix);
-    }
-
-    private static Map<Variant, String> initVariants(String base, List<String> availableVariants) {
+    private static Map<Variant, String> initVariants(String base, List<String> availableVariants, ContentTypes contentTypes) {
         Map<Variant, String> map = new HashMap<>();
         for (String path : availableVariants) {
             if (!base.equals(path)) {
-                String mediaType = parseMediaType(base, path);
-                map.put(new Variant(null, mediaType, null), path);
+                map.put(new Variant(null, contentTypes.getContentType(path), null), path);
             }
         }
         return map;

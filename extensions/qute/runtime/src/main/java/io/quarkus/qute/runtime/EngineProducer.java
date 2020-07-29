@@ -42,12 +42,15 @@ public class EngineProducer {
     private static final Logger LOGGER = Logger.getLogger(EngineProducer.class);
 
     private final Engine engine;
+    private final ContentTypes contentTypes;
     private final List<String> tags;
     private final List<String> suffixes;
     private final String basePath;
     private final String tagPath;
 
-    public EngineProducer(QuteContext context, Event<EngineBuilder> builderReady, Event<Engine> engineReady) {
+    public EngineProducer(QuteContext context, Event<EngineBuilder> builderReady, Event<Engine> engineReady,
+            ContentTypes contentTypes) {
+        this.contentTypes = contentTypes;
         this.suffixes = context.getConfig().suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
@@ -172,14 +175,9 @@ public class EngineProducer {
         return cl.getResource(path);
     }
 
-    static Variant guessVariant(String path) {
-        // TODO we need a proper way to detect the variant
-        int suffixIdx = path.lastIndexOf('.');
-        if (suffixIdx != -1) {
-            String suffix = path.substring(suffixIdx);
-            return new Variant(null, TemplateProducer.parseMediaType(suffix), null);
-        }
-        return null;
+    Variant guessVariant(String path) {
+        // TODO detect locale and encoding
+        return Variant.forContentType(contentTypes.getContentType(path));
     }
 
     static class ResourceTemplateLocation implements TemplateLocation {

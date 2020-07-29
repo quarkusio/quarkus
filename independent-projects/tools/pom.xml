@@ -51,7 +51,7 @@
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <quarkus-http.version>3.0.12.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.13.Final</quarkus-http.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>

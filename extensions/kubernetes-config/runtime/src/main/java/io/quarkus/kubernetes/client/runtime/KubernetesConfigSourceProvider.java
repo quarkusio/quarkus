@@ -70,7 +70,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                     result.addAll(
                             configMapConfigSourceUtil.toConfigSources(configMap.getMetadata().getName(), configMap.getData()));
                     if (log.isDebugEnabled()) {
-                        log.debug("Done reading ConfigMap " + configMap);
+                        log.debug("Done reading ConfigMap " + configMap.getMetadata().getName());
                     }
                 }
             }
@@ -103,7 +103,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 } else {
                     result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData()));
                     if (log.isDebugEnabled()) {
-                        log.debug("Done reading Secret " + secret);
+                        log.debug("Done reading Secret " + secret.getMetadata().getName());
                     }
                 }
             }

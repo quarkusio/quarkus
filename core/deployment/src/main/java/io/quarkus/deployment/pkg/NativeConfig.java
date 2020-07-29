@@ -50,12 +50,6 @@ public class NativeConfig {
     public boolean addAllCharsets;
 
     /**
-     * If all time zones should be added to the native image. This increases image size
-     */
-    @ConfigItem
-    public boolean includeAllTimeZones;
-
-    /**
      * The location of the Graal distribution
      */
     @ConfigItem(defaultValue = "${GRAALVM_HOME:}")

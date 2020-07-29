@@ -212,8 +212,6 @@ public class NativeImageBuildStep {
                     nativeConfig.enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
                 } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                     nativeConfig.addAllCharsets |= Boolean.parseBoolean(prop.getValue());
-                } else if (prop.getKey().equals("quarkus.native.enable-all-timezones") && prop.getValue() != null) {
-                    nativeConfig.includeAllTimeZones |= Boolean.parseBoolean(prop.getValue());
                 } else {
                     // todo maybe just -D is better than -J-D in this case
                     if (prop.getValue() == null) {
@@ -290,11 +288,6 @@ public class NativeImageBuildStep {
                 command.add("-H:+AddAllCharsets");
             } else {
                 command.add("-H:-AddAllCharsets");
-            }
-            //if 'includeAllTimeZones' is set, don't request it explicitly as native-image will log a warning about this being now the default.
-            //(But still disable it when necessary)
-            if (!nativeConfig.includeAllTimeZones) {
-                command.add("-H:-IncludeAllTimeZones");
             }
             if (!protocols.isEmpty()) {
                 command.add("-H:EnableURLProtocols=" + String.join(",", protocols));

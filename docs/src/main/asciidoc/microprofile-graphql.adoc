@@ -631,6 +631,159 @@ query heroWithSurnames {
 }
 ----
 
+== Context
+
+You can get information about the GraphQL request anywhere in your code, using this experimental, SmallRye specific feature:
+
+[source,java]
+----
+@Inject
+Context context;
+----
+
+The context object allows you to get:
+
+- the original request (Query/Mutation)
+- the arguments
+- the path
+- the selected fields
+- any variables
+
+This allows you to optimize the downstream queries to the datastore.
+
+See the https://javadoc.io/doc/io.smallrye/smallrye-graphql-api/latest/io/smallrye/graphql/api/Context.html[JavaDoc] for more details.
+
+=== GraphQL-Java
+
+This context object also allows you to fall down to the underlying https://www.graphql-java.com/[graphql-java] features by using the leaky abstraction:
+
+[source,java]
+----
+DataFetchingEnvironment dfe = context.unwrap(DataFetchingEnvironment.class);
+----
+
+You can also get access to the underlying `graphql-java` during schema generation, to add your own features directly:
+
+[source,java]
+----
+public GraphQLSchema.Builder addMyOwnEnum(@Observes GraphQLSchema.Builder builder) {
+
+    // Here add your own features directly, example adding an Enum
+    GraphQLEnumType myOwnEnum = GraphQLEnumType.newEnum()
+            .name("SomeEnum")
+            .description("Adding some enum type")
+            .value("value1")
+            .value("value2").build();
+
+    return builder.additionalType(myOwnEnum);
+}
+----
+
+By using the `@Observer` you can add anything to the Schema builder. 
+
+== Map to Scalar
+
+Another SmallRye specific experimental feature, allows you to map an existing scalar (that is mapped by the implementation to a certain Java type) to another type,
+or to map complex object, that would typically create a `Type` or `Input` in GraphQL, to an existing scalar.
+
+=== Mapping an existing Scalar to another type:
+
+[source,java]
+----
+public class Movie {
+
+    @ToScalar(Scalar.Int.class)
+    Long idLongThatShouldChangeToInt;
+    
+    // ....
+}
+----
+
+Above will map the `Long` java type to an `Int` Scalar type, rather than the https://download.eclipse.org/microprofile/microprofile-graphql-1.0/microprofile-graphql.html#scalars[default] `BigInteger`.
+
+=== Mapping a complex object to a Scalar type:
+
+[source,java]
+----
+public class Person {
+
+    @ToScalar(Scalar.String.class)
+    Phone phone;
+    
+    // ....
+}
+----
+
+This will, rather than creating a `Type` or `Input` in GraphQL, map to a String scalar.
+
+To be able to do the above, the `Phone` object needs to have a constructor that takes a String (or `Int` / `Date` / etc.), 
+or have a setter method for the String  (or `Int` / `Date` / etc.),
+or have a `fromString` (or `fromInt` / `fromDate` - depending on the Scalar type) static method.
+
+For example:
+
+[source,java]
+----
+public class Phone {
+
+    private String number;
+    
+    // Getters and setters....
+    
+    public static Phone fromString(String number) {
+        Phone phone = new Phone();
+        phone.setNumber(number);
+        return phone;
+    }
+}
+----
+
+See more about the `@ToScalar` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.0.6/index.html?io/smallrye/graphql/api/ToScalar.html[JavaDoc].
+
+== Error code
+
+You can add an error code on the error output in the GraphQL response by using the (SmallRye specific) `@ErrorCode`:
+
+[source,java]
+----
+@ErrorCode("some-business-error-code")
+public class SomeBusinessException extends RuntimeException {
+    // ...
+}
+----
+
+When `SomeBusinessException` occurs, the error output will contain the Error code:
+
+[source,graphql]
+----
+{
+    "errors": [
+        {
+            "message": "Unexpected failure in the system. Jarvis is working to fix it.",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 3
+                }
+            ],
+            "path": [
+                "annotatedCustomBusinessException"
+            ],
+            "extensions": {
+                "exception": "io.smallrye.graphql.test.apps.error.api.ErrorApi$AnnotatedCustomBusinessException",
+                "classification": "DataFetchingException",
+                "code": "some-business-error-code" <1>
+            }
+        }
+    ],
+    "data": {
+        ...
+    }
+}
+----
+
+<1> The error code
+
 == Conclusion
 
 MicroProfile GraphQL enables clients to retrieve the exact data that is

@@ -43,7 +43,7 @@ public abstract class CacheInterceptor {
             // @CacheKey-annotated parameters that were identified at build time.
             if (cacheKeyParameterPositions.length > 0) {
                 for (int i = 0; i < cacheKeyParameterPositions.length; i++) {
-                    keyElements.add(methodParameterValues[i]);
+                    keyElements.add(methodParameterValues[cacheKeyParameterPositions[i]]);
                 }
             } else {
                 // Otherwise, the key is composed of all of the method parameters.

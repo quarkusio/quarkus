@@ -14,7 +14,61 @@ This guide covers:
 
 This guide takes as input the application developed in the link:getting-started[Getting Started Guide].
 
-== Prerequisites
+== GraalVM
+
+Building a native executable requires using a distribution of GraalVM.
+There are three distributions:
+Oracle GraalVM Community Edition (CE), Oracle GraalVM Enterprise Edition (EE) and Mandrel.
+The differences between the Oracle and Mandrel distributions are as follows:
+
+* Mandrel is a downstream distribution of the Oracle GraalVM CE.
+Mandrel's main goal is to provide a way to build native executables specifically designed to support Quarkus.
+
+* Mandrel releases are built from a code base derived from the upstream Oracle GraalVM CE code base,
+with only minor changes but some significant exclusions that are not necessary for Quarkus native apps.
+They support the same capabilities to build native executables as Oracle GraalVM CE,
+with no significant changes to functionality.
+Notably, they do not include support for polyglot programming.
+The reason for these exclusions is to provide a better level of support for the majority of Quarkus users.
+These exclusions also mean Mandrel offers a considerable reduction in its distribution size
+when compared with Oracle GraalVM CE/EE.
+
+* Mandrel is built slightly differently to Oracle GraalVM CE, using the standard OpenJDK project.
+This means that it does not profit from a few small enhancements that Oracle have added to the version of OpenJDK used to build their own GraalVM downloads.
+This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
+This is particularly important when it comes to conformance and security.
+
+* Mandrel is only available for projects that can be compiled with Java 11.
+If you are using Java 8,
+you should consider using Oracle GraalVM instead.
+The reason for not using Java 8 is because it's a legacy release,
+which most Quarkus users are unlikely to need.
+
+* Mandrel is currently only recommended for building native executables that target Linux containerized environments.
+This means that Mandrel users should use containers to build their native executables.
+If you are building native executables for macOS or Windows target platforms,
+you should consider using Oracle GraalVM instead,
+because Mandrel does not currently target these platforms.
+Building native executables directly on bare metal Linux is possible,
+with details available in the https://github.com/graalvm/mandrel/blob/master/README-Mandrel.md[Mandrel README]
+and https://github.com/graalvm/mandrel/releases[Mandrel releases].
+
+The prerequisites vary slightly depending on whether you are using Oracle GraalVM CE/EE or Mandrel.
+
+== Prerequisites for Mandrel
+
+To complete this guide using Mandrel, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11 installed with `JAVA_HOME` configured appropriately
+* A working container runtime (Docker, podman)
+* The code of the application developed in the link:getting-started[Getting Started Guide].
+
+Skip to <<#container-runtime,this section>> to continue with the guide for Mandrel,
+and follow the Mandrel-specific instructions in that section.
+
+== Prerequisites for Oracle GraalVM CE/EE
 
 To complete this guide, you need:
 
@@ -327,9 +381,20 @@ You can also select the container runtime to use with:
 ./mvnw package -Pnative -Dquarkus.native.container-runtime=podman
 ----
 
-
 These are normal Quarkus config properties, so if you always want to build in a container
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
+
+====
+
+[TIP]
+====
+Building with Mandrel requires a custom builder image parameter to be passed additionally:
+[source,shell]
+----
+./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
+----
+
+Check https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[here] to find out about available tags.
 
 ====
 

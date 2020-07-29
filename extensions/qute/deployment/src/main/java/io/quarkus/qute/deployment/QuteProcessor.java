@@ -56,6 +56,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -700,15 +701,13 @@ public class QuteProcessor {
                 if (idx == -1) {
                     idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
                 }
-                String className = name.substring(0, idx).replace("/", ".");
+                String className = name.substring(0, idx);
                 if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
                     className = className.replace(ValueResolverGenerator.NESTED_SEPARATOR, "$");
                 }
-                if (applicationArchivesBuildItem.getRootArchive().getIndex()
-                        .getClassByName(DotName.createSimple(className)) != null) {
-                    return true;
-                }
-                return false;
+                //if the class is (directly) in the TCCL (and not its parent) then it is an application class
+                QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
+                return !cl.getElementsWithResource(className + ".class", true).isEmpty();
             }
         });
 

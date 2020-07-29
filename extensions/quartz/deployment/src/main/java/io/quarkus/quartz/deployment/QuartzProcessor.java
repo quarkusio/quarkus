@@ -86,7 +86,7 @@ public class QuartzProcessor {
 
         if (!selectedJdbcDataSourceBuildItem.isPresent()) {
             String message = String.format(
-                    "JDBC Store configured but '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource-guide",
+                    "JDBC Store configured but '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
                     config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
             throw new ConfigurationError(message);
         }

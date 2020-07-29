@@ -154,3 +154,7 @@
   title: "(?i).*config.*"
   description: "(?i).*config.*"
   notify: [radcortez]
+- labels: [area/arc]
+  title: "(?i).*(arc|cdi|injection).*"
+  description: "(?i).*(arc|cdi|injection).*"
+  notify: [mkouba, manovotn]

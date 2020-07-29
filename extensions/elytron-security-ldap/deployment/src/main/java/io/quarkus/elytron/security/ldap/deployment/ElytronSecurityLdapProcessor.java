@@ -16,8 +16,8 @@ import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.ldap.LdapRecorder;
 import io.quarkus.elytron.security.ldap.QuarkusDirContextFactory;
-import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmBuildTimeConfig;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
+import io.quarkus.elytron.security.ldap.deployment.config.LdapSecurityRealmBuildTimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 
 class ElytronSecurityLdapProcessor {

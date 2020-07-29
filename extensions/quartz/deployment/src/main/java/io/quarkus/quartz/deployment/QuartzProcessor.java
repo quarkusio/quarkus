@@ -5,10 +5,13 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.inject.Singleton;
 
+import org.quartz.JobListener;
+import org.quartz.TriggerListener;
 import org.quartz.core.QuartzSchedulerThread;
 import org.quartz.core.SchedulerSignalerImpl;
 import org.quartz.impl.StdSchedulerFactory;
@@ -23,6 +26,7 @@ import org.quartz.impl.triggers.SimpleTriggerImpl;
 import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
+import org.quartz.spi.SchedulerPlugin;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
@@ -40,6 +44,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
+import io.quarkus.quartz.runtime.QuartzAdditionalPropsConfig;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
@@ -136,6 +141,26 @@ public class QuartzProcessor {
                     .add(new ReflectiveClassBuildItem(true, false, QuarkusQuartzConnectionPoolProvider.class.getName()));
         }
 
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners, TriggerListener.class));
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners, JobListener.class));
+        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins, SchedulerPlugin.class));
+
+        return reflectiveClasses;
+    }
+
+    private List<ReflectiveClassBuildItem> getAdditionalConfigurationReflectiveClasses(
+            Map<String, QuartzAdditionalPropsConfig> config, Class<?> clazz) {
+        List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
+        for (QuartzAdditionalPropsConfig props : config.values()) {
+            try {
+                if (!clazz.isAssignableFrom(Class.forName(props.clazz))) {
+                    throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz, clazz));
+                }
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException(e);
+            }
+            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, props.clazz));
+        }
         return reflectiveClasses;
     }
 

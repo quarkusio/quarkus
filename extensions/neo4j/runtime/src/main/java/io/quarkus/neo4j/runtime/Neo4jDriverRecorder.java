@@ -42,7 +42,7 @@ public class Neo4jDriverRecorder {
         }
 
         Config.ConfigBuilder configBuilder = createBaseConfig();
-        configureSsl(configBuilder);
+        configureSsl(configBuilder, configuration);
         configurePoolSettings(configBuilder, configuration.pool);
 
         Driver driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
@@ -62,13 +62,21 @@ public class Neo4jDriverRecorder {
         return configBuilder;
     }
 
-    private static void configureSsl(Config.ConfigBuilder configBuilder) {
+    private static void configureSsl(Config.ConfigBuilder configBuilder,
+            Neo4jConfiguration configuration) {
 
         // Disable encryption regardless of user configuration when ssl is not natively enabled.
         if (ImageInfo.inImageRuntimeCode() && !SslContextConfiguration.isSslNativeEnabled()) {
             log.warn(
-                    "Native SSL is disabled, communication between this client and the Neo4j server won't be encrypted.");
+                    "Native SSL is disabled, communication between this client and the Neo4j server cannot be encrypted.");
             configBuilder.withoutEncryption();
+        } else {
+            if (configuration.encrypted) {
+                configBuilder.withEncryption();
+                configBuilder.withTrustStrategy(configuration.trustSettings.toInternalRepresentation());
+            } else {
+                configBuilder.withoutEncryption();
+            }
         }
     }
 

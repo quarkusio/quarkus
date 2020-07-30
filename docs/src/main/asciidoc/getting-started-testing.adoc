@@ -231,7 +231,7 @@ For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` repre
 == Testing a specific endpoint
 
 Both RESTassured and `@TestHTTPResource` allow you to specify the endpoint class you are testing rather than hard coding
-a path. This currently supports both JAX-RS endpoints and Servlets. This makes it a lot easier to see exactly which endpoints
+a path. This currently supports both JAX-RS endpoints, Servlets and Reactive Routes. This makes it a lot easier to see exactly which endpoints
 a given test is testing.
 
 For the purposes of these examples I am going to assume we have an endpoint that looks like the following:

@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * can also be applied to {@link TestHTTPResource} fields to set the base path.
  * 
  *
- * This mechanism is pluggable, and currently supports JAX-RS endpoints.
+ * This mechanism is pluggable, and currently supports JAX-RS endpoints, Servlets and Reactive Routes.
  *
  */
 @Retention(RetentionPolicy.RUNTIME)

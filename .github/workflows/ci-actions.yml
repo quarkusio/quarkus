@@ -85,7 +85,7 @@ jobs:
         with:
           path: ~/.m2/repository
           # Improves the reusability of the cache to limit key changes
-          key: q2maven-${{ hashFiles('bom/runtime/pom.xml') }}
+          key: q2maven-${{ hashFiles('bom/application/pom.xml') }}
           restore-keys: ${{ env.COMPUTED_RESTORE_KEY }}
           restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build

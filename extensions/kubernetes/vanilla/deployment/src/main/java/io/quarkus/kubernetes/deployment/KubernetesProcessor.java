@@ -419,7 +419,7 @@ class KubernetesProcessor {
             }
 
             if (!generatedFileNames.isEmpty()) {
-                log.infof("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
+                log.debugf("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
                         outputTarget.getOutputDirectory() + File.separator + KUBERNETES);
             }
 

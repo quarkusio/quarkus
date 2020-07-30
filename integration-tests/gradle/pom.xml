@@ -59,6 +59,8 @@
                                         <argument>-i</argument> <!-- info logging -->
                                         <argument>-S</argument>
                                         <argument>--stacktrace</argument>
+                                        <argument>-x</argument>
+                                        <argument>test</argument>
                                     </arguments>
                                     <environmentVariables>
                                         <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
@@ -119,6 +121,8 @@
                                         <argument>-Pquarkus.native.builder-image=${quarkus.native.builder-image}</argument>
                                         <argument>-S</argument>
                                         <argument>--stacktrace</argument>
+                                        <argument>-x</argument>
+                                        <argument>test</argument>
                                     </arguments>
                                     <environmentVariables>
                                         <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>

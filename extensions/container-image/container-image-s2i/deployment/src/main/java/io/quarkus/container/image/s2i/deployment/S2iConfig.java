@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class S2iConfig {
 
-    public static final String DEFAULT_BASE_JVM_IMAGE = "fabric8/s2i-java:2.3";
+    public static final String DEFAULT_BASE_JVM_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 

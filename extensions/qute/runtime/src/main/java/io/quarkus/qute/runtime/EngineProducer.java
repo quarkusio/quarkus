@@ -22,6 +22,7 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ReflectionValueResolver;
+import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.UserTagSectionHelper;
@@ -93,7 +94,12 @@ public class EngineProducer {
 
         // Add generated resolvers
         for (String resolverClass : context.getResolverClasses()) {
-            builder.addValueResolver(createResolver(resolverClass));
+            Resolver resolver = createResolver(resolverClass);
+            if (resolver instanceof NamespaceResolver) {
+                builder.addNamespaceResolver((NamespaceResolver) resolver);
+            } else {
+                builder.addValueResolver((ValueResolver) resolver);
+            }
             LOGGER.debugf("Added generated value resolver: %s", resolverClass);
         }
         // Add tags
@@ -129,14 +135,14 @@ public class EngineProducer {
         return tagPath;
     }
 
-    private ValueResolver createResolver(String resolverClassName) {
+    private Resolver createResolver(String resolverClassName) {
         try {
             Class<?> resolverClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(resolverClassName);
-            if (ValueResolver.class.isAssignableFrom(resolverClazz)) {
-                return (ValueResolver) resolverClazz.newInstance();
+            if (Resolver.class.isAssignableFrom(resolverClazz)) {
+                return (Resolver) resolverClazz.newInstance();
             }
-            throw new IllegalStateException("Not a value resolver: " + resolverClassName);
+            throw new IllegalStateException("Not a resolver: " + resolverClassName);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
         }

@@ -1,4 +1,4 @@
-package io.quarkus.qute.deployment;
+package io.quarkus.qute.deployment.extensions;
 
 import static io.quarkus.qute.TemplateExtension.ANY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateExtension;
+import io.quarkus.qute.deployment.Foo;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TemplateExtensionMethodsTest {

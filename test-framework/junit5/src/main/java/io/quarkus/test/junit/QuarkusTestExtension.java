@@ -344,7 +344,7 @@ public class QuarkusTestExtension
                     beforeEachCallback.getClass().getMethod("beforeEach", tuple.getKey())
                             .invoke(beforeEachCallback, tuple.getValue());
                 }
-                String endpointPath = getEndpointPath(context);
+                String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
                 if (runningQuarkusApplication != null) {
                     runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                             .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, false, endpointPath);
@@ -360,11 +360,22 @@ public class QuarkusTestExtension
         }
     }
 
-    public static String getEndpointPath(ExtensionContext context) {
+    public static String getEndpointPath(ExtensionContext context, List<Function<Class<?>, String>> testHttpEndpointProviders) {
         String endpointPath = null;
         TestHTTPEndpoint testHTTPEndpoint = context.getRequiredTestMethod().getAnnotation(TestHTTPEndpoint.class);
         if (testHTTPEndpoint == null) {
-            testHTTPEndpoint = context.getRequiredTestClass().getAnnotation(TestHTTPEndpoint.class);
+            Class<?> clazz = context.getRequiredTestClass();
+            while (true) {
+                // go up the hierarchy because most Native tests extend from a regular Quarkus test
+                testHTTPEndpoint = clazz.getAnnotation(TestHTTPEndpoint.class);
+                if (testHTTPEndpoint != null) {
+                    break;
+                }
+                clazz = clazz.getSuperclass();
+                if (clazz == Object.class) {
+                    break;
+                }
+            }
         }
         if (testHTTPEndpoint != null) {
             for (Function<Class<?>, String> i : testHttpEndpointProviders) {

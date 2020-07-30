@@ -34,6 +34,11 @@ public class JaegerDeploymentRecorder {
         registerTracer(jaeger, appConfig, new QuarkusJaegerMpMetricsFactory());
     }
 
+    /* RUNTIME_INIT */
+    public void registerTracerWithMicrometerMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMicrometerFactory());
+    }
+
     private synchronized void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {

@@ -155,6 +155,7 @@ public class KubernetesConfigSourceProviderTest {
         KubernetesConfigSourceConfig config = new KubernetesConfigSourceConfig();
         config.namespace = Optional.empty();
         config.configMaps = Optional.empty();
+        config.secrets = Optional.empty();
         return config;
     }
 

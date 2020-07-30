@@ -26,7 +26,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
-import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 
 public class KubernetesClientProcessor {
 
@@ -53,7 +53,7 @@ public class KubernetesClientProcessor {
     BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses;
 
     @Inject
-    BuildProducer<KubernetesRoleBuildItem> roleProducer;
+    BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer;
 
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
@@ -61,7 +61,7 @@ public class KubernetesClientProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
 
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
-        roleProducer.produce(new KubernetesRoleBuildItem("view"));
+        roleBindingProducer.produce(new KubernetesRoleBindingBuildItem("view", true));
 
         // make sure the watchers fully (and not weakly) register Kubernetes classes for reflection
         final Set<DotName> watchedClasses = new HashSet<>();

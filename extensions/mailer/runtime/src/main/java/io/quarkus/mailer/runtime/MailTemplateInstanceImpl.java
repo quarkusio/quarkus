@@ -92,7 +92,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             @SuppressWarnings("unchecked")
             List<Variant> variants = (List<Variant>) variantsAttr;
             for (Variant variant : variants) {
-                if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                if (variant.getContentType().equals(Variant.TEXT_HTML) || variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
                             Uni.createFrom().completionStage(
                                     new Supplier<CompletionStage<? extends String>>() {
@@ -130,9 +130,9 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
                 for (Result res : results) {
                     // We can safely access the content here: 1. it has been resolved, 2. it's cached.
                     String content = res.value.await().indefinitely();
-                    if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
+                    if (res.variant.getContentType().equals(Variant.TEXT_HTML)) {
                         mail.setHtml(content);
-                    } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                    } else if (res.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                         mail.setText(content);
                     }
                 }

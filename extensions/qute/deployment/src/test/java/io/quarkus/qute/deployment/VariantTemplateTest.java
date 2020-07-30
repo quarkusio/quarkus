@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import static io.quarkus.qute.TemplateInstance.SELECTED_VARIANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.enterprise.context.Dependent;
@@ -30,11 +31,11 @@ public class VariantTemplateTest {
 
     @Test
     public void testRendering() {
-        TemplateInstance rendering = simpleBean.foo.instance().data("bar");
-        rendering.setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(null, "text/plain", null));
-        assertEquals("bar", rendering.render());
-        rendering.setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(null, "text/html", null));
-        assertEquals("<strong>bar</strong>", rendering.render());
+        TemplateInstance instance = simpleBean.foo.instance().data("bar");
+        instance.setAttribute(SELECTED_VARIANT, Variant.forContentType("text/plain"));
+        assertEquals("bar", instance.render());
+        instance.setAttribute(SELECTED_VARIANT, Variant.forContentType("text/html"));
+        assertEquals("<strong>bar</strong>", instance.render());
     }
 
     @Dependent

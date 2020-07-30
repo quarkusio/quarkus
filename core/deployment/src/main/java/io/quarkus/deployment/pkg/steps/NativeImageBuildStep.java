@@ -101,15 +101,14 @@ public class NativeImageBuildStep {
                     outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
 
             if (SystemUtils.IS_OS_LINUX) {
-                if ("docker".equals(containerRuntime)) {
-                    String uid = getLinuxID("-ur");
-                    String gid = getLinuxID("-gr");
-                    if (uid != null && gid != null && !"".equals(uid) && !"".equals(gid)) {
-                        Collections.addAll(nativeImage, "--user", uid + ":" + gid);
+                String uid = getLinuxID("-ur");
+                String gid = getLinuxID("-gr");
+                if (uid != null && gid != null && !"".equals(uid) && !"".equals(gid)) {
+                    Collections.addAll(nativeImage, "--user", uid + ":" + gid);
+                    if ("podman".equals(containerRuntime)) {
+                        // Needed to avoid AccessDeniedExceptions
+                        nativeImage.add("--userns=keep-id");
                     }
-                } else if ("podman".equals(containerRuntime)) {
-                    // Needed to avoid AccessDeniedExceptions
-                    nativeImage.add("--userns=keep-id");
                 }
             }
             nativeConfig.containerRuntimeOptions.ifPresent(nativeImage::addAll);

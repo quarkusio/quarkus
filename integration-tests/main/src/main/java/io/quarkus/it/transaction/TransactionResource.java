@@ -9,7 +9,7 @@ import javax.transaction.UserTransaction;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-@Path("/txn")
+@Path("/txn/txendpoint")
 public class TransactionResource {
 
     @Inject

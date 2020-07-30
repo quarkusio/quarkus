@@ -42,6 +42,14 @@ public class QuartzBuildTimeConfig {
     public Optional<String> dataSourceName;
 
     /**
+     * The prefix for quartz job store tables.
+     * <p>
+     * Ignored if using a `ram` store.
+     */
+    @ConfigItem(defaultValue = "QRTZ_")
+    public String tablePrefix;
+
+    /**
      * The named trigged listeners list
      */
     @ConfigItem(name = "triggerListener")

@@ -23,6 +23,8 @@ import io.quarkus.funqy.runtime.FunctionConstructor;
 import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
+import io.quarkus.funqy.runtime.query.QueryObjectMapper;
+import io.quarkus.funqy.runtime.query.QueryReader;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -38,6 +40,7 @@ public class KnativeEventsBindingRecorder {
     private static final Logger log = Logger.getLogger(KnativeEventsBindingRecorder.class);
 
     private static ObjectMapper objectMapper;
+    private static QueryObjectMapper queryMapper;
     private static Map<String, FunctionInvoker> typeTriggers;
 
     public static final String RESPONSE_TYPE = "response.cloud.event.type";
@@ -48,6 +51,7 @@ public class KnativeEventsBindingRecorder {
         objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             Method method = invoker.getMethod();
             CloudEventMapping annotation = method.getAnnotation(CloudEventMapping.class);
@@ -60,6 +64,8 @@ public class KnativeEventsBindingRecorder {
             if (invoker.hasInput()) {
                 ObjectReader reader = objectMapper.readerFor(invoker.getInputType());
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
+                QueryReader queryReader = queryMapper.readerFor(invoker.getInputType(), invoker.getInputGenericType());
+                invoker.getBindingContext().put(QueryReader.class.getName(), queryReader);
             }
             if (invoker.hasOutput()) {
                 ObjectWriter writer = objectMapper.writerFor(invoker.getOutputType());

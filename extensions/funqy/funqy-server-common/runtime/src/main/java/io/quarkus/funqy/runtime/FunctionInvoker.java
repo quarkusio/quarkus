@@ -15,6 +15,7 @@ public class FunctionInvoker {
     protected FunctionConstructor<?> constructor;
     protected ArrayList<ValueInjector> parameterInjectors;
     protected Class<?> inputType;
+    protected Type inputGenericType;
     protected Class<?> outputType;
     protected boolean isAsync;
 
@@ -33,6 +34,7 @@ public class FunctionInvoker {
                 ValueInjector injector = ParameterInjector.createInjector(type, clz, annotations);
                 if (injector instanceof InputValueInjector) {
                     inputType = clz;
+                    inputGenericType = method.getGenericParameterTypes()[i];
                 }
                 parameterInjectors.add(injector);
             }
@@ -76,6 +78,10 @@ public class FunctionInvoker {
 
     public Class getInputType() {
         return inputType;
+    }
+
+    public Type getInputGenericType() {
+        return inputGenericType;
     }
 
     public Class getOutputType() {

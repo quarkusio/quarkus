@@ -101,7 +101,7 @@ public class OidcRecorder {
 
         if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
             throw new ConfigurationException(
-                    "Both 'auth-server-url' and 'client-id' or alterntively 'public-key' must be configured"
+                    "Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
                             + " when the quarkus-oidc extension is enabled");
         }
 

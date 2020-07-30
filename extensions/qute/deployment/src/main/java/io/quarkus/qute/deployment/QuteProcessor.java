@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -97,6 +98,8 @@ import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
 import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
+import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator.ResolveCreator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.runtime.ContentTypes;
 import io.quarkus.qute.runtime.EngineProducer;
@@ -126,9 +129,6 @@ public class QuteProcessor {
 
     static final DotName DOTNAME_CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
     static final DotName DOTNAME_TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
-
-    private static final String MATCH_NAME = "matchName";
-    private static final String PRIORITY = "priority";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -569,7 +569,9 @@ public class QuteProcessor {
         // Method-level annotations
         for (Entry<MethodInfo, AnnotationInstance> entry : methods.entrySet()) {
             MethodInfo method = entry.getKey();
-            ExtensionMethodGenerator.validate(method);
+            AnnotationValue namespaceValue = entry.getValue().value(ExtensionMethodGenerator.NAMESPACE);
+            ExtensionMethodGenerator.validate(method, method.parameters(),
+                    namespaceValue != null ? namespaceValue.asString() : null);
             produceExtensionMethod(index, extensionMethods, method, entry.getValue());
             LOGGER.debugf("Found template extension method %s declared on %s", method,
                     method.declaringClass().name());
@@ -578,11 +580,17 @@ public class QuteProcessor {
         // Class-level annotations
         for (Entry<ClassInfo, AnnotationInstance> entry : classes.entrySet()) {
             ClassInfo clazz = entry.getKey();
+            AnnotationValue namespaceValue = entry.getValue().value(ExtensionMethodGenerator.NAMESPACE);
+            String namespace = namespaceValue != null ? namespaceValue.asString() : null;
             for (MethodInfo method : clazz.methods()) {
                 if (!Modifier.isStatic(method.flags()) || method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID
-                        || method.parameters().isEmpty() || Modifier.isPrivate(method.flags())
+                        || Modifier.isPrivate(method.flags())
                         || ValueResolverGenerator.isSynthetic(method.flags())) {
-                    // Filter out non-static, synthetic, private and void methods with no params
+                    // Filter out non-static, synthetic, private and void methods
+                    continue;
+                }
+                if ((namespace == null || namespace.isEmpty()) && method.parameters().isEmpty()) {
+                    // Filter methods with no params for non-namespace extensions
                     continue;
                 }
                 if (methods.containsKey(method)) {
@@ -600,7 +608,7 @@ public class QuteProcessor {
             MethodInfo method, AnnotationInstance extensionAnnotation) {
         // Analyze matchName and priority so that it could be used during validation 
         String matchName = null;
-        AnnotationValue matchNameValue = extensionAnnotation.value(MATCH_NAME);
+        AnnotationValue matchNameValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_NAME);
         if (matchNameValue != null) {
             matchName = matchNameValue.asString();
         }
@@ -608,12 +616,17 @@ public class QuteProcessor {
             matchName = method.name();
         }
         int priority = TemplateExtension.DEFAULT_PRIORITY;
-        AnnotationValue priorityValue = extensionAnnotation.value(PRIORITY);
+        AnnotationValue priorityValue = extensionAnnotation.value(ExtensionMethodGenerator.PRIORITY);
         if (priorityValue != null) {
             priority = priorityValue.asInt();
         }
+        String namespace = "";
+        AnnotationValue namespaceValue = extensionAnnotation.value(ExtensionMethodGenerator.NAMESPACE);
+        if (namespaceValue != null) {
+            namespace = namespaceValue.asString();
+        }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName,
-                index.getClassByName(method.parameters().get(0).name()), priority));
+                index.getClassByName(method.parameters().get(0).name()), priority, namespace));
     }
 
     @BuildStep
@@ -758,10 +771,49 @@ public class QuteProcessor {
         generatedTypes.addAll(generator.getGeneratedTypes());
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
+        Map<DotName, List<TemplateExtensionMethodBuildItem>> classToNamespaceExtensions = new HashMap<>();
+        Map<String, DotName> namespaceToClass = new HashMap<>();
+
         for (TemplateExtensionMethodBuildItem templateExtension : templateExtensionMethods) {
-            extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName(),
-                    templateExtension.getPriority());
+            if (templateExtension.hasNamespace()) {
+                // Group extension methods declared on the same class by namespace
+                DotName declaringClassName = templateExtension.getMethod().declaringClass().name();
+                DotName namespaceClassName = namespaceToClass.get(templateExtension.getNamespace());
+                if (namespaceClassName == null) {
+                    namespaceToClass.put(templateExtension.getNamespace(), declaringClassName);
+                } else if (!namespaceClassName.equals(declaringClassName)) {
+                    throw new IllegalStateException("Template extension methods that share the namespace "
+                            + templateExtension.getNamespace() + " must be declared on the same class; but declared on "
+                            + namespaceClassName + " and " + declaringClassName);
+                }
+                List<TemplateExtensionMethodBuildItem> namespaceMethods = classToNamespaceExtensions
+                        .get(declaringClassName);
+                if (namespaceMethods == null) {
+                    namespaceMethods = new ArrayList<>();
+                    classToNamespaceExtensions.put(declaringClassName, namespaceMethods);
+                }
+                namespaceMethods.add(templateExtension);
+            } else {
+                // Generate ValueResolver per extension method
+                extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName(),
+                        templateExtension.getPriority());
+            }
         }
+
+        // Generate a namespace resolver for extension methods declared on the same class
+        for (Entry<DotName, List<TemplateExtensionMethodBuildItem>> entry : classToNamespaceExtensions.entrySet()) {
+            List<TemplateExtensionMethodBuildItem> methods = entry.getValue();
+            methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority));
+            try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
+                    .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), methods.get(0).getNamespace())) {
+                try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
+                    for (TemplateExtensionMethodBuildItem method : methods) {
+                        resolveCreator.addMethod(method.getMethod(), method.getMatchName());
+                    }
+                }
+            }
+        }
+
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
 
         LOGGER.debugf("Generated types: %s", generatedTypes);
@@ -1029,6 +1081,10 @@ public class QuteProcessor {
         }
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
+            if (extensionMethod.hasNamespace()) {
+                // Skip namespace extensions
+                continue;
+            }
             if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
                 // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
                 continue;

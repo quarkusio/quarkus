@@ -38,6 +38,7 @@ public class ExpressionTest {
         verify("foo.call(bar.call(1))", null, null, name("foo"), virtualMethod("call", ExpressionImpl.from("bar.call(1)")));
         verify("foo.call(bar.alpha(1),bar.alpha('ping'))", null, null, name("foo"),
                 virtualMethod("call", ExpressionImpl.from("bar.alpha(1)"), ExpressionImpl.from("bar.alpha('ping')")));
+        verify("'foo:bar'", null, CompletableFuture.completedFuture("foo:bar"), name("'foo:bar'", "|java.lang.String|"));
     }
 
     @Test

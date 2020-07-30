@@ -83,6 +83,8 @@
                                 <argument>-S</argument>
                                 <argument>--stacktrace</argument>
                                 <argument>--no-daemon</argument>
+                                <argument>-x</argument>
+                                <argument>test</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>

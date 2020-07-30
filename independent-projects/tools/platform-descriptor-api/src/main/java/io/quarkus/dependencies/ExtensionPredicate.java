@@ -21,6 +21,28 @@ public class ExtensionPredicate implements Predicate<Extension> {
         return new ExtensionPredicate(keyword);
     }
 
+    public static boolean isPattern(String keyword) {
+        for (char c : keyword.toCharArray()) {
+            switch (c) {
+                case '*':
+                case '?':
+                case '^': // escape character in cmd.exe
+                case '(':
+                case ')':
+                case '[':
+                case ']':
+                case '$':
+                case '.':
+                case '{':
+                case '}':
+                case '|':
+                case '\\':
+                    return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public boolean test(Extension extension) {
         if (extension.isUnlisted()) {

@@ -9,6 +9,8 @@ public final class Constants {
 
     public static final String OPENSHIFT = "openshift";
     public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
+    public static final String ROUTE = "Route";
+    public static final String ROUTE_API_GROUP = "route.openshift.io/v1";
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.

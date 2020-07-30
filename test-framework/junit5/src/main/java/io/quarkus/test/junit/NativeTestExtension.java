@@ -3,7 +3,9 @@ package io.quarkus.test.junit;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.platform.commons.JUnitException;
 
+import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -26,6 +29,8 @@ public class NativeTestExtension
 
     private static boolean failedBoot;
 
+    private static List<Function<Class<?>, String>> testHttpEndpointProviders;
+
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
@@ -37,7 +42,7 @@ public class NativeTestExtension
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            RestAssuredURLManager.setURL(false);
+            RestAssuredURLManager.setURL(false, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
             TestScopeManager.setup(true);
         }
     }
@@ -68,6 +73,8 @@ public class NativeTestExtension
                 }
                 state = new ExtensionState(testResourceManager, launcher, true);
                 store.put(ExtensionState.class.getName(), state);
+
+                testHttpEndpointProviders = TestHttpEndpointProvider.load();
             } catch (Exception e) {
 
                 failedBoot = true;

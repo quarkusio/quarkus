@@ -7,7 +7,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
 @Path("/ft")
-public class TestResource {
+public class FaultToleranceTestResource {
 
     @Inject
     Service service;

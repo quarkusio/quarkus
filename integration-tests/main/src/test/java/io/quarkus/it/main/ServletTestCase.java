@@ -5,6 +5,8 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.web.TestServlet;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -12,8 +14,9 @@ import io.restassured.RestAssured;
 public class ServletTestCase {
 
     @Test
+    @TestHTTPEndpoint(TestServlet.class)
     public void testServlet() {
-        RestAssured.when().get("/testservlet").then()
+        RestAssured.when().get().then()
                 .body(is("A message"));
     }
 

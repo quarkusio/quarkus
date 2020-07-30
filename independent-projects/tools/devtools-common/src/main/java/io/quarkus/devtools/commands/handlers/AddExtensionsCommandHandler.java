@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.commands.AddExtensions.EXTENSION_MANAGER;
+import static io.quarkus.platform.tools.ConsoleMessageFormats.nok;
 
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -12,6 +13,7 @@ import io.quarkus.devtools.project.extensions.ExtensionManager.InstallResult;
 import io.quarkus.platform.tools.ConsoleMessageFormats;
 import io.quarkus.registry.DefaultExtensionRegistry;
 import io.quarkus.registry.ExtensionRegistry;
+import io.quarkus.registry.MultipleExtensionsFoundException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
@@ -34,11 +36,11 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             extensionRegistry = DefaultExtensionRegistry.fromPlatform(invocation.getPlatformDescriptor());
         }
         String quarkusVersion = invocation.getPlatformDescriptor().getQuarkusVersion();
-        ExtensionInstallPlan extensionInstallPlan = extensionRegistry.planInstallation(quarkusVersion, extensionsQuery);
 
         final ExtensionManager extensionManager = invocation.getValue(EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
         try {
+            ExtensionInstallPlan extensionInstallPlan = extensionRegistry.planInstallation(quarkusVersion, extensionsQuery);
             if (extensionInstallPlan.isNotEmpty()) {
                 final InstallResult result = extensionManager.install(extensionInstallPlan);
                 result.getInstalled()
@@ -47,7 +49,15 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                                         + " has been installed"));
                 return new QuarkusCommandOutcome(true).setValue(AddExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
             }
-
+        } catch (MultipleExtensionsFoundException m) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(nok("Multiple extensions matching '")).append(m.getKeyword()).append("'");
+            m.getExtensions()
+                    .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                            .append(extension.managementKey()));
+            sb.append(System.lineSeparator())
+                    .append("     Be more specific e.g using the exact name or the full GAV.");
+            invocation.log().info(sb.toString());
         } catch (IOException e) {
             throw new QuarkusCommandException("Failed to add extensions", e);
         }

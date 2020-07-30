@@ -107,6 +107,12 @@ public class DefaultExtensionRegistry implements ExtensionRegistry {
                 // No extension found for this keyword. Return empty immediately
                 return ExtensionInstallPlan.EMPTY;
             }
+            // If it's a pattern allow multiple results
+            // See https://github.com/quarkusio/quarkus/issues/11086#issuecomment-666360783
+            else if (tuples.size() > 1 && !ExtensionPredicate.isPattern(keyword)) {
+                throw new MultipleExtensionsFoundException(keyword,
+                        tuples.stream().map(this::toQuarkusExtension).collect(Collectors.toList()));
+            }
             for (ExtensionReleaseTuple tuple : tuples) {
                 ArtifactKey id = tuple.getExtension().getId();
                 String groupId = id.getGroupId();

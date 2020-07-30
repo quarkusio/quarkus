@@ -37,7 +37,7 @@ public class NativeTestExtension
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            RestAssuredURLManager.setURL(false);
+            RestAssuredURLManager.setURL(false, QuarkusTestExtension.getEndpointPath(context));
             TestScopeManager.setup(true);
         }
     }

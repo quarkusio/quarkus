@@ -642,8 +642,13 @@ class Parser implements Function<String, Expression>, ParserHelper {
         int bracketIdx = value.indexOf('(');
 
         List<String> strParts;
-        if (namespaceIdx != -1 && (spaceIdx == -1 || namespaceIdx < spaceIdx)
-                && (bracketIdx == -1 || namespaceIdx < bracketIdx)) {
+        if (namespaceIdx != -1
+                // No space or colon before the space
+                && (spaceIdx == -1 || namespaceIdx < spaceIdx)
+                // No bracket or colon before the bracket
+                && (bracketIdx == -1 || namespaceIdx < bracketIdx)
+                // No string literal
+                && !isStringLiteralSeparator(value.charAt(0))) {
             // Expression that starts with a namespace
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);

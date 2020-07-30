@@ -99,7 +99,7 @@ public final class EngineBuilder {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             if (namespaceResolver.getNamespace().equals(resolver.getNamespace())) {
                 throw new IllegalArgumentException(
-                        String.format("Namespace %s is already handled by %s", resolver.getNamespace()));
+                        String.format("Namespace %s is already handled by %s", resolver.getNamespace(), namespaceResolver));
             }
         }
         this.namespaceResolvers.add(resolver);

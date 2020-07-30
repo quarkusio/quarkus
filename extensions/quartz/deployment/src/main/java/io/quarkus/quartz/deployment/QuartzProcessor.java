@@ -135,6 +135,8 @@ public class QuartzProcessor {
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleInstanceIdGenerator.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
         reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, config.storeType.clazz));
+        reflectiveClasses
+                .add(new ReflectiveClassBuildItem(false, false, org.quartz.simpl.InitThreadContextClassLoadHelper.class));
 
         if (config.storeType.isDbStore()) {
             reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, JobStoreSupport.class.getName()));

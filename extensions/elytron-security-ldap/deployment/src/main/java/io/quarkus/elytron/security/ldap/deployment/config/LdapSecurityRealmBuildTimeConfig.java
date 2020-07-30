@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.ldap.config;
+package io.quarkus.elytron.security.ldap.deployment.config;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * A configuration object for a LDAP based realm configuration,
  * {@linkplain org.wildfly.security.auth.realm.ldap.LdapSecurityRealm}
  */
-@ConfigRoot(name = "security.ldap", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(name = "security.ldap", phase = ConfigPhase.BUILD_TIME)
 public class LdapSecurityRealmBuildTimeConfig {
 
     /**

@@ -31,6 +31,7 @@ import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.simpl.InitThreadContextClassLoadHelper;
 import org.quartz.simpl.SimpleJobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
@@ -294,6 +295,7 @@ public class QuartzScheduler implements Scheduler {
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
+        props.put(StdSchedulerFactory.PROP_SCHED_CLASS_LOAD_HELPER_CLASS, InitThreadContextClassLoadHelper.class.getName());
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount",
                 "" + quartzSupport.getRuntimeConfig().threadCount);
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority",

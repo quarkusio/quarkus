@@ -14,6 +14,10 @@
     <artifactId>quarkus-integration-test-grpc-proto-v2</artifactId>
     <name>Quarkus - Integration Tests - gRPC - Proto v2</name>
 
+    <properties>
+        <skipTests>true</skipTests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

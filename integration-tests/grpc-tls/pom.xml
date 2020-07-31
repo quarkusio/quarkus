@@ -14,6 +14,10 @@
     <artifactId>quarkus-integration-test-grpc-tls</artifactId>
     <name>Quarkus - Integration Tests - gRPC - TLS</name>
 
+    <properties>
+        <skipTests>true</skipTests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -14,6 +14,7 @@ import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
@@ -23,17 +24,7 @@ public class Neo4jDriverRecorder {
 
     private static final Logger log = Logger.getLogger(Neo4jDriverRecorder.class);
 
-    public void configureNeo4jProducer(BeanContainer beanContainer, Neo4jConfiguration configuration,
-            ShutdownContext shutdownContext) {
-
-        Driver driver = initializeDriver(configuration, shutdownContext);
-
-        Neo4jDriverProducer driverProducer = beanContainer.instance(Neo4jDriverProducer.class);
-        driverProducer.initialize(driver);
-    }
-
-    private Driver initializeDriver(Neo4jConfiguration configuration,
-            ShutdownContext shutdownContext) {
+    public RuntimeValue<Driver> initializeDriver(Neo4jConfiguration configuration, ShutdownContext shutdownContext) {
 
         String uri = configuration.uri;
         AuthToken authToken = AuthTokens.none();
@@ -47,7 +38,12 @@ public class Neo4jDriverRecorder {
 
         Driver driver = GraphDatabase.driver(uri, authToken, configBuilder.build());
         shutdownContext.addShutdownTask(driver::close);
-        return driver;
+        return new RuntimeValue<>(driver);
+    }
+
+    public void configureNeo4jProducer(BeanContainer beanContainer, RuntimeValue<Driver> driverHolder) {
+        Neo4jDriverProducer driverProducer = beanContainer.instance(Neo4jDriverProducer.class);
+        driverProducer.initialize(driverHolder.getValue());
     }
 
     private static Config.ConfigBuilder createBaseConfig() {

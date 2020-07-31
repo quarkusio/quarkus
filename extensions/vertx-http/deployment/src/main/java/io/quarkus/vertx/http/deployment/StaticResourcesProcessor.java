@@ -107,9 +107,19 @@ public class StaticResourcesProcessor {
                 @Override
                 public FileVisitResult visitFile(Path p, BasicFileAttributes attrs)
                         throws IOException {
+                    String simpleName = p.getFileName().toString();
                     String file = resource.relativize(p).toString();
-                    if (file.equals("index.html") || file.equals("index.htm")) {
-                        knownPaths.add("/");
+                    if (simpleName.equals("index.html") || simpleName.equals("index.htm")) {
+                        Path parent = resource.relativize(p).getParent();
+                        if (parent == null) {
+                            knownPaths.add("/");
+                        } else {
+                            String parentString = parent.toString();
+                            if (!parentString.startsWith("/")) {
+                                parentString = "/" + parentString;
+                            }
+                            knownPaths.add(parentString + "/");
+                        }
                     }
                     if (!file.startsWith("/")) {
                         file = "/" + file;

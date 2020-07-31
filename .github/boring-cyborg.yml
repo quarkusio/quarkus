@@ -95,6 +95,11 @@ labelPRBasedOnFilePath:
         - docs/**/*
     area/funqy:
         - extensions/funqy/**/*
+    area/google-cloud-functions:
+        - extensions/google-cloud-functions/**/*
+        - extensions/google-cloud-functions-http/**/*
+        - integration-tests/google-cloud-functions/**/*
+        - integration-tests/google-cloud-functions-http/**/*
     area/gradle:
         - devtools/gradle/**/*
         - integration-tests/gradle/**/*

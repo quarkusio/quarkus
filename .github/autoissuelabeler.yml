@@ -154,3 +154,7 @@
   title: "(?i).*(arc|cdi|injection).*"
   description: "(?i).*(arc|cdi|injection).*"
   notify: [mkouba, manovotn]
+- labels: [area/google-cloud-functions]
+  title: "(?i).*google.cloud.*"
+  description: "(?i).*google.cloud.*"
+  notify: [loicmathieu]

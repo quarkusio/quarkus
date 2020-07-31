@@ -72,6 +72,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
+import io.quarkus.deployment.util.JavaVersionUtil;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.utilities.JavaBinFinder;
@@ -322,7 +323,13 @@ public class DevMojo extends AbstractMojo {
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
             if (!preventnoverify) {
-                args.add("-Xverify:none");
+                // in Java 13 and up, preventing verification is deprecated - see https://bugs.openjdk.java.net/browse/JDK-8218003
+                // this test isn't absolutely correct in the sense that depending on the user setup, the actual Java binary
+                // that is used might be different that the one running Maven, but given how small of an impact this has
+                // it's probably better than running an extra command on 'javaTool' just to figure out the version
+                if (!JavaVersionUtil.isJava13OrHigher()) {
+                    args.add("-Xverify:none");
+                }
             }
 
             DevModeRunner runner = new DevModeRunner(args);

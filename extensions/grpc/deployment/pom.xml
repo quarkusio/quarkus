@@ -13,10 +13,6 @@
     <artifactId>quarkus-grpc-deployment</artifactId>
     <name>Quarkus - gRPC - Deployment</name>
 
-    <properties>
-        <skipTests>true</skipTests>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

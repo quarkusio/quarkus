@@ -47,6 +47,11 @@ Add the following dependencies to your project:
         <groupId>com.blazebit</groupId>
         <artifactId>blaze-persistence-integration-quarkus</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.blazebit</groupId>
+        <artifactId>blaze-persistence-integration-hibernate-5.4</artifactId>
+        <scope>runtime</scope>
+    </dependency>
 </dependencies>
 ----
 

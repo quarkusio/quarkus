@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Default;
@@ -51,6 +52,7 @@ import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class MongoClientProcessor {
@@ -121,14 +123,20 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
+    @Record(STATIC_INIT)
     MongoConnectionPoolListenerBuildItem setupMetrics(
             MongoClientBuildTimeConfig buildTimeConfig,
+            MongoClientRecorder recorder,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
 
+        // Construction of MongoClient isn't compatible with the MetricsFactoryConsumer pattern.
+        // Use a supplier to defer construction of the pool listener for the supported metrics system
         if (buildTimeConfig.metricsEnabled && metricsCapability.isPresent()) {
-            // avoid import for lazy classloading
-            return new MongoConnectionPoolListenerBuildItem(
-                    new io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener());
+            if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+                return new MongoConnectionPoolListenerBuildItem(recorder.createMicrometerConnectionPoolListener());
+            } else {
+                return new MongoConnectionPoolListenerBuildItem(recorder.createMPMetricsConnectionPoolListener());
+            }
         }
         return null;
     }
@@ -151,9 +159,10 @@ public class MongoClientProcessor {
                 AdditionalBeanBuildItem.builder().addBeanClass(io.quarkus.mongodb.runtime.MongoClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
 
-        List<ConnectionPoolListener> poolListenerList = connectionPoolListenerProvider.stream()
-                .map(MongoConnectionPoolListenerBuildItem::getConnectionPoolListener)
-                .collect(Collectors.toList());
+        List<Supplier<ConnectionPoolListener>> poolListenerList = new ArrayList<>(connectionPoolListenerProvider.size());
+        for (MongoConnectionPoolListenerBuildItem item : connectionPoolListenerProvider) {
+            poolListenerList.add(item.getConnectionPoolListener());
+        }
 
         // make MongoClients an unremoveable bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());

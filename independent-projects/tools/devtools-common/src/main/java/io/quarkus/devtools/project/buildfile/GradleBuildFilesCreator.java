@@ -16,9 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
-import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 public final class GradleBuildFilesCreator {
 
@@ -69,16 +67,6 @@ public final class GradleBuildFilesCreator {
 
     public String getProperty(String propertyName) throws IOException {
         return getModel().getPropertiesContent().getProperty(propertyName);
-    }
-
-    private void readLineByLine(String content, Consumer<String> lineConsumer) {
-        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)),
-                StandardCharsets.UTF_8.name())) {
-            while (scanner.hasNextLine()) {
-                String currentLine = scanner.nextLine();
-                lineConsumer.accept(currentLine);
-            }
-        }
     }
 
     private Model getModel() throws IOException {

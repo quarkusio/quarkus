@@ -26,6 +26,8 @@ public class Extension implements Serializable {
 
     public static final String MD_SHORT_NAME = "short-name";
 
+    public static final String MD_CODESTART = "codestart";
+
     public static final String MD_GUIDE = "guide";
 
     /** Key used for keywords in metadata **/
@@ -261,6 +263,15 @@ public class Extension implements Serializable {
 
     public Extension setShortName(String shortName) {
         getMetadata().put(MD_SHORT_NAME, shortName);
+        return this;
+    }
+
+    public String getCodestart() {
+        return (String) getMetadata().get(MD_CODESTART);
+    }
+
+    public Extension setCodestart(String codestart) {
+        getMetadata().put(MD_CODESTART, codestart);
         return this;
     }
 

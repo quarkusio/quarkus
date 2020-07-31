@@ -1,8 +1,7 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -18,16 +17,11 @@ public class DirectoryResourceLoader implements ResourceLoader {
     }
 
     @Override
-    public <T> T loadResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {
-        Path resource = dir.resolve(name);
-        if (!Files.exists(resource)) {
-            throw new IOException("Failed to locate " + resource);
+    public <T> T loadResourceAsPath(String name, ResourcePathConsumer<T> consumer) throws IOException {
+        Path path = dir.resolve(name);
+        if (!Files.exists(path)) {
+            throw new IOException("Failed to locate " + name + " dir on the classpath");
         }
-        if (Files.isDirectory(resource)) {
-            throw new IOException("Can't open a stream for path pointing to directory " + resource);
-        }
-        try (InputStream is = Files.newInputStream(resource)) {
-            return consumer.consume(is);
-        }
+        return consumer.consume(path);
     }
 }

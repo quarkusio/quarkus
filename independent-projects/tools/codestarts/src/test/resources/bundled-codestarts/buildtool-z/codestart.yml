@@ -1,0 +1,8 @@
+---
+name: z
+type: buildtool
+language:
+  base:
+    shared-data:
+      buildtool:
+        foo: world z

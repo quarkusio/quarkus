@@ -66,7 +66,7 @@ public class ValueMap<V extends ValueMap<V>> {
             return defaultValue;
         }
         if (Boolean.class.equals(value.getClass())) {
-            return ((Boolean) value).booleanValue();
+            return (Boolean) value;
         }
         return Boolean.parseBoolean(value.toString());
     }

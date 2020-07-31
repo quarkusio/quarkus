@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
-import io.quarkus.devtools.commands.PlatformAwareTestBase;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.util.List;
@@ -50,9 +49,9 @@ public class CombinedQuarkusPlatformDescriptorTest extends PlatformAwareTestBase
 
         assertManagedDeps(combined);
 
-        assertEquals("dominating pom.xml template", combined.getTemplate("templates/basic-rest/java/pom.xml-template.ftl"));
-        assertEquals(defaultPlatform.getTemplate("templates/dockerfile-jvm.ftl"),
-                combined.getTemplate("templates/dockerfile-jvm.ftl"));
+        assertEquals("dominating pom.xml template", combined.getTemplate("dir/some-other-file.template"));
+        assertEquals(defaultPlatform.getTemplate("dir/some-file.template"),
+                combined.getTemplate("dir/some-file.template"));
     }
 
     private void assertBom(QuarkusPlatformDescriptor descriptor) {

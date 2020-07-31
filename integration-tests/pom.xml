@@ -30,6 +30,7 @@
         <module>hibernate-validator</module>
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
+        <module>devtools</module>
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>

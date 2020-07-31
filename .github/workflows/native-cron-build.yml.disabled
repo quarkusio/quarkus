@@ -1,3 +1,4 @@
+# Disabled because we mostly don't care about Java 8 native image
 name: "Quarkus CI - JDK 8 Native Build"
 on:
   schedule:

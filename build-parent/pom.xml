@@ -93,6 +93,10 @@
         <jacoco.version>0.8.5</jacoco.version>
 
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+
+        <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
+        <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
     </properties>
 
     <dependencyManagement>

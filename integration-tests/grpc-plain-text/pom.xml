@@ -14,6 +14,10 @@
     <artifactId>quarkus-integration-test-grpc-plain-text</artifactId>
     <name>Quarkus - Integration Tests - gRPC - Plain Text</name>
 
+    <properties>
+        <skipTests>true</skipTests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

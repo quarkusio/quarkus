@@ -14,6 +14,10 @@
     <artifactId>quarkus-integration-test-grpc-mutual-auth</artifactId>
     <name>Quarkus - Integration Tests - gRPC - TLS with mutual auth</name>
 
+    <properties>
+        <skipTests>true</skipTests>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

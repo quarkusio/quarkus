@@ -157,7 +157,7 @@ public class BeanProcessor {
                 generateSources, reflectionRegistration, existingClasses);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName,
-                injectionPointAnnotationsPredicate);
+                injectionPointAnnotationsPredicate, allowMocking);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
 
         List<Resource> resources = new ArrayList<>();

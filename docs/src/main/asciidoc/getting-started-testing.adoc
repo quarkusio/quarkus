@@ -228,6 +228,118 @@ public class StaticContentTest {
 
 For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` representations of the URL.
 
+== Testing a specific endpoint
+
+Both RESTassured and `@TestHTTPResource` allow you to specify the endpoint class you are testing rather than hard coding
+a path. This currently supports both JAX-RS endpoints, Servlets and Reactive Routes. This makes it a lot easier to see exactly which endpoints
+a given test is testing.
+
+For the purposes of these examples I am going to assume we have an endpoint that looks like the following:
+
+[source,java]
+----
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+NOTE: This currently does not support the `@ApplicationPath()` annotation to set the JAX-RS context path. Use the
+`quarkus.resteasy.path` config value instead if you want a custom context path.
+
+=== TestHTTPResource
+
+You can the use the `io.quarkus.test.common.http.TestHTTPEndpoint` annotation to specify the endpoint path, and the path
+will be extracted from the provided endpoint. If you also specify a value for the `TestHTTPResource` endpoint it will
+be appended to the end of the endpoint path.
+
+[source,java]
+----
+package org.acme.getting.started.testing;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class StaticContentTest {
+
+    @TestHTTPEndpoint(GreetingResource.class)  // <1>
+    @TestHTTPResource
+    URL url;
+
+    @Test
+    public void testIndexHtml() throws Exception {
+        try (InputStream in = url.openStream()) {
+            String contents = readStream(in);
+            Assertions.assertTrue(contents.equals("hello"));
+        }
+    }
+
+    private static String readStream(InputStream in) throws IOException {
+        byte[] data = new byte[1024];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(data)) > 0) {
+            out.write(data, 0, r);
+        }
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+}
+----
+<1> Because `GreetingResource` is annotated with `@Path("/hello")` the injected URL
+will end with `/hello`.
+
+=== RESTassured
+
+To control the RESTassured base path (i.e. the default path that serves as the root for every
+request) you can use the `io.quarkus.test.common.http.TestHTTPEndpoint` annotation. This can
+be applied at the class or method level. To test out greeting resource we would do:
+
+[source,java]
+----
+package org.acme.getting.started.testing;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+@TestHTTPEndpoint(GreetingResource.class) //<1>
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get()    //<2>
+          .then()
+             .statusCode(200)
+             .body(is("hello"));
+    }
+}
+----
+<1> This tells RESTAssured to prefix all requests with `/hello`.
+<2> Note we don't need to specify a path here, as `/hello` is the default for this test
+
 == Injection into tests
 
 So far we have only covered integration style tests that test the app via HTTP endpoints, but what if we want to do unit

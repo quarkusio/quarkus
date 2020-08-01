@@ -11,6 +11,12 @@ public interface BootstrapConstants {
     String SERIALIZED_APP_MODEL = "quarkus-internal.serialized-app-model.path";
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
 
+    /**
+     * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.
+     * The Gradle plugin populates this data which is then read by the PathTestHelper when executing tests.
+     */
+    String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
+
     @Deprecated
     String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
 

@@ -28,13 +28,16 @@ public class KafkaStreamsHotReplacementSetup implements HotReplacementSetup {
             if (nextUpdate < System.currentTimeMillis()) {
                 synchronized (this) {
                     if (nextUpdate < System.currentTimeMillis()) {
-                        executor.execute(() -> {
-                            try {
-                                context.doScan(true);
-                            } catch (RuntimeException e) {
-                                throw e;
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    context.doScan(true);
+                                } catch (RuntimeException e) {
+                                    throw e;
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
                         });
                         // we update at most once every 2s

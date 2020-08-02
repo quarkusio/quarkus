@@ -2,6 +2,7 @@ package io.quarkus.it.panache
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.quarkus.it.panache.kotlin.Dog
 import io.quarkus.it.panache.kotlin.Person
 import io.quarkus.test.junit.DisabledOnNativeImage
 import io.quarkus.test.junit.QuarkusTest
@@ -10,6 +11,7 @@ import io.restassured.http.ContentType
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import kotlin.test.assertNotNull
 
 /**
  * Test various Panache operations running in Quarkus
@@ -61,5 +63,10 @@ open class KotlinPanacheFunctionalityTest {
     @Test
     fun testBug9036() {
         RestAssured.`when`()["/test/9036"].then().body(Matchers.`is`("OK"))
+    }
+
+    @Test
+    fun entityManagerIsInjected() {
+        assertNotNull(Dog().getEntityManager())
     }
 }

@@ -21,7 +21,7 @@
         <scala.version>${scala_version}</scala.version>
         <scala-maven-plugin.version>${scala_plugin_version}</scala-maven-plugin.version>
     </properties>
-
+    ${maven_repositories}${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -74,6 +74,8 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>prepare</goal>
+                            <goal>prepare-tests</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>

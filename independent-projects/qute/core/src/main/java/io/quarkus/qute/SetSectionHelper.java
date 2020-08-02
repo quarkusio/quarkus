@@ -2,8 +2,6 @@ package io.quarkus.qute;
 
 import static io.quarkus.qute.Futures.evaluateParams;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,16 +63,16 @@ public class SetSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
-                Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
+                Scope newScope = new Scope(previousScope);
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     Expression expr = block.addExpression(entry.getKey(), entry.getValue());
-                    typeInfos.put(entry.getKey(), expr.collectTypeInfo());
+                    newScope.put(entry.getKey(), expr.collectTypeInfo());
                 }
-                return typeInfos;
+                return newScope;
             } else {
-                return Collections.emptyMap();
+                return previousScope;
             }
         }
 

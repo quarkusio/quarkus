@@ -40,7 +40,7 @@ public class IdentityProviderManagerCreator {
             builder.addProvider(new AnonymousIdentityProvider());
         }
         for (SecurityIdentityAugmentor i : augmentors) {
-            builder.addSecurityIdentityAugmenter(i);
+            builder.addSecurityIdentityAugmentor(i);
         }
         builder.setBlockingExecutor(new Executor() {
             @Override

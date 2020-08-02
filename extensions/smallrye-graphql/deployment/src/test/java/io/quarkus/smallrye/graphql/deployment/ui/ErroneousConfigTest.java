@@ -16,10 +16,10 @@ public class ErroneousConfigTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.root-path-ui=/\n"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.ui.root-path=/\n"), "application.properties"));
 
     @Test
-    public void shouldNotStartApplicationIfSwaggerPathIsASlash() {
+    public void shouldNotStartApplicationIfUIPathIsASlash() {
         Assertions.fail();
     }
 }

@@ -20,24 +20,85 @@
         <maven.compiler.source>1.8</maven.compiler.source>
     </properties>
 
+    <!-- not used atm
+    <repositories>
+        <repository>
+            <id>gradle-repo</id>
+            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
+        </repository>
+    </repositories>
+    -->
     <dependencies>
+        <!-- Compile -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-platform-descriptor-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
+        </dependency>
+        <!--
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+        </dependency>
+        -->
+        <!-- Gradle, not used atm
+        <dependency>
+            <groupId>org.gradle</groupId>
+            <artifactId>gradle-tooling-api</artifactId>
+            <version>6.3</version>
+        </dependency> -->
+
         <dependency>
             <groupId>org.aesh</groupId>
             <artifactId>aesh</artifactId>
         </dependency>
+
+        <!-- Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+          <resource>
+            <directory>${project.basedir}/../bom-descriptor-json/target</directory>
+            <targetPath>quarkus-bom-descriptor</targetPath>
+            <filtering>false</filtering>
+            <includes>
+              <include>extensions.json</include>
+            </includes>
+          </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -65,10 +126,21 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- fails for the bom-descriptor-json -->
+           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.0</version>
+                <configuration>
+                  <transformers>
+                    <!-- add Main-Class to manifest file -->
+                    <transformer
+                      implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                      <mainClass>io.quarkus.cli.QuarkusCli</mainClass>
+                    </transformer>
+                  </transformers>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -78,6 +150,7 @@
                         <configuration>
                             <artifactSet>
                                 <excludes>
+                                    <exclude>io.quarkus:quarkus-bom-descriptor-json</exclude>
                                     <exclude>org.fusesource.jansi:jansi</exclude>
                                     <exclude>org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain</exclude>
                                     <exclude>junit:junit</exclude>

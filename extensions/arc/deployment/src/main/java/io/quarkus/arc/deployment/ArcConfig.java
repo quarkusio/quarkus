@@ -6,10 +6,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.arc.config.ConfigProperties;
+import io.quarkus.deployment.index.IndexDependencyConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -57,6 +59,13 @@ public class ArcConfig {
      * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
      * can be created properly. If the value is set to false, then an exception is thrown at build time indicating that a
      * subclass/proxy could not be created.
+     *
+     * Quarkus performs the following transformations when this setting is enabled:
+     * <ul>
+     * <li>Remove 'final' modifier from classes and methods when a proxy is required.
+     * <li>Create a no-args constructor if needed.
+     * <li>Makes private no-args constructors package-private if necessary.
+     * </ul
      */
     @ConfigItem(defaultValue = "true")
     public boolean transformUnproxyableClasses;
@@ -93,6 +102,49 @@ public class ArcConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean autoProducerMethods;
+
+    /**
+     * The list of types that should be excluded from discovery.
+     * <p>
+     * An element value can be:
+     * <ul>
+     * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
+     * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * </ul>
+     * If any element value matches a discovered type then the type is excluded from discovery, i.e. no beans and observer
+     * methods are created from this type.
+     */
+    @ConfigItem
+    public Optional<List<String>> excludeTypes;
+
+    /**
+     * List of types that should be considered unremovable regardless of whether they are directly used or not.
+     * This is a configuration option equivalent to using {@link io.quarkus.arc.Unremovable} annotation.
+     *
+     * <p>
+     * An element value can be:
+     * <ul>
+     * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
+     * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * </ul>
+     * If any element value matches a discovered bean, then such a bean is considered unremovable.
+     *
+     * @see {@link #removeUnusedBeans}
+     * @see {@link io.quarkus.arc.Unremovable}
+     */
+    @ConfigItem
+    public Optional<List<String>> unremovableTypes;
+
+    /**
+     * The artifacts that should be excluded from discovery. These artifacts would be otherwise scanned for beans, i.e. they
+     * contain a Jandex index or a beans.xml descriptor.
+     */
+    @ConfigItem
+    Map<String, IndexDependencyConfig> excludeDependency;
 
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());

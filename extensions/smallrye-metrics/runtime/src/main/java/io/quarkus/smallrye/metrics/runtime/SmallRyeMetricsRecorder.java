@@ -13,6 +13,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
@@ -38,6 +39,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.metrics.ExtendedMetadata;
 import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
@@ -84,6 +86,8 @@ public class SmallRyeMetricsRecorder {
     private static final String MEMORY_USED_HEAP = "memory.usedHeap";
     private static final String MEMORY_USED_NON_HEAP = "memory.usedNonHeap";
 
+    private static final SmallRyeMetricsFactory factory = new SmallRyeMetricsFactory();
+
     public Function<Router, Route> route(String name) {
         return new Function<Router, Route>() {
             @Override
@@ -124,6 +128,7 @@ public class SmallRyeMetricsRecorder {
         micrometerJvmThreadMetrics(registry);
         micrometerJvmMemoryMetrics(registry);
         micrometerJvmClassLoaderMetrics(registry);
+        micrometerRuntimeMetrics(registry);
     }
 
     public void registerMetrics(BeanInfo beanInfo, MemberInfo memberInfo) {
@@ -206,6 +211,10 @@ public class SmallRyeMetricsRecorder {
             default:
                 break;
         }
+    }
+
+    public void registerMetrics(Consumer<MetricsFactory> consumer) {
+        consumer.accept(factory);
     }
 
     public void createRegistries(BeanContainer container) {
@@ -750,6 +759,47 @@ public class SmallRyeMetricsRecorder {
         }
     }
 
+    /**
+     * Mimics Uptime metrics from Micrometer. Most of the logic here is basically copied from
+     * {@link <a href=
+     * "https://github.com/micrometer-metrics/micrometer/blob/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
+     * Uptime metrics</a>}.
+     * 
+     * @param registry
+     */
+    private void micrometerRuntimeMetrics(MetricRegistry registry) {
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+
+        registry.register(
+                new ExtendedMetadataBuilder()
+                        .withName("process.runtime")
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.MILLISECONDS)
+                        .withDescription("The uptime of the Java virtual machine")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .build(),
+                new Gauge() {
+                    @Override
+                    public Number getValue() {
+                        return runtimeMXBean.getUptime();
+                    }
+                });
+        registry.register(
+                new ExtendedMetadataBuilder()
+                        .withName("process.start.time")
+                        .withType(MetricType.GAUGE)
+                        .withUnit(MetricUnits.MILLISECONDS)
+                        .withDescription("Start time of the process since unix epoch.")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .build(),
+                new Gauge() {
+                    @Override
+                    public Number getValue() {
+                        return runtimeMXBean.getStartTime();
+                    }
+                });
+    }
+
     private void micrometerJvmThreadMetrics(MetricRegistry registry) {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
@@ -977,5 +1027,4 @@ public class SmallRyeMetricsRecorder {
         }
         return count;
     }
-
 }

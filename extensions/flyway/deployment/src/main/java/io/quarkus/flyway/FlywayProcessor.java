@@ -3,6 +3,7 @@ package io.quarkus.flyway;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -11,7 +12,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -27,6 +27,9 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Default;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.migration.JavaMigration;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
@@ -35,16 +38,20 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
@@ -57,37 +64,58 @@ class FlywayProcessor {
 
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
+    private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
+
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
 
     FlywayBuildTimeConfig flywayBuildConfig;
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.FLYWAY);
+        return new CapabilityBuildItem(Capability.FLYWAY);
     }
 
     @BuildStep
-    void scannerTransformer(BuildProducer<BytecodeTransformerBuildItem> transformers) {
-        transformers
-                .produce(new BytecodeTransformerBuildItem(true, ScannerTransformer.FLYWAY_SCANNER_CLASS_NAME,
-                        new ScannerTransformer()));
+    IndexDependencyBuildItem indexFlyway() {
+        return new IndexDependencyBuildItem("org.flywaydb", "flyway-core");
     }
 
     @Record(STATIC_INIT)
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             FlywayRecorder recorder,
+            RecorderContext context,
+            CombinedIndexBuildItem combinedIndexBuildItem,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) throws IOException, URISyntaxException {
 
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.FLYWAY));
+        featureProducer.produce(new FeatureBuildItem(Feature.FLYWAY));
 
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
-        List<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
+        Collection<String> applicationMigrations = discoverApplicationMigrations(getMigrationLocations(dataSourceNames));
         recorder.setApplicationMigrationFiles(applicationMigrations);
 
+        Set<Class<? extends JavaMigration>> javaMigrationClasses = new HashSet<>();
+        addJavaMigrations(combinedIndexBuildItem.getIndex().getAllKnownImplementors(JAVA_MIGRATION), context,
+                reflectiveClassProducer, javaMigrationClasses);
+        recorder.setApplicationMigrationClasses(javaMigrationClasses);
+
         resourceProducer.produce(new NativeImageResourceBuildItem(applicationMigrations.toArray(new String[0])));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addJavaMigrations(Collection<ClassInfo> candidates, RecorderContext context,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            Set<Class<? extends JavaMigration>> javaMigrationClasses) {
+        for (ClassInfo javaMigration : candidates) {
+            if (Modifier.isAbstract(javaMigration.flags())) {
+                continue;
+            }
+            javaMigrationClasses.add((Class<JavaMigration>) context.classProxy(javaMigration.name().toString()));
+            reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, javaMigration.name().toString()));
+        }
     }
 
     @BuildStep
@@ -161,15 +189,19 @@ class FlywayProcessor {
         return migrationLocations;
     }
 
-    private List<String> discoverApplicationMigrations(Collection<String> locations) throws IOException, URISyntaxException {
+    private Collection<String> discoverApplicationMigrations(Collection<String> locations)
+            throws IOException, URISyntaxException {
         try {
-            List<String> applicationMigrationResources = new ArrayList<>();
+            LinkedHashSet<String> applicationMigrationResources = new LinkedHashSet<>();
             // Locations can be a comma separated list
             for (String location : locations) {
                 // Strip any 'classpath:' protocol prefixes because they are assumed
                 // but not recognized by ClassLoader.getResources()
                 if (location != null && location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
                     location = location.substring(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL.length() + 1);
+                    if (location.startsWith("/")) {
+                        location = location.substring(1);
+                    }
                 }
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
                 while (migrations.hasMoreElements()) {

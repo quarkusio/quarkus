@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -19,7 +20,11 @@ public class RemoteHostAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return exchange.request().remoteAddress().host();
+        final SocketAddress remoteAddr = exchange.request().remoteAddress();
+        if (remoteAddr == null) {
+            return null;
+        }
+        return remoteAddr.host();
     }
 
     @Override

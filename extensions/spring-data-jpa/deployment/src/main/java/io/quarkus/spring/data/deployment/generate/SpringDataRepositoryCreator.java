@@ -13,13 +13,13 @@ import java.util.function.Consumer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -27,6 +27,7 @@ import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 
 public class SpringDataRepositoryCreator {
@@ -116,6 +117,13 @@ public class SpringDataRepositoryCreator {
     }
 
     private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement) {
+        AnnotationInstance repositoryDefinitionInstance = repositoryToImplement
+                .classAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
+        if (repositoryDefinitionInstance != null) {
+            return new AbstractMap.SimpleEntry<>(repositoryDefinitionInstance.value("idClass").asClass().name(),
+                    repositoryDefinitionInstance.value("domainClass").asClass().name());
+        }
+
         DotName entityDotName = null;
         DotName idDotName = null;
 

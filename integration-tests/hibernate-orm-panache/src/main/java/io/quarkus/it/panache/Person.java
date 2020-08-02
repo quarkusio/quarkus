@@ -78,4 +78,8 @@ public class Person extends PanacheEntity {
     public static long methodWithPrimitiveParams(boolean b, byte bb, short s, int i, long l, float f, double d, char c) {
         return 0;
     }
+
+    public static void voidMethod() {
+        throw new RuntimeException("void");
+    }
 }

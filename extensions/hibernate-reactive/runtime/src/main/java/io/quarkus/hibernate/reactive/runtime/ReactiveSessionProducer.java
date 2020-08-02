@@ -34,7 +34,7 @@ public class ReactiveSessionProducer {
     @RequestScoped
     @DefaultBean
     public Uni<Mutiny.Session> mutinySession() {
-        return mutinySessionFactory.openSession();
+        return mutinySessionFactory.openSession().cache();
     }
 
     public void disposeStageSession(@Disposes CompletionStage<Stage.Session> reactiveSession) {
@@ -45,11 +45,32 @@ public class ReactiveSessionProducer {
     }
 
     public void disposeMutinySession(@Disposes Uni<Mutiny.Session> reactiveSession) {
-        // TODO: @AGG this is not working, need to check w/ Clement to figure out the proper way
-        reactiveSession.on().termination((session, ex, cancelled) -> {
-            if (session != null)
-                session.close();
-        });
+        reactiveSession.subscribe().with(Mutiny.Session::close);
     }
 
+    @Produces
+    @RequestScoped
+    @DefaultBean
+    public Stage.Session createStageSession() {
+        return reactiveSessionFactory.createSession();
+    }
+
+    @Produces
+    @RequestScoped
+    @DefaultBean
+    public Mutiny.Session createMutinySession() {
+        return mutinySessionFactory.createSession();
+    }
+
+    public void disposeStageSession(@Disposes Stage.Session reactiveSession) {
+        if (reactiveSession != null) {
+            reactiveSession.close();
+        }
+    }
+
+    public void disposeMutinySession(@Disposes Mutiny.Session reactiveSession) {
+        if (reactiveSession != null) {
+            reactiveSession.close();
+        }
+    }
 }

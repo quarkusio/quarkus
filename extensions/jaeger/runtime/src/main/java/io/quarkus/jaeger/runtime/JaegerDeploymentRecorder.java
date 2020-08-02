@@ -1,6 +1,7 @@
 package io.quarkus.jaeger.runtime;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -17,15 +18,23 @@ public class JaegerDeploymentRecorder {
     private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
-    synchronized public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+    public static String jaegerVersion;
+
+    public void setJaegerVersion(String version) {
+        jaegerVersion = version;
+    }
+
+    /* RUNTIME_INIT */
+    public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
         registerTracer(jaeger, appConfig, new NoopMetricsFactory());
     }
 
-    synchronized public void registerTracerWithMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
-        registerTracer(jaeger, appConfig, new QuarkusJaegerMetricsFactory());
+    /* RUNTIME_INIT */
+    public void registerTracerWithMpMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMpMetricsFactory());
     }
 
-    private void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
+    private synchronized void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
                 jaeger.serviceName = appConfig.name;
@@ -70,6 +79,12 @@ public class JaegerDeploymentRecorder {
     private <T> void initTracerProperty(String property, Optional<T> value, Function<T, String> accessor) {
         if (value.isPresent()) {
             System.setProperty(property, accessor.apply(value.get()));
+        }
+    }
+
+    private void initTracerProperty(String property, OptionalInt value, Function<Integer, String> accessor) {
+        if (value.isPresent()) {
+            System.setProperty(property, accessor.apply(Integer.valueOf(value.getAsInt())));
         }
     }
 }

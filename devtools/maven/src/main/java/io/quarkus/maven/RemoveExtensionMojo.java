@@ -10,8 +10,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.QuarkusCommandOutcome;
-import io.quarkus.cli.commands.RemoveExtensions;
+import io.quarkus.devtools.commands.RemoveExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
 
@@ -22,7 +22,7 @@ import io.quarkus.platform.tools.MessageWriter;
  * parameters.
  */
 @Mojo(name = "remove-extension")
-public class RemoveExtensionMojo extends BuildFileMojoBase {
+public class RemoveExtensionMojo extends QuarkusProjectMojoBase {
 
     /**
      * The list of extensions to be removed.

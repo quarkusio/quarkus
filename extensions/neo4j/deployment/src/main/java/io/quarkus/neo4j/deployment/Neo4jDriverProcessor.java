@@ -2,6 +2,7 @@ package io.quarkus.neo4j.deployment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -20,9 +21,9 @@ class Neo4jDriverProcessor {
     FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
         // Indicates that this extension would like the SSL support to be enabled
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.NEO4J));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.NEO4J));
 
-        return new FeatureBuildItem(FeatureBuildItem.NEO4J);
+        return new FeatureBuildItem(Feature.NEO4J);
     }
 
     @BuildStep

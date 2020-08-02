@@ -27,7 +27,7 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.6.3</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.4.1</gradle-wrapper.version>
+        <gradle-wrapper.version>6.5.1</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.0-jboss-2, we don't want that in the templates -->
@@ -39,7 +39,7 @@
         <!-- Versions -->
         <assertj.version>3.16.1</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jackson.version>2.10.4</jackson.version>
+        <jackson.version>2.11.1</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
@@ -47,14 +47,18 @@
         <commons-compress.version>1.20</commons-compress.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <maven-core.version>3.6.3</maven-core.version>
-        <mockito.version>3.3.3</mockito.version>
+        <mockito.version>3.4.6</mockito.version>
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <quarkus-http.version>3.0.10.Final</quarkus-http.version>
+        <maven-model-helper.version>14</maven-model-helper.version>
+        <commons-io.version>2.6</commons-io.version>
+        <quarkus-http.version>3.0.13.Final</quarkus-http.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>
-        <module>common</module>
+        <module>codestarts</module>
+        <module>devtools-common</module>
         <module>utilities</module>
         <module>platform-descriptor-resolver-json</module>
     </modules>
@@ -72,12 +76,27 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-core</artifactId>
+                <artifactId>quarkus-bootstrap-app-model</artifactId>
+                <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-generator</artifactId>
                 <version>${quarkus.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-utilities</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-codestarts</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -91,6 +110,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus.http</groupId>
                 <artifactId>quarkus-http-websockets-jsr</artifactId>
                 <version>${quarkus-http.version}</version>
@@ -100,6 +124,26 @@
                         <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>maven-model-helper</artifactId>
+                <version>${maven-model-helper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -151,6 +195,13 @@
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <version>${quarkus.version}</version>
             </dependency>
             <!-- Jackson dependencies, imported as a BOM -->
             <dependency>
@@ -263,9 +314,16 @@
                 </executions>
             </plugin>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${version.surefire.plugin}</version>
+                <configuration>
+                    <argLine>${jacoco.agent.argLine}</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.11.0</version>
+                <version>2.12.1</version>
                 <dependencies>
                     <dependency>
                         <artifactId>quarkus-ide-config</artifactId>
@@ -275,6 +333,7 @@
                   </dependencies>
                 <configuration>
                     <configFile>eclipse-format.xml</configFile>
+                    <lineEnding>LF</lineEnding>
                     <skip>${format.skip}</skip>
                 </configuration>
             </plugin>
@@ -291,6 +350,23 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>

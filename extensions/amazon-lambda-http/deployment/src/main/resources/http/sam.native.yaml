@@ -32,4 +32,4 @@
       Description: URL for application
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
       Export:
-        Name: ${resourceName}NativeApi
+        Name: ${lambdaName}NativeApi

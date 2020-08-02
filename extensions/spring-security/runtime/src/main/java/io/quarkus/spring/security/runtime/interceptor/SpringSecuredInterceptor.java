@@ -9,6 +9,7 @@ import javax.interceptor.InvocationContext;
 import org.springframework.security.access.annotation.Secured;
 
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 
 @Interceptor
 @Secured("")
@@ -18,8 +19,15 @@ public class SpringSecuredInterceptor {
     @Inject
     SecurityHandler handler;
 
+    @Inject
+    AuthorizationController controller;
+
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        return handler.handle(ic);
+        if (controller.isAuthorizationEnabled()) {
+            return handler.handle(ic);
+        } else {
+            return ic.proceed();
+        }
     }
 }

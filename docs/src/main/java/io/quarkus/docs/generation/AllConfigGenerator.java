@@ -31,12 +31,12 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
 import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.docs.generation.ExtensionJson.Extension;
 
 public class AllConfigGenerator {
-    public static void main(String[] args) throws AppModelResolverException, IOException {
+    public static void main(String[] args) throws BootstrapMavenException, IOException {
         if (args.length != 2) {
             // exit 1 will break Maven
             throw new IllegalArgumentException("Usage: <version> <extension.json>");

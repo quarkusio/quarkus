@@ -18,7 +18,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.builder.BuildException;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -36,10 +35,12 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.HttpRemoteDevClientProvider;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -91,7 +92,7 @@ class VertxHttpProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsNormal.class)
+    @BuildStep
     public KubernetesPortBuildItem kubernetes() {
         int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
         return new KubernetesPortBuildItem(port, "http");
@@ -101,11 +102,10 @@ class VertxHttpProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
             CoreVertxBuildItem vertx,
-            List<RouteBuildItem> routes, LaunchModeBuildItem launchModeBuildItem,
+            List<RouteBuildItem> routes,
             ShutdownContextBuildItem shutdown) {
 
-        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), launchModeBuildItem.getLaunchMode(),
-                shutdown);
+        RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx());
         for (RouteBuildItem route : routes) {
             recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
         }
@@ -131,9 +131,11 @@ class VertxHttpProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             ShutdownConfig shutdownConfig,
+            LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
             ExecutorBuildItem executorBuildItem)
             throws BuildException, IOException {
+
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
             defaultRoute = Optional.empty();
@@ -146,6 +148,7 @@ class VertxHttpProcessor {
             }
         }
 
+        HttpRemoteDevClientProvider.liveReloadConfig = lrc;
         GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
         shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
 
@@ -159,7 +162,8 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
+                listOfFilters, vertx.getVertx(), lrc, router.getRouter(), httpBuildTimeConfig.rootPath,
+                launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
                 shutdownConfig, executorBuildItem.getExecutorProxy());
 
@@ -186,7 +190,7 @@ class VertxHttpProcessor {
         // start http socket in dev/test mode even if virtual http is required
         boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         recorder.startServer(vertx.getVertx(), shutdown,
-                httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
+                httpBuildTimeConfig, httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.joining(",")));
@@ -199,7 +203,7 @@ class VertxHttpProcessor {
 
     /**
      * Register the {@link ExchangeAttributeBuilder} services for native image consumption
-     * 
+     *
      * @param exchangeAttributeBuilderService
      * @throws BuildException
      */

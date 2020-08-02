@@ -72,11 +72,15 @@ Bounded and Unbounded both work. Exception encountered when protobuf marshalling
 
 This is working, but requires some additional steps to get configured.
 
-#### Configure truststore information (optionally keystore)
+#### Configure truststore information
 
-This is configured via hotrod-client.properties file located in META-INF. Everything is the same as normal in that
+This is configured via the `quarkus.infinispan-client.trust-store` application property. Everything is the same as normal in that
 you have to add the certificate from the server to the configured truststore if it already trusted in the default
 java cacerts file.
+
+#### Configuring keystore information
+
+The keystore is configured via hotrod-client.properties file located in META-INF.
 
 #### Configure your project to allow security services
 

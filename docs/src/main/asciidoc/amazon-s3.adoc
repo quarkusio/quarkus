@@ -84,12 +84,22 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=amazon-s3-quickstart \
     -DclassName="org.acme.s3.S3SyncClientResource" \
     -Dpath="/s3" \
-    -Dextensions="resteasy-jsonb,multipart-provider,amazon-s3"
+    -Dextensions="resteasy-jsonb,amazon-s3"
 cd amazon-s3-quickstart
 ----
 
 This command generates a Maven structure importing the RESTEasy/JAX-RS and S3 Client extensions.
 After this, the `amazon-s3` extension has been added to your `pom.xml`.
+
+Then, we'll add the following dependency to support `multipart/form-data` requests:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.jboss.resteasy</groupId>
+    <artifactId>resteasy-multipart-provider</artifactId>
+</dependency>
+----
 
 == Setting up the model
 
@@ -129,6 +139,7 @@ public class FormData {
 ----
 
 The class defines three fields:
+
 * `data` that fill capture stream of uploaded bytes from the client
 * `fileName` that captures a filename as provided by the submited form
 * `mimeType` content type of the uploaded file
@@ -393,11 +404,8 @@ quarkus.s3.aws.credentials.type=default
 - `bucket.name` - name of the S3 bucket on your AWS account.
 - `quarkus.s3.aws.region` you should set it to the region where your S3 bucket was created,
 - `quarkus.s3.aws.credentials.type` - use the `default` credentials provider chain that looks for credentials in this order:
-    * Java System Properties - `aws.accessKeyId` and `aws.secretKey`
-    * Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-    * Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
-    * Credentials delivered through the Amazon EC2 container service if the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and the security manager has permission to access the variable,
-    * Instance profile credentials delivered through the Amazon EC2 metadata service
+
+include::./amazon-credentials.adoc[]
 
 == Creating a frontend
 
@@ -508,7 +516,7 @@ public class S3AsyncClientResource extends CommonResource {
                 .build();
 
         return Uni.createFrom().completionStage(() -> s3.listObjects(listRequest))
-                .onItem().apply(result -> toFileItems(result));
+                .onItem().transform(result -> toFileItems(result));
     }
 
     private List<FileObject> toFileItems(ListObjectsResponse objects) {
@@ -517,6 +525,23 @@ public class S3AsyncClientResource extends CommonResource {
                 .map(FileObject::from).collect(Collectors.toList());
     }
 }
+----
+
+You need the RESTEasy Mutiny support for asynchronous programming. Add the dependency to the `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
 ----
 
 And add the Netty HTTP client dependency to the `pom.xml`:

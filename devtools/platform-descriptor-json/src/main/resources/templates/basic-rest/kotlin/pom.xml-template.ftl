@@ -20,7 +20,7 @@
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
         <kotlin.version>${kotlin_version}</kotlin.version>
     </properties>
-
+    ${maven_repositories}${maven_plugin_repositories}
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -68,6 +68,8 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>prepare</goal>
+                            <goal>prepare-tests</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>

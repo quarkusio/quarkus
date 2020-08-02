@@ -435,7 +435,7 @@ List<Person> page7 = livingPersons.page(Page.of(7, 25)).list();
 int numberOfPages = livingPersons.pageCount();
 
 // get the total number of entities returned by this query without paging
-int count = livingPersons.count();
+long count = livingPersons.count();
 
 // and you can chain methods of course
 return Person.find("status", Status.Alive)
@@ -803,14 +803,40 @@ public class PanacheFunctionalityTest {
         // We can even mock your custom methods
         Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
         Assertions.assertTrue(Person.findOrdered().isEmpty());
+        
+        // Mocking a void method
+        Person.voidMethod();
+
+        // Make it throw
+        PanacheMock.doThrow(new RuntimeException("Stef2")).when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("Stef2", x.getMessage());
+        }
+
+        // Back to doNothing
+        PanacheMock.doNothing().when(Person.class).voidMethod();
+        Person.voidMethod();
+
+        // Make it call the real method
+        PanacheMock.doCallRealMethod().when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("void", x.getMessage());
+        }
 
         PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class, Mockito.atLeast(4)).voidMethod();
         PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
         PanacheMock.verifyNoMoreInteractions(Person.class);
     }
 }
 ----
-<1> Be sure to call your `verify` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
+<1> Be sure to call your `verify` and `do*` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
 what mock object to pass.
 
 === Using the repository pattern
@@ -950,3 +976,29 @@ by the presence of the marker file `META-INF/panache-archive.marker`. Panache in
 annotation processor that will automatically create this file in archives that depend on
 Panache (even indirectly). If you have disabled annotation processors you may need to create
 this file manually in some cases.
+
+WARNING: If you include the jpa-modelgen annotation processor this will exclude the Panache
+annotation processor by default. If you do this you should either create the marker file
+yourself, or add the `quarkus-panache-common` as well, as shown below:
+
+[source,xml]
+----
+<plugin>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>${compiler-plugin.version}</version>
+    <configuration>
+      <annotationProcessorPaths>
+        <annotationProcessorPath>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-jpamodelgen</artifactId>
+          <version>${hibernate.version}</version>
+        </annotationProcessorPath>
+        <annotationProcessorPath>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-panache-common</artifactId>
+          <version>${quarkus.platform.version}</version>
+        </annotationProcessorPath>
+      </annotationProcessorPaths>
+    </configuration>
+</plugin>
+----

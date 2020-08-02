@@ -71,9 +71,8 @@ public final class ConfigUtils {
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
         builder.withSources(inFileSystem, inJar, mpConfig, new DotEnvConfigSource());
-        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
-        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
-        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
+        builder.withProfile(ProfileManager.getActiveProfile());
+        builder.addDefaultInterceptors();
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (runTime) {
             builder.addDefaultSources();
@@ -92,6 +91,7 @@ public final class ConfigUtils {
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
+            builder.addDiscoveredInterceptors();
             builder.addDiscoveredConverters();
         }
         return builder;

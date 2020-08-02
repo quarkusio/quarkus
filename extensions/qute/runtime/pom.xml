@@ -28,8 +28,9 @@
             <artifactId>qute-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-mutiny</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

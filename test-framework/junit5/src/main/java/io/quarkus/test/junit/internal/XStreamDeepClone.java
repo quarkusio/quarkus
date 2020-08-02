@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.internal;
 
+import java.util.function.Supplier;
+
 import com.thoughtworks.xstream.XStream;
 
 /**
@@ -7,17 +9,48 @@ import com.thoughtworks.xstream.XStream;
  */
 public class XStreamDeepClone implements DeepClone {
 
-    private final XStream xStream;
+    private final Supplier<XStream> xStreamSupplier;
 
     public XStreamDeepClone(ClassLoader classLoader) {
-        xStream = new XStream();
-        XStream.setupDefaultSecurity(xStream);
-        xStream.allowTypesByRegExp(new String[] { ".*" });
-        xStream.setClassLoader(classLoader);
+        // avoid doing any work eagerly since the cloner is rarely used
+        xStreamSupplier = () -> {
+            XStream result = new XStream();
+            XStream.setupDefaultSecurity(result);
+            result.allowTypesByRegExp(new String[] { ".*" });
+            result.setClassLoader(classLoader);
+            return result;
+        };
     }
 
     public Object clone(Object objectToClone) {
+        if (objectToClone == null) {
+            return null;
+        }
+
+        if (objectToClone instanceof Supplier) {
+            return handleSupplier((Supplier<?>) objectToClone);
+        }
+
+        return doClone(objectToClone);
+    }
+
+    private Supplier<Object> handleSupplier(final Supplier<?> supplier) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return doClone(supplier.get());
+            }
+        };
+    }
+
+    private Object doClone(Object objectToClone) {
+        XStream xStream = xStreamSupplier.get();
         final String serialized = xStream.toXML(objectToClone);
-        return xStream.fromXML(serialized);
+        final Object result = xStream.fromXML(serialized);
+        if (result == null) {
+            throw new IllegalStateException("Unable to deep clone object of type '" + objectToClone.getClass().getName()
+                    + "'. Please report the issue on the Quarkus issue tracker.");
+        }
+        return result;
     }
 }

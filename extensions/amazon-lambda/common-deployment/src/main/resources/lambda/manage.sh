@@ -24,13 +24,19 @@ function cmd_delete() {
 
 function cmd_invoke() {
   echo Invoking function
+
+  inputFormat=""
+  if [ $(aws --version | awk '{print substr($1,9)}' | cut -c1-1) -ge 2 ]; then inputFormat="--cli-binary-format raw-in-base64-out"; fi
+
   set -x
+
   aws lambda invoke response.txt \
+    ${inputFormat} \
     --function-name ${FUNCTION_NAME} \
     --payload file://payload.json \
     --log-type Tail \
     --query 'LogResult' \
-    --output text |  base64 -d
+    --output text |  base64 --decode
   { set +x; } 2>/dev/null
   cat response.txt && rm -f response.txt
 }

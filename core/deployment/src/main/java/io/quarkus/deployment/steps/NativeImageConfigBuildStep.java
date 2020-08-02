@@ -1,8 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,9 +15,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
-import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -42,7 +37,6 @@ class NativeImageConfigBuildStep {
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
-            List<NativeImageEnableAllTimeZonesBuildItem> nativeImageEnableAllTimeZonesBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
@@ -51,8 +45,7 @@ class NativeImageConfigBuildStep {
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImage,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
-            BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath,
-            BuildProducer<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty) {
+            BuildProducer<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPath) {
         for (NativeImageConfigBuildItem nativeImageConfigBuildItem : nativeImageConfigBuildItems) {
             for (String i : nativeImageConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -76,21 +69,6 @@ class NativeImageConfigBuildStep {
         sslContextConfigurationRecorder.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
 
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
-        if (sslNativeEnabled) {
-            // This makes the native image dependent on the local path used to build it.
-            // This is useful for testing but the user will have to override it.
-            String graalVmHome = System.getenv("GRAALVM_HOME");
-            if (graalVmHome != null) {
-                // JDK 8 path
-                Path graalVmCacertsPath = Paths.get(graalVmHome, "jre", "lib", "security", "cacerts");
-                if (!Files.exists(graalVmCacertsPath)) {
-                    // Path starting with GraalVM JDK 11
-                    graalVmCacertsPath = Paths.get(graalVmHome, "lib", "security", "cacerts");
-                }
-
-                sslTrustStoreSystemProperty.produce(new SslTrustStoreSystemPropertyBuildItem(graalVmCacertsPath.toString()));
-            }
-        }
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
@@ -107,10 +85,6 @@ class NativeImageConfigBuildStep {
 
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
-        }
-
-        if (!nativeImageEnableAllTimeZonesBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-timezones", "true"));
         }
     }
 

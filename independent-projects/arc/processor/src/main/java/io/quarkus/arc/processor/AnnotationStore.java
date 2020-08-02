@@ -7,12 +7,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
@@ -20,9 +23,9 @@ import org.jboss.jandex.DotName;
  * @author Martin Kouba
  * @see AnnotationsTransformer
  */
-public class AnnotationStore {
+public final class AnnotationStore {
 
-    private final ConcurrentMap<AnnotationTarget, Collection<AnnotationInstance>> transformed;
+    private final ConcurrentMap<AnnotationTargetKey, Collection<AnnotationInstance>> transformed;
 
     private final EnumMap<Kind, List<AnnotationsTransformer>> transformersMap;
 
@@ -50,7 +53,7 @@ public class AnnotationStore {
      */
     public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
         if (transformed != null) {
-            return transformed.computeIfAbsent(target, this::transform);
+            return transformed.computeIfAbsent(new AnnotationTargetKey(target), this::transform);
         }
         return getOriginalAnnotations(target);
     }
@@ -88,7 +91,8 @@ public class AnnotationStore {
         return Annotations.containsAny(getAnnotations(target), names);
     }
 
-    private Collection<AnnotationInstance> transform(AnnotationTarget target) {
+    private Collection<AnnotationInstance> transform(AnnotationTargetKey key) {
+        AnnotationTarget target = key.target;
         Collection<AnnotationInstance> annotations = getOriginalAnnotations(target);
         List<AnnotationsTransformer> transformers = transformersMap.get(target.kind());
         if (transformers.isEmpty()) {
@@ -142,6 +146,67 @@ public class AnnotationStore {
             return new Transformation(new ArrayList<>(getAnnotations()), getTarget(), this::setAnnotations);
         }
 
+    }
+
+    /**
+     * We cannot use annotation target directly as a key in a Map. Only {@link MethodInfo} overrides equals/hashCode.
+     */
+    static final class AnnotationTargetKey {
+
+        final AnnotationTarget target;
+
+        public AnnotationTargetKey(AnnotationTarget target) {
+            this.target = target;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            AnnotationTargetKey other = (AnnotationTargetKey) obj;
+            if (target.kind() != other.target.kind()) {
+                return false;
+            }
+            switch (target.kind()) {
+                case METHOD:
+                    return target.asMethod().equals(other.target);
+                case FIELD:
+                    FieldInfo field = target.asField();
+                    FieldInfo otherField = other.target.asField();
+                    return Objects.equals(field.name(), otherField.name())
+                            && Objects.equals(field.declaringClass().name(), otherField.declaringClass().name());
+                case CLASS:
+                    return target.asClass().name().equals(other.target.asClass().name());
+                default:
+                    throw unsupportedAnnotationTarget(target);
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            switch (target.kind()) {
+                case METHOD:
+                    return target.asMethod().hashCode();
+                case FIELD:
+                    return Objects.hash(target.asField().name(), target.asField().declaringClass().name());
+                case CLASS:
+                    return target.asClass().name().hashCode();
+                default:
+                    throw unsupportedAnnotationTarget(target);
+            }
+        }
+
+    }
+
+    private static IllegalArgumentException unsupportedAnnotationTarget(AnnotationTarget target) {
+        return new IllegalArgumentException("Unsupported annotation target: " + target.kind());
     }
 
 }

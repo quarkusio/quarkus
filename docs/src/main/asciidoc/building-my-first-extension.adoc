@@ -61,7 +61,7 @@ Usually, Java frameworks do their bootstrapping during the runtime before actual
 * Having a peak of resource consumption at bootstrap: in a constrained environment, you will need to size the needed resources based on your technical bootstrap needs rather than your actual business needs.
 
 Quarkus' philosophy is to prevent as much as possible slow and memory intensive dynamic code execution by shifting left these actions and eventually do them during the build time.
-A Quarkus extension is a Java piece of code acting as an adapter layer for your favorite libary or technology.
+A Quarkus extension is a Java piece of code acting as an adapter layer for your favorite library or technology.
 
 == Description of a Quarkus extension
 
@@ -100,7 +100,7 @@ Now that everything is explained, we can start coding!
 
 Quarkus provides `create-extension` Maven Mojo to initialize your extension project.
 
-[source, shell]
+[source, shell, subs=attributes+]
 ----
 $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DgroupId=org.acme \ #<1>
@@ -133,7 +133,7 @@ Maven has generated a `quarkus-greeting` directory containing the extension proj
 
 Your extension is a multi-module project. So let's start by checking out the parent POM at `./quarkus-greeting/pom.xml`.
 
-[source, xml]
+[source, xml, subs=attributes+]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -271,6 +271,10 @@ class GreetingProcessor {
 
 }
 ----
+
+NOTE: `FeatureBuildItem` represents a functionality provided by an extension. 
+The name of the feature gets displayed in the log during application bootstrap.
+An extension should provide at most one feature.
 
 Be patient, we will explain the `Build Step Processor` concept and all the extension deployment API later on.
 At this point, you just need to understand that this class explains to Quarkus how to deploy a feature named `greeting` which is your extension.
@@ -622,7 +626,7 @@ public class GreetingTest {
 
 Time to test!
 
-[source, shell]
+[source, shell, subs=attributes+]
 ----
 $ mvn clean test
 [INFO] Scanning for projects...
@@ -727,7 +731,7 @@ Now that you just finish to build your first extension you should be eager to us
 Because your extension produces traditional JARs, the easiest way to share your extension is to publish it to a Maven repository.
 Once published you can simply declare it with your project dependencies. Let's demonstrate that by creating a simple Quarkus application
 
-[source, schell]
+[source, shell, subs=attributes+]
 ----
 $mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
@@ -757,7 +761,7 @@ NOTE: `quarkus-greeting` extension has to be installed in the local Maven reposi
 
 Run the application and notice the `Install Features` list contains the `quarkus-greeting` extension.
 
-[source, shell]
+[source, shell, subs=attributes+]
 ----
 $ mvn clean compile quarkus:dev
 [INFO] Scanning for projects...
@@ -794,7 +798,7 @@ That's why there is the Quarkus Platform.
 
 *Quarkus Platform*
 
-Quarkus proposes a `quarkus-universe-bom` which is a certified list of extensions placed under the Quarkus Platform label. From an application developper, the objectives of the platform are:
+Quarkus proposes a `quarkus-universe-bom` which is a certified list of extensions placed under the Quarkus Platform label. From an application developer, the objectives of the platform are:
 
 * To guarantee a supportability of the extension (bugfix, security issues, dependency upgrades)
 * To ease the extension discovery through the Quarkus CLI or https://code.quarkus.io/

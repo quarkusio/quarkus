@@ -115,7 +115,7 @@ import org.eclipse.microprofile.health.Liveness;
 import javax.enterprise.context.ApplicationScoped;
 
 @Liveness
-@ApplicationScoped
+@ApplicationScoped <1> <2>
 public class SimpleHealthCheck implements HealthCheck {
 
     @Override
@@ -124,10 +124,10 @@ public class SimpleHealthCheck implements HealthCheck {
     }
 }
 ----
+<1> It's recommended to annotate the health check class with `@ApplicationScoped` or the `@Singleton` scope so that a single bean instance is used for all health check requests. 
+<2> If a bean class annotated with one of the health check annotations declares no scope then the `@Singleton` scope is used automatically.
 
-As you can see health check procedures are defined as implementations of the 
-`HealthCheck` interface which are defined as CDI beans with the one of the 
-following CDI qualifiers: 
+As you can see, the health check procedures are defined as CDI beans that implement the `HealthCheck` interface and are annotated with one of the health check qualifiers, such as: 
 
 - `@Liveness` - the liveness check accessible at `/health/live`
 - `@Readiness` - the readiness check accessible at `/health/ready`
@@ -329,6 +329,18 @@ For example, `quarkus-agroal` that is used to manage Quarkus datasource(s) autom
 that will validate each datasources: link:datasource#datasource-health-check[Datasource Health Check].
 
 You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
+
+== Health UI 
+
+NOTE: Experimental - not included in the MicroProfile specification
+
+`health-ui` allows you to see your Health Checks in a Web GUI.
+
+The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by default in dev and test modes, but it can also be explicitly configured for production mode as well.
+
+`health-ui` can be accessed from http://localhost:8080/health-ui/ .
+
+image:health-ui-screenshot01.png[alt=Health UI]
 
 == Conclusion
 

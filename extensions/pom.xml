@@ -76,6 +76,7 @@
         <module>reactive-mysql-client</module>
         <module>mailer</module>
         <module>grpc</module>
+        <module>redis-client</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
@@ -84,11 +85,14 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>hibernate-orm</module>
+        <module>hibernate-envers</module>
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
         <module>jsch</module>
         <module>jgit</module>
         <module>kafka-client</module>
@@ -98,6 +102,7 @@
         <module>mongodb-client</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>
+        <module>avro</module>
 
         <!-- Spring -->
         <module>spring-di</module>
@@ -107,6 +112,7 @@
         <module>spring-boot-properties</module>
         <module>spring-cloud-config-client</module>
         <module>spring-cache</module>
+        <module>spring-scheduled</module>
 
         <!-- Security -->
         <module>security</module>
@@ -124,7 +130,6 @@
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
-        <module>infinispan-embedded</module>
 
         <!-- Caching -->
         <module>caffeine</module>
@@ -158,11 +163,6 @@
         <module>flyway</module>
         <module>liquibase</module>
 
-        <!-- Business automation -->
-        <module>optaplanner</module>
-        <module>optaplanner-jackson</module>
-        <module>optaplanner-jsonb</module>
-
         <!-- Vault -->
         <module>vault</module>
         <module>credentials</module>
@@ -181,6 +181,8 @@
 
         <!-- Command line -->
         <module>picocli</module>
+        <module>google-cloud-functions-http</module>
+        <module>google-cloud-functions</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin
@@ -201,8 +203,7 @@
                     <artifactIdPrefix>quarkus-</artifactIdPrefix>
                     <namePrefix xml:space="preserve">Quarkus - </namePrefix>
                     <quarkusVersion>@{project.version}</quarkusVersion>
-                    <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
-                    <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
+                    <bomPath>../bom/application/pom.xml</runtimeBomPath>
                     <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
             </plugin>

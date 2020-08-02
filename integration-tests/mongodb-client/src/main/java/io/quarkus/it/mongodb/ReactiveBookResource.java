@@ -37,7 +37,7 @@ public class ReactiveBookResource {
     @POST
     public CompletionStage<Response> addBook(Book book) {
         return collection.insertOne(book)
-                .onItem().apply(x -> Response.accepted().build())
+                .onItem().transform(x -> Response.accepted().build())
                 .subscribeAsCompletionStage();
     }
 

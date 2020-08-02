@@ -17,21 +17,27 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
+        <native.surefire.skip>${skipTests}</native.surefire.skip>
     </properties>
 
     <modules>
         <module>funqy-amazon-lambda</module>
+        <module>funqy-google-cloud-functions</module>
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
-        <module>infinispan-embedded</module>
+        <module>devtools</module>
+        <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
+        <module>kafka-avro</module>
         <module>kafka-streams</module>
         <module>jpa</module>
+        <module>jpa-db2</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>
         <module>vault</module>
@@ -44,10 +50,14 @@
         <module>hibernate-orm-panache</module>
         <module>hibernate-orm-rest-data-panache</module>
         <module>hibernate-orm-panache-kotlin</module>
-        <module>hibernate-reactive</module>
+        <module>hibernate-reactive-db2</module>
+        <module>hibernate-reactive-mysql</module>
+        <module>hibernate-reactive-postgresql</module>
         <module>hibernate-search-elasticsearch</module>
         <module>hibernate-tenancy</module>
+        <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
+        <module>vertx-web</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
@@ -75,8 +85,6 @@
         <module>amazon-lambda-http</module>
         <module>amazon-lambda-http-resteasy</module>
         <module>container-image</module>
-        <module>optaplanner-jackson</module>
-        <module>optaplanner-jsonb</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>tika</module>
@@ -101,9 +109,11 @@
         <module>elytron-security-jdbc</module>
         <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>
+        <module>smallrye-context-propagation</module>
         <module>smallrye-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
+        <module>redis-client</module>
         <module>logging-gelf</module>
         <module>cache</module>
         <module>qute</module>
@@ -118,7 +128,10 @@
         <module>picocli-native</module>
         <module>webjars-locator</module>
         <module>devmode</module>
-
+        <module>ide-launcher</module>
+        <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
+        
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>
         <module>grpc-tls</module>
@@ -127,6 +140,8 @@
         <module>grpc-interceptors</module>
         <module>grpc-proto-v2</module>
         <module>grpc-health</module>
+        <module>google-cloud-functions-http</module>
+        <module>google-cloud-functions</module>
     </modules>
 
     <build>

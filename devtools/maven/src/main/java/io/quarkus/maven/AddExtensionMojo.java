@@ -1,19 +1,23 @@
 package io.quarkus.maven;
 
+import static java.util.stream.Collectors.toSet;
+
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.AddExtensions;
+import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**
  * Allow adding an extension to an existing pom.xml file.
@@ -22,7 +26,7 @@ import io.quarkus.platform.tools.MessageWriter;
  * parameters.
  */
 @Mojo(name = "add-extension")
-public class AddExtensionMojo extends BuildFileMojoBase {
+public class AddExtensionMojo extends QuarkusProjectMojoBase {
 
     /**
      * The list of extensions to be added.
@@ -35,6 +39,12 @@ public class AddExtensionMojo extends BuildFileMojoBase {
      */
     @Parameter(property = "extension")
     String extension;
+
+    /**
+     * The URL where the registry is.
+     */
+    @Parameter(property = "registry", alias = "quarkus.extension.registry")
+    List<URL> registries;
 
     @Override
     protected void validateParameters() throws MojoExecutionException {
@@ -53,13 +63,16 @@ public class AddExtensionMojo extends BuildFileMojoBase {
         } else {
             // Parse the "extension" just in case it contains several comma-separated values
             // https://github.com/quarkusio/quarkus/issues/2393
-            ext.addAll(Arrays.stream(extension.split(",")).map(s -> s.trim()).collect(Collectors.toSet()));
+            ext.addAll(Arrays.stream(extension.split(",")).map(String::trim).collect(toSet()));
         }
 
         try {
-            final QuarkusCommandOutcome outcome = new AddExtensions(quarkusProject)
-                    .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
-                    .execute();
+            AddExtensions addExtensions = new AddExtensions(quarkusProject)
+                    .extensions(ext.stream().map(String::trim).collect(toSet()));
+            if (registries != null && !registries.isEmpty()) {
+                addExtensions.extensionRegistry(DefaultExtensionRegistry.fromURLs(registries));
+            }
+            final QuarkusCommandOutcome outcome = addExtensions.execute();
             if (!outcome.isSuccess()) {
                 throw new MojoExecutionException("Unable to add extensions");
             }

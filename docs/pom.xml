@@ -15,13 +15,12 @@
 
     <packaging>jar</packaging>
     <properties>
-        <asciidoctorj.version>2.2.0</asciidoctorj.version>
-        <asciidoctor-maven-plugin.version>2.0.0-RC.1</asciidoctor-maven-plugin.version>
+        <asciidoctorj.version>2.3.0</asciidoctorj.version>
+        <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
-        <skipDocs>false</skipDocs>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -116,8 +115,7 @@
 
                         <grpc-version>${grpc.version}</grpc-version>
                         <protoc-version>${protoc.version}</protoc-version>
-                        <os-maven-plugin-version>${os-maven-plugin.version}</os-maven-plugin-version>
-                        <protobuf-maven-plugin-version>${protobuf-maven-plugin.version}</protobuf-maven-plugin-version>
+                        <elasticsearch-version>${elasticsearch-server.version}</elasticsearch-version>
 
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>

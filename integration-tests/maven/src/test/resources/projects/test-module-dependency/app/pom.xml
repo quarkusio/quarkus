@@ -11,6 +11,10 @@
   <dependencies>
     <dependency>
       <groupId>org.acme</groupId>
+      <artifactId>quarkus-app-lib</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.acme</groupId>
       <artifactId>quarkus-app-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -54,6 +58,13 @@
       </activation>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>${native.surefire.skip}</skipTests>
+            </configuration>
+          </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
             <version>${surefire-plugin.version}</version>

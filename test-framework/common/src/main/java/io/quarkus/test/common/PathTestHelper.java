@@ -22,6 +22,10 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "bin" + File.separator + "test",
                 "bin" + File.separator + "main");
+        // idea
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "out" + File.separator + "test",
+                "out" + File.separator + "production");
         // gradle
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "native-test",
@@ -59,7 +63,7 @@ public final class PathTestHelper {
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
-        URL resource = testClass.getClassLoader().getResource(classFileName);
+        URL resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
 
         if (resource.getProtocol().equals("jar")) {
             try {

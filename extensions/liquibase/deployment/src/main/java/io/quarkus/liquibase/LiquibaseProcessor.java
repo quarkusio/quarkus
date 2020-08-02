@@ -35,7 +35,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -91,7 +92,7 @@ class LiquibaseProcessor {
 
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.LIQUIBASE);
+        return new CapabilityBuildItem(Capability.LIQUIBASE);
     }
 
     /**
@@ -109,6 +110,7 @@ class LiquibaseProcessor {
             Index index = reader.read();
             Map<String, List<String>> services = new HashMap<>();
             for (Class<?> c : Arrays.asList(liquibase.diff.compare.DatabaseObjectComparator.class,
+                    liquibase.command.LiquibaseCommand.class,
                     liquibase.parser.NamespaceDetails.class,
                     liquibase.precondition.Precondition.class,
                     liquibase.database.Database.class,
@@ -119,8 +121,7 @@ class LiquibaseProcessor {
                     liquibase.datatype.LiquibaseDataType.class,
                     liquibase.executor.Executor.class,
                     liquibase.lockservice.LockService.class,
-                    liquibase.sqlgenerator.SqlGenerator.class,
-                    liquibase.license.LicenseService.class)) {
+                    liquibase.sqlgenerator.SqlGenerator.class)) {
                 List<String> impls = new ArrayList<>();
                 services.put(c.getName(), impls);
                 Set<ClassInfo> classes = new HashSet<>();
@@ -142,6 +143,11 @@ class LiquibaseProcessor {
                     }
                 }
             }
+            // add license service manually. Index file for windows/jdk11 does not contain
+            // implementation 'liquibase.pro.packaged.kp' class for interface 'liquibase.license.LicenseService'
+            services.put(liquibase.license.LicenseService.class.getName(),
+                    Collections.singletonList("liquibase.pro.packaged.kp"));
+
             //if we know what DB types are in use we limit them
             //this gives a huge startup time boost
             //otherwise it generates SQL for every DB
@@ -235,8 +241,11 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.7.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.10.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-3.10.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles
@@ -245,7 +254,7 @@ class LiquibaseProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.LIQUIBASE);
+        return new FeatureBuildItem(Feature.LIQUIBASE);
     }
 
     @BuildStep

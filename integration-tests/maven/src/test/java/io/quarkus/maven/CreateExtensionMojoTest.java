@@ -45,7 +45,7 @@ public class CreateExtensionMojoTest {
                 if (deps != null && !deps.isEmpty()) {
                     Dependency deploymentBom = null;
                     for (Dependency dep : deps) {
-                        if (dep.getArtifactId().equals("quarkus-bom-deployment") && dep.getGroupId().equals("io.quarkus")) {
+                        if (dep.getArtifactId().equals("quarkus-bom") && dep.getGroupId().equals("io.quarkus")) {
                             deploymentBom = dep;
                         }
                     }
@@ -140,7 +140,7 @@ public class CreateExtensionMojoTest {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(add-to-bom)";
         mojo.assumeManaged = false;
-        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
+        mojo.bomPath = Paths.get("bom/pom.xml");
         mojo.additionalRuntimeDependencies = Arrays.asList("org.example:example-1:1.2.3",
                 "org.acme:acme-@{quarkus.artifactIdBase}:@{$}{acme.version}");
         mojo.execute();
@@ -171,8 +171,7 @@ public class CreateExtensionMojoTest {
         mojo.grandParentRelativePath = "../pom.xml";
         mojo.templatesUriBase = "file:templates";
 
-        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
-        mojo.deploymentBomPath = Paths.get("boms/deployment/pom.xml");
+        mojo.bomPath = Paths.get("bom/pom.xml");
         mojo.execute();
         assertTreesMatch(
                 Paths.get("src/test/resources/expected/create-extension-pom-with-grand-parent"),

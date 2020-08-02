@@ -40,7 +40,7 @@ However, local instance of SES is only mocks the SES APIs without the actual ema
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-ses 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-ses -p 8012:4579 -e SERVICES=ses -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
 This starts a SES instance that is accessible on port `8012`.
 
@@ -76,7 +76,7 @@ aws ses verify-email-identity --email-address <recipient@email.address>
 ----
 Now, you need to open a mailboxes of those email addresses in order to follow confirmation procedure. Once email is approved you can use it in your application.
 
-If you are using local SES you still need to verify email addresses, otherwise your send emaik in order to let local SES accepting your request.
+If you are using local SES you still need to verify email addresses, otherwise your send email in order to let local SES accepting your request.
 However, no emails to be send as it only mocks the service APIs.
 
 [source,shell,subs="verbatim,attributes"]
@@ -119,7 +119,36 @@ Lets create a `org.acme.ses.QuarkusSesSyncResource` that will provide an API to 
 
 [source,java]
 ----
-{  }
+package org.acme.ses;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.acme.ses.model.Email;
+import software.amazon.awssdk.services.ses.SesClient;
+
+@Path("/sync")
+@Produces(MediaType.TEXT_PLAIN)
+@Consumes(MediaType.APPLICATION_JSON)
+public class QuarkusSesSyncResource {
+
+    @Inject
+    SesClient ses;
+
+    @POST
+    @Path("/email")
+    public String encrypt(Email data) {
+        return ses.sendEmail(req -> req
+            .source(data.getFrom())
+            .destination(d -> d.toAddresses(data.getTo()))
+            .message(msg -> msg
+                .subject(sub -> sub.data(data.getSubject()))
+                .body(b -> b.text(txt -> txt.data(data.getBody()))))).messageId();
+    }
+}
 ----
 
 == Configuring SES clients
@@ -169,11 +198,8 @@ quarkus.ses.aws.credentials.static-provider.secret-access-key=test-secret
 
 If you want to work with an AWS account, you can simply remove or comment out all Amazon SES related properties. By default, the SES client extension
 will use the `default` credentials provider chain that looks for credentials in this order:
-- Java System Properties - `aws.accessKeyId` and `aws.secretKey`
-* Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-* Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
-* Credentials delivered through the Amazon EC2 container service if the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and the security manager has permission to access the variable,
-* Instance profile credentials delivered through the Amazon EC2 metadata service
+
+include::./amazon-credentials.adoc[]
 
 And the region from your AWS CLI profile will be used.
 
@@ -195,7 +221,41 @@ Create a `org.acme.ses.QuarkusSesAsyncResource` REST resource that will be simil
 
 [source,java]
 ----
-{  }
+package org.acme.ses;
+
+import io.smallrye.mutiny.Uni;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.acme.ses.model.Email;
+import software.amazon.awssdk.services.ses.SesAsyncClient;
+import software.amazon.awssdk.services.ses.model.SendEmailResponse;
+
+@Path("/async")
+@Produces(MediaType.TEXT_PLAIN)
+@Consumes(MediaType.APPLICATION_JSON)
+public class QuarkusSesAsyncResource {
+
+    @Inject
+    SesAsyncClient ses;
+
+    @POST
+    @Path("/email")
+    public Uni<String> encrypt(Email data) {
+        return Uni.createFrom()
+            .completionStage(
+                ses.sendEmail(req -> req
+                    .source(data.getFrom())
+                    .destination(d -> d.toAddresses(data.getTo()))
+                    .message(msg -> msg
+                        .subject(sub -> sub.data(data.getSubject()))
+                        .body(b -> b.text(txt -> txt.data(data.getBody()))))))
+            .onItem().apply(SendEmailResponse::messageId);
+    }
+}
 ----
 We create `Uni` instances from the `CompletionStage` objects returned by the asynchronous SES client, and then transform the emitted item.
 

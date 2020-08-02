@@ -3,15 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect and Keycloak to Centralize Authorizations
+= Quarkus - Using OpenID Connect and Keycloak to Centralize Authorization
 
 include::./attributes.adoc[]
 
-This guide demonstrates how your Quarkus application can authorize access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
+This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 
-The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak.
+The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus link:security-openid-connect[OIDC service appications].
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
-In other words, instead of explicitly enforce access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
+In other words, instead of explicitly enforcing access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
@@ -330,15 +330,16 @@ public class ProtectedResource {
 
 == Mapping Protected Resources
 
-By default, the extension loads all the protected resources managed by Keycloak where their `URI` are used to map the resources 
-in your application that should be protected. This is done during the application startup.
+By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.
 
-If you want to disable this behavior and map resources on-demand, you can use the following configuration:
+If you want to disable this behavior and fetch resources during startup, you can use the following configuration:
 
 [source,properties]
 ----
-quarkus.keycloak.policy-enforcer.lazy-load-paths=true
+quarkus.keycloak.policy-enforcer.lazy-load-paths=false
 ----
+
+Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time. 
 
 == More About Configuring Protected Resources 
 

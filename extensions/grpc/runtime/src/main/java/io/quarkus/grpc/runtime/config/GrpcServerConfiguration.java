@@ -65,4 +65,12 @@ public class GrpcServerConfiguration {
      */
     @ConfigItem(defaultValue = "false")
     public boolean enableReflectionService;
+
+    /**
+     * Number of gRPC server verticle instances.
+     * This is useful for scaling easily across multiple cores.
+     * The number should not exceed the amount of event loops.
+     */
+    @ConfigItem(defaultValue = "1")
+    public int instances;
 }

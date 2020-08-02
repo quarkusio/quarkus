@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -30,6 +31,18 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
+
+    /**
+     * The namespace the generated resources should belong to.
+     * If not value is set, then the 'namespace' field will not be
+     * added to the 'metadata' section of the generated manifests.
+     * This in turn means that when the manifests are applied to a cluster,
+     * the namespace will be resolved from the current Kubernetes context
+     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+     * for more details).
+     */
+    @ConfigItem
+    Optional<String> namespace;
 
     /**
      * Custom labels to add to all resources
@@ -105,7 +118,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * The nodePort to set when serviceType is set to node-port.
      */
     @ConfigItem
-    Optional<Integer> nodePort;
+    OptionalInt nodePort;
 
     /**
      * Image pull policy
@@ -189,7 +202,7 @@ public class KubernetesConfig implements PlatformConfiguration {
      * Sidecar containers
      */
     @ConfigItem
-    Map<String, ContainerConfig> containers;
+    Map<String, ContainerConfig> sidecars;
 
     /**
      * The target deployment platform.
@@ -216,6 +229,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
+    }
+
+    public Optional<String> getNamespace() {
+        return namespace;
     }
 
     public Map<String, String> getLabels() {
@@ -354,8 +371,8 @@ public class KubernetesConfig implements PlatformConfiguration {
         return initContainers;
     }
 
-    public Map<String, ContainerConfig> getContainers() {
-        return containers;
+    public Map<String, ContainerConfig> getSidecars() {
+        return sidecars;
     }
 
     @Override

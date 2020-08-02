@@ -33,6 +33,13 @@ public class ResourcePropertiesAccessor {
         return annotation.value("path").asString();
     }
 
+    public boolean isPaged(ClassInfo classInfo) {
+        AnnotationInstance annotation = getAnnotation(classInfo);
+        return annotation == null
+                || annotation.value("paged") == null
+                || annotation.value("paged").asBoolean();
+    }
+
     private AnnotationInstance getAnnotation(ClassInfo classInfo) {
         if (classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION) != null) {
             return classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION);

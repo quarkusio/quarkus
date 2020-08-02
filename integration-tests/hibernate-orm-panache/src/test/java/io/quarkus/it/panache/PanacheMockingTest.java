@@ -25,6 +25,40 @@ public class PanacheMockingTest {
     public void testPanacheMocking() {
         PanacheMock.mock(Person.class);
 
+        // does not throw (defaults to doNothing)
+        Person.voidMethod();
+
+        // make it throw our exception
+        Mockito.doThrow(new RuntimeException("Stef")).when(PanacheMock.getMock(Person.class)).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("Stef", x.getMessage());
+        }
+
+        // change our exception
+        PanacheMock.doThrow(new RuntimeException("Stef2")).when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("Stef2", x.getMessage());
+        }
+
+        // back to doNothing
+        PanacheMock.doNothing().when(Person.class).voidMethod();
+        Person.voidMethod();
+
+        // make it be called
+        PanacheMock.doCallRealMethod().when(Person.class).voidMethod();
+        try {
+            Person.voidMethod();
+            Assertions.fail();
+        } catch (RuntimeException x) {
+            Assertions.assertEquals("void", x.getMessage());
+        }
+
         Assertions.assertEquals(0, Person.count());
 
         Mockito.when(Person.count()).thenReturn(23l);
@@ -53,6 +87,7 @@ public class PanacheMockingTest {
         Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
         Assertions.assertTrue(Person.findOrdered().isEmpty());
 
+        PanacheMock.verify(Person.class, Mockito.atLeast(5)).voidMethod();
         PanacheMock.verify(Person.class).findOrdered();
         PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
         PanacheMock.verifyNoMoreInteractions(Person.class);

@@ -19,7 +19,7 @@ public class ConfigPropertiesResource {
 
     @GET
     public String greet() {
-        return greetingConfiguration.message + greetingConfiguration.suffix;
+        return greetingConfiguration.message + greetingConfiguration.number + greetingConfiguration.suffix;
     }
 
     @ConfigProperties(prefix = "configproperties")
@@ -28,5 +28,11 @@ public class ConfigPropertiesResource {
         public String message;
         public String suffix = "!";
         public BigDecimal other;
+        public NumberEnum number;
+    }
+
+    public enum NumberEnum {
+        ONE,
+        TWO;
     }
 }

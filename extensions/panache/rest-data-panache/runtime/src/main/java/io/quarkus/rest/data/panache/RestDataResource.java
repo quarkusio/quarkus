@@ -1,7 +1,5 @@
 package io.quarkus.rest.data.panache;
 
-import java.util.List;
-
 import javax.ws.rs.core.Response;
 
 /**
@@ -16,12 +14,13 @@ import javax.ws.rs.core.Response;
 public interface RestDataResource<Entity, ID> {
 
     /**
-     * Return all entities as a JSON array.
+     * Return all entities as a JSON array.The response is paged by default, but that could be disabled with
+     * {@link ResourceProperties} annotation.
      * Response content type: application/json.
      *
      * @return A response with a JSON array of all entities.
      */
-    List<Entity> list();
+    Response list();
 
     /**
      * Return an entity as a JSON object.

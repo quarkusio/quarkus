@@ -35,7 +35,7 @@ abstract class HalMethodImplementor implements MethodImplementor {
         return creator.newInstance(MethodDescriptor.ofConstructor(HalEntityWrapper.class, Object.class), entity);
     }
 
-    protected ResultHandle wrapEntities(BytecodeCreator creator, ResultHandle entities, RestDataResourceInfo resourceInfo) {
+    protected ResultHandle wrapHalEntities(BytecodeCreator creator, ResultHandle entities, RestDataResourceInfo resourceInfo) {
         String collectionName = ResourceName.fromClass(resourceInfo.getClassInfo().simpleName());
         return creator.newInstance(
                 MethodDescriptor.ofConstructor(HalCollectionWrapper.class, Collection.class, Class.class, String.class),

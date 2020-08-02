@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -41,7 +41,7 @@ public class DateTimeAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return formatter.format(LocalDateTime.now());
+        return formatter.format(ZonedDateTime.now());
     }
 
     @Override

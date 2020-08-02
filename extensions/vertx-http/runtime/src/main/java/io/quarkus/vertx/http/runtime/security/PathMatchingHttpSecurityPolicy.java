@@ -84,6 +84,7 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
             }
 
             for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
+                path = path.trim();
                 if (tempMap.containsKey(path)) {
                     HttpMatcher m = new HttpMatcher(new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
                             checker);

@@ -489,7 +489,7 @@ This is explicitly set in `manage.sh` `cmd_create()`. Whilst the native image po
 == Using HTTPS or SSL/TLS
 
 If your code makes HTTPS calls, such as to a micro-service (or AWS service), you will need to add configuration to the native image,
-as GraalVM will only include the dependencies when explictly declared.  Quarkus, by default enables this functionality on extensions that implicitly require it.
+as GraalVM will only include the dependencies when explicitly declared.  Quarkus, by default enables this functionality on extensions that implicitly require it.
 For further information, please consult the link:native-and-ssl[Quarkus SSL guide]
 
 Open src/main/resources/application.properties and add the following line to enable SSL in your native image.
@@ -591,7 +591,7 @@ For Maven, add the following to your `pom.xml`.
     </dependencies>
 ----
 
-NOTE: if you are using GraalVM earlier than 19.3, or see `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty` or similar SSL error, due to the current status of GraalVM,
+NOTE: if you see `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty` or similar SSL error, due to the current status of GraalVM,
 there is some additional work to bundle the `function.zip`, as below.  For more information, please see the link:native-and-ssl[Quarkus Native SSL Guide].
 
 == Additional requirements for client SSL
@@ -631,9 +631,9 @@ NOTE: If you are using a Docker image to build, then you must extract these file
 To extract the required ssl, you must start up a Docker container in the background, and attach to that container to copy the artifacts.
 
 First, let's start the GraalVM container, noting the container id output.
-[source, shell]
+[source, shell,subs=attributes+]
 ----
-docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java8
+docker run -it -d --entrypoint bash quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor}
 
 # This will output a container id, like 6304eea6179522aff69acb38eca90bedfd4b970a5475aa37ccda3585bc2abdde
 # Note this value as we will need it for the commands below

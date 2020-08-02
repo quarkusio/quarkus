@@ -11,13 +11,14 @@ public class HelloResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() throws ClassNotFoundException {
-        String result = "class not found";
         try {
-            Class.forName("org.acme.quarkus.test.SomeTestSupport");
-            result = "class found";
+            Class.forName("org.acme.SomeTestSupport");
+            return "Test class loaded";
         } catch (ClassNotFoundException e) {
-            // ignored
+            // expected
         }
-        return result;
+        Class.forName("org.acme.AcmeUtil");
+        Class.forName("org.acme.AcmeCommon");
+        return "Test class is not visible";
     }
 }

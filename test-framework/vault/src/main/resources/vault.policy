@@ -53,3 +53,11 @@ path "secret-v1/crud" {
 path "totp/*" {
   capabilities = ["read", "create", "update", "delete", "list"]
 }
+
+path "sys/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}
+
+path "auth/kubernetes/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}

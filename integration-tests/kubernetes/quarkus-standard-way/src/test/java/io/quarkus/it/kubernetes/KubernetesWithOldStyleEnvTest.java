@@ -58,15 +58,11 @@ public class KubernetesWithOldStyleEnvTest {
                                     .filteredOn(env -> "ENVVAR".equals(env.getName()))
                                     .hasOnlyOneElementSatisfying(env -> assertThat(env.getValue()).isEqualTo("value"));
                             final List<EnvFromSource> envFrom = container.getEnvFrom();
-                            assertThat(envFrom).hasSize(2);
+                            assertThat(envFrom).hasSize(1);
                             assertThat(envFrom)
                                     .filteredOn(e -> e.getSecretRef() != null)
                                     .hasOnlyOneElementSatisfying(
                                             e -> assertThat(e.getSecretRef().getName()).isEqualTo("secretName"));
-                            assertThat(envFrom)
-                                    .filteredOn(e -> e.getConfigMapRef() != null)
-                                    .hasOnlyOneElementSatisfying(
-                                            e -> assertThat(e.getConfigMapRef().getName()).isEqualTo("configName"));
                         });
                     });
                 });

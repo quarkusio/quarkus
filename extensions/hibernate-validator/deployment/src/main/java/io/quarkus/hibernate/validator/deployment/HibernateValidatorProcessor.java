@@ -45,6 +45,8 @@ import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -111,7 +113,7 @@ class HibernateValidatorProcessor {
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
         additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
 
-        if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
+        if (capabilities.isPresent(Capability.RESTEASY)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
@@ -149,7 +151,7 @@ class HibernateValidatorProcessor {
             LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) throws Exception {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
+        feature.produce(new FeatureBuildItem(Feature.HIBERNATE_VALIDATOR));
 
         // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
         IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
@@ -248,7 +250,7 @@ class HibernateValidatorProcessor {
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
                                 hasXmlConfiguration(),
-                                capabilities.isCapabilityPresent(Capabilities.HIBERNATE_ORM),
+                                capabilities.isPresent(Capability.HIBERNATE_ORM),
                                 shutdownContext,
                                 localesBuildTimeConfig,
                                 hibernateValidatorBuildTimeConfig)));

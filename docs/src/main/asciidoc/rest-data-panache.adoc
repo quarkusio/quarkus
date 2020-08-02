@@ -92,7 +92,7 @@ public class PeopleResourceImpl implements PeopleResource { // The actual class 
 
     @GET
     @Produces("application/json")
-    public List<Person> list(){
+    public Response list(){
         // ...
     }
 
@@ -132,7 +132,7 @@ It can be used in your resource interface:
 @ResourceProperties(hal = true, path = "my-people")
 public interface PeopleResource extends PanacheEntityResource<Person, Long> {
     @MethodProperties(path = "all")
-    List<Person> list();
+    Response list();
 
     @MethodProperties(exposed = false)
     void delete(Long id);
@@ -146,6 +146,10 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 * `hal` - in addition to the standard `application/json` responses, generates additional methods that can return `application/hal+json` responses if requested via an `Accept` header.
 Default is `false`.
 * `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
+* `paged` - whether collection responses should be paged or not.
+First, last, previous and next page URIs are included in the response headers if they exist.
+Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
+Default is `true`.
 
 `@MethodProperties`
 
@@ -155,7 +159,7 @@ Default is `false`.
 == Response body examples
 
 As mentioned above REST Data with Panache supports the `application/json` and `application/hal+json` response content types.
-Here are a couple of examples of how a response body would look like for the `get` and `list` operations assuming there are two `Person` records in a database.
+Here are a couple of examples of how a response body would look like for the `get` and `list` operations assuming there are five `Person` records in a database.
 
 === GET /people/1
 
@@ -188,7 +192,7 @@ Here are a couple of examples of how a response body would look like for the `ge
 }
 ----
 
-=== GET /people
+=== GET /people?page=0&size=2
 
 `Accept: application/json`
 
@@ -206,6 +210,7 @@ Here are a couple of examples of how a response body would look like for the `ge
     "birth": "1986-11-20"
   }
 ]
+
 ----
 
 `Accept: application/hal+json`
@@ -241,7 +246,18 @@ Here are a couple of examples of how a response body would look like for the `ge
   ],
   "_links": {
     "add": "http://example.com/people",
-    "list": "http://example.com/people"
+    "list": "http://example.com/people",
+    "first": "http://example.com/people?page=0&size=2",
+    "last": "http://example.com/people?page=2&size=2",
+    "next": "http://example.com/people?page=1&size=2"
   }
 }
 ----
+
+Both responses would also contain these headers:
+
+* Link: < http://example.com/people?page=0&size=2 >; rel="first"
+* Link: < http://example.com/people?page=2&size=2 >; rel="last"
+* Link: < http://example.com/people?page=1&size=2 >; rel="next"
+
+A `previous` link header (and hal link) would not be included, because the previous page does not exist.

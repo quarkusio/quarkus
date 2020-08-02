@@ -1,5 +1,6 @@
 package io.quarkus.scheduler;
 
+import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.PROCEED;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -104,11 +105,37 @@ public @interface Scheduled {
      */
     String delayed() default "";
 
+    /**
+     * Specify the strategy to handle concurrent execution of a scheduled method. By default, a scheduled method can be executed
+     * concurrently.
+     * 
+     * @return the concurrent execution strategy
+     */
+    ConcurrentExecution concurrentExecution() default PROCEED;
+
     @Retention(RUNTIME)
     @Target(METHOD)
     @interface Schedules {
 
         Scheduled[] value();
+
+    }
+
+    /**
+     * Represents a strategy to handle concurrent execution of a scheduled method
+     */
+    enum ConcurrentExecution {
+
+        /**
+         * The scheduled method can be executed concurrently, i.e. it is executed every time the trigger is fired.
+         */
+        PROCEED,
+
+        /**
+         * The scheduled method is never executed concurrently, i.e. a method execution is skipped until the previous
+         * invocation completes.
+         */
+        SKIP,
 
     }
 

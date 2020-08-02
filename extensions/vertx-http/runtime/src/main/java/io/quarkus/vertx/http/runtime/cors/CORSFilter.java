@@ -97,7 +97,11 @@ public class CORSFilter implements Handler<RoutingContext> {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             }
 
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            boolean allowCredentials = corsConfig.accessControlAllowCredentials
+                    .orElseGet(() -> corsConfig.origins.isPresent() && corsConfig.origins.get().contains(origin)
+                            && !origin.equals("*"));
+
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
 
             final Optional<List<String>> exposedHeaders = corsConfig.exposedHeaders;
 

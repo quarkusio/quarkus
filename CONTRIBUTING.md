@@ -49,52 +49,10 @@ Just do the following:
 git clone git@github.com:quarkusio/quarkus.git
 cd quarkus
 export MAVEN_OPTS="-Xmx1563m"
-./mvnw clean install -DskipTests -DskipITs -DskipDocs
+./mvnw -Dquickly
 ```
 
 Wait for a bit and you're done.
-
-#### Workflow tips
-
-Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very productive. 
-The following Maven tips can vastly speed up development when working on a specific extension.
-
-##### Building all modules of an extension
-
-Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime` and `spi` modules
-which can all be built by executing following command:
-
-``` 
-./mvnw install -f extensions/jackson/
-```     
-
-This command uses the path of the extension on the filesystem to identify it. Moreover, Maven will automatically build all modules in that path recursively.
-
-##### Building a single module of an extension
-
-Let's say you want to make changes to the `deployment` module of `Jackson` extension. There are two ways to accomplish this task as shown by the following commands:
-
-```
-./mvnw install -f extensions/jackson/deployment
-```                                                  
-
-or 
-
-```
-./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
-``` 
-
-In this command we use the groupId and artifactId of the module to identify it.
-
-##### Running a single test
-
-Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson[here]).
-One way to accomplish this is by executing the following command:
-
-```
-./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
-```
- 
 
 ### Updating the version
 
@@ -188,20 +146,21 @@ select the `eclipse.importorder` file as the import order config file.
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
 * Set Maven heap to 1.5GB `export MAVEN_OPTS="-Xmx1563m"`
-* Invoke `./mvnw clean install -DskipTests -DskipITs -DskipDocs` from the root directory
+* Invoke `./mvnw -Dquickly` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 export MAVEN_OPTS="-Xmx1563m"
-./mvnw clean install -DskipTests -DskipITs -DskipDocs
+./mvnw -Dquickly
 # Wait... success!
 ```
 
-This build skipped all the tests, native-image builds and documentation generation. 
+This build skipped all the tests, native-image builds, documentation generation etc. and used the Maven goals `clean install` by default.
+For more details about `-Dquickly` have a look at the `quick-build` profile in `quarkus-parent` (root `pom.xml`).
 
-Removing the `-DskipTests -DskipITs` flags enables the tests. 
-It will take much longer to build but will give you more guarantees on your code. 
+Adding `-DskipTests=false -DskipITs=false` enables the tests.
+It will take much longer to build but will give you more guarantees on your code.
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 
@@ -209,6 +168,46 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `./mvnw install -Dnative-image.new-server=true`.
 
+### Workflow tips
+
+Due to Quarkus being a large repository, having to rebuild the entire project every time a change is made isn't very productive. 
+The following Maven tips can vastly speed up development when working on a specific extension.
+
+#### Building all modules of an extension
+
+Let's say you want to make changes to the `Jackson` extension. This extension contains the `deployment`, `runtime` and `spi` modules
+which can all be built by executing following command:
+
+```
+./mvnw install -f extensions/jackson/
+```
+
+This command uses the path of the extension on the filesystem to identify it. Moreover, Maven will automatically build all modules in that path recursively.
+
+#### Building a single module of an extension
+
+Let's say you want to make changes to the `deployment` module of the Jackson extension. There are two ways to accomplish this task as shown by the following commands:
+
+```
+./mvnw install -f extensions/jackson/deployment
+```
+
+or 
+
+```
+./mvnw install --projects 'io.quarkus:quarkus-jackson-deployment'
+```
+
+In this command we use the groupId and artifactId of the module to identify it.
+
+#### Running a single test
+
+Often you need to run a single test from some Maven module. Say for example you want to run the `GreetingResourceTest` of the `resteasy-jackson` Quarkus integration test (which can be found [here](https://github.com/quarkusio/quarkus/blob/master/integration-tests/resteasy-jackson)).
+One way to accomplish this is by executing the following command:
+
+```
+./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
+```
 
 ## Usage
 

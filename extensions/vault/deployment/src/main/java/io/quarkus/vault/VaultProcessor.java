@@ -5,6 +5,7 @@ import java.util.OptionalInt;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -35,7 +36,7 @@ public class VaultProcessor {
             SslNativeConfigBuildItem sslNativeConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.VAULT));
+        feature.produce(new FeatureBuildItem(Feature.VAULT));
 
         final String[] modelClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(DotName.createSimple(VaultModel.class.getName()))
@@ -46,7 +47,7 @@ public class VaultProcessor {
         reflectiveClasses.produce(
                 new ReflectiveClassBuildItem(false, false, Base64StringDeserializer.class, Base64StringSerializer.class));
 
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.VAULT));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.VAULT));
     }
 
     @BuildStep

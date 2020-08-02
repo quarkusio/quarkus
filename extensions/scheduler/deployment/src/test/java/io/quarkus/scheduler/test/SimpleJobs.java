@@ -18,7 +18,8 @@ public class SimpleJobs {
         LATCHES.put("cronConfig", new CountDownLatch(2));
     }
 
-    @Scheduled(cron = "0/1 * * * * ?")
+    // the cron expression takes precedence
+    @Scheduled(cron = "0/1 * * * * ?", every = "2m")
     void checkEverySecondCron() {
         LATCHES.get("cron").countDown();
     }

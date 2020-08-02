@@ -194,11 +194,6 @@ public class PackageIT extends MojoTestBase {
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
-    private List<File> getFilesEndingWith(File dir, String suffix) {
-        final File[] files = dir.listFiles((d, name) -> name.endsWith(suffix));
-        return files != null ? Arrays.asList(files) : Collections.emptyList();
-    }
-
     private int getNumberOfFilesEndingWith(File dir, String suffix) {
         return getFilesEndingWith(dir, suffix).size();
     }

@@ -148,9 +148,7 @@ The injected `ManagedExecutor` uses the Quarkus thread pool.
 
 == Adding support for RxJava2
 
-If you use Reactive Streams Operators (the `quarkus-smallrye-reactive-streams-operators` module),
-you get support for link:https://github.com/ReactiveX/RxJava[RxJava2] context propagation automatically, but if you don't, you
-may want to include the following modules to get RxJava2 support:
+You need to include the following modules to get RxJava2 support:
 
 [source,xml]
 ----

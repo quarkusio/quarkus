@@ -19,7 +19,6 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
@@ -29,6 +28,7 @@ import io.quarkus.qute.TemplateInstanceBase;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.smallrye.mutiny.Multi;
 
 @Singleton
 public class TemplateProducer {
@@ -39,11 +39,12 @@ public class TemplateProducer {
 
     private final Map<String, TemplateVariants> templateVariants;
 
-    TemplateProducer(Engine engine, QuteContext context) {
+    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes) {
         this.engine = engine;
         Map<String, TemplateVariants> templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : context.getVariants().entrySet()) {
-            TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue()), entry.getKey());
+            TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue(), contentTypes),
+                    entry.getKey());
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
@@ -85,6 +86,13 @@ public class TemplateProducer {
         // 1. Be able to select an appropriate variant if needed
         // 2. Be able to reload the template when needed, i.e. when the cache is cleared
         return new InjectableTemplate(path.value(), templateVariants, engine);
+    }
+
+    /**
+     * Used by NativeCheckedTemplateEnhancer to inject calls to this method in the native type-safe methods.
+     */
+    public Template getInjectableTemplate(String path) {
+        return new InjectableTemplate(path, templateVariants, engine);
     }
 
     static class InjectableTemplate implements Template {
@@ -138,22 +146,33 @@ public class TemplateProducer {
 
         @Override
         public String render() {
-            return template().instance().data(data()).render();
+            return templateInstance().render();
         }
 
         @Override
         public CompletionStage<String> renderAsync() {
-            return template().instance().data(data()).renderAsync();
+            return templateInstance().renderAsync();
         }
 
         @Override
-        public Publisher<String> publisher() {
-            return template().instance().data(data()).publisher();
+        public Multi<String> createMulti() {
+            return templateInstance().createMulti();
         }
 
         @Override
         public CompletionStage<Void> consume(Consumer<String> consumer) {
-            return template().instance().data(data()).consume(consumer);
+            return templateInstance().consume(consumer);
+        }
+
+        private TemplateInstance templateInstance() {
+            TemplateInstance instance = template().instance();
+            instance.data(data());
+            if (!attributes.isEmpty()) {
+                for (Entry<String, Object> entry : attributes.entrySet()) {
+                    instance.setAttribute(entry.getKey(), entry.getValue());
+                }
+            }
+            return instance;
         }
 
         private Template template() {
@@ -182,34 +201,17 @@ public class TemplateProducer {
             this.defaultTemplate = defaultTemplate;
         }
 
-    }
-
-    static String parseMediaType(String suffix) {
-        // TODO we need a proper way to parse the media type
-        if (suffix.equalsIgnoreCase(".html") || suffix.equalsIgnoreCase(".htm")) {
-            return Variant.TEXT_HTML;
-        } else if (suffix.equalsIgnoreCase(".xml")) {
-            return Variant.TEXT_XML;
-        } else if (suffix.equalsIgnoreCase(".txt")) {
-            return Variant.TEXT_PLAIN;
-        } else if (suffix.equalsIgnoreCase(".json")) {
-            return Variant.APPLICATION_JSON;
+        @Override
+        public String toString() {
+            return "TemplateVariants{default=" + defaultTemplate + ", variants=" + variantToTemplate + "}";
         }
-        LOGGER.warn("Unknown media type for suffix: " + suffix);
-        return "application/octet-stream";
     }
 
-    static String parseMediaType(String base, String variant) {
-        String suffix = variant.substring(base.length());
-        return parseMediaType(suffix);
-    }
-
-    private static Map<Variant, String> initVariants(String base, List<String> availableVariants) {
+    private static Map<Variant, String> initVariants(String base, List<String> availableVariants, ContentTypes contentTypes) {
         Map<Variant, String> map = new HashMap<>();
         for (String path : availableVariants) {
             if (!base.equals(path)) {
-                String mediaType = parseMediaType(base, path);
-                map.put(new Variant(null, mediaType, null), path);
+                map.put(new Variant(null, contentTypes.getContentType(path), null), path);
             }
         }
         return map;

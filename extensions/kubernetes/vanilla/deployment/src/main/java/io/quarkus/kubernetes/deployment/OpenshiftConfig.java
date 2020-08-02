@@ -4,6 +4,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
@@ -31,6 +32,18 @@ public class OpenshiftConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
+
+    /**
+     * The namespace the generated resources should belong to.
+     * If not value is set, then the 'namespace' field will not be
+     * added to the 'metadata' section of the generated manifests.
+     * This in turn means that when the manifests are applied to a cluster,
+     * the namespace will be resolved from the current Kubernetes context
+     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+     * for more details).
+     */
+    @ConfigItem
+    Optional<String> namespace;
 
     /**
      * Custom labels to add to all resources
@@ -106,7 +119,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
      * The nodePort to set when serviceType is set to nodePort
      */
     @ConfigItem
-    Optional<Integer> nodePort;
+    OptionalInt nodePort;
 
     /**
      * Image pull policy
@@ -210,6 +223,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return version;
     }
 
+    public Optional<String> getNamespace() {
+        return namespace;
+    }
+
     public Map<String, String> getLabels() {
         return labels;
     }
@@ -307,7 +324,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return initContainers;
     }
 
-    public Map<String, ContainerConfig> getContainers() {
+    public Map<String, ContainerConfig> getSidecars() {
         return containers;
     }
 

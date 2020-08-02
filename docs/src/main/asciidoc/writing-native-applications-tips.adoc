@@ -396,3 +396,9 @@ Using such a construct means that a `-H:DynamicProxyConfigurationResources` opti
 ====
 For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/substratevm/DYNAMIC_PROXY.md[the GraalVM documentation].
 ====
+
+=== Logging with Native Image
+
+If you are using dependencies that require logging components such as Apache Commons Logging or Log4j and are experiencing a `ClassNotFoundException` when building the native executable, you can resolve this by excluding the logging library and adding the corresponding JBoss Logging adapter.
+
+For more details please refer to the link:logging#logging-adapters[Logging guide].

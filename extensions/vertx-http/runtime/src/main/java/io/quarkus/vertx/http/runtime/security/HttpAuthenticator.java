@@ -28,10 +28,9 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class HttpAuthenticator {
 
+    final HttpAuthenticationMechanism[] mechanisms;
     @Inject
     IdentityProviderManager identityProviderManager;
-
-    final HttpAuthenticationMechanism[] mechanisms;
 
     public HttpAuthenticator() {
         mechanisms = null;
@@ -90,10 +89,10 @@ public class HttpAuthenticator {
      * Attempts authentication with the contents of the request. If this is possible the Uni
      * will resolve to a valid SecurityIdentity when it is subscribed to. Note that Uni is lazy,
      * so this may not happen until the Uni is subscribed to.
-     *
+     * <p>
      * If invalid credentials are present then the completion stage will resolve to a
      * {@link io.quarkus.security.AuthenticationFailedException}
-     *
+     * <p>
      * If no credentials are present it will resolve to null.
      */
     public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
@@ -101,7 +100,7 @@ public class HttpAuthenticator {
         Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+            result = result.onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
                 @Override
                 public Uni<SecurityIdentity> apply(SecurityIdentity data) {
                     if (data != null) {
@@ -116,31 +115,39 @@ public class HttpAuthenticator {
     }
 
     /**
-     *
      * @return
      */
     public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
         Uni<Boolean> result = mechanisms[0].sendChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<Boolean, Uni<? extends Boolean>>() {
+            result = result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
                 @Override
-                public Uni<? extends Boolean> apply(Boolean aBoolean) {
-                    if (aBoolean) {
-                        return Uni.createFrom().item(aBoolean);
+                public Uni<? extends Boolean> apply(Boolean authDone) {
+                    if (authDone) {
+                        return Uni.createFrom().item(authDone);
                     }
                     return mech.sendChallenge(routingContext);
                 }
             });
         }
-        return result;
+        return result.onItem().transformToUni(new Function<Boolean, Uni<? extends Boolean>>() {
+            @Override
+            public Uni<? extends Boolean> apply(Boolean authDone) {
+                if (!authDone) {
+                    routingContext.response().setStatusCode(401);
+                    routingContext.response().end();
+                }
+                return Uni.createFrom().item(authDone);
+            }
+        });
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
         Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.onItem().produceUni(new Function<ChallengeData, Uni<? extends ChallengeData>>() {
+            result = result.onItem().transformToUni(new Function<ChallengeData, Uni<? extends ChallengeData>>() {
                 @Override
                 public Uni<? extends ChallengeData> apply(ChallengeData data) {
                     if (data != null) {

@@ -35,6 +35,9 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+
+        <skipDocs>false</skipDocs>
+        <skip.gradle.tests>false</skip.gradle.tests>
     </properties>
 
     <modules>
@@ -43,12 +46,11 @@
         <module>independent-projects/ide-config</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
-        <module>independent-projects/tools</module>
         <module>independent-projects/qute</module>
+        <module>independent-projects/tools</module>
 
         <!-- BOMs and parent POM -->
-        <module>bom/runtime</module>
-        <module>bom/deployment</module>
+        <module>bom/application</module>
         <module>bom/test</module>
         <module>build-parent</module>
 
@@ -78,7 +80,12 @@
             <name>Maven Repository Switchboard</name>
             <url>https://repo.maven.apache.org/maven2</url>
         </repository>
-   </repositories>
+        <repository>
+            <id>gradle-dependencies</id>
+            <name>Gradle releases repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases</url>
+        </repository>
+    </repositories>
 
     <distributionManagement>
         <snapshotRepository>
@@ -92,6 +99,26 @@
     </distributionManagement>
 
     <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>

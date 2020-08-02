@@ -8,7 +8,10 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 public final class QuarkusJtaPlatformInitiator implements StandardServiceInitiator<JtaPlatform> {
 
-    public static final QuarkusJtaPlatformInitiator INSTANCE = new QuarkusJtaPlatformInitiator();
+    public static final StandardServiceInitiator<JtaPlatform> INSTANCE = new QuarkusJtaPlatformInitiator();
+
+    private QuarkusJtaPlatformInitiator() {
+    }
 
     @Override
     public JtaPlatform initiateService(Map map, ServiceRegistryImplementor serviceRegistryImplementor) {
@@ -19,4 +22,5 @@ public final class QuarkusJtaPlatformInitiator implements StandardServiceInitiat
     public Class<JtaPlatform> getServiceInitiated() {
         return JtaPlatform.class;
     }
+
 }

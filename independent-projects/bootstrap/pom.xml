@@ -26,7 +26,7 @@
         <!-- Versions -->
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <junit.version>5.6.1</junit.version>
+        <junit.jupiter.version>5.6.2</junit.jupiter.version>
         <maven-core.version>3.6.3</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
@@ -35,22 +35,29 @@
         <plexus-cypher.version>1.7</plexus-cypher.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson.version>2.10.4</jackson.version>
+        <jackson.version>2.11.1</jackson.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <commons-lang.version>3.9</commons-lang.version>
         <guava.version>27.0.1-jre</guava.version>
-        <asm.version>7.3.1</asm.version>
+        <asm.version>8.0.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
+        <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
         <graal-sdk.version>20.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <smallrye-common.version>1.2.0</smallrye-common.version>
+        <gradle-tooling.version>6.5</gradle-tooling.version>
     </properties>
     <modules>
+        <module>app-model</module>
+        <module>maven-resolver</module>
         <module>core</module>
         <module>maven-plugin</module>
         <module>runner</module>
+        <module>gradle-resolver</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -83,7 +90,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-app-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -150,9 +172,23 @@
                         <groupId>org.checkerframework</groupId>
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
-
+            <dependency>
+                <groupId>org.gradle</groupId>
+                <artifactId>gradle-tooling-api</artifactId>
+                <version>${gradle-tooling.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>jakarta.annotation</groupId>
                 <artifactId>jakarta.annotation-api</artifactId>
@@ -293,6 +329,11 @@
                 <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.jboss.slf4j</groupId>
+                <artifactId>slf4j-jboss-logging</artifactId>
+                <version>${slf4j-jboss-logging.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-classworlds</artifactId>
                 <version>${plexus-classworlds.version}</version>
@@ -304,10 +345,11 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.jupiter.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>org.jboss.shrinkwrap</groupId>
@@ -324,7 +366,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-io</artifactId>
+                <version>${smallrye-common.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
@@ -424,9 +470,16 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${version.surefire.plugin}</version>
+                    <configuration>
+                        <argLine>${jacoco.agent.argLine}</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.11.0</version>
+                    <version>2.12.1</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -436,6 +489,7 @@
                     </dependencies>
                     <configuration>
                         <configFile>eclipse-format.xml</configFile>
+                        <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
@@ -463,7 +517,32 @@
         </repository>
     </distributionManagement>
 
+    <repositories>
+        <repository>
+            <id>gradle-dependencies</id>
+            <name>Gradle releases repository</name>
+            <url>https://repo.gradle.org/gradle/libs-releases</url>
+        </repository>
+    </repositories>
+
     <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>

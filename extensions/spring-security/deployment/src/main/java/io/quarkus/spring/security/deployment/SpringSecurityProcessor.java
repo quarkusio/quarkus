@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,21 +31,23 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.security.deployment.AdditionalSecurityCheckBuildItem;
-import io.quarkus.security.deployment.SecurityCheckInstantiationUtil;
 import io.quarkus.security.deployment.SecurityTransformerUtils;
+import io.quarkus.security.runtime.SecurityCheckRecorder;
+import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 import io.quarkus.spring.di.deployment.SpringBeanNameToDotNameBuildItem;
-import io.quarkus.spring.security.deployment.roles.HasRoleValueProducer;
 import io.quarkus.spring.security.runtime.interceptor.SpringPreauthorizeInterceptor;
 import io.quarkus.spring.security.runtime.interceptor.SpringSecuredInterceptor;
+import io.quarkus.spring.security.runtime.interceptor.SpringSecurityRecorder;
 import io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterSecurityCheck;
 
 class SpringSecurityProcessor {
@@ -65,7 +67,7 @@ class SpringSecurityProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SPRING_SECURITY);
+        return new FeatureBuildItem(Feature.SPRING_SECURITY);
     }
 
     @BuildStep
@@ -76,8 +78,10 @@ class SpringSecurityProcessor {
         beans.produce(new AdditionalBeanBuildItem(SpringPreauthorizeInterceptor.class));
     }
 
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void addSpringSecuredSecurityCheck(CombinedIndexBuildItem index,
+            SecurityCheckRecorder securityCheckRecorder,
             BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityCheckBuildItems) {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
@@ -94,7 +98,7 @@ class SpringSecurityProcessor {
                 checksStandardSecurity(instance, methodInfo);
                 checksStandardSecurity(instance, methodInfo.declaringClass());
                 additionalSecurityCheckBuildItems.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
-                        SecurityCheckInstantiationUtil.rolesAllowedSecurityCheck(rolesAllowed)));
+                        securityCheckRecorder.rolesAllowed(rolesAllowed)));
                 methodsWithSecurityAnnotation.add(methodInfo);
             }
         }
@@ -119,7 +123,7 @@ class SpringSecurityProcessor {
                     }
                     if (!methodsWithSecurityAnnotation.contains(methodInfo)) {
                         additionalSecurityCheckBuildItems.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
-                                SecurityCheckInstantiationUtil.rolesAllowedSecurityCheck(rolesAllowed)));
+                                securityCheckRecorder.rolesAllowed(rolesAllowed)));
                     }
                 }
             }
@@ -343,8 +347,11 @@ class SpringSecurityProcessor {
         }
     }
 
+    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void addSpringPreAuthorizeSecurityCheck(CombinedIndexBuildItem index,
+            SecurityCheckRecorder securityCheckRecorder,
+            SpringSecurityRecorder springSecurityRecorder,
             SpringPreAuthorizeAnnotatedMethodBuildItem springPreAuthorizeAnnotatedMethods,
             SpringBeanNameToDotNameBuildItem springBeanNames,
             BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityChecks,
@@ -393,43 +400,43 @@ class SpringSecurityProcessor {
                 parts = value.split("(?i) or ");
             }
 
-            List<Function<BytecodeCreator, ResultHandle>> securityChecks = new ArrayList<>(parts.length);
+            List<SecurityCheck> securityChecks = new ArrayList<>(parts.length);
 
             for (String part : parts) {
                 part = part.trim();
                 if (part.equals("permitAll()")) {
-                    securityChecks.add(SecurityCheckInstantiationUtil.permitAllSecurityCheck());
+                    securityChecks.add(securityCheckRecorder.permitAll());
                 } else if (part.equals("denyAll()")) {
-                    securityChecks.add(SecurityCheckInstantiationUtil.denyAllSecurityCheck());
+                    securityChecks.add(securityCheckRecorder.denyAll());
                 } else if (part.equals("isAnonymous()")) {
-                    securityChecks.add(PreAuthorizeSecurityCheckUtil.anonymousSecurityCheck());
+                    securityChecks.add(springSecurityRecorder.anonymous());
                 } else if (part.replaceAll("\\s", "").equals("isAuthenticated()")) {
 
-                    securityChecks.add(SecurityCheckInstantiationUtil.authenticatedSecurityCheck());
+                    securityChecks.add(securityCheckRecorder.authenticated());
 
                 } else if (part.startsWith("hasRole(")) {
 
                     String hasRoleValue = part.replace("hasRole(", "").replace(")", "");
-                    HasRoleValueProducer hasRoleValueProducer = HasRoleValueUtil.getHasRoleValueProducer(hasRoleValue,
+                    Supplier<String[]> hasRoleValueProducer = HasRoleValueUtil.getHasRoleValueProducer(hasRoleValue,
                             methodInfo,
                             index.getIndex(), springBeansNameToDotName, springBeansNameToClassInfo,
-                            beansReferencedInPreAuthorized);
+                            beansReferencedInPreAuthorized,
+                            springSecurityRecorder);
                     securityChecks.add(
-                            PreAuthorizeSecurityCheckUtil
-                                    .hasRoleSecurityCheck(Collections.singletonList(hasRoleValueProducer)));
+                            springSecurityRecorder.rolesAllowed(Collections.singletonList(hasRoleValueProducer)));
 
                 } else if (part.startsWith("hasAnyRole(")) {
 
                     String hasRoleValues = part.replace("hasAnyRole(", "").replace(")", "");
                     String[] hasRoleParts = hasRoleValues.split(",");
-                    List<HasRoleValueProducer> hasRoleValueProducers = new ArrayList<>(hasRoleParts.length);
+                    List<Supplier<String[]>> hasRoleValueProducers = new ArrayList<>(hasRoleParts.length);
                     for (String hasRolePart : hasRoleParts) {
                         hasRoleValueProducers
                                 .add(HasRoleValueUtil.getHasRoleValueProducer(hasRolePart.trim(), methodInfo, index.getIndex(),
                                         springBeansNameToDotName,
-                                        springBeansNameToClassInfo, beansReferencedInPreAuthorized));
+                                        springBeansNameToClassInfo, beansReferencedInPreAuthorized, springSecurityRecorder));
                     }
-                    securityChecks.add(PreAuthorizeSecurityCheckUtil.hasRoleSecurityCheck(hasRoleValueProducers));
+                    securityChecks.add(springSecurityRecorder.rolesAllowed(hasRoleValueProducers));
 
                 } else if (part.matches(PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX)) { // TODO this section needs to be improved
 
@@ -449,13 +456,11 @@ class SpringSecurityProcessor {
                                             + "' of class '" + methodInfo.declaringClass() + "' references method parameter '"
                                             + parameterNameAndIndex.getName() + "' which is not a string");
                         }
-
                         PrincipalNameFromParameterSecurityCheck.CheckType checkType = part.contains("==")
                                 ? PrincipalNameFromParameterSecurityCheck.CheckType.EQ
                                 : PrincipalNameFromParameterSecurityCheck.CheckType.NEQ;
-                        securityChecks.add(PreAuthorizeSecurityCheckUtil
+                        securityChecks.add(springSecurityRecorder
                                 .principalNameFromParameterSecurityCheck(parameterNameAndIndex.getIndex(), checkType));
-
                     } else {
                         /*
                          * In this the security check needs to check against a property of the method parameter.
@@ -467,7 +472,7 @@ class SpringSecurityProcessor {
                                 propertyName, index.getIndex(),
                                 part);
 
-                        securityChecks.add(PreAuthorizeSecurityCheckUtil.principalNameFromParameterObjectSecurityCheck(
+                        securityChecks.add(springSecurityRecorder.principalNameFromParameterObjectSecurityCheck(
                                 parameterNameAndIndex.getIndex(),
                                 stringPropertyAccessorData.getMatchingParameterClassInfo().name().toString(),
                                 StringPropertyAccessorGenerator
@@ -478,8 +483,7 @@ class SpringSecurityProcessor {
                     }
                 } else if (part.matches(SpringSecurityProcessorUtil.BASIC_BEAN_METHOD_INVOCATION_REGEX)) {
                     String generatedClassName = beanMethodInvocationGenerator.generateSecurityCheck(part, methodInfo);
-                    securityChecks.add(PreAuthorizeSecurityCheckUtil.beanMethodGeneratedSecurityCheck(
-                            generatedClassName));
+                    securityChecks.add(springSecurityRecorder.fromGeneratedClass(generatedClassName));
                 } else {
                     throw SpringSecurityProcessorUtil.createGenericMalformedException(methodInfo, part);
                 }
@@ -491,10 +495,10 @@ class SpringSecurityProcessor {
             } else {
                 if (containsAnd) {
                     additionalSecurityChecks.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
-                            PreAuthorizeSecurityCheckUtil.generateAllDelegatingSecurityCheck(securityChecks)));
+                            springSecurityRecorder.allDelegating(securityChecks)));
                 } else if (containsOr) {
                     additionalSecurityChecks.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
-                            PreAuthorizeSecurityCheckUtil.generateAnyDelegatingSecurityCheck(securityChecks)));
+                            springSecurityRecorder.anyDelegating(securityChecks)));
                 }
             }
         }

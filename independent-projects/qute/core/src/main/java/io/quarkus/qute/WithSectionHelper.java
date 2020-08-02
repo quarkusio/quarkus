@@ -1,9 +1,7 @@
 package io.quarkus.qute;
 
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -48,16 +46,16 @@ public class WithSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
                 String object = block.getParameters().get(OBJECT);
                 if (object == null) {
                     throw new IllegalStateException("Object param not present");
                 }
                 block.addExpression(OBJECT, object);
-                return outerNameTypeInfos;
+                return previousScope;
             } else {
-                return Collections.emptyMap();
+                return previousScope;
             }
         }
 

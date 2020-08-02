@@ -7,9 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
@@ -22,7 +20,7 @@ import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.EnumMarshaller;
@@ -40,6 +38,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -79,13 +78,13 @@ class InfinispanClientProcessor {
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
             CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(InfinispanClientProducer.class));
         systemProperties.produce(new SystemPropertyBuildItem("io.netty.noUnsafe", "true"));
         hotDeployment.produce(new HotDeploymentWatchedFileBuildItem(HOTROD_CLIENT_PROPERTIES));
 
         // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
 
         InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;
@@ -225,16 +224,9 @@ class InfinispanClientProcessor {
         return new BeanContainerListenerBuildItem(recorder.configureInfinispan(properties));
     }
 
-    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(
-                    DotName.createSimple(BaseMarshaller.class.getName()),
-                    DotName.createSimple(EnumMarshaller.class.getName()),
-                    DotName.createSimple(MessageMarshaller.class.getName()),
-                    DotName.createSimple(RawProtobufMarshaller.class.getName()),
-                    DotName.createSimple(FileDescriptorSource.class.getName()))));
-
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypesExclusion(UNREMOVABLE_BEANS));
+        return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
+                RawProtobufMarshaller.class, FileDescriptorSource.class);
     }
 }

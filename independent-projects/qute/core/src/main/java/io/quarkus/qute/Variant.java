@@ -8,24 +8,44 @@ import java.util.Objects;
  */
 public final class Variant {
 
+    public static Variant forContentType(String contentType) {
+        return new Variant(null, contentType, null);
+    }
+
     public final static String TEXT_HTML = "text/html";
     public final static String TEXT_PLAIN = "text/plain";
     public final static String TEXT_XML = "text/xml";
     public final static String APPLICATION_JSON = "application/json";
 
-    public final Locale locale;
-    public final String mediaType;
-    public final String encoding;
+    private final Locale locale;
+    private final String contentType;
+    private final String encoding;
 
-    public Variant(Locale locale, String mediaType, String encoding) {
+    public Variant(Locale locale, String contentType, String encoding) {
         this.locale = locale;
-        this.mediaType = mediaType;
+        this.contentType = contentType;
         this.encoding = encoding;
+    }
+
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public String getMediaType() {
+        return getContentType();
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public String getEncoding() {
+        return encoding;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(encoding, locale, mediaType);
+        return Objects.hash(encoding, locale, contentType);
     }
 
     @Override
@@ -41,7 +61,15 @@ public final class Variant {
         }
         Variant other = (Variant) obj;
         return Objects.equals(encoding, other.encoding) && Objects.equals(locale, other.locale)
-                && Objects.equals(mediaType, other.mediaType);
+                && Objects.equals(contentType, other.contentType);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Variant [locale=").append(locale).append(", contentType=").append(contentType).append(", encoding=")
+                .append(encoding).append("]");
+        return builder.toString();
     }
 
 }

@@ -12,7 +12,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.version>@project.version@</quarkus.platform.version>
         <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
-        <surefire-plugin.version>2.22.1</surefire-plugin.version>
+        <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -20,6 +20,8 @@
     <modules>
         <module>app</module>
         <module>test</module>
+        <module>common</module>
+        <module>library</module>
     </modules>
 
     <build>
@@ -43,7 +45,17 @@
             </dependency>
             <dependency>
                 <groupId>org.acme</groupId>
+                <artifactId>quarkus-app-common</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
                 <artifactId>quarkus-app</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.acme</groupId>
+                <artifactId>quarkus-app-lib</artifactId>
                 <version>1.0-SNAPSHOT</version>
             </dependency>
             <dependency>

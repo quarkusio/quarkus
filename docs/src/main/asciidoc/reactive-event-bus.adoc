@@ -229,7 +229,7 @@ public class EventResource {
     @Path("{name}")
     public Uni<String> greeting(@PathParam String name) {
         return bus.<String>request("greeting", name)        // <2>
-                .onItem().apply(Message::body);
+                .onItem().transform(Message::body);
     }
 }
 ----
@@ -250,7 +250,7 @@ bus.sendAndForget("greeting", name)
 bus.publish("greeting", name)
 // Case 3
 Uni<String> response = bus.<String>request("address", "hello, how are you?")
-        .onItem().apply(Message::body);
+        .onItem().transform(Message::body);
 ----
 
 == Putting things together - bridging HTTP and messages
@@ -302,7 +302,7 @@ public class EventResource {
     @Path("{name}")
     public Uni<String> greeting(@PathParam String name) {
         return bus.<String>request("greeting", name)            // <1>
-                .onItem().apply(Message::body);            // <2>
+                .onItem().transform(Message::body);            // <2>
     }
 }
 ----
@@ -376,7 +376,7 @@ So you can exchange objects as follows:
 @Path("{name}")
 public Uni<String> greeting(@PathParam String name) {
     return bus.<String>request("greeting", new MyName(name))
-        .onItem().apply(Message::body);
+        .onItem().transform(Message::body);
 }
 
 @ConsumeEvent(value = "greeting")
@@ -395,7 +395,7 @@ If you want to use a specific codec, you need to explicitly set it on both ends:
 public Uni<String> greeting(@PathParam String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
-        .onItem().apply(Message::body);
+        .onItem().transform(Message::body);
 }
 
 @ConsumeEvent(value = "greeting", codec = MyNameCodec.class)            // <2>

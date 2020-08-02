@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
@@ -36,7 +37,13 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     @Override
     public ClassPathResource getResource(String name) {
-        Path file = root.resolve(name);
+        final Path file;
+        try {
+            file = root.resolve(name);
+        } catch (InvalidPathException ipe) {
+            // can't resolve the resource
+            return null;
+        }
         Path normal = file.normalize();
         String cn = name;
         if (File.separatorChar == '\\') {
@@ -51,7 +58,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
             //we don't allow absolute paths
             return null;
         }
-        if (!normal.endsWith(Paths.get(cn))) {
+        if (!normal.endsWith(Paths.get(cn)) && !cn.isEmpty()) {
             //make sure the case is correct
             //if the file on disk does not match the case of name return null
             return null;
@@ -72,7 +79,15 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
                 @Override
                 public URL getUrl() {
                     try {
-                        return file.toUri().toURL();
+                        URI uri = file.toUri();
+                        // the URLClassLoader doesn't add trailing slashes to directories, so we make sure we return
+                        // the same URL as it would to avoid having QuarkusClassLoader return different URLs
+                        // (one with a trailing slash and one without) for same resource
+                        if (uri.getPath().endsWith("/")) {
+                            String uriStr = uri.toString();
+                            return new URL(uriStr.substring(0, uriStr.length() - 1));
+                        }
+                        return uri.toURL();
                     } catch (MalformedURLException e) {
                         throw new RuntimeException(e);
                     }
@@ -92,6 +107,11 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
                     } catch (IOException e) {
                         throw new RuntimeException("Unable to read " + file, e);
                     }
+                }
+
+                @Override
+                public boolean isDirectory() {
+                    return Files.isDirectory(file);
                 }
             };
         }

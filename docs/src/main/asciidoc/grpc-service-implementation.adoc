@@ -129,7 +129,7 @@ public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
                 .map(Item::getValue)
                 .map(Long::parseLong)
                 .onItem().scan(() -> 0L, Long::sum)
-                .onItem().apply(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+                .onItem().transform(l -> Item.newBuilder().setValue(Long.toString(l)).build());
     }
 }
 ----
@@ -179,6 +179,11 @@ This service allows tools like https://github.com/fullstorydev/grpcurl[grpcurl] 
 The reflection service is enabled by default in _dev_ mode.
 In test or production mode, you need to enable it explicitly by setting `quarkus.grpc-server.enable-reflection-service` to `true`.
 
+== Scaling
+By default, quarkus-grpc starts a single gRPC server running on a single event loop.
+
+If you wish to scale your server, you can set the number of server instances by setting `quarkus.grpc.server.instances`.
+
 == Server configuration
 
 include::{generated-dir}/config/quarkus-grpc-config-group-config-grpc-server-configuration.adoc[opts=optional, leveloffset=+1]
@@ -209,4 +214,3 @@ quarkus.grpc-server.ssl.trust-store=src/main/resources/tls/ca.jks
 quarkus.grpc-server.ssl.trust-store-password=*****
 quarkus.grpc-server.ssl.client-auth=REQUIRED
 ----
-

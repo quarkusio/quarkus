@@ -15,6 +15,8 @@ Quarkus DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
+TIP: If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] first. 
+
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the Quarkus architecture and goals.
 
 [[bean_discovery]]
@@ -76,10 +78,39 @@ quarkus.index-dependency.<name>.classifier=(this one is optional)
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
+=== How To Exclude Types and Dependencies from Discovery
+
+It may happen that some beans from third-party libraries do not work correctly in Quarkus.
+A typical example is a bean injecting a portable extension.
+In such case, it's possible to exclude types and dependencies from the bean discovery.
+The `quarkus.arc.exclude-types` property accepts a list of string values that are used to match classes that should be excluded.
+
+.Value Examples
+|===
+|Value|Description
+|`org.acme.Foo`| Match the fully qualified name of the class
+|`org.acme.*`| Match classes with package `org.acme`
+|`org.acme.**`| Match classes where the package starts with `org.acme` 
+|`Bar`| Match the simple name of the class
+|===
+
+.Example application.properties
 [source,properties]
 ----
-quarkus.index-dependency.acme.group-id=org.acme <1>
-quarkus.index-dependency.acme.artifact-id=acme-api <2>
+quarkus.arc.exclude-types=org.acme.Foo,org.acme.*,Bar <1><2><3>
+----
+<1> Exclude the type `org.acme.Foo`.
+<2> Exclude all types from the `org.acme` package.
+<3> Exclude all types whose simple name is `Bar`
+
+It is also possible to exclude a dependency artifact that would be otherwise scanned for beans.
+For example, because it contains a `beans.xml` descriptor.  
+
+.Example application.properties
+[source,properties]
+----
+quarkus.arc.exclude-dependency.acme.group-id=org.acme <1>
+quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 ----
 <1> Value is a group id for a dependency identified by name `acme`.
 <2> Value is an artifact id for a dependency identified by name `acme`.
@@ -164,7 +195,9 @@ public class CounterBean {
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
+* `@Interceptors` is not supported
 
+[[nonstandard_features]]
 == Non-standard Features
 
 === Eager Instantiation of Beans
@@ -361,6 +394,24 @@ This optimization applies to all forms of bean declarations: bean class, produce
 
 Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
 This annotation can be placed on the types, producer methods, and producer fields.
+
+Since this is not always possible, there is an option to achieve the same via `application.properties`.
+The `quarkus.arc.unremovable-types` property accepts a list of string values that are used to match beans based on their name or package.
+
+.Value Examples
+|===
+|Value|Description
+|`org.acme.Foo`| Match the fully qualified name of the bean class
+|`org.acme.*`| Match beans where the package of the bean class is `org.acme`
+|`org.acme.**`| Match beans where the package of the bean class starts with `org.acme`
+|`Bar`| Match the simple name of the bean class
+|===
+
+.Example application.properties
+[source,properties]
+----
+quarkus.arc.unremovable-types=org.acme.Foo,org.acme.*,Bar
+----
 
 Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
 
@@ -572,6 +623,79 @@ class Producers {
 }
 ----
 
+=== Interception of Static Methods 
+
+The Interceptors specification is clear that _around-invoke_ methods must not be declared static.
+However, this restriction was driven mostly by technical limitations.
+And since Quarkus is a build-time oriented stack that allows for additional class transformations, those limitations don't apply anymore. 
+It's possible to annotate a non-private static method with an interceptor binding:
+
+[source,java]
+----
+class Services {
+
+  @Logged <1>
+  static BigDecimal computePrice(long amout) { <2>
+    BigDecimal price;
+    // Perform computations...
+    return price;
+  }
+}
+----
+<1> `Logged` is an interceptor binding.
+<2> Each method invocation is intercepted if there is an interceptor associated with `Logged`. 
+
+==== Limitations
+
+* Only *method-level bindings* are considered for backward compatibility reasons (otherwise static methods of bean classes that declare class-level bindings would be suddenly intercepted)
+* Private static methods are never intercepted
+* `InvocationContext#getTarget()` returns `null` for obvious reasons; therefore not all existing interceptors may behave correctly when intercepting static methods
++
+NOTE: Interceptors can use `InvocationContext.getMethod()` to detect static methods and adjust the behavior accordingly.
+
+=== Ability to handle 'final' classes and methods
+
+In normal CDI, classes that are marked as `final` and / or have `final` methods are not eligible for proxy creation,
+which in turn means that interceptors and normal scoped beans don't work properly.
+This situation is very common when trying to use CDI with alternative JVM languages like Kotlin where classes and methods are `final` by default.
+
+Quarkus however, can overcome these limitations when `quarkus.arc.transform-unproxyable-classes` is set to `true` (which is the default value).
+
+=== Container-managed Concurrency
+
+There is no standard concurrency control mechanism for CDI beans.
+Nevertheless, a bean instance can be shared and accessed concurrently from multiple threads.
+In that case it should be thread-safe.
+You can use standard Java constructs (`volatile`, `synchronized`, `ReadWriteLock`, etc.) or let the container control the concurrent access. 
+Quarkus provides `@io.quarkus.arc.Lock` and a built-in interceptor for this interceptor binding.
+Each interceptor instance associated with a contextual instance of an intercepted bean holds a separate `ReadWriteLock` with non-fair ordering policy.
+
+TIP: `io.quarkus.arc.Lock` is a regular interceptor binding and as such can be used for any bean with any scope. However, it is especially useful for "shared" scopes, e.g. `@Singleton` and `@ApplicationScoped`.
+
+.Container-managed Concurrency Example
+[source,java]
+----
+import io.quarkus.arc.Lock;
+
+@Lock <1>
+@ApplicationScoped
+class SharedService {
+
+  void addAmount(BigDecimal amout) {
+    // ...changes some internal state of the bean
+  }
+  
+  @Lock(value = Lock.Type.READ, time = 1, unit = TimeUnit.SECONDS) <2> <3>
+  BigDecimal getAmount() {
+    // ...it is safe to read the value concurrently
+  }
+}
+----
+<1> `@Lock` (which maps to `@Lock(Lock.Type.WRITE)`) declared on the class instructs the container to lock the bean instance for any invocation of any business method, i.e. the client has "exclusive access" and no concurrent invocations will be allowed.
+<2> `@Lock(Lock.Type.READ)` overrides the value specified at class level. It means that any number of clients can invoke the method concurrently, unless the bean instance is locked by `@Lock(Lock.Type.WRITE)`. 
+<3> You can also specify the "wait time". If it's not possible to acquire the lock in the given time a `LockException` is thrown.
+
+[[build_time_apis]]
 == Build Time Extension Points
 
 [[portable_extensions]]
@@ -612,6 +736,7 @@ void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceA
 }
 ----
 
+[[additional_beans]]
 === Additional Beans
 
 `AdditionalBeanBuildItem` is used to specify additional bean classes to be analyzed during discovery.
@@ -629,12 +754,20 @@ List<AdditionalBeanBuildItem> additionalBeans() {
 
 NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is removable by default. See also <<remove_unused_beans>>.
 
+[[synthetic_beans]]
 === Synthetic Beans
 
-Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
-In CDI, this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In Quarkus, we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+Sometimes it is very useful to be able to register a synthetic bean.
+Bean attributes of a synthetic bean are not derived from a java class, method or field.
+Instead, the attributes are specified by an extension.
+In CDI, this could be achieved using the `AfterBeanDiscovery.addBean()` methods.
+In Quarkus, there are three ways to register a synthetic bean.
 
+==== `BeanRegistrarBuildItem`
+
+A build step can produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+
+.`BeanRegistrarBuildItem` Example
 [source,java]
 ----
 @BuildStep
@@ -653,9 +786,12 @@ NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore ther
 
 TIP: You can easily filter all class-based beans via the convenient `BeanStream` returned from the `RegistrationContext.beans()` method.
 
-If an extension needs to produce other build items during the "bean registration" phase it should use the `BeanRegistrationPhaseBuildItem` instead.
+==== `BeanRegistrationPhaseBuildItem`
+
+If a build step *needs to produce other build items during the registration* it should use the `BeanRegistrationPhaseBuildItem`.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
 
+.`BeanRegistrationPhaseBuildItem` Example
 [source,java]
 ----
 @BuildStep
@@ -667,7 +803,24 @@ void syntheticBean(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
 }
 ----
 
-NOTE: See `BeanRegistrationPhaseBuildItem` javadoc for more information.
+NOTE: See the `BeanRegistrationPhaseBuildItem` javadoc for more information.
+
+==== `SyntheticBeanBuildItem`
+
+Finally, a build step can produce a `SyntheticBeanBuildItem` to register a synthetic bean whose instance can be easily *produced through a <<writing-extensions.adoc#bytecode-recording,recorder>>*.
+The extended `BeanConfigurator` accepts either a `io.quarkus.runtime.RuntimeValue` or a `java.util.function.Supplier`.
+
+.`SyntheticBeanBuildItem` Example
+[source,java]
+----
+@BuildStep
+@Record(STATIC_INIT)
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .runtimeValue(recorder.createFoo())
+                .done();
+}
+----
 
 
 === Annotation Transformations
@@ -687,7 +840,7 @@ AnnotationsTransformerBuildItem transform() {
         }
 
         public void transform(TransformationContext context) {
-            if (contex.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
+            if (context.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
                 context.transform().add(MyInterceptorBinding.class).done();
             }
         }

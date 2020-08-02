@@ -12,10 +12,6 @@ import javax.enterprise.inject.Default;
 import javax.inject.Singleton;
 import javax.sql.XADataSource;
 
-import org.eclipse.microprofile.metrics.Metadata;
-import org.eclipse.microprofile.metrics.MetricType;
-import org.eclipse.microprofile.metrics.MetricUnits;
-import org.eclipse.microprofile.metrics.Tag;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
@@ -30,8 +26,6 @@ import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.LegacyDataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
-import io.quarkus.agroal.runtime.metrics.AgroalCounter;
-import io.quarkus.agroal.runtime.metrics.AgroalGauge;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -41,6 +35,8 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -53,7 +49,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
-import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 
 @SuppressWarnings("deprecation")
 class AgroalProcessor {
@@ -69,8 +64,8 @@ class AgroalProcessor {
     @BuildStep
     void agroal(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CapabilityBuildItem> capability) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.AGROAL));
-        capability.produce(new CapabilityBuildItem(Capabilities.AGROAL));
+        feature.produce(new FeatureBuildItem(Feature.AGROAL));
+        capability.produce(new CapabilityBuildItem(Capability.AGROAL));
     }
 
     @BuildStep
@@ -121,7 +116,7 @@ class AgroalProcessor {
                 java.sql.ResultSet[].class.getName()));
 
         // Enable SSL support by default
-        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.AGROAL));
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.AGROAL.getName()));
     }
 
     private static void validateBuildTimeConfig(AggregatedDataSourceBuildTimeConfigBuildItem aggregatedConfig) {
@@ -175,7 +170,7 @@ class AgroalProcessor {
         }
 
         return new DataSourceSupport(sslNativeConfig.isExplicitlyDisabled(),
-                capabilities.isCapabilityPresent(Capabilities.METRICS), dataSourceSupportEntries);
+                capabilities.isPresent(Capability.METRICS), dataSourceSupportEntries);
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -255,22 +250,6 @@ class AgroalProcessor {
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
                     entry.getValue().resolvedDbKind,
                     entry.getValue().isDefault));
-        }
-    }
-
-    @BuildStep
-    void configureDataSources(BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig) {
-        if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
-            // No datasource has been configured so bail out
-            return;
-        }
-
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
-            jdbcDataSource.produce(new JdbcDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
-                    aggregatedBuildTimeConfigBuildItem.getResolvedDbKind(),
-                    DataSourceUtil.isDefault(aggregatedBuildTimeConfigBuildItem.getName())));
         }
     }
 
@@ -442,198 +421,5 @@ class AgroalProcessor {
     HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
                 dataSourcesBuildTimeConfig.healthEnabled);
-    }
-
-    @BuildStep
-    void registerMetrics(
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs,
-            BuildProducer<MetricBuildItem> metrics) {
-        Metadata activeCountMetadata = Metadata.builder()
-                .withName("agroal.active.count")
-                .withDescription("Number of active connections. These connections are in use and not available to be acquired.")
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata availableCountMetadata = Metadata.builder()
-                .withName("agroal.available.count")
-                .withDescription("Number of idle connections in the pool, available to be acquired.")
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata maxUsedCountMetadata = Metadata.builder()
-                .withName("agroal.max.used.count")
-                .withDescription("Maximum number of connections active simultaneously.")
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata awaitingCountMetadata = Metadata.builder()
-                .withName("agroal.awaiting.count")
-                .withDescription("Approximate number of threads blocked, waiting to acquire a connection.")
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata blockingTimeAverageMetadata = Metadata.builder()
-                .withName("agroal.blocking.time.average")
-                .withDescription("Average time an application waited to acquire a connection.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata blockingTimeMaxMetadata = Metadata.builder()
-                .withName("agroal.blocking.time.max")
-                .withDescription("Maximum time an application waited to acquire a connection.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata blockingTimeTotalMetadata = Metadata.builder()
-                .withName("agroal.blocking.time.total")
-                .withDescription("Total time applications waited to acquire a connection.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata creationTimeAverageMetadata = Metadata.builder()
-                .withName("agroal.creation.time.average")
-                .withDescription("Average time for a connection to be created.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata creationTimeMaxMetadata = Metadata.builder()
-                .withName("agroal.creation.time.max")
-                .withDescription("Maximum time for a connection to be created.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata creationTimeTotalMetadata = Metadata.builder()
-                .withName("agroal.creation.time.total")
-                .withDescription("Total time waiting for connections to be created.")
-                .withUnit(MetricUnits.MILLISECONDS)
-                .withType(MetricType.GAUGE)
-                .build();
-        Metadata acquireCountMetadata = Metadata.builder()
-                .withName("agroal.acquire.count")
-                .withDescription("Number of times an acquire operation succeeded.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata creationCountMetadata = Metadata.builder()
-                .withName("agroal.creation.count")
-                .withDescription("Number of created connections.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata leakDetectionCountMetadata = Metadata.builder()
-                .withName("agroal.leak.detection.count")
-                .withDescription("Number of times a leak was detected. A single connection can be detected multiple times.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata destroyCountMetadata = Metadata.builder()
-                .withName("agroal.destroy.count")
-                .withDescription("Number of destroyed connections.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata flushCountMetadata = Metadata.builder()
-                .withName("agroal.flush.count")
-                .withDescription("Number of connections removed from the pool, not counting invalid / idle.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata invalidCountMetadata = Metadata.builder()
-                .withName("agroal.invalid.count")
-                .withDescription("Number of connections removed from the pool for being invalid.")
-                .withType(MetricType.COUNTER)
-                .build();
-        Metadata reapCountMetadata = Metadata.builder()
-                .withName("agroal.reap.count")
-                .withDescription("Number of connections removed from the pool for being idle.")
-                .withType(MetricType.COUNTER)
-                .build();
-
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
-            String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
-            // expose metrics for this datasource if metrics are enabled both globally and for this data source
-            // (they are enabled for each data source by default if they are also enabled globally)
-            boolean metricsEnabledForThisDatasource = dataSourcesBuildTimeConfig.metricsEnabled &&
-                    aggregatedDataSourceBuildTimeConfig.getJdbcConfig().enableMetrics.orElse(true);
-            Tag tag = new Tag("datasource", DataSourceUtil.isDefault(dataSourceName) ? "default" : dataSourceName);
-            String configRootName = "datasource";
-            metrics.produce(new MetricBuildItem(activeCountMetadata,
-                    new AgroalGauge(dataSourceName, "activeCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(maxUsedCountMetadata,
-                    new AgroalGauge(dataSourceName, "maxUsedCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(awaitingCountMetadata,
-                    new AgroalGauge(dataSourceName, "awaitingCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(availableCountMetadata,
-                    new AgroalGauge(dataSourceName, "availableCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeAverageMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeAverage"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeMaxMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeMax"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(blockingTimeTotalMetadata,
-                    new AgroalGauge(dataSourceName, "blockingTimeTotal"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeAverageMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeAverage"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeMaxMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeMax"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationTimeTotalMetadata,
-                    new AgroalGauge(dataSourceName, "creationTimeTotal"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(acquireCountMetadata,
-                    new AgroalCounter(dataSourceName, "acquireCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(creationCountMetadata,
-                    new AgroalCounter(dataSourceName, "creationCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(leakDetectionCountMetadata,
-                    new AgroalCounter(dataSourceName, "leakDetectionCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(destroyCountMetadata,
-                    new AgroalCounter(dataSourceName, "destroyCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(flushCountMetadata,
-                    new AgroalCounter(dataSourceName, "flushCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(invalidCountMetadata,
-                    new AgroalCounter(dataSourceName, "invalidCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-            metrics.produce(new MetricBuildItem(reapCountMetadata,
-                    new AgroalCounter(dataSourceName, "reapCount"),
-                    metricsEnabledForThisDatasource,
-                    configRootName,
-                    tag));
-        }
     }
 }

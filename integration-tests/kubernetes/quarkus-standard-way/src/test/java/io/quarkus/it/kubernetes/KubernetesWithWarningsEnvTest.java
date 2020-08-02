@@ -27,7 +27,8 @@ public class KubernetesWithWarningsEnvTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
             .setApplicationName(APPLICATION_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .setLogRecordPredicate(r -> "io.quarkus.kubernetes.deployment.EnvVarValidator".equals(r.getLoggerName()))
+            .setLogRecordPredicate(r -> "io.quarkus.kubernetes.deployment.EnvVarValidator".equals(r.getLoggerName())
+                    || "io.quarkus.kubernetes.spi.KubernetesEnvBuildItem".equals(r.getLoggerName()))
             .withConfigurationResource("kubernetes-with-" + APPLICATION_NAME + "-env.properties");
 
     @ProdBuildResults
@@ -75,6 +76,7 @@ public class KubernetesWithWarningsEnvTest {
         });
 
         List<LogRecord> buildLogRecords = prodModeTestResults.getRetainedBuildLogRecords();
+        buildLogRecords.forEach(l -> System.out.println("l = " + l.getMessage()));
         assertThat(buildLogRecords).hasSize(4);
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("my-field"))
@@ -84,9 +86,10 @@ public class KubernetesWithWarningsEnvTest {
                 .hasOnlyOneElementSatisfying(r -> assertThat(r.getMessage()).contains("newVariable"));
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("configMap"))
-                .hasSize(1);
+                .hasOnlyOneElementSatisfying(
+                        r -> assertThat(r.getMessage().contains("'xxx'") && r.getMessage().contains("'secret'")));
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("secret"))
-                .hasSize(1);
+                .hasSize(2);
     }
 }

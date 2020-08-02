@@ -84,7 +84,7 @@ labelPRBasedOnFilePath:
     area/core:
         - core/**/*
     area/dependencies:
-        - .dependabot/config.yml
+        - .github/dependabot.yml
         - bom/**/*
         - build-parent/**/*
     area/devtools:
@@ -95,8 +95,14 @@ labelPRBasedOnFilePath:
         - docs/**/*
     area/funqy:
         - extensions/funqy/**/*
+    area/google-cloud-functions:
+        - extensions/google-cloud-functions/**/*
+        - extensions/google-cloud-functions-http/**/*
+        - integration-tests/google-cloud-functions/**/*
+        - integration-tests/google-cloud-functions-http/**/*
     area/gradle:
         - devtools/gradle/**/*
+        - integration-tests/gradle/**/*
     area/hibernate-orm:
         - extensions/hibernate-orm/**/*
         - extensions/spring-data-jpa/**/*
@@ -123,10 +129,8 @@ labelPRBasedOnFilePath:
         - integration-tests/hibernate-validator/**/*
     area/infinispan:
         - extensions/infinispan-client/**/*
-        - extensions/infinispan-embedded/**/*
         - integration-tests/infinispan-cache-jpa/**/*
         - integration-tests/infinispan-client/**/*
-        - integration-tests/infinispan-embedded/**/*
     area/infra-automation:
         - .github/**/*
     area/jaeger:
@@ -286,3 +290,6 @@ labelPRBasedOnFilePath:
         - integration-tests/vertx/**/*
         - integration-tests/vertx-graphql/**/*
         - integration-tests/vertx-http/**/*
+    area/redis:
+        - extensions/redis-client/**/*
+        - integration-tests/redis-client/**/*

@@ -56,6 +56,7 @@ public class CuratedApplication implements Serializable, Closeable {
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CurationResult curationResult;
+
     final AppModel appModel;
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult) {

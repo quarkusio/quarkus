@@ -1,21 +1,10 @@
 package io.quarkus.container.image.s2i.deployment;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -47,7 +36,7 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -55,11 +44,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.JarBuildItem;
-import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.*;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
@@ -68,19 +53,19 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
 public class S2iProcessor {
 
-    private static final String S2I = "s2i";
+    public static final String S2I = "s2i";
     private static final String OPENSHIFT = "openshift";
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
-    @BuildStep
+    @BuildStep(onlyIf = S2iBuild.class)
     public CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_S2I);
+        return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_S2I);
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -108,11 +93,11 @@ public class S2iProcessor {
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
         Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
         baseImage.ifPresent(b -> {
-            envProducer.produce(new KubernetesEnvBuildItem(b.getJarEnvVar(), pathToJar, OPENSHIFT));
-            envProducer.produce(new KubernetesEnvBuildItem(b.getJarLibEnvVar(),
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, OPENSHIFT));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarLibEnvVar(),
                     concatUnixPaths(jarDirectory, "lib"), OPENSHIFT));
-            envProducer.produce(new KubernetesEnvBuildItem(b.getClasspathEnvVar(), classpath, OPENSHIFT));
-            envProducer.produce(new KubernetesEnvBuildItem(b.getJvmOptionsEnvVar(),
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getClasspathEnvVar(), classpath, OPENSHIFT));
+            envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
                     String.join(" ", s2iConfig.jvmArguments), OPENSHIFT));
         });
 
@@ -121,7 +106,7 @@ public class S2iProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -150,9 +135,11 @@ public class S2iProcessor {
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseNativeImage));
         Optional<S2iBaseNativeImage> baseImage = S2iBaseNativeImage.findMatching(s2iConfig.baseNativeImage);
         baseImage.ifPresent(b -> {
-            envProducer.produce(new KubernetesEnvBuildItem(b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory, OPENSHIFT));
-            envProducer.produce(new KubernetesEnvBuildItem(b.getOptsEnvVar(),
-                    String.join(" ", s2iConfig.nativeArguments), OPENSHIFT));
+            envProducer.produce(
+                    KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory, OPENSHIFT));
+            envProducer.produce(
+                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", s2iConfig.nativeArguments),
+                            OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {

@@ -14,10 +14,16 @@ public class InterceptorResolver {
 
     private final BeanDeployment beanDeployment;
 
-    public InterceptorResolver(BeanDeployment beanDeployment) {
+    InterceptorResolver(BeanDeployment beanDeployment) {
         this.beanDeployment = beanDeployment;
     }
 
+    /**
+     * 
+     * @param interceptionType
+     * @param bindings
+     * @return the list of interceptors for a set of interceptor bindings and a type of interception
+     */
     public List<InterceptorInfo> resolve(InterceptionType interceptionType, Set<AnnotationInstance> bindings) {
         if (bindings.isEmpty()) {
             return Collections.emptyList();

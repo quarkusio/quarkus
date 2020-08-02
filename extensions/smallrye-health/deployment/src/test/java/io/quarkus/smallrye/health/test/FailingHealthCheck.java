@@ -11,7 +11,7 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 
-import io.smallrye.health.HealthGroup;
+import io.smallrye.health.api.HealthGroup;
 
 @Dependent
 @Liveness

@@ -44,6 +44,10 @@ public interface TemplateNode {
 
         String getTemplateGeneratedId();
 
+        /**
+         * 
+         * @return the template variant
+         */
         Optional<Variant> getVariant();
 
     }

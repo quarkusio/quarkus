@@ -19,6 +19,7 @@
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
 import java.util.Collections;
+import java.util.StringJoiner;
 
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttribute;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeParser;
@@ -104,12 +105,19 @@ public class AccessLogHandler implements Handler<RoutingContext> {
     }
 
     private static String handleCommonNames(String formatString) {
-        if (formatString.equals("common")) {
-            return "%h %l %u %t \"%r\" %s %b";
-        } else if (formatString.equals("combined")) {
-            return "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\"";
+        switch (formatString) {
+            case "common":
+                return "%h %l %u %t \"%r\" %s %b";
+            case "combined":
+                return "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\"";
+            case "long":
+                return new StringJoiner(System.lineSeparator(), System.lineSeparator(), "")
+                        .add("%r")
+                        .add("%{ALL_REQUEST_HEADERS}")
+                        .toString();
+            default:
+                return formatString;
         }
-        return formatString;
     }
 
     @Override

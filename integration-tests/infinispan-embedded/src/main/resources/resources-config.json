@@ -1,7 +1,0 @@
-{
-  "resources": [
-    {
-      "pattern": "stacks.*\\.xml$"
-    }
-  ]
-}

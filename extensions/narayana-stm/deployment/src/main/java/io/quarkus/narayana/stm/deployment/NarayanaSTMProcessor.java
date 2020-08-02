@@ -20,6 +20,7 @@ import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
 import com.arjuna.ats.txoj.Lock;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -46,7 +47,7 @@ class NarayanaSTMProcessor {
     // register classes in need of reflection
     @BuildStep
     ReflectiveClassBuildItem registerFeature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_STM));
+        feature.produce(new FeatureBuildItem(Feature.NARAYANA_STM));
 
         return new ReflectiveClassBuildItem(true, false,
                 ShadowNoFileLockStore.class.getName(),

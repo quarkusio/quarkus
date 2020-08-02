@@ -23,7 +23,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -34,6 +33,7 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.deployment.MethodNameParser;
 import io.quarkus.spring.data.runtime.TypesConverter;

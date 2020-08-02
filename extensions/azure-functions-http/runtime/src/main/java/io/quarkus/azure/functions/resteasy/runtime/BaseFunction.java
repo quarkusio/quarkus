@@ -37,12 +37,14 @@ public class BaseFunction {
     protected static final String deploymentStatus;
     protected static boolean started = false;
 
+    private static final int BUFFER_SIZE = 8096;
+
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
         if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock azure unit testing.
             try {
-                Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
+                Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
                 Application app = (Application) appClass.newInstance();
                 app.start(args);
@@ -93,7 +95,7 @@ public class BaseFunction {
         }
 
         ResponseHandler handler = new ResponseHandler(request);
-        VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
 
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
@@ -104,13 +106,13 @@ public class BaseFunction {
         }
     }
 
-    private ByteArrayOutputStream createByteStream() {
+    private static ByteArrayOutputStream createByteStream() {
         ByteArrayOutputStream baos;
-        baos = new ByteArrayOutputStream(500);
+        baos = new ByteArrayOutputStream(BUFFER_SIZE);
         return baos;
     }
 
-    private class ResponseHandler implements VirtualResponseHandler {
+    private static class ResponseHandler implements VirtualResponseHandler {
         HttpResponseMessage.Builder responseBuilder;
         ByteArrayOutputStream baos;
         WritableByteChannel byteChannel;
@@ -136,7 +138,6 @@ public class BaseFunction {
                 if (msg instanceof HttpContent) {
                     HttpContent content = (HttpContent) msg;
                     if (baos == null) {
-                        // todo what is right size?
                         baos = createByteStream();
                     }
                     int readable = content.content().readableBytes();

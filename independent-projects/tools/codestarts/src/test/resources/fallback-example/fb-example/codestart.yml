@@ -1,0 +1,10 @@
+---
+name: fb-example
+type: example
+fallback: true
+language:
+  base:
+    data:
+      greeting:
+        message: "hello"
+        default-name: "commando"

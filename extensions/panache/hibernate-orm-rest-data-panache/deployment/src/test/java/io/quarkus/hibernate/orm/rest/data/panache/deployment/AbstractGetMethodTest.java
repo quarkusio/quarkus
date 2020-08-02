@@ -1,13 +1,22 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.ws.rs.core.Link;
+
 import org.junit.jupiter.api.Test;
+
+import io.restassured.http.Header;
+import io.restassured.response.Response;
 
 public abstract class AbstractGetMethodTest {
 
@@ -126,5 +135,157 @@ public abstract class AbstractGetMethodTest {
                         contains(endsWith("/collections/empty"), endsWith("/collections/full")))
                 .and().body("_links.add.href", endsWith("/collections"))
                 .and().body("_links.list.href", endsWith("/collections"));
+    }
+
+    @Test
+    void shouldNotGetNonExistentPage() {
+        given().accept("application/json")
+                .and().queryParam("page", 100)
+                .when().get("/items")
+                .then().statusCode(200)
+                .and().body("id", is(empty()));
+    }
+
+    @Test
+    void shouldNotGetNegativePageOrSize() {
+        given().accept("application/json")
+                .and().queryParam("page", -1)
+                .and().queryParam("size", -1)
+                .when().get("/items")
+                .then().statusCode(200)
+                // Invalid page and size parameters are replaced with defaults
+                .and().body("id", contains(1, 2));
+    }
+
+    @Test
+    void shouldGetFirstPage() {
+        Response response = given().accept("application/json")
+                .and().queryParam("page", 0)
+                .and().queryParam("size", 1)
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("id")).containsOnly(1);
+        assertThat(response.body().jsonPath().getList("name")).containsOnly("first");
+
+        List<Link> links = new LinkedList<>();
+        for (Header header : response.getHeaders().getList("Link")) {
+            links.add(Link.valueOf(header.getValue()));
+        }
+        assertThat(links).hasSize(3);
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("first");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("last");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("next");
+        });
+    }
+
+    @Test
+    void shouldGetFirstHalPage() {
+        Response response = given().accept("application/hal+json")
+                .and().queryParam("page", 0)
+                .and().queryParam("size", 1)
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("_embedded.items.id")).containsOnly(1);
+        assertThat(response.body().jsonPath().getList("_embedded.items.name")).containsOnly("first");
+        assertThat(response.body().jsonPath().getString("_links.add.href")).endsWith("/items");
+        assertThat(response.body().jsonPath().getString("_links.list.href")).endsWith("/items");
+        assertThat(response.body().jsonPath().getString("_links.first.href")).endsWith("/items?page=0&size=1");
+        assertThat(response.body().jsonPath().getString("_links.last.href")).endsWith("/items?page=1&size=1");
+        assertThat(response.body().jsonPath().getString("_links.previous.href")).isNull();
+        assertThat(response.body().jsonPath().getString("_links.next.href")).endsWith("/items?page=1&size=1");
+
+        List<Link> links = new LinkedList<>();
+        for (Header header : response.getHeaders().getList("Link")) {
+            links.add(Link.valueOf(header.getValue()));
+        }
+        assertThat(links).hasSize(3);
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("first");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("last");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("next");
+        });
+    }
+
+    @Test
+    void shouldGetLastPage() {
+        Response response = given().accept("application/json")
+                .and().queryParam("page", 1)
+                .and().queryParam("size", 1)
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("id")).containsOnly(2);
+        assertThat(response.body().jsonPath().getList("name")).containsOnly("second");
+
+        List<Link> links = new LinkedList<>();
+        for (Header header : response.getHeaders().getList("Link")) {
+            links.add(Link.valueOf(header.getValue()));
+        }
+        assertThat(links).hasSize(3);
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("first");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("last");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("previous");
+        });
+    }
+
+    @Test
+    void shouldGetLastHalPage() {
+        Response response = given().accept("application/hal+json")
+                .and().queryParam("page", 1)
+                .and().queryParam("size", 1)
+                .when().get("/items")
+                .thenReturn();
+        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThat(response.body().jsonPath().getList("_embedded.items.id")).containsOnly(2);
+        assertThat(response.body().jsonPath().getList("_embedded.items.name")).containsOnly("second");
+        assertThat(response.body().jsonPath().getString("_links.add.href")).endsWith("/items");
+        assertThat(response.body().jsonPath().getString("_links.list.href")).endsWith("/items");
+        assertThat(response.body().jsonPath().getString("_links.first.href")).endsWith("/items?page=0&size=1");
+        assertThat(response.body().jsonPath().getString("_links.last.href")).endsWith("/items?page=1&size=1");
+        assertThat(response.body().jsonPath().getString("_links.previous.href")).endsWith("/items?page=0&size=1");
+        assertThat(response.body().jsonPath().getString("_links.next.href")).isNull();
+
+        List<Link> links = new LinkedList<>();
+        for (Header header : response.getHeaders().getList("Link")) {
+            links.add(Link.valueOf(header.getValue()));
+        }
+        assertThat(links).hasSize(3);
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("first");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=1&size=1");
+            assertThat(link.getRel()).isEqualTo("last");
+        });
+        assertThat(links).anySatisfy(link -> {
+            assertThat(link.getUri().toString()).endsWith("/items?page=0&size=1");
+            assertThat(link.getRel()).isEqualTo("previous");
+        });
     }
 }

@@ -1,12 +1,17 @@
 package io.quarkus.deployment.dev;
 
+import static java.util.Collections.singleton;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
@@ -31,7 +37,11 @@ import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
+import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.util.FSWatchUtil;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -40,14 +50,14 @@ import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
 public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<String, Object>>, Closeable {
 
-    private static final Logger log = Logger.getLogger(DevModeMain.class);
+    private static final Logger log = Logger.getLogger(IsolatedDevModeMain.class);
+    public static final String APP_ROOT = "app-root";
 
     private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     private static volatile RunningQuarkusApplication runner;
     static volatile Throwable deploymentProblem;
-    static volatile Throwable compileProblem;
     static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
     private static volatile CuratedApplication curatedApplication;
     private static volatile AugmentAction augmentAction;
@@ -55,7 +65,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private static volatile boolean firstStartCompleted;
     private static final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
-    private synchronized void firstStart() {
+    private synchronized void firstStart(QuarkusClassLoader deploymentClassLoader, List<CodeGenData> codeGens) {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
@@ -91,6 +101,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }
                         });
+
+                startCodeGenWatcher(deploymentClassLoader, codeGens);
+
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
@@ -100,7 +113,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 } else {
                     //we need to set this here, while we still have the correct TCCL
                     //this is so the config is still valid, and we can read HTTP config from application.properties
-                    log.error("Failed to start Quarkus", t);
                     log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
                     if (runtimeUpdatesProcessor != null) {
                         Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
@@ -113,8 +125,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }
                             runtimeUpdatesProcessor.startupFailed();
                         } catch (Exception e) {
-                            t.addSuppressed(new RuntimeException("Failed to recover after failed start", e));
-                            throw new RuntimeException(t);
+                            close();
+                            log.error("Failed to recover after failed start", e);
+                            //this is the end of the road, we just exit
+                            //generally we only hit this if something is already listening on the HTTP port
+                            //or the system config is so broken we can't start HTTP
+                            System.exit(1);
                         }
                     }
                 }
@@ -123,6 +139,24 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
+    }
+
+    private void startCodeGenWatcher(QuarkusClassLoader classLoader, List<CodeGenData> codeGens) {
+
+        Collection<FSWatchUtil.Watcher> watchers = new ArrayList<>();
+        for (CodeGenData codeGen : codeGens) {
+            watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
+                    modifiedPaths -> {
+                        try {
+                            CodeGenerator.trigger(classLoader,
+                                    codeGen,
+                                    curatedApplication.getAppModel());
+                        } catch (Exception any) {
+                            log.warn("Code generation failed", any);
+                        }
+                    }));
+        }
+        FSWatchUtil.observe(watchers, 500);
     }
 
     public synchronized void restartApp(Set<String> changedResources) {
@@ -141,6 +175,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             } catch (Throwable t) {
                 deploymentProblem = t;
                 log.error("Failed to start quarkus", t);
+                Thread.currentThread().setContextClassLoader(curatedApplication.getAugmentClassLoader());
+                LoggingSetupRecorder.handleFailedStart();
             }
         } finally {
             restarting = false;
@@ -148,7 +184,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
-    private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, CuratedApplication application)
+    private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context, Path appRoot, DevModeType devModeType)
             throws Exception {
         if (!context.getAllModules().isEmpty()) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
@@ -165,7 +201,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
-            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(context, compiler, this);
+            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(appRoot, context, compiler,
+                    devModeType, this::restartApp, null);
 
             for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class,
                     curatedApplication.getBaseRuntimeClassLoader())) {
@@ -228,7 +265,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
     //the main entry point, but loaded inside the augmentation class loader
     @Override
-    public void accept(CuratedApplication o, Map<String, Object> o2) {
+    public void accept(CuratedApplication o, Map<String, Object> params) {
         Timing.staticInitStarted(o.getBaseRuntimeClassLoader());
         //https://github.com/quarkusio/quarkus/issues/9748
         //if you have an app with all daemon threads then the app thread
@@ -251,7 +288,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         try {
             curatedApplication = o;
 
-            Object potentialContext = o2.get(DevModeContext.class.getName());
+            Object potentialContext = params.get(DevModeContext.class.getName());
             if (potentialContext instanceof DevModeContext) {
                 context = (DevModeContext) potentialContext;
             } else {
@@ -286,17 +323,33 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }).produces(ApplicationClassPredicateBuildItem.class).build();
                         }
                     }));
-            runtimeUpdatesProcessor = setupRuntimeCompilation(context, o);
+            List<CodeGenData> codeGens = new ArrayList<>();
+            QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+
+            for (DevModeContext.ModuleInfo module : context.getAllModules()) {
+                if (module.getSourceParents() != null) { // it's null for remote dev
+                    codeGens.addAll(
+                            CodeGenerator.init(
+                                    deploymentClassLoader,
+                                    module.getSourceParents().stream().map(Paths::get).collect(Collectors.toSet()),
+                                    Paths.get(module.getPreBuildOutputDir()),
+                                    Paths.get(module.getTargetDir()),
+                                    sourcePath -> module.addSourcePaths(singleton(sourcePath.toAbsolutePath().toString()))));
+                }
+            }
+            runtimeUpdatesProcessor = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT),
+                    (DevModeType) params.get(DevModeType.class.getName()));
             if (runtimeUpdatesProcessor != null) {
                 runtimeUpdatesProcessor.checkForFileChange();
                 runtimeUpdatesProcessor.checkForChangedClasses();
             }
-            firstStart();
+            firstStart(deploymentClassLoader, codeGens);
 
             //        doStart(false, Collections.emptySet());
-            if (deploymentProblem != null || compileProblem != null) {
+            if (deploymentProblem != null || runtimeUpdatesProcessor.getCompileProblem() != null) {
                 if (context.isAbortOnFailedStart()) {
-                    throw new RuntimeException(deploymentProblem == null ? compileProblem : deploymentProblem);
+                    throw new RuntimeException(
+                            deploymentProblem == null ? runtimeUpdatesProcessor.getCompileProblem() : deploymentProblem);
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

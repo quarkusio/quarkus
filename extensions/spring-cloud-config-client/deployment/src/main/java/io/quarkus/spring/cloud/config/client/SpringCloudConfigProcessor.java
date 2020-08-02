@@ -1,5 +1,6 @@
 package io.quarkus.spring.cloud.config.client;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -17,12 +18,12 @@ public class SpringCloudConfigProcessor {
 
     @BuildStep
     public void feature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.SPRING_CLOUD_CONFIG_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.SPRING_CLOUD_CONFIG_CLIENT));
     }
 
     @BuildStep
     public void enableSsl(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SPRING_CLOUD_CONFIG_CLIENT));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.SPRING_CLOUD_CONFIG_CLIENT));
     }
 
     @BuildStep

@@ -1,7 +1,6 @@
 package io.quarkus.maven;
 
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import java.util.List;
@@ -59,7 +58,7 @@ public class AbstractTreeMojo extends AbstractMojo {
             setupResolver(modelResolver);
             modelResolver.setBuildTreeLogger(s -> getLog().info(s));
             modelResolver.resolveModel(appArtifact);
-        } catch (AppModelResolverException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
         }
     }

@@ -117,14 +117,14 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
-                    request.method(), allocator, output);
+                    request.method(), allocator, output, routingContext);
 
             // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very cheap to create.
             LazyHostSupplier hostSupplier = new LazyHostSupplier(request);
 
             VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo, request.rawMethod(),
                     hostSupplier,
-                    dispatcher.getDispatcher(), vertxResponse, requestContext);
+                    dispatcher.getDispatcher(), vertxResponse, requestContext, executor);
             vertxRequest.setInputStream(is);
             try {
                 ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request, routingContext));

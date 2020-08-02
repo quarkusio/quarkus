@@ -82,6 +82,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[TIP]
+====
+To use a JDBC store, the `quarkus-agroal` extension, which provides the datasource support, is also required.
+====
+
 == Creating the Task Entity
 
 In the `org.acme.quartz` package, create the `Task` class, with the following content:
@@ -179,7 +184,7 @@ public class TaskBean {
     }
     
     // A new instance of MyJob is created by Quartz for every job execution
-    static class MyJob implements Job {
+    public static class MyJob implements Job {
     
        public void execute(JobExecutionContext context) throws JobExecutionException {
           Arc.container().instance(TaskBean.class).get(). performTask(); <3>
@@ -399,6 +404,31 @@ docker-compose up --scale tasks=2 --scale nginx=1 <1>
 After a few seconds, in another terminal, run `curl localhost:8080/tasks` to verify that tasks were only created at different instants and in an interval of 10 seconds.
 
 You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+[[quartz-register-plugin-listeners]]
+== Registering Plugin and Listeners
+
+You can register a plugin, jobListener or triggerListener through Quarkus configuration.
+
+The example bellow registers the plugin `org.quartz.plugins.history.LoggingJobHistoryPlugin` named as `jobHistory` with the property `jobSuccessMessage` defined as `Job [{1}.{0}] execution complete and reports: {8}`
+
+[source,conf]
+----
+quarkus.quartz.plugin.jobHistory.class=org.quartz.plugins.history.LoggingJobHistoryPlugin
+quarkus.quartz.plugin.jobHistory.jobSuccessMessage=Job [{1}.{0}] execution complete and reports: {8}
+----
+
+You can also register a listener programmatically with an injected `org.quartz.Scheduler`
+
+[source,java]
+---
+public class MyListenerManager {
+    void onStart(@Observes StartupEvent event, org.quartz.Scheduler scheduler) throws SchedulerException {
+        scheduler.getListenerManager().addJobListener(new MyJogListener());
+        scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
+    }
+}
+---
 
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference

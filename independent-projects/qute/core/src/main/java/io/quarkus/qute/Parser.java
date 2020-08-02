@@ -2,21 +2,22 @@ package io.quarkus.qute;
 
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,18 +26,18 @@ import org.jboss.logging.Logger;
 /**
  * Simple non-reusable parser.
  */
-class Parser implements Function<String, Expression> {
+class Parser implements Function<String, Expression>, ParserHelper {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     private static final String ROOT_HELPER_NAME = "$root";
 
     static final Origin SYNTHETIC_ORIGIN = new OriginImpl(0, 0, "<<synthetic>>", "<<synthetic>>", Optional.empty());
 
-    private final EngineImpl engine;
-
     private static final char START_DELIMITER = '{';
     private static final char END_DELIMITER = '}';
     private static final char COMMENT_DELIMITER = '!';
+    private static final char CDATA_START_DELIMITER = '[';
+    private static final char CDATA_END_DELIMITER = ']';
     private static final char UNDERSCORE = '_';
     private static final char ESCAPE_CHAR = '\\';
 
@@ -49,6 +50,7 @@ class Parser implements Function<String, Expression> {
     static final char START_COMPOSITE_PARAM = '(';
     static final char END_COMPOSITE_PARAM = ')';
 
+    private final EngineImpl engine;
     private StringBuilder buffer;
     private State state;
     private int line;
@@ -56,7 +58,7 @@ class Parser implements Function<String, Expression> {
     private final Deque<SectionNode.Builder> sectionStack;
     private final Deque<SectionBlock.Builder> sectionBlockStack;
     private final Deque<ParametersInfo> paramsStack;
-    private final Deque<Map<String, String>> typeInfoStack;
+    private final Deque<Scope> scopeStack;
     private int sectionBlockIdx;
     private boolean ignoreContent;
     private String id;
@@ -71,28 +73,30 @@ class Parser implements Function<String, Expression> {
         this.sectionStack
                 .addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin())
                         .setEngine(engine)
-                        .setHelperFactory(new SectionHelperFactory<SectionHelper>() {
-                            @Override
-                            public SectionHelper initialize(SectionInitContext context) {
-                                return new SectionHelper() {
-
-                                    @Override
-                                    public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-                                        return context.execute();
-                                    }
-                                };
-                            }
-
-                        }));
+                        .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
         this.sectionBlockStack = new ArrayDeque<>();
         this.sectionBlockStack.addFirst(SectionBlock.builder(SectionHelperFactory.MAIN_BLOCK_NAME, this, this::parserError));
         this.sectionBlockIdx = 0;
         this.paramsStack = new ArrayDeque<>();
         this.paramsStack.addFirst(ParametersInfo.EMPTY);
-        this.typeInfoStack = new ArrayDeque<>();
-        this.typeInfoStack.addFirst(new HashMap<>());
+        this.scopeStack = new ArrayDeque<>();
+        this.scopeStack.addFirst(new Scope(null));
         this.line = 1;
         this.lineCharacter = 1;
+    }
+
+    static class RootSectionHelperFactory implements SectionHelperFactory<SectionHelper> {
+
+        @Override
+        public SectionHelper initialize(SectionInitContext context) {
+            return new SectionHelper() {
+
+                @Override
+                public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
+                    return context.execute();
+                }
+            };
+        }
     }
 
     Template parse(Reader reader, Optional<Variant> variant, String id, String generatedId) {
@@ -104,10 +108,11 @@ class Parser implements Function<String, Expression> {
             int val;
             while ((val = reader.read()) != -1) {
                 processCharacter((char) val);
+                lineCharacter++;
             }
 
             if (buffer.length() > 0) {
-                if (state == State.TEXT) {
+                if (state == State.TEXT || state == State.LINE_SEPARATOR) {
                     // Flush the last text segment
                     flushText();
                 } else {
@@ -128,7 +133,24 @@ class Parser implements Function<String, Expression> {
                 throw parserError("no root section part found");
             }
             root.addBlock(part.build());
-            Template template = new TemplateImpl(engine, root.build(), generatedId, variant);
+            TemplateImpl template = new TemplateImpl(engine, root.build(), generatedId, variant);
+
+            if (engine.removeStandaloneLines) {
+                Set<TemplateNode> nodesToRemove = new HashSet<>();
+                List<List<TemplateNode>> lines = readLines(template.root);
+                for (List<TemplateNode> line : lines) {
+                    if (isStandalone(line)) {
+                        for (TemplateNode node : line) {
+                            if (node instanceof SectionNode) {
+                                continue;
+                            }
+                            nodesToRemove.add(node);
+                        }
+                    }
+                }
+                template.root.removeNodes(nodesToRemove);
+            }
+
             LOGGER.tracef("Parsing finished in %s ms", System.currentTimeMillis() - start);
             return template;
 
@@ -151,13 +173,18 @@ class Parser implements Function<String, Expression> {
             case COMMENT:
                 comment(character);
                 break;
+            case CDATA:
+                cdata(character);
+                break;
             case TAG_CANDIDATE:
                 tagCandidate(character);
+                break;
+            case LINE_SEPARATOR:
+                lineSeparator(character);
                 break;
             default:
                 throw parserError("unknown parsing state: " + state);
         }
-        lineCharacter++;
     }
 
     private void escape(char character) {
@@ -174,12 +201,25 @@ class Parser implements Function<String, Expression> {
             state = State.TAG_CANDIDATE;
         } else if (character == ESCAPE_CHAR) {
             state = State.ESCAPE;
-        } else {
-            if (isLineSeparator(character)) {
-                line++;
-                lineCharacter = 1;
-            }
+        } else if (isLineSeparatorStart(character)) {
+            flushText();
             buffer.append(character);
+            state = State.LINE_SEPARATOR;
+        } else {
+            buffer.append(character);
+        }
+    }
+
+    private void lineSeparator(char character) {
+        if (character == LINE_SEPARATOR_LF && buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == LINE_SEPARATOR_CR) {
+            // CRLF
+            buffer.append(character);
+            flushNextLine();
+            state = State.TEXT;
+        } else {
+            flushNextLine();
+            state = State.TEXT;
+            processCharacter(character);
         }
     }
 
@@ -188,6 +228,17 @@ class Parser implements Function<String, Expression> {
             // End of comment
             state = State.TEXT;
             buffer = new StringBuilder();
+        } else {
+            buffer.append(character);
+        }
+    }
+
+    private void cdata(char character) {
+        if (character == END_DELIMITER && buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == CDATA_END_DELIMITER) {
+            // End of cdata
+            state = State.TEXT;
+            buffer.deleteCharAt(buffer.length() - 1);
+            flushText();
         } else {
             buffer.append(character);
         }
@@ -205,30 +256,37 @@ class Parser implements Function<String, Expression> {
         if (isValidIdentifierStart(character)) {
             // Real tag start, flush text if any
             flushText();
-            state = character == COMMENT_DELIMITER ? State.COMMENT : State.TAG_INSIDE;
-            buffer.append(character);
+            if (character == COMMENT_DELIMITER) {
+                buffer.append(character);
+                state = State.COMMENT;
+            } else if (character == CDATA_START_DELIMITER) {
+                state = State.CDATA;
+            } else {
+                buffer.append(character);
+                state = State.TAG_INSIDE;
+            }
         } else {
             // Ignore expressions/tags starting with an invalid identifier
-            buffer.append(START_DELIMITER).append(character);
-            if (isLineSeparator(character)) {
-                line++;
-                lineCharacter = 1;
-            }
+            buffer.append(START_DELIMITER);
             state = State.TEXT;
+            if (START_DELIMITER == character) {
+                buffer.append(START_DELIMITER);
+            } else {
+                processCharacter(character);
+            }
         }
     }
 
     private boolean isValidIdentifierStart(char character) {
-        // A valid identifier must start with a digit, alphabet, underscore, comment delimiter or a tag command (e.g. # for sections)
-        return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == UNDERSCORE
+        // A valid identifier must start with a digit, alphabet, underscore, comment delimiter, cdata start delimiter or a tag command (e.g. # for sections)
+        return Tag.isCommand(character) || character == COMMENT_DELIMITER || character == CDATA_START_DELIMITER
+                || character == UNDERSCORE
                 || Character.isDigit(character)
                 || Character.isAlphabetic(character);
     }
 
-    private boolean isLineSeparator(char character) {
-        return character == LINE_SEPARATOR_CR
-                || (character == LINE_SEPARATOR_LF
-                        && (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) != LINE_SEPARATOR_CR));
+    private boolean isLineSeparatorStart(char character) {
+        return character == LINE_SEPARATOR_CR || character == LINE_SEPARATOR_LF;
     }
 
     private void flushText() {
@@ -237,6 +295,16 @@ class Parser implements Function<String, Expression> {
             block.addNode(new TextNode(buffer.toString(), origin()));
         }
         this.buffer = new StringBuilder();
+    }
+
+    private void flushNextLine() {
+        if (buffer.length() > 0 && !ignoreContent) {
+            SectionBlock.Builder block = sectionBlockStack.peek();
+            block.addNode(new LineSeparatorNode(buffer.toString(), origin()));
+        }
+        this.buffer = new StringBuilder();
+        line++;
+        lineCharacter = 1;
     }
 
     private void flushTag() {
@@ -278,16 +346,9 @@ class Parser implements Function<String, Expression> {
                 processParams(tag, sectionName, iter);
 
                 // Initialize the block
-                Map<String, String> typeInfos = typeInfoStack.peek();
-                Map<String, String> result = sectionStack.peek().factory.initializeBlock(typeInfos, block);
-                if (!result.isEmpty()) {
-                    Map<String, String> newTypeInfos = new HashMap<>();
-                    newTypeInfos.putAll(typeInfos);
-                    newTypeInfos.putAll(result);
-                    typeInfoStack.addFirst(newTypeInfos);
-                } else {
-                    typeInfoStack.addFirst(typeInfos);
-                }
+                Scope currentScope = scopeStack.peek();
+                Scope newScope = sectionStack.peek().factory.initializeBlock(currentScope, block);
+                scopeStack.addFirst(newScope);
 
                 // A new block - stop ignoring the block content
                 ignoreContent = false;
@@ -306,8 +367,8 @@ class Parser implements Function<String, Expression> {
                 processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter);
 
                 // Init section block
-                Map<String, String> typeInfos = typeInfoStack.peek();
-                Map<String, String> result = factory.initializeBlock(typeInfos, mainBlock);
+                Scope currentScope = scopeStack.peek();
+                Scope newScope = factory.initializeBlock(currentScope, mainBlock);
                 SectionNode.Builder sectionNode = SectionNode
                         .builder(sectionName, origin())
                         .setEngine(engine)
@@ -322,15 +383,7 @@ class Parser implements Function<String, Expression> {
                     // Add node to the parent block
                     sectionBlockStack.peek().addNode(sectionNode.build());
                 } else {
-                    if (!result.isEmpty()) {
-                        // The section modifies the type info stack
-                        Map<String, String> newTypeInfos = new HashMap<>();
-                        newTypeInfos.putAll(typeInfos);
-                        newTypeInfos.putAll(result);
-                        typeInfoStack.addFirst(newTypeInfos);
-                    } else {
-                        typeInfoStack.addFirst(typeInfos);
-                    }
+                    scopeStack.addFirst(newScope);
                     sectionStack.addFirst(sectionNode);
                 }
             }
@@ -350,6 +403,9 @@ class Parser implements Function<String, Expression> {
                 ignoreContent = true;
             } else {
                 // Section end
+                if (section.helperName.equals(ROOT_HELPER_NAME)) {
+                    throw parserError("no section start tag found for " + tag);
+                }
                 if (!name.isEmpty() && !section.helperName.equals(name)) {
                     throw parserError(
                             "section end tag [" + name + "] does not match the start tag [" + section.helperName + "]");
@@ -366,16 +422,17 @@ class Parser implements Function<String, Expression> {
             }
 
             // Remove the last type info map from the stack
-            typeInfoStack.pop();
+            scopeStack.pop();
 
         } else if (content.charAt(0) == Tag.PARAM.command) {
 
             // {@org.acme.Foo foo}
-            Map<String, String> typeInfos = typeInfoStack.peek();
+            Scope currentScope = scopeStack.peek();
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            typeInfos.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            currentScope.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
+            sectionBlockStack.peek().addNode(new ParameterDeclarationNode(content, origin()));
 
         } else {
             sectionBlockStack.peek().addNode(new ExpressionNode(apply(content), engine, origin()));
@@ -570,15 +627,14 @@ class Parser implements Function<String, Expression> {
         TAG_CANDIDATE,
         COMMENT,
         ESCAPE,
+        CDATA,
+        LINE_SEPARATOR,
 
     }
 
-    static ExpressionImpl parseExpression(String value, Map<String, String> typeInfos, Origin origin) {
+    static ExpressionImpl parseExpression(String value, Scope scope, Origin origin) {
         if (value == null || value.isEmpty()) {
             return ExpressionImpl.EMPTY;
-        }
-        if (typeInfos == null) {
-            typeInfos = Collections.emptyMap();
         }
         String namespace = null;
         int namespaceIdx = value.indexOf(':');
@@ -586,8 +642,13 @@ class Parser implements Function<String, Expression> {
         int bracketIdx = value.indexOf('(');
 
         List<String> strParts;
-        if (namespaceIdx != -1 && (spaceIdx == -1 || namespaceIdx < spaceIdx)
-                && (bracketIdx == -1 || namespaceIdx < bracketIdx)) {
+        if (namespaceIdx != -1
+                // No space or colon before the space
+                && (spaceIdx == -1 || namespaceIdx < spaceIdx)
+                // No bracket or colon before the bracket
+                && (bracketIdx == -1 || namespaceIdx < bracketIdx)
+                // No string literal
+                && !isStringLiteralSeparator(value.charAt(0))) {
             // Expression that starts with a namespace
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);
@@ -604,7 +665,7 @@ class Parser implements Function<String, Expression> {
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
         for (String strPart : strParts) {
-            Part part = createPart(namespace, first, strPart, typeInfos, origin);
+            Part part = createPart(namespace, first, strPart, scope, origin);
             if (first == null) {
                 first = part;
             }
@@ -613,13 +674,13 @@ class Parser implements Function<String, Expression> {
         return new ExpressionImpl(namespace, parts, Result.NOT_FOUND, origin);
     }
 
-    private static Part createPart(String namespace, Part first, String value, Map<String, String> typeInfos, Origin origin) {
+    private static Part createPart(String namespace, Part first, String value, Scope scope, Origin origin) {
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value));
             List<Expression> params = new ArrayList<>(strParams.size());
             for (String strParam : strParams) {
-                params.add(parseExpression(strParam.trim(), typeInfos, origin));
+                params.add(parseExpression(strParam.trim(), scope, origin));
             }
             return new ExpressionImpl.VirtualMethodExpressionPartImpl(name, params);
         }
@@ -627,7 +688,7 @@ class Parser implements Function<String, Expression> {
         if (namespace != null) {
             typeInfo = value;
         } else if (first == null) {
-            typeInfo = typeInfos.get(value);
+            typeInfo = scope.getBindingType(value);
         } else if (first.getTypeInfo() != null) {
             typeInfo = value;
         }
@@ -658,11 +719,84 @@ class Parser implements Function<String, Expression> {
 
     @Override
     public ExpressionImpl apply(String value) {
-        return parseExpression(value, typeInfoStack.peek(), origin());
+        return parseExpression(value, scopeStack.peek(), origin());
     }
 
     Origin origin() {
         return new OriginImpl(line, lineCharacter, id, generatedId, variant);
+    }
+
+    private List<List<TemplateNode>> readLines(SectionNode rootNode) {
+        List<List<TemplateNode>> lines = new ArrayList<>();
+        // Add the last line manually - there is no line separator to trigger flush
+        lines.add(readLines(lines, null, rootNode));
+        return lines;
+    }
+
+    private List<TemplateNode> readLines(List<List<TemplateNode>> lines, List<TemplateNode> currentLine,
+            SectionNode sectionNode) {
+        if (currentLine == null) {
+            currentLine = new ArrayList<>();
+        }
+        if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
+            // Simulate the start tag
+            currentLine.add(sectionNode);
+        }
+        for (SectionBlock block : sectionNode.blocks) {
+            currentLine.add(BLOCK_NODE);
+            for (TemplateNode node : block.nodes) {
+                if (node instanceof SectionNode) {
+                    currentLine = readLines(lines, currentLine, (SectionNode) node);
+                } else if (node instanceof LineSeparatorNode) {
+                    // New line separator - flush the line
+                    currentLine.add(node);
+                    lines.add(currentLine);
+                    currentLine = new ArrayList<>();
+                } else {
+                    currentLine.add(node);
+                }
+            }
+            currentLine.add(BLOCK_NODE);
+        }
+        if (!ROOT_HELPER_NAME.equals(sectionNode.name)) {
+            // Simulate the end tag
+            currentLine.add(sectionNode);
+        }
+        return currentLine;
+    }
+
+    private boolean isStandalone(List<TemplateNode> line) {
+        boolean maybeStandalone = false;
+        for (TemplateNode node : line) {
+            if (node instanceof ExpressionNode) {
+                // Line contains an expression
+                return false;
+            } else if (node instanceof SectionNode || node instanceof ParameterDeclarationNode || node instanceof BlockNode) {
+                maybeStandalone = true;
+            } else if (node instanceof TextNode) {
+                if (!isBlank(((TextNode) node).getValue())) {
+                    // Line contains a non-whitespace char
+                    return false;
+                }
+            }
+        }
+        return maybeStandalone;
+    }
+
+    private boolean isBlank(CharSequence val) {
+        if (val == null) {
+            return true;
+        }
+        int length = val.length();
+        if (length == 0) {
+            return true;
+        }
+        for (int i = 0; i < length; i++) {
+            if (!Character.isWhitespace(val.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static class OriginImpl implements Origin {
@@ -732,6 +866,37 @@ class Parser implements Function<String, Expression> {
             StringBuilder builder = new StringBuilder();
             builder.append("Template ").append(templateId).append(" at line ").append(line);
             return builder.toString();
+        }
+
+    }
+
+    @Override
+    public void addParameter(String name, String type) {
+        // {@org.acme.Foo foo}
+        Scope currentScope = scopeStack.peek();
+        currentScope.put(name, Expressions.TYPE_INFO_SEPARATOR + type + Expressions.TYPE_INFO_SEPARATOR);
+    }
+
+    private static final SectionHelperFactory<SectionHelper> ROOT_SECTION_HELPER_FACTORY = new SectionHelperFactory<SectionHelper>() {
+        @Override
+        public SectionHelper initialize(SectionInitContext context) {
+            return SectionResolutionContext::execute;
+        }
+    };
+
+    private static final BlockNode BLOCK_NODE = new BlockNode();
+
+    // A dummy node for section blocks, it's only used when removing standalone lines
+    private static class BlockNode implements TemplateNode {
+
+        @Override
+        public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Origin getOrigin() {
+            throw new IllegalStateException();
         }
 
     }

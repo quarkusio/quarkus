@@ -20,8 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
-            <scope>provided</scope>
+            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -41,7 +40,6 @@
             <artifactId>quarkus-bootstrap-core</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
-            <version>${quarkus.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -3,15 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Funqy Amazon Lambda
+= Quarkus - Funqy Amazon Lambda Binding
 :extension-status: preview
 
 include::./attributes.adoc[]
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Amazon Lambda.
 
-Funqy functions can be deployed using the Amazon Java Runtime, or you can build a native executable and use
-Amazon's Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
+Funqy functions can be deployed using the AWS Lambda Java Runtime, or you can build a native executable and use
+Lambda Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
 
 include::./status-include.adoc[]
 
@@ -20,6 +20,7 @@ include::./status-include.adoc[]
 To complete this guide, you need:
 
 * less than 30 minutes
+* Read about link:funqy[Funqy Basics].  This is a short read!
 * JDK 11 (AWS requires JDK 1.8 or 11)
 * Apache Maven {maven-version}
 * https://aws.amazon.com[An Amazon AWS account]
@@ -47,8 +48,7 @@ environments and AWS Lambda is one of them.  The Java code is actually the same 
 [[choose]]
 == Choose Your Function
 
-Only one Funqy function can be exported per Amazon Lambda deployment.  If you only have one method
-annotated with `@Funq` in your project, then there is no worries.  If you have multiple functions defined
+Only one Funqy function can be exported per Amazon Lambda deployment.  If you have multiple functions defined
 within your project, then you will need to choose the function within your Quarkus `application.properties`:
 
 [source, subs=attributes+]

@@ -290,7 +290,7 @@ Setting the properties would occur in the normal manner, for example in `applica
 ----
 greeting.message = hello
 greeting.name = quarkus
-greeting.hidden.prizeAmount=10
+greeting.hidden.prize-amount=10
 greeting.hidden.recipients=Jane,John
 ----
 
@@ -307,6 +307,8 @@ public class GreetingConfiguration {
 
 }
 ----
+
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension needs to be present.
 
 If the validation fails with the given configuration, the application will fail to start and indicate the corresponding validation errors in the log.
 
@@ -803,8 +805,17 @@ any level for disambiguating configuration keys.
 
 == More info on how to configure
 
-Quarkus relies on Eclipse MicroProfile and inherits its features.
+Quarkus relies on SmallRye Config and inherits its features.
 
-There are converters that convert your property file content from `String` to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
+SmallRye Config provides:
 
-// TODO: make Ken review this section and discuss SmallRye expansion.
+* Additional Config Sources
+* Additional Converters
+* Interceptors for configuration value resolution
+* Relocate Configuration Properties
+* Fallback Configuration Properties
+* Logging
+* Hide Secrets
+
+For more information, please check the
+link:https://smallrye.io/docs/smallrye-config/index.html[SmallRye Config documentation].

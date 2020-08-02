@@ -32,6 +32,18 @@ public class KnativeConfig implements PlatformConfiguration {
     Optional<String> version;
 
     /**
+     * The namespace the generated resources should belong to.
+     * If not value is set, then the 'namespace' field will not be
+     * added to the 'metadata' section of the generated manifests.
+     * This in turn means that when the manifests are applied to a cluster,
+     * the namespace will be resolved from the current Kubernetes context
+     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+     * for more details).
+     */
+    @ConfigItem
+    Optional<String> namespace;
+
+    /**
      * Custom labels to add to all resources
      */
     @ConfigItem
@@ -191,6 +203,10 @@ public class KnativeConfig implements PlatformConfiguration {
         return version;
     }
 
+    public Optional<String> getNamespace() {
+        return namespace;
+    }
+
     public Map<String, String> getLabels() {
         return labels;
     }
@@ -289,7 +305,7 @@ public class KnativeConfig implements PlatformConfiguration {
         return initContainers;
     }
 
-    public Map<String, ContainerConfig> getContainers() {
+    public Map<String, ContainerConfig> getSidecars() {
         return containers;
     }
 
@@ -326,4 +342,42 @@ public class KnativeConfig implements PlatformConfiguration {
     public EnvVarsConfig getEnv() {
         return env;
     }
+
+    /**
+     * Whether or not this service is cluster-local.
+     * Cluster local services are not exposed to the outside world.
+     */
+    @ConfigItem
+    public boolean clusterLocal;
+
+    /**
+     * This value controls the minimum number of replicas each revision should have.
+     * Knative will attempt to never have less than this number of replicas at any one point in time.
+     */
+    @ConfigItem
+    Optional<Integer> minScale;
+
+    /**
+     * This value controls the maximum number of replicas each revision should have.
+     * Knative will attempt to never have more than this number of replicas running, or in the process of being created, at any
+     * one point in time.
+     **/
+    @ConfigItem
+    Optional<Integer> maxScale;
+
+    /**
+     * The scale-to-zero values control whether Knative allows revisions to scale down to zero, or stops at “1”.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean scaleToZeroEnabled;
+
+    /**
+     * Revision autoscaling configuration.
+     */
+    AutoScalingConfig revisionAutoScaling;
+
+    /**
+     * Global autoscaling configuration.
+     */
+    GlobalAutoScalingConfig globalAutoScaling;
 }

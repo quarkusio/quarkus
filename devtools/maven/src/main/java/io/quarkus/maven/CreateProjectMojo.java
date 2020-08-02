@@ -16,7 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -44,13 +43,10 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.fusesource.jansi.Ansi;
 
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.generators.SourceType;
+import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -77,6 +73,12 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(property = "projectVersion")
     private String projectVersion;
+
+    @Parameter(property = "codestartsEnabled", defaultValue = "false")
+    private Boolean codestartsEnabled;
+
+    @Parameter(property = "withExampleCode", defaultValue = "true")
+    private Boolean withExampleCode;
 
     /**
      * Group ID of the target platform BOM
@@ -144,7 +146,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos).build();
-        } catch (AppModelResolverException e1) {
+        } catch (Exception e1) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e1);
         }
         final QuarkusPlatformDescriptor platform = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion,
@@ -162,19 +164,7 @@ public class CreateProjectMojo extends AbstractMojo {
         File pom = new File(projectRoot, "pom.xml");
 
         if (pom.isFile()) {
-            // Enforce that the GAV are not set
-            if (!StringUtils.isBlank(projectGroupId) || !StringUtils.isBlank(projectArtifactId)
-                    || !StringUtils.isBlank(projectVersion)) {
-                throw new MojoExecutionException("Unable to generate the project, the `projectGroupId`, " +
-                        "`projectArtifactId` and `projectVersion` parameters are not supported when applied to an " +
-                        "existing `pom.xml` file");
-            }
-
-            // Load the GAV from the existing project
-            projectGroupId = project.getGroupId();
-            projectArtifactId = project.getArtifactId();
-            projectVersion = project.getVersion();
-
+            throw new MojoExecutionException("Unable to generate the project in a directory that already contains a pom.xml");
         } else {
             askTheUserForMissingValues();
             projectRoot = new File(outputDirectory, projectArtifactId);
@@ -185,7 +175,7 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         boolean success;
-        final Path projectFolderPath = projectRoot.toPath();
+        final Path projectDirPath = projectRoot.toPath();
         try {
             sanitizeExtensions();
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
@@ -199,14 +189,16 @@ public class CreateProjectMojo extends AbstractMojo {
                         Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
                 throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
             }
-            final CreateProject createProject = new CreateProject(projectFolderPath, platform)
+            final CreateProject createProject = new CreateProject(projectDirPath, platform)
                     .buildTool(buildToolEnum)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
                     .sourceType(sourceType)
                     .className(className)
-                    .extensions(extensions);
+                    .extensions(extensions)
+                    .codestartsEnabled(codestartsEnabled)
+                    .withExampleCode(withExampleCode);
             if (path != null) {
                 createProject.setValue("path", path);
             }
@@ -214,15 +206,10 @@ public class CreateProjectMojo extends AbstractMojo {
             success = createProject.execute().isSuccess();
 
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            if (success) {
-                success = new AddExtensions(QuarkusProject.of(projectFolderPath, platform, buildToolEnum))
-                        .extensions(extensions).execute()
-                        .isSuccess();
-            }
             if (BuildTool.MAVEN.equals(buildToolEnum)) {
                 createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
             } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(platform, projectFolderPath);
+                createGradleWrapper(platform, projectDirPath);
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);
@@ -235,23 +222,23 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-    private void createGradleWrapper(QuarkusPlatformDescriptor platform, Path projectFolderPath) {
+    private void createGradleWrapper(QuarkusPlatformDescriptor platform, Path projectDirPath) {
         try {
-            Files.createDirectories(projectFolderPath.resolve("gradle/wrapper"));
+            Files.createDirectories(projectDirPath.resolve("gradle/wrapper"));
 
             for (String filename : CreateUtils.GRADLE_WRAPPER_FILES) {
-                byte[] fileContent = platform.loadResource(Paths.get(CreateUtils.GRADLE_WRAPPER_PATH, filename).toString(),
+                byte[] fileContent = platform.loadResource(CreateUtils.GRADLE_WRAPPER_PATH + '/' + filename,
                         is -> {
                             byte[] buffer = new byte[is.available()];
                             is.read(buffer);
                             return buffer;
                         });
-                final Path destination = projectFolderPath.resolve(filename);
+                final Path destination = projectDirPath.resolve(filename);
                 Files.write(destination, fileContent);
             }
 
-            projectFolderPath.resolve("gradlew").toFile().setExecutable(true);
-            projectFolderPath.resolve("gradlew.bat").toFile().setExecutable(true);
+            projectDirPath.resolve("gradlew").toFile().setExecutable(true);
+            projectDirPath.resolve("gradlew.bat").toFile().setExecutable(true);
         } catch (IOException e) {
             getLog().error("Unable to copy Gradle wrapper from platform descriptor", e);
         }

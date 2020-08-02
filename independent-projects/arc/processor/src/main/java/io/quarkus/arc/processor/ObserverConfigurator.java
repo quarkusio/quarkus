@@ -14,24 +14,22 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 /**
+ * Configures a synthetic observer.
+ * <p>
  * This construct is not thread-safe.
+ * 
+ * @see ObserverRegistrar
  */
 public final class ObserverConfigurator implements Consumer<AnnotationInstance> {
 
     final Consumer<ObserverConfigurator> consumer;
-
+    String id;
     DotName beanClass;
-
     Type observedType;
-
     final Set<AnnotationInstance> observedQualifiers;
-
     int priority;
-
     boolean isAsync;
-
     TransactionPhase transactionPhase;
-
     Consumer<MethodCreator> notifyConsumer;
 
     public ObserverConfigurator(Consumer<ObserverConfigurator> consumer) {
@@ -40,6 +38,18 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
         this.priority = ObserverMethod.DEFAULT_PRIORITY;
         this.isAsync = false;
         this.transactionPhase = TransactionPhase.IN_PROGRESS;
+    }
+
+    /**
+     * A unique identifier should be used for multiple synthetic observer methods with the same
+     * attributes (including the bean class).
+     * 
+     * @param id
+     * @return self
+     */
+    public ObserverConfigurator id(String id) {
+        this.id = id;
+        return this;
     }
 
     public ObserverConfigurator beanClass(DotName beanClass) {

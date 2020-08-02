@@ -10,8 +10,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -23,22 +25,25 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
+import io.quarkus.netty.runtime.EmptyByteBufStub;
 import io.quarkus.netty.runtime.NettyRecorder;
 
 class NettyProcessor {
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     private static final Logger log = Logger.getLogger(NettyProcessor.class);
 
     static {
         InternalLoggerFactory.setDefaultFactory(new JBossNettyLoggerFactory());
     }
+
+    @Inject
+    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     @BuildStep
     public NativeImageSystemPropertyBuildItem limitMem() {
@@ -216,6 +221,37 @@ class NettyProcessor {
     public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
         return Arrays.asList(
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
-                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"));
+                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerIndexField", "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueProducerLimitField", "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueueConsumerIndexField", "consumerIndex"),
+
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields",
+                        "producerIndex"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields",
+                        "producerLimit"),
+                new UnsafeAccessedFieldBuildItem(
+                        "io.netty.util.internal.shaded.org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields",
+                        "consumerIndex"));
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitBcryptUtil() {
+        // this holds a direct allocated byte buffer that needs to be initialised at run time
+        return new RuntimeInitializedClassBuildItem(EmptyByteBufStub.class.getName());
+    }
+
+    //if debug logging is enabled netty logs lots of exceptions
+    //see https://github.com/quarkusio/quarkus/issues/5213
+    @BuildStep
+    LogCleanupFilterBuildItem cleanup() {
+        return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE, "direct buffer constructor",
+                "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
     }
 }

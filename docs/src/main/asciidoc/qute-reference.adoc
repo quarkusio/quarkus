@@ -80,7 +80,7 @@ NOTE: In Quarkus, the caching is done automatically.
 The dynamic parts of a template include:
 
 * *Comment* 
-** `{! This is a comment !}`,
+** Starts with `{!` and ends with `!}`:  `{! This is a comment !}`,
 ** Could be multi-line,
 ** May contain expressions and sections: `{! {#if true} !}`.
 * *Expression*
@@ -93,6 +93,10 @@ The dynamic parts of a template include:
 ** The name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
 ** Can be empty: `{#myTag image=true /}`,
 ** May declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
+* *Unparsed Character Data*
+** Starts with `{[` and ends with `]}`: `{[ <script>if(true){alert('Qute is cute!')};</script> ]}`,
+** Could be multi-line,
+** Used to mark the content that should be rendered but not parsed.
 
 === Identifiers
 
@@ -120,6 +124,64 @@ A closing curly bracket (`}`) is ignored if not inside an expression/tag.
 
 TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no evaluation will happen).
 
+=== Removing Standalone Lines From the Template
+
+By default, Qute parser removes standalone lines from the template output.
+A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`) or parameter declaration (e.g. `{@org.acme.Foo foo}`) but no expression and non-whitespace character.
+In other words, a line that contains no section tag or a parameter declaration is *not* a standalone line.
+Likewise, a line that contains an _expression_ or a _non-whitespace character_ is *not* a standalone line.
+
+.Template Example
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+     {#for item in items} <1>
+       <li>{item.name} {#if item.active}{item.price}{/if}</li>  <2>
+                          <3>
+     {/for}               <4>
+     </ul>
+   <body>
+</html>
+----
+<1> This is a standalone line and will be removed.
+<2> Not a standalone line - contains an expression and non-whitespace characters 
+<3> Not a standalone line - contains no section tag/parameter declaration
+<4> This is a standalone line.
+
+.Default Output
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+       <li>Foo 100</li>  
+                             
+     </ul>
+   <body>
+</html>
+----
+
+The default behavior can be disabled by setting the property `quarkus.qute.remove-standalone-lines` to `false`.
+In this case, all whitespace characters from a standalone line will be printed to the output.
+
+.Output with `quarkus.qute.remove-standalone-lines=false`
+[source,html]
+----
+<html>
+  <body>
+     <ul>
+     
+       <li>Foo 100</li>
+                                    
+     
+     </ul>
+   <body>
+</html>
+----
+
+[[expressions]]
 ==== Expressions
 
 An expression consists of:
@@ -184,7 +246,7 @@ A typical example is the for/each loop - during iteration the content of the sec
 [TIP]
 ====
 Data passed to the template instance are always accessible using the `data` namespace. 
-This could be useful to access data for which the key is overriden:  
+This could be useful to access data for which the key is overridden:  
 
 [source,html]
 ----
@@ -542,8 +604,8 @@ These sections can be used to include another template and possibly override som
 </body>
 </html>
 ----
-<1> `insert` sections are used to specify parts that could be overriden by a template that includes the given template.
-<2> An `insert` section may define the default content that is rendered if not overriden.
+<1> `insert` sections are used to specify parts that could be overridden by a template that includes the given template.
+<2> An `insert` section may define the default content that is rendered if not overridden.
 
 .Template "detail"
 [source,html]
@@ -558,7 +620,7 @@ These sections can be used to include another template and possibly override som
 {/include}
 ----
 <1> `include` section is used to specify the extended template.
-<2> Nested blocks are used to specify the parts that should be overriden.
+<2> Nested blocks are used to specify the parts that should be overridden.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.
 
@@ -572,10 +634,12 @@ Let's suppose we have a template called `itemDetail.html`:
 ----
 {#if showImage} <1>
   {it.image} <2>
+  {nested-content} <3>
 {/if}
 ----
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
+<3> (optional) `nested-content` is a special key that will be replaced by the content of the tag.
 
 Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
 
@@ -595,12 +659,15 @@ We can include the tag like this:
 <ul>
 {#for item in items}
   <li>
-  {#itemDetail item showImage=true /} <1>
+  {#itemDetail item showImage=true} <1>
+    = <b>{item.name}</b> <2>
+  {/itemDetail}
   </li>
 {/for}
 </ul>
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
+<2> Tag content injected using the `nested-content` key in the tag template.
 
 === Engine Configuration
 
@@ -740,23 +807,28 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 [[template_extension_methods]]
 === Template Extension Methods
 
-Extension methods can be used to extend the data classes with new functionality.
-For example, it is possible to add "computed properties" and "virtual methods".
+Extension methods can be used to extend the data classes with new functionality or resolve expressions for a specific <<namespace_extension_methods,namespace>>.
+For example, it is possible to add _computed properties_ and _virtual methods_.
+
 A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
-If declared on a class a value resolver is generated for every non-private method declared on the class.
+If a  class is annotated with `@TemplateExtension` then a value resolver is generated for every method declared on the class.
 Methods that do not meet the following requirements are ignored.
 
 A template extension method:
 
+* must not be `private`
 * must be static, 
 * must not return `void`,
-* must accept at least one parameter.
+* must accept at least one parameter, unless the namespace is specified.
  
-The class of the first parameter is always used to match the base object.
+The class of the first parameter is used to match the base object unless the namespace is specified. 
+In such case, the namespace is used to match an expression.
 The method name is used to match the property name by default. 
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
 
-NOTE: A special constant - `ANY` - may be used to specify that the extension method matches any name. In that case, the method must declare at least two parameters and the second parameter must be a string. 
+NOTE: A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name. In that case, a method parameter is used to pass the property name.
+If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. 
+If no namespace is specified the method must declare at least two parameters and the second parameter must be a string. 
 
 .Extension Method Example
 [source,java]
@@ -793,14 +865,14 @@ This template extension method makes it possible to render the following templat
 ==== Method Parameters
 
 An extension method may accept multiple parameters.
-The first parameter is always used to pass the base object, ie. `org.acme.Item` in the previous example.
+If no namespace is specified the first parameter is always used to pass the base object, i.e. `org.acme.Item` in the first example.
 Other parameters are resolved when rendering the template and passed to the extension method.
 
 .Multiple Parameters Example
 [source,java]
 ----
 @TemplateExtension
-class MyExtensions {
+class BigDecimalExtensions {
 
     static BigDecimal scale(BigDecimal val, int scale, RoundingMode mode) { <1>
         return val.setScale(scale, mode);
@@ -815,7 +887,40 @@ class MyExtensions {
 ----
 <1> `item.discountedPrice` is resolved to an instance of `BigDecimal`.
 
-==== Built-in Template Extension methods
+[[namespace_extension_methods]]
+==== Namespace Extention Methods
+
+If `TemplateExtension#namespace()` is specified then the extension method is used to resolve expressions with the given <<expressions,namespace>>.
+Template extension methods that share the same namespace are grouped in one resolver ordered by `TemplateExtension#priority()`.
+The first matching extension method is used to resolve an expression.
+
+.Namespace Extension Method Example
+[source,java]
+----
+@TemplateExtension(namespace = "str")
+public static class StringExtensions {
+
+   static String format(String fmt, Object... args) {
+      return String.format(fmt, args);
+   }
+   
+   static String reverse(String val) {
+      return new StringBuilder(val).reverse().toString();
+   }
+}
+----
+
+These extension methods can be used as follows.
+
+[source,html]
+----
+{str:format('%s %s!','Hello', 'world')} <1>
+{str:reverse('hello')} <2>
+----
+<1> The output is `Hello world!`
+<2> The output is `olleh`
+
+==== Built-in Template Extension
 
 Quarkus provides a set of built-in extension methods.
 
@@ -982,10 +1087,101 @@ class DetailResource {
 
 In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
 
+=== Type-safe Message Bundles
+
+==== Basic Concepts
+
+The basic idea is that every message is potentially a very simple template.
+In order to prevent type errors a message is defined as an annotated method of a *message bundle interface*.
+Quarkus generates the *message bundle implementation* at build time.
+Subsequently, the bundles can be used at runtime:
+
+1. Directly in your code via `io.quarkus.qute.i18n.MessageBundles#get()`; e.g. `MessageBundles.get(AppMessages.class).hello_name("Lucie")`
+2. Injected in your beans via `@Inject`; e.g. `@Inject AppMessages`
+3. Referenced in the templates via the message bundle name; e.g. `{msg:hello_name('Lucie')}`
+
+.Message Bundle Interface Example
+[source,java]
+----
+import io.quarkus.qute.i18n.Message;
+import io.quarkus.qute.i18n.MessageBundle;
+
+@MessageBundle <1>
+public interface AppMessages {
+
+    @Message("Hello {name}!") <2>
+    String hello_name(String name); <3>
+}
+----
+<1> Denotes a message bundle interface. The bundle name is defaulted to `msg` and is used as a namespace in templates expressions, e.g. `{msg:hello_name}`.
+<2> Each method must be annotated with `@Message`. The value is a qute template.
+<3> The method parameters can be used in the template.
+
+==== Bundle Name and Message Keys
+
+Keys are used directly in templates.
+The bundle name is used as a namespace in template expressions. 
+The `@MessageBundle` can be used to define the default strategy used to generate message keys from method names. 
+However, the `@Message` can override this strategy and even define a custom key.
+By default, the annotated element's name is used as-is. 
+Other possibilities are:
+
+1. De-camel-cased and hyphenated; e.g. `helloName()` -> `hello-name`
+2. De-camel-cased and parts separated by underscores; e.g. `helloName()` -> `hello_name`. 
+
+==== Validation
+
+* All message bundle templates are validated:
+** All expressions without a namespace must map to a parameter; e.g. `Hello {foo}` -> the method must have a param of name `foo`
+** All expressions are validated against the types of the parameters; e.g. `Hello {foo.bar}` where the parameter `foo` is of type `org.acme.Foo` -> `org.acme.Foo` must have a property of name `bar`
++
+NOTE: A warning message is logged for each _unused_ parameter.
+* Expressions that reference a message bundle method, such as `{msg:hello(item.name)}`, are validated too.
+
+==== Localization
+
+The default locale of the Java Virtual Machine used to *build the application* is used for the `@MessageBundle` interface by default.
+However, the `io.quarkus.qute.i18n.MessageBundle#locale()` can be used to specify a custom locale.
+Additionaly, there are two ways to define a localized bundle:
+
+1. Create an interface that extends the default interface that is annotated with `@Localized`
+2. Create an UTF-8 encoded file located in `src/main/resources/messages`; e.g. `msg_de.properties`.
+
+TIP: A localized interface is the preferred solution mainly due to the possibility of easy refactoring.
+
+.Localized Interface Example
+[source,java]
+----
+import io.quarkus.qute.i18n.Localized;
+import io.quarkus.qute.i18n.Message;
+
+@Localized("de") <1>
+public interface GermanAppMessages {
+
+    @Override
+    @Message("Hallo {name}!") <2>
+    String hello_name(String name);
+}
+----
+<1> The value is the locale tag string (IETF).
+<2> The value is the localized template.
+
+Message bundle files must be encoded in UTF-8.
+The file name consists of the relevant bundle name (e.g. `msg`) and underscore followed by the locate tag (IETF).
+The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
+Keys are mapped to method names from the corresponding message bundle interface.
+Values represent the templates normally defined by `io.quarkus.qute.i18n.Message#value()`.
+We use `.properties` suffix in our example because most IDEs and text editors support syntax highlighting of `.properties` files.
+But in fact, the suffix could be anything.
+
+.Localized File Example - `msg_de.properties`
+[source,properties]
+----
+hello_name=Hallo {name}! <1> <2>
+----
+<1> Each line in a localized file represents a message template. 
+<2> Keys and values are separated by the equals sign.
+
 === Configuration Reference
 
 include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]
-
-== Extension Points
-
-TODO

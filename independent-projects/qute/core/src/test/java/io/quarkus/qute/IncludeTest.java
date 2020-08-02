@@ -87,4 +87,18 @@ public class IncludeTest {
                         .render());
     }
 
+    @Test
+    public void testIncludeStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        engine.putTemplate("super", engine.parse("{#insert header}\n"
+                + "default header\n"
+                + "{/insert}"));
+        assertEquals("super header\n",
+                engine.parse("{#include super}\n"
+                        + "{#header}\n"
+                        + "super header\n"
+                        + "{/header}\n"
+                        + "{/include}").render());
+    }
+
 }

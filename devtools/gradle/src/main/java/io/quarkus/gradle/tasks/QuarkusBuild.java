@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.runtime.util.StringUtil;
 
 public class QuarkusBuild extends QuarkusTask {
 
@@ -88,8 +90,11 @@ public class QuarkusBuild extends QuarkusTask {
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));
         final AppModelResolver modelResolver = extension().getAppModelResolver();
 
-        final Properties realProperties = getBuildSystemProperties(appArtifact);
-
+        final Properties effectiveProperties = getBuildSystemProperties(appArtifact);
+        if (ignoredEntries != null && ignoredEntries.size() > 0) {
+            String joinedEntries = String.join(",", ignoredEntries);
+            effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+        }
         boolean clear = false;
         if (uberJar && System.getProperty("quarkus.package.uber-jar") == null) {
             System.setProperty("quarkus.package.uber-jar", "true");
@@ -100,13 +105,20 @@ public class QuarkusBuild extends QuarkusTask {
                 .setAppModelResolver(modelResolver)
                 .setTargetDirectory(getProject().getBuildDir().toPath())
                 .setBaseName(extension().finalName())
-                .setBuildSystemProperties(realProperties)
+                .setBuildSystemProperties(effectiveProperties)
                 .setAppArtifact(appArtifact)
                 .setLocalProjectDiscovery(false)
                 .setIsolateDeployment(true)
                 .build().bootstrap()) {
 
-            appCreationContext.createAugmentor().createProductionApplication();
+            // Processes launched from within the build task of Gradle (daemon) lose content
+            // generated on STDOUT/STDERR by the process (see https://github.com/gradle/gradle/issues/13522).
+            // We overcome this by letting build steps know that the STDOUT/STDERR should be explicitly
+            // streamed, if they need to make available that generated data.
+            // The io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory
+            // does the necessary work to generate such a build item which the build step(s) can rely on
+            appCreationContext.createAugmentor("io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory",
+                    Collections.emptyMap()).createProductionApplication();
 
         } catch (BootstrapException e) {
             throw new GradleException("Failed to build a runnable JAR", e);
@@ -118,9 +130,10 @@ public class QuarkusBuild extends QuarkusTask {
     }
 
     private String expandConfigurationKey(String shortKey) {
-        if (shortKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
-            return shortKey;
+        final String hyphenatedKey = StringUtil.hyphenate(shortKey);
+        if (hyphenatedKey.startsWith(NATIVE_PROPERTY_NAMESPACE)) {
+            return hyphenatedKey;
         }
-        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, shortKey);
+        return String.format("%s.%s", NATIVE_PROPERTY_NAMESPACE, hyphenatedKey);
     }
 }

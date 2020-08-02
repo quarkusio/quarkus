@@ -4,6 +4,7 @@ import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.vault.runtime.LogConfidentialityLevel.MEDIUM;
 import static io.quarkus.vault.runtime.config.VaultCacheEntry.tryReturnLastKnownValue;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_CONNECT_TIMEOUT;
+import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KUBERNETES_AUTH_MOUNT_PATH;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KUBERNETES_JWT_TOKEN_PATH;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_READ_TIMEOUT;
@@ -215,6 +216,8 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.authentication.kubernetes.role = getOptionalVaultProperty("authentication.kubernetes.role");
         serverConfig.authentication.kubernetes.jwtTokenPath = getVaultProperty("authentication.kubernetes.jwt-token-path",
                 DEFAULT_KUBERNETES_JWT_TOKEN_PATH);
+        serverConfig.authentication.kubernetes.authMountPath = getVaultProperty("authentication.kubernetes.auth-mount-path",
+                DEFAULT_KUBERNETES_AUTH_MOUNT_PATH);
         serverConfig.authentication.userpass.username = getOptionalVaultProperty("authentication.userpass.username");
         serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
         serverConfig.authentication.userpass.passwordWrappingToken = getOptionalVaultProperty(

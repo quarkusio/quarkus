@@ -6,7 +6,8 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -16,8 +17,9 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronTokenMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
-import io.quarkus.elytron.security.oauth2.runtime.OAuth2Config;
+import io.quarkus.elytron.security.oauth2.runtime.OAuth2BuildTimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
+import io.quarkus.elytron.security.oauth2.runtime.OAuth2RuntimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2AuthMechanism;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
@@ -31,21 +33,19 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 class OAuth2DeploymentProcessor {
     private static final String REALM_NAME = "OAuth2";
 
-    OAuth2Config oauth2;
-
     @BuildStep
     CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.SECURITY_ELYTRON_OAUTH2);
+        return new CapabilityBuildItem(Capability.SECURITY_ELYTRON_OAUTH2);
     }
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
+        return new FeatureBuildItem(Feature.SECURITY_OAUTH2);
     }
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SECURITY_OAUTH2);
+        return new ExtensionSslNativeSupportBuildItem(Feature.SECURITY_OAUTH2);
     }
 
     /**
@@ -60,29 +60,33 @@ class OAuth2DeploymentProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     AdditionalBeanBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
+            OAuth2BuildTimeConfig oauth2BuildTimeConfig,
+            OAuth2RuntimeConfig oauth2RuntimeConfig,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (oauth2.enabled) {
-            RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2);
-            securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
-            return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
+        if (!oauth2BuildTimeConfig.enabled) {
+            return null;
         }
-        return null;
+
+        RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2RuntimeConfig);
+        securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
+        return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
     }
 
     @BuildStep
-    ElytronTokenMarkerBuildItem marker() {
-        if (oauth2.enabled) {
-            return new ElytronTokenMarkerBuildItem();
+    ElytronTokenMarkerBuildItem marker(OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
+        if (!oauth2BuildTimeConfig.enabled) {
+            return null;
         }
-        return null;
+        return new ElytronTokenMarkerBuildItem();
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem augmentor(OAuth2Recorder recorder) {
+    SyntheticBeanBuildItem augmentor(OAuth2Recorder recorder,
+            OAuth2BuildTimeConfig oauth2BuildTimeConfig) {
         return SyntheticBeanBuildItem.configure(SecurityIdentityAugmentor.class)
                 .scope(ApplicationScoped.class)
-                .runtimeValue(recorder.augmentor(oauth2))
+                .runtimeValue(recorder.augmentor(oauth2BuildTimeConfig))
                 .unremovable()
                 .done();
     }

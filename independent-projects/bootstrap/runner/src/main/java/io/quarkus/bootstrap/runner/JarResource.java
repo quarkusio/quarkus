@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -36,13 +35,18 @@ public class JarResource implements ClassLoadingResource {
             return null;
         }
         try (InputStream is = zipFile.getInputStream(entry)) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] data = new byte[1024];
-            int r;
-            while ((r = is.read(data)) > 0) {
-                out.write(data, 0, r);
+            byte[] data = new byte[(int) entry.getSize()];
+            int pos = 0;
+            int rem = data.length;
+            while (rem > 0) {
+                int read = is.read(data, pos, rem);
+                if (read == -1) {
+                    throw new RuntimeException("Failed to read all data for " + resource);
+                }
+                pos += read;
+                rem -= read;
             }
-            return out.toByteArray();
+            return data;
         } catch (IOException e) {
             throw new RuntimeException("Failed to read zip entry " + resource, e);
         }

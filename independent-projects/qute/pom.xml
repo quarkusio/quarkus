@@ -36,16 +36,15 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <version.junit>5.6.2</version.junit>
-        <version.gizmo>1.0.3.Final</version.gizmo>
+        <version.gizmo>1.0.4.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
-        <version.reactivestreams>1.0.3</version.reactivestreams>
-        <version.mutiny>0.5.2</version.mutiny>
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
+        <version.smallrye-mutiny>0.7.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
         <module>core</module>
-        <module>mutiny</module>
         <module>generator</module>
     </modules>
 
@@ -70,11 +69,6 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.quarkus.qute</groupId>
-                <artifactId>qute-rxjava</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${version.jboss-logging}</version>
@@ -85,14 +79,9 @@
                 <version>${version.gizmo}</version>
             </dependency>
             <dependency>
-                <groupId>org.reactivestreams</groupId>
-                <artifactId>reactive-streams</artifactId>
-                <version>${version.reactivestreams}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>mutiny</artifactId>
-                <version>${version.mutiny}</version>
+                <version>${version.smallrye-mutiny}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -193,9 +182,16 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${version.surefire.plugin}</version>
+                    <configuration>
+                        <argLine>${jacoco.agent.argLine}</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.11.0</version>
+                    <version>2.12.1</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -205,6 +201,7 @@
                       </dependencies>
                     <configuration>
                         <configFile>eclipse-format.xml</configFile>
+                        <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
@@ -233,6 +230,23 @@
     </distributionManagement>
 
     <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <format.skip>true</format.skip>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>

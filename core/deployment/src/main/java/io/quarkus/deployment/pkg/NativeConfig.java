@@ -50,12 +50,6 @@ public class NativeConfig {
     public boolean addAllCharsets;
 
     /**
-     * If all time zones should be added to the native image. This increases image size
-     */
-    @ConfigItem
-    public boolean includeAllTimeZones;
-
-    /**
      * The location of the Graal distribution
      */
     @ConfigItem(defaultValue = "${GRAALVM_HOME:}")
@@ -72,12 +66,6 @@ public class NativeConfig {
      */
     @ConfigItem
     public Optional<String> nativeImageXmx;
-
-    /**
-     * If debug symbols should be included
-     */
-    @ConfigItem
-    public boolean debugSymbols;
 
     /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
@@ -275,5 +263,21 @@ public class NativeConfig {
         @ConfigItem
         public Optional<List<String>> includes;
 
+    }
+
+    /**
+     * Debugging options.
+     */
+    @ConfigItem
+    public Debug debug;
+
+    @ConfigGroup
+    public static class Debug {
+        /**
+         * If debug is enabled and debug symbols are generated.
+         * The symbols will be generated in a separate .debug file.
+         */
+        @ConfigItem
+        public boolean enabled;
     }
 }

@@ -204,7 +204,7 @@ quarkus.security.jdbc.principal-query.attribute-mappings.0.index=2 <3>
 quarkus.security.jdbc.principal-query.attribute-mappings.0.to=groups
 ----
 
-The `elytron-security-jdbc` extension requires at least one principal query to autenticate the user and its identity.
+The `elytron-security-jdbc` extension requires at least one principal query to authenticate the user and its identity.
 
 <1> We define a parameterized SQL statement (with exactly 1 parameter) which should return the user's password plus any additional information you want to load.
 <2> We  configure the password mapper with the position of the password field in the `SELECT` fields and other information like salt, hash encoding, etc.

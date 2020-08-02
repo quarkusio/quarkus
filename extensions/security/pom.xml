@@ -18,5 +18,6 @@
         <module>runtime</module>
         <module>spi</module>
         <module>test-utils</module>
+        <module>runtime-spi</module>
     </modules>
 </project>

@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -26,6 +27,9 @@ public class FlywayFunctionalityResource {
     @FlywayDataSource("second-datasource")
     Flyway flyway2;
 
+    @Inject
+    EntityManager entityManager;
+
     @GET
     @Path("migrate")
     public String doMigrateAuto() {
@@ -36,8 +40,15 @@ public class FlywayFunctionalityResource {
     }
 
     @GET
-    @Path("multiple-flyway-migratation")
-    public String doMigratationOfSecondDataSource() {
+    @Path("title")
+    public String returnTitle() {
+        return entityManager.createQuery("select a from AppEntity a where a.id = 1", AppEntity.class)
+                .getSingleResult().getName();
+    }
+
+    @GET
+    @Path("multiple-flyway-migration")
+    public String doMigrationOfSecondDataSource() {
         flyway2.migrate();
         MigrationVersion version = Objects.requireNonNull(flyway2.info().current().getVersion(),
                 "Version is null! Migration was not applied for second datasource");
@@ -50,4 +61,9 @@ public class FlywayFunctionalityResource {
         return flyway.getConfiguration().getPlaceholders();
     }
 
+    @GET
+    @Path("create-schemas")
+    public boolean returnCreateSchema() {
+        return flyway.getConfiguration().getCreateSchemas();
+    }
 }

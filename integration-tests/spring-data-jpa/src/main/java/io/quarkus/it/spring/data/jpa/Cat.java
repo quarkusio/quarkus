@@ -9,7 +9,7 @@ public class Cat {
 
     @Id
     @GeneratedValue
-    public Long id;
+    public long id;
 
     private String breed;
 
@@ -25,7 +25,7 @@ public class Cat {
         this.color = color;
     }
 
-    public Long getId() {
+    public long getId() {
         return id;
     }
 

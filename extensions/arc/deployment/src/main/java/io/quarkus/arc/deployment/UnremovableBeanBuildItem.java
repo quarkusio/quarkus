@@ -1,20 +1,48 @@
 package io.quarkus.arc.deployment;
 
+import static io.quarkus.arc.processor.Annotations.getAnnotations;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to exclude beans that would be normally removed if the config property
  * {@link ArcConfig#removeUnusedBeans} is set to true.
+ * <p>
+ * Consider using one of the convenient static factory methods such as {@link #beanTypes(Class...)}:
+ * 
+ * <pre>
+ * &#64;BuildStep
+ * UnremovableBeanBuildItem unremovable() {
+ *     // Any bean that has MyService in its set of bean types is considered unremovable
+ *     return UnremovableBeanBuildItem.beanTypes(MyService.class);
+ * }
+ * </pre>
+ * 
+ * Alternatively, you could make use of the pre-built predicate classes such as {@link BeanClassNameExclusion}:
+ * 
+ * <pre>
+ * &#64;BuildStep
+ * UnremovableBeanBuildItem unremovable() {
+ *     // A bean whose bean class FQCN is equal to org.acme.MyService is considered unremovable
+ *     return new UnremovableBeanBuildItem(new BeanClassNameExclusion("org.acme.MyService"));
+ * }
+ * </pre>
  */
 public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
@@ -26,6 +54,109 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
 
     public Predicate<BeanInfo> getPredicate() {
         return predicate;
+    }
+
+    /**
+     * Match beans whose bean class matches any of the specified class names.
+     * 
+     * @param classNames
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanClassNames(String... classNames) {
+        Set<String> names = new HashSet<>();
+        Collections.addAll(names, classNames);
+        return new UnremovableBeanBuildItem(new BeanClassNamesExclusion(names));
+    }
+
+    /**
+     * Match beans whose bean class matches any of the specified class names.
+     * 
+     * @param classNames
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanClassNames(Set<String> classNames) {
+        return new UnremovableBeanBuildItem(new BeanClassNamesExclusion(classNames));
+    }
+
+    /**
+     * Match beans which have any of the specified type names in its set of bean types.
+     * 
+     * @param typeNames
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanTypes(DotName... typeNames) {
+        Set<DotName> names = new HashSet<>();
+        Collections.addAll(names, typeNames);
+        return new UnremovableBeanBuildItem(new BeanTypesExclusion(names));
+    }
+
+    /**
+     * Match beans which have any of the specified type names in its set of bean types.
+     * 
+     * @param typeNames
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanTypes(Class<?>... types) {
+        return new UnremovableBeanBuildItem(new BeanTypesExclusion(
+                Arrays.stream(types).map(Class::getName).map(DotName::createSimple).collect(Collectors.toSet())));
+    }
+
+    /**
+     * Match beans which have any of the specified type names in its set of bean types.
+     * 
+     * @param typeNames
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanTypes(Set<DotName> typeNames) {
+        return new UnremovableBeanBuildItem(new BeanTypesExclusion(typeNames));
+    }
+
+    /**
+     * Match class beans whose target class contains the specified annotation.
+     * <p>
+     * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
+     * 
+     * @param annotationName
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanClassAnnotation(DotName annotationName) {
+        return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(annotationName));
+    }
+
+    /**
+     * Match class beans whose target class contains an annotation whose name starts with the specified value.
+     * <p>
+     * The annotations can be declared on the class, and every nested element of the class (fields, types, methods, etc).
+     * 
+     * @param annotationName
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem beanClassAnnotation(String nameStartsWith) {
+        return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(nameStartsWith));
+    }
+
+    /**
+     * Match beans whose target (class, method or field) is annotated with the specified annotation.
+     * 
+     * @param annotationName
+     * @return a new build item
+     */
+    public static UnremovableBeanBuildItem targetWithAnnotation(DotName annotationName) {
+        return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo bean) {
+                if (bean.isClassBean()) {
+                    return Annotations.contains(bean.getTarget().get().asClass().classAnnotations(), annotationName);
+                } else if (bean.isProducerMethod()) {
+                    return !getAnnotations(Kind.METHOD, annotationName, bean.getTarget().get().asMethod().annotations())
+                            .isEmpty();
+                } else if (bean.isProducerField()) {
+                    return bean.getTarget().get().asField().hasAnnotation(annotationName);
+                }
+                // No target - synthetic bean
+                return false;
+            }
+        });
     }
 
     public static class BeanClassNameExclusion implements Predicate<BeanInfo> {

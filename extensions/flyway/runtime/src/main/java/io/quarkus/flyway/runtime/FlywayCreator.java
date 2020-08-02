@@ -1,5 +1,7 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Arrays;
+
 import javax.sql.DataSource;
 
 import org.flywaydb.core.Flyway;
@@ -47,6 +49,25 @@ class FlywayCreator {
             configure.baselineDescription(flywayRuntimeConfig.baselineDescription.get());
         }
         configure.placeholders(flywayRuntimeConfig.placeholders);
+        configure.createSchemas(flywayRuntimeConfig.createSchemas);
+        if (flywayRuntimeConfig.placeholderPrefix.isPresent()) {
+            configure.placeholderPrefix(flywayRuntimeConfig.placeholderPrefix.get());
+        }
+        if (flywayRuntimeConfig.placeholderSuffix.isPresent()) {
+            configure.placeholderSuffix(flywayRuntimeConfig.placeholderSuffix.get());
+        }
+
+        /*
+         * Ensure that no classpath scanning takes place by setting the ClassProvider and the ResourceProvider
+         * (see Flyway#createResourceAndClassProviders)
+         */
+
+        // the static fields of this class have already been set at static-init
+        QuarkusPathLocationScanner quarkusPathLocationScanner = new QuarkusPathLocationScanner(
+                Arrays.asList(configure.getLocations()));
+        configure.javaMigrationClassProvider(new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
+        configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
+
         return configure.load();
     }
 }

@@ -19,6 +19,7 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.Stereotype;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.AnnotatedField;
 import javax.enterprise.inject.spi.AnnotatedMember;
@@ -172,17 +173,22 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isStereotype(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        //best effort, in theory an extension could change this but this is an edge case
+        return annotationType.isAnnotationPresent(Stereotype.class);
     }
 
     @Override
     public Set<Annotation> getInterceptorBindingDefinition(Class<? extends Annotation> bindingType) {
-        throw new UnsupportedOperationException();
+        //best effort, in theory an extension could change this its better than nothing
+        //it could also return annotations that aren't bindings
+        return new HashSet<>(Arrays.asList(bindingType.getAnnotations()));
     }
 
     @Override
     public Set<Annotation> getStereotypeDefinition(Class<? extends Annotation> stereotype) {
-        throw new UnsupportedOperationException();
+        //best effort, in theory an extension could change this its better than nothing
+        //it could also return annotations that aren't metadata
+        return new HashSet<>(Arrays.asList(stereotype.getAnnotations()));
     }
 
     @Override

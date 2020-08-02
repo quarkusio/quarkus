@@ -2,8 +2,13 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Collections;
+
+import org.asciidoctor.Asciidoctor.Factory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class JavaDocConfigDescriptionParserTest {
 
@@ -238,4 +243,41 @@ public class JavaDocConfigDescriptionParserTest {
 
         assertEquals(asciidoc, parser.parseConfigDescription(asciidoc + "\n" + "@asciidoclet"));
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
+    public void escape(String ch) {
+        final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
+                + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
+
+        final String asciiDoc = parser.parseConfigDescription(javaDoc);
+        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void escapePlus() {
+        final String javaDoc = "Inline + ++, <code>HTML tag glob + ++</code>, {@code JavaDoc tag + ++}";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline &#43; &#43;&#43;, <code>HTML tag glob &#43; &#43;&#43;</code>, <code>JavaDoc tag &#43; &#43;&#43;</code></p>\n</div>";
+
+        final String asciiDoc = parser.parseConfigDescription(javaDoc);
+        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "{", "}" })
+    public void escapeBrackets(String ch) {
+        final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
+                + "</code>";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code></p>\n</div>";
+
+        final String asciiDoc = parser.parseConfigDescription(javaDoc);
+        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        assertEquals(expected, actual);
+    }
+
 }

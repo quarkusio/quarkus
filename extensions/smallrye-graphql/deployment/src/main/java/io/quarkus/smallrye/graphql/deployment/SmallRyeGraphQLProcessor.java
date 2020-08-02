@@ -3,6 +3,7 @@ package io.quarkus.smallrye.graphql.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,8 +13,8 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -29,6 +30,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -60,7 +63,6 @@ import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.GraphQLConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
-import io.smallrye.graphql.execution.Classes;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -71,6 +73,7 @@ import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.LookupService;
+import io.smallrye.graphql.spi.SchemaBuildingExtensionService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -79,9 +82,7 @@ import io.vertx.ext.web.RoutingContext;
  * We scan all annotations and build the model during build.
  */
 public class SmallRyeGraphQLProcessor {
-    private static final Logger log = Logger.getLogger(SmallRyeGraphQLProcessor.class);
-
-    private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class.getName());
+    private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class);
     private static final String SCHEMA_PATH = "/schema.graphql";
     private static final String SPI_PATH = "META-INF/services/";
 
@@ -99,7 +100,7 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_GRAPHQL));
+        featureProducer.produce(new FeatureBuildItem(Feature.SMALLRYE_GRAPHQL));
     }
 
     @BuildStep
@@ -129,6 +130,15 @@ public class SmallRyeGraphQLProcessor {
                 lookupService);
         serviceProvider.produce(
                 new ServiceProviderBuildItem(LookupService.class.getName(), lookupImplementations.toArray(new String[0])));
+
+        // Schema Extension Service (We use the one from the CDI Module)
+        String schemaExtensionService = SPI_PATH + SchemaBuildingExtensionService.class.getName();
+        Set<String> schemaExtensionImplementations = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                schemaExtensionService);
+        serviceProvider.produce(
+                new ServiceProviderBuildItem(SchemaBuildingExtensionService.class.getName(),
+                        schemaExtensionImplementations.toArray(new String[0])));
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -149,7 +159,7 @@ public class SmallRyeGraphQLProcessor {
         for (String c : getClassesToRegisterForReflection(schema)) {
             DotName name = DotName.createSimple(c);
             org.jboss.jandex.Type type = org.jboss.jandex.Type.create(name, org.jboss.jandex.Type.Kind.CLASS);
-            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index, GraphQLIgnorePredicate.INSTANCE));
+            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index));
         }
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
@@ -162,14 +172,14 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
-            if (capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+            if (capabilities.isPresent(Capability.METRICS)) {
                 unremovableBeans.produce(new UnremovableBeanBuildItem(
                         new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricsRegistryImpl")));
                 unremovableBeans.produce(new UnremovableBeanBuildItem(
                         new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricRegistries")));
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
-                log.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
+                LOG.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
                         "dependency is not present.");
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
             }
@@ -191,7 +201,9 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
             LaunchModeBuildItem launchMode,
             SmallRyeGraphQLRecorder recorder,
-            ShutdownContextBuildItem shutdownContext) throws IOException {
+            ShutdownContextBuildItem shutdownContext,
+            BeanContainerBuildItem beanContainerBuildItem // don't remove this - makes sure beanContainer is initialized
+    ) {
 
         /*
          * <em>Ugly Hack</em>
@@ -226,7 +238,7 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void openTracingIntegration(Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> properties) {
-        if (capabilities.isCapabilityPresent(Capabilities.SMALLRYE_OPENTRACING)) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
             properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
         }
     }
@@ -262,6 +274,7 @@ public class SmallRyeGraphQLProcessor {
         classes.add(graphql.schema.GraphQLScalarType.class);
         classes.add(graphql.schema.GraphQLSchema.class);
         classes.add(graphql.schema.GraphQLTypeReference.class);
+        classes.add(List.class);
         return classes.toArray(new Class[] {});
     }
 
@@ -304,9 +317,9 @@ public class SmallRyeGraphQLProcessor {
         return classes;
     }
 
-    private Set<String> getFieldClassNames(Set<Field> fields) {
+    private Set<String> getFieldClassNames(Map<String, Field> fields) {
         Set<String> classes = new HashSet<>();
-        for (Field field : fields) {
+        for (Field field : fields.values()) {
             classes.add(field.getReference().getClassName());
         }
         return classes;
@@ -325,10 +338,10 @@ public class SmallRyeGraphQLProcessor {
             HttpRootPathBuildItem httpRootPath,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
-        if (!quarkusConfig.enableUi) {
+        if (!quarkusConfig.ui.enable) {
             return;
         }
-        if ("/".equals(quarkusConfig.rootPathUi)) {
+        if ("/".equals(quarkusConfig.ui.rootPath)) {
             throw new ConfigurationError(
                     "quarkus.smallrye-graphql.root-path-ui was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
         }
@@ -361,16 +374,16 @@ public class SmallRyeGraphQLProcessor {
                     cached.cachedDirectory = tempDir.toAbsolutePath().toString();
                     cached.cachedGraphQLPath = graphQLPath;
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedIOException(e);
                 }
             }
             Handler<RoutingContext> handler = recorder.uiHandler(cached.cachedDirectory,
-                    httpRootPath.adjustPath(quarkusConfig.rootPathUi));
-            routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPathUi, handler));
-            routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPathUi + "/*", handler));
+                    httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
+            routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath, handler));
+            routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath + "/*", handler));
             notFoundPageDisplayableEndpointProducer
-                    .produce(new NotFoundPageDisplayableEndpointBuildItem(quarkusConfig.rootPathUi + "/"));
-        } else if (quarkusConfig.alwaysIncludeUi) {
+                    .produce(new NotFoundPageDisplayableEndpointBuildItem(quarkusConfig.ui.rootPath + "/"));
+        } else if (quarkusConfig.ui.alwaysInclude) {
             AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
             //we are including in a production artifact
             //just stick the files in the generated output
@@ -413,9 +426,9 @@ public class SmallRyeGraphQLProcessor {
             }
 
             Handler<RoutingContext> handler = recorder
-                    .uiHandler(GRAPHQL_UI_FINAL_DESTINATION, httpRootPath.adjustPath(quarkusConfig.rootPathUi));
-            routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPathUi, handler));
-            routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPathUi + "/*", handler));
+                    .uiHandler(GRAPHQL_UI_FINAL_DESTINATION, httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
+            routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath, handler));
+            routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath + "/*", handler));
         }
     }
 
@@ -482,16 +495,6 @@ public class SmallRyeGraphQLProcessor {
             } catch (IOException e) {
                 LOG.error("Failed to clean GraphQL UI temp directory on shutdown", e);
             }
-        }
-    }
-
-    public static class GraphQLIgnorePredicate implements Predicate<DotName> {
-
-        public static final GraphQLIgnorePredicate INSTANCE = new GraphQLIgnorePredicate();
-
-        @Override
-        public boolean test(DotName t) {
-            return Classes.isPrimitive(t.toString()) || t.toString().startsWith("java.net.");
         }
     }
 }

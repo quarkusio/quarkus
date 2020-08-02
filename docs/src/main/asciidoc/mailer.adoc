@@ -232,6 +232,39 @@ It's also possible to inject a mail template, where the message body is created 
 
 [source, java]
 ----
+@Path("")
+public class MailingResource {
+
+    @CheckedTemplate
+    class Templates {
+        public static native MailTemplateInstance hello(String name); <1>
+    }
+    
+    @GET
+    @Path("/mail")
+    public CompletionStage<Response> send() {
+        // the template looks like: Hello {name}! <2>
+        return Templates.hello("John")
+           .to("to@acme.org") <3>
+           .subject("Hello from Qute template")
+           .send() <4>
+           .subscribeAsCompletionStage()
+           .thenApply(x -> Response.accepted().build());
+    }
+}
+----
+<1> By convention, the enclosing class name and method names are used to locate the template. In this particular case, 
+we will use the `MailingResource/hello.html` and `MailingResource/hello.txt` templates to create the message body.
+<2> Set the data used in the template.
+<3> Create a mail template instance and set the recipient.
+<4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance. 
+
+TIP: Injected mail templates are validated during build. If there is no matching template in `src/main/resources/templates` the build fails.
+
+You can also do this without type-safe templates:
+
+[source, java]
+----
 @Inject
 MailTemplate hello; <1>
 

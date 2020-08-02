@@ -10,23 +10,35 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantConfigResolver implements TenantConfigResolver {
     @Override
     public OidcTenantConfig resolve(RoutingContext context) {
-        if ("tenant-d".equals(context.request().path().split("/")[2])) {
+        String path = context.request().path();
+        String tenantId = path.split("/")[2];
+        if ("tenant-d".equals(tenantId)) {
             OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("tenant-id");
+            config.setTenantId("tenant-d");
             config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-d");
             config.setClientId("quarkus-d");
-            OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();
-
-            credentials.setSecret("secret");
-
-            config.setCredentials(credentials);
-
-            OidcTenantConfig.Token token = new OidcTenantConfig.Token();
-
-            token.setIssuer(getIssuerUrl() + "/realms/quarkus-d");
-
-            config.setToken(token);
-
+            config.getCredentials().setSecret("secret");
+            config.getToken().setIssuer(getIssuerUrl() + "/realms/quarkus-d");
+            return config;
+        } else if ("tenant-oidc".equals(tenantId)) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("tenant-oidc");
+            String uri = context.request().absoluteURI();
+            String authServerUri = path.contains("tenant-opaque")
+                    ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
+                    : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+            config.setAuthServerUrl(authServerUri);
+            config.setClientId("client");
+            return config;
+        } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
+            OidcTenantConfig config = new OidcTenantConfig();
+            config.setTenantId("tenant-oidc-no-discovery");
+            String uri = context.request().absoluteURI();
+            String authServerUri = uri.replace("/tenant/tenant-oidc-no-discovery/api/user", "/oidc");
+            config.setAuthServerUrl(authServerUri);
+            config.setDiscoveryEnabled(false);
+            config.setJwksPath("jwks");
+            config.setClientId("client");
             return config;
         }
         return null;

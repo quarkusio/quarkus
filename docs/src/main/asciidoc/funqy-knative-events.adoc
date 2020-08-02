@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Funqy Knative Events
+= Quarkus - Funqy Knative Events Binding
 
 include::./attributes.adoc[]
 :extension-status: preview
@@ -59,7 +59,8 @@ only one Funqy function in the application.  In that case, the event is pushed t
 of the Cloud Event type.
 
 Currently, Funqy can only consume JSON-based data.  It supports both Binary and Structured mode of execution,
-but the data component of the Cloud Event message must be JSON.
+but the data component of the Cloud Event message must be JSON.  This JSON must also be marshallable to and from the
+Java parameters and return types of your functions.
 
 == The Code
 
@@ -113,8 +114,8 @@ quarkus.funqy.knative-events.mapping.configChain.response-type=annotated
 quarkus.funqy.knative-events.mapping.configChain.response-source=configChain
 ----
 
-In this case, the configuration maps the Cloud Event type `defaultChain.outout` to the `configChain` function.
-The `configChain` function response Cloud Event type is mapped to annotated`annotated` and the Cloud Event source of the response event is `configChain`
+In this case, the configuration maps the incoming Cloud Event type `defaultChain.output` to the `configChain` function.
+The `configChain` function maps its response to the `annotated` Cloud Event type, and the Cloud Event source `configChain`.
 
 * `quarkus.funqy.knative-events.mapping.{function name}.trigger` sets the Cloud Event type that triggers a specific function
 * `quarkus.funqy.knative-events.mapping.{function name}.response-type` sets the Cloud Event type of the response
@@ -308,7 +309,7 @@ kubectl apply -n knativetutorial -f src/main/k8s/lastChainLink-trigger.yaml
 You'll need two different terminal windows.  One to do a curl request to the Broker, the other to watch the pod log
 files so you can see the messages flowing through the Funqy function event chain.
 
-Make sure you have the `stern` tool installed.  See the Knative Tutoriall setup for information on that.  Run stern
+Make sure you have the `stern` tool installed.  See the Knative Tutorial setup for information on that.  Run stern
 to look for logs outputed by our Funqy deployment
 
 [source, shell]
@@ -348,8 +349,8 @@ curl -v "http://default-broker.knativetutorial.svc.cluster.local" \
 ----
 
 This posts a Knative Event to the broker, which will trigger the `defaultChain` function.  As discussed earlier, the output
-of `defaultChain` triggers an event that is posted to `configChain` which triggers an event posted to `annoatedChain` then
-finally to the `lastChainLink` function.  You can see this flow in your stern window.  Something like this should
+of `defaultChain` triggers an event that is posted to `configChain` which triggers an event posted to `annotatedChain` then
+finally to the `lastChainLink` function.  You can see this flow in your `stern` window.  Something like this should
 be outputted.
 
 [source, subs=attributes+]

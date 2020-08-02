@@ -4,6 +4,7 @@ import java.util.Map;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -21,7 +22,7 @@ public class KeycloakPolicyEnforcerBuildStep {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(FeatureBuildItem.KEYCLOAK_AUTHORIZATION);
+        return new FeatureBuildItem(Feature.KEYCLOAK_AUTHORIZATION);
     }
 
     @BuildStep

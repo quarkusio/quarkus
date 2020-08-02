@@ -14,6 +14,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -144,12 +145,19 @@ public class VertxRecorder {
     @SuppressWarnings("unchecked")
     private void registerCodecs(Map<Class<?>, Class<?>> codecByClass) {
         EventBus eventBus = vertx.eventBus();
+        boolean isDevMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
         for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
             Class<?> target = codecEntry.getKey();
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
                     MessageCodec messageCodec = (MessageCodec) codec.newInstance();
+                    if (isDevMode) {
+                        // we need to unregister the codecs because in dev mode vert.x is not reloaded
+                        // which means that if we don't unregister, we get an exception mentioning that the
+                        // codec has already been registered
+                        eventBus.unregisterDefaultCodec(target);
+                    }
                     eventBus.registerDefaultCodec(target, messageCodec);
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));

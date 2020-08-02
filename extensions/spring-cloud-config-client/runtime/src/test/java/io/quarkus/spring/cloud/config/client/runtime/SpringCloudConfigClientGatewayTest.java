@@ -35,7 +35,7 @@ class SpringCloudConfigClientGatewayTest {
     }
 
     @Test
-    void testBasicExchange() throws IOException {
+    void testBasicExchange() throws Exception {
         final String applicationName = "foo";
         final String profile = "dev";
         wireMockServer.stubFor(WireMock.get(String.format("/%s/%s", applicationName, profile)).willReturn(WireMock

@@ -30,18 +30,19 @@ public class OpenApiTestCase {
     public void testOpenAPIJSON() throws Exception {
         URLConnection connection = uri.openConnection();
         connection.setRequestProperty("Accept", "application/json");
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
+        try (InputStream in = connection.getInputStream()) {
+            byte[] buf = new byte[100];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
         }
         JsonReader parser = Json.createReader(new ByteArrayInputStream(out.toByteArray()));
         JsonObject obj = parser.readObject();
         Assertions.assertNotNull(obj);
 
-        Assertions.assertEquals("3.0.1", obj.getString("openapi"));
+        Assertions.assertEquals("3.0.3", obj.getString("openapi"));
         Assertions.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
         Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 

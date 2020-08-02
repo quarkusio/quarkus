@@ -1,9 +1,9 @@
 package io.quarkus.annotation.processor;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,35 +58,14 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_DOC_MAP_KEY = "io.quarkus.runtime.annotations.ConfigDocMapKey";
     public static final String ANNOTATION_CONFIG_DOC_SECTION = "io.quarkus.runtime.annotations.ConfigDocSection";
 
-    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
-    public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
+    public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES;
+    public static final Map<String, String> ALIASED_TYPES;
     private static final Properties SYSTEM_PROPERTIES = System.getProperties();
 
     private static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
     private static final String DOCS_OUT_DIR = System.getProperty("quarkus.docsOutputDir",
             SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory", "."));
     public static final Path GENERATED_DOCS_PATH = Paths.get(DOCS_OUT_DIR + DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
-    public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
-    public static final Boolean SKIP_DOCS_GENERATION = Boolean.valueOf(SYSTEM_PROPERTIES.getProperty("skipDocs", "false"));
-
-    /**
-     * Holds the list of configuration items of each configuration roots.
-     */
-    public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
-            .resolve("all-configuration-roots-generated-doc.properties").toFile();
-
-    /**
-     * Holds the list of configuration items of each configuration groups.
-     * The items in this list may not have complete information as some depend on the configuration root.
-     */
-    public static final File ALL_CG_GENERATED_DOC = GENERATED_DOCS_PATH
-            .resolve("all-configuration-groups-generated-doc.properties").toFile();
-
-    /**
-     * Holds the list of computed file names and the list of configuration roots of this extension
-     */
-    public static final File EXTENSION_CONFIGURATION_ROOT_LIST = GENERATED_DOCS_PATH
-            .resolve("extensions-configuration-roots-list.properties").toFile();
 
     public static final String DURATION_NOTE_ANCHOR = "duration-note-anchor";
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";
@@ -124,18 +103,23 @@ final public class Constants {
             "====\n";
 
     static {
-        ALIASED_TYPES.put(OptionalLong.class.getName(), Long.class.getName());
-        ALIASED_TYPES.put(OptionalInt.class.getName(), Integer.class.getName());
-        ALIASED_TYPES.put(OptionalDouble.class.getName(), Double.class.getName());
-        ALIASED_TYPES.put("java.lang.Class<?>", "class name");
-        ALIASED_TYPES.put("java.net.InetSocketAddress", "host:port");
-        ALIASED_TYPES.put(Path.class.getName(), "path");
-        ALIASED_TYPES.put(String.class.getName(), "string");
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_BUILD_STEP);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_GROUP);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_CONFIG_ROOT);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_TEMPLATE);
-        SUPPORTED_ANNOTATIONS_TYPES.add(ANNOTATION_RECORDER);
+        final Map<String, String> aliasedTypes = new HashMap<>();
+        aliasedTypes.put(OptionalLong.class.getName(), Long.class.getName());
+        aliasedTypes.put(OptionalInt.class.getName(), Integer.class.getName());
+        aliasedTypes.put(OptionalDouble.class.getName(), Double.class.getName());
+        aliasedTypes.put("java.lang.Class<?>", "class name");
+        aliasedTypes.put("java.net.InetSocketAddress", "host:port");
+        aliasedTypes.put(Path.class.getName(), "path");
+        aliasedTypes.put(String.class.getName(), "string");
+        ALIASED_TYPES = Collections.unmodifiableMap(aliasedTypes);
+
+        final Set<String> supportedAnnotationTypes = new HashSet<>();
+        supportedAnnotationTypes.add(ANNOTATION_BUILD_STEP);
+        supportedAnnotationTypes.add(ANNOTATION_CONFIG_GROUP);
+        supportedAnnotationTypes.add(ANNOTATION_CONFIG_ROOT);
+        supportedAnnotationTypes.add(ANNOTATION_TEMPLATE);
+        supportedAnnotationTypes.add(ANNOTATION_RECORDER);
+        SUPPORTED_ANNOTATIONS_TYPES = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
 
 }

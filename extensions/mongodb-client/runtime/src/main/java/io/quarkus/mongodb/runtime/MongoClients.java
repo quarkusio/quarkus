@@ -92,7 +92,7 @@ public class MongoClients {
         return reactive;
     }
 
-    private MongoClientConfig getMatchingMongoClientConfig(String clientName) {
+    public MongoClientConfig getMatchingMongoClientConfig(String clientName) {
         return MongoClientBeanUtil.isDefault(clientName) ? mongodbConfig.defaultMongoClientConfig
                 : mongodbConfig.mongoClientConfigs.get(clientName);
     }

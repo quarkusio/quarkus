@@ -1,5 +1,8 @@
 package io.quarkus.it.kafka.streams;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,6 +10,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.http.HttpStatus;
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,6 +20,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.hamcrest.CoreMatchers;
@@ -32,12 +37,27 @@ import io.restassured.RestAssured;
 @QuarkusTest
 public class KafkaStreamsTest {
 
+    private static void addSSL(Properties props) {
+        try {
+            File sslDir = KafkaTestResource.sslDir(null, false);
+            File tsFile = new File(sslDir, "ks-truststore.p12");
+            props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+            props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
+            props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L");
+            props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");
+            props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private static Producer<Integer, Customer> createCustomerProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
+        addSSL(props);
 
         return new KafkaProducer<>(props);
     }
@@ -48,6 +68,7 @@ public class KafkaStreamsTest {
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-category-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
+        addSSL(props);
 
         return new KafkaProducer<>(props);
     }
@@ -60,6 +81,7 @@ public class KafkaStreamsTest {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, EnrichedCustomerDeserializer.class.getName());
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        addSSL(props);
 
         KafkaConsumer<Integer, EnrichedCustomer> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("streams-test-customers-processed"));

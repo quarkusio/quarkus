@@ -10,7 +10,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.security.Authenticated;
 
-@Path("/web-app")
+@Path("/protected")
 @Authenticated
 public class ProtectedResource {
 

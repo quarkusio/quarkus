@@ -17,16 +17,15 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
     private final String matchName;
     private final ClassInfo matchClass;
     private final int priority;
+    private final String namespace;
 
-    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, ClassInfo matchClass) {
-        this(method, matchName, matchClass, TemplateExtension.DEFAULT_PRIORITY);
-    }
-
-    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, ClassInfo matchClass, int priority) {
+    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, ClassInfo matchClass, int priority,
+            String namespace) {
         this.method = method;
         this.matchName = matchName;
         this.matchClass = matchClass;
         this.priority = priority;
+        this.namespace = namespace;
     }
 
     public MethodInfo getMethod() {
@@ -45,12 +44,20 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         return priority;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
     boolean matchesClass(ClassInfo clazz) {
         return matchClass.name().equals(clazz.name());
     }
 
     boolean matchesName(String name) {
         return TemplateExtension.ANY.equals(matchName) ? true : matchName.equals(name);
+    }
+
+    boolean hasNamespace() {
+        return namespace != null && !namespace.isEmpty();
     }
 
 }

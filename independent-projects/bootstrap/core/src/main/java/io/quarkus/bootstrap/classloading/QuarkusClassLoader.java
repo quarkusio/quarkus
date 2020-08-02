@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -152,6 +153,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
+        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
         //for resources banned means that we don't delegate to the parent, as there can be multiple resources
@@ -184,7 +186,28 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
             for (ClassPathElement element : providers) {
-                resources.add(element.getResource(name).getUrl());
+                ClassPathResource res = element.getResource(name);
+                //if the requested name ends with a trailing / we make sure
+                //that the resource is a directory, and return a URL that ends with a /
+                //this matches the behaviour of URLClassLoader
+                if (endsWithTrailingSlash) {
+                    if (res.isDirectory()) {
+                        try {
+                            resources.add(new URL(res.getUrl().toString() + "/"));
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } else {
+                    resources.add(res.getUrl());
+                }
+            }
+        } else if (name.isEmpty()) {
+            for (ClassPathElement i : elements) {
+                ClassPathResource res = i.getResource("");
+                if (res != null) {
+                    resources.add(res.getUrl());
+                }
             }
         }
         if (!banned) {
@@ -256,6 +279,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public URL getResource(String unsantisedName) {
+        boolean endsWithTrailingSlash = unsantisedName.endsWith("/");
         String name = sanitizeName(unsantisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -264,7 +288,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //TODO: because of dev mode we iterate, to see if any resources were added
         //not for .class files though, adding them causes a restart
         //this is very important for bytebuddy performance
-        if (name.endsWith(".class")) {
+        if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
                 return providers[0].getResource(name).getUrl();
@@ -273,7 +297,20 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             for (ClassPathElement i : elements) {
                 ClassPathResource res = i.getResource(name);
                 if (res != null) {
-                    return res.getUrl();
+                    //if the requested name ends with a trailing / we make sure
+                    //that the resource is a directory, and return a URL that ends with a /
+                    //this matches the behaviour of URLClassLoader
+                    if (endsWithTrailingSlash) {
+                        if (res.isDirectory()) {
+                            try {
+                                return new URL(res.getUrl().toString() + "/");
+                            } catch (MalformedURLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    } else {
+                        return res.getUrl();
+                    }
                 }
             }
         }
@@ -658,6 +695,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
             return new QuarkusClassLoader(this);
         }
+    }
+
+    public ClassLoader parent() {
+        return parent;
     }
 
     static final class ClassLoaderState {

@@ -3,16 +3,18 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect to Protect Web Applications
+= Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow.
 
 include::./attributes.adoc[]
+:toc:
 
-This guide demonstrates how to use the OpenID Connect Extension to protect your application using Quarkus, where authentication and authorization are based on tokens issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
+This guide demonstrates how to use Quarkus OpenID Connect Extension to protect your Quarkus HTTP endpoints using OpenId Connect Authorization Code Flow supported by OpenId Connect compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
-The extension allows you to easily enable authentication to your web application based on the Authorization Code Flow so that your users are redirected to a
-OpenID Connect Provider (e.g.: Keycloak) to authenticate and, once the authentication is complete, return back to your application.
+The extension allows to easily authenticate the users of your web application by redirecting them to the OpenID Connect Provider (e.g.: Keycloak) to login and, once the authentication is complete, return them back with the code confirming the successful authentication. The extension will request ID and access tokens from the OpenID Connect Provider using an authorization code grant and verify these tokens in order to authorize an access to the application.
 
-We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extension.
+Please read the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide if you need to protect your applications using Bearer Token Authorization.
+
+Please read the link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy] guide how to support multiple tenants.
 
 == Prerequisites
 
@@ -174,6 +176,17 @@ In order to authenticate to the application you should type the following creden
 
 After clicking the `Login` button you should be redirected back to the application.
 
+== Redirection
+
+When the user is redirected to the OpenID Connect Provider to authenticate, the redirect URL includes a `redirect_uri` query parameter which indicates to the Provider where the user has to be redirected to once the authentication has been completed.
+
+Quarkus will set this parameter to the current request URL by default. For example, if the user is trying to access a Quarkus service endpoint at `http://localhost:8080/service/1` then the `redirect_uri` parameter will be set to `http://localhost:8080/service/1`. Similarly, if the request URL is `http://localhost:8080/service/2` then the `redirect_uri` parameter will be set to `http://localhost:8080/service/2`, etc.
+
+OpenID Connect Providers may be configured to require the `redirect_uri` parameter to have the same value (eg. `http://localhost:8080/service/callback`) for all the redirect URLs.
+In such cases a `quarkus.oidc.authentication.redirect-path` property has to be set, for example, `quarkus.oidc.authentication.redirect-path=/service/callback`, and Quarkus will set the `redirect_uri` parameter to an absolute URL such as `http://localhost:8080/service/callback` which will be the same regardless of the current request URL.
+
+If `quarkus.oidc.authentication.redirect-path` is set but the original request URL has to be restored after the user has been redirected back to a callback URL such as `http://localhost:8080/service/callback` then a `quarkus.oidc.authentication.restore-path-after-redirect` property has to be set to `true` which will restore the request URL such as `http://localhost:8080/service/1`, etc.
+
 == Logout
 
 By default the logout is based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the ID Token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
@@ -251,9 +264,49 @@ public class ProtectedResource {
 }
 ----
 
-Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`. However the opaque access tokens are not currently supported by the `web-app` applications.
+Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`.
 
 Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
+== User Info
+
+Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+This will make an `io.quarkus.oidc.UserInfo` (which is a simple `javax.json.JsonObject` wrapper) object accessible as a SecurityIdentity `userinfo` attribute.
+
+== Token Claims And SecurityIdentity Roles
+
+The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the link:security-openid-connect#token-claims-and-securityidentity-roles[bearer tokens] with the only difference being is that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
+
+Note if you use Keycloak then you should set a Microprofile JWT client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
+
+If only the access token contains the roles and this access token is not meant to be propagated to the downstream endpoints then set `quarkus.oidc.roles.source=accesstoken`.
+
+If UserInfo is the source of the roles then set `quarkus.oidc.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
+
+== Single Page Applications
+
+Please check if implementing SPAs the way it is suggested in the link:security-openid-connect#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
+
+If you do prefer to use SPA and `XMLHttpRequest`(XHR) with Quarkus `web-app` applications then please be aware that OpenId Connect Providers may not support CORS for Authorization endpoints where the users
+ are authenticated after a redirect from Quarkus which will lead to the authentication failures if the Quarkus `web-app` application and OpenId Connect Provider are hosted on the different HTTP domains/ports.
+
+In such cases one needs to set the `quarkus.oidc.authentication.xhr-auto-redirect` property to `false` which will instruct Quarkus to return a `499` status code and `WWW-Authenticate` header with the `OIDC` value and the browser script needs to be updated to set "X-Requested-With" header with the `XMLHttpRequest` value and reload the last requested page in case of `499`, for example:
+
+[source,javascript]
+----
+Future<void> callQuarkusService() async {
+    Map<String, String> headers = Map.fromEntries([MapEntry("X-Requested-With", "XMLHttpRequest")]);
+
+    await http
+        .get("https://localhost:443/serviceCall")
+        .then((response) {
+            if (response.statusCode == 499) {
+                window.location.assign(https://localhost.com:443/serviceCall);
+            }
+         });
+  }
+----
+
 
 == Configuration Reference
 

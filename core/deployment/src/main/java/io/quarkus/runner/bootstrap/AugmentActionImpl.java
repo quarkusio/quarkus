@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -53,6 +54,10 @@ import io.quarkus.runtime.configuration.ProfileManager;
 public class AugmentActionImpl implements AugmentAction {
 
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
+
+    private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
+            GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class,
+            MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
@@ -80,46 +85,42 @@ public class AugmentActionImpl implements AugmentAction {
 
     @Override
     public AugmentResult createProductionApplication() {
-        try {
-            if (launchMode != LaunchMode.NORMAL) {
-                throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
-            }
-            ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-            BuildResult result = runAugment(true, Collections.emptySet(), classLoader, ArtifactResultBuildItem.class);
+        if (launchMode != LaunchMode.NORMAL) {
+            throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
+        }
+        ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
+        BuildResult result = runAugment(true, Collections.emptySet(), classLoader, ArtifactResultBuildItem.class);
 
-            String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
-            if (debugSourcesDir != null) {
-                for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
-                    try {
-                        if (i.getSource() != null) {
-                            File debugPath = new File(debugSourcesDir);
-                            if (!debugPath.exists()) {
-                                debugPath.mkdir();
-                            }
-                            File sourceFile = new File(debugPath, i.getName() + ".zig");
-                            sourceFile.getParentFile().mkdirs();
-                            Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
-                                    StandardOpenOption.CREATE);
-                            log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
-                        } else {
-                            log.infof("Source not available: %s", i.getName());
+        String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+        if (debugSourcesDir != null) {
+            for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
+                try {
+                    if (i.getSource() != null) {
+                        File debugPath = new File(debugSourcesDir);
+                        if (!debugPath.exists()) {
+                            debugPath.mkdir();
                         }
-                    } catch (Exception t) {
-                        log.errorf(t, "Failed to write debug source file: %s", i.getName());
+                        File sourceFile = new File(debugPath, i.getName() + ".zig");
+                        sourceFile.getParentFile().mkdirs();
+                        Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                                StandardOpenOption.CREATE);
+                        log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
+                    } else {
+                        log.infof("Source not available: %s", i.getName());
                     }
+                } catch (Exception t) {
+                    log.errorf(t, "Failed to write debug source file: %s", i.getName());
                 }
             }
-
-            JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
-            NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
-            return new AugmentResult(result.consumeMulti(ArtifactResultBuildItem.class).stream()
-                    .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getAdditionalPaths()))
-                    .collect(Collectors.toList()),
-                    jarBuildItem != null ? jarBuildItem.toJarResult() : null,
-                    nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
-        } finally {
-            curatedApplication.close();
         }
+
+        JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
+        NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
+        return new AugmentResult(result.consumeMulti(ArtifactResultBuildItem.class).stream()
+                .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getAdditionalPaths()))
+                .collect(Collectors.toList()),
+                jarBuildItem != null ? jarBuildItem.toJarResult() : null,
+                nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null);
     }
 
     @Override
@@ -128,9 +129,10 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Cannot launch a runtime application with NORMAL launch mode");
         }
         ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        BuildResult result = runAugment(true, Collections.emptySet(), classLoader, GeneratedClassBuildItem.class,
-                GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class,
-                MainClassBuildItem.class);
+
+        @SuppressWarnings("unchecked")
+        BuildResult result = runAugment(true, Collections.emptySet(), classLoader, NON_NORMAL_MODE_OUTPUTS);
+
         return new StartupActionImpl(curatedApplication, result, classLoader);
     }
 
@@ -140,8 +142,10 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Only application with launch mode DEVELOPMENT can restart");
         }
         ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-        BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classLoader, GeneratedClassBuildItem.class,
-                GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class);
+
+        @SuppressWarnings("unchecked")
+        BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classLoader, NON_NORMAL_MODE_OUTPUTS);
+
         return new StartupActionImpl(curatedApplication, result, classLoader);
     }
 

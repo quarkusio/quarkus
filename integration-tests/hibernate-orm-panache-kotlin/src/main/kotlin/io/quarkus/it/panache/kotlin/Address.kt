@@ -7,7 +7,7 @@ import javax.persistence.GeneratedValue
 import javax.persistence.Id
 
 @Entity
-open class Address : PanacheEntityBase, Comparable<Address> {
+open class Address : PanacheEntityBase {
     companion object : PanacheCompanion<Address, Int> {
         override fun count(query: String, params: Map<String, Any>): Long {
             AddressDao.shouldBeOverridden()
@@ -21,6 +21,8 @@ open class Address : PanacheEntityBase, Comparable<Address> {
 
     lateinit var street: String
 
+    var street2: String? = null
+
     constructor()
 
     constructor(street: String) {
@@ -28,6 +30,4 @@ open class Address : PanacheEntityBase, Comparable<Address> {
     }
 
     override fun toString() = "${javaClass.simpleName}<$id>"
-
-    override fun compareTo(other: Address): Int = street.compareTo(other.street)
 }

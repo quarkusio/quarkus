@@ -6,15 +6,25 @@ import io.quarkus.mongodb.runtime.MongoClientName;
 /**
  * Represents the values of the {@link MongoClientName}
  */
-final class MongoClientNameBuildItem extends MultiBuildItem {
+public final class MongoClientNameBuildItem extends MultiBuildItem {
 
     private final String name;
+    private final boolean addQualifier;
 
     public MongoClientNameBuildItem(String name) {
+        this(name, true);
+    }
+
+    public MongoClientNameBuildItem(String name, boolean addQualifier) {
         this.name = name;
+        this.addQualifier = addQualifier;
     }
 
     public String getName() {
         return name;
+    }
+
+    public boolean isAddQualifier() {
+        return addQualifier;
     }
 }

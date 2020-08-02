@@ -21,6 +21,11 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuthBody;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthBody;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigData;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthConfigResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthListRolesResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthReadRoleResult;
+import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthRoleData;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfBody;
@@ -36,6 +41,9 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultInitBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
+import io.quarkus.vault.runtime.client.dto.sys.VaultListPolicyResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultPolicyResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapBody;
@@ -72,6 +80,7 @@ public class OkHttpVaultClient implements VaultClient {
 
     private OkHttpClient client;
     private URL url;
+    private String kubernetesAuthMountPath;
     private ObjectMapper mapper = new ObjectMapper();
 
     public OkHttpVaultClient(VaultRuntimeConfig serverConfig) {
@@ -79,6 +88,8 @@ public class OkHttpVaultClient implements VaultClient {
         this.url = serverConfig.url.get();
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        this.kubernetesAuthMountPath = serverConfig.authentication.kubernetes.authMountPath;
     }
 
     @Override
@@ -90,7 +101,37 @@ public class OkHttpVaultClient implements VaultClient {
     @Override
     public VaultKubernetesAuth loginKubernetes(String role, String jwt) {
         VaultKubernetesAuthBody body = new VaultKubernetesAuthBody(role, jwt);
-        return post("auth/kubernetes/login", null, body, VaultKubernetesAuth.class);
+        return post(kubernetesAuthMountPath + "/login", null, body, VaultKubernetesAuth.class);
+    }
+
+    @Override
+    public void createKubernetesAuthRole(String token, String name, VaultKubernetesAuthRoleData body) {
+        post(kubernetesAuthMountPath + "/role/" + name, token, body, 204);
+    }
+
+    @Override
+    public VaultKubernetesAuthReadRoleResult getVaultKubernetesAuthRole(String token, String name) {
+        return get(kubernetesAuthMountPath + "/role/" + name, token, VaultKubernetesAuthReadRoleResult.class);
+    }
+
+    @Override
+    public VaultKubernetesAuthListRolesResult listKubernetesAuthRoles(String token) {
+        return list(kubernetesAuthMountPath + "/role", token, VaultKubernetesAuthListRolesResult.class);
+    }
+
+    @Override
+    public void deleteKubernetesAuthRoles(String token, String name) {
+        delete(kubernetesAuthMountPath + "/role/" + name, token, 204);
+    }
+
+    @Override
+    public void configureKubernetesAuth(String token, VaultKubernetesAuthConfigData config) {
+        post(kubernetesAuthMountPath + "/config", token, config, 204);
+    }
+
+    @Override
+    public VaultKubernetesAuthConfigResult readKubernetesAuthConfig(String token) {
+        return get(kubernetesAuthMountPath + "/config", token, VaultKubernetesAuthConfigResult.class);
     }
 
     @Override
@@ -265,6 +306,26 @@ public class OkHttpVaultClient implements VaultClient {
         return post("sys/wrapping/unwrap", wrappingToken, VaultUnwrapBody.EMPTY, resultClass);
     }
 
+    @Override
+    public VaultPolicyResult getPolicy(String token, String name) {
+        return get("sys/policy/" + name, token, VaultPolicyResult.class);
+    }
+
+    @Override
+    public void createUpdatePolicy(String token, String name, VaultPolicyBody body) {
+        put("sys/policy/" + name, token, body, 204);
+    }
+
+    @Override
+    public VaultListPolicyResult listPolicies(String token) {
+        return get("sys/policy", token, VaultListPolicyResult.class);
+    }
+
+    @Override
+    public void deletePolicy(String token, String name) {
+        delete("sys/policy/" + name, token, 204);
+    }
+
     // ---
 
     protected <T> T list(String path, String token, Class<T> resultClass) {
@@ -295,6 +356,11 @@ public class OkHttpVaultClient implements VaultClient {
 
     protected <T> T post(String path, String token, Object body, int expectedCode) {
         Request request = builder(path, token).post(requestBody(body)).build();
+        return exec(request, expectedCode);
+    }
+
+    protected <T> T put(String path, String token, Object body, int expectedCode) {
+        Request request = builder(path, token).put(requestBody(body)).build();
         return exec(request, expectedCode);
     }
 

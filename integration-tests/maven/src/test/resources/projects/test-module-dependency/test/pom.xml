@@ -8,4 +8,10 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
   <artifactId>quarkus-app-test</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>org.acme</groupId>
+      <artifactId>quarkus-app-common</artifactId>
+    </dependency>
+  </dependencies>
 </project>

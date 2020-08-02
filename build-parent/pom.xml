@@ -17,7 +17,7 @@
     <properties>
         <!-- Maven plugin versions -->
         <elasticsearch-maven-plugin.version>6.15</elasticsearch-maven-plugin.version>
-        <elasticsearch-server.version>7.6.2</elasticsearch-server.version>
+        <elasticsearch-server.version>7.7.0</elasticsearch-server.version>
         <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
@@ -27,7 +27,7 @@
         <scala.version>2.12.8</scala.version>
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
-        <version.surefire.plugin>2.22.1</version.surefire.plugin>
+        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
@@ -35,9 +35,9 @@
            what we work with by self downloading it: -->
         <graal-sdk.version-for-documentation>20.1.0</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
-        <axle-client.version>0.0.16</axle-client.version>
-        <mutiny-client.version>0.0.16</mutiny-client.version>
-        <vertx.version>3.9.1</vertx.version>
+        <axle-client.version>1.1.0</axle-client.version>
+        <mutiny-client.version>1.1.0</mutiny-client.version>
+        <vertx.version>3.9.2</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.30</freemarker.version>
@@ -56,7 +56,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.6.3</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.4.1</gradle-wrapper.version>
+        <gradle-wrapper.version>6.5.1</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.2</microprofile-health-api.version>
@@ -81,7 +81,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update .github/workflows/ci-actions.yml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:10.0.2</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:11.0.0</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -92,11 +92,11 @@
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <jacoco.version>0.8.5</jacoco.version>
 
-        <!-- grpc -->
-        <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
-        <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
-        <protoc.version>3.11.4</protoc.version>
-        <grpc.version>1.29.0</grpc.version>
+        <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+
+        <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
+        <protoc.version>3.12.3</protoc.version> <!--keep in sync with the BOM-->
+        <grpc.version>1.30.2</grpc.version> <!--keep in sync with the BOM -->
     </properties>
 
     <dependencyManagement>
@@ -105,7 +105,7 @@
             <!-- Quarkus Extensions Dependencies are coming from quarkus-bom-deployment (that also imports quarkus-bom) -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom-deployment</artifactId>
+                <artifactId>quarkus-bom</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -208,6 +208,34 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-class-transformer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-integration-test-shared-library</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-maven</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-security-test-utils</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -234,6 +262,11 @@
                             <maven.home>${maven.home}</maven.home>
                         </systemPropertyVariables>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${maven-dependency-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
@@ -323,7 +356,6 @@
                                             <exclude>io.netty:netty-all</exclude>
                                             <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
                                             <exclude>log4j:log4j</exclude>
-                                            <exclude>org.apache.logging.log4j:log4j-api</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-core</exclude>
                                             <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
                                             <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->
@@ -387,7 +419,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.11.0</version>
+                    <version>2.12.1</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -397,6 +429,7 @@
                       </dependencies>
                     <configuration>
                         <configFile>eclipse-format.xml</configFile>
+                        <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
@@ -419,6 +452,12 @@
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.1.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <parameters>true</parameters>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>com.github.alexcojocaru</groupId>
@@ -447,16 +486,6 @@
                         </dependency>
                     </dependencies>
                 </plugin>
-                <plugin>
-                    <groupId>kr.motd.maven</groupId>
-                    <artifactId>os-maven-plugin</artifactId>
-                    <version>${os-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.xolstice.maven.plugins</groupId>
-                    <artifactId>protobuf-maven-plugin</artifactId>
-                    <version>${protobuf-maven-plugin.version}</version>
-                </plugin>
             </plugins>
         </pluginManagement>
     </build>
@@ -474,6 +503,7 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
+                            <parameters>true</parameters>
                         </configuration>
                     </plugin>
                 </plugins>

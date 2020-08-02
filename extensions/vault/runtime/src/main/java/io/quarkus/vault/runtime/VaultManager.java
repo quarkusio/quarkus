@@ -20,6 +20,7 @@ public class VaultManager {
     private VaultCredentialsProvider vaultCredentialsProvider;
     private VaultTOTPManager vaultTOTPManager;
     private VaultSystemBackendManager vaultSystemBackendManager;
+    private VaultKubernetesAuthManager vaultKubernetesAuthManager;
 
     public static VaultManager getInstance() {
         return instance;
@@ -49,7 +50,9 @@ public class VaultManager {
         this.vaultTransitManager = new VaultTransitManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultCredentialsProvider = new VaultCredentialsProvider(serverConfig, this.vaultKvManager, this.vaultDbManager);
         this.vaultTOTPManager = new VaultTOTPManager(this.vaultAuthManager, this.vaultClient);
-        this.vaultSystemBackendManager = new VaultSystemBackendManager(this.buildTimeConfig, this.vaultClient);
+        this.vaultSystemBackendManager = new VaultSystemBackendManager(this.buildTimeConfig, this.vaultAuthManager,
+                this.vaultClient);
+        this.vaultKubernetesAuthManager = new VaultKubernetesAuthManager(this.vaultAuthManager, this.vaultClient);
     }
 
     public VaultClient getVaultClient() {
@@ -90,5 +93,9 @@ public class VaultManager {
 
     public VaultSystemBackendManager getVaultSystemBackendManager() {
         return vaultSystemBackendManager;
+    }
+
+    public VaultKubernetesAuthManager getVaultKubernetesAuthManager() {
+        return vaultKubernetesAuthManager;
     }
 }

@@ -159,6 +159,7 @@ public class TestEndpoint {
         persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
+        Assertions.assertEquals(1, Person.find("#Person.getByName", Parameters.with("name", "stef")).count());
         Assertions.assertThrows(PanacheQueryException.class, () -> Person.find("#Person.namedQueryNotFound").list());
         NamedQueryEntity.find("#NamedQueryMappedSuperClass.getAll").list();
         NamedQueryEntity.find("#NamedQueryEntity.getAll").list();

@@ -171,11 +171,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         }
 
         public ArcTestContainer build() {
-            return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars,
-                    observerRegistrars, contextRegistrars, interceptorBindingRegistrars, annotationsTransformers,
-                    injectionsPointsTransformers,
-                    observerTransformers, beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions,
-                    alternativePriorities);
+            return new ArcTestContainer(this);
         }
 
     }
@@ -211,39 +207,41 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final AlternativePriorities alternativePriorities;
 
     public ArcTestContainer(Class<?>... beanClasses) {
-        this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, false,
-                Collections.emptyList(), null);
+        this.resourceReferenceProviders = Collections.emptyList();
+        this.beanClasses = Arrays.asList(beanClasses);
+        this.resourceAnnotations = Collections.emptyList();
+        this.beanRegistrars = Collections.emptyList();
+        this.observerRegistrars = Collections.emptyList();
+        this.contextRegistrars = Collections.emptyList();
+        this.bindingRegistrars = Collections.emptyList();
+        this.annotationsTransformers = Collections.emptyList();
+        this.injectionPointsTransformers = Collections.emptyList();
+        this.observerTransformers = Collections.emptyList();
+        this.beanDeploymentValidators = Collections.emptyList();
+        this.buildFailure = new AtomicReference<Throwable>(null);
+        this.shouldFail = false;
+        this.removeUnusedBeans = false;
+        this.exclusions = Collections.emptyList();
+        this.alternativePriorities = null;
     }
 
-    public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses,
-            List<Class<? extends Annotation>> resourceAnnotations,
-            List<BeanRegistrar> beanRegistrars, List<ObserverRegistrar> observerRegistrars,
-            List<ContextRegistrar> contextRegistrars,
-            List<InterceptorBindingRegistrar> bindingRegistrars,
-            List<AnnotationsTransformer> annotationsTransformers, List<InjectionPointsTransformer> ipTransformers,
-            List<ObserverTransformer> observerTransformers,
-            List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail, boolean removeUnusedBeans,
-            List<Predicate<BeanInfo>> exclusions,
-            AlternativePriorities alternativePriorities) {
-        this.resourceReferenceProviders = resourceReferenceProviders;
-        this.beanClasses = beanClasses;
-        this.resourceAnnotations = resourceAnnotations;
-        this.beanRegistrars = beanRegistrars;
-        this.observerRegistrars = observerRegistrars;
-        this.contextRegistrars = contextRegistrars;
-        this.bindingRegistrars = bindingRegistrars;
-        this.annotationsTransformers = annotationsTransformers;
-        this.injectionPointsTransformers = ipTransformers;
-        this.observerTransformers = observerTransformers;
-        this.beanDeploymentValidators = beanDeploymentValidators;
+    public ArcTestContainer(Builder builder) {
+        this.resourceReferenceProviders = builder.resourceReferenceProviders;
+        this.beanClasses = builder.beanClasses;
+        this.resourceAnnotations = builder.resourceAnnotations;
+        this.beanRegistrars = builder.beanRegistrars;
+        this.observerRegistrars = builder.observerRegistrars;
+        this.contextRegistrars = builder.contextRegistrars;
+        this.bindingRegistrars = builder.interceptorBindingRegistrars;
+        this.annotationsTransformers = builder.annotationsTransformers;
+        this.injectionPointsTransformers = builder.injectionsPointsTransformers;
+        this.observerTransformers = builder.observerTransformers;
+        this.beanDeploymentValidators = builder.beanDeploymentValidators;
         this.buildFailure = new AtomicReference<Throwable>(null);
-        this.shouldFail = shouldFail;
-        this.removeUnusedBeans = removeUnusedBeans;
-        this.exclusions = exclusions;
-        this.alternativePriorities = alternativePriorities;
+        this.shouldFail = builder.shouldFail;
+        this.removeUnusedBeans = builder.removeUnusedBeans;
+        this.exclusions = builder.exclusions;
+        this.alternativePriorities = builder.alternativePriorities;
     }
 
     // this is where we start Arc, we operate on a per-method basis

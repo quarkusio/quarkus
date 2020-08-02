@@ -4,6 +4,7 @@ import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -92,7 +93,7 @@ public class HibernateOrmConfig {
      * Class name of the Hibernate PhysicalNamingStrategy implementation
      */
     @ConfigItem
-    Optional<String> physicalNamingStrategy;
+    public Optional<String> physicalNamingStrategy;
 
     /**
      * Pluggable strategy for applying implicit naming rules when an explicit name is not given.
@@ -100,7 +101,7 @@ public class HibernateOrmConfig {
      * Class name of the Hibernate ImplicitNamingStrategy implementation
      */
     @ConfigItem
-    Optional<String> implicitNamingStrategy;
+    public Optional<String> implicitNamingStrategy;
 
     /**
      * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
@@ -162,7 +163,7 @@ public class HibernateOrmConfig {
     public Optional<Boolean> statistics;
 
     /**
-     * Whether or not metrics are published in case the smallrye-metrics extension is present (default to false).
+     * Whether or not metrics are published if a metrics extension is enabled.
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
@@ -285,13 +286,13 @@ public class HibernateOrmConfig {
          * How many rows are fetched at a time by the JDBC driver.
          */
         @ConfigItem
-        public Optional<Integer> statementFetchSize;
+        public OptionalInt statementFetchSize;
 
         /**
          * The number of updates (inserts, updates and deletes) that are sent by the JDBC driver at one time for execution.
          */
         @ConfigItem
-        public Optional<Integer> statementBatchSize;
+        public OptionalInt statementBatchSize;
 
         public boolean isAnyPropertySet() {
             return timezone.isPresent() || statementFetchSize.isPresent() || statementBatchSize.isPresent();

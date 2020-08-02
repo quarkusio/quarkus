@@ -1,14 +1,15 @@
 package io.quarkus.rest.data.panache.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
 
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.rest.data.panache.deployment.methods.AddMethodImplementor;
@@ -21,8 +22,10 @@ import io.quarkus.rest.data.panache.deployment.methods.hal.AddHalMethodImplement
 import io.quarkus.rest.data.panache.deployment.methods.hal.GetHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.hal.ListHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.hal.UpdateHalMethodImplementor;
+import io.quarkus.rest.data.panache.deployment.methods.internal.IsPagedMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesAccessor;
+import io.quarkus.runtime.util.HashUtil;
 
 class RestDataResourceImplementor {
 
@@ -64,9 +67,18 @@ class RestDataResourceImplementor {
                 .build();
         classCreator.addAnnotation(Path.class)
                 .addValue("value", resourcePropertiesAccessor.path(resourceInfo.getClassInfo()));
+        implementPrivateFields(classCreator);
         implementMethods(classCreator, resourceInfo);
+        implementPrivateMethods(classCreator, resourceInfo);
+
         classCreator.close();
         LOGGER.tracef("Completed generation of '%s'", implementationClassName);
+    }
+
+    private void implementPrivateFields(ClassCreator classCreator) {
+        classCreator.getFieldCreator(PrivateFields.URI_INFO.getName(), PrivateFields.URI_INFO.getType())
+                .setModifiers(Modifier.PRIVATE)
+                .addAnnotation(Context.class);
     }
 
     private void implementMethods(ClassCreator classCreator, RestDataResourceInfo resourceInfo) {
@@ -78,5 +90,10 @@ class RestDataResourceImplementor {
                 methodImplementor.implement(classCreator, index, methodPropertiesAccessor, resourceInfo);
             }
         }
+    }
+
+    private void implementPrivateMethods(ClassCreator classCreator, RestDataResourceInfo resourceInfo) {
+        new IsPagedMethodImplementor(resourcePropertiesAccessor.isPaged(resourceInfo.getClassInfo()))
+                .implement(classCreator, index, methodPropertiesAccessor, resourceInfo);
     }
 }

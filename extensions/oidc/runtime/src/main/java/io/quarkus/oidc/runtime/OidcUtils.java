@@ -1,10 +1,13 @@
 package io.quarkus.oidc.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -14,12 +17,14 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.RoutingContext;
 
 public final class OidcUtils {
     /**
@@ -30,6 +35,31 @@ public final class OidcUtils {
 
     private OidcUtils() {
 
+    }
+
+    public static boolean isOpaqueToken(String token) {
+        return new StringTokenizer(token, ".").countTokens() != 3;
+    }
+
+    public static JsonObject decodeJwtContent(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        // part 1: skip the token headers
+        tokens.nextToken();
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
+        // part 2: token content
+        String encodedContent = tokens.nextToken();
+
+        // lets check only 1 more signature part is available
+        if (tokens.countTokens() != 1) {
+            return null;
+        }
+        try {
+            return new JsonObject(new String(Base64.getUrlDecoder().decode(encodedContent), StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {
@@ -122,8 +152,9 @@ public final class OidcUtils {
         return list;
     }
 
-    static QuarkusSecurityIdentity validateAndCreateIdentity(TokenCredential credential,
-            OidcTenantConfig config, JsonObject tokenJson) {
+    static QuarkusSecurityIdentity validateAndCreateIdentity(
+            RoutingContext vertxContext, TokenCredential credential,
+            OidcTenantConfig config, JsonObject tokenJson, JsonObject rolesJson, JsonObject userInfo) {
         try {
             OidcUtils.validateClaims(config.getToken(), tokenJson);
         } catch (OIDCException e) {
@@ -145,12 +176,31 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         try {
             String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), tokenJson)) {
+            for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
                 builder.addRole(role);
             }
         } catch (Exception e) {
             throw new ForbiddenException(e);
         }
+        setSecurityIdentityUserInfo(builder, userInfo);
         return builder.build();
+    }
+
+    public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {
+        if (userInfo != null) {
+            builder.addAttribute("userinfo", new UserInfo(userInfo.encode()));
+        }
+    }
+
+    public static void validatePrimaryJwtTokenType(OidcTenantConfig.Token tokenConfig, JsonObject tokenJson) {
+        if (tokenJson.containsKey("typ")) {
+            String type = tokenJson.getString("typ");
+            if (tokenConfig.getTokenType().isPresent() && !tokenConfig.getTokenType().get().equals(type)) {
+                throw new OIDCException("Invalid token type");
+            } else if ("Refresh".equals(type)) {
+                // At least check it is not a refresh token issued by Keycloak
+                throw new OIDCException("Refresh token can only be used with the refresh token grant");
+            }
+        }
     }
 }

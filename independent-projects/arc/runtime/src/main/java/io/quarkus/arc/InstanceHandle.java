@@ -27,6 +27,18 @@ public interface InstanceHandle<T> extends AutoCloseable {
     }
 
     /**
+     * If an instance is available, returns the value, otherwise returns
+     * {@code other}.
+     * 
+     * @param other
+     * @return the instance if available, otherwise {@code other}
+     */
+    default T orElse(T other) {
+        T val = get();
+        return val != null ? val : other;
+    }
+
+    /**
      * Destroy the instance as defined by
      * {@link javax.enterprise.context.spi.Contextual#destroy(Object, javax.enterprise.context.spi.CreationalContext)}. If this
      * is a CDI contextual instance it is also removed from the underlying context.

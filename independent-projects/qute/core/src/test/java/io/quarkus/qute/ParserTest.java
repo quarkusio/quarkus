@@ -32,6 +32,14 @@ public class ParserTest {
     }
 
     @Test
+    public void testSectionEndWithoutStart() {
+        assertParserError("Hello {/}",
+                "Parser error on line 1: no section start tag found for {/}", 1);
+        assertParserError("{#if true}Bye...{/if} Hello {/if}",
+                "Parser error on line 1: no section start tag found for {/if}", 1);
+    }
+
+    @Test
     public void testNonexistentHelper() {
         assertParserError("Hello!\n {#foo test/}",
                 "Parser error on line 2: no section helper found for {#foo test/}", 2);
@@ -163,6 +171,33 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("Hello world", engine.parse("{#if true  }Hello {name }{/if  }").data("name", "world").render());
         assertEquals("Hello world", engine.parse("Hello {name ?: 'world'  }").render());
+    }
+
+    @Test
+    public void testCdata() {
+        Engine engine = Engine.builder().addDefaults().build();
+        String jsSnippet = "<script>const foo = function(){alert('bar');};</script>";
+        try {
+            engine.parse("Hello {name} " + jsSnippet);
+            fail();
+        } catch (Exception expected) {
+        }
+        assertEquals("Hello world <script>const foo = function(){alert('bar');};</script>", engine.parse("Hello {name} {["
+                + jsSnippet
+                + "]}").data("name", "world").render());
+        assertEquals("Hello world <strong>", engine.parse("Hello {name} {[<strong>]}").data("name", "world").render());
+    }
+
+    @Test
+    public void testRemoveStandaloneLines() {
+        Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
+        String content = "{@java.lang.String foo}\n" // -> standalone
+                + "\n"
+                + "  {#for i in 5}\n" // -> standalone
+                + "{index}:\n"
+                + "{/} "; // -> standalone
+        assertEquals("\n0:\n1:\n2:\n3:\n4:\n", engine.parse(content).render());
+        assertEquals("bar\n", engine.parse("{foo}\n").data("foo", "bar").render());
     }
 
     private void assertParserError(String template, String message, int line) {

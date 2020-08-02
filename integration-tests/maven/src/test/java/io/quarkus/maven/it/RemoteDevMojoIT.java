@@ -8,13 +8,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -29,8 +29,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
     @Test
     public void testThatTheApplicationIsReloadedOnJavaChange()
             throws MavenInvocationException, IOException, InterruptedException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-java-change-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-java-change-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-java-change-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-java-change-local");
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -58,8 +58,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test
     public void testThatTheApplicationIsReloadedOnNewResource() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-resource-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-new-resource-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-new-resource-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-new-resource-local");
         runAndCheck();
 
         File source = new File(agentDir, "src/main/java/org/acme/MyNewResource.java");
@@ -89,13 +89,10 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-config-change-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-config-change-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-config-change-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-config-change-local");
         assertThat(testDir).isDirectory();
-        running = new RunningInvoker(testDir, false);
-        final Properties mvnRunProps = new Properties();
-        mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+        runAndCheck();
 
         String resp = DevModeTestUtils.getHttpResponse();
         runningAgent = new RunningInvoker(agentDir, false);
@@ -124,9 +121,10 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
     }
 
     @Test
+    @Disabled
     public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-resource-change-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-resource-change-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-resource-change-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-resource-change-local");
         runAndCheck();
 
         // Create a new resource
@@ -158,8 +156,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test
     public void testThatApplicationRecoversCompilationIssue() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-compilation-issue-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-compilation-issue-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-compilation-issue-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-compilation-issue-local");
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -195,8 +193,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test
     public void testThatNewBeanAreDiscovered() throws IOException, MavenInvocationException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-bean-remote");
-        agentDir = initProject("projects/classic", "projects/project-classic-run-run-new-bean-local");
+        testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-new-bean-remote");
+        agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-run-new-bean-local");
         runAndCheck();
 
         // Edit the "Hello" message.

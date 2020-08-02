@@ -1,7 +1,10 @@
 package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -17,7 +20,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisabledSchedulerTest {
 
     @Inject
-    Scheduler quartzScheduler;
+    Scheduler scheduler;
+
+    @Inject
+    Instance<org.quartz.Scheduler> quartzScheduler;
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -28,7 +34,13 @@ public class DisabledSchedulerTest {
 
     @Test
     public void testNoSchedulerInvocations() throws InterruptedException {
-        assertFalse(quartzScheduler.isRunning());
+        assertFalse(scheduler.isRunning());
+        assertTrue(quartzScheduler.isResolvable());
+        try {
+            quartzScheduler.get();
+            fail();
+        } catch (IllegalStateException expected) {
+        }
     }
 
     static class Jobs {

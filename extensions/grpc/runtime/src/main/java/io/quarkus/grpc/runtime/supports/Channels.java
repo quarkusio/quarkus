@@ -6,15 +6,9 @@ import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.Prioritized;
 import javax.net.ssl.SSLException;
 
 import io.grpc.Channel;
@@ -26,6 +20,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.grpc.runtime.GrpcClientInterceptorContainer;
 import io.quarkus.grpc.runtime.annotations.GrpcServiceLiteral;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 
@@ -122,9 +117,9 @@ public class Channels {
         }
 
         // Client-side interceptors
-        Instance<ClientInterceptor> interceptors = Arc.container().beanManager().createInstance()
-                .select(ClientInterceptor.class);
-        for (ClientInterceptor clientInterceptor : getSortedInterceptors(interceptors)) {
+        InstanceHandle<GrpcClientInterceptorContainer> interceptors = Arc.container()
+                .instance(GrpcClientInterceptorContainer.class);
+        for (ClientInterceptor clientInterceptor : interceptors.get().getSortedInterceptors()) {
             builder.intercept(clientInterceptor);
         }
 
@@ -138,29 +133,4 @@ public class Channels {
         }
         return instance.get();
     }
-
-    private static List<ClientInterceptor> getSortedInterceptors(Instance<ClientInterceptor> interceptors) {
-        if (interceptors.isUnsatisfied()) {
-            return Collections.emptyList();
-        }
-
-        return interceptors.stream().sorted(new Comparator<ClientInterceptor>() { // NOSONAR
-            @Override
-            public int compare(ClientInterceptor si1, ClientInterceptor si2) {
-                int p1 = 0;
-                int p2 = 0;
-                if (si1 instanceof Prioritized) {
-                    p1 = ((Prioritized) si1).getPriority();
-                }
-                if (si2 instanceof Prioritized) {
-                    p2 = ((Prioritized) si2).getPriority();
-                }
-                if (si1.equals(si2)) {
-                    return 0;
-                }
-                return Integer.compare(p1, p2);
-            }
-        }).collect(Collectors.toList());
-    }
-
 }

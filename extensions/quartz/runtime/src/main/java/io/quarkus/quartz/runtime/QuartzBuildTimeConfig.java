@@ -1,7 +1,9 @@
 package io.quarkus.quartz.runtime;
 
+import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -38,4 +40,31 @@ public class QuartzBuildTimeConfig {
      */
     @ConfigItem(name = "datasource")
     public Optional<String> dataSourceName;
+
+    /**
+     * The prefix for quartz job store tables.
+     * <p>
+     * Ignored if using a `ram` store.
+     */
+    @ConfigItem(defaultValue = "QRTZ_")
+    public String tablePrefix;
+
+    /**
+     * The named trigged listeners list
+     */
+    @ConfigItem(name = "triggerListener")
+    @ConfigDocMapKey("namedTriggerListener")
+    public Map<String, QuartzAdditionalPropsConfig> triggerListeners;
+    /**
+     * The named job listeners list
+     */
+    @ConfigItem(name = "jobListener")
+    @ConfigDocMapKey("namedJobListener")
+    public Map<String, QuartzAdditionalPropsConfig> jobListeners;
+    /**
+     * The named plugins list
+     */
+    @ConfigItem(name = "plugin")
+    @ConfigDocMapKey("namedPlugin")
+    public Map<String, QuartzAdditionalPropsConfig> plugins;
 }

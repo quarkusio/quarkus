@@ -24,7 +24,7 @@ public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAu
     @Override
     public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        TestIdentityController.TestIdentity ident = TestIdentityController.idenitities.get(request.getUsername());
+        TestIdentityController.TestIdentity ident = TestIdentityController.identities.get(request.getUsername());
         if (ident == null) {
             return Uni.createFrom().optional(Optional.empty());
         }

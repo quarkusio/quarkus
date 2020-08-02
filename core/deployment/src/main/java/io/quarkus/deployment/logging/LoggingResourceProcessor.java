@@ -65,6 +65,13 @@ public final class LoggingResourceProcessor {
                             "quarkus.log.filter.\"" + logCleanupFilter.getFilterElement().getLoggerName()
                                     + "\".if-starts-with",
                             startsWithClause));
+            if (logCleanupFilter.getFilterElement().getTargetLevel() != null) {
+                configOutput.accept(
+                        new RunTimeConfigurationDefaultBuildItem(
+                                "quarkus.log.filter.\"" + logCleanupFilter.getFilterElement().getLoggerName()
+                                        + "\".target-level",
+                                logCleanupFilter.getFilterElement().getTargetLevel().toString()));
+            }
         }
     }
 

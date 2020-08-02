@@ -8,8 +8,12 @@ import javax.ws.rs.PathParam;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.UserInfo;
+import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/tenant/{tenant}/api/user")
 public class TenantResource {
@@ -18,32 +22,81 @@ public class TenantResource {
     JsonWebToken accessToken;
 
     @Inject
+    SecurityIdentity securityIdentity;
+
+    @Inject
+    AccessTokenCredential accessTokenCred;
+
+    @Inject
     @IdToken
     JsonWebToken idToken;
 
     @GET
     @RolesAllowed("user")
-    public String userName(@PathParam("tenant") String tenant) {
-        return tenant + ":" + (tenant.startsWith("tenant-web-app") ? getNameWebAppType() : getNameServiceType());
+    public String userNameService(@PathParam("tenant") String tenant) {
+        if (tenant.startsWith("tenant-web-app")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        return tenant + ":" + getNameServiceType();
     }
 
-    private String getNameWebAppType() {
+    @GET
+    @Path("webapp")
+    @RolesAllowed("user")
+    public String userNameWebApp(@PathParam("tenant") String tenant) {
+        if (!tenant.equals("tenant-web-app")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        if (!(securityIdentity.getAttribute("userinfo") instanceof UserInfo)) {
+            throw new OIDCException("userinfo attribute muset be set");
+        }
+        // Not injecting in the service field as not all tenants require it
+        UserInfo userInfo = Arc.container().instance(UserInfo.class).get();
+        if (!idToken.getGroups().contains("user")) {
+            throw new OIDCException("Groups expected");
+        }
+        return tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+    }
+
+    @GET
+    @Path("webapp2")
+    @RolesAllowed("user")
+    public String userNameWebApp2(@PathParam("tenant") String tenant) {
+        if (!tenant.equals("tenant-web-app2")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        if (idToken.getGroups().contains("user")) {
+            throw new OIDCException("Groups are not expected");
+        }
+        return tenant + ":" + getNameWebAppType(idToken.getName(), "preferred_username", "upn");
+    }
+
+    private String getNameWebAppType(String name,
+            String idTokenNameClaim,
+            String idTokenNameClaimNotExpected) {
         if (!"ID".equals(idToken.getClaim("typ"))) {
             throw new OIDCException("Wrong ID token type");
         }
-        String name = idToken.getName();
-        // The test is set up to use 'upn' for the 'web-app' application type
-        if (!name.equals(idToken.getClaim("upn"))) {
-            throw new OIDCException("upn claim is missing");
+        if (!name.equals(idToken.getClaim(idTokenNameClaim))) {
+            throw new OIDCException(idTokenNameClaim + " claim is missing");
+        }
+        if (idToken.getClaim(idTokenNameClaimNotExpected) != null) {
+            throw new OIDCException(idTokenNameClaimNotExpected + " claim is not expected");
         }
         // Access token must be available too
         if (!"Bearer".equals(accessToken.getClaim("typ"))) {
             throw new OIDCException("Wrong access token type");
         }
+        if (accessTokenCred.isOpaque()) {
+            throw new OIDCException("JWT token is expected");
+        }
         return name;
     }
 
     private String getNameServiceType() {
+        if (accessTokenCred.isOpaque()) {
+            throw new OIDCException("JWT token is expected");
+        }
         if (!"Bearer".equals(accessToken.getClaim("typ"))) {
             throw new OIDCException("Wrong access token type");
         }

@@ -1,15 +1,19 @@
 package io.quarkus.reactive.pg.client.deployment;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -25,6 +29,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 
 @SuppressWarnings("deprecation")
 class ReactivePgClientProcessor {
@@ -47,7 +52,9 @@ class ReactivePgClientProcessor {
             BuildProducer<VertxPoolBuildItem> vertxPool,
             PgPoolRecorder recorder,
             VertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
@@ -55,7 +62,7 @@ class ReactivePgClientProcessor {
             LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
             LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
+        feature.produce(new FeatureBuildItem(Feature.REACTIVE_PG_CLIENT));
         // Make sure the PgPoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-pg-client");
 
@@ -68,12 +75,22 @@ class ReactivePgClientProcessor {
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
 
-        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(), beanContainer.getValue(),
+        RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
                 shutdown);
         pgPool.produce(new PgPoolBuildItem(pool));
-        vertxPool.produce(new VertxPoolBuildItem(pool));
+
+        // Synthetic bean for PgPool
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(PgPool.class).addType(Pool.class).scope(Singleton.class).runtimeValue(pool)
+                        .setRuntimeInit().done());
+
+        boolean isDefault = true; // assume always the default pool for now
+        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.POSTGRESQL, isDefault));
+
+        // Enable SSL support by default
+        sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_PG_CLIENT));
 
         return serviceStart;
     }

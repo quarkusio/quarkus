@@ -82,7 +82,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     public B types(Class<?>... types) {
         for (Class<?> type : types) {
-            this.types.add(Type.create(DotName.createSimple(type.getName()), Kind.CLASS));
+            addType(type);
         }
         return self();
     }
@@ -100,6 +100,10 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
     public B addType(Type type) {
         this.types.add(type);
         return self();
+    }
+
+    public B addType(Class<?> type) {
+        return addType(DotName.createSimple(type.getName()));
     }
 
     public B addQualifier(Class<? extends Annotation> annotationClass) {
@@ -220,7 +224,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
             ResultHandle destoyerHandle = mc.newInstance(MethodDescriptor.ofConstructor(destroyerClazz));
             ResultHandle[] params = { mc.getMethodParam(0), mc.getMethodParam(1), paramsHandle };
             mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", Void.class, Object.class, CreationalContext.class,
+                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", void.class, Object.class, CreationalContext.class,
                             Map.class),
                     destoyerHandle, params);
             mc.returnValue(null);

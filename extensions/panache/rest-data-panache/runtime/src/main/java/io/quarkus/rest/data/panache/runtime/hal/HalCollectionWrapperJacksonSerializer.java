@@ -45,6 +45,7 @@ public class HalCollectionWrapperJacksonSerializer extends JsonSerializer<HalCol
 
     private void writeLinks(HalCollectionWrapper wrapper, JsonGenerator generator) throws IOException {
         Map<String, HalLink> links = linksExtractor.getLinks(wrapper.getElementType());
+        links.putAll(wrapper.getLinks());
         generator.writeFieldName("_links");
         generator.writeObject(links);
     }

@@ -18,6 +18,8 @@ import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -47,11 +49,18 @@ public class ResteasyServletProcessor {
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
 
     @BuildStep
-    public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig, HttpRootPathBuildItem httpRootPathBuildItem) {
+    public void jaxrsConfig(
+            Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<ResteasyJaxrsConfigBuildItem> deprecatedResteasyJaxrsConfig,
+            BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
+            HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            resteasyJaxrsConfig.produce(
-                    new ResteasyJaxrsConfigBuildItem(httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath())));
+            String rootPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getRootPath());
+            String defaultPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath());
+
+            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
+            resteasyJaxrsConfig
+                    .produce(new io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
         }
     }
 
@@ -83,10 +92,10 @@ public class ResteasyServletProcessor {
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
-        if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
+        if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY));
+        feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,

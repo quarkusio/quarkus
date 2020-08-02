@@ -7,7 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.Subclass;
-import io.quarkus.arc.impl.SubclassMethodMetadata;
+import io.quarkus.arc.impl.InterceptedMethodMetadata;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -63,11 +63,11 @@ public class SubclassGenerator extends AbstractGenerator {
 
     protected static final String FIELD_NAME_PREDESTROYS = "preDestroys";
     protected static final String FIELD_NAME_METADATA = "metadata";
-    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(SubclassMethodMetadata.class, "method",
+    protected static final FieldDescriptor FIELD_METADATA_METHOD = FieldDescriptor.of(InterceptedMethodMetadata.class, "method",
             Method.class);
-    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(SubclassMethodMetadata.class, "chain",
+    protected static final FieldDescriptor FIELD_METADATA_CHAIN = FieldDescriptor.of(InterceptedMethodMetadata.class, "chain",
             List.class);
-    protected static final FieldDescriptor FIELD_METADATA_BINDINGS = FieldDescriptor.of(SubclassMethodMetadata.class,
+    protected static final FieldDescriptor FIELD_METADATA_BINDINGS = FieldDescriptor.of(InterceptedMethodMetadata.class,
             "bindings", Set.class);
 
     private final Predicate<DotName> applicationClassPredicate;
@@ -308,8 +308,9 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle bindingsHandle = bindings.computeIfAbsent(
                     interceptedMethod.bindings.stream().map(BindingKey::new).collect(Collectors.toList()), bindingsFun);
 
-            //Now create SubclassMethodMetadata for the given intercepted method
-            ResultHandle methodMetadataHandle = constructor.newInstance(MethodDescriptors.SUBCLASS_METHOD_METADATA_CONSTRUCTOR,
+            // Now create metadata for the given intercepted method
+            ResultHandle methodMetadataHandle = constructor.newInstance(
+                    MethodDescriptors.INTERCEPTED_METHOD_METADATA_CONSTRUCTOR,
                     chainHandle, methodHandle, bindingsHandle);
             // metadata.put("m1", new SubclassMethodMetadata(...))
             constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, metadataHandle, methodIdHandle, methodMetadataHandle);

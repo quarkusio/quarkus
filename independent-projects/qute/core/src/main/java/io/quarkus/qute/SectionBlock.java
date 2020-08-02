@@ -12,10 +12,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Each section tag consists of one or more blocks. The main block is always present. Additional blocks start with a label
+ * Each section consists of one or more blocks. The main block is always present. Additional blocks start with a label
  * definition: <code>{#label param1}</code>.
  */
-public class SectionBlock {
+public final class SectionBlock {
 
     public final Origin origin;
 
@@ -37,9 +37,9 @@ public class SectionBlock {
     /**
      * Section content.
      */
-    final List<TemplateNode> nodes;
+    List<TemplateNode> nodes;
 
-    public SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
+    SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
             Map<String, Expression> expressions,
             List<TemplateNode> nodes) {
         this.origin = origin;
@@ -48,6 +48,10 @@ public class SectionBlock {
         this.parameters = parameters;
         this.expressions = expressions;
         this.nodes = ImmutableList.copyOf(nodes);
+    }
+
+    public boolean isEmpty() {
+        return nodes.isEmpty();
     }
 
     Set<Expression> getExpressions() {
@@ -65,6 +69,19 @@ public class SectionBlock {
         builder.append("SectionBlock [origin=").append(origin).append(", id=").append(id).append(", label=").append(label)
                 .append("]");
         return builder.toString();
+    }
+
+    void removeNodes(Set<TemplateNode> nodesToRemove) {
+        ImmutableList.Builder<TemplateNode> builder = ImmutableList.builder();
+        for (TemplateNode node : nodes) {
+            if (node instanceof SectionNode) {
+                builder.add(node);
+                ((SectionNode) node).removeNodes(nodesToRemove);
+            } else if (!nodesToRemove.contains(node)) {
+                builder.add(node);
+            }
+        }
+        nodes = builder.build();
     }
 
     static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,

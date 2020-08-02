@@ -5,6 +5,7 @@ import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
 import java.util.stream.Stream
+import javax.persistence.EntityManager
 import javax.persistence.LockModeType
 
 /**
@@ -15,6 +16,14 @@ import javax.persistence.LockModeType
  * @param Id The ID type of the entity
  */
 interface PanacheRepositoryBase<Entity : Any, Id: Any> {
+
+    /**
+     * Returns the default [EntityManager] for extra operations (eg. CriteriaQueries)
+     *
+     * @return the default [EntityManager]
+     */
+    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager()
+
     /**
      * Persist the given entity in the database, if not already persisted.
      *

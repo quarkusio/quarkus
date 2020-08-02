@@ -7,6 +7,7 @@ import io.quarkus.artemis.core.deployment.ArtemisJmsBuildItem;
 import io.quarkus.artemis.core.runtime.ArtemisRuntimeConfig;
 import io.quarkus.artemis.jms.runtime.ArtemisJmsProducer;
 import io.quarkus.artemis.jms.runtime.ArtemisJmsRecorder;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -21,7 +22,7 @@ public class ArtemisJmsProcessor {
             BuildProducer<ArtemisJmsBuildItem> artemisJms) {
 
         artemisJms.produce(new ArtemisJmsBuildItem());
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.ARTEMIS_JMS));
+        feature.produce(new FeatureBuildItem(Feature.ARTEMIS_JMS));
         additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(ArtemisJmsProducer.class));
     }
 

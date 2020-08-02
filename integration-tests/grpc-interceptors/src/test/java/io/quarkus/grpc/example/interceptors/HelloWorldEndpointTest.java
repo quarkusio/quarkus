@@ -6,14 +6,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.response.Response;
 
 @QuarkusTest
 class HelloWorldEndpointTest {
 
     @Test
     public void testHelloWorldServiceUsingBlockingStub() {
-        String response = get("/hello/blocking/neo").asString();
-        assertThat(response).isEqualTo("Hello neo");
+        Response response = get("/hello/blocking/neo");
+        String intercepted = response.getHeader("intercepted");
+        String responseMsg = response.asString();
+        assertThat(responseMsg).isEqualTo("Hello neo");
+        assertThat(intercepted).isEqualTo("true");
     }
 
     @Test

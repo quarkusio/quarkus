@@ -27,7 +27,7 @@ public class KubernetesWithConflictingEnvTest {
                     .isInstanceOf(RuntimeException.class)
                     .hasCauseInstanceOf(BuildException.class)
                     .hasMessageContaining(
-                            "- 'envvar': first defined as 'var' env var with value 'value' redefined as 'field' env var with value 'field'"))
+                            "- 'envvar': first defined as 'envvar' env var with value 'value' redefined as 'envvar' env var with value from field 'field'"))
             .withConfigurationResource("kubernetes-with-" + APPLICATION_NAME + "-env.properties");
 
     @ProdBuildResults

@@ -141,4 +141,17 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                 .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
+
+    public static String getRefreshToken(String userName) {
+        return RestAssured
+                .given()
+                .param("grant_type", "password")
+                .param("username", userName)
+                .param("password", userName)
+                .param("client_id", "quarkus-app")
+                .param("client_secret", "secret")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getRefreshToken();
+    }
 }

@@ -19,6 +19,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.artemis.core.runtime.ArtemisCoreProducer;
 import io.quarkus.artemis.core.runtime.ArtemisCoreRecorder;
 import io.quarkus.artemis.core.runtime.ArtemisRuntimeConfig;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -97,7 +98,7 @@ public class ArtemisCoreProcessor {
         if (artemisJms.isPresent()) {
             return;
         }
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.ARTEMIS_CORE));
+        feature.produce(new FeatureBuildItem(Feature.ARTEMIS_CORE));
         additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(ArtemisCoreProducer.class));
     }
 

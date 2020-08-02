@@ -20,15 +20,20 @@ repositories {
     mavenCentral()
 }
 
+configurations.all {
+    exclude group: 'io.quarkus', module: 'quarkus-bootstrap-maven-resolver'
+}
+
 dependencies {
     api gradleApi()
+
     implementation "io.quarkus:quarkus-bootstrap-core:${version}"
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
     implementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
 
-    testImplementation 'org.mockito:mockito-core:3.3.3'
+    testImplementation 'org.mockito:mockito-core:3.4.6'
     testImplementation 'org.assertj:assertj-core:3.16.1'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
     testImplementation 'org.awaitility:awaitility:4.0.3'
@@ -63,35 +68,6 @@ gradlePlugin {
             description = 'Builds a Quarkus application, and provides helpers to launch dev-mode, the Quarkus CLI, building of native images'
         }
     }
-}
-
-// Add a source set for the functional test suite
-sourceSets {
-    functionalTest {
-    }
-}
-
-gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
-configurations.functionalTestRuntime.extendsFrom(configurations.testRuntimeOnly)
-
-// Add a task to run the functional tests
-task functionalTest(type: Test) {
-    description = "Runs functional tests"
-    group = "verification"
-    useJUnitPlatform()
-    testClassesDirs = sourceSets.functionalTest.output.classesDirs
-    classpath = sourceSets.functionalTest.runtimeClasspath
-
-    // Kotlin compiler does not support Java 14
-    if(JavaVersion.current() == JavaVersion.VERSION_14) {
-        exclude 'io/quarkus/gradle/devmode/MultiModuleKotlinProjectDevModeTest.class'
-    }
-}
-
-check {
-    // Run the functional tests as part of `check`
-    dependsOn(tasks.functionalTest)
 }
 
 wrapper {

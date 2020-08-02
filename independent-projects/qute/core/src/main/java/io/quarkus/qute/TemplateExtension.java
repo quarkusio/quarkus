@@ -16,13 +16,16 @@ import java.lang.annotation.Target;
  * <ul>
  * <li>must be static,</li>
  * <li>must not return {@code void},</li>
- * <li>must accept at least one parameter.</li>
+ * <li>must accept at least one parameter, unless the namespace is specified.</li>
  * <p>
- * The class of the first parameter is used to match the base object.
+ * The class of the first parameter is used to match the base object unless the namespace is specified. In such case, the
+ * namespace is used to match an expression.
  * <p>
  * By default, the method name is used to match the property name. However, it is possible to specify the matching name with
  * {@link #matchName()}. A special constant - {@link #ANY} - may be used to specify that the extension method matches any name.
- * In that case, the method must declare at least two parameters and the second parameter must be a string.
+ * In that case, a method parameter is used to pass the property name. If a namespace is specified the method must declare at
+ * least one parameter and the first parameter must be a string. If no namespace is specified the method must declare at least
+ * two parameters and the second parameter must be a string.
  * 
  * <pre>
  * {@literal @}TemplateExtension
@@ -62,5 +65,16 @@ public @interface TemplateExtension {
      * @return the priority used by the generated value resolver
      */
     int priority() default DEFAULT_PRIORITY;
+
+    /**
+     * If not empty a namespace resolver is generated instead.
+     * <p>
+     * Template extension methods that share the same namespace and are declared on the same class are grouped in one resolver
+     * ordered by {@link #priority()}. The first matching extension method is used to resolve an expression. Template extension
+     * methods declared on different classes cannot share the same namespace.
+     * 
+     * @return the namespace
+     */
+    String namespace() default "";
 
 }

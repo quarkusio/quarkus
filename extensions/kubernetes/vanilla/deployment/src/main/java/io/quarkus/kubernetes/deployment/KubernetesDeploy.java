@@ -67,7 +67,6 @@ public class KubernetesDeploy {
         KubernetesClient client = KubernetesClientUtils.createClient();
         String masterURL = client.getConfiguration().getMasterUrl();
         try {
-            masterURL = client.getConfiguration().getMasterUrl();
             //Let's check if we can connect.
             VersionInfo version = client.getVersion();
             if (version == null) {
@@ -79,7 +78,6 @@ public class KubernetesDeploy {
             log.info("Kubernetes API Server at '" + masterURL + "' successfully contacted.");
             log.debugf("Kubernetes Version: %s.%s", version.getMajor(), version.getMinor());
             serverFound = true;
-            client.close();
             return Result.enabled();
         } catch (Exception e) {
             if (e.getCause() instanceof SSLHandshakeException) {
@@ -94,6 +92,8 @@ public class KubernetesDeploy {
                                 + masterURL + "'",
                         e));
             }
+        } finally {
+            client.close();
         }
     }
 

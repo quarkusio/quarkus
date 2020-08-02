@@ -8,10 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,6 +26,8 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import javax.inject.Inject;
 
 import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.GradleException;
@@ -56,7 +56,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
-import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.JavaBinFinder;
@@ -79,8 +78,13 @@ public class QuarkusDev extends QuarkusTask {
 
     private List<String> compilerArgs = new LinkedList<>();
 
+    @Inject
     public QuarkusDev() {
         super("Development mode: enables hot deployment with background compilation");
+    }
+
+    public QuarkusDev(String name) {
+        super(name);
     }
 
     @InputDirectory
@@ -331,6 +335,7 @@ public class QuarkusDev extends QuarkusTask {
             tempFile.deleteOnExit();
 
             context.setDevModeRunnerJarFile(tempFile);
+            modifyDevModeContext(context);
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
@@ -383,6 +388,10 @@ public class QuarkusDev extends QuarkusTask {
         }
     }
 
+    protected void modifyDevModeContext(DevModeContext devModeContext) {
+
+    }
+
     private void addSelfWithLocalDeps(Project project, DevModeContext context, Set<String> visited,
             Set<AppArtifactKey> addedDeps, boolean root) {
         if (!visited.add(project.getPath())) {
@@ -413,10 +422,12 @@ public class QuarkusDev extends QuarkusTask {
         SourceSetContainer sourceSets = javaConvention.getSourceSets();
         SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Set<String> sourcePaths = new HashSet<>();
+        Set<String> sourceParentPaths = new HashSet<>();
 
         for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
             if (sourceDir.exists()) {
                 sourcePaths.add(sourceDir.getAbsolutePath());
+                sourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath().toString());
             }
         }
         //TODO: multiple resource directories
@@ -440,13 +451,17 @@ public class QuarkusDev extends QuarkusTask {
             resourcesOutputPath = classesDir;
         }
 
-        DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
+        DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(key,
                 project.getName(),
                 project.getProjectDir().getAbsolutePath(),
                 sourcePaths,
                 classesDir,
                 resourcesSrcDir.getAbsolutePath(),
-                resourcesOutputPath);
+                resourcesOutputPath,
+                sourceParentPaths,
+                project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
+                project.getBuildDir().toString());
+
         if (root) {
             context.setApplicationRoot(wsModuleInfo);
         } else {
@@ -470,20 +485,19 @@ public class QuarkusDev extends QuarkusTask {
         boolean foundQuarkusPlugin = false;
         Project prj = getProject();
         while (prj != null && !foundQuarkusPlugin) {
-            if (prj.getPlugins().hasPlugin(QuarkusPlugin.ID)) {
-                final Set<ResolvedDependency> firstLevelDeps = prj.getBuildscript().getConfigurations().getByName("classpath")
-                        .getResolvedConfiguration().getFirstLevelModuleDependencies();
-                if (firstLevelDeps.isEmpty()) {
-                    // TODO this looks weird
-                } else {
-                    for (ResolvedDependency rd : firstLevelDeps) {
-                        if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
-                            rd.getAllModuleArtifacts().stream()
-                                    .map(ResolvedArtifact::getFile)
-                                    .forEach(f -> addToClassPaths(classPathManifest, f));
-                            foundQuarkusPlugin = true;
-                            break;
-                        }
+            final Set<ResolvedDependency> firstLevelDeps = prj.getBuildscript().getConfigurations().getByName("classpath")
+                    .getResolvedConfiguration().getFirstLevelModuleDependencies();
+
+            if (firstLevelDeps.isEmpty()) {
+                // TODO this looks weird
+            } else {
+                for (ResolvedDependency rd : firstLevelDeps) {
+                    if ("io.quarkus.gradle.plugin".equals(rd.getModuleName())) {
+                        rd.getAllModuleArtifacts().stream()
+                                .map(ResolvedArtifact::getFile)
+                                .forEach(f -> addToClassPaths(classPathManifest, f));
+                        foundQuarkusPlugin = true;
+                        break;
                     }
                 }
             }
@@ -519,19 +533,10 @@ public class QuarkusDev extends QuarkusTask {
 
     private void addToClassPaths(StringBuilder classPathManifest, File file) {
         if (filesIncludedInClasspath.add(file)) {
-            getProject().getLogger().info("Adding dependency {}", file);
+            getProject().getLogger().debug("Adding dependency {}", file);
 
             final URI uri = file.toPath().toAbsolutePath().toUri();
             classPathManifest.append(uri).append(" ");
         }
     }
-
-    private URL toUrl(URI uri) {
-        try {
-            return uri.toURL();
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException("Failed to convert URI to URL: " + uri, e);
-        }
-    }
-
 }

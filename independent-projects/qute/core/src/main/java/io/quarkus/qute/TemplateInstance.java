@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.smallrye.mutiny.Multi;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import org.reactivestreams.Publisher;
@@ -79,8 +80,19 @@ public interface TemplateInstance {
      * 
      * @return a publisher that can be used to consume chunks of the rendered template
      * @throws UnsupportedOperationException If no {@link PublisherFactory} service provider is found
+     * @deprecated Use {@link #createMulti()} instead
      */
-    Publisher<String> publisher();
+    @Deprecated
+    default Publisher<String> publisher() {
+        return createMulti();
+    }
+
+    /**
+     * Each subscription triggers rendering.
+     * 
+     * @return a Multi that can be used to consume chunks of the rendered template
+     */
+    Multi<String> createMulti();
 
     /**
      * Triggers rendering.

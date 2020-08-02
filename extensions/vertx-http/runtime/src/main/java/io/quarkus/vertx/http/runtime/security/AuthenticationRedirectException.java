@@ -19,8 +19,12 @@ public class AuthenticationRedirectException extends RuntimeException {
         this.redirectUri = redirectUri;
     }
 
+    public AuthenticationRedirectException(Boolean autoRedirect, String redirectUri) {
+        this(autoRedirect ? 302 : 444, redirectUri);
+    }
+
     public int getCode() {
-        return 302;
+        return this.code;
     }
 
     public String getRedirectUri() {

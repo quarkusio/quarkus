@@ -1,6 +1,7 @@
 package io.quarkus.vault.test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class VaultTestLifecycleManager implements QuarkusTestResourceLifecycleMa
 
         try {
             vaultTestExtension.start();
-        } catch (InterruptedException | IOException e) {
+        } catch (InterruptedException | IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
 

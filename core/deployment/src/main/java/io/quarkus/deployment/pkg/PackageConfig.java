@@ -16,26 +16,18 @@ public class PackageConfig {
      * be referred to as 'jar'.
      */
     public static final String FAST_JAR = "fast-jar";
+    public static final String MUTABLE_JAR = "mutable-jar";
     public static final String LEGACY = "legacy";
     public static final String NATIVE = "native";
 
     /**
      * The requested output type.
      *
-     * The default built in types are jar and native
+     * The default built in types are 'jar', 'fast-jar' (a prototype more performant version of the default 'jar' type),
+     * 'uber-jar' and 'native'.
      */
     @ConfigItem(defaultValue = JAR)
     public String type;
-
-    /**
-     * Experimental property that allows for the creation of a 'mutable' application that
-     * can be re-augmented after creation.
-     *
-     * TODO: should this just be a different package type: 'mutable-jar'
-     *
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean mutableApplication;
 
     /**
      * If the java runner should be packed as an uberjar
@@ -87,4 +79,44 @@ public class PackageConfig {
      */
     @ConfigItem
     public Optional<String> outputName;
+
+    /**
+     * Whether to automate the creation of AppCDS. This has not effect when a native binary is needed and will be ignored in
+     * that case.
+     * Furthermore, this option only works for Java 11+ and is considered experimental for the time being.
+     * Finally, care must be taken to use the same exact JVM version when building and running the application.
+     */
+    @ConfigItem
+    public boolean createAppcds;
+
+    /**
+     * This is an advanced option that only takes effect for the mutable-jar format.
+     *
+     * If this is specified a directory of this name will be created in the jar distribution. Users can place
+     * jar files in this directory, and when re-augmentation is performed these will be processed and added to the
+     * class-path.
+     *
+     * Note that before reaugmentation has been performed these jars will be ignored, and if they are updated the app
+     * should be reaugmented again.
+     */
+    @ConfigItem
+    public Optional<String> userProvidersDirectory;
+
+    public boolean isAnyJarType() {
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
+                type.equalsIgnoreCase(PackageConfig.JAR) ||
+                type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.UBER_JAR)) ||
+                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+    }
+
+    public boolean isFastJar() {
+        return type.equalsIgnoreCase(PackageConfig.FAST_JAR) ||
+                type.equalsIgnoreCase(PackageConfig.MUTABLE_JAR);
+    }
+
+    public boolean isLegacyJar() {
+        return (type.equalsIgnoreCase(PackageConfig.LEGACY) ||
+                type.equalsIgnoreCase(PackageConfig.JAR));
+    }
 }

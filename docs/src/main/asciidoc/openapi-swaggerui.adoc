@@ -185,7 +185,7 @@ You just need to add the `openapi` extension to your Quarkus application:
 
 [source, shell]
 ----
-./mvnw quarkus:add-extension -Dextensions="openapi"
+./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-openapi"
 ----
 
 This will add the following to your `pom.xml`:
@@ -210,7 +210,7 @@ Once your application is started, you can make a request to the default `/openap
 [source, shell]
 ----
 $ curl http://localhost:8080/openapi
-openapi: 3.0.1
+openapi: 3.0.3
 info:
   title: Generated API
   version: "1.0"
@@ -302,6 +302,27 @@ public class ExampleApiApplication extends Application {
 }
 ----
 
+Another option, that is a feature provided by SmallRye and not part of the specification, is to use configuration to add this global API information.
+This way, you do not need to have a JAX-RS `Application` class, and you can name the API differently per environment.
+
+For example, add the following to your `application.properties`:
+
+[source, properties]
+----
+mp.openapi.extensions.smallrye.info.title=Example API
+%dev.mp.openapi.extensions.smallrye.info.title=Example API (development)
+%test.mp.openapi.extensions.smallrye.info.title=Example API (test)
+mp.openapi.extensions.smallrye.info.version=1.0.1
+mp.openapi.extensions.smallrye.info.description=Just an example service
+mp.openapi.extensions.smallrye.info.termsOfService=Your terms here
+mp.openapi.extensions.smallrye.info.contact.email=techsupport@example.com
+mp.openapi.extensions.smallrye.info.contact.name=Example API Support
+mp.openapi.extensions.smallrye.info.contact.url=http://exampleurl.com/contact
+mp.openapi.extensions.smallrye.info.license.name=Apache 2.0
+mp.openapi.extensions.smallrye.info.license.url=http://www.apache.org/licenses/LICENSE-2.0.html
+----
+
+This will give you similar information as the `@OpenAPIDefinition` example above.
 
 == Loading OpenAPI Schema From Static Files
 
@@ -384,6 +405,44 @@ Alternative paths are:
 
 Live reload of static OpenAPI document is supported during development. A modification to your OpenAPI document will be picked up on fly by Quarkus.
 ====
+
+== Changing the OpenAPI version
+
+By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file 
+will be used. You can also define the version in SmallRye using the following configuration:
+
+[source, properties]
+----
+mp.openapi.extensions.smallrye.openapi=3.0.2
+----
+
+This might be useful if your API go through a Gateway that needs a certain version.
+
+== Auto-generation of Operation Id
+
+The https://swagger.io/docs/specification/paths-and-operations/[Operation Id] can be set using the `@Operation` annotation, and is in many cases useful when using a tool to generate a client stub from the schema. 
+The Operation Id is typically used for the method name in the client stub. In SmallRye, you can auto-generate this Operation Id by using the following configuration:
+
+[source, properties]
+----
+mp.openapi.extensions.smallrye.operationIdStrategy=METHOD
+----
+
+Now you do not need to use the `@Operation` annotation. While generating the document, the method name will be used for the Operation Id.
+
+.The strategies available for generating the Operation Id
+|===
+|Property value |Description
+
+|`METHOD`
+|Use the method name.
+
+|`CLASS_METHOD`
+|Use the class name (without the package) plus the method.
+
+|`PACKAGE_CLASS_METHOD`
+|Use the class name plus the method name.
+|===
 
 == Use Swagger UI for development
 

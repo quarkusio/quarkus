@@ -1,6 +1,6 @@
 package io.quarkus.grpc.deployment;
 
-import static io.quarkus.deployment.builditem.FeatureBuildItem.GRPC_SERVER;
+import static io.quarkus.deployment.Feature.GRPC_SERVER;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -12,14 +12,17 @@ import org.jboss.logging.Logger;
 
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
+import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyChannelProvider;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -27,6 +30,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
@@ -40,11 +44,6 @@ import io.quarkus.vertx.deployment.VertxBuildItem;
 public class GrpcServerProcessor {
 
     private static final Logger logger = Logger.getLogger(GrpcServerProcessor.class);
-
-    @BuildStep
-    public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem(GRPC_SERVER);
-    }
 
     @BuildStep
     void discoverBindableServices(BuildProducer<BindableServiceBuildItem> bindables,
@@ -70,11 +69,12 @@ public class GrpcServerProcessor {
 
     @BuildStep
     void buildContainerBean(BuildProducer<AdditionalBeanBuildItem> beans,
-            List<BindableServiceBuildItem> bindables) {
+            List<BindableServiceBuildItem> bindables, BuildProducer<FeatureBuildItem> features) {
         if (!bindables.isEmpty()) {
             beans.produce(AdditionalBeanBuildItem.unremovableOf(GrpcContainer.class));
+            features.produce(new FeatureBuildItem(GRPC_SERVER));
         } else {
-            logger.warn("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            logger.debug("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
     }
 
@@ -88,6 +88,14 @@ public class GrpcServerProcessor {
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void definializeGrpcFieldsForDevMode(BuildProducer<BytecodeTransformerBuildItem> transformers) {
+        transformers.produce(new BytecodeTransformerBuildItem("io.grpc.internal.InternalHandlerRegistry",
+                new FieldDefinalizingVisitor("services", "methods")));
+        transformers.produce(new BytecodeTransformerBuildItem(ServerImpl.class.getName(),
+                new FieldDefinalizingVisitor("interceptors")));
     }
 
     @BuildStep

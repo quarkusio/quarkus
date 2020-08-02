@@ -1,15 +1,18 @@
 package io.quarkus.mongodb.panache.reactive.runtime;
 
+import static io.quarkus.mongodb.panache.runtime.BeanUtils.beanName;
+import static io.quarkus.mongodb.panache.runtime.BeanUtils.clientFromArc;
+import static io.quarkus.mongodb.panache.runtime.BeanUtils.getDatabaseName;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import javax.enterprise.inject.spi.Bean;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
@@ -17,7 +20,6 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import com.mongodb.client.model.InsertOneModel;
@@ -25,13 +27,11 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
-import io.quarkus.mongodb.panache.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -43,9 +43,8 @@ import io.smallrye.mutiny.Uni;
 public class ReactiveMongoOperations {
     private static final Logger LOGGER = Logger.getLogger(ReactiveMongoOperations.class);
     public static final String ID = "_id";
-    public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
 
-    private static volatile String defaultDatabaseName;
+    private static final Map<String, String> defaultDatabaseName = new ConcurrentHashMap<>();
 
     //
     // Instance methods
@@ -299,36 +298,21 @@ public class ReactiveMongoOperations {
     }
 
     private static ReactiveMongoDatabase mongoDatabase(MongoEntity entity) {
-        ReactiveMongoClient mongoClient = mongoClient(entity);
+        ReactiveMongoClient mongoClient = clientFromArc(entity, ReactiveMongoClient.class);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
-        String databaseName = getDefaultDatabaseName();
+        String databaseName = getDefaultDatabaseName(entity);
         return mongoClient.getDatabase(databaseName);
     }
 
-    private static String getDefaultDatabaseName() {
-        if (defaultDatabaseName == null) {
-            synchronized (MongoOperations.class) {
-                if (defaultDatabaseName == null) {
-                    defaultDatabaseName = ConfigProvider.getConfig()
-                            .getValue(MONGODB_DATABASE, String.class);
-                }
+    private static String getDefaultDatabaseName(MongoEntity entity) {
+        return defaultDatabaseName.computeIfAbsent(beanName(entity), new Function<String, String>() {
+            @Override
+            public String apply(String beanName) {
+                return getDatabaseName(entity, beanName);
             }
-        }
-        return defaultDatabaseName;
-    }
-
-    private static ReactiveMongoClient mongoClient(MongoEntity entity) {
-        if (entity != null && !entity.clientName().isEmpty()) {
-            Set<Bean<?>> beans = Arc.container().beanManager().getBeans(ReactiveMongoClient.class);
-            for (Bean<?> bean : beans) {
-                if (bean.getName() != null) {
-                    return (ReactiveMongoClient) Arc.container().instance(entity.clientName()).get();
-                }
-            }
-        }
-        return Arc.container().instance(ReactiveMongoClient.class).get();
+        });
     }
 
     //
@@ -336,13 +320,13 @@ public class ReactiveMongoOperations {
 
     public static Uni<Object> findById(Class<?> entityClass, Object id) {
         Uni<Optional> optionalEntity = findByIdOptional(entityClass, id);
-        return optionalEntity.onItem().apply(optional -> optional.orElse(null));
+        return optionalEntity.onItem().transform(optional -> optional.orElse(null));
     }
 
     public static Uni<Optional> findByIdOptional(Class<?> entityClass, Object id) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.find(new Document(ID, id)).collectItems().first()
-                .onItem().apply(Optional::ofNullable);
+                .onItem().transform(Optional::ofNullable);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {

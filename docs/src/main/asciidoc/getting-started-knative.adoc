@@ -25,7 +25,7 @@ For this guide you need:
 * roughly 20 minutes
 * having access to a Kubernetes cluster. Minikube is a valid option.
 * having deployed Knative components on https://knative.dev/docs/install/knative-with-minikube/[minikube]
-* having https://https://skaffold.dev/[Skaffold] CLI on your PATH
+* having https://skaffold.dev/[Skaffold] CLI on your PATH
 
 == Solution
 

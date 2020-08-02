@@ -51,6 +51,16 @@ public class KubernetesWithEnvFromSecretTest {
                                     assertThat(secretRef.getName()).isEqualTo("my-secret");
                                 });
                             });
+
+                            assertThat(container.getEnv()).filteredOn(env -> "DB_PASSWORD".equals(env.getName()))
+                                    .hasOnlyOneElementSatisfying(env -> {
+                                        assertThat(env.getValueFrom()).satisfies(valueFrom -> {
+                                            assertThat(valueFrom.getSecretKeyRef()).satisfies(secretKeyRef -> {
+                                                assertThat(secretKeyRef.getKey()).isEqualTo("database.password");
+                                                assertThat(secretKeyRef.getName()).isEqualTo("db-secret");
+                                            });
+                                        });
+                                    });
                         });
                     });
                 });

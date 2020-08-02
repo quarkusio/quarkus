@@ -17,7 +17,7 @@ import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.runtime.OpenApiProcessor;
 import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.io.Format;
 
 /**
  * @author Ken Finnigan
@@ -36,9 +36,9 @@ public class OpenApiDocumentProducer {
     @PostConstruct
     void create() throws IOException {
         try (InputStream is = getClass().getClassLoader()
-                .getResourceAsStream(OpenApiHandler.BASE_NAME + OpenApiSerializer.Format.JSON)) {
+                .getResourceAsStream(OpenApiHandler.BASE_NAME + Format.JSON)) {
             if (is != null) {
-                try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, OpenApiSerializer.Format.JSON)) {
+                try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, Format.JSON)) {
                     Config config = ConfigProvider.getConfig();
                     OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 

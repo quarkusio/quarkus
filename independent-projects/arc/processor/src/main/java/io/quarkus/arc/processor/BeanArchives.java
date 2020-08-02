@@ -1,7 +1,9 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.Lock;
 import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
 import io.quarkus.arc.impl.InjectableRequestContextController;
+import io.quarkus.arc.impl.LockInterceptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -64,9 +66,11 @@ public final class BeanArchives {
         index(indexer, Destroyed.class.getName());
         index(indexer, Intercepted.class.getName());
         index(indexer, Model.class.getName());
+        index(indexer, Lock.class.getName());
         // Arc built-in beans
         index(indexer, ActivateRequestContextInterceptor.class.getName());
         index(indexer, InjectableRequestContextController.class.getName());
+        index(indexer, LockInterceptor.class.getName());
         return indexer.complete();
     }
 
@@ -176,6 +180,11 @@ public final class BeanArchives {
         @Override
         public Collection<AnnotationInstance> getAnnotations(DotName annotationName) {
             return index.getAnnotations(annotationName);
+        }
+
+        @Override
+        public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName annotationName, IndexView index) {
+            return this.index.getAnnotationsWithRepeatable(annotationName, index);
         }
 
         private void getAllKnownSubClasses(DotName className, Set<ClassInfo> allKnown, Set<DotName> processedClasses) {

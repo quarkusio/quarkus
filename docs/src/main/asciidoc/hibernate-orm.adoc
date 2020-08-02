@@ -29,6 +29,7 @@ Add the following dependencies to your project:
 
 * the Hibernate ORM extension: `io.quarkus:quarkus-hibernate-orm`
 * your JDBC driver extension; the following options are available:
+  - `quarkus-jdbc-db2` for link:https://www.ibm.com/products/db2-database[IBM DB2]
   - `quarkus-jdbc-derby` for link:https://db.apache.org/derby/[Apache Derby]
   - `quarkus-jdbc-h2` for link:https://www.h2database.com/html/main.html[H2]
   - `quarkus-jdbc-mariadb` for link:https://mariadb.com/[MariaDB]
@@ -454,6 +455,26 @@ Finally, the second-level cache can be disabled globally by setting `hibernate.c
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.
 
+[[envers]]
+== Hibernate Envers
+The Envers extension to Hibernate ORM aims to provide an easy auditing / versioning solution for entity classes.
+
+In Quarkus, Envers has a dedicated Quarkus Extension `io.quarkus:quarkus-hibernate-envers`; you just need to add this to your project to start using it.
+
+[source,xml]
+.Additional dependency to enable Hibernate Envers
+--
+    <!-- Add the Hibernate Envers extension -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-envers</artifactId>
+    </dependency>
+--
+
+At this point the extension does not expose additional configuration properties.
+
+For more information about Hibernate Envers, see link:https://hibernate.org/orm/envers/[hibernate.org/orm/envers/].
+
 [[metrics]]
 == Metrics
 The SmallRye Metrics extension is capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
@@ -639,9 +660,9 @@ CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In t
 # Disable generation
 quarkus.hibernate-orm.database.generation=none
 
-# Enable SCHEMA approach and use default schema
+# Enable SCHEMA approach and use default datasource
 quarkus.hibernate-orm.multitenant=SCHEMA
-# You could use a non-default schema by using the following setting 
+# You could use a non-default datasource by using the following setting 
 # quarkus.hibernate-orm.multitenant-schema-datasource=other
 
 # The default data source used for all tenant schemas

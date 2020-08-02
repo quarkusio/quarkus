@@ -1,15 +1,18 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.stream.Collectors.toList;
+
+import java.net.URL;
+import java.util.List;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.cli.commands.ListExtensions;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.writer.FileProjectWriter;
-import io.quarkus.gradle.GradleBuildFileFromConnector;
+import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.registry.DefaultExtensionRegistry;
 
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
@@ -18,6 +21,8 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     private String format = "concise";
 
     private String searchPattern;
+
+    private List<String> registries;
 
     @Input
     public boolean isAll() {
@@ -51,6 +56,17 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
         this.searchPattern = searchPattern;
     }
 
+    @Optional
+    @Input
+    public List<String> getRegistries() {
+        return registries;
+    }
+
+    @Option(description = "The extension registry URLs to be used", option = "registry")
+    public void setRegistries(List<String> registry) {
+        this.registries = registry;
+    }
+
     public QuarkusListExtensions() {
         super("Lists the available quarkus extensions");
     }
@@ -58,15 +74,17 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @TaskAction
     public void listExtensions() {
         try {
-            final GradleBuildFileFromConnector buildFileFromConnector = new GradleBuildFileFromConnector(
-                    new FileProjectWriter(getProject().getProjectDir()));
-            QuarkusProject quarkusProject = QuarkusProject.of(getProject().getProjectDir().toPath(), platformDescriptor(),
-                    buildFileFromConnector);
-            new ListExtensions(quarkusProject)
+            ListExtensions listExtensions = new ListExtensions(getQuarkusProject())
                     .all(isAll())
                     .format(getFormat())
-                    .search(getSearchPattern())
-                    .execute();
+                    .search(getSearchPattern());
+            if (registries != null && !registries.isEmpty()) {
+                List<URL> urls = registries.stream()
+                        .map(QuarkusListExtensions::toURL)
+                        .collect(toList());
+                listExtensions.extensionRegistry(DefaultExtensionRegistry.fromURLs(urls));
+            }
+            listExtensions.execute();
         } catch (Exception e) {
             throw new GradleException("Unable to list extensions", e);
         }

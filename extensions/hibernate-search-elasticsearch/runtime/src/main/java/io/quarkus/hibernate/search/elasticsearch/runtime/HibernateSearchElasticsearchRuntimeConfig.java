@@ -32,11 +32,11 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**
-     * Additional backends
+     * Named backends
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchAdditionalBackendsRuntimeConfig additionalBackends;
+    public ElasticsearchNamedBackendsRuntimeConfig namedBackends;
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -58,10 +58,10 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     AutomaticIndexingConfig automaticIndexing;
 
     @ConfigGroup
-    public static class ElasticsearchAdditionalBackendsRuntimeConfig {
+    public static class ElasticsearchNamedBackendsRuntimeConfig {
 
         /**
-         * Additional backends
+         * Named backends
          */
         @ConfigDocMapKey("backend-name")
         public Map<String, ElasticsearchBackendRuntimeConfig> backends;

@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.hibernate.search.engine.cfg.BackendSettings;
+import org.hibernate.search.engine.cfg.IndexSettings;
 
 public class HibernateSearchConfigUtil {
 
@@ -42,17 +43,20 @@ public class HibernateSearchConfigUtil {
         }
     }
 
+    @Deprecated
     public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String configPath, Optional<?> value) {
         addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, Optional::isPresent, Optional::get);
     }
 
+    @Deprecated
     public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String configPath, OptionalInt value) {
         addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, OptionalInt::isPresent,
                 OptionalInt::getAsInt);
     }
 
+    @Deprecated
     public static <T> void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String configPath, T value,
             Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
@@ -74,7 +78,14 @@ public class HibernateSearchConfigUtil {
     public static <T> void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String indexName, String configPath, T value,
             Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
-        addBackendConfig(propertyCollector, backendName, BackendSettings.INDEXES + "." + indexName + "." + configPath, value,
-                shouldBeAdded, getValue);
+        if (shouldBeAdded.apply(value)) {
+            if (indexName != null) {
+                propertyCollector.accept(
+                        IndexSettings.indexKey(backendName, indexName, configPath), getValue.apply(value));
+            } else {
+                propertyCollector.accept(
+                        BackendSettings.backendKey(backendName, configPath), getValue.apply(value));
+            }
+        }
     }
 }

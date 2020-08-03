@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.elasticsearch.runtime;
 
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendConfig;
-import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendDefaultIndexConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
@@ -143,26 +142,6 @@ public class HibernateSearchElasticsearchRecorder {
             // Index defaults at the backend level
             contributeBackendIndexRuntimeProperties(propertyCollector, backendName, null,
                     elasticsearchBackendConfig.indexDefaults);
-
-            // Deprecated .index-defaults.foo syntax for index defaults
-            // (Hibernate Search will log warnings if these properties are used)
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
-                    elasticsearchBackendConfig.legacyIndexDefaults.schemaManagement.requiredStatus);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                    elasticsearchBackendConfig.legacyIndexDefaults.schemaManagement.requiredStatusWaitTimeout,
-                    Optional::isPresent,
-                    d -> d.get().toMillis());
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
-                    elasticsearchBackendConfig.legacyIndexDefaults.indexing.queueCount);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
-                    elasticsearchBackendConfig.legacyIndexDefaults.indexing.queueSize);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
-                    elasticsearchBackendConfig.legacyIndexDefaults.indexing.maxBulkSize);
 
             for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();

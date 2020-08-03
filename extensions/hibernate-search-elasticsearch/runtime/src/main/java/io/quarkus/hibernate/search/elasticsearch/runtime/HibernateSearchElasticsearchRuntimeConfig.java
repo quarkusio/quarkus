@@ -132,15 +132,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         ElasticsearchIndexConfig indexDefaults;
 
         /**
-         * @deprecated Define index defaults directly at the backend level instead of using {@code index-defaults};
-         *             e.g. use simply {@code quarkus.hibernate-search.elasticsearch.indexing.queue.count}
-         *             instead of {@code quarkus.hibernate-search.elasticsearch.index-defaults.indexing.queue.count}.
-         */
-        @ConfigItem(name = "index-defaults")
-        @Deprecated
-        ElasticsearchIndexConfig legacyIndexDefaults;
-
-        /**
          * Per-index specific configuration.
          */
         @ConfigItem

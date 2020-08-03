@@ -43,27 +43,6 @@ public class HibernateSearchConfigUtil {
         }
     }
 
-    @Deprecated
-    public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, Optional<?> value) {
-        addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, Optional::isPresent, Optional::get);
-    }
-
-    @Deprecated
-    public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, OptionalInt value) {
-        addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, OptionalInt::isPresent,
-                OptionalInt::getAsInt);
-    }
-
-    @Deprecated
-    public static <T> void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, T value,
-            Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
-        addBackendConfig(propertyCollector, backendName, BackendSettings.INDEX_DEFAULTS + "." + configPath, value,
-                shouldBeAdded, getValue);
-    }
-
     public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String indexName, String configPath, Optional<?> value) {
         addBackendIndexConfig(propertyCollector, backendName, indexName, configPath, value, Optional::isPresent, Optional::get);

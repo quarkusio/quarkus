@@ -46,11 +46,6 @@ final class CodestartProcessor {
         resourceLoader.loadResourceAsPath(codestart.getResourceDir(), p -> {
             final Path baseDir = p.resolve(BASE_LANGUAGE);
             final Path languageDir = p.resolve(languageName);
-            if (!codestart.getSpec().getMissingLanguages().isEmpty()
-                    && codestart.getSpec().getMissingLanguages().contains(languageName)) {
-                // TODO print a warning to inform that this codestart miss this language
-                return null; // We ignore that codestart as it doesn't implement the specified language
-            }
             Stream.of(baseDir, languageDir)
                     .filter(Files::isDirectory)
                     .forEach(dirPath -> processCodestartDir(dirPath,

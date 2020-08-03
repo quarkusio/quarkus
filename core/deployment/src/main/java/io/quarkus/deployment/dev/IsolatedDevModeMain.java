@@ -69,6 +69,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
 
+            boolean augmentDone = false;
             //ok, we have resolved all the deps
             try {
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
@@ -104,13 +105,15 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
                 startCodeGenWatcher(deploymentClassLoader, codeGens);
 
+                augmentDone = true;
                 runner = start.runMainClass(context.getArgs());
                 firstStartCompleted = true;
             } catch (Throwable t) {
                 deploymentProblem = t;
-                if (context.isAbortOnFailedStart()) {
+                if (!augmentDone) {
                     log.error("Failed to start quarkus", t);
-                } else {
+                }
+                if (!context.isAbortOnFailedStart()) {
                     //we need to set this here, while we still have the correct TCCL
                     //this is so the config is still valid, and we can read HTTP config from application.properties
                     log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");

@@ -20,6 +20,7 @@ import javax.json.JsonWriterFactory;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.execution.ExecutionService;
 import io.vertx.core.Handler;
@@ -39,13 +40,16 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
     private static final String OK = "OK";
     private volatile ExecutionService executionService;
     private final CurrentIdentityAssociation currentIdentityAssociation;
+    private final CurrentVertxRequest currentVertxRequest;
     private static final JsonBuilderFactory jsonObjectFactory = Json.createBuilderFactory(null);
     private static final JsonReaderFactory jsonReaderFactory = Json.createReaderFactory(null);
     private static final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(null);
 
-    public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation) {
+    public SmallRyeGraphQLExecutionHandler(boolean allowGet, CurrentIdentityAssociation currentIdentityAssociation,
+            CurrentVertxRequest currentVertxRequest) {
         SmallRyeGraphQLExecutionHandler.allowGet = allowGet;
         this.currentIdentityAssociation = currentIdentityAssociation;
+        this.currentVertxRequest = currentVertxRequest;
     }
 
     @Override
@@ -67,6 +71,7 @@ public class SmallRyeGraphQLExecutionHandler implements Handler<RoutingContext> 
         if (currentIdentityAssociation != null) {
             currentIdentityAssociation.setIdentity(QuarkusHttpUser.getSecurityIdentity(ctx, null));
         }
+        currentVertxRequest.setCurrent(ctx);
 
         HttpServerRequest request = ctx.request();
         HttpServerResponse response = ctx.response();

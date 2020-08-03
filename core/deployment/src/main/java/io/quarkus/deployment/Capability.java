@@ -45,6 +45,13 @@ public enum Capability {
     CONTAINER_IMAGE_S2I,
     HIBERNATE_ORM,
     HIBERNATE_REACTIVE,
+    /**
+     * Presence of an io.opentracing tracer (for example, Jaeger).
+     */
+    OPENTRACING,
+    /**
+     * Presence of SmallRye OpenTracing.
+     */
     SMALLRYE_OPENTRACING,
     SPRING_WEB;
 

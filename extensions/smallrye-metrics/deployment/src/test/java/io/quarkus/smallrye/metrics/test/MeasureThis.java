@@ -24,7 +24,6 @@ public class MeasureThis {
     static MetricsFactory.TimeRecorder timeRecorder;
 
     static Consumer<MetricsFactory> registerMetrics() {
-        MeasureThis mt = new MeasureThis();
         return new Consumer<MetricsFactory>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {

@@ -46,7 +46,6 @@ public class BasicTests {
     @Test
     public void testFailure() throws ChainBuildException, BuildException {
         final BuildChainBuilder builder = BuildChain.builder();
-        final AtomicBoolean ran = new AtomicBoolean();
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
             @Override
             public void execute(final BuildContext context) {

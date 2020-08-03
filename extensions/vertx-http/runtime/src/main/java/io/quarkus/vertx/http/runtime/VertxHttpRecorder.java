@@ -429,7 +429,6 @@ public class VertxHttpRecorder {
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode);
-        ForwardingProxyOptions forwardingProxyOptions = ForwardingProxyOptions.from(httpConfiguration);
 
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");

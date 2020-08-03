@@ -14,6 +14,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
@@ -78,13 +79,18 @@ public class QuarkusBuild extends QuarkusTask {
     }
 
     @OutputFile
-    public File getOutputDir() {
+    public File getRunnerJar() {
         return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
+    }
+
+    @OutputDirectory
+    public File getFastJar() {
+        return new File(getProject().getBuildDir(), "quarkus-app");
     }
 
     @TaskAction
     public void buildQuarkus() {
-        getLogger().lifecycle("building quarkus runner");
+        getLogger().lifecycle("building quarkus jar");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
         appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(getProject()));

@@ -20,6 +20,10 @@
 - labels: [area/maven]
   title: "(?i).*maven.*"
   notify: [quarkusio/devtools]
+- labels: [area/codestarts]
+  title: "(?i).*codestart.*"
+  description: "(?i).*codestart.*"
+  notify: [quarkusio/devtools,ia3andy]
 - labels: [area/hibernate-reactive, area/persistence]
   title: "(?i).*hibernate reactive.*"
   description: "(?i).*hibernate reactive.*"

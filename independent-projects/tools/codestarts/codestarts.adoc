@@ -218,13 +218,3 @@ The Foo Example shows...
 - Write the config in `src/main/resources/application.yml`.
 It is going to be merged with the other codestarts config and automatically converted to the selected config type (yaml or properties).
 - you can add languages independently
-
-== Problems to solve
-
-- How to test that (in combinations)?
-- Dependencies conflicts?
-- Config conflicts?
-- Versioning?
-- Dynamic paths for dynamic package names (should or should not do)?
-    - `/{project.package-name}` or auto-replace `org.acme`
-- We could add `foo.data.qute` processed and made available in data `foo` as a collection to other templates

@@ -28,7 +28,9 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaTestFixturesPlugin;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.internal.component.external.model.TestFixturesSupport;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -100,12 +102,12 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
 
-        return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject())),
+        return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode)),
                 new HashSet<>(appDependencies.values()),
                 extensionDependencies);
     }
 
-    public Set<WorkspaceModule> getWorkspace(Project project) {
+    public Set<WorkspaceModule> getWorkspace(Project project, LaunchMode mode) {
         Set<WorkspaceModule> modules = new HashSet<>();
         for (Project subproject : project.getAllprojects()) {
             final Convention convention = subproject.getConvention();
@@ -113,18 +115,26 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
             if (javaConvention == null) {
                 continue;
             }
-            modules.add(getWorkspaceModule(subproject));
+            modules.add(getWorkspaceModule(subproject, mode));
         }
         return modules;
     }
 
-    private WorkspaceModule getWorkspaceModule(Project project) {
+    private WorkspaceModule getWorkspaceModule(Project project, LaunchMode mode) {
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
         final SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
+        final SourceSetImpl modelSourceSet = convert(mainSourceSet);
+
+        // If the project exposes test fixtures, we must add them as source directory
+        if (mode.equals(LaunchMode.TEST) && project.getPlugins().hasPlugin(JavaTestFixturesPlugin.class)) {
+            final SourceSet fixtureSourceSet = QuarkusGradleUtils.getSourceSet(project,
+                    TestFixturesSupport.TEST_FIXTURE_SOURCESET_NAME);
+            modelSourceSet.addSourceDirectories(fixtureSourceSet.getOutput().getClassesDirs().getFiles());
+        }
 
         return new WorkspaceModuleImpl(appArtifactCoords, project.getProjectDir().getAbsoluteFile(),
-                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), convert(mainSourceSet));
+                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
     }
 
     private Set<org.gradle.api.artifacts.Dependency> getEnforcedPlatforms(Project project) {
@@ -239,7 +249,6 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 Project projectDep = project.getRootProject()
                         .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-
                 dep = toDependency(a, configurationName, projectDep);
             } else {
                 dep = toDependency(a, configurationName);

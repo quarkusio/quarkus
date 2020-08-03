@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
@@ -130,6 +131,10 @@ public class QuarkusTestExtension
                     rootBuilder.add(testResourcesLocation);
                 }
             }
+            if (Files.exists(testClassLocation.getParent().resolve("testFixtures"))) {
+                rootBuilder.add(testClassLocation.getParent().resolve("testFixtures"));
+            }
+
             originalCl = Thread.currentThread().getContextClassLoader();
             Map<String, String> sysPropRestore = new HashMap<>();
             sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,

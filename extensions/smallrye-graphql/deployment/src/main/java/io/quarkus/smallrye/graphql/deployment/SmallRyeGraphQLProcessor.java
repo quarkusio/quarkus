@@ -238,8 +238,11 @@ public class SmallRyeGraphQLProcessor {
     @BuildStep
     void openTracingIntegration(Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> properties) {
-        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
+        // if there is an opentracing tracer available, enable tracing within SmallRye GraphQL
+        if (capabilities.isPresent(Capability.OPENTRACING)) {
             properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
+        } else {
+            properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "false"));
         }
     }
 

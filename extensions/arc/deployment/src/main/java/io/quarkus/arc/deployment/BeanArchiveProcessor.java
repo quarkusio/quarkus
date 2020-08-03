@@ -142,9 +142,12 @@ public class BeanArchiveProcessor {
             AppArtifactKey key = archive.getArtifactKey();
             for (IndexDependencyConfig excludeDependency : config.excludeDependency.values()) {
                 if (Objects.equal(key.getArtifactId(), excludeDependency.artifactId)
-                        && Objects.equal(key.getGroupId(), excludeDependency.groupId)
-                        && Objects.equal(key.getClassifier(), excludeDependency.classifier)) {
-                    return true;
+                        && Objects.equal(key.getGroupId(), excludeDependency.groupId)) {
+                    if (excludeDependency.classifier.isPresent()) {
+                        return Objects.equal(key.getClassifier(), excludeDependency.classifier.get());
+                    } else {
+                        return true;
+                    }
                 }
             }
         }

@@ -116,6 +116,10 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
                 return false;
             }
             Key other = (Key) obj;
+            // Shortcut removes hotspot on contextual.equals
+            if (contextual == other.contextual) {
+                return true;
+            }
             if (!contextual.equals(other.contextual)) {
                 return false;
             }

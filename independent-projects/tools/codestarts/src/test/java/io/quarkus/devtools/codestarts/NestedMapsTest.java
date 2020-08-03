@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,6 +30,7 @@ class NestedMapsTest {
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "foo.bar.bar")).hasValue("foo");
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar.foo")).hasValue("baz");
+        assertThat((Collection) NestedMaps.getValue(NESTED_MAP_1, "list").get()).containsExactly("foo", "bar");
         assertThat(NestedMaps.getValue(NESTED_MAP_1, "bar.foo.bar")).hasValueSatisfying(v -> {
             assertThat(v).isInstanceOf(Map.class);
             assertThat((Map) v).hasFieldOrPropertyWithValue("foo", "baz");
@@ -61,6 +64,7 @@ class NestedMapsTest {
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.foo")).hasValue("bar");
         assertThat(NestedMaps.getValue(target, "bar.foo.bar.baz")).hasValue("foo");
         assertThat(NestedMaps.getValue(target, "hello")).hasValue("world");
+        assertThat((Collection) NestedMaps.getValue(target, "list").get()).containsExactly("foo", "bar", "baz");
     }
 
     @Test
@@ -73,7 +77,7 @@ class NestedMapsTest {
         data.put("bar.foo.bar.foo", "bar");
         data.put("bar.foo.bar.baz", "foo");
         data.put("hello", "world");
-
+        data.put("list", Arrays.asList("foo", "bar", "baz"));
         final Map<String, Object> target = NestedMaps.unflatten(data);
 
         checkTargetMap(target);

@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts;
 import static io.quarkus.devtools.codestarts.CodestartData.DataKey.BUILDTOOL;
 import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
 import static io.quarkus.devtools.codestarts.CodestartProcessor.buildStrategies;
+import static io.quarkus.devtools.codestarts.CodestartSpec.Type.LANGUAGE;
 
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategy;
 import java.io.IOException;
@@ -28,17 +29,21 @@ public class Codestarts {
 
         final List<Codestart> allCodestarts = loadAllCodestarts(input);
 
-        final List<Codestart> selectedCodestarts = new ArrayList<>();
+        final Collection<Codestart> baseCodestarts = resolveSelectedBaseCodestarts(allCodestarts, selectedCodestartNames);
+        final String languageName = baseCodestarts.stream().filter(c -> c.getType() == LANGUAGE).findFirst()
+                .orElseThrow(() -> new CodestartDefinitionException("Language codestart is required")).getName();
+        final Collection<Codestart> extraCodestarts = resolveSelectedExtraCodestarts(input, selectedCodestartNames,
+                allCodestarts, languageName);
 
-        selectedCodestarts.addAll(resolveSelectedBaseCodestarts(allCodestarts, selectedCodestartNames));
-        selectedCodestarts.addAll(resolveSelectedExtraCodestarts(input, selectedCodestartNames, allCodestarts));
+        final List<Codestart> selectedCodestarts = new ArrayList<>();
+        selectedCodestarts.addAll(baseCodestarts);
+        selectedCodestarts.addAll(extraCodestarts);
 
         // include fallback example codestarts if none selected
         if (input.includeExamples()
                 && selectedCodestarts.stream().noneMatch(c -> c.getSpec().isExample() && !c.getSpec().isPreselected())) {
-            final List<Codestart> fallbackExampleCodestarts = allCodestarts.stream()
-                    .filter(c -> c.getSpec().isExample() && c.getSpec().isFallback())
-                    .collect(Collectors.toList());
+            final List<Codestart> fallbackExampleCodestarts = resolveFallbackExampleCodestarts(allCodestarts,
+                    languageName);
             selectedCodestarts.addAll(fallbackExampleCodestarts);
         }
 
@@ -70,11 +75,13 @@ public class Codestarts {
 
     private static Collection<Codestart> resolveSelectedExtraCodestarts(CodestartInput input,
             Set<String> selectedCodestartNames,
-            Collection<Codestart> allCodestarts) {
+            Collection<Codestart> allCodestarts,
+            String languageName) {
         return allCodestarts.stream()
                 .filter(c -> !c.getSpec().getType().isBase())
                 .filter(c -> c.getSpec().isPreselected() || selectedCodestartNames.contains(c.getSpec().getRef()))
                 .filter(c -> !c.getSpec().isExample() || input.includeExamples())
+                .filter(c -> c.implementsLanguage(languageName))
                 .collect(Collectors.toList());
     }
 
@@ -100,6 +107,15 @@ public class Codestarts {
                     // The selected is picked.
                     return !a.getSpec().isFallback() ? a : b;
                 })).values();
+    }
+
+    private static List<Codestart> resolveFallbackExampleCodestarts(List<Codestart> allCodestarts,
+            String languageName) {
+        return allCodestarts.stream()
+                .filter(c -> !c.getSpec().getType().isBase())
+                .filter(c -> c.getSpec().isExample() && c.getSpec().isFallback())
+                .filter(c -> c.implementsLanguage(languageName))
+                .collect(Collectors.toList());
     }
 
 }

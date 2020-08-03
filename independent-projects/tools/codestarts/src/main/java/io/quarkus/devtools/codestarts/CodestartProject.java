@@ -32,7 +32,7 @@ public final class CodestartProject {
     }
 
     public Optional<Codestart> getCodestart(Type type) {
-        return codestarts.stream().filter(c -> c.getSpec().getType() == type).findFirst();
+        return codestarts.stream().filter(c -> c.getType() == type).findFirst();
     }
 
     public Codestart getRequiredCodestart(Type type) {
@@ -40,7 +40,7 @@ public final class CodestartProject {
     }
 
     public String getLanguageName() {
-        return getRequiredCodestart(Type.LANGUAGE).getSpec().getName();
+        return getRequiredCodestart(Type.LANGUAGE).getName();
     }
 
     public Map<String, Object> getSharedData() {
@@ -54,7 +54,7 @@ public final class CodestartProject {
     }
 
     public Map<String, Object> getCodestartProjectData() {
-        return buildCodestartProjectData(getBaseCodestarts());
+        return buildCodestartProjectData(getBaseCodestarts(), getExtraCodestarts());
     }
 
     List<Codestart> getBaseCodestarts() {

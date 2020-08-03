@@ -4,7 +4,6 @@ ref: commandmode
 type: example
 fallback: true
 missing-languages:
-  - kotlin
   - scala
 language:
   base:
@@ -12,3 +11,5 @@ language:
       greeting:
         message: "hello"
         default-name: "commando"
+    dependencies:
+      - io.quarkus:quarkus-arc

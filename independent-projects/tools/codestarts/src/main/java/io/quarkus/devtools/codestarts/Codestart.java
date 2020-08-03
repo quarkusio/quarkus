@@ -21,6 +21,18 @@ public final class Codestart {
         return spec;
     }
 
+    public String getName() {
+        return spec.getName();
+    }
+
+    public CodestartSpec.Type getType() {
+        return spec.getType();
+    }
+
+    public boolean implementsLanguage(String languageName) {
+        return spec.getMissingLanguages().isEmpty() || !spec.getMissingLanguages().contains(languageName);
+    }
+
     public Map<String, Object> getLocalData(String languageName) {
         return NestedMaps.deepMerge(Stream.of(getBaseLanguageSpec().getData(), getLanguageSpec(languageName).getData()));
     }

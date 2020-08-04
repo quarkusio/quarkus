@@ -1,0 +1,21 @@
+---
+name: azure-functions-http-example
+ref: azure-functions-http
+type: example
+language:
+  base:
+    shared-data:
+      uberjar: true
+      supports:
+        native: false
+      # /api is the default root context azure functions will prepend
+      root-context-path: "/api"
+    data:
+      app-region:
+        westus
+      resource-group:
+        java-functions-group
+      function:
+        greeting
+    dependencies:
+      - io.quarkus:quarkus-azure-functions-http

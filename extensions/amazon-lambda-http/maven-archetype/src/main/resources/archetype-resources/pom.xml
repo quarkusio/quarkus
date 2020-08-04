@@ -125,28 +125,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>\${assembly-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>zip-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <finalName>function</finalName>
-                                    <descriptors>
-                                        <descriptor>src${file.separator}assembly${file.separator}zip.xml</descriptor>
-                                    </descriptors>
-                                    <attach>false</attach>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>

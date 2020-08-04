@@ -68,6 +68,11 @@
                 <groupId>{quarkus.plugin.group-id}</groupId>
                 <artifactId>{quarkus.plugin.artifact-id}</artifactId>
                 <version>$\{quarkus-plugin.version}</version>
+                {#if uberjar}
+                <configuration>
+                    <uberJar>true</uberJar>
+                </configuration>
+                {/if}
                 <executions>
                     <execution>
                         <goals>
@@ -96,7 +101,7 @@
             </plugin>
         </plugins>
     </build>
-
+{#if supports.native}
     <profiles>
         <!-- Use this profile to build a native executable using GraalVM -->
         <profile>
@@ -136,5 +141,5 @@
             </build>
         </profile>
     </profiles>
-
+{/if}
 </project>

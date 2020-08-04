@@ -88,6 +88,15 @@ spec:
     test-dependencies: a list of test dependencies to add when this is selected
 ----
 
+=== Common Shared and Built In Data
+
+There's a few built `shared-data` variables that you should know about
+* `supports.native` can be toggled if your example does not support native.  This will omit README and relevant build scripts
+* `supports.dev-mode` can be toggled if your example does not support Quarkus devmode.  This will omit README information
+* `uberjar` can be toggled to switch on the uberjar flag in the pom.xml
+* `gen-info.time` is hardcoded to current time milliseconds of when the codestart was generated.  Useful if you need a random value in your codestart.
+
+
 === Naming Convention for files
 
 * `.tpl.qute` will be processed with Qute (`.tpl.qute` will be removed from the output file name).

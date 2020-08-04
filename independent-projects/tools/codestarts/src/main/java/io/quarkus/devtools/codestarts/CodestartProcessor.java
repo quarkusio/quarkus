@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ final class CodestartProcessor {
     }
 
     void process(final Codestart codestart) throws IOException {
+        addBuiltinData();
         resourceLoader.loadResourceAsPath(codestart.getResourceDir(), p -> {
             final Path baseDir = p.resolve(BASE_LANGUAGE);
             final Path languageDir = p.resolve(languageName);
@@ -52,6 +54,11 @@ final class CodestartProcessor {
                             CodestartData.buildCodestartData(codestart, languageName, data)));
             return null;
         });
+    }
+
+    void addBuiltinData() {
+        // needed for azure functions codestart
+        data.put("gen-info", Collections.singletonMap("time", System.currentTimeMillis()));
     }
 
     void processCodestartDir(final Path sourceDirectory, final Map<String, Object> finalData) {

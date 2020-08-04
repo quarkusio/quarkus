@@ -1,6 +1,7 @@
 package io.quarkus.devtools.codestarts;
 
 import static io.quarkus.devtools.codestarts.QuarkusCodestarts.inputBuilder;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -8,14 +9,18 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import com.google.common.collect.Sets;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
@@ -24,6 +29,13 @@ import io.quarkus.devtools.ProjectTestUtil;
 class CodestartProjectRunTest extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/codestarts-run-test");
+
+    private static final Set<String> RUN_MANUALLY_CODESTARTS = Sets.newHashSet(
+            "azure-functions-http-example");
+    private static final Set<String> RUN_ALONE_CODESTARTS = Sets.newHashSet(
+            "funqy-amazon-lambda-example",
+            "funqy-knative-events-example",
+            "amazon-lambda-example");
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -43,9 +55,15 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
                 .loadCodestartsFromExtensions(QuarkusCodestarts.resourceLoader(getPlatformDescriptor())).stream()
                 .filter(c -> c.getSpec().isExample())
                 .map(Codestart::getName)
+                .filter(c -> !RUN_MANUALLY_CODESTARTS.contains(c))
+                .collect(Collectors.toList());
+        final List<List<String>> runAlone = examples.stream().filter(RUN_ALONE_CODESTARTS::contains)
+                .map(Collections::singletonList).collect(Collectors.toList());
+        final List<String> runTogether = examples.stream().filter(o -> !RUN_ALONE_CODESTARTS.contains(o))
                 .collect(Collectors.toList());
         return Stream.of("java", "kotlin", "scala")
-                .flatMap(l -> Stream.of(Collections.emptyList(), examples).map(c -> Arguments.of(l, c)));
+                .flatMap(l -> Stream.concat(Stream.of(runTogether, Collections.emptyList()), Stream.of(runAlone.toArray()))
+                        .map(c -> Arguments.of(l, c)));
     }
 
     @ParameterizedTest
@@ -58,6 +76,11 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
     @MethodSource("provideGenerateCombinations")
     public void generateGradleProjectRun(String language, List<String> codestarts) throws Exception {
         generateProjectRunTests("gradle", language, codestarts);
+    }
+
+    @Test
+    public void generateAzureFunctionsHttpExampleProjectRun() throws Exception {
+        generateProjectRunTests("maven", "java", Collections.singletonList("azure-functions-http-example"));
     }
 
     private void generateProjectRunTests(String buildtool, String language, List<String> codestarts) throws Exception {
@@ -78,6 +101,8 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         Path projectDir = testDirPath.resolve(name);
         Codestarts.generateProject(codestartProject, projectDir);
-        CodestartProjectTestRunner.run(projectDir, CodestartProjectTestRunner.Wrapper.fromBuildtool(buildtool));
+        final int result = CodestartProjectTestRunner.run(projectDir,
+                CodestartProjectTestRunner.Wrapper.fromBuildtool(buildtool));
+        assertThat(result).isZero();
     }
 }

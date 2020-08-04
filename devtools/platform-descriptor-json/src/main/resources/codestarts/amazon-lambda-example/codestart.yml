@@ -1,0 +1,13 @@
+---
+name: amazon-lambda-example
+ref: amazon-lambda
+type: example
+language:
+  base:
+    shared-data:
+      supports:
+        dev-mode: false
+    dependencies:
+      - io.quarkus:quarkus-amazon-lambda
+    test-dependencies:
+      - io.quarkus:quarkus-test-amazon-lambda

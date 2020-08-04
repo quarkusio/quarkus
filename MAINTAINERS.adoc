@@ -185,7 +185,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/loicmathieu[Loïc Mathieu], https://github.com/evanchooly[Justin Lee]
 
 |MongoDB with Panache for Kotlin
-|https://github.com/evanchooy[Justin Lee]
+|https://github.com/evanchooly[Justin Lee]
 
 |Narayana JTA
 |https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]

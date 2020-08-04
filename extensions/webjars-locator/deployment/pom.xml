@@ -56,11 +56,10 @@
           <version>2.24.0</version>
           <scope>test</scope>
         </dependency>
-        
-        <!-- DevMode has no setForcedDependencies, so need to add resteasy extension here -->
         <dependency>
           <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-resteasy</artifactId>
+          <artifactId>quarkus-resteasy-deployment</artifactId>
+          <scope>test</scope>
         </dependency>
     </dependencies>
 

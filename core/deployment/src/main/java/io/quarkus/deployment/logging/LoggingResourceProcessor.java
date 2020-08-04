@@ -25,8 +25,12 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogConfig;
+import io.quarkus.runtime.logging.LogMetricsHandlerRecorder;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 
 public final class LoggingResourceProcessor {
@@ -123,5 +127,17 @@ public final class LoggingResourceProcessor {
     @BuildStep
     void setUpDarkeningDefault(Consumer<RunTimeConfigurationDefaultBuildItem> rtcConsumer) {
         rtcConsumer.accept(new RunTimeConfigurationDefaultBuildItem("quarkus.log.console.darken", "0"));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerMetrics(LogMetricsHandlerRecorder recorder, LogBuildTimeConfig log,
+            BuildProducer<MetricsFactoryConsumerBuildItem> metrics,
+            BuildProducer<LogHandlerBuildItem> logHandler, Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        if (metricsCapability.isPresent() && log.metricsEnabled) {
+            recorder.initCounters();
+            metrics.produce(new MetricsFactoryConsumerBuildItem(recorder.registerMetrics()));
+            logHandler.produce(new LogHandlerBuildItem(recorder.getLogHandler()));
+        }
     }
 }

@@ -1,11 +1,15 @@
 package io.quarkus.qrs.runtime.core;
 
 import java.io.Closeable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -14,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
+import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
@@ -50,6 +55,8 @@ public class RequestContext implements Runnable, Closeable {
     private ExceptionMapping exceptionMapping;
     private Serialisers serialisers;
     private Object requestEntity;
+    private Map<String, Object> properties;
+    private Request request;
 
     public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping,
             Serialisers serialisers) {
@@ -288,5 +295,40 @@ public class RequestContext implements Runnable, Closeable {
             return buildTimeWriter.getFactory().createInstance(this).getInstance();
         }
         return (MessageBodyWriter<Object>) serialisers.findWriter(getResponse(), this);
+    }
+
+    public Object getProperty(String name) {
+        if (properties == null) {
+            return null;
+        }
+        return properties.get(name);
+    }
+
+    public Collection<String> getPropertyNames() {
+        if (properties == null) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableSet(properties.keySet());
+    }
+
+    public void setProperty(String name, Object object) {
+        if (properties == null) {
+            properties = new HashMap<>();
+        }
+        properties.put(name, object);
+    }
+
+    public void removeProperty(String name) {
+        if (properties == null) {
+            return;
+        }
+        properties.remove(name);
+    }
+
+    public Request getRequest() {
+        if (request == null) {
+            request = new QrsRequest(this);
+        }
+        return request;
     }
 }

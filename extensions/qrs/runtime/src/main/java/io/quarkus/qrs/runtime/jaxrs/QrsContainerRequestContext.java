@@ -30,25 +30,22 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
     @Override
     public Object getProperty(String name) {
         // TODO Auto-generated method stub
-        return null;
+        return context.getProperty(name);
     }
 
     @Override
     public Collection<String> getPropertyNames() {
-        // TODO Auto-generated method stub
-        return null;
+        return context.getPropertyNames();
     }
 
     @Override
     public void setProperty(String name, Object object) {
-        // TODO Auto-generated method stub
-
+        context.setProperty(name, object);
     }
 
     @Override
     public void removeProperty(String name) {
-        // TODO Auto-generated method stub
-
+        context.removeProperty(name);
     }
 
     @Override
@@ -58,20 +55,17 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void setRequestUri(URI requestUri) {
-        // TODO Auto-generated method stub
-
+        throw new RuntimeException("NYI");
     }
 
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) {
-        // TODO Auto-generated method stub
-
+        throw new RuntimeException("NYI");
     }
 
     @Override
     public Request getRequest() {
-        // TODO Auto-generated method stub
-        return null;
+        return context.getRequest();
     }
 
     @Override

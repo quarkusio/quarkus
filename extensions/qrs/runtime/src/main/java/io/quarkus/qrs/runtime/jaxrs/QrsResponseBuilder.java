@@ -18,6 +18,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import io.quarkus.qrs.runtime.util.HttpHeaderNames;
+
 public class QrsResponseBuilder extends ResponseBuilder {
 
     private int status;
@@ -211,4 +213,35 @@ public class QrsResponseBuilder extends ResponseBuilder {
         return null;
     }
 
+    public static String createVaryHeader(List<Variant> variants) {
+        boolean accept = false;
+        boolean acceptLanguage = false;
+        boolean acceptEncoding = false;
+
+        for (Variant variant : variants) {
+            if (variant.getMediaType() != null)
+                accept = true;
+            if (variant.getLanguage() != null)
+                acceptLanguage = true;
+            if (variant.getEncoding() != null)
+                acceptEncoding = true;
+        }
+
+        String vary = null;
+        if (accept)
+            vary = HttpHeaderNames.ACCEPT;
+        if (acceptLanguage) {
+            if (vary == null)
+                vary = HttpHeaderNames.ACCEPT_LANGUAGE;
+            else
+                vary += ", " + HttpHeaderNames.ACCEPT_LANGUAGE;
+        }
+        if (acceptEncoding) {
+            if (vary == null)
+                vary = HttpHeaderNames.ACCEPT_ENCODING;
+            else
+                vary += ", " + HttpHeaderNames.ACCEPT_ENCODING;
+        }
+        return vary;
+    }
 }

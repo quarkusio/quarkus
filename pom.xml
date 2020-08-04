@@ -79,11 +79,9 @@
             <id>central</id>
             <name>Maven Repository Switchboard</name>
             <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>gradle-dependencies</id>
-            <name>Gradle releases repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 

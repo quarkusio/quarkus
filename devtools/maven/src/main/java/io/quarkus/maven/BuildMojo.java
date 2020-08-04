@@ -221,6 +221,7 @@ public class BuildMojo extends AbstractMojo {
 
                 Artifact original = project.getArtifact();
                 if (result.getJar() != null) {
+
                     if (result.getJar().isUberJar() && result.getJar().getOriginalArtifact() != null) {
                         final Path standardJar = curatedApplication.getAppModel().getAppArtifact().getPaths().getSinglePath();
                         if (Files.exists(standardJar)) {
@@ -234,7 +235,8 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                     if (result.getJar().isUberJar()) {
-                        projectHelper.attachArtifact(project, result.getJar().getPath().toFile(), "runner");
+                        projectHelper.attachArtifact(project, result.getJar().getPath().toFile(),
+                                result.getJar().getClassifier());
                     }
                 }
             }

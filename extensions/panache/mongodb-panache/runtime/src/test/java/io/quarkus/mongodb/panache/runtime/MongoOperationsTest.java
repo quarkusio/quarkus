@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.runtime;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,6 +61,10 @@ class MongoOperationsTest {
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
         assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
+        query = MongoOperations.bindFilter(Object.class, "field",
+                new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
+        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
+
         //test field replacement
         query = MongoOperations.bindFilter(DemoObj.class, "property", new Object[] { "a value" });
         assertEquals("{'value':'a value'}", query);
@@ -96,6 +101,10 @@ class MongoOperationsTest {
         query = MongoOperations.bindFilter(Object.class, "{'field': ?1}",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
         assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "{'field': ?1}",
+                new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
+        assertEquals("{'field': UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
 
         query = MongoOperations.bindFilter(Object.class, "{'field': ?1, 'isOk': ?2}", new Object[] { "a value", true });
         assertEquals("{'field': 'a value', 'isOk': true}", query);
@@ -150,6 +159,10 @@ class MongoOperationsTest {
         query = MongoOperations.bindFilter(Object.class, "{'field': :field}",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
         assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "{'field': :field}",
+                Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());
+        assertEquals("{'field': UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
 
         query = MongoOperations.bindFilter(Object.class, "{'field': :field, 'isOk': :isOk}",
                 Parameters.with("field", "a value").and("isOk", true).map());
@@ -206,6 +219,10 @@ class MongoOperationsTest {
         query = MongoOperations.bindFilter(Object.class, "field = ?1",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
         assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field = ?1",
+                new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
+        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
 
         query = MongoOperations.bindFilter(Object.class, "field = ?1 and isOk = ?2", new Object[] { "a value", true });
         assertEquals("{'field':'a value','isOk':true}", query);
@@ -281,6 +298,10 @@ class MongoOperationsTest {
         query = MongoOperations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
         assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field = :field",
+                Parameters.with("field", UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000")).map());
+        assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
 
         query = MongoOperations.bindFilter(Object.class, "field = :field and isOk = :isOk",
                 Parameters.with("field", "a value").and("isOk", true).map());

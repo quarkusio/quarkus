@@ -132,7 +132,7 @@ public class TestResourceManager implements Closeable {
 
                 uniqueEntries.add(new TestResourceClassEntry(testResourceClass, args));
             } catch (IllegalArgumentException | SecurityException e) {
-                throw new RuntimeException("Unable to instantiate the test resource " + annotation.value().asString());
+                throw new RuntimeException("Unable to instantiate the test resource " + annotation.value().asString(), e);
             }
         }
 
@@ -145,7 +145,7 @@ public class TestResourceManager implements Closeable {
                 testResourceEntries.add(new TestResourceEntry(testResourceClass.getConstructor().newInstance(), args));
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                     | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-                throw new RuntimeException("Unable to instantiate the test resource " + testResourceClass.getName());
+                throw new RuntimeException("Unable to instantiate the test resource " + testResourceClass.getName(), e);
             }
         }
 

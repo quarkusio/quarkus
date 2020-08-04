@@ -12,12 +12,11 @@ import java.util.Map;
 
 /**
  * IDE entry point.
- * 
+ *
  * This is launched from the core/launcher module. To avoid any shading issues core/launcher unpacks all its dependencies
  * into the jar file, then uses a custom class loader load them.
- * 
+ *
  */
-@SuppressWarnings("unused")
 public class IDELauncherImpl {
 
     public static void launch(Path projectRoot, Map<String, Object> context) {

@@ -8,14 +8,30 @@ public class JavaVersionUtil {
     private static final Pattern PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     private static boolean IS_JAVA_11_OR_NEWER;
+    private static boolean IS_JAVA_13_OR_NEWER;
 
     static {
-        Matcher matcher = PATTERN.matcher(System.getProperty("java.version", ""));
-        IS_JAVA_11_OR_NEWER = !matcher.matches() || Integer.parseInt(matcher.group(1)) >= 11;
+        performChecks();
+    }
 
+    // visible for testing
+    static void performChecks() {
+        Matcher matcher = PATTERN.matcher(System.getProperty("java.version", ""));
+        if (matcher.matches()) {
+            int first = Integer.parseInt(matcher.group(1));
+            IS_JAVA_11_OR_NEWER = (first >= 11);
+            IS_JAVA_13_OR_NEWER = (first >= 13);
+        } else {
+            IS_JAVA_11_OR_NEWER = false;
+            IS_JAVA_13_OR_NEWER = false;
+        }
     }
 
     public static boolean isJava11OrHigher() {
         return IS_JAVA_11_OR_NEWER;
+    }
+
+    public static boolean isJava13OrHigher() {
+        return IS_JAVA_13_OR_NEWER;
     }
 }

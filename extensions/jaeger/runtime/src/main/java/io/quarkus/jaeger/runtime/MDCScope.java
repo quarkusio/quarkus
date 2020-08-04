@@ -58,7 +58,7 @@ public class MDCScope implements Scope {
 
     protected void putContext(JaegerSpanContext spanContext) {
         MDC.put(TRACE_ID, spanContext.getTraceId());
-        MDC.put(SPAN_ID, String.format("%16x", spanContext.getSpanId()));
+        MDC.put(SPAN_ID, Long.toHexString(spanContext.getSpanId()));
         MDC.put(SAMPLED, Boolean.toString(spanContext.isSampled()));
     }
 }

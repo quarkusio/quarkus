@@ -24,7 +24,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.common.config.SaslConfigs;
@@ -55,6 +55,7 @@ public class KafkaStreamsProducer {
     private final ExecutorService executorService;
     private final KafkaStreams kafkaStreams;
     private final KafkaStreamsTopologyManager kafkaStreamsTopologyManager;
+    private final Admin kafkaAdminClient;
 
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
@@ -66,6 +67,7 @@ public class KafkaStreamsProducer {
             this.executorService = null;
             this.kafkaStreams = null;
             this.kafkaStreamsTopologyManager = null;
+            this.kafkaAdminClient = null;
             return;
         }
 
@@ -73,13 +75,13 @@ public class KafkaStreamsProducer {
 
         String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers);
         Properties kafkaStreamsProperties = getStreamsProperties(buildTimeProperties, bootstrapServersConfig, runtimeConfig);
-        Properties adminClientConfig = getAdminClientConfig(kafkaStreamsProperties);
+        this.kafkaAdminClient = Admin.create(getAdminClientConfig(kafkaStreamsProperties));
 
         this.executorService = Executors.newSingleThreadExecutor();
 
-        this.kafkaStreams = initializeKafkaStreams(kafkaStreamsProperties, runtimeConfig, adminClientConfig, topology.get(),
+        this.kafkaStreams = initializeKafkaStreams(kafkaStreamsProperties, runtimeConfig, kafkaAdminClient, topology.get(),
                 kafkaClientSupplier, stateListener, globalStateRestoreListener, executorService);
-        this.kafkaStreamsTopologyManager = new KafkaStreamsTopologyManager(adminClientConfig);
+        this.kafkaStreamsTopologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient);
     }
 
     @Produces
@@ -107,11 +109,14 @@ public class KafkaStreamsProducer {
             LOGGER.debug("Stopping Kafka Streams pipeline");
             kafkaStreams.close();
         }
+        if (kafkaAdminClient != null) {
+            kafkaAdminClient.close();
+        }
     }
 
     private static KafkaStreams initializeKafkaStreams(Properties kafkaStreamsProperties,
-            KafkaStreamsRuntimeConfig runtimeConfig,
-            Properties adminClientConfig, Topology topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
+            KafkaStreamsRuntimeConfig runtimeConfig, Admin adminClient, Topology topology,
+            Instance<KafkaClientSupplier> kafkaClientSupplier,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
             ExecutorService executorService) {
         KafkaStreams kafkaStreams;
@@ -133,7 +138,7 @@ public class KafkaStreamsProducer {
             @Override
             public void run() {
                 try {
-                    waitForTopicsToBeCreated(adminClientConfig, runtimeConfig.getTrimmedTopics());
+                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
@@ -249,35 +254,33 @@ public class KafkaStreamsProducer {
                 .collect(Collectors.joining(","));
     }
 
-    private static void waitForTopicsToBeCreated(Properties adminClientConfig, Collection<String> topicsToAwait)
+    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait)
             throws InterruptedException {
-        try (AdminClient adminClient = AdminClient.create(adminClientConfig)) {
-            Set<String> lastMissingTopics = null;
-            while (true) {
-                try {
-                    ListTopicsResult topics = adminClient.listTopics();
-                    Set<String> existingTopics = topics.names().get(10, TimeUnit.SECONDS);
+        Set<String> lastMissingTopics = null;
+        while (true) {
+            try {
+                ListTopicsResult topics = adminClient.listTopics();
+                Set<String> existingTopics = topics.names().get(10, TimeUnit.SECONDS);
 
-                    if (existingTopics.containsAll(topicsToAwait)) {
-                        LOGGER.debug("All expected topics created: " + topicsToAwait);
-                        return;
+                if (existingTopics.containsAll(topicsToAwait)) {
+                    LOGGER.debug("All expected topics created: " + topicsToAwait);
+                    return;
+                } else {
+                    Set<String> missingTopics = new HashSet<>(topicsToAwait);
+                    missingTopics.removeAll(existingTopics);
+
+                    // Do not spam warnings - topics may take time to be created by an operator like Strimzi
+                    if (missingTopics.equals(lastMissingTopics)) {
+                        LOGGER.debug("Waiting for topic(s) to be created: " + missingTopics);
                     } else {
-                        Set<String> missingTopics = new HashSet<>(topicsToAwait);
-                        missingTopics.removeAll(existingTopics);
-
-                        // Do not spam warnings - topics may take time to be created by an operator like Strimzi
-                        if (missingTopics.equals(lastMissingTopics)) {
-                            LOGGER.debug("Waiting for topic(s) to be created: " + missingTopics);
-                        } else {
-                            LOGGER.warn("Waiting for topic(s) to be created: " + missingTopics);
-                            lastMissingTopics = missingTopics;
-                        }
+                        LOGGER.warn("Waiting for topic(s) to be created: " + missingTopics);
+                        lastMissingTopics = missingTopics;
                     }
-
-                    Thread.sleep(1_000);
-                } catch (ExecutionException | TimeoutException e) {
-                    LOGGER.error("Failed to get topic names from broker", e);
                 }
+
+                Thread.sleep(1_000);
+            } catch (ExecutionException | TimeoutException e) {
+                LOGGER.error("Failed to get topic names from broker", e);
             }
         }
     }

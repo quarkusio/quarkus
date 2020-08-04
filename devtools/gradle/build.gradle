@@ -16,7 +16,14 @@ compileTestJava {
 }
 
 repositories {
-    mavenLocal()
+    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
     mavenCentral()
 }
 
@@ -42,6 +49,10 @@ dependencies {
 }
 
 test {
+    // propagate the custom local maven repo, in case it's configured
+    if (System.properties.containsKey('maven.repo.local')) {
+        systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
+    }
     testLogging {
         events "passed", "skipped", "failed"
     }

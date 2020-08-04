@@ -23,7 +23,7 @@ public class QrsRuntimeDelegate extends RuntimeDelegate {
 
     @Override
     public Variant.VariantListBuilder createVariantListBuilder() {
-        return null;
+        return new QrsVariantListBuilder();
     }
 
     @Override
@@ -39,6 +39,6 @@ public class QrsRuntimeDelegate extends RuntimeDelegate {
 
     @Override
     public Link.Builder createLinkBuilder() {
-        return null;
+        return new QrsLinkBuilder();
     }
 }

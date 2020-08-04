@@ -5,30 +5,37 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 
-    private final ComputingCache<Key<?>, ContextInstanceHandle<?>> instances;
+    private final ComputingCache<String, ContextInstanceHandle<?>> instances;
 
     public AbstractSharedContext() {
-        this.instances = new ComputingCache<>(AbstractSharedContext::createInstanceHandle);
+        this.instances = new ComputingCache<>();
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-        return (T) instances.getValue(new Key<>(contextual, creationalContext)).get();
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        return (T) instances.computeIfAbsent(bean.getIdentifier(), new Supplier<ContextInstanceHandle<?>>() {
+            @Override
+            public ContextInstanceHandle<?> get() {
+                return createInstanceHandle(bean, creationalContext);
+            }
+        }).get();
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(Contextual<T> contextual) {
-        ContextInstanceHandle<?> handle = instances.getValueIfPresent(new Key<>(contextual, null));
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        ContextInstanceHandle<?> handle = instances.getValueIfPresent(bean.getIdentifier());
         return handle != null ? (T) handle.get() : null;
     }
 
@@ -50,7 +57,8 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public void destroy(Contextual<?> contextual) {
-        ContextInstanceHandle<?> handle = instances.remove(new Key<>(contextual, null));
+        InjectableBean<?> bean = (InjectableBean<?>) contextual;
+        ContextInstanceHandle<?> handle = instances.remove(bean.getIdentifier());
         if (handle != null) {
             handle.destroy();
         }
@@ -83,50 +91,9 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static ContextInstanceHandle createInstanceHandle(Key key) {
-        InjectableBean<?> bean = (InjectableBean<?>) key.contextual;
-        return new ContextInstanceHandleImpl(bean, bean.create(key.creationalContext), key.creationalContext);
-    }
-
-    private static final class Key<T> {
-
-        private final Contextual<T> contextual;
-        private final CreationalContext<T> creationalContext;
-
-        Key(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-            this.contextual = Objects.requireNonNull(contextual);
-            this.creationalContext = creationalContext;
-        }
-
-        @Override
-        public int hashCode() {
-            return contextual.hashCode();
-        }
-
-        @SuppressWarnings("rawtypes")
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null) {
-                return false;
-            }
-            if (!(obj instanceof Key)) {
-                return false;
-            }
-            Key other = (Key) obj;
-            if (!contextual.equals(other.contextual)) {
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "Key for " + contextual;
-        }
-
+    private static <T> ContextInstanceHandle createInstanceHandle(InjectableBean<T> bean,
+            CreationalContext<T> creationalContext) {
+        return new ContextInstanceHandleImpl(bean, bean.create(creationalContext), creationalContext);
     }
 
 }

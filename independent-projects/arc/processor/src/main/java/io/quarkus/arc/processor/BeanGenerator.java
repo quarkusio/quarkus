@@ -50,7 +50,6 @@ import java.util.function.Supplier;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.IllegalProductException;
-import javax.enterprise.inject.TransientReference;
 import javax.enterprise.inject.literal.InjectLiteral;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
@@ -245,6 +244,8 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
         implementGetKind(beanCreator, InjectableBean.Kind.SYNTHETIC);
+        implementEquals(bean, beanCreator);
+        implementHashCode(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -329,6 +330,9 @@ public class BeanGenerator extends AbstractGenerator {
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
         }
+
+        implementEquals(bean, beanCreator);
+        implementHashCode(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -428,6 +432,8 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
         implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_METHOD);
+        implementEquals(bean, beanCreator);
+        implementHashCode(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -512,6 +518,8 @@ public class BeanGenerator extends AbstractGenerator {
             implementIsDefaultBean(bean, beanCreator);
         }
         implementGetKind(beanCreator, InjectableBean.Kind.PRODUCER_FIELD);
+        implementEquals(bean, beanCreator);
+        implementHashCode(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -1604,6 +1612,36 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementGetIdentifier(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getScope = beanCreator.getMethodCreator("getIdentifier", String.class).setModifiers(ACC_PUBLIC);
         getScope.returnValue(getScope.load(bean.getIdentifier()));
+    }
+
+    protected void implementEquals(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator equals = beanCreator.getMethodCreator("equals", boolean.class, Object.class).setModifiers(ACC_PUBLIC);
+        // if (this == obj) {
+        //    return true;
+        // }
+        equals.ifTrue(equals.invokeStaticMethod(MethodDescriptors.OBJECTS_REFERENCE_EQUALS, equals.getThis(),
+                equals.getMethodParam(0))).trueBranch().returnValue(equals.load(true));
+        // if (obj == null) {
+        //    return false;
+        // }
+        equals.ifNull(equals.getMethodParam(0)).trueBranch().returnValue(equals.load(false));
+        // if (!(obj instanceof InjectableBean)) {
+        //    return false;
+        // }
+        equals.ifFalse(equals.instanceOf(equals.getMethodParam(0), InjectableBean.class)).trueBranch()
+                .returnValue(equals.load(false));
+        // return identifier.equals(((InjectableBean) obj).getIdentifier());
+        ResultHandle injectableBean = equals.checkCast(equals.getMethodParam(0), InjectableBean.class);
+        ResultHandle otherIdentifier = equals.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER, injectableBean);
+        equals.returnValue(equals.invokeVirtualMethod(MethodDescriptors.OBJECT_EQUALS, equals.load(bean.getIdentifier()),
+                otherIdentifier));
+    }
+
+    protected void implementHashCode(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator hashCode = beanCreator.getMethodCreator("hashCode", int.class).setModifiers(ACC_PUBLIC);
+        // return identifier.hashCode()
+        hashCode.returnValue(
+                hashCode.invokeVirtualMethod(MethodDescriptors.OBJECT_HASH_CODE, hashCode.load(bean.getIdentifier())));
     }
 
     /**

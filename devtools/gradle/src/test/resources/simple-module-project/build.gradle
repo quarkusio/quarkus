@@ -4,12 +4,18 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
+    if (System.properties.containsKey('maven.repo.local')) {
+        maven {
+            url System.properties.get('maven.repo.local')
+        }
+    } else {
+        mavenLocal()
+    }
     mavenCentral()
 }
 
 dependencies {
-    implementation enforcedPlatform("io.quarkus:quarkus-bom:999-SNAPSHOT")
+    implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
 }
 

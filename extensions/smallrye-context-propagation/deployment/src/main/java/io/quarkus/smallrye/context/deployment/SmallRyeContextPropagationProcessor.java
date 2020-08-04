@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Singleton;
+import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
@@ -76,7 +76,10 @@ class SmallRyeContextPropagationProcessor {
 
         // Synthetic bean for ManagedExecutor
         syntheticBeans.produce(
-                SyntheticBeanBuildItem.configure(ManagedExecutor.class).scope(Singleton.class).defaultBean().unremovable()
+                SyntheticBeanBuildItem.configure(ManagedExecutor.class)
+                        .scope(ApplicationScoped.class)
+                        .defaultBean()
+                        .unremovable()
                         .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
                         .setRuntimeInit().done());
 

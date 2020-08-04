@@ -75,7 +75,6 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void setMethod(String method) {
-        // TODO Auto-generated method stub
 
     }
 

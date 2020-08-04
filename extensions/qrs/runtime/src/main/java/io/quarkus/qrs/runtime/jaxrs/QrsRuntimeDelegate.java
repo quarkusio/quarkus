@@ -13,7 +13,7 @@ public class QrsRuntimeDelegate extends RuntimeDelegate {
 
     @Override
     public UriBuilder createUriBuilder() {
-        return null;
+        return new QrsUriBuilder();
     }
 
     @Override
@@ -29,12 +29,12 @@ public class QrsRuntimeDelegate extends RuntimeDelegate {
     @Override
     public <T> T createEndpoint(Application application, Class<T> endpointType)
             throws IllegalArgumentException, UnsupportedOperationException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <T> HeaderDelegate<T> createHeaderDelegate(Class<T> type) throws IllegalArgumentException {
-        return new MediaTypeHeaderDelegate();
+        return new MediaTypeHeaderDelegate<T>();
     }
 
     @Override

@@ -9,9 +9,8 @@ import javax.ws.rs.ext.RuntimeDelegate;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
- * @version $Revision: 1 $
  */
-public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
+public class MediaTypeHeaderDelegate<T> implements RuntimeDelegate.HeaderDelegate<T> {
     public static final MediaTypeHeaderDelegate INSTANCE = new MediaTypeHeaderDelegate();
     private static final int MAX_MT_CACHE_SIZE = Integer.getInteger("org.jboss.resteasy.max_mediatype_cache_size", 200);
     private static final char[] quotedChars = "()<>@,;:\\\"/[]?= \t\r\n".toCharArray();
@@ -118,10 +117,10 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
         return false;
     }
 
-    public Object fromString(String type) throws IllegalArgumentException {
+    public T fromString(String type) throws IllegalArgumentException {
         if (type == null)
             throw new IllegalArgumentException("Media type was null");
-        return parse(type);
+        return (T) parse(type);
     }
 
     public String toString(Object o) {

@@ -28,8 +28,8 @@ import io.vertx.core.MultiMap;
  */
 public class QrsHttpHeaders implements HttpHeaders {
 
-    private MultivaluedMap<String, String> requestHeaders;
-    private MultivaluedMap<String, String> unmodifiableRequestHeaders;
+    private final MultivaluedMap<String, String> requestHeaders;
+    private final MultivaluedMap<String, String> unmodifiableRequestHeaders;
     private Map<String, Cookie> cookies;
 
     public QrsHttpHeaders(MultiMap vertxHeaders) {

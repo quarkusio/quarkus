@@ -214,8 +214,6 @@ public class MinikubeHandler extends AbstractKubernetesHandler<KubernetesConfig>
 
     private static ImageConfiguration getImageConfiguration(Project project, KubernetesConfig appConfig,
             Configurators configurators) {
-        Optional<ImageConfiguration> origin = configurators.getImageConfig(BuildServiceFactories.supplierMatches(project));
-
         return configurators.getImageConfig(BuildServiceFactories.supplierMatches(project)).map(i -> merge(appConfig, i))
                 .orElse(ImageConfiguration.from(appConfig));
     }

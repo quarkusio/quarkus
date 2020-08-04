@@ -105,7 +105,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
         if (association != null) {
             association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
         }

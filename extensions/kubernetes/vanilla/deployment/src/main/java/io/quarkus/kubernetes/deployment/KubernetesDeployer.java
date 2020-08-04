@@ -145,7 +145,7 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
+            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.getName().equals(activeContainerImageCapability);
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         }

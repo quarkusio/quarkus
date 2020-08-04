@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.enterprise.context.NormalScope;
@@ -135,8 +134,13 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     public B scope(Class<? extends Annotation> scope) {
         DotName scopeName = DotName.createSimple(scope.getName());
-        this.scope = Optional.ofNullable(BuiltinScope.from(scopeName)).map(BuiltinScope::getInfo).orElse(new ScopeInfo(
-                scopeName, scope.isAnnotationPresent(NormalScope.class), scope.isAnnotationPresent(Inherited.class)));
+        BuiltinScope builtinScope = BuiltinScope.from(scopeName);
+        if (builtinScope != null) {
+            this.scope = builtinScope.getInfo();
+        } else {
+            this.scope = new ScopeInfo(scopeName, scope.isAnnotationPresent(NormalScope.class),
+                    scope.isAnnotationPresent(Inherited.class));
+        }
         return self();
     }
 

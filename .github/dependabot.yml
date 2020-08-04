@@ -10,6 +10,7 @@ updates:
     labels:
       - area/dependencies
     allow:
+      - dependency-name: org.jboss:jboss-parent
       - dependency-name: org.apache.activemq:artemis-core-client
       - dependency-name: org.apache.activemq:artemis-jms-client
       - dependency-name: org.apache.activemq:artemis-server

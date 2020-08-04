@@ -79,7 +79,7 @@
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>20.1.0</graal-sdk.version>
         <gizmo.version>1.0.4.Final</gizmo.version>
-        <jackson.version>2.11.1</jackson.version>
+        <jackson.version>2.11.2</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.14</commons-codec.version>

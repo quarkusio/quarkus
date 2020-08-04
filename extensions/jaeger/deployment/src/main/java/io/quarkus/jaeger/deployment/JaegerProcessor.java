@@ -5,11 +5,13 @@ import java.util.Optional;
 import javax.inject.Inject;
 
 import io.jaegertracing.internal.JaegerTracer;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -51,6 +53,14 @@ public class JaegerProcessor {
     @BuildStep
     public void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.JAEGER));
+    }
+
+    @BuildStep
+    public void capability(JaegerBuildTimeConfig buildTimeConfig,
+            BuildProducer<CapabilityBuildItem> capability) {
+        if (buildTimeConfig.enabled) {
+            capability.produce(new CapabilityBuildItem(Capability.OPENTRACING));
+        }
     }
 
     @BuildStep

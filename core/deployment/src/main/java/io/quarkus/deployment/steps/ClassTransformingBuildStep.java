@@ -45,6 +45,7 @@ public class ClassTransformingBuildStep {
                 bytecodeTransformerBuildItems.size());
         Set<String> noConstScanning = new HashSet<>();
         Map<String, Set<String>> constScanning = new HashMap<>();
+        Set<String> eager = new HashSet<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i.getVisitorFunction());
@@ -53,6 +54,9 @@ public class ClassTransformingBuildStep {
             } else {
                 constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
                         .addAll(i.getRequireConstPoolEntry());
+            }
+            if (i.isEager()) {
+                eager.add(i.getClassToTransform());
             }
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
@@ -100,8 +104,8 @@ public class ClassTransformingBuildStep {
                                     visitor = i.apply(className, visitor);
                                 }
                                 cr.accept(visitor, 0);
-                                return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
-                                        classFileName);
+                                return new TransformedClassesBuildItem.TransformedClass(className, writer.toByteArray(),
+                                        classFileName, eager.contains(className));
                             } finally {
                                 Thread.currentThread().setContextClassLoader(old);
                             }

@@ -184,10 +184,67 @@ In this case, all whitespace characters from a standalone line will be printed t
 [[expressions]]
 ==== Expressions
 
-An expression consists of:
+An expression outputs a value.
+It consists of one or more parts separated by dot (dot notation) or square brackets (bracket notation).
+In the `object[property_name]` syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
+An expression could start with an optional namespace followed by a colon (`:`).
 
-* an optional namespace followed by a colon (`:`), 
-* one or more parts separated by dot (`.`).
+.Expressions Example
+[source]
+----
+{name} <1>
+{item.name} <2>
+{item['name']} <3>
+{global:colors} <4> 
+----
+<1> no namespace, one part: `name`
+<2> no namespace, two parts: `item`, `name`
+<3> equivalent to `{item.name}` but using the bracket notation
+<4> namespace `global`, one part: `colors`
+
+A part of an expression could be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses: 
+
+.Virtual Method Example
+[source]
+----
+{item.getLabels(1)} <1>
+{name or 'John'} <2>
+----
+<1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
+<2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
+
+NOTE: A parameter of a virtual method can be a <<literals, literal>> value.
+
+[[literals]]
+===== Supported Literals
+
+|===
+|Literal |Examples
+
+|boolean 
+|`true`, `false`
+
+|null 
+|`null`
+
+|string 
+|`'value'`, `"string"`
+
+|integer 
+|`1`, `-5`
+
+|long
+|`1l`, `-5L`
+
+|double
+|`1D`, `-5d`
+
+|float
+|`1f`, `-5F`
+
+|===
+
+===== Resolution
 
 The first part of the expression is always resolved against the <<current_context_object, current context object>>.
 If no result is found for the first part it's resolved against the parent context object (if available).
@@ -200,26 +257,6 @@ The "name" will be resolved using all available value resolvers against the curr
 However, the expression `{global:colors}` has the namespace `global` and single part - `colors`.
 First, all available ``NamespaceResolver``s will be used to find the current context object.
 And afterwards value resolvers will be used to resolve "colors" against the context object found. 
-
-[source]
-----
-{name} <1>
-{item.name} <2>
-{global:colors} <3> 
-----
-<1> no namespace, one part -`name`
-<2> no namespace, two parts - `item`, `name`
-<3> namespace `global`, one part - `colors`
-
-An expression part could be a "virtual method" in which case the name can be followed by a list of comma-separated parameters in parentheses: 
-
-[source]
-----
-{item.getLabels(1)} <1>
-{name or 'John'} <2>
-----
-<1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
-<2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
 
 [[current_context_object]]
 ===== Current Context

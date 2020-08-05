@@ -682,8 +682,25 @@ class Parser implements Function<String, Expression>, ParserHelper {
             for (String strParam : strParams) {
                 params.add(parseExpression(strParam.trim(), scope, origin));
             }
-            return new ExpressionImpl.VirtualMethodExpressionPartImpl(name, params);
+            return new ExpressionImpl.VirtualMethodPartImpl(name, params);
         }
+        // Try to parse the literal for bracket notation
+        if (Expressions.isBracketNotation(value)) {
+            value = Expressions.parseBracketContent(value);
+            Object literal = LiteralSupport.getLiteralValue(value);
+            if (literal != null && !Result.NOT_FOUND.equals(literal)) {
+                value = literal.toString();
+            } else {
+                StringBuilder builder = new StringBuilder(literal == null ? "Null" : "Non-literal");
+                builder.append(" value used in bracket notation [").append(value).append("]");
+                if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                    builder.append(" in template [").append(origin.getTemplateId()).append("]");
+                }
+                builder.append(" on line ").append(origin.getLine());
+                throw new IllegalArgumentException(builder.toString());
+            }
+        }
+
         String typeInfo = null;
         if (namespace != null) {
             typeInfo = value;
@@ -692,11 +709,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
         } else if (first.getTypeInfo() != null) {
             typeInfo = value;
         }
-        return new ExpressionImpl.ExpressionPartImpl(value, typeInfo);
-    }
-
-    static boolean isSeparator(char candidate) {
-        return candidate == '.' || candidate == '[' || candidate == ']';
+        return new ExpressionImpl.PartImpl(value, typeInfo);
     }
 
     /**

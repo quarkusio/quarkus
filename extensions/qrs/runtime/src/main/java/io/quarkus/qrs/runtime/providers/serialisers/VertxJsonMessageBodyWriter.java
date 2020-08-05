@@ -32,9 +32,7 @@ public class VertxJsonMessageBodyWriter implements QrsMessageBodyWriter<Object> 
     }
 
     @Override
-    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, RequestContext context)
-            throws WebApplicationException {
+    public void writeResponse(Object o, RequestContext context) throws WebApplicationException {
         HttpServerResponse vertxResponse = context.getContext().response();
         vertxResponse.end(Json.encodeToBuffer(o));
     }

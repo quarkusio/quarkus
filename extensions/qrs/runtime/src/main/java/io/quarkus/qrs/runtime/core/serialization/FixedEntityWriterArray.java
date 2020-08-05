@@ -30,8 +30,7 @@ public class FixedEntityWriterArray implements EntityWriter {
             MessageBodyWriter writer = writers[i];
             if (writer.isWriteable(entity.getClass(), null, null, response.getMediaType())) {
                 if (writer instanceof QrsMessageBodyWriter) {
-                    ((QrsMessageBodyWriter<Object>) writer).writeTo(entity, null, null, null, response.getMediaType(), null,
-                            context);
+                    ((QrsMessageBodyWriter<Object>) writer).writeResponse(entity, context);
                 } else {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     writer.writeTo(entity, null, null, null, response.getMediaType(), null, baos);

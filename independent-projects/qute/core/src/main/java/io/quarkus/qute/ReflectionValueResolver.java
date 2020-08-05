@@ -22,6 +22,7 @@ public class ReflectionValueResolver implements ValueResolver {
 
     public static final String GET_PREFIX = "get";
     public static final String IS_PREFIX = "is";
+    public static final String HAS_PREFIX = "has";
 
     @Override
     public int getPriority() {
@@ -92,39 +93,33 @@ public class ReflectionValueResolver implements ValueResolver {
     }
 
     private static Method findMethod(Class<?> clazz, String name) {
-
         Objects.requireNonNull(clazz);
         Objects.requireNonNull(name);
 
         Method foundMatch = null;
-        Method foundGetMatch = null;
-        Method foundIsMatch = null;
+        Method foundGetterMatch = null;
+        Method foundBooleanMatch = null;
 
         for (Method method : clazz.getMethods()) {
-
             if (!isMethodValid(method)) {
                 continue;
             }
-
             if (method.isBridge()) {
                 continue;
             }
-
             if (name.equals(method.getName())) {
                 foundMatch = method;
             } else if (matchesPrefix(name, method.getName(),
                     GET_PREFIX)) {
-                foundGetMatch = method;
-            } else if (matchesPrefix(name, method.getName(),
-                    IS_PREFIX)) {
-                foundIsMatch = method;
+                foundGetterMatch = method;
+            } else if (isBoolean(method.getReturnType()) && (matchesPrefix(name, method.getName(),
+                    IS_PREFIX) || matchesPrefix(name, method.getName(), HAS_PREFIX))) {
+                foundBooleanMatch = method;
             }
         }
-
         if (foundMatch == null) {
-            foundMatch = (foundGetMatch != null ? foundGetMatch : foundIsMatch);
+            foundMatch = (foundGetterMatch != null ? foundGetterMatch : foundBooleanMatch);
         }
-
         return foundMatch;
     }
 
@@ -161,6 +156,10 @@ public class ReflectionValueResolver implements ValueResolver {
             String prefix) {
         return methodName.startsWith(prefix)
                 && decapitalize(methodName.substring(prefix.length(), methodName.length())).equals(name);
+    }
+
+    private static boolean isBoolean(Class<?> type) {
+        return type.equals(Boolean.class) || type.equals(boolean.class);
     }
 
     static String decapitalize(String name) {

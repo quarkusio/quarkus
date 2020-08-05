@@ -103,7 +103,7 @@ public class NativeImageBuildStep {
             if (SystemUtils.IS_OS_LINUX) {
                 String uid = getLinuxID("-ur");
                 String gid = getLinuxID("-gr");
-                if (uid != null && gid != null && !"".equals(uid) && !"".equals(gid)) {
+                if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                     Collections.addAll(nativeImage, "--user", uid + ":" + gid);
                     if ("podman".equals(containerRuntime)) {
                         // Needed to avoid AccessDeniedExceptions

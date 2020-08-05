@@ -8,6 +8,7 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -209,9 +210,7 @@ public class CuratedApplication implements Serializable, Closeable {
                 //in test mode we have everything in the base class loader
                 //there is no need to restart so there is no need for an additional CL
 
-                for (Path root : quarkusBootstrap.getApplicationRoot()) {
-                    builder.addElement(ClassPathElement.fromPath(root));
-                }
+                addApplicationArtifact(builder, quarkusBootstrap, appModel.getAppArtifact().getPaths());
             }
             //additional user class path elements first
             Set<Path> hotReloadPaths = new HashSet<>();
@@ -240,6 +239,25 @@ public class CuratedApplication implements Serializable, Closeable {
         return baseRuntimeClassLoader;
     }
 
+    private void addApplicationArtifact(QuarkusClassLoader.Builder builder, QuarkusBootstrap quarkusBootstrap,
+            PathsCollection appArchivePaths) {
+        Set<Path> seen = new HashSet<>();
+        for (Path root : quarkusBootstrap.getApplicationRoot()) {
+            Path normal = root.toAbsolutePath().normalize();
+            builder.addElement(ClassPathElement.fromPath(root));
+            seen.add(normal);
+        }
+        //its possible the resolver may resolve additional paths that belong to this artifact
+        //such as the 'testFixtures' path in gradle
+        for (Path root : appArchivePaths) {
+            Path normal = root.toAbsolutePath().normalize();
+            if (!seen.contains(normal)) {
+                builder.addElement(ClassPathElement.fromPath(root));
+                seen.add(normal);
+            }
+        }
+    }
+
     private static boolean isHotReloadable(AppArtifact a, Set<Path> hotReloadPaths) {
         for (Path p : a.getPaths()) {
             if (hotReloadPaths.contains(p)) {
@@ -255,9 +273,7 @@ public class CuratedApplication implements Serializable, Closeable {
                 getAugmentClassLoader(), false)
                 .setAggregateParentResources(true);
 
-        for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root));
-        }
+        addApplicationArtifact(builder, quarkusBootstrap, appModel.getAppArtifact().getPaths());
 
         //additional user class path elements first
         for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
@@ -278,9 +294,7 @@ public class CuratedApplication implements Serializable, Closeable {
         builder.setTransformerPredicates(transformerPredicates);
         builder.setTransformerClassLoader(deploymentClassLoader);
 
-        for (Path root : quarkusBootstrap.getApplicationRoot()) {
-            builder.addElement(ClassPathElement.fromPath(root));
-        }
+        addApplicationArtifact(builder, quarkusBootstrap, appModel.getAppArtifact().getPaths());
         builder.addElement(new MemoryClassPathElement(resources));
 
         for (AdditionalDependency i : getQuarkusBootstrap().getAdditionalApplicationArchives()) {

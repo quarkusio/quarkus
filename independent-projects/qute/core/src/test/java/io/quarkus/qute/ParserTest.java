@@ -193,6 +193,7 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
         String content = "{@java.lang.String foo}\n" // -> standalone
                 + "\n"
+                + " {! My comment !} \n"
                 + "  {#for i in 5}\n" // -> standalone
                 + "{index}:\n"
                 + "{/} "; // -> standalone

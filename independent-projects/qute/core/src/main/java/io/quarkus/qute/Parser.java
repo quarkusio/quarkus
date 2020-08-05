@@ -228,6 +228,10 @@ class Parser implements Function<String, Expression>, ParserHelper {
             // End of comment
             state = State.TEXT;
             buffer = new StringBuilder();
+            if (engine.removeStandaloneLines) {
+                // Add a dummy comment block to detect standalone lines
+                sectionBlockStack.peek().addNode(COMMENT_NODE);
+            }
         } else {
             buffer.append(character);
         }
@@ -771,7 +775,8 @@ class Parser implements Function<String, Expression>, ParserHelper {
             if (node instanceof ExpressionNode) {
                 // Line contains an expression
                 return false;
-            } else if (node instanceof SectionNode || node instanceof ParameterDeclarationNode || node instanceof BlockNode) {
+            } else if (node instanceof SectionNode || node instanceof ParameterDeclarationNode || node == BLOCK_NODE
+                    || node == COMMENT_NODE) {
                 maybeStandalone = true;
             } else if (node instanceof TextNode) {
                 if (!isBlank(((TextNode) node).getValue())) {
@@ -885,9 +890,25 @@ class Parser implements Function<String, Expression>, ParserHelper {
     };
 
     private static final BlockNode BLOCK_NODE = new BlockNode();
+    private static final CommentNode COMMENT_NODE = new CommentNode();
 
     // A dummy node for section blocks, it's only used when removing standalone lines
     private static class BlockNode implements TemplateNode {
+
+        @Override
+        public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Origin getOrigin() {
+            throw new IllegalStateException();
+        }
+
+    }
+
+    // A dummy node for comments, it's only used when removing standalone lines
+    private static class CommentNode implements TemplateNode {
 
         @Override
         public CompletionStage<ResultNode> resolve(ResolutionContext context) {

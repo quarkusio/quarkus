@@ -127,7 +127,7 @@ TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimit
 === Removing Standalone Lines From the Template
 
 By default, Qute parser removes standalone lines from the template output.
-A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`) or parameter declaration (e.g. `{@org.acme.Foo foo}`) but no expression and non-whitespace character.
+A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`), parameter declaration (e.g. `{@org.acme.Foo foo}`) or comment but no expression and no non-whitespace character.
 In other words, a line that contains no section tag or a parameter declaration is *not* a standalone line.
 Likewise, a line that contains an _expression_ or a _non-whitespace character_ is *not* a standalone line.
 

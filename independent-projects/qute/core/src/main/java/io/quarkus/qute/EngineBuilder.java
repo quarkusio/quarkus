@@ -139,8 +139,10 @@ public final class EngineBuilder {
     }
 
     /**
-     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains
-     * only section tags, parameter declarations and whitespace characters.
+     * Specify whether the parser should remove standalone lines from the output.
+     * <p>
+     * A standalone line is a line that contains at least one section tag, parameter declaration, or comment but no expression
+     * and no non-whitespace character.
      * 
      * @param value
      * @return self

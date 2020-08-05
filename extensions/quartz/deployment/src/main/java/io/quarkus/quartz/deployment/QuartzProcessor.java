@@ -28,8 +28,8 @@ import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
 import org.quartz.spi.SchedulerPlugin;
 
-import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
-import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;

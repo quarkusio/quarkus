@@ -8,19 +8,17 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
-import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -57,6 +55,7 @@ public class RequestContext implements Runnable, Closeable {
     private Object requestEntity;
     private Map<String, Object> properties;
     private Request request;
+    private EntityWriter entityWriter;
 
     public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping,
             Serialisers serialisers) {
@@ -148,7 +147,7 @@ public class RequestContext implements Runnable, Closeable {
         return uriInfo;
     }
 
-    public HttpHeaders getHttpHeaders() {
+    public QrsHttpHeaders getHttpHeaders() {
         if (httpHeaders == null) {
             httpHeaders = new QrsHttpHeaders(context.request().headers());
         }
@@ -181,6 +180,15 @@ public class RequestContext implements Runnable, Closeable {
 
     public RequestContext setRequestEntity(Object requestEntity) {
         this.requestEntity = requestEntity;
+        return this;
+    }
+
+    public EntityWriter getEntityWriter() {
+        return entityWriter;
+    }
+
+    public RequestContext setEntityWriter(EntityWriter entityWriter) {
+        this.entityWriter = entityWriter;
         return this;
     }
 
@@ -285,16 +293,6 @@ public class RequestContext implements Runnable, Closeable {
 
     public Response getResponse() {
         return (Response) result;
-    }
-
-    public MessageBodyWriter<Object> getMessageBodyWriter() {
-        // for some endpoints (no filter, easy content/return type) we can hardcode this and save the lookup
-        ResourceWriter<Object> buildTimeWriter = target.getBuildTimeWriter();
-        // no build-time writers for exception responses
-        if (throwable == null && buildTimeWriter != null) {
-            return buildTimeWriter.getFactory().createInstance(this).getInstance();
-        }
-        return (MessageBodyWriter<Object>) serialisers.findWriter(getResponse(), this);
     }
 
     public Object getProperty(String name) {

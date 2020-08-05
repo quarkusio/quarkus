@@ -80,7 +80,7 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public MultivaluedMap<String, String> getHeaders() {
-        return context.getHttpHeaders().getRequestHeaders();
+        return context.getHttpHeaders().getMutableHeaders();
     }
 
     @Override

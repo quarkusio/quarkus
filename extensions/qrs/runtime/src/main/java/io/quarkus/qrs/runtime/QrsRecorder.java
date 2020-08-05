@@ -26,8 +26,11 @@ import io.quarkus.qrs.runtime.core.QueryParamExtractor;
 import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.core.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.core.Serialisers;
+import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
+import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
+import io.quarkus.qrs.runtime.handlers.EntityWriterHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
@@ -144,27 +147,35 @@ public class QrsRecorder {
                 if (method.isBlocking()) {
                     handlers.add(new BlockingHandler(blockingExecutor));
                 }
+                List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
+                Type returnType = TypeSignatureParser.parse(method.getReturnType());
+                Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
+                Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
+                ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType,
+                        responseInterceptors);
+                if (buildTimeWriter == null) {
+                    handlers.add(new EntityWriterHandler(new DynamicEntityWriter(serialisers)));
+                } else {
+                    handlers.add(new EntityWriterHandler(
+                            new FixedEntityWriter(buildTimeWriter.getFactory().createInstance().getInstance())));
+                }
+
                 handlers.add(new InvocationHandler(invoker));
                 // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
                 handlers.add(new CompletionStageResponseHandler());
                 handlers.add(new UniResponseHandler());
                 handlers.add(new ResponseHandler());
-                List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
+
                 if (!responseInterceptors.isEmpty()) {
                     handlers.add(new ResourceResponseInterceptorHandler(responseInterceptors));
                 }
                 handlers.add(new ResponseWriterHandler());
 
-                Type returnType = TypeSignatureParser.parse(method.getReturnType());
-                Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
-                Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
                 RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         consumesMediaType, invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                        nonAsyncReturnType,
-                        // FIXME: also depends on filters and content type
-                        serialisers.findBuildTimeWriter(rawNonAsyncReturnType, responseInterceptors));
+                        nonAsyncReturnType);
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
                 if (list == null) {
                     templates.put(method.getMethod(), list = new ArrayList<>());

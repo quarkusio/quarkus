@@ -5,7 +5,6 @@ import java.lang.reflect.Type;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qrs.runtime.handlers.RestHandler;
-import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
@@ -21,11 +20,10 @@ public class RuntimeResource {
     private final String method;
     private final Class<?>[] parameterTypes;
     private final Type returnType;
-    private final ResourceWriter<Object> buildTimeWriter;
 
     public RuntimeResource(String httpMethod, URITemplate path, MediaType produces, MediaType consumes, EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
-            Type returnType, ResourceWriter<Object> buildTimeWriter) {
+            Type returnType) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
@@ -36,7 +34,6 @@ public class RuntimeResource {
         this.method = method;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
-        this.buildTimeWriter = buildTimeWriter;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -77,10 +74,6 @@ public class RuntimeResource {
 
     public BeanFactory<Object> getEndpointFactory() {
         return endpointFactory;
-    }
-
-    public ResourceWriter<Object> getBuildTimeWriter() {
-        return buildTimeWriter;
     }
 
     @Override

@@ -27,7 +27,7 @@ public class ResourcePropertiesAccessor {
 
     public String path(ClassInfo classInfo) {
         AnnotationInstance annotation = getAnnotation(classInfo);
-        if (annotation == null || annotation.value("path") == null || "".equals(annotation.value("path").asString())) {
+        if (annotation == null || annotation.value("path") == null || annotation.value("path").asString().isEmpty()) {
             return ResourceName.fromClass(classInfo.simpleName());
         }
         return annotation.value("path").asString();

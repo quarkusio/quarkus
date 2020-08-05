@@ -60,7 +60,7 @@ public class FunctionScannerBuildStep {
             if (funqMethod.value() != null) {
                 functionName = funqMethod.value().asString();
             }
-            if (functionName != null && "".equals(functionName))
+            if (functionName != null && functionName.isEmpty())
                 functionName = null;
             functions.produce(new FunctionBuildItem(className, methodName, functionName));
         }

@@ -3,7 +3,6 @@ name: qute-example
 ref: qute
 type: example
 missing-languages:
-  - kotlin
   - scala
 language:
   base:

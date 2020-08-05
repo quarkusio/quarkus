@@ -20,8 +20,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
@@ -31,16 +33,14 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
-/**
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
- */
 @DisableForNative
 public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
@@ -50,6 +50,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private Invoker invoker;
     private RunningInvoker running;
     private File testDir;
+    private File projectDir;
 
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "gradlew";
@@ -68,24 +69,47 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         executor.shutdownNow();
     }
 
+    private static Stream<Arguments> provideGenerateCombinations() {
+        return Stream.of("maven", "gradle")
+                .flatMap(b -> Stream.of("java", "kotlin", "scala").map(l -> Pair.of(b, l)))
+                .flatMap(p -> Stream.of("", "resteasy,qute").map(e -> Arguments.of(p.getLeft(), p.getRight(), e)));
+    }
+
     @ParameterizedTest
-    @CsvSource({ "maven,java", "maven,kotlin", "maven,scala", "gradle,java", "gradle,kotlin", "gradle,scala" })
-    public void generateProjectRunTestsAndDev(String buildtool, String language) throws Exception {
-        testDir = prepareTestDir("project-" + buildtool + "-" + language);
+    @MethodSource("provideGenerateCombinations")
+    public void generateProjectRunTestsAndDev(String buildtool, String language, String extensions) throws Exception {
+        String name = "project-" + buildtool + "-" + language;
+        if (extensions.isEmpty()) {
+            name += "-commandmode";
+        } else {
+            name += "-" + extensions.replace(",", "-");
+        }
+        testDir = prepareTestDir("project-" + name);
         LOG.info("creating project in " + testDir.toPath().toString());
-        runCreateCommand(buildtool, "resteasy,qute" + (!Objects.equals(language, "java") ? "," + language : ""));
+        runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""));
         LOG.info("running quarkus test and dev command...");
+        // FIXME Gradle test are disabled https://github.com/quarkusio/quarkus/issues/11127
         switch (buildtool) {
             case "maven":
-                runMavenQuarkusDevCommand();
-                LOG.info("checking resteasy...");
-                checkRestEasyDevmode();
-
+                runMavenPackageCommand();
                 break;
             case "gradle":
-                // FIXME find a way to make gradle check work
-                //runGradleQuarkusDevCommand();
+                // runGradleBuildCommand();
+                ;
                 break;
+        }
+
+        if (extensions.contains("resteasy")) {
+            LOG.info("checking resteasy...");
+            switch (buildtool) {
+                case "maven":
+                    runMavenQuarkusDevCommand();
+                    checkRestEasyDevmode();
+                    break;
+                case "gradle":
+                    // runGradleQuarkusDevCommand();
+                    break;
+            }
         }
     }
 
@@ -104,6 +128,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     }
 
     private void checkRestEasyDevmode() {
+
         String resp = DevModeTestUtils.getHttpResponse();
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.test")
@@ -133,18 +158,38 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
 
         // Run
         // As the directory is not empty (log) navigate to the artifactID directory
-        testDir = new File(testDir, "my-test-app");
+        projectDir = new File(testDir, "my-test-app");
     }
 
-    private void runMavenQuarkusDevCommand() throws MavenInvocationException {
-        running = new RunningInvoker(testDir, false);
+    private void runMavenPackageCommand() throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("test", "compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+
+        PrintStreamLogger logger = getPrintStreamLogger("test-codestart.log");
+        invoker.setLogger(logger);
+        InvocationRequest request = new DefaultInvocationRequest();
+        request.setBatchMode(true);
+        request.setGoals(Collections.singletonList("package"));
+        request.setDebug(false);
+        request.setShowErrors(true);
+        request.setBaseDirectory(projectDir);
+
+        assertThat(invoker.execute(request).getExitCode()).isZero();
+    }
+
+    private void runGradleBuildCommand() throws IOException, InterruptedException {
+        assertThat(runGradleWrapper(projectDir, "build")).isZero();
     }
 
     private void runGradleQuarkusDevCommand() throws IOException, InterruptedException {
-        runGradleWrapper(testDir, "test", "quarkusDev");
+        executor.submit(() -> runGradleWrapper(projectDir, "quarkusDev"));
+    }
+
+    private void runMavenQuarkusDevCommand() throws MavenInvocationException {
+        running = new RunningInvoker(projectDir, false);
+        final Properties mvnRunProps = new Properties();
+        mvnRunProps.setProperty("debug", "false");
+        running.execute(Arrays.asList("quarkus:dev"), Collections.emptyMap(), mvnRunProps);
     }
 
     private InvocationResult executeCreate(Properties params)
@@ -162,36 +207,40 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         request.setShowErrors(false);
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
-        File log = new File(testDir, "build-create-codestart-" + testDir.getName() + ".log");
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
-                InvokerLogger.DEBUG);
+        PrintStreamLogger logger = getPrintStreamLogger("create-codestart.log");
         invoker.setLogger(logger);
         return invoker.execute(request);
     }
 
-    public void runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {
+    private PrintStreamLogger getPrintStreamLogger(String s) throws UnsupportedEncodingException, FileNotFoundException {
+        File log = new File(testDir, s);
+        return new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
+                InvokerLogger.DEBUG);
+    }
+
+    private int runGradleWrapper(File projectDir, String... args) {
         List<String> command = new LinkedList<>();
         command.add(projectDir.toPath().resolve(getGradleWrapperName()).toAbsolutePath().toString());
         command.add(GRADLE_NO_DAEMON);
         command.addAll(Arrays.asList(args));
-        executor.submit(() -> {
+        try {
+            System.out.println("Running command: " + command);
+            final Process p = new ProcessBuilder()
+                    .directory(projectDir)
+                    .command(command)
+                    .start();
             try {
-                System.out.println("Running command: " + command);
-                final Process p = new ProcessBuilder()
-                        .directory(projectDir)
-                        .command(command)
-                        .start();
-                try {
-                    ProcessUtil.streamToSysOutSysErr(p);
-                    p.waitFor(3, TimeUnit.MINUTES);
-                } catch (InterruptedException e) {
-                    p.destroyForcibly();
-                    Thread.currentThread().interrupt();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+                ProcessUtil.streamToSysOutSysErr(p);
+                p.waitFor(3, TimeUnit.MINUTES);
+                return p.exitValue();
+            } catch (InterruptedException e) {
+                p.destroyForcibly();
+                Thread.currentThread().interrupt();
             }
-        });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
     private String getGradleWrapperName() {

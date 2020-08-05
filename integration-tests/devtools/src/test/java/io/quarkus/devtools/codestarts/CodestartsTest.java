@@ -29,7 +29,7 @@ class CodestartsTest extends PlatformAwareTestBase {
     void loadBundledCodestartsTest() throws IOException {
         final Collection<Codestart> codestarts = CodestartLoader
                 .loadBundledCodestarts(inputBuilder(getPlatformDescriptor()).build());
-        assertThat(codestarts).hasSize(11);
+        assertThat(codestarts).hasSize(10);
     }
 
     @Test
@@ -102,7 +102,7 @@ class CodestartsTest extends PlatformAwareTestBase {
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)
                 .contains("bundled-codestarts/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/example/base-example", "bundled-codestarts/tooling/dockerfiles",
+                .containsExactlyInAnyOrder("bundled-codestarts/tooling/dockerfiles",
                         "codestarts/resteasy-example");
     }
 
@@ -115,7 +115,7 @@ class CodestartsTest extends PlatformAwareTestBase {
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)
                 .contains("bundled-codestarts/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/example/base-example", "bundled-codestarts/tooling/dockerfiles",
+                .containsExactlyInAnyOrder("bundled-codestarts/tooling/dockerfiles",
                         "bundled-codestarts/example/commandmode-example");
     }
 }

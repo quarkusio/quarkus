@@ -23,7 +23,8 @@ public class TemplateDataTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(Foo.class)
-                    .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
+                    .addAsResource(new StringAsset(
+                            "{foo.val} is not {foo.val.setScale(2,roundingMode)} and {foo.bar}={foo.hasBar} and {foo.baz}={foo.isBaz}"),
                             "templates/foo.txt"));
 
     @Inject
@@ -31,7 +32,7 @@ public class TemplateDataTest {
 
     @Test
     public void testTemplateData() {
-        assertEquals("123.4563 is not 123.46",
+        assertEquals("123.4563 is not 123.46 and true=true and false=false",
                 foo.data("roundingMode", RoundingMode.HALF_UP).data("foo", new Foo(new BigDecimal("123.4563"))).render());
     }
 
@@ -43,6 +44,14 @@ public class TemplateDataTest {
 
         public Foo(BigDecimal val) {
             this.val = val;
+        }
+
+        public boolean hasBar() {
+            return true;
+        }
+
+        public boolean isBaz() {
+            return false;
         }
 
     }

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 
@@ -36,8 +35,9 @@ public class ResourceResponseInterceptorHandler implements RestHandler, Closeabl
 
     @Override
     public void handle(RequestContext requestContext) throws Exception {
-        // FIXME: reuse previous request context?
-        ContainerRequestContext filterRequestContext = new QrsContainerRequestContext(requestContext);
+        QrsContainerRequestContext filterRequestContext = requestContext.getContainerRequestContext();
+        filterRequestContext.setResponse(true);
+        filterRequestContext.setPreMatch(false);
         ContainerResponseContext filterResponseContext = new QrsContainerResponseContext(requestContext);
         for (ContainerResponseFilter interceptor : filters) {
             interceptor.filter(filterRequestContext, filterResponseContext);

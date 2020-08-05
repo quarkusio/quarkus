@@ -24,6 +24,7 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
     private RequestContext context;
     private boolean aborted;
     private boolean preMatch;
+    private boolean response;
 
     public QrsContainerRequestContext(RequestContext requestContext) {
         this.context = requestContext;
@@ -88,6 +89,12 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
         }
     }
 
+    public void assertNotResponse() {
+        if (!isPreMatch()) {
+            throw new IllegalStateException("Cannot be called from response filter");
+        }
+    }
+
     @Override
     public MultivaluedMap<String, String> getHeaders() {
         return context.getHttpHeaders().getMutableHeaders();
@@ -147,6 +154,7 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void setEntityStream(InputStream input) {
+        assertNotResponse();
         // TODO Auto-generated method stub
 
     }
@@ -159,6 +167,7 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void setSecurityContext(SecurityContext context) {
+        assertNotResponse();
         // TODO Auto-generated method stub
 
     }
@@ -174,9 +183,19 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void abortWith(Response response) {
+        assertNotResponse();
         context.setResult(response);
         context.restart(context.getDeployment().getAbortHandlerChain());
         aborted = true;
+    }
+
+    public boolean isResponse() {
+        return response;
+    }
+
+    public QrsContainerRequestContext setResponse(boolean response) {
+        this.response = response;
+        return this;
     }
 
     public boolean isAborted() {

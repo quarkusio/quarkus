@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.qrs.deployment.framework.EndpointIndexer;
 import io.quarkus.qrs.deployment.framework.QrsDotNames;
@@ -62,7 +63,8 @@ public class QrsProcessor {
     public FilterBuildItem setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            QrsRecorder recorder, ExecutorBuildItem executorBuildItem) {
+            QrsRecorder recorder, ExecutorBuildItem executorBuildItem,
+            ShutdownContextBuildItem shutdownContext) {
         Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(QrsDotNames.PATH);
         Collection<ClassInfo> containerRequestFilters = beanArchiveIndexBuildItem.getIndex()
                 .getAllKnownImplementors(QrsDotNames.CONTAINER_REQUEST_FILTER);
@@ -107,7 +109,12 @@ public class QrsProcessor {
                 ResourceRequestInterceptor interceptor = new ResourceRequestInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                interceptors.addRequestInterceptor(interceptor);
+                interceptor.setPreMatching(filterClass.classAnnotation(QrsDotNames.PRE_MATCHING) != null);
+                if (interceptor.isPreMatching()) {
+                    interceptors.addResourcePreMatchInterceptor(interceptor);
+                } else {
+                    interceptors.addRequestInterceptor(interceptor);
+                }
             }
         }
         for (ClassInfo filterClass : containerResponseFilters) {
@@ -170,7 +177,7 @@ public class QrsProcessor {
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses,
-                        executorBuildItem.getExecutorProxy()),
+                        executorBuildItem.getExecutorProxy(), shutdownContext),
                 10);
     }
 

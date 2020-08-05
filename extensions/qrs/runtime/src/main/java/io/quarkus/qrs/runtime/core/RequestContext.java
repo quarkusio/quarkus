@@ -16,8 +16,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
+import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
@@ -27,13 +29,15 @@ import io.vertx.ext.web.RoutingContext;
 
 public class RequestContext implements Runnable, Closeable {
     private static final Logger log = Logger.getLogger(RequestContext.class);
+    public static final Object[] EMPTY_ARRAY = new Object[0];
+    private final QrsDeployment deployment;
     private final RoutingContext context;
     /**
      * The parameters array, populated by handlers
      */
-    private final Object[] parameters;
-    private final RuntimeResource target;
-    private final RestHandler[] handlers;
+    private Object[] parameters;
+    private RuntimeResource target;
+    private RestHandler[] handlers;
     Map<String, String> pathParamValues;
     private UriInfo uriInfo;
     /**
@@ -50,15 +54,15 @@ public class RequestContext implements Runnable, Closeable {
     private int position;
     private Throwable throwable;
     private QrsHttpHeaders httpHeaders;
-    private ExceptionMapping exceptionMapping;
-    private Serialisers serialisers;
     private Object requestEntity;
     private Map<String, Object> properties;
     private Request request;
     private EntityWriter entityWriter;
+    private QrsContainerRequestContext containerRequestContext;
+    private String method;
 
-    public RequestContext(RoutingContext context, RuntimeResource target, ExceptionMapping exceptionMapping,
-            Serialisers serialisers) {
+    public RequestContext(QrsDeployment deployment, RoutingContext context, RuntimeResource target) {
+        this.deployment = deployment;
         this.context = context;
         this.target = target;
         this.handlers = target.getHandlerChain();
@@ -69,8 +73,23 @@ public class RequestContext implements Runnable, Closeable {
                 close();
             }
         });
-        this.exceptionMapping = exceptionMapping;
-        this.serialisers = serialisers;
+    }
+
+    public RequestContext(QrsDeployment deployment, RoutingContext context, RestHandler... handlerChain) {
+        this.deployment = deployment;
+        this.context = context;
+        this.handlers = handlerChain;
+        this.parameters = EMPTY_ARRAY;
+        context.addEndHandler(new Handler<AsyncResult<Void>>() {
+            @Override
+            public void handle(AsyncResult<Void> event) {
+                close();
+            }
+        });
+    }
+
+    public QrsDeployment getDeployment() {
+        return deployment;
     }
 
     public void suspend() {
@@ -115,8 +134,9 @@ public class RequestContext implements Runnable, Closeable {
                 return;
             }
             while (position < handlers.length) {
-                handlers[position].handle(this);
-                ++position;
+                int pos = position;
+                position++; //increment before, as reset may reset it to zero
+                handlers[pos].handle(this);
                 if (suspended) {
                     Executor exec = null;
                     synchronized (this) {
@@ -143,7 +163,36 @@ public class RequestContext implements Runnable, Closeable {
         }
     }
 
+    /**
+     * Restarts handler chain processing on a chain that does not target a specific resource
+     *
+     * Generally used to abort processing.
+     *
+     * @param newHandlerChain The new handler chain
+     */
+    public void restart(RestHandler[] newHandlerChain) {
+        this.handlers = newHandlerChain;
+        position = 0;
+        parameters = new Object[0];
+        target = null;
+    }
+
+    /**
+     * Restarts handler chain processing with a new chain targeting a new resource.
+     *
+     * @param target The resource target
+     */
+    public void restart(RuntimeResource target) {
+        this.handlers = target.getHandlerChain();
+        position = 0;
+        parameters = new Object[target.getParameterTypes().length];
+        this.target = target;
+    }
+
     public UriInfo getUriInfo() {
+        if (uriInfo == null) {
+            uriInfo = new QrsUriInfo(context.request().absoluteURI(), "/");
+        }
         return uriInfo;
     }
 
@@ -274,7 +323,7 @@ public class RequestContext implements Runnable, Closeable {
         if (throwable instanceof WebApplicationException) {
             this.result = ((WebApplicationException) throwable).getResponse();
         } else {
-            this.result = exceptionMapping.mapException(throwable, this);
+            this.result = deployment.getExceptionMapping().mapException(throwable, this);
         }
     }
 
@@ -328,5 +377,23 @@ public class RequestContext implements Runnable, Closeable {
             request = new QrsRequest(this);
         }
         return request;
+    }
+
+    public QrsContainerRequestContext getContainerRequestContext() {
+        if (containerRequestContext == null) {
+            containerRequestContext = new QrsContainerRequestContext(this);
+        }
+        return containerRequestContext;
+    }
+
+    public String getMethod() {
+        if (method == null) {
+            return context.request().rawMethod();
+        }
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
     }
 }

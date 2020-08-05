@@ -191,4 +191,16 @@ public class SimpleQrsResource {
     public Uni<String> asyncUniStageFail() {
         return Uni.createFrom().failure(new TestException());
     }
+
+    @GET
+    @Path("pre-match")
+    public String preMatchGet() {
+        return "pre-match-get";
+    }
+
+    @POST
+    @Path("pre-match")
+    public String preMatchPost() {
+        return "pre-match-post";
+    }
 }

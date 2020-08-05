@@ -22,9 +22,8 @@ import io.quarkus.qrs.runtime.core.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
 import io.quarkus.qrs.runtime.core.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.PathParamExtractor;
+import io.quarkus.qrs.runtime.core.QrsDeployment;
 import io.quarkus.qrs.runtime.core.QueryParamExtractor;
-import io.quarkus.qrs.runtime.core.ResourceRequestInterceptorHandler;
-import io.quarkus.qrs.runtime.core.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
@@ -36,6 +35,8 @@ import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
+import io.quarkus.qrs.runtime.handlers.ResourceRequestInterceptorHandler;
+import io.quarkus.qrs.runtime.handlers.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
@@ -55,6 +56,7 @@ import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -86,17 +88,30 @@ public class QrsRecorder {
             ExceptionMapping exceptionMapping,
             Serialisers serialisers,
             List<ResourceClass> resourceClasses,
-            Executor blockingExecutor) {
+            Executor blockingExecutor,
+            ShutdownContext shutdownContext) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
         Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
+        //pre matching interceptors are run first
+        List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
+        List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
+
+        ResourceResponseInterceptorHandler resourceResponseInterceptorHandler = new ResourceResponseInterceptorHandler(
+                responseInterceptors, shutdownContext);
+        ResourceRequestInterceptorHandler requestInterceptorsHandler = new ResourceRequestInterceptorHandler(
+                requestInterceptors, shutdownContext, false);
+        ResourceRequestInterceptorHandler preMatchHandler = null;
+        if (!interceptors.getResourcePreMatchRequestInterceptors().isEmpty()) {
+            preMatchHandler = new ResourceRequestInterceptorHandler(interceptors.getResourcePreMatchRequestInterceptors(),
+                    shutdownContext, true);
+        }
         for (ResourceClass clazz : resourceClasses) {
             for (ResourceMethod method : clazz.getMethods()) {
                 List<RestHandler> handlers = new ArrayList<>();
                 MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
-                List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
                 if (!requestInterceptors.isEmpty()) {
-                    handlers.add(new ResourceRequestInterceptorHandler(requestInterceptors));
+                    handlers.add(requestInterceptorsHandler);
                 }
 
                 EndpointInvoker invoker = method.getInvoker().get();
@@ -147,7 +162,6 @@ public class QrsRecorder {
                 if (method.isBlocking()) {
                     handlers.add(new BlockingHandler(blockingExecutor));
                 }
-                List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
                 Type returnType = TypeSignatureParser.parse(method.getReturnType());
                 Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
                 Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
@@ -167,7 +181,7 @@ public class QrsRecorder {
                 handlers.add(new ResponseHandler());
 
                 if (!responseInterceptors.isEmpty()) {
-                    handlers.add(new ResourceResponseInterceptorHandler(responseInterceptors));
+                    handlers.add(resourceResponseInterceptorHandler);
                 }
                 handlers.add(new ResponseWriterHandler());
 
@@ -191,7 +205,16 @@ public class QrsRecorder {
             i.getValue().addAll(nullMethod);
             mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
         }
-        return new QrsInitialHandler(mappersByMethod, exceptionMapping, serialisers);
+        List<RestHandler> abortHandlingChain = new ArrayList<>();
+
+        if (!responseInterceptors.isEmpty()) {
+            abortHandlingChain.add(resourceResponseInterceptorHandler);
+        }
+        abortHandlingChain.add(new ResponseWriterHandler());
+        QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
+                abortHandlingChain.toArray(new RestHandler[0]));
+
+        return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
     }
 
     private Class<?> getRawType(Type type) {

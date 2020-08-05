@@ -24,7 +24,7 @@ public class SimpleQrsTestCase {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class,
                                     TestResponseFilter.class, HelloService.class, TestException.class,
-                                    TestExceptionMapper.class,
+                                    TestExceptionMapper.class, TestPreMatchRequestFilter.class,
                                     TestWriter.class, TestClass.class);
                 }
             });
@@ -96,6 +96,14 @@ public class SimpleQrsTestCase {
     public void testBlocking() {
         RestAssured.get("/simple/blocking")
                 .then().body(Matchers.equalTo("true"));
+    }
+
+    @Test
+    public void testPreMatchFilter() {
+        RestAssured.get("/simple/pre-match")
+                .then().body(Matchers.equalTo("pre-match-post"));
+        RestAssured.post("/simple/pre-match")
+                .then().body(Matchers.equalTo("pre-match-post"));
     }
 
     @Test

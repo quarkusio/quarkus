@@ -12,6 +12,11 @@ public class InvocationHandler implements RestHandler {
 
     @Override
     public void handle(RequestContext requestContext) throws Exception {
+        if (requestContext.getResult() != null) {
+            //processing was aborted
+            //but we still follow through with the handler chain
+            return;
+        }
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
             requestContext.setResult(result);

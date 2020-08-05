@@ -22,6 +22,8 @@ import io.quarkus.qrs.runtime.core.RequestContext;
 public class QrsContainerRequestContext implements ContainerRequestContext {
 
     private RequestContext context;
+    private boolean aborted;
+    private boolean preMatch;
 
     public QrsContainerRequestContext(RequestContext requestContext) {
         this.context = requestContext;
@@ -29,7 +31,6 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public Object getProperty(String name) {
-        // TODO Auto-generated method stub
         return context.getProperty(name);
     }
 
@@ -55,11 +56,13 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public void setRequestUri(URI requestUri) {
+        assertPreMatch();
         throw new RuntimeException("NYI");
     }
 
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) {
+        assertPreMatch();
         throw new RuntimeException("NYI");
     }
 
@@ -70,12 +73,19 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public String getMethod() {
-        return context.getContext().request().rawMethod();
+        return context.getMethod();
     }
 
     @Override
     public void setMethod(String method) {
+        assertPreMatch();
+        context.setMethod(method);
+    }
 
+    public void assertPreMatch() {
+        if (!isPreMatch()) {
+            throw new IllegalStateException("Can only be called from a @PreMatch filter");
+        }
     }
 
     @Override
@@ -153,10 +163,23 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     }
 
-    @Override
-    public void abortWith(Response response) {
-        // TODO Auto-generated method stub
-
+    public boolean isPreMatch() {
+        return preMatch;
     }
 
+    public QrsContainerRequestContext setPreMatch(boolean preMatch) {
+        this.preMatch = preMatch;
+        return this;
+    }
+
+    @Override
+    public void abortWith(Response response) {
+        context.setResult(response);
+        context.restart(context.getDeployment().getAbortHandlerChain());
+        aborted = true;
+    }
+
+    public boolean isAborted() {
+        return aborted;
+    }
 }

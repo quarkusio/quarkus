@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -91,6 +93,7 @@ public class MessageBundleProcessor {
     private static final String SUFFIX = "_Bundle";
     private static final String BUNDLE_DEFAULT_KEY = "defaultKey";
     private static final String BUNDLE_LOCALE = "locale";
+    private static final String MESSAGES = "messages";
 
     static final DotName BUNDLE = DotName.createSimple(MessageBundle.class.getName());
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
@@ -116,12 +119,22 @@ public class MessageBundleProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, BeanRegistrationPhaseBuildItem beanRegistration,
             BuildProducer<BeanConfiguratorBuildItem> configurators,
-            BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods) throws IOException {
+            BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles) throws IOException {
 
         IndexView index = beanArchiveIndex.getIndex();
         Map<String, ClassInfo> found = new HashMap<>();
         List<MessageBundleBuildItem> bundles = new ArrayList<>();
         Set<Path> messageFiles = findMessageFiles(applicationArchivesBuildItem);
+
+        Path messagesPath = applicationArchivesBuildItem.getRootArchive().getChildPath(MESSAGES);
+        for (Path messageFile : messageFiles) {
+            String messageFilePath = messagesPath.relativize(messageFile).toString();
+            if (File.separatorChar != '/') {
+                messageFilePath = messageFilePath.replace(File.separatorChar, '/');
+            }
+            watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(MESSAGES + "/" + messageFilePath));
+        }
 
         // First collect all interfaces annotated with @MessageBundle
         for (AnnotationInstance bundleAnnotation : index.getAnnotations(BUNDLE)) {
@@ -794,8 +807,7 @@ public class MessageBundleProcessor {
 
     private Set<Path> findMessageFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "messages";
-        Path messagesPath = applicationArchive.getChildPath(basePath);
+        Path messagesPath = applicationArchive.getChildPath(MESSAGES);
         if (messagesPath == null) {
             return Collections.emptySet();
         }

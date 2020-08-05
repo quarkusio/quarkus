@@ -2,7 +2,6 @@ package io.quarkus.devtools.project.buildfile;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import java.io.IOException;
@@ -11,12 +10,7 @@ import java.util.Collection;
 /**
  * TODO We need to find a way to use the gradle api outside of a gradle plugin
  */
-public class GenericGradleBuildFile implements ExtensionManager {
-
-    @Override
-    public BuildTool getBuildTool() {
-        return BuildTool.GRADLE;
-    }
+abstract class GenericGradleBuildFile implements ExtensionManager {
 
     @Override
     public Collection<AppArtifactCoords> getInstalled() throws IOException {

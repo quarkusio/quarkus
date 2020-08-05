@@ -16,7 +16,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.AbstractGroovyGradleBuildFile;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
@@ -64,7 +64,7 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
         return QuarkusProject.of(projectPath, platformDescriptor, new TestingGradleBuildFile(projectPath, platformDescriptor));
     }
 
-    static class TestingGradleBuildFile extends AbstractGradleBuildFile {
+    static class TestingGradleBuildFile extends AbstractGroovyGradleBuildFile {
 
         public TestingGradleBuildFile(Path projectDirPath, QuarkusPlatformDescriptor platformDescriptor) {
             super(projectDirPath, platformDescriptor);

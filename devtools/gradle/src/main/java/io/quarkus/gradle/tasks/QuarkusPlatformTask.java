@@ -2,6 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,8 @@ import org.gradle.api.tasks.Internal;
 
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.buildfile.BuildFile;
-import io.quarkus.gradle.GradleBuildFileFromConnector;
+import io.quarkus.gradle.GroovyBuildFileFromConnector;
+import io.quarkus.gradle.KotlinBuildFileFromConnector;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
@@ -71,9 +73,16 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     protected BuildFile getGradleBuildFile() {
         final Path projectDirPath = getProject().getProjectDir().toPath();
         final Path rootProjectPath = getProject().getParent() != null ? getProject().getRootProject().getProjectDir().toPath()
-                : null;
-        return new GradleBuildFileFromConnector(projectDirPath, platformDescriptor(),
-                rootProjectPath);
+                : projectDirPath;
+        if (Files.exists(rootProjectPath.resolve("settings.gradle.kts"))
+                && Files.exists(projectDirPath.resolve("build.gradle.kts"))) {
+            return new KotlinBuildFileFromConnector(projectDirPath, platformDescriptor(), rootProjectPath);
+        } else if (Files.exists(rootProjectPath.resolve("settings.gradle"))
+                && Files.exists(projectDirPath.resolve("build.gradle"))) {
+            return new GroovyBuildFileFromConnector(projectDirPath, platformDescriptor(), rootProjectPath);
+        }
+        throw new GradleException(
+                "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
     }
 
     @Internal

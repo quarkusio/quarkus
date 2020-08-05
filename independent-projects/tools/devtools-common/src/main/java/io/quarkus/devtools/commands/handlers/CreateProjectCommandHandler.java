@@ -16,7 +16,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.buildfile.GradleBuildFilesCreator;
+import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFilesCreator;
+import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFilesCreator;
 import io.quarkus.devtools.project.codegen.ProjectGenerator;
 import io.quarkus.devtools.project.codegen.ProjectGeneratorRegistry;
 import io.quarkus.devtools.project.codegen.SourceType;
@@ -65,7 +66,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                         .addExtensions(extensionsToAdd)
                         .addData(CodestartData.LegacySupport.convertFromLegacy(invocation.getValues()))
                         .putData(CodestartData.DataKey.BUILDTOOL.getKey(),
-                                invocation.getQuarkusProject().getBuildTool().toString().toLowerCase())
+                                invocation.getQuarkusProject().getBuildTool().toString().toLowerCase().replace("_", "-"))
                         .includeExamples(invocation.getValue("codestarts.with-example-code", true))
                         .build();
                 invocation.log().info("Generating Quarkus Codestart Project with data: " + input.getData().toString());
@@ -103,7 +104,17 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
                 //TODO ia3andy extensions should be added directly during the project generation
                 if (invocation.getQuarkusProject().getBuildTool().equals(BuildTool.GRADLE)) {
-                    final GradleBuildFilesCreator generator = new GradleBuildFilesCreator(invocation.getQuarkusProject());
+                    final GroovyGradleBuildFilesCreator generator = new GroovyGradleBuildFilesCreator(
+                            invocation.getQuarkusProject());
+                    generator.create(
+                            invocation.getStringValue(PROJECT_GROUP_ID),
+                            invocation.getStringValue(PROJECT_ARTIFACT_ID),
+                            invocation.getStringValue(PROJECT_VERSION),
+                            quarkusProps,
+                            extensionsToAdd);
+                } else if (invocation.getQuarkusProject().getBuildTool().equals(BuildTool.GRADLE_KOTLIN_DSL)) {
+                    final KotlinGradleBuildFilesCreator generator = new KotlinGradleBuildFilesCreator(
+                            invocation.getQuarkusProject());
                     generator.create(
                             invocation.getStringValue(PROJECT_GROUP_ID),
                             invocation.getStringValue(PROJECT_ARTIFACT_ID),

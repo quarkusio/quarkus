@@ -78,8 +78,10 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             platformExtensions.forEach(platformExtension -> display(log, platformExtension,
                     installedByKey.get(toKey(platformExtension)), all, currentFormatter));
             final BuildTool buildTool = invocation.getQuarkusProject().getBuildTool();
+            boolean isGradle = BuildTool.GRADLE.equals(buildTool) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildTool);
+
             if ("concise".equalsIgnoreCase(format)) {
-                if (BuildTool.GRADLE.equals(buildTool)) {
+                if (isGradle) {
                     log.info("\nTo get more information, append --format=full to your command line.");
                 } else {
                     log.info(
@@ -87,7 +89,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                 }
             }
 
-            if (BuildTool.GRADLE.equals(buildTool)) {
+            if (isGradle) {
                 log.info("\nAdd an extension to your project by adding the dependency to your " +
                         "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
             } else {

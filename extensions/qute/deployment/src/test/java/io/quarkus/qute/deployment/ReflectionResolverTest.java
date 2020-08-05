@@ -19,14 +19,15 @@ public class ReflectionResolverTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloReflect.class)
-                    .addAsResource(new StringAsset("{age}:{ping}:{noMatch}"), "templates/reflect.txt"));
+                    .addAsResource(new StringAsset("{age}:{ping}:{noMatch}:{active}:{isActive}:{hasItem}:{item}:{age2}"),
+                            "templates/reflect.txt"));
 
     @Inject
     Template reflect;
 
     @Test
     public void testInjection() {
-        assertEquals("10:pong:NOT_FOUND", reflect.render(new HelloReflect()));
+        assertEquals("10:pong:NOT_FOUND:true:true:false:false:10", reflect.render(new HelloReflect()));
     }
 
 }

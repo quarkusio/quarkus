@@ -11,7 +11,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.model.ResourceReader;
-import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 
 public class Serialisers {
@@ -76,14 +75,9 @@ public class Serialisers {
         readers.add(entityClass, reader);
     }
 
-    public <T> ResourceWriter<T> findBuildTimeWriter(Class<T> entityType,
-            List<ResourceResponseInterceptor> responseInterceptors) {
+    public <T> ResourceWriter<T> findBuildTimeWriter(Class<T> entityType) {
         if (entityType == Response.class)
             return null;
-        for (ResourceResponseInterceptor responseInterceptor : responseInterceptors) {
-            if (!responseInterceptor.isWriterSafe())
-                return null;
-        }
         Class<?> klass = entityType;
         do {
             List<ResourceWriter<?>> goodTypeWriters = writers.get(klass);

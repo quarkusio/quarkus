@@ -35,6 +35,7 @@ import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
+import io.quarkus.qrs.runtime.handlers.RequestDeserializeHandler;
 import io.quarkus.qrs.runtime.handlers.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
@@ -165,8 +166,7 @@ public class QrsRecorder {
                 Type returnType = TypeSignatureParser.parse(method.getReturnType());
                 Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
                 Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
-                ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType,
-                        responseInterceptors);
+                ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType);
                 if (buildTimeWriter == null) {
                     handlers.add(new EntityWriterHandler(new DynamicEntityWriter(serialisers)));
                 } else {
@@ -212,7 +212,7 @@ public class QrsRecorder {
         }
         abortHandlingChain.add(new ResponseWriterHandler());
         QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
-                abortHandlingChain.toArray(new RestHandler[0]));
+                abortHandlingChain.toArray(new RestHandler[0]), new DynamicEntityWriter(serialisers));
 
         return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
     }

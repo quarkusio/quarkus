@@ -38,7 +38,7 @@ public class RequestContext implements Runnable, Closeable {
     private Object[] parameters;
     private RuntimeResource target;
     private RestHandler[] handlers;
-    Map<String, String> pathParamValues;
+    private Map<String, String> pathParamValues;
     private UriInfo uriInfo;
     /**
      * The endpoint to invoke
@@ -187,6 +187,14 @@ public class RequestContext implements Runnable, Closeable {
         position = 0;
         parameters = new Object[target.getParameterTypes().length];
         this.target = target;
+    }
+
+    /**
+     * Resets the build time serialization assumptions. Called if a filter
+     * modifies the response
+     */
+    public void resetBuildTimeSerialization() {
+        entityWriter = deployment.getDynamicEntityWriter();
     }
 
     public UriInfo getUriInfo() {

@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime;
+package io.quarkus.qrs.runtime.handlers;
 
 import java.io.ByteArrayInputStream;
 
@@ -8,7 +8,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 
 import io.quarkus.qrs.runtime.core.RequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
-import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 

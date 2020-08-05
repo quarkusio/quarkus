@@ -122,7 +122,6 @@ public class QrsProcessor {
                 ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                interceptor.setWriterSafe(filterClass.classAnnotation(QrsDotNames.DOES_NOT_CHANGE_WRITER) != null);
                 interceptors.addResponseInterceptor(interceptor);
             }
         }

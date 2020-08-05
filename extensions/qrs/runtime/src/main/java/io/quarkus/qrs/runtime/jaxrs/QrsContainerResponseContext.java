@@ -35,8 +35,7 @@ public class QrsContainerResponseContext implements ContainerResponseContext {
 
     @Override
     public void setStatus(int code) {
-        // TODO Auto-generated method stub
-
+        context.getContext().response().setStatusCode(code);
     }
 
     @Override
@@ -154,8 +153,8 @@ public class QrsContainerResponseContext implements ContainerResponseContext {
 
     @Override
     public void setEntity(Object entity) {
-        // TODO Auto-generated method stub
-
+        context.resetBuildTimeSerialization();
+        context.setResult(entity);
     }
 
     @Override

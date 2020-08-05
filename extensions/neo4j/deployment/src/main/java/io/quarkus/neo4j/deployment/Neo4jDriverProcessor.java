@@ -1,5 +1,7 @@
 package io.quarkus.neo4j.deployment;
 
+import org.neo4j.driver.Driver;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Feature;
@@ -13,6 +15,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.neo4j.runtime.Neo4jConfiguration;
 import io.quarkus.neo4j.runtime.Neo4jDriverProducer;
 import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class Neo4jDriverProcessor {
@@ -33,11 +36,13 @@ class Neo4jDriverProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void configureDriverProducer(Neo4jDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+    Neo4jDriverBuildItem configureDriverProducer(Neo4jDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
             Neo4jConfiguration configuration,
             ShutdownContextBuildItem shutdownContext) {
 
-        recorder.configureNeo4jProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
+        RuntimeValue<Driver> driverHolder = recorder.initializeDriver(configuration, shutdownContext);
+        recorder.configureNeo4jProducer(beanContainerBuildItem.getValue(), driverHolder);
+        return new Neo4jDriverBuildItem(driverHolder);
     }
 
     @BuildStep

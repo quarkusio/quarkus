@@ -13,15 +13,16 @@ import java.util.stream.Stream;
 
 public interface CodestartFileStrategyHandler {
 
-    CodestartFileStrategyHandler FAIL_ON_DUPLICATE = new FailOnDuplicateCodestartFileStrategyHandler();
-    CodestartFileStrategyHandler APPEND = new AppendCodestartFileStrategyHandler();
-    CodestartFileStrategyHandler REPLACE = new ReplaceCodestartFileStrategyHandler();
-    CodestartFileStrategyHandler FORBIDDEN = new ForbiddenCodestartFileStrategyHandler();
-    CodestartFileStrategyHandler SMART_CONFIG_MERGE = new SmartConfigMergeCodestartFileStrategyHandler();
-    CodestartFileStrategyHandler SMART_POM_MERGE = new SmartPomMergeCodestartFileStrategyHandler();
+    FailOnDuplicateCodestartFileStrategyHandler DEFAULT_STRATEGY = new FailOnDuplicateCodestartFileStrategyHandler();
 
     Map<String, CodestartFileStrategyHandler> BY_NAME = Stream
-            .of(FAIL_ON_DUPLICATE, APPEND, REPLACE, FORBIDDEN, SMART_CONFIG_MERGE, SMART_POM_MERGE)
+            .of(DEFAULT_STRATEGY,
+                    new AppendCodestartFileStrategyHandler(),
+                    new ExecutableFileStrategyHandler(),
+                    new ReplaceCodestartFileStrategyHandler(),
+                    new ForbiddenCodestartFileStrategyHandler(),
+                    new SmartConfigMergeCodestartFileStrategyHandler(),
+                    new SmartPomMergeCodestartFileStrategyHandler())
             .collect(Collectors.toMap(CodestartFileStrategyHandler::name, Function.identity()));
 
     String name();

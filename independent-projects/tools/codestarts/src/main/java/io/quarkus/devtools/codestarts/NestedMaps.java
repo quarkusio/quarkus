@@ -27,8 +27,8 @@ public final class NestedMaps {
 
     }
 
-    public static Map<String, Object> deepMerge(final Stream<Map<String, Object>> mapStream) {
-        final Map<String, Object> out = new HashMap<>();
+    public static <T> Map<String, T> deepMerge(final Stream<Map<String, T>> mapStream) {
+        final Map<String, T> out = new HashMap<>();
         mapStream.forEach(m -> deepMerge(out, m));
         return out;
     }

@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
@@ -47,7 +46,6 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private static final Logger LOG = Logger.getLogger(CreateProjectCodestartMojoIT.class.getName());
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Invoker invoker;
     private RunningInvoker running;
     private File testDir;
     private File projectDir;
@@ -55,6 +53,8 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "gradlew";
     private static final String GRADLE_NO_DAEMON = "--no-daemon";
+    private static final String MAVEN_WRAPPER_WINDOWS = "mvnw.bat";
+    private static final String MAVEN_WRAPPER_UNIX = "mvnw";
 
     private void check(final File resource, final String contentsToFind) throws IOException {
         assertThat(resource).isFile();
@@ -70,47 +70,44 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     }
 
     private static Stream<Arguments> provideGenerateCombinations() {
-        return Stream.of("maven", "gradle")
-                .flatMap(b -> Stream.of("java", "kotlin", "scala").map(l -> Pair.of(b, l)))
-                .flatMap(p -> Stream.of("", "resteasy,qute").map(e -> Arguments.of(p.getLeft(), p.getRight(), e)));
+        return Stream.of("java", "kotlin", "scala")
+                .flatMap(l -> Stream.of("", "resteasy,qute").map(e -> Arguments.of(l, e)));
     }
 
     @ParameterizedTest
     @MethodSource("provideGenerateCombinations")
-    public void generateProjectRunTestsAndDev(String buildtool, String language, String extensions) throws Exception {
+    public void generateMavenProjectRunTestsAndDev(String language, String extensions) throws Exception {
+        generateProjectRunTestsAndDev("maven", language, extensions);
+        LOG.info("running quarkus test and dev command...");
+        runMavenPackageCommand();
+        if (extensions.contains("resteasy")) {
+            runMavenQuarkusDevCommand();
+            checkRestEasyDevmode();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideGenerateCombinations")
+    public void generateGradleProjectRunTestsAndDev(String language, String extensions) throws Exception {
+        generateProjectRunTestsAndDev("gradle", language, extensions);
+        LOG.info("running quarkus test and dev command...");
+        runGradleBuildCommand();
+        if (extensions.contains("resteasy")) {
+            runGradleQuarkusDevCommand();
+            checkRestEasyDevmode();
+        }
+    }
+
+    private void generateProjectRunTestsAndDev(String buildtool, String language, String extensions) throws Exception {
         String name = "project-" + buildtool + "-" + language;
         if (extensions.isEmpty()) {
             name += "-commandmode";
         } else {
             name += "-" + extensions.replace(",", "-");
         }
-        testDir = prepareTestDir("project-" + name);
+        testDir = prepareTestDir(name);
         LOG.info("creating project in " + testDir.toPath().toString());
         runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""));
-        LOG.info("running quarkus test and dev command...");
-        // FIXME Gradle test are disabled https://github.com/quarkusio/quarkus/issues/11127
-        switch (buildtool) {
-            case "maven":
-                runMavenPackageCommand();
-                break;
-            case "gradle":
-                // runGradleBuildCommand();
-                ;
-                break;
-        }
-
-        if (extensions.contains("resteasy")) {
-            LOG.info("checking resteasy...");
-            switch (buildtool) {
-                case "maven":
-                    runMavenQuarkusDevCommand();
-                    checkRestEasyDevmode();
-                    break;
-                case "gradle":
-                    // runGradleQuarkusDevCommand();
-                    break;
-            }
-        }
     }
 
     private static File prepareTestDir(String name) {
@@ -142,7 +139,6 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         // Scaffold the new project
         assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
 
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.test");
@@ -164,7 +160,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private void runMavenPackageCommand() throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-
+        Invoker invoker = initInvoker(projectDir);
         PrintStreamLogger logger = getPrintStreamLogger("test-codestart.log");
         invoker.setLogger(logger);
         InvocationRequest request = new DefaultInvocationRequest();
@@ -172,8 +168,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         request.setGoals(Collections.singletonList("package"));
         request.setDebug(false);
         request.setShowErrors(true);
-        request.setBaseDirectory(projectDir);
-
+        invoker.setMavenExecutable(projectDir.toPath().toAbsolutePath().resolve(getMavenWrapperName()).toFile());
         assertThat(invoker.execute(request).getExitCode()).isZero();
     }
 
@@ -194,7 +189,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
 
     private InvocationResult executeCreate(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
-
+        Invoker invoker = initInvoker(testDir);
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
         params.setProperty("platformVersion", getPluginVersion());
@@ -248,6 +243,13 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
             return GRADLE_WRAPPER_WINDOWS;
         }
         return GRADLE_WRAPPER_UNIX;
+    }
+
+    private String getMavenWrapperName() {
+        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
+            return MAVEN_WRAPPER_WINDOWS;
+        }
+        return MAVEN_WRAPPER_UNIX;
     }
 
 }

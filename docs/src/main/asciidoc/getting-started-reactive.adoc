@@ -292,6 +292,24 @@ public class ReactiveGreetingResource {
 The `ReactiveGreetingService` class contains a straightforward method producing a `Uni`.
 While, in this example, the resulting item is emitted immediately, you can imagine any async API producing a `Uni`. We cover this later in this guide.
 
+NOTE: In order to get Mutiny working properly with JAX-RS resources, make sure the Mutiny support for RESTEasy extension (`io.quarkus:quarkus-resteasy-mutiny`) is present, otherwise add the extension by executing the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:add-extensions \
+    -Dextensions="io.quarkus:quarkus-resteasy-mutiny"
+----
+
+Or add `quarkus-resteasy-mutiny` into your dependencies manually.
+
+[source, xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-resteasy-mutiny</artifactId>
+    </dependency>
+----
+
 Now, start the application using:
 
 [source, shell]

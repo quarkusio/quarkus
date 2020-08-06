@@ -56,7 +56,7 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     }
 
     private boolean isPrefixUnset(String prefix) {
-        return prefix == null || "".equals(prefix.trim()) || ConfigProperties.UNSET_PREFIX.equals(prefix.trim());
+        return prefix == null || prefix.trim().isEmpty() || ConfigProperties.UNSET_PREFIX.equals(prefix.trim());
     }
 
     private String getPrefixFromClassName(DotName className) {

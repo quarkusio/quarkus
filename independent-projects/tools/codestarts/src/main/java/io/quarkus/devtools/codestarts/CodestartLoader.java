@@ -35,8 +35,14 @@ final class CodestartLoader {
 
     public static Collection<Codestart> loadCodestartsFromExtensions(CodestartInput input)
             throws IOException {
+
+        return loadCodestartsFromExtensions(input.getResourceLoader());
+    }
+
+    public static Collection<Codestart> loadCodestartsFromExtensions(CodestartResourceLoader resourceLoader)
+            throws IOException {
         // TODO resolve codestarts which live inside extensions. Using a directory is just a temporary workaround.
-        return loadCodestarts(input.getResourceLoader(), CODESTARTS_DIR_FROM_EXTENSIONS);
+        return loadCodestarts(resourceLoader, CODESTARTS_DIR_FROM_EXTENSIONS);
     }
 
     // Visible for testing

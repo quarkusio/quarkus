@@ -46,11 +46,6 @@ final class CodestartProcessor {
         resourceLoader.loadResourceAsPath(codestart.getResourceDir(), p -> {
             final Path baseDir = p.resolve(BASE_LANGUAGE);
             final Path languageDir = p.resolve(languageName);
-            if (!codestart.getSpec().getMissingLanguages().isEmpty()
-                    && codestart.getSpec().getMissingLanguages().contains(languageName)) {
-                // TODO print a warning to inform that this codestart miss this language
-                return null; // We ignore that codestart as it doesn't implement the specified language
-            }
             Stream.of(baseDir, languageDir)
                     .filter(Files::isDirectory)
                     .forEach(dirPath -> processCodestartDir(dirPath,
@@ -77,12 +72,13 @@ final class CodestartProcessor {
                         ? relativeSourcePath.getParent().resolve(targetFileName)
                         : Paths.get(targetFileName);
 
-                final boolean hasConflictStrategyHandler = getStrategy(relativeTargetPath.toString()).isPresent();
+                final boolean hasFileStrategyHandler = getStrategy(relativeTargetPath.toString()).isPresent();
                 try {
-                    if (!possibleReader.isPresent() && !hasConflictStrategyHandler) {
+                    if (!possibleReader.isPresent() && !hasFileStrategyHandler) {
                         // Copy static files
                         final Path targetPath = targetDirectory.resolve(relativeTargetPath.toString());
                         processStaticFile(sourcePath, targetPath);
+                        continue;
                     }
                     final Optional<String> content = reader.read(sourceDirectory, relativeSourcePath,
                             languageName, finalData);
@@ -134,7 +130,7 @@ final class CodestartProcessor {
         for (Map.Entry<String, List<CodestartFile>> e : files.entrySet()) {
             final String relativePath = e.getKey();
             Files.createDirectories(targetDirectory.resolve(relativePath).getParent());
-            getStrategy(relativePath).orElse(CodestartFileStrategyHandler.FAIL_ON_DUPLICATE)
+            getStrategy(relativePath).orElse(CodestartFileStrategyHandler.DEFAULT_STRATEGY)
                     .process(targetDirectory, relativePath, e.getValue(), data);
         }
     }

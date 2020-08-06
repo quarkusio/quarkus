@@ -25,4 +25,7 @@ public interface AppMessages {
     @Message("Item name: {item.name}, age: {item.age}")
     String itemDetail(Item item);
 
+    @Message(key = "dot.test", value = "Dot test!")
+    String dotTest();
+
 }

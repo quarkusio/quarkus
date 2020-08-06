@@ -84,10 +84,12 @@ public final class CodestartData {
         return NestedMaps.deepMerge(Stream.of(codestart.getLocalData(languageName), data));
     }
 
-    public static Map<String, Object> buildCodestartProjectData(Collection<Codestart> codestarts) {
+    public static Map<String, Object> buildCodestartProjectData(Collection<Codestart> baseCodestarts,
+            Collection<Codestart> extraCodestarts) {
         final HashMap<String, Object> data = new HashMap<>();
-        codestarts.forEach((c) -> data.put("codestart-project." + c.getSpec().getType().toString().toLowerCase() + ".name",
-                c.getSpec().getName()));
+        baseCodestarts.forEach((c) -> data.put("codestart-project." + c.getSpec().getType().toString().toLowerCase() + ".name",
+                c.getName()));
+        data.put("codestart-project.codestarts", extraCodestarts.stream().map(Codestart::getName).collect(Collectors.toList()));
         return NestedMaps.unflatten(data);
     }
 

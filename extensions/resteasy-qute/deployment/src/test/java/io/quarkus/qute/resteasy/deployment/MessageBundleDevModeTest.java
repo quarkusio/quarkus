@@ -27,9 +27,11 @@ public class MessageBundleDevModeTest {
     @Test
     public void testMessageBundles() {
         when().get("/hello").then().body(is("Hello Georg!"));
-
         TEST.modifySourceFile("AppMessages.java", (s -> s.replace("Hello", "Heya")));
-
         when().get("/hello").then().body(is("Heya Georg!"));
+
+        when().get("/hello/de").then().body(is("Hallo Georg!"));
+        TEST.modifyResourceFile("messages/msg_de.properties", (s -> s.replace("Hallo", "Heya")));
+        when().get("/hello/de").then().body(is("Heya Georg!"));
     }
 }

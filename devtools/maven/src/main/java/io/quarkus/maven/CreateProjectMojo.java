@@ -75,10 +75,10 @@ public class CreateProjectMojo extends AbstractMojo {
     private String projectVersion;
 
     @Parameter(property = "codestartsEnabled", defaultValue = "false")
-    private Boolean codestartsEnabled;
+    private boolean codestartsEnabled;
 
-    @Parameter(property = "withExampleCode", defaultValue = "true")
-    private Boolean withExampleCode;
+    @Parameter(property = "skipExample", defaultValue = "false")
+    private boolean skipExample;
 
     /**
      * Group ID of the target platform BOM
@@ -198,18 +198,19 @@ public class CreateProjectMojo extends AbstractMojo {
                     .className(className)
                     .extensions(extensions)
                     .codestartsEnabled(codestartsEnabled)
-                    .withExampleCode(withExampleCode);
+                    .withExampleCode(!skipExample);
             if (path != null) {
                 createProject.setValue("path", path);
             }
 
             success = createProject.execute().isSuccess();
-
-            File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            if (BuildTool.MAVEN.equals(buildToolEnum)) {
-                createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
-            } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(platform, projectDirPath);
+            if (!codestartsEnabled) {
+                File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
+                if (BuildTool.MAVEN.equals(buildToolEnum)) {
+                    createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
+                } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
+                    createGradleWrapper(platform, projectDirPath);
+                }
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);

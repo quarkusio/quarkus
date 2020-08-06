@@ -659,8 +659,15 @@ public class QuteProcessor {
             Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
 
             for (Expression expression : injectExpressions) {
-
-                String beanName = expression.getParts().get(0).getName();
+                Expression.Part firstPart = expression.getParts().get(0);
+                if (firstPart.isVirtualMethod()) {
+                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                            "The inject: namespace must be followed by a bean name",
+                            expression.getOrigin().getLine(),
+                            expression.getOrigin().getTemplateGeneratedId()));
+                    continue;
+                }
+                String beanName = firstPart.getName();
                 BeanInfo bean = namedBeans.get(beanName);
                 if (bean != null) {
                     if (expression.getParts().size() == 1) {

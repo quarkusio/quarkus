@@ -1,6 +1,8 @@
 package io.quarkus.devtools.codestarts;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -25,8 +27,8 @@ public final class NestedMaps {
 
     }
 
-    public static Map<String, Object> deepMerge(final Stream<Map<String, Object>> mapStream) {
-        final Map<String, Object> out = new HashMap<>();
+    public static <T> Map<String, T> deepMerge(final Stream<Map<String, T>> mapStream) {
+        final Map<String, T> out = new HashMap<>();
         mapStream.forEach(m -> deepMerge(out, m));
         return out;
     }
@@ -38,6 +40,11 @@ public final class NestedMaps {
                 Map leftChild = (Map) left.get(key);
                 Map rightChild = (Map) right.get(key);
                 deepMerge(leftChild, rightChild);
+            } else if (right.get(key) instanceof Collection && left.get(key) instanceof Collection) {
+                Collection c = new LinkedHashSet();
+                c.addAll((Collection) left.get(key));
+                c.addAll((Collection) right.get(key));
+                left.put(key, c);
             } else {
                 // Override
                 left.put(key, right.get(key));

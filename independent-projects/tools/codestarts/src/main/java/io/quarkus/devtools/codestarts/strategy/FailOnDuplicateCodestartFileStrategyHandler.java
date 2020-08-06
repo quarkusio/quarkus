@@ -20,8 +20,10 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements CodestartFile
         checkNotEmptyCodestartFiles(codestartFiles);
         if (codestartFiles.size() > 1) {
             throw new CodestartDefinitionException(
-                    "Multiple files found for path with Single Combine Strategy: " + relativePath);
+                    "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + relativePath);
         }
-        Files.write(targetDirectory.resolve(relativePath), codestartFiles.get(0).getContent().getBytes());
+        final Path targetPath = targetDirectory.resolve(relativePath);
+        checkTargetDoesNotExist(targetPath);
+        Files.write(targetPath, codestartFiles.get(0).getContent().getBytes());
     }
 }

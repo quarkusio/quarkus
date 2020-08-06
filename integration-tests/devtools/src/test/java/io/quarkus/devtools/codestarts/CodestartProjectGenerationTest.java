@@ -18,14 +18,15 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
-class CodestartProjectTest extends PlatformAwareTestBase {
+class CodestartProjectGenerationTest extends PlatformAwareTestBase {
 
-    private static final Path projectPath = Paths.get("target/codestarts-test");
+    private static final Path testDirPath = Paths.get("target/codestarts-test");
 
     @BeforeAll
     static void setUp() throws IOException {
-        ProjectTestUtil.delete(projectPath.toFile());
+        ProjectTestUtil.delete(testDirPath.toFile());
     }
 
     private Map<String, Object> getTestInputData() {
@@ -33,17 +34,22 @@ class CodestartProjectTest extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
+        return CodestartProjectGenerationTest.getTestInputData(getPlatformDescriptor(), override);
+    }
+
+    static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,
+            final Map<String, Object> override) {
         final HashMap<String, Object> data = new HashMap<>();
         data.put("project.group-id", "org.test");
         data.put("project.artifact-id", "test-codestart");
         data.put("project.version", "1.0.0-codestart");
-        data.put("quarkus.platform.group-id", getPlatformDescriptor().getBomGroupId());
-        data.put("quarkus.platform.artifact-id", getPlatformDescriptor().getBomArtifactId());
-        data.put("quarkus.platform.version", getPlatformDescriptor().getBomVersion());
-        data.put("quarkus.version", getPlatformDescriptor().getQuarkusVersion());
+        data.put("quarkus.platform.group-id", descriptor.getBomGroupId());
+        data.put("quarkus.platform.artifact-id", descriptor.getBomArtifactId());
+        data.put("quarkus.platform.version", descriptor.getBomVersion());
+        data.put("quarkus.version", descriptor.getQuarkusVersion());
         data.put("quarkus.plugin.group-id", "io.quarkus");
         data.put("quarkus.plugin.artifact-id", "quarkus-maven-plugin");
-        data.put("quarkus.plugin.version", getPlatformDescriptor().getQuarkusVersion());
+        data.put("quarkus.plugin.version", descriptor.getQuarkusVersion());
         data.put("java.version", "11");
         if (override != null)
             data.putAll(override);
@@ -56,7 +62,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("empty");
+        final Path projectDir = testDirPath.resolve("empty");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);
@@ -72,7 +78,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("empty-examples");
+        final Path projectDir = testDirPath.resolve("empty-examples");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);
@@ -91,7 +97,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("maven-resteasy-java");
+        final Path projectDir = testDirPath.resolve("maven-resteasy-java");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);
@@ -111,7 +117,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("maven-resteasy-kotlin");
+        final Path projectDir = testDirPath.resolve("maven-resteasy-kotlin");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);
@@ -131,7 +137,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("maven-resteasy-scala");
+        final Path projectDir = testDirPath.resolve("maven-resteasy-scala");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);
@@ -151,7 +157,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .putData("buildtool.name", "gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("gradle-resteasy-java");
+        final Path projectDir = testDirPath.resolve("gradle-resteasy-java");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkGradle(projectDir);
@@ -172,7 +178,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("gradle-resteasy-kotlin");
+        final Path projectDir = testDirPath.resolve("gradle-resteasy-kotlin");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkGradle(projectDir);
@@ -193,7 +199,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .putData("buildtool.name", "gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("gradle-resteasy-scala");
+        final Path projectDir = testDirPath.resolve("gradle-resteasy-scala");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkGradle(projectDir);
@@ -213,7 +219,7 @@ class CodestartProjectTest extends PlatformAwareTestBase {
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
-        final Path projectDir = projectPath.resolve("maven-qute");
+        final Path projectDir = testDirPath.resolve("maven-qute");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);

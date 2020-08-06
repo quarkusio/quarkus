@@ -96,7 +96,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         public static final DefaultIgnorePredicate INSTANCE = new DefaultIgnorePredicate();
 
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
-                "org.reactivestreams.", "org.slf4j.");
+                "org.reactivestreams.", "org.slf4j.", "javax.json.", "com.fasterxml.jackson.databind.",
+                "io.vertx.core.json.");
         // if this gets more complicated we will need to move to some tree like structure
         static final Set<String> WHITELISTED_FROM_IGNORED_PACKAGES = new HashSet<>(
                 Arrays.asList("java.math.BigDecimal", "java.math.BigInteger"));

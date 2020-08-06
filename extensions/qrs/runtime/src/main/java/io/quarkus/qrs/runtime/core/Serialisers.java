@@ -19,7 +19,7 @@ public class Serialisers {
     private MultivaluedMap<Class<?>, ResourceWriter<?>> writers = new MultivaluedHashMap<>();
     private MultivaluedMap<Class<?>, ResourceReader<?>> readers = new MultivaluedHashMap<>();
 
-    public MessageBodyWriter<?> findWriter(Response response, RequestContext requestContext) {
+    public MessageBodyWriter<?> findWriter(Response response, QrsRequestContext requestContext) {
         Class<?> klass = response.getEntity().getClass();
         do {
             List<ResourceWriter<?>> goodTypeWriters = writers.get(klass);
@@ -43,7 +43,7 @@ public class Serialisers {
         return null;
     }
 
-    public MessageBodyReader<?> findReader(Class<?> targetType, MediaType mediaType, RequestContext requestContext) {
+    public MessageBodyReader<?> findReader(Class<?> targetType, MediaType mediaType, QrsRequestContext requestContext) {
         Class<?> klass = targetType;
         do {
             List<ResourceReader<?>> goodTypeReaders = readers.get(klass);

@@ -3,7 +3,7 @@ package io.quarkus.qrs.runtime.core;
 public class BodyParamExtractor implements ParameterExtractor {
 
     @Override
-    public Object extractParameter(RequestContext context) {
+    public Object extractParameter(QrsRequestContext context) {
         return context.getRequestEntity();
     }
 

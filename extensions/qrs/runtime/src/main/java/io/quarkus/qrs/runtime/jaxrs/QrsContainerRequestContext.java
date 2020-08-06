@@ -17,16 +17,16 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class QrsContainerRequestContext implements ContainerRequestContext {
 
-    private RequestContext context;
+    private QrsRequestContext context;
     private boolean aborted;
     private boolean preMatch;
     private boolean response;
 
-    public QrsContainerRequestContext(RequestContext requestContext) {
+    public QrsContainerRequestContext(QrsRequestContext requestContext) {
         this.context = requestContext;
     }
 

@@ -6,7 +6,7 @@ import java.util.Map;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 /**
  * An entity writer that will delegate based on the actual type of the
@@ -21,7 +21,7 @@ public class TypeDelegatingEntityWriter implements EntityWriter {
     }
 
     @Override
-    public void write(RequestContext context, Object entity) throws IOException {
+    public void write(QrsRequestContext context, Object entity) throws IOException {
         Class<?> c = entity.getClass();
         while (c != null) {
             EntityWriter delegate = typeMap.get(c);

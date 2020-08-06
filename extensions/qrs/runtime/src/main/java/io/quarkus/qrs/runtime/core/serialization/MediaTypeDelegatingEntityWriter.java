@@ -7,7 +7,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 /**
  * An entity writer that will delegate based on the actual type of the
@@ -22,7 +22,7 @@ public class MediaTypeDelegatingEntityWriter implements EntityWriter {
     }
 
     @Override
-    public void write(RequestContext context, Object entity) throws IOException {
+    public void write(QrsRequestContext context, Object entity) throws IOException {
         EntityWriter delegate = typeMap.get(context.getResponse().getMediaType());
         if (delegate != null) {
             delegate.write(context, entity);

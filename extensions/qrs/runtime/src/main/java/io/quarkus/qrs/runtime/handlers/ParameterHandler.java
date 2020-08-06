@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 
 import io.quarkus.qrs.runtime.core.ParameterConverter;
 import io.quarkus.qrs.runtime.core.ParameterExtractor;
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class ParameterHandler implements RestHandler {
 
@@ -19,7 +19,7 @@ public class ParameterHandler implements RestHandler {
     }
 
     @Override
-    public void handle(RequestContext requestContext) {
+    public void handle(QrsRequestContext requestContext) {
         Object result = extractor.extractParameter(requestContext);
         if (result instanceof ParameterExtractor.ParameterCallback) {
             requestContext.suspend();
@@ -39,7 +39,7 @@ public class ParameterHandler implements RestHandler {
         }
     }
 
-    private void handleResult(Object result, RequestContext requestContext) {
+    private void handleResult(Object result, QrsRequestContext requestContext) {
         if (converter != null) {
             result = converter.convert(result);
         }

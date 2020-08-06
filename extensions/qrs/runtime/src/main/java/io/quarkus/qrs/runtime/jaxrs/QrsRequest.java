@@ -21,17 +21,17 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.request.ServerDrivenNegotiation;
 import io.quarkus.qrs.runtime.util.DateUtil;
 
 public class QrsRequest implements Request {
 
-    private final RequestContext requestContext;
+    private final QrsRequestContext requestContext;
     private final String httpMethod;
     private String varyHeader;
 
-    public QrsRequest(RequestContext requestContext) {
+    public QrsRequest(QrsRequestContext requestContext) {
         this.requestContext = requestContext;
         this.httpMethod = requestContext.getContext().request().method().name();
     }

@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -16,7 +16,7 @@ import io.vertx.core.http.HttpServerResponse;
 public class ResponseWriterHandler implements RestHandler {
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         HttpServerResponse vertxResponse = requestContext.getContext().response();
 
         // has been converted in ResponseHandler

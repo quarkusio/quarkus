@@ -1,12 +1,12 @@
 package io.quarkus.qrs.runtime.handlers;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.smallrye.mutiny.Uni;
 
 public class UniResponseHandler implements RestHandler {
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         // FIXME: handle Response with entity being a Uni
         if (requestContext.getResult() instanceof Uni) {
             Uni<?> result = (Uni<?>) requestContext.getResult();

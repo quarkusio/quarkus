@@ -6,6 +6,7 @@ import static io.quarkus.qrs.deployment.framework.QrsDotNames.PATH;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.PRODUCES;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.QUERY_PARAM;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -162,8 +164,17 @@ public class EndpointIndexer {
                         for (int i = 0; i < method.getParameters().length; ++i) {
                             args[i] = mc.readArrayValue(array, i);
                         }
-                        ResultHandle res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
-                        mc.returnValue(res);
+                        ResultHandle res;
+                        if (Modifier.isInterface(currentClassInfo.flags())) {
+                            res = mc.invokeInterfaceMethod(info, mc.getMethodParam(0), args);
+                        } else {
+                            res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
+                        }
+                        if (info.returnType().kind() == Type.Kind.VOID) {
+                            mc.returnValue(mc.loadNull());
+                        } else {
+                            mc.returnValue(res);
+                        }
                     }
                     method.setInvoker(recorder.invoker(baseName));
 
@@ -174,6 +185,12 @@ public class EndpointIndexer {
         DotName superClassName = currentClassInfo.superName();
         if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
+            ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
+                    generatedClassBuildItemBuildProducer, recorder));
+        }
+        List<DotName> interfaces = currentClassInfo.interfaceNames();
+        for (DotName i : interfaces) {
+            ClassInfo superClass = index.getClassByName(i);
             ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
                     generatedClassBuildItemBuildProducer, recorder));
         }

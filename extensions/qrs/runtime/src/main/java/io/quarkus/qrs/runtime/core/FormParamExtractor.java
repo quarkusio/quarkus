@@ -11,7 +11,7 @@ public class FormParamExtractor implements ParameterExtractor {
     }
 
     @Override
-    public Object extractParameter(RequestContext context) {
+    public Object extractParameter(QrsRequestContext context) {
         if (single) {
             return context.getContext().request().getFormAttribute(name);
         } else {

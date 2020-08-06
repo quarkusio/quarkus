@@ -7,7 +7,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
 
@@ -24,7 +24,7 @@ public class FixedEntityWriterArray implements EntityWriter {
     }
 
     @Override
-    public void write(RequestContext context, Object entity) throws IOException {
+    public void write(QrsRequestContext context, Object entity) throws IOException {
         Response response = context.getResponse();
         for (int i = 0; i < writers.length; ++i) {
             MessageBodyWriter writer = writers[i];

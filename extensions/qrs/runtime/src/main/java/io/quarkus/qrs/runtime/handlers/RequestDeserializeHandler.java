@@ -6,7 +6,7 @@ import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -24,7 +24,7 @@ public class RequestDeserializeHandler implements RestHandler {
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         MessageBodyReader<?> reader = serialisers.findReader(type, mediaType, requestContext);
         if (reader == null) {
             requestContext.setThrowable(new NotSupportedException());

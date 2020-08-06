@@ -6,7 +6,7 @@ import java.util.List;
 
 import javax.ws.rs.container.ContainerRequestFilter;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.spi.BeanFactory.BeanInstance;
@@ -33,7 +33,7 @@ public class ResourceRequestInterceptorHandler implements RestHandler, Closeable
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         QrsContainerRequestContext filterContext = requestContext.getContainerRequestContext();
         filterContext.setPreMatch(preMatch);
         for (ContainerRequestFilter interceptor : interceptors) {

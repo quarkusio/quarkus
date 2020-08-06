@@ -10,7 +10,7 @@ public interface ParameterExtractor {
      * If this returns a {@link ParameterCallback} then the value must be obtained from the listener
      *
      */
-    Object extractParameter(RequestContext context);
+    Object extractParameter(QrsRequestContext context);
 
     /**
      * listener class that is used to provide async method parameters.

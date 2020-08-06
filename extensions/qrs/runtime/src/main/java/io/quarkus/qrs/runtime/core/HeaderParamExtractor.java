@@ -11,7 +11,7 @@ public class HeaderParamExtractor implements ParameterExtractor {
     }
 
     @Override
-    public Object extractParameter(RequestContext context) {
+    public Object extractParameter(QrsRequestContext context) {
         if (single) {
             return context.getContext().request().getHeader(name);
         } else {

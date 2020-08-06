@@ -2,20 +2,25 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.Map;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.qrs.runtime.core.QrsDeployment;
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
 
-    //TODO: this by method approach does not work for sub resource locators
     final Map<String, RequestMapper<RuntimeResource>> mappers;
     final QrsDeployment deployment;
     final ResourceRequestInterceptorHandler preMappingHandler;
     final RestHandler[] initialChain;
+
+    final CurrentVertxRequest currentVertxRequest;
+    final ManagedContext requestContext;
 
     public QrsInitialHandler(Map<String, RequestMapper<RuntimeResource>> mappers, QrsDeployment deployment,
             ResourceRequestInterceptorHandler preMappingHandler) {
@@ -27,16 +32,18 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
         } else {
             initialChain = new RestHandler[] { preMappingHandler, this };
         }
+        this.requestContext = Arc.container().requestContext();
+        this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();
     }
 
     @Override
     public void handle(RoutingContext event) {
-        RequestContext requestContext = new RequestContext(deployment, event, initialChain);
-        requestContext.run();
+        QrsRequestContext rq = new QrsRequestContext(deployment, event, requestContext, currentVertxRequest, initialChain);
+        rq.run();
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         RoutingContext event = requestContext.getContext();
         RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
         if (mapper == null) {

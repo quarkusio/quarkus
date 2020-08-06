@@ -51,6 +51,9 @@ public class TypeSignatureParser {
                 case 'Z':
                     ret = boolean.class;
                     break LOOP;
+                case 'V':
+                    ret = void.class;
+                    break LOOP;
                 // ClassTypeSignature
                 case 'L':
                     ret = parseReference();

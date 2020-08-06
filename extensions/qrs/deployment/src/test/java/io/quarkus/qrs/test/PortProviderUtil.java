@@ -50,6 +50,10 @@ public class PortProviderUtil {
         return TestHTTPResourceManager.getUri().replace("0.0.0.0", "localhost") + path;
     }
 
+    public static String generateURL(String path, String ignore) {
+        return generateURL(path);
+    }
+
     /**
      * Get port.
      *

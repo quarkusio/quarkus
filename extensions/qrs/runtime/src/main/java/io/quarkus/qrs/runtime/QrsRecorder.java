@@ -189,7 +189,7 @@ public class QrsRecorder {
                         method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                         consumesMediaType, invoker,
                         clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                        nonAsyncReturnType);
+                        nonAsyncReturnType, method.isBlocking());
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
                 if (list == null) {
                     templates.put(method.getMethod(), list = new ArrayList<>());

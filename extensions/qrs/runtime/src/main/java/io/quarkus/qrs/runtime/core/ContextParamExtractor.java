@@ -15,11 +15,11 @@ public class ContextParamExtractor implements ParameterExtractor {
     }
 
     @Override
-    public Object extractParameter(RequestContext context) {
+    public Object extractParameter(QrsRequestContext context) {
         if (type.equals(HttpHeaders.class.getName())) {
             return context.getHttpHeaders();
         }
-        if (type.equals(RequestContext.class.getName())) {
+        if (type.equals(QrsRequestContext.class.getName())) {
             return context;
         }
         if (type.equals(UriInfo.class.getName())) {

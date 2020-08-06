@@ -18,13 +18,13 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response.StatusType;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class QrsContainerResponseContext implements ContainerResponseContext {
 
-    private RequestContext context;
+    private QrsRequestContext context;
 
-    public QrsContainerResponseContext(RequestContext requestContext) {
+    public QrsContainerResponseContext(QrsRequestContext requestContext) {
         this.context = requestContext;
     }
 

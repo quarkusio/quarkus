@@ -11,7 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -31,7 +31,7 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
     }
 
     @Override
-    public void writeResponse(String o, RequestContext context) throws WebApplicationException {
+    public void writeResponse(String o, QrsRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
         HttpServerResponse vertxResponse = context.getContext().response();
         vertxResponse.end(o);

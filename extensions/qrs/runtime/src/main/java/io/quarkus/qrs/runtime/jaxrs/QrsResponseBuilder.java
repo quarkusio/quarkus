@@ -2,13 +2,20 @@ package io.quarkus.qrs.runtime.jaxrs;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.TimeZone;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -18,14 +25,18 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import io.quarkus.qrs.runtime.util.HeaderHelper;
 import io.quarkus.qrs.runtime.util.HttpHeaderNames;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.core.http.HttpServerRequest;
 
 public class QrsResponseBuilder extends ResponseBuilder {
 
     private int status;
     private String reasonPhrase;
     private Object entity;
-    private MultivaluedMap<String, Object> headers = new MultivaluedHashMap<>();
+    private MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
+    private Annotation[] entityAnnotations;
 
     @Override
     public Response build() {
@@ -34,7 +45,7 @@ public class QrsResponseBuilder extends ResponseBuilder {
         response.reasonPhrase = reasonPhrase;
         response.entity = entity;
         response.headers = new MultivaluedHashMap<>();
-        response.headers.putAll(headers);
+        response.headers.putAll(metadata);
         return response;
     }
 
@@ -44,173 +55,301 @@ public class QrsResponseBuilder extends ResponseBuilder {
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
-        responseBuilder.headers = new MultivaluedHashMap<>();
-        responseBuilder.headers.putAll(headers);
+        responseBuilder.metadata = new MultivaluedHashMap<>();
+        responseBuilder.metadata.putAll(metadata);
         return responseBuilder;
     }
 
     @Override
-    public ResponseBuilder status(int status) {
-        this.status = status;
-        return this;
-    }
-
-    @Override
-    public ResponseBuilder status(int status, String reasonPhrase) {
+    public Response.ResponseBuilder status(int status, String reasonPhrase) {
         this.status = status;
         this.reasonPhrase = reasonPhrase;
         return this;
     }
 
     @Override
-    public ResponseBuilder entity(Object entity) {
+    public Response.ResponseBuilder status(int status) {
+        return status(status, null);
+    }
+
+    @Override
+    public Response.ResponseBuilder entity(Object entity) {
         this.entity = entity;
         return this;
     }
 
     @Override
-    public ResponseBuilder entity(Object entity, Annotation[] annotations) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResponseBuilder allow(String... methods) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResponseBuilder allow(Set<String> methods) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResponseBuilder cacheControl(CacheControl cacheControl) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResponseBuilder encoding(String encoding) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public ResponseBuilder header(String name, Object value) {
-        this.headers.add(name, value);
+    public Response.ResponseBuilder entity(Object entity, Annotation[] annotations) {
+        this.entity = entity;
+        this.entityAnnotations = annotations;
         return this;
     }
 
     @Override
-    public ResponseBuilder replaceAll(MultivaluedMap<String, Object> headers) {
-        this.headers.clear();
-        this.headers.putAll(headers);
+    public Response.ResponseBuilder type(MediaType type) {
+        if (type == null) {
+            metadata.remove(HttpHeaderNames.CONTENT_TYPE);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.CONTENT_TYPE, type);
         return this;
     }
 
     @Override
-    public ResponseBuilder language(String language) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder type(String type) {
+        if (type == null) {
+            metadata.remove(HttpHeaderNames.CONTENT_TYPE);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.CONTENT_TYPE, type);
+        return this;
     }
 
     @Override
-    public ResponseBuilder language(Locale language) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder variant(Variant variant) {
+        if (variant == null) {
+            type((String) null);
+            language((String) null);
+            metadata.remove(HttpHeaderNames.CONTENT_ENCODING);
+            return this;
+        }
+        type(variant.getMediaType());
+        language(variant.getLanguage());
+        if (variant.getEncoding() != null)
+            metadata.putSingle(HttpHeaderNames.CONTENT_ENCODING, variant.getEncoding());
+        else
+            metadata.remove(HttpHeaderNames.CONTENT_ENCODING);
+        return this;
     }
 
     @Override
-    public ResponseBuilder type(MediaType type) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder variants(List<Variant> variants) {
+        if (variants == null) {
+            metadata.remove(HttpHeaderNames.VARY);
+            return this;
+        }
+        String vary = createVaryHeader(variants);
+        metadata.putSingle(HttpHeaderNames.VARY, vary);
+
+        return this;
     }
 
     @Override
-    public ResponseBuilder type(String type) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder language(String language) {
+        if (language == null) {
+            metadata.remove(HttpHeaderNames.CONTENT_LANGUAGE);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.CONTENT_LANGUAGE, language);
+        return this;
     }
 
     @Override
-    public ResponseBuilder variant(Variant variant) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder location(URI location) {
+        if (location == null) {
+            metadata.remove(HttpHeaderNames.LOCATION);
+            return this;
+        }
+        if (!location.isAbsolute()) {
+            CurrentVertxRequest cur = CDI.current().select(CurrentVertxRequest.class).get();
+            HttpServerRequest req = cur.getCurrent().request();
+            try {
+                String host = req.host();
+                int port = -1;
+                int index = host.indexOf(":");
+                if (index > -1) {
+                    port = Integer.parseInt(host.substring(index + 1));
+                    host = host.substring(0, index);
+                }
+                location = new URI(req.scheme(), null, host, port,
+                        location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
+                        location.getQuery(), null);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        metadata.putSingle(HttpHeaderNames.LOCATION, location);
+        return this;
     }
 
     @Override
-    public ResponseBuilder contentLocation(URI location) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder contentLocation(URI location) {
+        if (location == null) {
+            metadata.remove(HttpHeaderNames.CONTENT_LOCATION);
+            return this;
+        }
+        if (!location.isAbsolute()) {
+            CurrentVertxRequest cur = CDI.current().select(CurrentVertxRequest.class).get();
+            HttpServerRequest req = cur.getCurrent().request();
+            try {
+                String host = req.host();
+                int port = -1;
+                int index = host.indexOf(":");
+                if (index > -1) {
+                    port = Integer.parseInt(host.substring(index + 1));
+                    host = host.substring(0, index);
+                }
+                location = new URI(req.scheme(), null, host, port,
+                        location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
+                        location.getQuery(), null);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        metadata.putSingle(HttpHeaderNames.CONTENT_LOCATION, location);
+        return this;
     }
 
     @Override
-    public ResponseBuilder cookie(NewCookie... cookies) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder tag(EntityTag tag) {
+        if (tag == null) {
+            metadata.remove(HttpHeaderNames.ETAG);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.ETAG, tag);
+        return this;
     }
 
     @Override
-    public ResponseBuilder expires(Date expires) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder tag(String tag) {
+        if (tag == null) {
+            metadata.remove(HttpHeaderNames.ETAG);
+            return this;
+        }
+        return tag(new EntityTag(tag));
     }
 
     @Override
-    public ResponseBuilder lastModified(Date lastModified) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder lastModified(Date lastModified) {
+        if (lastModified == null) {
+            metadata.remove(HttpHeaderNames.LAST_MODIFIED);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.LAST_MODIFIED, lastModified);
+        return this;
     }
 
     @Override
-    public ResponseBuilder location(URI location) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder cacheControl(CacheControl cacheControl) {
+        if (cacheControl == null) {
+            metadata.remove(HttpHeaderNames.CACHE_CONTROL);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.CACHE_CONTROL, cacheControl);
+        return this;
     }
 
     @Override
-    public ResponseBuilder tag(EntityTag tag) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder header(String name, Object value) {
+        if (value == null) {
+            metadata.remove(name);
+            return this;
+        }
+        metadata.add(name, value);
+        return this;
     }
 
     @Override
-    public ResponseBuilder tag(String tag) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder cookie(NewCookie... cookies) {
+        if (cookies == null) {
+            metadata.remove(HttpHeaderNames.SET_COOKIE);
+            return this;
+        }
+        for (NewCookie cookie : cookies) {
+            metadata.add(HttpHeaderNames.SET_COOKIE, cookie);
+        }
+        return this;
+    }
+
+    public Response.ResponseBuilder language(Locale language) {
+        if (language == null) {
+            metadata.remove(HttpHeaderNames.CONTENT_LANGUAGE);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.CONTENT_LANGUAGE, language);
+        return this;
+    }
+
+    public static SimpleDateFormat getDateFormatRFC822() {
+        SimpleDateFormat dateFormatRFC822 = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        dateFormatRFC822.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return dateFormatRFC822;
+    }
+
+    public Response.ResponseBuilder expires(Date expires) {
+        if (expires == null) {
+            metadata.remove(HttpHeaderNames.EXPIRES);
+            return this;
+        }
+        metadata.putSingle(HttpHeaderNames.EXPIRES, getDateFormatRFC822().format(expires));
+        return this;
+    }
+
+    // spec
+
+    public Response.ResponseBuilder allow(String... methods) {
+        if (methods == null) {
+            return allow((Set<String>) null);
+        }
+        HashSet<String> set = new HashSet<String>();
+        for (String m : methods)
+            set.add(m);
+        return allow(set);
+    }
+
+    public Response.ResponseBuilder allow(Set<String> methods) {
+        HeaderHelper.setAllow(this.metadata, methods);
+        return this;
     }
 
     @Override
-    public ResponseBuilder variants(Variant... variants) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder encoding(String encoding) {
+        if (encoding == null) {
+            metadata.remove(HttpHeaders.CONTENT_ENCODING);
+            return this;
+        }
+        metadata.putSingle(HttpHeaders.CONTENT_ENCODING, encoding);
+        return this;
     }
 
     @Override
-    public ResponseBuilder variants(List<Variant> variants) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder variants(Variant... variants) {
+        return this.variants(Arrays.asList(variants));
     }
 
     @Override
-    public ResponseBuilder links(Link... links) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder links(Link... links) {
+        if (links == null) {
+            metadata.remove(HttpHeaders.LINK);
+            return this;
+        }
+        for (Link link : links) {
+            metadata.add(HttpHeaders.LINK, link);
+        }
+        return this;
     }
 
     @Override
-    public ResponseBuilder link(URI uri, String rel) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder link(URI uri, String rel) {
+        Link link = Link.fromUri(uri).rel(rel).build();
+        metadata.add(HttpHeaders.LINK, link);
+        return this;
     }
 
     @Override
-    public ResponseBuilder link(String uri, String rel) {
-        // TODO Auto-generated method stub
-        return null;
+    public Response.ResponseBuilder link(String uri, String rel) {
+        Link link = Link.fromUri(uri).rel(rel).build();
+        metadata.add(HttpHeaders.LINK, link);
+        return this;
+    }
+
+    @Override
+    public Response.ResponseBuilder replaceAll(MultivaluedMap<String, Object> headers) {
+        metadata.clear();
+        if (headers == null)
+            return this;
+        metadata.putAll(headers);
+        return this;
     }
 
     public static String createVaryHeader(List<Variant> variants) {

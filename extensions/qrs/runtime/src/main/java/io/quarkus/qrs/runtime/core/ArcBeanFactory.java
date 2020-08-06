@@ -28,7 +28,7 @@ public class ArcBeanFactory<T> implements BeanFactory<T> {
     }
 
     @Override
-    public BeanInstance<T> createInstance(RequestContext requestContext) {
+    public BeanInstance<T> createInstance(QrsRequestContext requestContext) {
         return createInstance();
     }
 

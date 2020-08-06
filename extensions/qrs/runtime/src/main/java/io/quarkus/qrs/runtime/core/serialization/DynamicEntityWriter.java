@@ -6,7 +6,7 @@ import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
 
 /**
@@ -21,7 +21,7 @@ public class DynamicEntityWriter implements EntityWriter {
     }
 
     @Override
-    public void write(RequestContext context, Object entity) throws IOException {
+    public void write(QrsRequestContext context, Object entity) throws IOException {
         MessageBodyWriter<?> writer = serialisers.findWriter(context.getResponse(), context);
         if (writer == null) {
             throw new InternalServerErrorException("Could not find MessageBodyWriter for " + entity.getClass(),

@@ -20,10 +20,11 @@ public class RuntimeResource {
     private final String method;
     private final Class<?>[] parameterTypes;
     private final Type returnType;
+    private final boolean blocking;
 
     public RuntimeResource(String httpMethod, URITemplate path, MediaType produces, MediaType consumes, EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
-            Type returnType) {
+            Type returnType, boolean blocking) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
@@ -34,6 +35,7 @@ public class RuntimeResource {
         this.method = method;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
+        this.blocking = blocking;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -70,6 +72,10 @@ public class RuntimeResource {
 
     public EndpointInvoker getInvoker() {
         return invoker;
+    }
+
+    public boolean isBlocking() {
+        return blocking;
     }
 
     public BeanFactory<Object> getEndpointFactory() {

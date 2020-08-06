@@ -1,6 +1,6 @@
 package io.quarkus.qrs.runtime.handlers;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.vertx.core.http.HttpServerRequest;
 
 public class ReadBodyHandler implements RestHandler {
@@ -10,7 +10,7 @@ public class ReadBodyHandler implements RestHandler {
     //    BodyHandler bodyHandler = BodyHandler.create();
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         requestContext.suspend();
         HttpServerRequest vertxRequest = requestContext.getContext().request();
         vertxRequest.setExpectMultipart(true);

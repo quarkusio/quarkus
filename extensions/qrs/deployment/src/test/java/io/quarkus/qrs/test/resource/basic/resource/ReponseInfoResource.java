@@ -30,7 +30,7 @@ public class ReponseInfoResource {
         Response response = Response.temporaryRedirect(URI.create("new/one")).build();
         URI uri = (URI) response.getMetadata().getFirst(HttpHeaderNames.LOCATION);
         logger.info("Location uri: " + uri);
-        Assertions.assertEquals("Wrong path from URI", base.getPath(), uri.getPath());
+        Assertions.assertEquals(base.getPath(), uri.getPath());
         return "CONTENT";
     }
 }

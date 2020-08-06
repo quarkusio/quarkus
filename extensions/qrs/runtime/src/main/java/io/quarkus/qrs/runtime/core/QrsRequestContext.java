@@ -14,6 +14,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
@@ -22,16 +24,20 @@ import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
 import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
-public class RequestContext implements Runnable, Closeable {
-    private static final Logger log = Logger.getLogger(RequestContext.class);
+public class QrsRequestContext implements Runnable, Closeable {
+    private static final Logger log = Logger.getLogger(QrsRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QrsDeployment deployment;
     private final RoutingContext context;
+    private final ManagedContext requestContext;
+    private final CurrentVertxRequest currentVertxRequest;
+    private InjectableContext.ContextState currentRequestScope;
     /**
      * The parameters array, populated by handlers
      */
@@ -61,9 +67,12 @@ public class RequestContext implements Runnable, Closeable {
     private QrsContainerRequestContext containerRequestContext;
     private String method;
 
-    public RequestContext(QrsDeployment deployment, RoutingContext context, RuntimeResource target) {
+    public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
+            CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
         this.deployment = deployment;
         this.context = context;
+        this.requestContext = requestContext;
+        this.currentVertxRequest = currentVertxRequest;
         this.target = target;
         this.handlers = target.getHandlerChain();
         this.parameters = new Object[target.getParameterTypes().length];
@@ -75,9 +84,12 @@ public class RequestContext implements Runnable, Closeable {
         });
     }
 
-    public RequestContext(QrsDeployment deployment, RoutingContext context, RestHandler... handlerChain) {
+    public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
+            CurrentVertxRequest currentVertxRequest, RestHandler... handlerChain) {
         this.deployment = deployment;
         this.context = context;
+        this.requestContext = requestContext;
+        this.currentVertxRequest = currentVertxRequest;
         this.handlers = handlerChain;
         this.parameters = EMPTY_ARRAY;
         context.addEndHandler(new Handler<AsyncResult<Void>>() {
@@ -128,6 +140,17 @@ public class RequestContext implements Runnable, Closeable {
     @Override
     public void run() {
         running = true;
+        //if this is a blocking target we don't activate for the initial non-blocking part
+        //unless there are pre-mapping filters as these may require CDI
+        boolean activationRequired = target == null || (target.isBlocking() && executor == null);
+        if (activationRequired) {
+            if (currentRequestScope == null) {
+                requestContext.activate();
+                currentVertxRequest.setCurrent(context);
+            } else {
+                requestContext.activate(currentRequestScope);
+            }
+        }
         try {
             if (throwable != null) {
                 handleException(throwable);
@@ -160,6 +183,14 @@ public class RequestContext implements Runnable, Closeable {
             handleException(t);
         } finally {
             running = false;
+            if (activationRequired) {
+                if (position == handlers.length) {
+                    requestContext.terminate();
+                } else {
+                    currentRequestScope = requestContext.getState();
+                    requestContext.deactivate();
+                }
+            }
         }
     }
 
@@ -235,7 +266,7 @@ public class RequestContext implements Runnable, Closeable {
         return requestEntity;
     }
 
-    public RequestContext setRequestEntity(Object requestEntity) {
+    public QrsRequestContext setRequestEntity(Object requestEntity) {
         this.requestEntity = requestEntity;
         return this;
     }
@@ -244,7 +275,7 @@ public class RequestContext implements Runnable, Closeable {
         return entityWriter;
     }
 
-    public RequestContext setEntityWriter(EntityWriter entityWriter) {
+    public QrsRequestContext setEntityWriter(EntityWriter entityWriter) {
         this.entityWriter = entityWriter;
         return this;
     }
@@ -256,7 +287,7 @@ public class RequestContext implements Runnable, Closeable {
         return endpointInstance.getInstance();
     }
 
-    public RequestContext setEndpointInstance(BeanFactory.BeanInstance<Object> endpointInstance) {
+    public QrsRequestContext setEndpointInstance(BeanFactory.BeanInstance<Object> endpointInstance) {
         this.endpointInstance = endpointInstance;
         return this;
     }
@@ -265,7 +296,7 @@ public class RequestContext implements Runnable, Closeable {
         return result;
     }
 
-    public RequestContext setResult(Object result) {
+    public QrsRequestContext setResult(Object result) {
         this.result = result;
         return this;
     }
@@ -278,7 +309,7 @@ public class RequestContext implements Runnable, Closeable {
         return suspended;
     }
 
-    public RequestContext setSuspended(boolean suspended) {
+    public QrsRequestContext setSuspended(boolean suspended) {
         this.suspended = suspended;
         return this;
     }
@@ -287,7 +318,7 @@ public class RequestContext implements Runnable, Closeable {
         return running;
     }
 
-    public RequestContext setRunning(boolean running) {
+    public QrsRequestContext setRunning(boolean running) {
         this.running = running;
         return this;
     }
@@ -296,7 +327,7 @@ public class RequestContext implements Runnable, Closeable {
         return executor;
     }
 
-    public RequestContext setExecutor(Executor executor) {
+    public QrsRequestContext setExecutor(Executor executor) {
         this.executor = executor;
         return this;
     }
@@ -305,7 +336,7 @@ public class RequestContext implements Runnable, Closeable {
         return position;
     }
 
-    public RequestContext setPosition(int position) {
+    public QrsRequestContext setPosition(int position) {
         this.position = position;
         return this;
     }
@@ -321,7 +352,7 @@ public class RequestContext implements Runnable, Closeable {
     /**
      * ATM this can only be called by the InvocationHandler
      */
-    public RequestContext setThrowable(Throwable throwable) {
+    public QrsRequestContext setThrowable(Throwable throwable) {
         invokeExceptionMapper(throwable);
         this.throwable = throwable;
         return this;

@@ -10,7 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -32,7 +32,7 @@ public class VertxJsonMessageBodyWriter implements QrsMessageBodyWriter<Object> 
     }
 
     @Override
-    public void writeResponse(Object o, RequestContext context) throws WebApplicationException {
+    public void writeResponse(Object o, QrsRequestContext context) throws WebApplicationException {
         HttpServerResponse vertxResponse = context.getContext().response();
         vertxResponse.end(Json.encodeToBuffer(o));
     }

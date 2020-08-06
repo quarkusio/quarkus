@@ -2,7 +2,7 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.concurrent.Executor;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class BlockingHandler implements RestHandler {
 
@@ -13,7 +13,7 @@ public class BlockingHandler implements RestHandler {
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         requestContext.suspend();
         requestContext.resume(executor);
     }

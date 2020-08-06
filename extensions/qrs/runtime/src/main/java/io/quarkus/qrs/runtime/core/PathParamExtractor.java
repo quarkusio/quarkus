@@ -9,7 +9,7 @@ public class PathParamExtractor implements ParameterExtractor {
     }
 
     @Override
-    public Object extractParameter(RequestContext context) {
+    public Object extractParameter(QrsRequestContext context) {
         return context.getPathParamValues().get(name);
     }
 }

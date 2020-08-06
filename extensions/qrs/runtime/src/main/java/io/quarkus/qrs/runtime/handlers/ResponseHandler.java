@@ -4,7 +4,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 /**
  * Our job is to turn endpoint return types into Response instances
@@ -12,7 +12,7 @@ import io.quarkus.qrs.runtime.core.RequestContext;
 public class ResponseHandler implements RestHandler {
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         Object result = requestContext.getResult();
         Response response = null;
         if (result instanceof Response) {

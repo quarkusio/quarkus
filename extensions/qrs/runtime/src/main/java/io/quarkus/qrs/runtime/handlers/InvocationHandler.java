@@ -1,6 +1,6 @@
 package io.quarkus.qrs.runtime.handlers;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
 public class InvocationHandler implements RestHandler {
@@ -11,7 +11,7 @@ public class InvocationHandler implements RestHandler {
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         if (requestContext.getResult() != null) {
             //processing was aborted
             //but we still follow through with the handler chain

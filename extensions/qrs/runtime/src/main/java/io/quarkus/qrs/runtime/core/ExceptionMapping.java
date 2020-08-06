@@ -16,7 +16,7 @@ public class ExceptionMapping {
 
     private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
-    public Response mapException(Throwable throwable, RequestContext requestContext) {
+    public Response mapException(Throwable throwable, QrsRequestContext requestContext) {
         Class<?> klass = throwable.getClass();
         do {
             ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);

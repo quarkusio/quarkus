@@ -8,7 +8,7 @@ import java.util.List;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerResponseContext;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
@@ -34,7 +34,7 @@ public class ResourceResponseInterceptorHandler implements RestHandler, Closeabl
     }
 
     @Override
-    public void handle(RequestContext requestContext) throws Exception {
+    public void handle(QrsRequestContext requestContext) throws Exception {
         QrsContainerRequestContext filterRequestContext = requestContext.getContainerRequestContext();
         filterRequestContext.setResponse(true);
         filterRequestContext.setPreMatch(false);

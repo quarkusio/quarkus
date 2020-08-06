@@ -11,6 +11,6 @@ public class SpecialResourceDeleteResource {
     @DELETE
     @Consumes("text/plain")
     public void delete(String msg) {
-        Assertions.assertEquals("Wrong request content", "hello", msg);
+        Assertions.assertEquals("hello", msg);
     }
 }

@@ -2,7 +2,7 @@ package io.quarkus.qrs.runtime.core.serialization;
 
 import java.io.IOException;
 
-import io.quarkus.qrs.runtime.core.RequestContext;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 /**
  * An interface that can be used to write out an entity.
@@ -14,6 +14,6 @@ import io.quarkus.qrs.runtime.core.RequestContext;
  */
 public interface EntityWriter {
 
-    void write(RequestContext context, Object entity) throws IOException;
+    void write(QrsRequestContext context, Object entity) throws IOException;
 
 }

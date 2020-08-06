@@ -360,10 +360,13 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-io</artifactId>
+                <artifactId>smallrye-common-bom</artifactId>
                 <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
         </dependencies>
     </dependencyManagement>

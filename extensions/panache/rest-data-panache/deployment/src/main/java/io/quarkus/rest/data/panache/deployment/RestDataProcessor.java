@@ -43,6 +43,10 @@ public class RestDataProcessor {
             ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
             ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
                     resourceMetadata, resourcePropertiesBuildItems);
+            if (resourceProperties.isHal() && !hasHalCapability(capabilities)) {
+                throw new IllegalStateException(
+                        "Cannot generate HAL endpoints without a RESTEasy JSON-B or Jackson capability");
+            }
             if (resourceProperties.isExposed()) {
                 jaxRsResourceImplementor.implement(classOutput, resourceMetadata, resourceProperties);
             }
@@ -85,5 +89,9 @@ public class RestDataProcessor {
 
     private boolean hasValidatorCapability(Capabilities capabilities) {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
+    }
+
+    private boolean hasHalCapability(Capabilities capabilities) {
+        return capabilities.isPresent(Capability.RESTEASY_JSONB) || capabilities.isPresent(Capability.RESTEASY_JACKSON);
     }
 }

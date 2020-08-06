@@ -32,6 +32,7 @@ public class ResteasyJsonbProcessor {
     void capabilities(BuildProducer<CapabilityBuildItem> capability) {
         capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSON));
         capability.produce(new CapabilityBuildItem(Capability.REST_JSONB));
+        capability.produce(new CapabilityBuildItem(Capability.RESTEASY_JSONB));
     }
 
     @BuildStep

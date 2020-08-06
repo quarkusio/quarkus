@@ -966,6 +966,13 @@ public class BeanDeployment {
     }
 
     private void addSyntheticBean(BeanInfo bean) {
+        for (BeanInfo b : beans) {
+            if (b.getIdentifier().equals(bean.getIdentifier())) {
+                throw new IllegalStateException(
+                        "A synthetic bean with identifier " + bean.getIdentifier() + " is already registered: "
+                                + b);
+            }
+        }
         beans.add(bean);
     }
 

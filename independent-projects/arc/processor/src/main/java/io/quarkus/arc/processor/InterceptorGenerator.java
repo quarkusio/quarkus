@@ -114,6 +114,9 @@ public class InterceptorGenerator extends BeanGenerator {
         implementIntercept(interceptorCreator, interceptor, providerTypeName, reflectionRegistration, isApplicationClass);
         implementGetPriority(interceptorCreator, interceptor);
 
+        implementEquals(interceptor, interceptorCreator);
+        implementHashCode(interceptor, interceptorCreator);
+
         interceptorCreator.close();
         return classOutput.getResources();
 

@@ -28,7 +28,7 @@ public class NativeImageBuildStepTest {
         assertThat(version.major).isEqualTo(major);
         assertThat(version.minor).isEqualTo(minor);
 
-        assertThat(version.distro).isEqualTo(distro);
+        assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL)
             assertThat(version.isMandrel()).isTrue();
 
@@ -47,7 +47,7 @@ public class NativeImageBuildStepTest {
     }
 
     static void assertSnapshot(Distribution distro, Version version) {
-        assertThat(version.distro).isEqualTo(distro);
+        assertThat(version.distribution).isEqualTo(distro);
         assertThat(version.isDetected()).isEqualTo(true);
         assertThat(version.isSnapshot()).isEqualTo(true);
     }

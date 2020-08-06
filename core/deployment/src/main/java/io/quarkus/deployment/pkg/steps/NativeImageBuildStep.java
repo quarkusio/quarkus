@@ -491,12 +491,12 @@ public class NativeImageBuildStep {
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {
-        log.info("Running Quarkus native-image plugin on " + version);
+        log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
         if (version.isObsolete()) {
             final int major = GraalVM.Version.CURRENT.major;
             final int minor = GraalVM.Version.CURRENT.minor;
-            throw new IllegalStateException("Out of date version of GraalVM detected: " + version + "."
-                    + " Quarkus currently supports " + major + " ." + minor + ".0. Please upgrade GraalVM to this version.");
+            throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
+                    + " Quarkus currently supports " + major + "." + minor + ". Please upgrade GraalVM to this version.");
         }
     }
 
@@ -652,20 +652,28 @@ public class NativeImageBuildStep {
             private static final Pattern PATTERN = Pattern.compile(
                     "GraalVM Version (([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+|\\p{XDigit}*)[^(\n$]*(\\(Mandrel Distribution\\))?\\s*");
 
-            static final Version UNVERSIONED = new Version(-1, -1, Distribution.ORACLE);
-            static final Version SNAPSHOT_ORACLE = new Version(Integer.MAX_VALUE, Integer.MAX_VALUE, Distribution.ORACLE);
-            static final Version SNAPSHOT_MANDREL = new Version(Integer.MAX_VALUE, Integer.MAX_VALUE, Distribution.MANDREL);
-            static final Version VERSION_20_1 = new Version(20, 1, Distribution.ORACLE);
+            static final Version UNVERSIONED = new Version("Undefined", -1, -1, Distribution.ORACLE);
+            static final Version SNAPSHOT_ORACLE = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
+                    Distribution.ORACLE);
+            static final Version SNAPSHOT_MANDREL = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
+                    Distribution.MANDREL);
+            static final Version VERSION_20_1 = new Version("GraalVM 20.1", 20, 1, Distribution.ORACLE);
             static final Version CURRENT = VERSION_20_1;
 
+            final String fullVersion;
             final int major;
             final int minor;
-            final Distribution distro;
+            final Distribution distribution;
 
-            Version(int major, int minor, Distribution distro) {
+            Version(String fullVersion, int major, int minor, Distribution distro) {
+                this.fullVersion = fullVersion;
                 this.major = major;
                 this.minor = minor;
-                this.distro = distro;
+                this.distribution = distro;
+            }
+
+            String getFullVersion() {
+                return fullVersion;
             }
 
             boolean isDetected() {
@@ -677,7 +685,7 @@ public class NativeImageBuildStep {
             }
 
             boolean isMandrel() {
-                return distro == Distribution.MANDREL;
+                return distribution == Distribution.MANDREL;
             }
 
             boolean isSnapshot() {
@@ -714,6 +722,7 @@ public class NativeImageBuildStep {
                             return isMandrel(distro) ? SNAPSHOT_MANDREL : SNAPSHOT_ORACLE;
                         } else {
                             return new Version(
+                                    line,
                                     Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
                                     isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
                         }
@@ -736,7 +745,7 @@ public class NativeImageBuildStep {
                 return "Version{" +
                         "major=" + major +
                         ", minor=" + minor +
-                        ", distro=" + distro +
+                        ", distribution=" + distribution +
                         '}';
             }
         }

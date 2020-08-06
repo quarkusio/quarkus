@@ -69,6 +69,7 @@ public class MessageBundleTest {
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
         assertEquals("Hallo Welt! Hallo Jachym! Hello you guys! Hello alpha! Hello!",
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.GERMAN).render());
+        assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
     }
 
 }

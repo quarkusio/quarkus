@@ -3,6 +3,8 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.Expression.Part;
 import java.util.Arrays;
@@ -17,7 +19,6 @@ public class ExpressionTest {
     public void testExpressions() throws InterruptedException, ExecutionException {
         verify("data:name.value", "data", null, name("name", "name"), name("value", "value"));
         verify("name.value", null, null, name("name"), name("value"));
-        verify("name[value]", null, null, name("name"), name("value"));
         verify("0", null, CompletableFuture.completedFuture(Integer.valueOf(0)), name("0", "|java.lang.Integer|"));
         verify("false", null, CompletableFuture.completedFuture(Boolean.FALSE), name("false", "|java.lang.Boolean|"));
         verify("null", null, CompletableFuture.completedFuture(null), name("null"));
@@ -39,6 +40,24 @@ public class ExpressionTest {
         verify("foo.call(bar.alpha(1),bar.alpha('ping'))", null, null, name("foo"),
                 virtualMethod("call", ExpressionImpl.from("bar.alpha(1)"), ExpressionImpl.from("bar.alpha('ping')")));
         verify("'foo:bar'", null, CompletableFuture.completedFuture("foo:bar"), name("'foo:bar'", "|java.lang.String|"));
+        // bracket notation
+        verify("name['value']", null, null, name("name"), name("value"));
+        verify("name[false]", null, null, name("name"), name("false"));
+        verify("name[1l]", null, null, name("name"), name("1"));
+        try {
+            verify("name['value'][1][null]", null, null);
+            fail();
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("Null value"));
+        }
+        try {
+            verify("name[value]", null, null);
+            fail();
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("Non-literal value"));
+        }
+        //verify("name[1l]['foo']", null, null, name("name"), name("1"), name("foo"));
+        verify("foo[\"name.dot\"].value", null, null, name("foo"), name("name.dot"), name("value"));
     }
 
     @Test
@@ -90,11 +109,11 @@ public class ExpressionTest {
     }
 
     private Part name(String name, String typeInfo) {
-        return new ExpressionImpl.ExpressionPartImpl(name, typeInfo);
+        return new ExpressionImpl.PartImpl(name, typeInfo);
     }
 
     private Part virtualMethod(String name, Expression... params) {
-        return new ExpressionImpl.VirtualMethodExpressionPartImpl(name, Arrays.asList(params));
+        return new ExpressionImpl.VirtualMethodPartImpl(name, Arrays.asList(params));
     }
 
 }

@@ -121,10 +121,15 @@ public class DevModeTestUtils {
     }
 
     public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason) {
+        return getHttpResponse(path, allowError, brokenReason, 1, TimeUnit.MINUTES);
+    }
+
+    public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason, long timeout,
+            TimeUnit tu) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(timeout, tu).until(() -> {
                     String broken = brokenReason.get();
                     if (broken != null) {
                         resp.set("BROKEN: " + broken);

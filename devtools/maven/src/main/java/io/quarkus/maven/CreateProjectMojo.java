@@ -204,12 +204,13 @@ public class CreateProjectMojo extends AbstractMojo {
             }
 
             success = createProject.execute().isSuccess();
-
-            File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            if (BuildTool.MAVEN.equals(buildToolEnum)) {
-                createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
-            } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(platform, projectDirPath);
+            if (!codestartsEnabled) {
+                File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
+                if (BuildTool.MAVEN.equals(buildToolEnum)) {
+                    createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
+                } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
+                    createGradleWrapper(platform, projectDirPath);
+                }
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);

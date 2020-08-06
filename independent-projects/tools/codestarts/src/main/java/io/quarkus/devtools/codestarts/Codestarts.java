@@ -61,8 +61,7 @@ public class Codestarts {
                 codestartProject.getCodestartProjectData()));
 
         final Codestart projectCodestart = codestartProject.getRequiredCodestart(CodestartSpec.Type.PROJECT);
-        final List<CodestartFileStrategy> strategies = buildStrategies(
-                projectCodestart.getSpec().getOutputStrategy());
+        final List<CodestartFileStrategy> strategies = buildStrategies(mergeStrategies(codestartProject));
 
         CodestartProcessor processor = new CodestartProcessor(codestartProject.getCodestartInput().getResourceLoader(),
                 languageName, targetDirectory, strategies, data);
@@ -71,6 +70,11 @@ public class Codestarts {
             processor.process(codestart);
         }
         processor.writeFiles();
+    }
+
+    private static Map<String, String> mergeStrategies(CodestartProject codestartProject) {
+        return NestedMaps.deepMerge(
+                codestartProject.getCodestarts().stream().map(Codestart::getSpec).map(CodestartSpec::getOutputStrategy));
     }
 
     private static Collection<Codestart> resolveSelectedExtraCodestarts(CodestartInput input,

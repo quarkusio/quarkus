@@ -89,7 +89,7 @@ The dynamic parts of a template include:
 ** Virtual methods: `{item.get(name)}`, `{name ?: 'John'}`,
 ** With namespace: `{inject:colors}`.
 * *Section*
-** May contain expressions and sections: `{#if foo}{foo.name}{/if}`,
+** May contain expressions and nested sections: `{#if foo}{foo.name}{/if}`,
 ** The name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
 ** Can be empty: `{#myTag image=true /}`,
 ** May declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
@@ -98,31 +98,46 @@ The dynamic parts of a template include:
 ** Could be multi-line,
 ** Used to mark the content that should be rendered but not parsed.
 
-=== Identifiers
+[[identifiers]]
+=== Identifiers and Tags
 
-Expressions/tags must start with a curly bracket (`{`) followed by a valid identifier.
-A valid identifier is a digit, an alphabet character, underscore (`_`), or a section command (`#`).
-Expressions/tags starting with an invalid identifier are ignored.
-A closing curly bracket (`}`) is ignored if not inside an expression/tag.
+Identifiers are used in expressions and section tags.
+A valid identifier is a sequence of non-whitespace characters.
+However, users are encouraged to only use valid Java identifiers in expressions.
+
+TIP: You can use bracket notation if you need to specify an identifier that contains a dot, e.g. `{map['my.key']}`.
+
+When parsing a template document the parser identifies all _tags_.
+A tag starts and ends with a curly bracket, e.g. `{foo}`.
+The content of a tag must start with:
+
+* a digit, or
+* an alphabet character, or
+* underscore, or 
+* a built-in command: `#`, `!`, `@`, `/`.
+
+If it does not start with any of the above it is ignored by the parser.
  
-.hello.html
+.Tag Examples
 [source,html]
 ----
 <html>
    <body>
-   {_foo}       <1>
-   {  foo}      <2>
-   {{foo}}      <3>
-   {"foo":true} <4>
+   {_foo.bar}   <1>
+   {! comment !}<2>
+   {  foo}      <3>
+   {{foo}}      <4>
+   {"foo":true} <5>
    </body>
 </html>
 ----
-<1> Evaluated: expression starts with underscore.
-<2> Ignored: expression starts with whitespace. 
-<3> Ignored: expression starts with `{`.
-<4> Ignored: expression starts with `"`.
+<1> Parsed: an expression that starts with underscore.
+<2> Parsed: a comment
+<3> Ignored: starts with whitespace. 
+<4> Ignored: starts with `{`.
+<5> Ignored: starts with `"`.
 
-TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no evaluation will happen).
+TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no parsing/evaluation will happen).
 
 === Removing Standalone Lines From the Template
 
@@ -186,7 +201,8 @@ In this case, all whitespace characters from a standalone line will be printed t
 
 An expression outputs a value.
 It consists of one or more parts separated by dot (dot notation) or square brackets (bracket notation).
-In the `object[property_name]` syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
+In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>.
+In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
 An expression could start with an optional namespace followed by a colon (`:`).
 
 .Expressions Example
@@ -202,9 +218,10 @@ An expression could start with an optional namespace followed by a colon (`:`).
 <3> equivalent to `{item.name}` but using the bracket notation
 <4> namespace `global`, one part: `colors`
 
-A part of an expression could be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses: 
+A part of an expression could be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
+A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
 
-.Virtual Method Example
+.Virtual Methods Example
 [source]
 ----
 {item.getLabels(1)} <1>
@@ -212,8 +229,6 @@ A part of an expression could be a _virtual method_ in which case the name can b
 ----
 <1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
 <2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
-
-NOTE: A parameter of a virtual method can be a <<literals, literal>> value.
 
 [[literals]]
 ===== Supported Literals

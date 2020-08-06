@@ -68,7 +68,7 @@ public final class Expressions {
             return Collections.emptyList();
         }
         boolean literal = false;
-        boolean separator = false;
+        char separator = 0;
         byte infix = 0;
         byte brackets = 0;
         ImmutableList.Builder<String> builder = ImmutableList.builder();
@@ -77,7 +77,7 @@ public final class Expressions {
             char c = value.charAt(i);
             if (splitConfig.isSeparator(c)) {
                 // Adjacent separators may be ignored
-                if (!separator || !splitConfig.ignoreAdjacentSeparator(c)) {
+                if (separator == 0 || separator != c) {
                     if (!literal && brackets == 0) {
                         if (splitConfig.shouldPrependSeparator(c)) {
                             buffer.append(c);
@@ -90,7 +90,7 @@ public final class Expressions {
                         if (splitConfig.shouldAppendSeparator(c)) {
                             buffer.append(c);
                         }
-                        separator = true;
+                        separator = c;
                     } else {
                         buffer.append(c);
                     }
@@ -128,10 +128,10 @@ public final class Expressions {
                         }
                         buffer.append(c);
                     }
-                    separator = false;
+                    separator = 0;
                 } else {
                     buffer.append(c);
-                    separator = false;
+                    separator = 0;
                 }
             }
         }
@@ -180,11 +180,6 @@ public final class Expressions {
             return candidate == '[';
         }
 
-        @Override
-        public boolean ignoreAdjacentSeparator(char candidate) {
-            return candidate == '.';
-        }
-
     }
 
     interface SplitConfig {
@@ -201,10 +196,6 @@ public final class Expressions {
 
         default boolean shouldAppendSeparator(char candidate) {
             return false;
-        }
-
-        default boolean ignoreAdjacentSeparator(char candidate) {
-            return isSeparator(candidate);
         }
 
     }

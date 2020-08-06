@@ -916,13 +916,7 @@
                                 <configurationFile>
                                     <resource>revapi/revapi-configuration.xml</resource>
                                 </configurationFile>
-                              <configurationFile>
-                                <path>api-changes.xml</path>
-                                <roots>
-                                  <root>global-filters</root>
-                                </roots>
-                              </configurationFile>
-                              <configurationFile>
+                                <configurationFile>
                                   <path>api-changes.xml</path>
                                   <roots>
                                     <root>versions/v${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</root>
@@ -937,6 +931,7 @@
                             <checkDependencies>${revapi.checkdeps}</checkDependencies>
                             <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
                             <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
+                            <expandProperties>true</expandProperties>
                         </configuration>
                           <!-- Running two executions is a workaround to make sure we get a HTML report in case revapi finds
                                some incompatible changes. The "check" goal will simply fail the whole build before it could get

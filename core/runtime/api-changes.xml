@@ -2,40 +2,24 @@
 <versions>
     <v999.0.0>
         <revapi.differences>
-        <justification>This change is necessary to fix bug #1234</justification>
+        <justification>First reason</justification>
         <criticality>highlight</criticality>
         <differences>
             <item>
                 <code>java.class.removed</code>
                 <old>class io.quarkus.runtime.configuration.AbstractDelegatingConfigSource</old>
-                <justification>ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE</justification>
-                <!--
-                Additionally, the following attachments can be used to further identify the difference:
-              
-                <package>io.quarkus.runtime.configuration</package>
-                <classQualifiedName>io.quarkus.runtime.configuration.AbstractDelegatingConfigSource</classQualifiedName>
-                <classSimpleName>AbstractDelegatingConfigSource</classSimpleName>
-                <elementKind>class</elementKind>
-                <oldArchive>io.quarkus:quarkus-core:jar:1.6.0.Final</oldArchive>
-                <oldArchiveRole>primary</oldArchiveRole>
-                -->
-              </item><item>
-                <code>java.method.removed</code>
-                <old>method void io.quarkus.runtime.logging.LogCleanupFilterElement::setMessageStart(java.util.List&lt;java.lang.String&gt;)</old>
-                <justification>ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE</justification>
-                <!--
-                Additionally, the following attachments can be used to further identify the difference:
-              
-                <package>io.quarkus.runtime.logging</package>
-                <classQualifiedName>io.quarkus.runtime.logging.LogCleanupFilterElement</classQualifiedName>
-                <classSimpleName>LogCleanupFilterElement</classSimpleName>
-                <methodName>setMessageStart</methodName>
-                <elementKind>method</elementKind>
-                <oldArchive>io.quarkus:quarkus-core:jar:1.6.0.Final</oldArchive>
-                <oldArchiveRole>primary</oldArchiveRole>
-                -->
               </item>
-        </differences>
+         </differences>
         </revapi.differences>
+        <revapi.differences>
+            <justification>Second reason</justification>
+            <criticality>highlight</criticality>
+            <differences>
+                <item>
+                    <code>java.method.removed</code>
+                    <old>method void io.quarkus.runtime.logging.LogCleanupFilterElement::setMessageStart(java.util.List&lt;java.lang.String&gt;)</old>
+                  </item>
+            </differences>
+            </revapi.differences>
     </v999.0.0>
 </versions>

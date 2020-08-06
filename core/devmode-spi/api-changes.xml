@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<versions>
+    <v999.0.0>
+        <revapi.differences>
+        <!--<justification></justification>-->
+        <!--<criticality>highlight</criticality>-->
+        <differences>
+          <item>
+            <code>java.method.addedToInterface</code>
+            <new>method io.quarkus.dev.spi.DevModeType io.quarkus.dev.spi.HotReplacementContext::getDevModeType()</new>
+            <justification>ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE</justification>
+            <!--
+            Additionally, the following attachments can be used to further identify the difference:
+          
+            <package>io.quarkus.dev.spi</package>
+            <classQualifiedName>io.quarkus.dev.spi.HotReplacementContext</classQualifiedName>
+            <classSimpleName>HotReplacementContext</classSimpleName>
+            <methodName>getDevModeType</methodName>
+            <elementKind>method</elementKind>
+            <newArchive>io.quarkus:quarkus-development-mode-spi:jar:999-SNAPSHOT</newArchive>
+            <newArchiveRole>primary</newArchiveRole>
+            -->
+          </item>
+        </differences>
+        </revapi.differences>
+    </v999.0.0>
+</versions>

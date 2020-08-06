@@ -1,16 +1,26 @@
 <#ftl strip_whitespace=true>
 <#if reports?has_content>
-Old API: <#list analysis.oldApi.archives as archive>${archive.name}<#sep>, </#list>
-New API: <#list analysis.newApi.archives as archive>${archive.name}<#sep>, </#list>
+# API Change analysis Results
+
+The summary of the API changes between artifacts <#list analysis.oldApi.archives as archive>`${archive.name}`<#sep>, </#list> and 
+<#list analysis.newApi.archives as archive>`${archive.name}`<#sep>, </#list>
+
+[cols="1,1,1,1,1", options="header"]
+.Changes
+|===
+|Code
+|Element
+|Classification
+|Description
+|Justification
+
 <#list reports as report>
+
 <#list report.differences as diff>
 
-revapi: ${diff.description!} [${diff.code}]
-  new: ${report.newElement!"<none>"} (${diff.attachments['newArchive']!})
-<#if report.newElement! != report.oldElement!>
-  old: ${report.oldElement!"<none>"} (${diff.attachments['oldArchive']!})
-</#if>
-<#list diff.classification?keys as compat><#if diff.classification?api.get(compat) != "NON_BREAKING">  ${compat?capitalize}: ${diff.classification?api.get(compat)?capitalize?replace("_","")}${'\n'}</#if></#list>
+|${diff.code}
+|<#if report.newElement??>*${report.newElement}*</#if>
+<#if report.oldElement??>*${report.oldElement}*</#if>
 <#if diff.attachments['exampleUseChainInNewApi']??>
   Example use chain in new api:
 <#list diff.attachments['exampleUseChainInNewApi']?split(" <- ") as e>
@@ -23,11 +33,17 @@ revapi: ${diff.description!} [${diff.code}]
   <-${e}
 </#list>
 </#if>
+
 <#list diff.attachments?keys as key>
-<#if !['newArchive', 'oldArchive','package','classQualifiedName','classSimpleName','elementKind','exception','methodName','exampleUseChainInNewApi','exampleUseChainInOldApi','fieldName']?seq_contains(key)>
+<#if !['newArchive', 'newArchiveRole', 'oldArchive', 'oldArchiveRole','package','classQualifiedName','classSimpleName','elementKind','exception','methodName','exampleUseChainInNewApi','exampleUseChainInOldApi','fieldName']?seq_contains(key)>
   ${key} = ${diff.attachments[key]}
 </#if>
 </#list>
+|<#list diff.classification?keys as compat><#if diff.classification?api.get(compat) != "NON_BREAKING">  ${compat?capitalize}: ${diff.classification?api.get(compat)?capitalize?replace("_","")}${'\n'}</#if></#list>
+|${diff.description}
+|${diff.justification!""}
+
 </#list>
 </#list>
+|===
 </#if>

@@ -18,15 +18,14 @@
       <template>revapi.ftl</template>
     </revapi.reporter.text>  -->
     <revapi.reporter.text>
-      <minSeverity>POTENTIALLY_BREAKING</minSeverity>
-      <output>revapi-results/revapi-breakages.md</output>
+      <minSeverity>NON_BREAKING</minSeverity>
+      <output>${project.build.directory}/revapi-results/revapi-breakages.adoc</output>
       <template>revapi.ftl</template>
-      <append>true</append>
     </revapi.reporter.text>
     <revapi.reporter.json>
-        <minSeverity>POTENTIALLY_BREAKING</minSeverity>
-        <output>revapi-results/revapi-breakages.json</output>
+        <minSeverity>NON_BREAKING</minSeverity>
+        <output>${project.build.directory}/revapi-results/revapi-breakages.json</output>
         <indent>true</indent>
-        <append>true</append>
+        <keepEmptyFile>true</keepEmptyFile>
       </revapi.reporter.json>
 </analysisConfiguration>

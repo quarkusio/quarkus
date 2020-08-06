@@ -5,11 +5,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.enterprise.context.RequestScoped;
 
 @RequestScoped
-public class RequestScopedObject
-{
+public class RequestScopedObject {
 
-   AtomicInteger count = new AtomicInteger();
-   public int getCount() {
-      return count.incrementAndGet();
-   }
+    AtomicInteger count = new AtomicInteger();
+
+    public int getCount() {
+        return count.incrementAndGet();
+    }
 }

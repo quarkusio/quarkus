@@ -8,7 +8,7 @@ import javax.ws.rs.core.MediaType;
 @Produces(MediaType.TEXT_PLAIN)
 public interface ResourceLocatorSubInterface extends ResourceLocatorRootInterface {
 
-   @POST
-   @Consumes(MediaType.TEXT_PLAIN)
-   String post(String s);
+    @POST
+    @Consumes(MediaType.TEXT_PLAIN)
+    String post(String s);
 }

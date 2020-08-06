@@ -1,10 +1,11 @@
 package io.quarkus.qrs.test.resource.basic.resource;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.QueryParam;
 import java.util.List;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.QueryParam;
+
 public interface ParameterSubResGenericInterface<T> {
-   @GET
-   String get(@QueryParam("foo") List<T> params);
+    @GET
+    String get(@QueryParam("foo") List<T> params);
 }

@@ -51,7 +51,7 @@ public class QrsResponse extends Response {
     @Override
     public <T> T readEntity(Class<T> entityType) {
         // TODO Auto-generated method stub
-        return null;
+        return (T) entity;
     }
 
     @Override

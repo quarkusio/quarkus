@@ -16,11 +16,10 @@ import javax.ws.rs.Produces;
 @Path("/student/{id}")
 @Produces("application/student")
 @Consumes("application/student")
-public interface GenericResourceStudentInterface
-{
-   @GET
-   GenericResourceStudent get(@PathParam("id") Integer id);
+public interface GenericResourceStudentInterface {
+    @GET
+    GenericResourceStudent get(@PathParam("id") Integer id);
 
-   @PUT
-   void put(@PathParam("id") Integer id, GenericResourceStudent entity);
+    @PUT
+    void put(@PathParam("id") Integer id, GenericResourceStudent entity);
 }

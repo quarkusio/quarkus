@@ -5,8 +5,8 @@ import javax.ws.rs.Path;
 
 @Path("{x:.*}")
 public class WiderMappingDefaultOptions {
-   @OPTIONS
-   public String options() {
-      return "hello";
-   }
+    @OPTIONS
+    public String options() {
+        return "hello";
+    }
 }

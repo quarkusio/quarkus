@@ -7,14 +7,14 @@ import javax.ws.rs.PathParam;
 @Path("/directory")
 public class ResourceLocatorDirectory {
 
-   @Path("/receivers/{id}")
-   public ResourceLocatorQueueReceiver getReceiver(@PathParam("id") String id) {
-      return new ResourceLocatorQueueReceiver();
-   }
+    @Path("/receivers/{id}")
+    public ResourceLocatorQueueReceiver getReceiver(@PathParam("id") String id) {
+        return new ResourceLocatorQueueReceiver();
+    }
 
-   @DELETE
-   @Path("/receivers/{id}")
-   public String closeReceiver(@PathParam("id") String id) throws Exception {
-      return ResourceLocatorDirectory.class.getName();
-   }
+    @DELETE
+    @Path("/receivers/{id}")
+    public String closeReceiver(@PathParam("id") String id) throws Exception {
+        return ResourceLocatorDirectory.class.getName();
+    }
 }

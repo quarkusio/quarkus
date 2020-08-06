@@ -8,7 +8,7 @@ import javax.ws.rs.QueryParam;
 
 public interface ResourceLocatorSubresource3Interface {
 
-   @GET
-   @Path("3")
-   String get(@QueryParam("foo") List<Double> params);
+    @GET
+    @Path("3")
+    String get(@QueryParam("foo") List<Double> params);
 }

@@ -16,25 +16,25 @@ import javax.ws.rs.ext.Provider;
 @Produces(MediaType.TEXT_PLAIN + "; charset=UTF-8")
 public class MediaTypeFromMessageBodyWriterListAsText implements MessageBodyWriter<Iterable<?>> {
 
-   @Override
-   public long getSize(final Iterable<?> t, final Class<?> type, final Type genericType, final Annotation[] annotations,
-         final MediaType mediaType) {
-      return -1L;
-   }
+    @Override
+    public long getSize(final Iterable<?> t, final Class<?> type, final Type genericType, final Annotation[] annotations,
+            final MediaType mediaType) {
+        return -1L;
+    }
 
-   @Override
-   public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
-         final MediaType mediaType) {
-      return Iterable.class.isAssignableFrom(type);
-   }
+    @Override
+    public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
+            final MediaType mediaType) {
+        return Iterable.class.isAssignableFrom(type);
+    }
 
-   @Override
-   public void writeTo(final Iterable<?> items, final Class<?> type, final Type genericType,
-         final Annotation[] annotations, final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
-         final OutputStream out) throws IOException {
+    @Override
+    public void writeTo(final Iterable<?> items, final Class<?> type, final Type genericType,
+            final Annotation[] annotations, final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
+            final OutputStream out) throws IOException {
 
-      if (items instanceof Collection) {
-         httpHeaders.putSingle("X-COUNT", Integer.toString(((Collection<?>) items).size()));
-      }
-   }
+        if (items instanceof Collection) {
+            httpHeaders.putSingle("X-COUNT", Integer.toString(((Collection<?>) items).size()));
+        }
+    }
 }

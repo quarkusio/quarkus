@@ -9,8 +9,8 @@ import javax.ws.rs.core.MediaType;
 @Produces(MediaType.APPLICATION_JSON)
 public class ClassLevelMediaTypeResource {
 
-   @GET
-   public String test() {
-      return "test";
-   }
+    @GET
+    public String test() {
+        return "test";
+    }
 }

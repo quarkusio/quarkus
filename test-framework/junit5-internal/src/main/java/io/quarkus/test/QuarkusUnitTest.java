@@ -234,6 +234,7 @@ public class QuarkusUnitTest
         try {
             JavaArchive archive = getArchiveProducerOrDefault();
             Class<?> c = testClass;
+            archive.addClasses(c.getClasses());
             while (c != Object.class) {
                 archive.addClass(c);
                 c = c.getSuperclass();

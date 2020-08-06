@@ -9,9 +9,9 @@ import javax.ws.rs.core.MediaType;
 @Produces(MediaType.TEXT_PLAIN)
 public interface ResourceLocatorRootInterface {
 
-   @GET
-   String get();
+    @GET
+    String get();
 
-   @Path("{id}")
-   Object getSubSubResource(@PathParam("id") String id);
+    @Path("{id}")
+    Object getSubSubResource(@PathParam("id") String id);
 }

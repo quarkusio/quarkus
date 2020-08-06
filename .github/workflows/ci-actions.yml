@@ -99,6 +99,9 @@ jobs:
         with:
           name: maven-repo
           path: maven-repo.tgz
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
 
   linux-jvm-tests:
     name: JDK ${{matrix.java.name}} JVM Tests

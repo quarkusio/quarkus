@@ -61,11 +61,30 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
-        StringBuilder newDependency = new StringBuilder()
-                .append("    implementation '")
-                .append(coords.getGroupId())
-                .append(":")
-                .append(coords.getArtifactId());
+        boolean isBOM = "pom".equals(coords.getType());
+        StringBuilder newDependency;
+        if (isBOM) {
+            // Check if BOM is not included already
+            String resolvedPlatform = String
+                    .format("%s:%s:%s", getProperty(model, "quarkusPlatformGroupId"),
+                            getProperty(model, "quarkusPlatformArtifactId"),
+                            getProperty(model, "quarkusPlatformVersion"));
+            String thisBOM = String.format("%s:%s:%s", coords.getGroupId(), coords.getArtifactId(), coords.getVersion());
+            if (thisBOM.equals(resolvedPlatform)) {
+                // BOM matches the platform, no need to do anything
+                return false;
+            }
+            newDependency = new StringBuilder()
+                    .append("    implementation enforcedPlatform(\"")
+                    .append(thisBOM)
+                    .append("\")'");
+        } else {
+            newDependency = new StringBuilder()
+                    .append("    implementation '")
+                    .append(coords.getGroupId())
+                    .append(":")
+                    .append(coords.getArtifactId());
+        }
         if (!managed &&
                 (coords.getVersion() != null && !coords.getVersion().isEmpty())) {
             newDependency.append(":").append(coords.getVersion());
@@ -109,16 +128,20 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
 
     @Override
     public String getProperty(String propertyName) {
-        final String property = getModel().getPropertiesContent().getProperty(propertyName);
-        if (property != null || getModel().getRootPropertiesContent() == null) {
-            return property;
-        }
-        return getModel().getRootPropertiesContent().getProperty(propertyName);
+        return getProperty(getModel(), propertyName);
     }
 
     @Override
     public BuildTool getBuildTool() {
         return BuildTool.GRADLE;
+    }
+
+    static String getProperty(Model model, String propertyName) {
+        final String property = model.getPropertiesContent().getProperty(propertyName);
+        if (property != null || model.getRootPropertiesContent() == null) {
+            return property;
+        }
+        return model.getRootPropertiesContent().getProperty(propertyName);
     }
 
     private Model getModel() {

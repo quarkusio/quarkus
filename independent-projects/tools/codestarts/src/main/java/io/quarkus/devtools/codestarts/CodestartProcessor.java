@@ -95,8 +95,8 @@ final class CodestartProcessor {
     }
 
     private List<Path> findSources(Path sourceDirectory) {
-        try {
-            return Files.walk(sourceDirectory)
+        try (final Stream<Path> pathStream = Files.walk(sourceDirectory)) {
+            return pathStream
                     .filter(path -> !path.equals(sourceDirectory))
                     .collect(Collectors.toList());
         } catch (IOException e) {

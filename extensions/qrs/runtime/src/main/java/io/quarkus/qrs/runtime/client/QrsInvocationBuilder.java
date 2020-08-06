@@ -2,7 +2,9 @@ package io.quarkus.qrs.runtime.client;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -23,6 +25,7 @@ import io.quarkus.qrs.runtime.jaxrs.QrsResponseBuilder;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 
 public class QrsInvocationBuilder implements Invocation.Builder {
@@ -117,7 +120,8 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Invocation.Builder header(String name, Object value) {
-        return null;
+        headers.header(name, value);
+        return this;
     }
 
     @Override
@@ -143,7 +147,12 @@ public class QrsInvocationBuilder implements Invocation.Builder {
     @Override
     public Response get() {
         CompletableFuture<Response> result = new CompletableFuture<>();
-        httpClient.get(uri.getPort(), uri.getHost(), uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()))
+        HttpClientRequest httpClientRequest = httpClient.get(uri.getPort(), uri.getHost(),
+                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        for (Map.Entry<String, List<String>> entry : headers.asMap().entrySet()) {
+            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
+        }
+        httpClientRequest
                 .handler(new Handler<HttpClientResponse>() {
                     @Override
                     public void handle(HttpClientResponse event) {

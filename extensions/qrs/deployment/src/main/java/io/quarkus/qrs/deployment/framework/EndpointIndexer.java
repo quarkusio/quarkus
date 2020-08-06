@@ -185,14 +185,18 @@ public class EndpointIndexer {
         DotName superClassName = currentClassInfo.superName();
         if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
-            ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                    generatedClassBuildItemBuildProducer, recorder));
+            if (superClass != null) {
+                ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
+                        generatedClassBuildItemBuildProducer, recorder));
+            }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
         for (DotName i : interfaces) {
             ClassInfo superClass = index.getClassByName(i);
-            ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                    generatedClassBuildItemBuildProducer, recorder));
+            if (superClass != null) {
+                ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
+                        generatedClassBuildItemBuildProducer, recorder));
+            }
         }
         return ret;
     }

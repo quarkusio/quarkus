@@ -23,14 +23,10 @@ import org.jboss.logging.Logger;
 public class HttpHeadersResource {
     private static Logger logger = Logger.getLogger(HttpHeadersResource.class);
 
-    @Context
-    HttpHeaders hs;
-    StringBuffer sb;
-
     @GET
     @Path("/headers")
-    public String headersGet() {
-        sb = new StringBuffer();
+    public String headersGet(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
         List<String> myHeaders = Arrays.asList("Accept", "Content-Type");
 
         try {
@@ -55,8 +51,8 @@ public class HttpHeadersResource {
 
     @GET
     @Path("/acl")
-    public String aclGet() {
-        sb = new StringBuffer();
+    public String aclGet(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
         try {
             sb.append("Accept-Language");
 
@@ -77,8 +73,8 @@ public class HttpHeadersResource {
 
     @GET
     @Path("/amt")
-    public String amtGet() {
-        sb = new StringBuffer();
+    public String amtGet(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
         try {
             sb.append("getAcceptableMediaTypes");
             List<MediaType> acmts = hs.getAcceptableMediaTypes();
@@ -99,8 +95,8 @@ public class HttpHeadersResource {
 
     @GET
     @Path("/mt")
-    public String mtGet() {
-        sb = new StringBuffer();
+    public String mtGet(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
 
         try {
             sb.append("getMediaType");
@@ -136,8 +132,8 @@ public class HttpHeadersResource {
 
     @GET
     @Path("/cookie")
-    public String cookieGet() {
-        sb = new StringBuffer();
+    public String cookieGet(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
 
         try {
             sb.append("getCookies= ");
@@ -165,8 +161,8 @@ public class HttpHeadersResource {
     }
 
     @PUT
-    public String headersPlainPut() {
-        sb = new StringBuffer();
+    public String headersPlainPut(@Context HttpHeaders hs) {
+        StringBuffer sb = new StringBuffer();
         sb.append("Content-Language");
         sb.append(hs.getLanguage());
         return sb.toString();

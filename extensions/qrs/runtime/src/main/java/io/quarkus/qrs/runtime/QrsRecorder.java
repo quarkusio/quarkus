@@ -57,6 +57,7 @@ import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
+import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.mutiny.Uni;
@@ -89,7 +90,6 @@ public class QrsRecorder {
             ExceptionMapping exceptionMapping,
             Serialisers serialisers,
             List<ResourceClass> resourceClasses,
-            Executor blockingExecutor,
             ShutdownContext shutdownContext) {
         Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
         Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
@@ -161,7 +161,12 @@ public class QrsRecorder {
                     handlers.add(new ParameterHandler(i, extractor, null));
                 }
                 if (method.isBlocking()) {
-                    handlers.add(new BlockingHandler(blockingExecutor));
+                    handlers.add(new BlockingHandler(new Supplier<Executor>() {
+                        @Override
+                        public Executor get() {
+                            return ExecutorRecorder.getCurrent();
+                        }
+                    }));
                 }
                 Type returnType = TypeSignatureParser.parse(method.getReturnType());
                 Type nonAsyncReturnType = getNonAsyncReturnType(returnType);

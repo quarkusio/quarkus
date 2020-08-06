@@ -1,8 +1,8 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <properties>
-        <scala-maven-plugin.version>{version.scala-maven-plugin}</scala-maven-plugin.version>
-        <scala.version>{version.scala}</scala.version>
+        <scala-maven-plugin.version>{scala-maven-plugin.version}</scala-maven-plugin.version>
+        <scala.version>{scala.version}</scala.version>
     </properties>
     <dependencies>
         <dependency>

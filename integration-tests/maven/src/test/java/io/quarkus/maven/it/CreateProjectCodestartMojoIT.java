@@ -53,7 +53,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private static final String GRADLE_WRAPPER_WINDOWS = "gradlew.bat";
     private static final String GRADLE_WRAPPER_UNIX = "gradlew";
     private static final String GRADLE_NO_DAEMON = "--no-daemon";
-    private static final String MAVEN_WRAPPER_WINDOWS = "mvnw.bat";
+    private static final String MAVEN_WRAPPER_WINDOWS = "mvnw.cmd";
     private static final String MAVEN_WRAPPER_UNIX = "mvnw";
 
     private void check(final File resource, final String contentsToFind) throws IOException {

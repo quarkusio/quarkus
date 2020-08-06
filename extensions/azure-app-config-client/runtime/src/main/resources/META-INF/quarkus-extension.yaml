@@ -1,0 +1,12 @@
+---
+name: "Quarkus Extension for Azure App Config Client"
+metadata:
+  keywords:
+  - "azure-app-config-client"
+  - "azure"
+  - "config"
+  - "configuration"
+  guide: "https://quarkus.io/guides/azure-app-config-client"
+  categories:
+  - "compatibility"
+  status: "preview"

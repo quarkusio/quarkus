@@ -1,0 +1,161 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Reading properties from Azure App Config Server
+
+include::./attributes.adoc[]
+:extension-status: preview
+
+This guide explains how your Quarkus application can read configuration properties at runtime from the https://docs.microsoft.com/en-us/azure/azure-app-configuration/overview[Azure App Config Server].
+
+include::./status-include.adoc[]
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 11+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+
+== Stand up a Azure Config Server
+
+To stand up the Azure Config Server required for this guide, please follow the instructions outlined https://docs.microsoft.com/en-us/azure/azure-app-configuration/quickstart-java-spring-app[here] till 'Create a Spring Boot app'.
+The end result of that process is a running Azure App Config Server that will provide the `Hello` value for a configuration property named `/application/config.message`.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=azure-app-config-quickstart \
+    -DclassName="org.acme.azure.app.config.client.GreetingResource" \
+    -Dpath="/greeting" \
+    -Dextensions="azure-app-config-client"
+cd azure-app-config-quickstart
+----
+
+This command generates a Maven project with a REST endpoint and imports the `azure-app-config-client` extension.
+
+If you already have your Quarkus project configured, you can add the `azure-app-config-client` extension
+to your project by running the following command in your project base directory:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="azure-app-config-client"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-azure-app-config-client</artifactId>
+</dependency>
+----
+
+== GreetingController
+
+The Quarkus Maven plugin automatically generated a `GreetingResource` JAX-RS resource in the
+`src/main/java/org/acme/azure/app/config/client/GreetingResource.java` file that looks like:
+
+[source,java]
+----
+package org.acme.azure.app.config.client;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+As we want to use configuration properties obtained from the Config Server, we will update the `GreetingResource` to inject the `message` property. The updated code will look like this:
+
+[source,java]
+----
+package org.acme.azure.app.config.client;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @ConfigProperty(name = "application/config.message", defaultValue="hello default")
+    String message;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return message;
+    }
+}
+----
+
+== Configuring the application
+
+Quarkus provides various configuration knobs under the `quarkus.azure-app-config` root. For the purposes of this guide, our Quarkus application is going to be configured in `application.properties` as follows:
+
+[source,properties]
+----
+# use the same name as the application name that was configured when standing up the Config Server
+quarkus.application.name=a-bootiful-client
+# enable retrieval of configuration from the Config Server - this is off by default
+quarkus.azure-app-config.enabled=true
+# configure the URL where the Azure App Config Server listens to HTTPS requests 
+quarkus.azure-app-config.url=https://{your-config-name}.azconfig.io
+# configure the credential provided by the azure app-config portal
+quarkus.azure-app-config.credential={your-credential}
+# configure the secret provided by the azure app-config portal
+quarkus.azure-app-config.secret={your-secret}
+----
+
+== Package and run the application
+
+Run the application with: `./mvnw compile quarkus:dev`.
+Open your browser to http://localhost:8080/greeting.
+
+The result should be: `Hello` as it is the value obtained from the Azure App Config server.
+
+== Run the application as a native executable
+
+You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
+
+== More Azure guides
+
+Quarkus has more Azure compatibility features. See the following guides for more details:
+
+* link:azure-functions-http[Quarkus - Extension for Azure functions]
+
+
+[[azure-app-config-client-configuration-reference]]
+== Azure App Config Client Reference
+
+include::{generated-dir}/config/quarkus-azure-app-config.adoc[leveloffset=+1, opts=optional]
+

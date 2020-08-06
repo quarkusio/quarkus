@@ -1,4 +1,4 @@
-package io.quarkus.it.spring.config.server.client;
+package io.quarkus.it.azure.config.server.client;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

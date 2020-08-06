@@ -1,4 +1,4 @@
-package io.quarkus.spring.cloud.config.client.runtime;
+package io.quarkus.azure.app.config.client.runtime;
 
 import io.quarkus.test.junit.NativeImageTest;
 

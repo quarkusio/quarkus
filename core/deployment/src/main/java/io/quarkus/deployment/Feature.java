@@ -20,6 +20,7 @@ public enum Feature {
     AMAZON_KMS,
     ARTEMIS_CORE,
     ARTEMIS_JMS,
+    AZURE_APP_CONFIG_CLIENT,
     CACHE,
     CDI,
     CONFIG_YAML,

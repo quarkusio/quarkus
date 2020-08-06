@@ -1,4 +1,4 @@
-package io.quarkus.spring.cloud.config.client.runtime;
+package io.quarkus.azure.app.config.client.runtime;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;

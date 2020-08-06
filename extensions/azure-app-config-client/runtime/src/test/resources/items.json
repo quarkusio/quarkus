@@ -1,0 +1,54 @@
+{
+  "items": [
+    {
+      "etag": "MeYEkaLj36fIcrN0CVPuGhsvCTc",
+      "key": ".appconfig.featureflag/test",
+      "label": null,
+      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+      "value": "{\"id\":\"test\",\"description\":\"some kay\",\"enabled\":true,\"conditions\":{\"client_filters\":[]}}",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-07-28T13:49:23+00:00"
+    },
+    {
+      "etag": "Pnnc4LgwnbysEkOeq7dQG0PtR4o",
+      "key": ".appconfig.featureflag/test",
+      "label": "abn",
+      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+      "value": "{\"id\":\"test\",\"description\":\"some kay\",\"enabled\":false,\"conditions\":{\"client_filters\":[]}}",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-07-19T09:02:19+00:00"
+    },
+    {
+      "etag": "y6EpCfxjZ4zlgnwyuCKDVeAo4fV",
+      "key": "myKey",
+      "label": null,
+      "content_type": "",
+      "value": "Bloem",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-06-27T11:45:03+00:00"
+    },
+    {
+      "etag": "RQ95XtRyXZ9TYzSB4xEyDku6xfh",
+      "key": "myKey",
+      "label": "abn",
+      "content_type": "",
+      "value": "Haaf",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-07-29T14:10:18+00:00"
+    },
+    {
+      "etag": "oVc83EHY3CFrY5RdEYx1fPZCSRs",
+      "key": "mySecret",
+      "label": null,
+      "content_type": "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8",
+      "value": "{\"uri\":\"https://dabloem-test-vault.vault.azure.net/secrets/aKey\"}",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-06-27T11:46:05+00:00"
+    }
+  ]
+}

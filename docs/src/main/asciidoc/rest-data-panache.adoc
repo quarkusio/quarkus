@@ -183,11 +183,21 @@ Here are a couple of examples of how a response body would look like for the `ge
   "name": "John Johnson",
   "birth": "1988-01-10",
   "_links": {
-    "self": "http://example.com/people/1",
-    "remove": "http://example.com/people/1",
-    "update": "http://example.com/people/1",
-    "add": "http://example.com/people",
-    "list": "http://example.com/people"
+    "self": {
+      "href": "http://example.com/people/1"
+    },
+    "remove": {
+      "href": "http://example.com/people/1"
+    },
+    "update": {
+      "href": "http://example.com/people/1"
+    },
+    "add": {
+      "href": "http://example.com/people"
+    },
+    "list": {
+      "href": "http://example.com/people"
+    }
   }
 }
 ----
@@ -224,11 +234,21 @@ Here are a couple of examples of how a response body would look like for the `ge
       "name": "John Johnson",
       "birth": "1988-01-10",
       "_links": {
-        "self": "http://example.com/people/1",
-        "remove": "http://example.com/people/1",
-        "update": "http://example.com/people/1",
-        "add": "http://example.com/people",
-        "list": "http://example.com/people"
+        "self": {
+          "href": "http://example.com/people/1"
+        },
+        "remove": {
+          "href": "http://example.com/people/1"
+        },
+        "update": {
+          "href": "http://example.com/people/1"
+        },
+        "add": {
+          "href": "http://example.com/people"
+        },
+        "list": {
+          "href": "http://example.com/people"
+        }
       }
     },
     {
@@ -236,20 +256,40 @@ Here are a couple of examples of how a response body would look like for the `ge
       "name": "Peter Peterson",
       "birth": "1986-11-20",
       "_links": {
-        "self": "http://example.com/people/2",
-        "remove": "http://example.com/people/2",
-        "update": "http://example.com/people/2",
-        "add": "http://example.com/people",
-        "list": "http://example.com/people"
+        "self": {
+          "href": "http://example.com/people/2"
+        },
+        "remove": {
+          "href": "http://example.com/people/2"
+        },
+        "update": {
+          "href": "http://example.com/people/2"
+        },
+        "add": {
+          "href": "http://example.com/people"
+        },
+        "list": {
+          "href": "http://example.com/people"
+        }
       }
     }
   ],
   "_links": {
-    "add": "http://example.com/people",
-    "list": "http://example.com/people",
-    "first": "http://example.com/people?page=0&size=2",
-    "last": "http://example.com/people?page=2&size=2",
-    "next": "http://example.com/people?page=1&size=2"
+    "add": {
+      "href": "http://example.com/people"
+    },
+    "list": {
+      "href": "http://example.com/people"
+    },
+    "first": {
+      "href": "http://example.com/people?page=0&size=2"
+    },
+    "last": {
+      "href": "http://example.com/people?page=2&size=2"
+    },
+    "next": {
+      "href": "http://example.com/people?page=1&size=2"
+    }
   }
 }
 ----

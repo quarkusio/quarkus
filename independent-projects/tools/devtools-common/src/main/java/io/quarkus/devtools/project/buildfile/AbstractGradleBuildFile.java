@@ -66,17 +66,16 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
         if (isBOM) {
             // Check if BOM is not included already
             String resolvedPlatform = String
-                    .format("%s:%s:%s", getProperty(model, "quarkusPlatformGroupId"),
-                            getProperty(model, "quarkusPlatformArtifactId"),
-                            getProperty(model, "quarkusPlatformVersion"));
-            String thisBOM = String.format("%s:%s:%s", coords.getGroupId(), coords.getArtifactId(), coords.getVersion());
+                    .format("%s:%s", getProperty(model, "quarkusPlatformGroupId"),
+                            getProperty(model, "quarkusPlatformArtifactId"));
+            String thisBOM = String.format("%s:%s", coords.getGroupId(), coords.getArtifactId());
             if (thisBOM.equals(resolvedPlatform)) {
                 // BOM matches the platform, no need to do anything
                 return false;
             }
             newDependency = new StringBuilder()
                     .append("    implementation enforcedPlatform(\"")
-                    .append(thisBOM)
+                    .append(thisBOM).append(":").append(coords.getVersion())
                     .append("\")'");
         } else {
             newDependency = new StringBuilder()

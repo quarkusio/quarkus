@@ -30,6 +30,31 @@ class CodestartsTest extends PlatformAwareTestBase {
         final Collection<Codestart> codestarts = CodestartLoader
                 .loadBundledCodestarts(inputBuilder(getPlatformDescriptor()).build());
         assertThat(codestarts).hasSize(10);
+        assertThat(codestarts)
+                .filteredOn(c -> c.getType().isBase())
+                .extracting(Codestart::getImplementedLanguages)
+                .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 3).isTrue());
+
+        assertThat(codestarts).filteredOn("ref", "commandmode")
+                .extracting(Codestart::getImplementedLanguages)
+                .hasSize(1)
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
+    }
+
+    @Test
+    void loadExtensionCodestartsTest() throws IOException {
+        final Collection<Codestart> codestarts = CodestartLoader
+                .loadCodestartsFromExtensions(inputBuilder(getPlatformDescriptor()).build());
+
+        assertThat(codestarts).filteredOn("ref", "qute")
+                .extracting(Codestart::getImplementedLanguages)
+                .hasSize(1)
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
+
+        assertThat(codestarts).filteredOn("ref", "resteasy")
+                .extracting(Codestart::getImplementedLanguages)
+                .hasSize(1)
+                .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));
     }
 
     @Test

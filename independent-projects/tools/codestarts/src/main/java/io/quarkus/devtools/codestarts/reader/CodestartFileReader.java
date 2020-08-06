@@ -13,10 +13,11 @@ import java.util.Optional;
 public interface CodestartFileReader {
 
     CodestartFileReader DEFAULT = new DefaultCodestartFileReader();
-    CodestartFileReader QUTE = new QuteCodestartFileReader();
 
     List<CodestartFileReader> ALL = Collections.unmodifiableList(Arrays.asList(
-            DEFAULT, QUTE));
+            DEFAULT,
+            new QuteCodestartFileReader(),
+            new IgnoreCodestartFileReader()));
 
     boolean matches(String fileName);
 

@@ -41,7 +41,7 @@ public class Codestarts {
 
         // include fallback example codestarts if none selected
         if (input.includeExamples()
-                && selectedCodestarts.stream().noneMatch(c -> c.getSpec().isExample() && !c.getSpec().isPreselected())) {
+                && extraCodestarts.stream().noneMatch(c -> c.getSpec().isExample() && !c.getSpec().isPreselected())) {
             final List<Codestart> fallbackExampleCodestarts = resolveFallbackExampleCodestarts(allCodestarts,
                     languageName);
             selectedCodestarts.addAll(fallbackExampleCodestarts);
@@ -83,7 +83,7 @@ public class Codestarts {
             String languageName) {
         return allCodestarts.stream()
                 .filter(c -> !c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isPreselected() || selectedCodestartNames.contains(c.getSpec().getRef()))
+                .filter(c -> c.getSpec().isPreselected() || c.isSelected(selectedCodestartNames))
                 .filter(c -> !c.getSpec().isExample() || input.includeExamples())
                 .filter(c -> c.implementsLanguage(languageName))
                 .collect(Collectors.toList());
@@ -93,7 +93,7 @@ public class Codestarts {
             Set<String> selectedCodestartNames) {
         return allCodestarts.stream()
                 .filter(c -> c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isFallback() || selectedCodestartNames.contains(c.getSpec().getRef()))
+                .filter(c -> c.getSpec().isFallback() || c.isSelected(selectedCodestartNames))
                 .collect(Collectors.toMap(c -> c.getSpec().getType(), c -> c, (a, b) -> {
                     // When there is multiple matches for one key, one should be selected and the other a fallback.
                     if (a.getSpec().isFallback() && b.getSpec().isFallback()) {

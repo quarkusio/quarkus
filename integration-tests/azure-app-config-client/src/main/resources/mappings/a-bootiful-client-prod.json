@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/kv?key=*&api-version=1.0"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "bodyFileName": "a-bootiful-client-prod.json"
+  }
+}

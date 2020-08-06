@@ -1,0 +1,14 @@
+'%prod':
+   quarkus:
+     azure-app-config:
+       enabled: true     
+quarkus:
+  application:
+    name: a-bootiful-client
+  azure-app-config:
+    url: http://localhost:8089/base
+    credential: eitf-l9-s0:navlz4m8FoQIzA2PCjDh
+    secret: LK/bFy0qaix+aLZj/O7xkG+MGdR/UkeuZVEX/MKd7cY=
+
+greeting:
+    message: hello from application.properties

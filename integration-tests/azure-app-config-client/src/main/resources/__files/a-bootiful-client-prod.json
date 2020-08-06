@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "etag": "MeYEkaLj36fIcrN0CVPuGhsvCTc",
+      "key": ".appconfig.featureflag/test",
+      "label": null,
+      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+      "value": "{\"id\":\"test\",\"description\":\"some kay\",\"enabled\":true,\"conditions\":{\"client_filters\":[]}}",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-07-28T13:49:23+00:00"
+    },
+    {
+      "etag": "y6EpCfxjZ4zlgnwyuCKDVeAo4fV",
+      "key": "greeting.message",
+      "label": null,
+      "content_type": "",
+      "value": "hello from azure app config server",
+      "tags": {},
+      "locked": false,
+      "last_modified": "2020-06-27T11:45:03+00:00"
+    }
+  ]
+}

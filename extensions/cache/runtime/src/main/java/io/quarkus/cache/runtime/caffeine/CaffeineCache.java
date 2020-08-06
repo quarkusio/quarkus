@@ -14,7 +14,11 @@ import java.util.function.Supplier;
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import io.quarkus.cache.runtime.DefaultCacheKey;
+
 public class CaffeineCache {
+
+    public static final String NULL_KEYS_NOT_SUPPORTED_MSG = "Null keys are not supported by the Quarkus application data cache";
 
     private AsyncCache<Object, Object> cache;
 
@@ -27,6 +31,8 @@ public class CaffeineCache {
     private Duration expireAfterWrite;
 
     private Duration expireAfterAccess;
+
+    private Object defaultKey;
 
     public CaffeineCache(CaffeineCacheInfo cacheInfo, Executor executor) {
         this.name = cacheInfo.name;
@@ -54,6 +60,9 @@ public class CaffeineCache {
     }
 
     public Object get(Object key, Callable<Object> valueLoader, long lockTimeout) throws Exception {
+        if (key == null) {
+            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
+        }
         if (lockTimeout <= 0) {
             return fromCacheValue(cache.synchronous().get(key, k -> new MappingSupplier(valueLoader).get()));
         }
@@ -91,6 +100,9 @@ public class CaffeineCache {
     }
 
     public void invalidate(Object key) {
+        if (key == null) {
+            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
+        }
         cache.synchronous().invalidate(key);
     }
 
@@ -120,6 +132,20 @@ public class CaffeineCache {
     // For testing purposes only.
     public Duration getExpireAfterAccess() {
         return expireAfterAccess;
+    }
+
+    /**
+     * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
+     * a no-args method annotated with {@link io.quarkus.cache.CacheResult CacheResult} or
+     * {@link io.quarkus.cache.CacheInvalidate CacheInvalidate} is invoked.
+     * 
+     * @return default cache key
+     */
+    public Object getDefaultKey() {
+        if (defaultKey == null) {
+            defaultKey = new DefaultCacheKey(getName());
+        }
+        return defaultKey;
     }
 
     private static class MappingSupplier implements Supplier<Object> {

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**

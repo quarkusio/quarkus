@@ -1,4 +1,4 @@
-package io.quarkus.agroal.deployment;
+package io.quarkus.agroal.spi;
 
 import java.util.Collection;
 

@@ -1,6 +1,6 @@
 package io.quarkus.jdbc.h2.deployment;
 
-import io.quarkus.agroal.deployment.JdbcDriverBuildItem;
+import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;

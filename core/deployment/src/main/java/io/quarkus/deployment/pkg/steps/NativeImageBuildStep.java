@@ -650,7 +650,7 @@ public class NativeImageBuildStep {
     protected static final class GraalVM {
         static final class Version implements Comparable<Version> {
             private static final Pattern PATTERN = Pattern.compile(
-                    "GraalVM Version ((1|[1-9][0-9]).([0-3]).[0-9]|\\p{XDigit}*)[^(\n$]*(\\(Mandrel Distribution\\))?\\s*");
+                    "GraalVM Version (([1-9][0-9]*)\\.([0-9]+)\\.[0-9]+|\\p{XDigit}*)[^(\n$]*(\\(Mandrel Distribution\\))?\\s*");
 
             static final Version UNVERSIONED = new Version(-1, -1, Distribution.ORACLE);
             static final Version SNAPSHOT_ORACLE = new Version(Integer.MAX_VALUE, Integer.MAX_VALUE, Distribution.ORACLE);

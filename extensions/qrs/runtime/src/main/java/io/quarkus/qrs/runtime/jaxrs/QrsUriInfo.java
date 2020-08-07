@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
@@ -14,6 +15,9 @@ import javax.ws.rs.core.UriInfo;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.UriMatch;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
+import io.quarkus.qrs.runtime.util.MultivaluedMapImpl;
+import io.quarkus.qrs.runtime.util.UnmodifiableMultivaluedMap;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -22,6 +26,7 @@ import io.vertx.core.http.HttpServerRequest;
 public class QrsUriInfo implements UriInfo {
 
     private final QrsRequestContext currentRequest;
+    private MultivaluedMap<String, String> queryParams;
     private URI requestUri;
 
     public QrsUriInfo(QrsRequestContext currentRequest) {
@@ -79,7 +84,21 @@ public class QrsUriInfo implements UriInfo {
 
     @Override
     public URI getBaseUri() {
-        return null;
+        HttpServerRequest req = currentRequest.getContext().request();
+        try {
+            String host = req.host();
+            int port = -1;
+            int index = host.indexOf(":");
+            if (index > -1) {
+                port = Integer.parseInt(host.substring(index + 1));
+                host = host.substring(0, index);
+            }
+            return new URI(req.scheme(), null, host, port,
+                    "/",
+                    null, null);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -99,12 +118,19 @@ public class QrsUriInfo implements UriInfo {
 
     @Override
     public MultivaluedMap<String, String> getQueryParameters() {
-        return null;
+        return getQueryParameters(true);
     }
 
     @Override
     public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
-        return null;
+        if (queryParams == null) {
+            queryParams = new MultivaluedMapImpl<>();
+            MultiMap entries = currentRequest.getContext().queryParams();
+            for (String i : entries.names()) {
+                queryParams.addAll(i, entries.getAll(i));
+            }
+        }
+        return new UnmodifiableMultivaluedMap<>(queryParams);
     }
 
     @Override

@@ -4,8 +4,11 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Request;
@@ -23,6 +26,7 @@ import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
 import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
+import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.AsyncResult;
@@ -67,6 +71,10 @@ public class QrsRequestContext implements Runnable, Closeable {
     private QrsContainerRequestContext containerRequestContext;
     private String method;
     private String remaining;
+    /**
+     * used for {@link UriInfo#getMatchedURIs()}
+     */
+    private List<UriMatch> matchedURIs;
 
     public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
             CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
@@ -231,7 +239,7 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public UriInfo getUriInfo() {
         if (uriInfo == null) {
-            uriInfo = new QrsUriInfo(context.request().absoluteURI(), "/");
+            uriInfo = new QrsUriInfo(this);
         }
         return uriInfo;
     }
@@ -443,5 +451,50 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public String getRemaining() {
         return remaining;
+    }
+
+    public void saveUriMatchState() {
+        if (matchedURIs == null) {
+            matchedURIs = new LinkedList<>();
+        } else if (matchedURIs.get(0).resource == target) {
+            //already saved
+            return;
+        }
+        URITemplate classPath = target.getClassPath();
+        if (classPath != null) {
+            //this is not great, but the alternative is to do path based matching on every request
+            //given that this method is likely to be called very infrequently it is better to have a small
+            //cost here than a cost applied to every request
+            int pos = classPath.stem.length();
+            String path = context.request().path();
+            //we already know that this template matches, we just need to find the matched bit
+            for (int i = 1; i < classPath.components.length; ++i) {
+                URITemplate.TemplateComponent segment = classPath.components[i];
+                if (segment.type == URITemplate.Type.LITERAL) {
+                    pos += segment.literalText.length();
+                } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
+                    for (; pos < path.length(); ++pos) {
+                        if (path.charAt(pos) == '/') {
+                            --pos;
+                            break;
+                        }
+                    }
+                } else {
+                    Matcher matcher = segment.pattern.matcher(path);
+                    if (matcher.find(pos) && matcher.start() == pos) {
+                        pos = matcher.end();
+                    }
+                }
+            }
+            matchedURIs.add(new UriMatch(path.substring(1, pos), null, null));
+        }
+            String path = context.request().path();
+            matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
+                    target, endpointInstance));
+    }
+
+    public List<UriMatch> getMatchedURIs() {
+        saveUriMatchState();
+        return matchedURIs;
     }
 }

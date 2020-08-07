@@ -1,10 +1,10 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.core.parameters;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
-import io.vertx.core.http.HttpServerRequest;
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
+import io.quarkus.qrs.runtime.core.parameters.ParameterExtractor;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
@@ -23,8 +23,7 @@ public class ContextParamExtractor implements ParameterExtractor {
             return context;
         }
         if (type.equals(UriInfo.class.getName())) {
-            HttpServerRequest request = context.getContext().request();
-            return new QrsUriInfo(request.absoluteURI() + (request.query() == null ? "" : "?" + request.query()), "/");
+            return context.getUriInfo();
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

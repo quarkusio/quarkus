@@ -15,15 +15,15 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
-import io.quarkus.qrs.runtime.core.BodyParamExtractor;
-import io.quarkus.qrs.runtime.core.ContextParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.BodyParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.ContextParamExtractor;
 import io.quarkus.qrs.runtime.core.ExceptionMapping;
-import io.quarkus.qrs.runtime.core.FormParamExtractor;
-import io.quarkus.qrs.runtime.core.HeaderParamExtractor;
-import io.quarkus.qrs.runtime.core.ParameterExtractor;
-import io.quarkus.qrs.runtime.core.PathParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.FormParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.HeaderParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.ParameterExtractor;
+import io.quarkus.qrs.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.QrsDeployment;
-import io.quarkus.qrs.runtime.core.QueryParamExtractor;
+import io.quarkus.qrs.runtime.core.parameters.QueryParamExtractor;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
@@ -109,10 +109,11 @@ public class QrsRecorder {
         for (ResourceClass clazz : locatableResourceClasses) {
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
             Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
+            URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath());
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        true);
+                        true, classPathTemplate);
 
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(runtimeResource.getHttpMethod());
                 if (list == null) {
@@ -138,7 +139,7 @@ public class QrsRecorder {
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        false);
+                        false, new URITemplate(clazz.getPath()));
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getHttpMethod());
                 if (list == null) {
                     templates.put(method.getHttpMethod(), list = new ArrayList<>());
@@ -148,7 +149,7 @@ public class QrsRecorder {
             }
         }
 
-        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.remove(null);
+        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.get(null);
         if (nullMethod == null) {
             nullMethod = Collections.emptyList();
         }
@@ -169,12 +170,12 @@ public class QrsRecorder {
     }
 
     public RuntimeResource buildResourceMethod(Serialisers serialisers,
-            List<ResourceRequestInterceptor> requestInterceptors,
-            List<ResourceResponseInterceptor> responseInterceptors,
-            ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
-            ResourceRequestInterceptorHandler requestInterceptorsHandler,
-            ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
-            ResourceMethod method, boolean locatableResource) {
+                                               List<ResourceRequestInterceptor> requestInterceptors,
+                                               List<ResourceResponseInterceptor> responseInterceptors,
+                                               ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
+                                               ResourceRequestInterceptorHandler requestInterceptorsHandler,
+                                               ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
+                                               ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
         List<RestHandler> handlers = new ArrayList<>();
         MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
@@ -263,12 +264,11 @@ public class QrsRecorder {
         }
         handlers.add(new ResponseWriterHandler());
 
-        RuntimeResource resource = new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
-                method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
+        return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
+                classPathTemplate, method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), loadClass(clazz.getClassName()));
-        return resource;
     }
 
     private Class<?> getRawType(Type type) {

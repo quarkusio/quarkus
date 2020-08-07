@@ -1,4 +1,6 @@
-package io.quarkus.qrs.runtime.core;
+package io.quarkus.qrs.runtime.core.parameters;
+
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class HeaderParamExtractor implements ParameterExtractor {
 

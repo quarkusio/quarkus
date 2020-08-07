@@ -2,8 +2,8 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.function.BiConsumer;
 
-import io.quarkus.qrs.runtime.core.ParameterConverter;
-import io.quarkus.qrs.runtime.core.ParameterExtractor;
+import io.quarkus.qrs.runtime.core.parameters.ParameterConverter;
+import io.quarkus.qrs.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class ParameterHandler implements RestHandler {

@@ -47,8 +47,11 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
         RoutingContext event = requestContext.getContext();
         RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
         if (mapper == null) {
-            event.next();
-            return;
+            mapper = mappers.get(null);
+            if (mapper == null) {
+                event.next();
+                return;
+            }
         }
         RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(event.normalisedPath());
         if (target == null) {

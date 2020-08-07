@@ -2,6 +2,7 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -39,6 +40,7 @@ public class ResourceLocatorHandler implements RestHandler {
                     new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build()));
             return;
         }
+        requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);
         requestContext.setPathParamValues(res.pathParamValues);
         requestContext.setEndpointInstance(new FixedBeanInstance(locator));
@@ -59,6 +61,12 @@ public class ResourceLocatorHandler implements RestHandler {
             res = resourceLocatorHandlers.get(iface);
             if (res != null) {
                 return res;
+            }
+            for (Class<?> i : iface.getInterfaces()) {
+                Map<String, RequestMapper<RuntimeResource>> located  = findTarget(i);
+                if (located != null) {
+                    return located;
+                }
             }
         }
         return findTarget(locatorClass.getSuperclass());

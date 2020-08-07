@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,6 +79,12 @@ public class TemplateExtensionMethodsTest {
     @Test
     public void testPriority() {
         assertEquals("bravo::baz", engine.getTemplate("priority").data("foo", new Foo("baz", 10l)).render());
+    }
+
+    @Test
+    public void testListGetByIndex() {
+        assertEquals("true=true=NOT_FOUND",
+                engine.parse("{list.0}={list[0]}={list[100]}").data("list", Collections.singletonList(true)).render());
     }
 
     @TemplateExtension

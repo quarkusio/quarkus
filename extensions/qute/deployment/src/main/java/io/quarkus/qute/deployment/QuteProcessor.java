@@ -625,7 +625,12 @@ public class QuteProcessor {
         if (namespaceValue != null) {
             namespace = namespaceValue.asString();
         }
-        extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName,
+        String matchRegex = null;
+        AnnotationValue matchRegexValue = extensionAnnotation.value(ExtensionMethodGenerator.MATCH_REGEX);
+        if (matchRegexValue != null) {
+            matchRegex = matchRegexValue.asString();
+        }
+        extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
                 index.getClassByName(method.parameters().get(0).name()), priority, namespace));
     }
 
@@ -718,7 +723,10 @@ public class QuteProcessor {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Predicate<String>() {
             @Override
             public boolean test(String name) {
-                int idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
+                int idx = name.lastIndexOf(ExtensionMethodGenerator.NAMESPACE_SUFFIX);
+                if (idx == -1) {
+                    idx = name.lastIndexOf(ExtensionMethodGenerator.SUFFIX);
+                }
                 if (idx == -1) {
                     idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
                 }
@@ -803,7 +811,7 @@ public class QuteProcessor {
             } else {
                 // Generate ValueResolver per extension method
                 extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName(),
-                        templateExtension.getPriority());
+                        templateExtension.getMatchRegex(), templateExtension.getPriority());
             }
         }
 
@@ -815,7 +823,7 @@ public class QuteProcessor {
                     .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), methods.get(0).getNamespace())) {
                 try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {
                     for (TemplateExtensionMethodBuildItem method : methods) {
-                        resolveCreator.addMethod(method.getMethod(), method.getMatchName());
+                        resolveCreator.addMethod(method.getMethod(), method.getMatchName(), method.getMatchRegex());
                     }
                 }
             }

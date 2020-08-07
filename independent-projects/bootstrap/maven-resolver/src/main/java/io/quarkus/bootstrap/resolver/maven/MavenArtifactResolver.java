@@ -126,6 +126,10 @@ public class MavenArtifactResolver {
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
     }
 
+    public RemoteRepositoryManager getRemoteRepositoryManager() {
+        return remoteRepoManager;
+    }
+
     public MavenLocalRepositoryManager getLocalRepositoryManager() {
         return localRepoManager;
     }

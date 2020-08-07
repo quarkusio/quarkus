@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -48,8 +49,24 @@ public class DeploymentInjectingDependencyVisitor {
     private final AppModel.Builder appBuilder;
 
     public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, AppModel.Builder appBuilder) {
-        this.resolver = resolver;
+            List<RemoteRepository> mainRepos, AppModel.Builder appBuilder) throws BootstrapDependencyProcessingException {
+        // we need to be able to take into account whether the deployment dependencies are on an optional dependency branch
+        // for that we are going to use a custom dependency selector and re-initialize the resolver to use it
+        final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(resolver.getSession());
+        final DeploymentDependencySelector depSelector = new DeploymentDependencySelector(session.getDependencySelector());
+        session.setDependencySelector(depSelector);
+        try {
+            this.resolver = new MavenArtifactResolver(new BootstrapMavenContext(BootstrapMavenContext.config()
+                    .setRepositorySystem(resolver.getSystem())
+                    .setRepositorySystemSession(session)
+                    .setRemoteRepositories(resolver.getRepositories())
+                    .setRemoteRepositoryManager(resolver.getRemoteRepositoryManager())
+                    .setWorkspaceDiscovery(false)));
+        } catch (BootstrapMavenException e) {
+            throw new BootstrapDependencyProcessingException("Failed to initialize deployment dependencies resolver",
+                    e);
+        }
+
         this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
         this.mainRepos = mainRepos;
         this.appBuilder = appBuilder;

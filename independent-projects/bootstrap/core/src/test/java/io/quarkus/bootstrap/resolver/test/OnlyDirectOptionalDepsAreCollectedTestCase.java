@@ -15,10 +15,14 @@ public class OnlyDirectOptionalDepsAreCollectedTestCase extends CollectDependenc
         installAsDep(new TsDependency(new TsArtifact("required-dep-a"), "compile"), true);
         installAsDep(new TsDependency(new TsArtifact("required-dep-b"), "runtime"), true);
 
+        final TsArtifact nonOptionalCommon = new TsArtifact("non-optional-common");
+        install(nonOptionalCommon, "compile", true);
+
         installAsDep(
                 new TsDependency(
                         new TsArtifact("optional-dep")
                                 .addDependency(new TsDependency(new TsArtifact("common", "1"), true))
+                                .addDependency(new TsDependency(nonOptionalCommon, false))
                                 .addDependency(new TsDependency(new TsArtifact("other", "1"), true)),
                         true),
                 true);

@@ -221,9 +221,10 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 
-        final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
-                managedDeps, repos, appBuilder);
+        final DeploymentInjectingDependencyVisitor deploymentInjector;
         try {
+            deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
+                    managedDeps, repos, appBuilder);
             deploymentInjector.injectDeploymentDependencies(resolvedDeps);
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(

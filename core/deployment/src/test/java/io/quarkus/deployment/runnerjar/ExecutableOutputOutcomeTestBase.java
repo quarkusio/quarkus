@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.update.CreatorOutcomeTestBase;
 
@@ -36,11 +37,15 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
     }
 
+    protected void assertAppModel(AppModel appModel) throws Exception {
+    }
+
     @Override
     protected void testCreator(QuarkusBootstrap creator) throws Exception {
         System.setProperty("quarkus.package.type", "legacy");
         try {
             CuratedApplication curated = creator.bootstrap();
+            assertAppModel(curated.getAppModel());
             AugmentAction action = curated.createAugmentor();
             AugmentResult outcome = action.createProductionApplication();
 

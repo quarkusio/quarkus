@@ -37,7 +37,6 @@ public final class CodestartSpec {
     private final String ref;
     private final Type type;
     private final boolean isFallback;
-    private final List<String> missingLanguages;
     private final Map<String, String> outputStrategy;
     private final Map<String, LanguageSpec> languagesSpec;
 
@@ -47,7 +46,6 @@ public final class CodestartSpec {
             @JsonProperty(value = "type") Type type,
             @JsonProperty("fallback") boolean isFallback,
             @JsonProperty("preselected") boolean isPreselected,
-            @JsonProperty(value = "missing-languages") List<String> missingLanguages,
             @JsonProperty("output-strategy") Map<String, String> outputStrategy,
             @JsonProperty("language") Map<String, LanguageSpec> languagesSpec) {
         this.name = requireNonNull(name, "name is required");
@@ -55,7 +53,6 @@ public final class CodestartSpec {
         this.type = type != null ? type : Type.EXAMPLE;
         this.isFallback = isFallback;
         this.isPreselected = isPreselected;
-        this.missingLanguages = missingLanguages != null ? missingLanguages : Collections.emptyList();
         this.outputStrategy = outputStrategy != null ? outputStrategy : Collections.emptyMap();
         this.languagesSpec = languagesSpec != null ? languagesSpec : Collections.emptyMap();
     }
@@ -78,10 +75,6 @@ public final class CodestartSpec {
 
     public boolean isPreselected() {
         return isPreselected;
-    }
-
-    public List<String> getMissingLanguages() {
-        return missingLanguages;
     }
 
     public boolean isExample() {

@@ -68,6 +68,7 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
             name += "-" + String.join("-", codestarts);
         }
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .includeExamples()
                 .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
                 .addCodestarts(codestarts)
                 .putData("buildtool.name", buildtool)

@@ -3,8 +3,6 @@ name: commandmode-example
 ref: commandmode
 type: example
 fallback: true
-missing-languages:
-  - scala
 language:
   base:
     data:

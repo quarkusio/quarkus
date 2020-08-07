@@ -3,17 +3,22 @@ package io.quarkus.bootstrap.resolver.model.impl;
 import io.quarkus.bootstrap.resolver.model.SourceSet;
 import java.io.File;
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SourceSetImpl implements SourceSet, Serializable {
 
-    private final Set<File> sourceDirectories;
+    private Set<File> sourceDirectories = new HashSet<>();
     private final File resourceDirectory;
 
     public SourceSetImpl(Set<File> sourceDirectories, File resourceDirectory) {
-        this.sourceDirectories = sourceDirectories;
+        this.sourceDirectories.addAll(sourceDirectories);
         this.resourceDirectory = resourceDirectory;
+    }
+
+    public void addSourceDirectories(Set<File> files) {
+        sourceDirectories.addAll(files);
     }
 
     @Override

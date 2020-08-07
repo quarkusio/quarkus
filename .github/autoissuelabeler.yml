@@ -162,3 +162,7 @@
   title: "(?i).*google.cloud.*"
   description: "(?i).*google.cloud.*"
   notify: [loicmathieu]
+- labels: [area/mandrel]
+  title: "(?i).*mandrel.*"
+  description: "(?i).*mandrel.*"
+  notify: [galderz,zakkak]

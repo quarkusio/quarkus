@@ -624,9 +624,27 @@ The section tag is also registered under the `set` alias:
 
 
 [[include_helper]]
-===== Include/Insert Sections
+===== Include Section
 
-These sections can be used to include another template and possibly override some parts of the template (template inheritance).
+This section can be used to include another template and possibly override some parts of the template (template inheritance).
+
+.Simple Example
+[source,html]
+----
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simple Include</title>
+</head>
+<body>
+  {#include foo limit=10 /} <1><2>
+</body>
+</html>
+----
+<1> Include a template with id `foo`. The included template can reference data from the current context. 
+<2> It's also possible to define optional parameters that can be used in the included template.
+
+Template inheritance makes it possible to reuse template layouts.
 
 .Template "base"
 [source,html]

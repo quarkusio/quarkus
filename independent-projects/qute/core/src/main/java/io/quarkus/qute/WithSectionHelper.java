@@ -24,7 +24,7 @@ public class WithSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(object)
                 .thenCompose(with -> {
-                    return context.execute(main, context.resolutionContext().createChild(with, null));
+                    return context.execute(main, context.resolutionContext().createChild(with, null, null));
                 });
     }
 

@@ -14,11 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qrs.runtime.util.HttpResponseCodes;
-import io.quarkus.qrs.test.PortProviderUtil;
 import io.quarkus.qrs.test.resource.basic.resource.CovariantReturnSubresourceLocatorsRootProxy;
 import io.quarkus.qrs.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxy;
 import io.quarkus.qrs.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxyRootImpl;
 import io.quarkus.qrs.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxySubImpl;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

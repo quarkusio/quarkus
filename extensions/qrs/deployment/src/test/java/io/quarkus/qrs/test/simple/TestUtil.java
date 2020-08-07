@@ -1,4 +1,4 @@
-package io.quarkus.qrs.test;
+package io.quarkus.qrs.test.simple;
 
 import java.io.BufferedReader;
 import java.io.File;

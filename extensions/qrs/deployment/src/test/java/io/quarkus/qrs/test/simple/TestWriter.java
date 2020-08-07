@@ -1,4 +1,4 @@
-package io.quarkus.qrs.test;
+package io.quarkus.qrs.test.simple;
 
 import java.io.IOException;
 import java.io.OutputStream;

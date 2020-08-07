@@ -90,7 +90,7 @@ public class PathMatcher<T> implements Dumpable {
                 }
             }
         }
-        return new PathMatch<>("", path, defaultHandler);
+        return new PathMatch<>("/", path, defaultHandler);
     }
 
     /**

@@ -36,6 +36,7 @@ import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
 import io.quarkus.qrs.runtime.handlers.RequestDeserializeHandler;
+import io.quarkus.qrs.runtime.handlers.ResourceLocatorHandler;
 import io.quarkus.qrs.runtime.handlers.ResourceRequestInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
@@ -89,10 +90,8 @@ public class QrsRecorder {
     public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping,
             Serialisers serialisers,
-            List<ResourceClass> resourceClasses,
+            List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
             ShutdownContext shutdownContext) {
-        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
-        Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
         //pre matching interceptors are run first
         List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
         List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
@@ -106,102 +105,49 @@ public class QrsRecorder {
             preMatchHandler = new ResourceRequestInterceptorHandler(interceptors.getResourcePreMatchRequestInterceptors(),
                     shutdownContext, true);
         }
+        ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler();
+        for (ResourceClass clazz : locatableResourceClasses) {
+            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
+            Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
+            for (ResourceMethod method : clazz.getMethods()) {
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
+                        resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
+                        true);
+
+                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(runtimeResource.getHttpMethod());
+                if (list == null) {
+                    templates.put(runtimeResource.getHttpMethod(), list = new ArrayList<>());
+                }
+                list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
+                        runtimeResource));
+            }
+            List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.remove(null);
+            if (nullMethod == null) {
+                nullMethod = Collections.emptyList();
+            }
+            for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : templates.entrySet()) {
+                i.getValue().addAll(nullMethod);
+                mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
+            }
+
+            resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
+        }
+        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
+        Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
         for (ResourceClass clazz : resourceClasses) {
             for (ResourceMethod method : clazz.getMethods()) {
-                List<RestHandler> handlers = new ArrayList<>();
-                MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
-
-                if (!requestInterceptors.isEmpty()) {
-                    handlers.add(requestInterceptorsHandler);
-                }
-
-                EndpointInvoker invoker = method.getInvoker().get();
-                handlers.add(new InstanceHandler(clazz.getFactory()));
-                Class<?>[] parameterTypes = new Class[method.getParameters().length];
-                for (int i = 0; i < method.getParameters().length; ++i) {
-                    parameterTypes[i] = loadClass(method.getParameters()[i].type);
-                }
-                // some parameters need the body to be read
-                MethodParameter[] parameters = method.getParameters();
-                for (int i = 0; i < parameters.length; i++) {
-                    MethodParameter param = parameters[i];
-                    if (param.parameterType == ParameterType.FORM) {
-                        handlers.add(new ReadBodyHandler());
-                        break;
-                    } else if (param.parameterType == ParameterType.BODY) {
-                        handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
-                    }
-                }
-                for (int i = 0; i < parameters.length; i++) {
-                    MethodParameter param = parameters[i];
-                    ParameterExtractor extractor;
-                    switch (param.parameterType) {
-                        case HEADER:
-                            extractor = new HeaderParamExtractor(param.name, true);
-                            break;
-                        case FORM:
-                            extractor = new FormParamExtractor(param.name, true);
-                            break;
-                        case PATH:
-                            extractor = new PathParamExtractor(param.name);
-                            break;
-                        case CONTEXT:
-                            extractor = new ContextParamExtractor(param.type);
-                            break;
-                        case QUERY:
-                            extractor = new QueryParamExtractor(param.name, true);
-                            break;
-                        case BODY:
-                            extractor = new BodyParamExtractor();
-                            break;
-                        default:
-                            extractor = new QueryParamExtractor(param.name, true);
-                            break;
-                    }
-                    handlers.add(new ParameterHandler(i, extractor, null));
-                }
-                if (method.isBlocking()) {
-                    handlers.add(new BlockingHandler(new Supplier<Executor>() {
-                        @Override
-                        public Executor get() {
-                            return ExecutorRecorder.getCurrent();
-                        }
-                    }));
-                }
-                Type returnType = TypeSignatureParser.parse(method.getReturnType());
-                Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
-                Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
-                ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType);
-                if (buildTimeWriter == null) {
-                    handlers.add(new EntityWriterHandler(new DynamicEntityWriter(serialisers)));
-                } else {
-                    handlers.add(new EntityWriterHandler(
-                            new FixedEntityWriter(buildTimeWriter.getFactory().createInstance().getInstance())));
-                }
-
-                handlers.add(new InvocationHandler(invoker));
-                // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
-                handlers.add(new CompletionStageResponseHandler());
-                handlers.add(new UniResponseHandler());
-                handlers.add(new ResponseHandler());
-
-                if (!responseInterceptors.isEmpty()) {
-                    handlers.add(resourceResponseInterceptorHandler);
-                }
-                handlers.add(new ResponseWriterHandler());
-
-                RuntimeResource resource = new RuntimeResource(method.getMethod(), new URITemplate(method.getPath()),
-                        method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
-                        consumesMediaType, invoker,
-                        clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                        nonAsyncReturnType, method.isBlocking());
-                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getMethod());
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
+                        resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
+                        false);
+                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getHttpMethod());
                 if (list == null) {
-                    templates.put(method.getMethod(), list = new ArrayList<>());
+                    templates.put(method.getHttpMethod(), list = new ArrayList<>());
                 }
-                list.add(new RequestMapper.RequestPath<>(resource.getPath(), resource));
+                list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
+                        runtimeResource));
             }
         }
+
         List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.remove(null);
         if (nullMethod == null) {
             nullMethod = Collections.emptyList();
@@ -220,6 +166,109 @@ public class QrsRecorder {
                 abortHandlingChain.toArray(new RestHandler[0]), new DynamicEntityWriter(serialisers));
 
         return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
+    }
+
+    public RuntimeResource buildResourceMethod(Serialisers serialisers,
+            List<ResourceRequestInterceptor> requestInterceptors,
+            List<ResourceResponseInterceptor> responseInterceptors,
+            ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
+            ResourceRequestInterceptorHandler requestInterceptorsHandler,
+            ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
+            ResourceMethod method, boolean locatableResource) {
+        List<RestHandler> handlers = new ArrayList<>();
+        MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
+
+        if (!requestInterceptors.isEmpty()) {
+            handlers.add(requestInterceptorsHandler);
+        }
+
+        EndpointInvoker invoker = method.getInvoker().get();
+        if (!locatableResource) {
+            handlers.add(new InstanceHandler(clazz.getFactory()));
+        }
+        Class<?>[] parameterTypes = new Class[method.getParameters().length];
+        for (int i = 0; i < method.getParameters().length; ++i) {
+            parameterTypes[i] = loadClass(method.getParameters()[i].type);
+        }
+        // some parameters need the body to be read
+        MethodParameter[] parameters = method.getParameters();
+        for (int i = 0; i < parameters.length; i++) {
+            MethodParameter param = parameters[i];
+            if (param.parameterType == ParameterType.FORM) {
+                handlers.add(new ReadBodyHandler());
+                break;
+            } else if (param.parameterType == ParameterType.BODY) {
+                handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
+            }
+        }
+        for (int i = 0; i < parameters.length; i++) {
+            MethodParameter param = parameters[i];
+            ParameterExtractor extractor;
+            switch (param.parameterType) {
+                case HEADER:
+                    extractor = new HeaderParamExtractor(param.name, true);
+                    break;
+                case FORM:
+                    extractor = new FormParamExtractor(param.name, true);
+                    break;
+                case PATH:
+                    extractor = new PathParamExtractor(param.name);
+                    break;
+                case CONTEXT:
+                    extractor = new ContextParamExtractor(param.type);
+                    break;
+                case QUERY:
+                    extractor = new QueryParamExtractor(param.name, true);
+                    break;
+                case BODY:
+                    extractor = new BodyParamExtractor();
+                    break;
+                default:
+                    extractor = new QueryParamExtractor(param.name, true);
+                    break;
+            }
+            handlers.add(new ParameterHandler(i, extractor, null));
+        }
+        if (method.isBlocking()) {
+            handlers.add(new BlockingHandler(new Supplier<Executor>() {
+                @Override
+                public Executor get() {
+                    return ExecutorRecorder.getCurrent();
+                }
+            }));
+        }
+        Type returnType = TypeSignatureParser.parse(method.getReturnType());
+        Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
+        Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
+        ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType);
+        if (buildTimeWriter == null) {
+            handlers.add(new EntityWriterHandler(new DynamicEntityWriter(serialisers)));
+        } else {
+            handlers.add(new EntityWriterHandler(
+                    new FixedEntityWriter(buildTimeWriter.getFactory().createInstance().getInstance())));
+        }
+
+        handlers.add(new InvocationHandler(invoker));
+        if (method.getHttpMethod() == null) {
+            //this is a resource locator method
+            handlers.add(resourceLocatorHandler);
+        }
+        // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
+        handlers.add(new CompletionStageResponseHandler());
+        handlers.add(new UniResponseHandler());
+        handlers.add(new ResponseHandler());
+
+        if (!responseInterceptors.isEmpty()) {
+            handlers.add(resourceResponseInterceptorHandler);
+        }
+        handlers.add(new ResponseWriterHandler());
+
+        RuntimeResource resource = new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
+                method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
+                consumesMediaType, invoker,
+                clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
+                nonAsyncReturnType, method.isBlocking(), loadClass(clazz.getClassName()));
+        return resource;
     }
 
     private Class<?> getRawType(Type type) {

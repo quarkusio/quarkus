@@ -28,7 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.qrs.test.PortProviderUtil;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 @DisplayName("Media Type Negotiation Server Quality Test")

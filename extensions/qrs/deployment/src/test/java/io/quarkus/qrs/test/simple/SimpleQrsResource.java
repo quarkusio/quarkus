@@ -1,4 +1,4 @@
-package io.quarkus.qrs.test;
+package io.quarkus.qrs.test.simple;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,6 +40,11 @@ public class SimpleQrsResource {
     @GET
     public String get() {
         return "GET";
+    }
+
+    @Path("sub")
+    public Object subResource() {
+        return new SubResource();
     }
 
     @GET

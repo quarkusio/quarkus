@@ -11,7 +11,7 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.qrs.runtime.util.HttpHeaderNames;
-import io.quarkus.qrs.test.PortProviderUtil;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 
 @Path("/")
 public class ReponseInfoResource {

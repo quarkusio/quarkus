@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qrs.runtime.util.HttpResponseCodes;
-import io.quarkus.qrs.test.PortProviderUtil;
 import io.quarkus.qrs.test.resource.basic.resource.DefaultMediaTypeCustomObject;
 import io.quarkus.qrs.test.resource.basic.resource.DefaultMediaTypeResource;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

@@ -16,6 +16,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -84,6 +85,7 @@ public class QrsProcessor {
         }
 
         Map<DotName, ClassInfo> scannedResources = new HashMap<>();
+        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Set<DotName> pathInterfaces = new HashSet<>();
         for (AnnotationInstance annotation : allPaths) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
@@ -97,9 +99,28 @@ public class QrsProcessor {
         }
 
         List<ResourceClass> resourceClasses = new ArrayList<>();
+        List<ResourceClass> subResourceClasses = new ArrayList<>();
         for (ClassInfo i : scannedResources.values()) {
             resourceClasses.add(EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), i,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder));
+        }
+
+        //now index possible sub resources. These are all classes that have method annotations
+        //that are not annotated @Path
+        //TODO custom method annotations
+        for (DotName methodAnnotation : QrsDotNames.JAXRS_METHOD_ANNOTATIONS) {
+            for (AnnotationInstance instance : beanArchiveIndexBuildItem.getIndex().getAnnotations(methodAnnotation)) {
+                MethodInfo method = instance.target().asMethod();
+                ClassInfo classInfo = method.declaringClass();
+                if (scannedResources.containsKey(classInfo.name()) ||
+                        pathInterfaces.contains(classInfo.name()) ||
+                        possibleSubResources.containsKey(classInfo.name())) {
+                    continue;
+                }
+                possibleSubResources.put(classInfo.name(), classInfo);
+                subResourceClasses.add(EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), classInfo,
+                        beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder));
+            }
         }
 
         ResourceInterceptors interceptors = new ResourceInterceptors();
@@ -174,7 +195,7 @@ public class QrsProcessor {
                 true);
 
         return new FilterBuildItem(
-                recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses,
+                recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses, subResourceClasses,
                         shutdownContext),
                 10);
     }

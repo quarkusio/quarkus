@@ -1,4 +1,4 @@
-package io.quarkus.qrs.test;
+package io.quarkus.qrs.test.simple;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;

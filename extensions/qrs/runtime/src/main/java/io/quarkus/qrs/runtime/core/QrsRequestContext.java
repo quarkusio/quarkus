@@ -66,6 +66,7 @@ public class QrsRequestContext implements Runnable, Closeable {
     private EntityWriter entityWriter;
     private QrsContainerRequestContext containerRequestContext;
     private String method;
+    private String remaining;
 
     public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
             CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
@@ -434,5 +435,13 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public void setMethod(String method) {
         this.method = method;
+    }
+
+    public void setRemaining(String remaining) {
+        this.remaining = remaining;
+    }
+
+    public String getRemaining() {
+        return remaining;
     }
 }

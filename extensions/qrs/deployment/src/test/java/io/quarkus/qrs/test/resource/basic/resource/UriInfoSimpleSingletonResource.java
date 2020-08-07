@@ -11,7 +11,7 @@ import javax.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.qrs.test.PortProviderUtil;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 
 @Path("UriInfoSimpleSingletonResource")
 public class UriInfoSimpleSingletonResource {

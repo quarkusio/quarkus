@@ -38,6 +38,7 @@ public class RequestMapper<T> {
         Map<String, String> params = new HashMap<>();
         for (RequestPath<T> potentialMatch : initialMatch.getValue()) {
             boolean matched = true;
+            boolean prefixAllowed = potentialMatch.prefixTemplate;
             int matchPos = initialMatch.getMatched().length();
             for (int i = 1; i < potentialMatch.template.components.length; ++i) {
                 URITemplate.TemplateComponent segment = potentialMatch.template.components[i];
@@ -74,8 +75,15 @@ public class RequestMapper<T> {
                 }
 
             }
-            if (matched && matchPos == pathLength) {
-                return new RequestMatch(potentialMatch.template, potentialMatch.value, params);
+            boolean fullMatch = matchPos == pathLength;
+            if (matched && (fullMatch || prefixAllowed)) {
+                String remaining;
+                if (fullMatch) {
+                    remaining = "";
+                } else {
+                    remaining = path.substring(matchPos);
+                }
+                return new RequestMatch(potentialMatch.template, potentialMatch.value, params, remaining);
             } else {
                 params.clear();
             }
@@ -84,10 +92,12 @@ public class RequestMapper<T> {
     }
 
     public static class RequestPath<T> implements Dumpable {
+        public final boolean prefixTemplate;
         public final URITemplate template;
         public final T value;
 
-        public RequestPath(URITemplate template, T value) {
+        public RequestPath(boolean prefixTemplate, URITemplate template, T value) {
+            this.prefixTemplate = prefixTemplate;
             this.template = template;
             this.value = value;
         }
@@ -113,11 +123,13 @@ public class RequestMapper<T> {
         public final URITemplate template;
         public final T value;
         public final Map<String, String> pathParamValues;
+        public final String remaining;
 
-        public RequestMatch(URITemplate template, T value, Map<String, String> pathParamValues) {
+        public RequestMatch(URITemplate template, T value, Map<String, String> pathParamValues, String remaining) {
             this.template = template;
             this.value = value;
             this.pathParamValues = pathParamValues;
+            this.remaining = remaining;
         }
 
         @Override

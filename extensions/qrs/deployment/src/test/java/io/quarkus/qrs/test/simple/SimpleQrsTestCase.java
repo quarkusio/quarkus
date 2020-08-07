@@ -1,4 +1,4 @@
-package io.quarkus.qrs.test;
+package io.quarkus.qrs.test.simple;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -25,6 +25,7 @@ public class SimpleQrsTestCase {
                             .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class,
                                     TestResponseFilter.class, HelloService.class, TestException.class,
                                     TestExceptionMapper.class, TestPreMatchRequestFilter.class,
+                                    SubResource.class,
                                     TestWriter.class, TestClass.class);
                 }
             });
@@ -68,6 +69,14 @@ public class SimpleQrsTestCase {
     public void testInjection() {
         RestAssured.get("/simple/hello")
                 .then().body(Matchers.equalTo("Hello"));
+    }
+
+    @Test
+    public void testSubResource() {
+        RestAssured.get("/simple/sub/otherSub")
+                .then().body(Matchers.equalTo("otherSub"));
+        RestAssured.get("/simple/sub")
+                .then().body(Matchers.equalTo("sub"));
     }
 
     @Test

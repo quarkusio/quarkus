@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.qrs.test.PortProviderUtil;
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorBaseCrudService;
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorBaseService;
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorFoo;
@@ -23,6 +22,7 @@ import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorOhaUserMode
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorPlatformServiceImpl;
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorPlatformServiceResource;
 import io.quarkus.qrs.test.resource.basic.resource.SubResourceLocatorUserResource;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

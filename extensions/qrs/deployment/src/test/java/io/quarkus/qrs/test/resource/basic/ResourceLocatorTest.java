@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qrs.runtime.util.HttpResponseCodes;
-import io.quarkus.qrs.test.PortProviderUtil;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResouce;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorBaseResource;
@@ -34,6 +33,7 @@ import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorSubresource;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorSubresource2;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorSubresource3;
 import io.quarkus.qrs.test.resource.basic.resource.ResourceLocatorSubresource3Interface;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

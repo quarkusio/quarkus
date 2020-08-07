@@ -17,14 +17,15 @@ public class RuntimeResource {
     private final EndpointInvoker invoker;
     private final BeanFactory<Object> endpointFactory;
     private final RestHandler[] handlerChain;
-    private final String method;
+    private final String javaMethodName;
     private final Class<?>[] parameterTypes;
     private final Type returnType;
     private final boolean blocking;
+    private final Class<?> resourceClass;
 
     public RuntimeResource(String httpMethod, URITemplate path, MediaType produces, MediaType consumes, EndpointInvoker invoker,
-            BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String method, Class<?>[] parameterTypes,
-            Type returnType, boolean blocking) {
+            BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
+            Type returnType, boolean blocking, Class<?> resourceClass) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
@@ -32,18 +33,19 @@ public class RuntimeResource {
         this.invoker = invoker;
         this.endpointFactory = endpointFactory;
         this.handlerChain = handlerChain;
-        this.method = method;
+        this.javaMethodName = javaMethodName;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
         this.blocking = blocking;
+        this.resourceClass = resourceClass;
     }
 
     public RestHandler[] getHandlerChain() {
         return handlerChain;
     }
 
-    public String getMethod() {
-        return method;
+    public String getJavaMethodName() {
+        return javaMethodName;
     }
 
     public Class<?>[] getParameterTypes() {
@@ -78,12 +80,16 @@ public class RuntimeResource {
         return blocking;
     }
 
+    public Class<?> getResourceClass() {
+        return resourceClass;
+    }
+
     public BeanFactory<Object> getEndpointFactory() {
         return endpointFactory;
     }
 
     @Override
     public String toString() {
-        return "RuntimeResource{ method: " + method + ", path: " + path + "}";
+        return "RuntimeResource{ method: " + javaMethodName + ", path: " + path + "}";
     }
 }

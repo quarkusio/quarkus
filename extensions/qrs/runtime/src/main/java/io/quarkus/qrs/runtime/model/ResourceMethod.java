@@ -16,7 +16,7 @@ public class ResourceMethod {
      * The HTTP Method. Will be null if this is a resource locator method. Note that only one method is allowed in this class,
      * if a method has multiple method annotations then it should be added multiple times.
      */
-    private String method;
+    private String httpMethod;
 
     /**
      * The value of the path annotation. May be null if this serves from the path of the resource class.
@@ -50,15 +50,15 @@ public class ResourceMethod {
     private MessageBodyReader<?> reader;
 
     public boolean isResourceLocator() {
-        return method == null;
+        return httpMethod == null;
     }
 
-    public String getMethod() {
-        return method;
+    public String getHttpMethod() {
+        return httpMethod;
     }
 
-    public ResourceMethod setMethod(String method) {
-        this.method = method;
+    public ResourceMethod setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
         return this;
     }
 

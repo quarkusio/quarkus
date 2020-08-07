@@ -13,13 +13,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.qrs.test.PortProviderUtil;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceCrudResource;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceStudent;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceStudentCrudResource;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceStudentInterface;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceStudentReader;
 import io.quarkus.qrs.test.resource.basic.resource.GenericResourceStudentWriter;
+import io.quarkus.qrs.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

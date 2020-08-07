@@ -56,6 +56,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
             return;
         }
         requestContext.restart(target.value);
+        requestContext.setRemaining(target.remaining);
         requestContext.setPathParamValues(target.pathParamValues);
     }
 }

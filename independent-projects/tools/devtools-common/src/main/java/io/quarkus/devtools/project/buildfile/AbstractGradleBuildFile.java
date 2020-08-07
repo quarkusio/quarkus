@@ -24,7 +24,7 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
 
     private final Path rootProjectPath;
 
-    private AtomicReference<Model> modelReference = new AtomicReference<>();
+    private final AtomicReference<Model> modelReference = new AtomicReference<>();
 
     public AbstractGradleBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
         this(projectDirPath, platformDescriptor, null);
@@ -61,11 +61,29 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
     }
 
     static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
-        StringBuilder newDependency = new StringBuilder()
-                .append("    implementation '")
-                .append(coords.getGroupId())
-                .append(":")
-                .append(coords.getArtifactId());
+        boolean isBOM = "pom".equals(coords.getType());
+        StringBuilder newDependency;
+        if (isBOM) {
+            // Check if BOM is not included already
+            String resolvedPlatform = String
+                    .format("%s:%s", getProperty(model, "quarkusPlatformGroupId"),
+                            getProperty(model, "quarkusPlatformArtifactId"));
+            String thisBOM = String.format("%s:%s", coords.getGroupId(), coords.getArtifactId());
+            if (thisBOM.equals(resolvedPlatform)) {
+                // BOM matches the platform, no need to do anything
+                return false;
+            }
+            newDependency = new StringBuilder()
+                    .append("    implementation enforcedPlatform(\"")
+                    .append(thisBOM).append(":").append(coords.getVersion())
+                    .append("\")'");
+        } else {
+            newDependency = new StringBuilder()
+                    .append("    implementation '")
+                    .append(coords.getGroupId())
+                    .append(":")
+                    .append(coords.getArtifactId());
+        }
         if (!managed &&
                 (coords.getVersion() != null && !coords.getVersion().isEmpty())) {
             newDependency.append(":").append(coords.getVersion());
@@ -109,16 +127,20 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
 
     @Override
     public String getProperty(String propertyName) {
-        final String property = getModel().getPropertiesContent().getProperty(propertyName);
-        if (property != null || getModel().getRootPropertiesContent() == null) {
-            return property;
-        }
-        return getModel().getRootPropertiesContent().getProperty(propertyName);
+        return getProperty(getModel(), propertyName);
     }
 
     @Override
     public BuildTool getBuildTool() {
         return BuildTool.GRADLE;
+    }
+
+    static String getProperty(Model model, String propertyName) {
+        final String property = model.getPropertiesContent().getProperty(propertyName);
+        if (property != null || model.getRootPropertiesContent() == null) {
+            return property;
+        }
+        return model.getRootPropertiesContent().getProperty(propertyName);
     }
 
     private Model getModel() {
@@ -139,7 +161,7 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
         this.modelReference.set(null);
     }
 
-    private boolean hasRootProjectFile(final String fileName) throws IOException {
+    private boolean hasRootProjectFile(final String fileName) {
         if (rootProjectPath == null) {
             return false;
         }
@@ -185,17 +207,17 @@ public abstract class AbstractGradleBuildFile extends BuildFile {
         return new Model(settingsContent, buildContent, propertiesContent, rootSettingsContent, rootPropertiesContent);
     }
 
-    protected String getBuildContent() throws IOException {
+    protected String getBuildContent() {
         return getModel().getBuildContent();
     }
 
     static class Model {
         private String settingsContent;
         private String buildContent;
-        private Properties propertiesContent;
+        private final Properties propertiesContent;
 
-        private String rootSettingsContent;
-        private Properties rootPropertiesContent;
+        private final String rootSettingsContent;
+        private final Properties rootPropertiesContent;
 
         public Model(String settingsContent, String buildContent, Properties propertiesContent, String rootSettingsContent,
                 Properties rootPropertiesContent) {

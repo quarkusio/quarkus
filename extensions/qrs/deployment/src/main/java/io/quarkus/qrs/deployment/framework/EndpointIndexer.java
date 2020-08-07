@@ -2,6 +2,7 @@ package io.quarkus.qrs.deployment.framework;
 
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.BLOCKING;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.CONSUMES;
+import static io.quarkus.qrs.deployment.framework.QrsDotNames.LIST;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.PATH;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.PRODUCES;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.QUERY_PARAM;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.qrs.runtime.mapping.URITemplate;
+import io.quarkus.qrs.runtime.model.CollectionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ArrayType;
@@ -22,6 +24,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.DotNames;
@@ -192,8 +195,25 @@ public class EndpointIndexer {
             } else {
                 type = ParameterType.BODY;
             }
+            String elementType;
+            CollectionType collectionType = CollectionType.NONE;
+            Type paramType = info.parameters().get(i);
+            if (paramType.kind() == Type.Kind.ARRAY) {
+                collectionType = CollectionType.ARRAY;
+                elementType = toClassName(paramType.asArrayType().component());
+            } else if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType pt = paramType.asParameterizedType();
+                if (pt.name().equals(LIST)) {
+                    collectionType = CollectionType.LIST;
+                    elementType = toClassName(pt.arguments().get(0));
+                } else {
+                    throw new RuntimeException("Invalid parameter type " + pt);
+                }
+            } else {
+                elementType = toClassName(paramType);
+            }
             methodParameters[i] = new MethodParameter(name,
-                    toClassName(info.parameters().get(i)), type);
+                    elementType, type, collectionType);
         }
 
         String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);

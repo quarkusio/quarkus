@@ -10,9 +10,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
+import io.quarkus.arc.Unremovable;
 import org.junit.jupiter.api.Assertions;
 
 @ApplicationScoped
+@Unremovable
 public class ParameterSubResClassSub {
     AtomicInteger resourceCounter = new AtomicInteger();
     @Inject
@@ -21,14 +23,11 @@ public class ParameterSubResClassSub {
     @Inject
     RequestScopedObject requestScope;
 
-    @Context
-    UriInfo uriInfo;
-
     @GET
     @Produces("text/plain")
-    public String get(@Context HttpHeaders headers) {
-        Assertions.assertEquals("Wrong path value from injected UriInfo", "/path/subclass", uriInfo.getPath());
-        Assertions.assertNotNull("Connection header from injected HttpHeaders is null", headers.getHeaderString("Connection"));
+    public String get(@Context HttpHeaders headers,@Context UriInfo uriInfo) {
+        Assertions.assertEquals( "/path/subclass", uriInfo.getPath());
+        Assertions.assertNotNull(headers.getHeaderString("Host"));
         return "resourceCounter:" + resourceCounter.incrementAndGet() + ",appscope:" + appScope.getCount() + ",requestScope:"
                 + requestScope.getCount();
     }

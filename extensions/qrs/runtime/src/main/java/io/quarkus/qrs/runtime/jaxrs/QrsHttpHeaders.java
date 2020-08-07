@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
+import io.quarkus.qrs.runtime.util.CaseInsensitiveMap;
 import io.quarkus.qrs.runtime.util.CookieParser;
 import io.quarkus.qrs.runtime.util.DateUtil;
 import io.quarkus.qrs.runtime.util.MediaTypeHelper;
@@ -33,7 +34,7 @@ public class QrsHttpHeaders implements HttpHeaders {
     private Map<String, Cookie> cookies;
 
     public QrsHttpHeaders(MultiMap vertxHeaders) {
-        requestHeaders = new MultivaluedHashMap<>();
+        requestHeaders = new CaseInsensitiveMap<>();
         for (Map.Entry<String, String> entry : vertxHeaders.entries()) {
             requestHeaders.add(entry.getKey(), entry.getValue());
         }

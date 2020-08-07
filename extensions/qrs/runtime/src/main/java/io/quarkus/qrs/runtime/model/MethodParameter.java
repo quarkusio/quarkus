@@ -4,11 +4,13 @@ public class MethodParameter {
     public String name;
     public String type;
     public ParameterType parameterType;
+    public CollectionType collectionType;
 
-    public MethodParameter(String name, String type, ParameterType parameterType) {
+    public MethodParameter(String name, String type, ParameterType parameterType, CollectionType collectionType) {
         this.name = name;
         this.type = type;
         this.parameterType = parameterType;
+        this.collectionType = collectionType;
     }
 
     public MethodParameter() {
@@ -37,5 +39,14 @@ public class MethodParameter {
 
     public void setParameterType(ParameterType parameterType) {
         this.parameterType = parameterType;
+    }
+
+    public CollectionType getCollectionType() {
+        return collectionType;
+    }
+
+    public MethodParameter setCollectionType(CollectionType collectionType) {
+        this.collectionType = collectionType;
+        return this;
     }
 }

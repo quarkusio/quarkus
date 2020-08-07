@@ -46,6 +46,7 @@ import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
+import io.quarkus.qrs.runtime.model.CollectionType;
 import io.quarkus.qrs.runtime.model.MethodParameter;
 import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
@@ -205,12 +206,13 @@ public class QrsRecorder {
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             ParameterExtractor extractor;
+            boolean single = param.collectionType == CollectionType.NONE;
             switch (param.parameterType) {
                 case HEADER:
-                    extractor = new HeaderParamExtractor(param.name, true);
+                    extractor = new HeaderParamExtractor(param.name, single);
                     break;
                 case FORM:
-                    extractor = new FormParamExtractor(param.name, true);
+                    extractor = new FormParamExtractor(param.name, single);
                     break;
                 case PATH:
                     extractor = new PathParamExtractor(param.name);
@@ -219,13 +221,13 @@ public class QrsRecorder {
                     extractor = new ContextParamExtractor(param.type);
                     break;
                 case QUERY:
-                    extractor = new QueryParamExtractor(param.name, true);
+                    extractor = new QueryParamExtractor(param.name, single);
                     break;
                 case BODY:
                     extractor = new BodyParamExtractor();
                     break;
                 default:
-                    extractor = new QueryParamExtractor(param.name, true);
+                    extractor = new QueryParamExtractor(param.name, single);
                     break;
             }
             handlers.add(new ParameterHandler(i, extractor, null));

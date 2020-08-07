@@ -64,6 +64,8 @@ public final class QrsDotNames {
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 
+    public static final DotName LIST = DotName.createSimple(List.class.getName());
+
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));
 

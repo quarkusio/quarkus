@@ -2,12 +2,12 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.arc.Arc;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
@@ -20,7 +20,20 @@ public class ResourceLocatorHandler implements RestHandler {
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         Object locator = requestContext.getResult();
-        Class<?> locatorClass = locator.getClass();
+        Class<?> locatorClass;
+        if (locator instanceof Class) {
+            locatorClass = (Class<?>) locator;
+            try {
+                locator = Arc.container().instance(locatorClass).get();
+            } catch (Exception e) {
+                requestContext.setThrowable(
+                        new RuntimeException("Could not instantiate resource bean " + locatorClass
+                                + " make sure it has a bean defining annotation", e));
+                return;
+            }
+        } else {
+            locatorClass = locator.getClass();
+        }
         Map<String, RequestMapper<RuntimeResource>> target = findTarget(locatorClass);
         if (target == null) {
             requestContext.setThrowable(
@@ -63,7 +76,7 @@ public class ResourceLocatorHandler implements RestHandler {
                 return res;
             }
             for (Class<?> i : iface.getInterfaces()) {
-                Map<String, RequestMapper<RuntimeResource>> located  = findTarget(i);
+                Map<String, RequestMapper<RuntimeResource>> located = findTarget(i);
                 if (located != null) {
                     return located;
                 }

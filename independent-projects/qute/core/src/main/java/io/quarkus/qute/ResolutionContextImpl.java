@@ -34,12 +34,8 @@ class ResolutionContextImpl implements ResolutionContext {
     }
 
     @Override
-    public ResolutionContext createChild(Object data, List<NamespaceResolver> namespaceResolvers) {
-        return new ResolutionContextImpl(this, data, namespaceResolvers, evaluator, null, templateInstance);
-    }
-
-    @Override
-    public ResolutionContext createChild(Map<String, SectionBlock> extendingBlocks) {
+    public ResolutionContext createChild(Object data, List<NamespaceResolver> namespaceResolvers,
+            Map<String, SectionBlock> extendingBlocks) {
         return new ResolutionContextImpl(this, data, namespaceResolvers, evaluator, extendingBlocks, templateInstance);
     }
 

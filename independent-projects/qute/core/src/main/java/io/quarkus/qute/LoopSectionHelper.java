@@ -92,7 +92,7 @@ public class LoopSectionHelper implements SectionHelper {
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {
         AtomicReference<ResolutionContext> resolutionContextHolder = new AtomicReference<>();
         ResolutionContext child = context.resolutionContext().createChild(new IterationElement(alias, element, index, hasNext),
-                null);
+                null, null);
         resolutionContextHolder.set(child);
         return context.execute(child);
     }

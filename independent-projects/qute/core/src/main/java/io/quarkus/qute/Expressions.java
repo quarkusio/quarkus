@@ -159,7 +159,7 @@ public final class Expressions {
 
         @Override
         public boolean isLiteralSeparator(char candidate) {
-            return candidate == TYPE_INFO_SEPARATOR || Parser.isStringLiteralSeparator(candidate);
+            return candidate == TYPE_INFO_SEPARATOR || LiteralSupport.isStringLiteralSeparator(candidate);
         }
     };
 
@@ -192,7 +192,7 @@ public final class Expressions {
         boolean isSeparator(char candidate);
 
         default boolean isLiteralSeparator(char candidate) {
-            return Parser.isStringLiteralSeparator(candidate);
+            return LiteralSupport.isStringLiteralSeparator(candidate);
         }
 
         default boolean shouldPrependSeparator(char candidate) {

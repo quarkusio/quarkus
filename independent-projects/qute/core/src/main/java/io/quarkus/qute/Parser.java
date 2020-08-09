@@ -529,7 +529,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
     static int getFirstDeterminingEqualsCharPosition(String part) {
         boolean stringLiteral = false;
         for (int i = 0; i < part.length(); i++) {
-            if (isStringLiteralSeparator(part.charAt(i))) {
+            if (LiteralSupport.isStringLiteralSeparator(part.charAt(i))) {
                 if (i == 0) {
                     // The first char is a string literal separator
                     return -1;
@@ -568,7 +568,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 }
             } else {
                 if (composite == 0
-                        && isStringLiteralSeparator(c)) {
+                        && LiteralSupport.isStringLiteralSeparator(c)) {
                     stringLiteral = !stringLiteral;
                 } else if (!stringLiteral
                         && isCompositeStart(c) && (i == 0 || space || composite > 0
@@ -652,7 +652,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 // No bracket or colon before the bracket
                 && (bracketIdx == -1 || namespaceIdx < bracketIdx)
                 // No string literal
-                && !isStringLiteralSeparator(value.charAt(0))) {
+                && !LiteralSupport.isStringLiteralSeparator(value.charAt(0))) {
             // Expression that starts with a namespace
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);
@@ -714,16 +714,6 @@ class Parser implements Function<String, Expression>, ParserHelper {
             typeInfo = value;
         }
         return new ExpressionImpl.PartImpl(value, typeInfo);
-    }
-
-    /**
-     *
-     * @param character
-     * @return <code>true</code> if the char is a string literal separator,
-     *         <code>false</code> otherwise
-     */
-    static boolean isStringLiteralSeparator(char character) {
-        return character == '"' || character == '\'';
     }
 
     static boolean isLeftBracket(char character) {

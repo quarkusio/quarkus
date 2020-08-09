@@ -38,4 +38,7 @@ Interested on when the next release is coming? Check our [release planning](http
 
 The build instructions are available in the [contribution guide](CONTRIBUTING.md).
 
+## Testing powered by 
+<a target="_blank" href="https://www.browserstack.com/"><img width="200" src="https://www.browserstack.com/images/layout/browserstack-logo-600x315.png"></a><br>
+[[BrowserStack Open-Source Program](https://www.browserstack.com/open-source)]
 

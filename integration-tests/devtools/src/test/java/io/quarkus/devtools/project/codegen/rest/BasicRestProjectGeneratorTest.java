@@ -106,7 +106,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
                         && argument.contains("<artifactId>quarkus-app</artifactId")
                         && argument.contains("<version>0.0.1-SNAPSHOT</version>")
                         && argument.contains(
-                                "<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + getPluginVersion()
+                                "<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + getQuarkusCoreVersion()
                                         + "</" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">")));
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
                 argThat(argument -> argument.contains("@Path(\"/hello\")")));

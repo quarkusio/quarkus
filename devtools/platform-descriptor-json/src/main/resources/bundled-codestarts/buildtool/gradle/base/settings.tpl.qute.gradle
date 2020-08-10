@@ -3,9 +3,14 @@ pluginManagement {
         mavenLocal()
         mavenCentral()
         gradlePluginPortal()
+{#if gradle.plugin-repositories}
+{#for rep in gradle.plugin-repositories}
+        maven { url "{rep.url}" }
+{/for}
+{/if}
     }
     plugins {
-        id '{quarkus.plugin.id}' version "$\{quarkusPluginVersion}"
+        id "$\{quarkusPluginId}" version "$\{quarkusPluginVersion}"
     }
 }
 rootProject.name='{project.artifact-id}'

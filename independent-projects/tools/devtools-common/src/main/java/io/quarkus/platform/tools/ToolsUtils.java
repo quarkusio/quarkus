@@ -56,20 +56,40 @@ public class ToolsUtils {
         return properties;
     }
 
-    public static String getPluginArtifactId(Properties props) {
-        return props.getProperty(ToolsConstants.PROP_QUARKUS_PLUGIN_ARTIFACT_ID);
+    public static String requireProperty(Properties props, String name) {
+        final String value = props.getProperty(name);
+        if (value == null) {
+            throw new IllegalStateException("Failed to resolve required property " + name);
+        }
+        return value;
     }
 
-    public static String getPluginGroupId(Properties props) {
-        return props.getProperty(ToolsConstants.PROP_QUARKUS_PLUGIN_GROUP_ID);
+    public static String getMavenPluginArtifactId(Properties props) {
+        return props.getProperty(ToolsConstants.PROP_QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID);
     }
 
-    public static String getPluginVersion(Properties props) {
-        return props.getProperty(ToolsConstants.PROP_QUARKUS_PLUGIN_VERSION);
+    public static String getMavenPluginGroupId(Properties props) {
+        return props.getProperty(ToolsConstants.PROP_QUARKUS_MAVEN_PLUGIN_GROUP_ID);
+    }
+
+    public static String getQuarkusCoreVersion(Properties props) {
+        return props.getProperty(ToolsConstants.PROP_QUARKUS_CORE_VERSION);
+    }
+
+    public static String requireQuarkusCoreVersion(Properties props) {
+        return requireProperty(props, ToolsConstants.PROP_QUARKUS_CORE_VERSION);
+    }
+
+    public static String getMavenPluginVersion(Properties props) {
+        return props.getProperty(ToolsConstants.PROP_QUARKUS_MAVEN_PLUGIN_VERSION);
+    }
+
+    public static String getGradlePluginVersion(Properties props) {
+        return props.getProperty(ToolsConstants.PROP_QUARKUS_GRADLE_PLUGIN_VERSION);
     }
 
     public static String getPluginKey(Properties props) {
-        return getPluginGroupId(props) + ":" + getPluginArtifactId(props);
+        return getMavenPluginGroupId(props) + ":" + getMavenPluginArtifactId(props);
     }
 
     public static String getProposedMavenVersion(Properties props) {

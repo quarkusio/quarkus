@@ -2,9 +2,9 @@
 {#plugins}
 plugins {
     scala
-    id("{quarkus.plugin.id}")
+    id("{quarkus.gradle-plugin.id}")
 }
-        {/plugins}
+{/plugins}
 {/include}
 
 tasks.withType<ScalaCompile> {

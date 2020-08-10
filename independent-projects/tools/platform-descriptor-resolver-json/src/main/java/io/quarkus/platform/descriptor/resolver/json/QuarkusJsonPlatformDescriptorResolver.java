@@ -711,12 +711,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load quarkus.properties from the classpath", e);
         }
-        final String quarkusVersion = props.getProperty("plugin-version");
-        if (quarkusVersion == null) {
-            throw new IllegalStateException(
-                    "quarkus.properties loaded from the classpath is missing plugin-version property");
-        }
-        return quarkusVersion;
+        return ToolsUtils.requireQuarkusCoreVersion(props);
     }
 
     private static InputStream getCpResourceAsStream(String name) {

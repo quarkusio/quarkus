@@ -9,6 +9,7 @@ import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
+import io.quarkus.platform.tools.ToolsConstants;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -143,9 +144,10 @@ public class QuarkusTestPlatformDescriptorLoader
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load quarkus.properties", e);
         }
-        quarkusVersion = quarkusProps.getProperty("plugin-version");
+        quarkusVersion = quarkusProps.getProperty(ToolsConstants.PROP_QUARKUS_CORE_VERSION);
         if (quarkusVersion == null) {
-            throw new IllegalStateException("plugin-version property is missing from quarkus.properties");
+            throw new IllegalStateException(
+                    ToolsConstants.PROP_QUARKUS_CORE_VERSION + " property is missing from quarkus.properties");
         }
 
         addCategories();

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands;
 
+import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,7 +104,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project, getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertTrue(result.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result.isSuccess());
     }
@@ -116,7 +117,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project1 = readProject();
         hasDependency(project1, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project1, getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project1, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertTrue(result1.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result1.isSuccess());
 
@@ -124,7 +125,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final T project2 = readProject();
         hasDependency(project2, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project2, getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project2, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertFalse(result2.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result2.isSuccess());
     }
@@ -214,7 +215,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     private void hasDependency(T project, String artifactId) {
-        hasDependency(project, getPluginGroupId(), artifactId, null);
+        hasDependency(project, IO_QUARKUS, artifactId, null);
     }
 
     private void hasDependency(T project, String groupId, String artifactId, String version) {
@@ -224,8 +225,8 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     private void doesNotHaveDependency(T project, String artifactId) {
-        assertThat(countDependencyOccurrences(project, getPluginGroupId(), artifactId, null))
-                .describedAs("Dependency %s:%s must not be in project", getPluginGroupId(), artifactId)
+        assertThat(countDependencyOccurrences(project, IO_QUARKUS, artifactId, null))
+                .describedAs("Dependency %s:%s must not be in project", IO_QUARKUS, artifactId)
                 .isZero();
     }
 

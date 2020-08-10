@@ -1,6 +1,6 @@
 {#insert plugins}
 plugins {
-    id '{quarkus.plugin.id}'
+    id '{quarkus.gradle-plugin.id}'
 }
 {/}
 
@@ -8,6 +8,11 @@ plugins {
 repositories {
     mavenLocal()
     mavenCentral()
+{#if gradle.repositories}
+{#for rep in gradle.repositories}
+    maven { url "{rep.url}" }
+{/for}
+{/if}
 }
 {/}
 

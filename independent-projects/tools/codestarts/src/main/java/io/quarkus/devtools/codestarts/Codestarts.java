@@ -1,6 +1,5 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartData.DataKey.BUILDTOOL;
 import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
 import static io.quarkus.devtools.codestarts.CodestartProcessor.buildStrategies;
 import static io.quarkus.devtools.codestarts.CodestartSpec.Type.LANGUAGE;
@@ -10,10 +9,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,11 +19,7 @@ import java.util.stream.Stream;
 public class Codestarts {
 
     public static CodestartProject prepareProject(final CodestartInput input) throws IOException {
-        final Optional<String> buildtool = NestedMaps.getValue(input.getData(), BUILDTOOL.getKey());
-        final Set<String> selectedCodestartNames = Stream.concat(
-                input.getCodestarts().stream(),
-                Stream.of(buildtool.orElse(null)).filter(Objects::nonNull))
-                .collect(Collectors.toSet());
+        final Set<String> selectedCodestartNames = new HashSet<>(input.getCodestarts());
 
         final List<Codestart> allCodestarts = loadAllCodestarts(input);
 

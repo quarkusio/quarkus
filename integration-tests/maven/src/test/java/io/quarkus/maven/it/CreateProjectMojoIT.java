@@ -361,12 +361,12 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", getPluginVersion());
+        params.setProperty("platformVersion", getQuarkusCoreVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":create"));
+                getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(false);
         request.setProperties(params);

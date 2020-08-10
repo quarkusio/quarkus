@@ -1,5 +1,26 @@
 
 {
+    "metadata":{
+        "application-properties": {
+            "quarkus.native.builder-image" : "foo-bar"
+        },
+        "maven" :  {
+            "repositories" : {
+                "id": "redhat",
+                "url": "https://maven.repository.redhat.com"
+            },
+            "plugin-repositories" : {
+                "id": "redhat",
+                "url": "https://maven.repository.redhat.com"
+            }
+        },
+        "gradle" :  {
+            "repositories" : {
+                "id": "redhat",
+                "url": "https://maven.repository.redhat.com"
+            }
+        }
+    },
     "bom": {
         "group-id": "io.quarkus",
         "artifact-id": "quarkus-bom",

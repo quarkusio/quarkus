@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
     private List<Extension> extensions = Collections.emptyList();
     private List<Dependency> managedDeps = Collections.emptyList();
     private List<Category> categories = Collections.emptyList();
+    private Map<String, Object> metadata = Collections.emptyMap();
     private transient ResourceLoader resourceLoader;
     private transient MessageWriter log;
 
@@ -49,6 +51,10 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
 
     public void setExtensions(List<Extension> extensions) {
         this.extensions = extensions;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
     }
 
     void setManagedDependencies(List<Dependency> managedDeps) {
@@ -99,6 +105,11 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
     @Override
     public List<Extension> getExtensions() {
         return extensions;
+    }
+
+    @Override
+    public Map<String, Object> getMetadata() {
+        return metadata;
     }
 
     @Override

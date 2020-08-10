@@ -102,9 +102,8 @@ public class CodeGenMojo extends AbstractMojo {
                     .setTargetDirectory(buildDir.toPath())
                     .build().bootstrap();
 
-            Path generatedSourcesDir = test
-                    ? buildDir.toPath().resolve("generated-test-sources")
-                    : buildDir.toPath().resolve("generated-sources");
+            Path generatedSourcesDir = buildDir.toPath().resolve(test ? "generated-test-sources" : "generated-sources")
+                    .resolve("quarkus");
 
             sourceRegistrar.accept(generatedSourcesDir);
 

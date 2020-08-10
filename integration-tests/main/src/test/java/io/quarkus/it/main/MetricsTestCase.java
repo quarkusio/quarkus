@@ -145,7 +145,8 @@ public class MetricsTestCase {
                 // the spaces at the end are there on purpose to make sure the metrics are named exactly this way
                 .body(containsString("vendor_memory_committedNonHeap_bytes "))
                 .body(containsString("vendor_memory_usedNonHeap_bytes "))
-                .body(containsString("vendor_memory_maxNonHeap_bytes "));
+                .body(containsString("vendor_memory_maxNonHeap_bytes "))
+                .body(containsString("vendor_log_total{level=\"INFO\"} "));
     }
 
     /**

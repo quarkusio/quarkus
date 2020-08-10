@@ -1,5 +1,6 @@
 
 {
+    "any-future-property" : "blah",
     "metadata":{
         "application-properties": {
             "quarkus.native.builder-image" : "foo-bar"

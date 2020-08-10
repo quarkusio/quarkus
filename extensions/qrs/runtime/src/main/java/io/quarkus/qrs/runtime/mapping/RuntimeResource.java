@@ -24,9 +24,10 @@ public class RuntimeResource {
     private final boolean blocking;
     private final Class<?> resourceClass;
 
-    public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, MediaType produces, MediaType consumes, EndpointInvoker invoker,
-                           BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
-                           Type returnType, boolean blocking, Class<?> resourceClass) {
+    public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, MediaType produces, MediaType consumes,
+            EndpointInvoker invoker,
+            BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
+            Type returnType, boolean blocking, Class<?> resourceClass) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -92,6 +93,7 @@ public class RuntimeResource {
 
     /**
      * The @Path that is present on the class itself
+     * 
      * @return
      */
     public URITemplate getClassPath() {

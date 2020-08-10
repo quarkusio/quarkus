@@ -5,7 +5,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;

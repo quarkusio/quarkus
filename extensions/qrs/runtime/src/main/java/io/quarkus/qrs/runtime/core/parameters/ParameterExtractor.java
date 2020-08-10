@@ -1,8 +1,8 @@
 package io.quarkus.qrs.runtime.core.parameters;
 
-import io.quarkus.qrs.runtime.core.QrsRequestContext;
-
 import java.util.function.BiConsumer;
+
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public interface ParameterExtractor {
 

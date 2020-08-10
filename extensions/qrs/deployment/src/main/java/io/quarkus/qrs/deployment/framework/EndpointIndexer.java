@@ -6,17 +6,21 @@ import static io.quarkus.qrs.deployment.framework.QrsDotNames.LIST;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.PATH;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.PRODUCES;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.QUERY_PARAM;
+import static io.quarkus.qrs.deployment.framework.QrsDotNames.SET;
+import static io.quarkus.qrs.deployment.framework.QrsDotNames.SORTED_SET;
+import static io.quarkus.qrs.deployment.framework.QrsDotNames.STRING;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import io.quarkus.qrs.runtime.mapping.URITemplate;
-import io.quarkus.qrs.runtime.model.CollectionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ArrayType;
@@ -26,6 +30,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -33,42 +39,85 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.qrs.runtime.QrsRecorder;
+import io.quarkus.qrs.runtime.core.parameters.converters.GeneratedParameterConverter;
+import io.quarkus.qrs.runtime.core.parameters.converters.ListConverter;
+import io.quarkus.qrs.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.qrs.runtime.core.parameters.converters.SetConverter;
+import io.quarkus.qrs.runtime.core.parameters.converters.SortedSetConverter;
 import io.quarkus.qrs.runtime.model.MethodParameter;
 import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceMethod;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
-import org.jboss.jandex.TypeVariable;
 
 public class EndpointIndexer {
 
+    private static final Map<String, String> primitiveTypes;
+
+    private static final Logger log = Logger.getLogger(EndpointInvoker.class);
+
+    static {
+        Map<String, String> prims = new HashMap<>();
+        prims.put(byte.class.getName(), Byte.class.getName());
+        prims.put(Byte.class.getName(), Byte.class.getName());
+        prims.put(boolean.class.getName(), Boolean.class.getName());
+        prims.put(Boolean.class.getName(), Boolean.class.getName());
+        prims.put(char.class.getName(), Character.class.getName());
+        prims.put(Character.class.getName(), Character.class.getName());
+        prims.put(short.class.getName(), Short.class.getName());
+        prims.put(Short.class.getName(), Short.class.getName());
+        prims.put(int.class.getName(), Integer.class.getName());
+        prims.put(Integer.class.getName(), Integer.class.getName());
+        prims.put(float.class.getName(), Float.class.getName());
+        prims.put(Float.class.getName(), Float.class.getName());
+        prims.put(double.class.getName(), Double.class.getName());
+        prims.put(Double.class.getName(), Double.class.getName());
+        prims.put(long.class.getName(), Long.class.getName());
+        prims.put(Long.class.getName(), Long.class.getName());
+        primitiveTypes = Collections.unmodifiableMap(prims);
+    }
+
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder) {
-        List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                generatedClassBuildItemBuildProducer, recorder);
-        ResourceClass clazz = new ResourceClass();
-        clazz.getMethods().addAll(methods);
-        clazz.setClassName(classInfo.name().toString());
-        AnnotationInstance pathAnnotation = classInfo.classAnnotation(PATH);
-        if (pathAnnotation != null) {
-            String path = pathAnnotation.value().asString();
-            if (!path.startsWith("/")) {
-                path = "/" + path;
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
+            Map<String, String> existingConverters) {
+        try {
+            List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters);
+            ResourceClass clazz = new ResourceClass();
+            clazz.getMethods().addAll(methods);
+            clazz.setClassName(classInfo.name().toString());
+            AnnotationInstance pathAnnotation = classInfo.classAnnotation(PATH);
+            if (pathAnnotation != null) {
+                String path = pathAnnotation.value().asString();
+                if (!path.startsWith("/")) {
+                    path = "/" + path;
+                }
+                clazz.setPath(path);
             }
-            clazz.setPath(path);
+            clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
+            return clazz;
+        } catch (Exception e) {
+            if (Modifier.isInterface(classInfo.flags())) {
+                //kinda bogus, but we just ignore failed interfaces for now
+                //they can have methods that are not valid until they are actually extended by a concrete type
+                log.debug("Ignoring interface " + classInfo.name(), e);
+                return null;
+            }
+            throw new RuntimeException(e);
         }
-        clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
-        return clazz;
     }
 
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder) {
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
+            Map<String, String> existingConverters) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.PRODUCES));
         String[] classConsumes = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.CONSUMES));
@@ -96,8 +145,9 @@ public class EndpointIndexer {
                     if (methodPath == null) {
                         methodPath = "/";
                     }
-                    ResourceMethod method = createResourceMethod(currentClassInfo, generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, httpMethod, info, methodPath);
+                    ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
+                            generatedClassBuildItemBuildProducer,
+                            recorder, classProduces, classConsumes, httpMethod, info, methodPath, index, existingConverters);
 
                     ret.add(method);
                 }
@@ -123,8 +173,9 @@ public class EndpointIndexer {
                     if (pathAnnotation != null) {
                         methodPath = appendPath(pathAnnotation.value().asString(), methodPath);
                     }
-                    ResourceMethod method = createResourceMethod(currentClassInfo, generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, null, info, methodPath);
+                    ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
+                            generatedClassBuildItemBuildProducer,
+                            recorder, classProduces, classConsumes, null, info, methodPath, index, existingConverters);
                     ret.add(method);
                 }
             }
@@ -135,7 +186,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -143,15 +194,16 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters));
             }
         }
         return ret;
     }
 
-    private static ResourceMethod createResourceMethod(ClassInfo currentClassInfo,
+    private static ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
-            String[] classProduces, String[] classConsumes, DotName httpMethod, MethodInfo info, String methodPath) {
+            String[] classProduces, String[] classConsumes, DotName httpMethod, MethodInfo info, String methodPath,
+            IndexView indexView, Map<String, String> existingEndpoints) {
         Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
         MethodParameter[] methodParameters = new MethodParameter[info.parameters()
                 .size()];
@@ -196,24 +248,41 @@ public class EndpointIndexer {
                 type = ParameterType.BODY;
             }
             String elementType;
-            CollectionType collectionType = CollectionType.NONE;
+            boolean single = true;
+            Supplier<ParameterConverter> converter = null;
             Type paramType = info.parameters().get(i);
-            if (paramType.kind() == Type.Kind.ARRAY) {
-                collectionType = CollectionType.ARRAY;
-                elementType = toClassName(paramType.asArrayType().component());
-            } else if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                 ParameterizedType pt = paramType.asParameterizedType();
                 if (pt.name().equals(LIST)) {
-                    collectionType = CollectionType.LIST;
-                    elementType = toClassName(pt.arguments().get(0));
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, info);
+                    converter = new ListConverter.ListSupplier(converter);
+                } else if (pt.name().equals(SET)) {
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), actualEndpointInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, info);
+                    converter = new SetConverter.SetSupplier(converter);
+                } else if (pt.name().equals(SORTED_SET)) {
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), actualEndpointInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, info);
+                    converter = new SortedSetConverter.SortedSetSupplier(converter);
                 } else {
                     throw new RuntimeException("Invalid parameter type " + pt);
                 }
             } else {
-                elementType = toClassName(paramType);
+                elementType = toClassName(paramType, actualEndpointInfo, actualEndpointInfo, indexView);
+                if (type != ParameterType.CONTEXT && type != ParameterType.BODY) {
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, info);
+                }
             }
             methodParameters[i] = new MethodParameter(name,
-                    elementType, type, collectionType);
+                    elementType, type, single, converter);
         }
 
         String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
@@ -260,6 +329,73 @@ public class EndpointIndexer {
         }
         method.setInvoker(recorder.invoker(baseName));
         return method;
+    }
+
+    private static Supplier<ParameterConverter> extractConverter(String elementType, IndexView indexView,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            Map<String, String> existingConverters, MethodInfo methodInfo) {
+        if (elementType.equals(String.class.getName())) {
+            return null;
+        } else if (existingConverters.containsKey(elementType)) {
+            return new GeneratedParameterConverter().setClassName(existingConverters.get(elementType));
+        }
+        MethodDescriptor fromString = null;
+        MethodDescriptor valueOf = null;
+        MethodInfo stringCtor = null;
+        String prim = primitiveTypes.get(elementType);
+        String prefix = "";
+        if (prim != null) {
+            elementType = prim;
+            valueOf = MethodDescriptor.ofMethod(elementType, "valueOf", elementType, String.class);
+            prefix = "io.quarkus.generated.";
+        } else {
+            ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
+            if (type == null) {
+                //todo: should we fall back to reflection here?
+                throw new RuntimeException("Unknown parameter type " + elementType);
+            }
+            for (MethodInfo i : type.methods()) {
+                if (i.parameters().size() == 1) {
+                    if (i.parameters().get(0).name().equals(STRING)) {
+                        if (i.name().equals("<init>")) {
+                            stringCtor = i;
+                        } else if (i.name().equals("valueOf")) {
+                            valueOf = MethodDescriptor.of(i);
+                        } else if (i.name().equals("fromString")) {
+                            fromString = MethodDescriptor.of(i);
+                        }
+                    }
+                }
+            }
+            if (type.isEnum()) {
+                //spec weirdness, enums order is different
+                if (fromString != null) {
+                    valueOf = null;
+                }
+            }
+        }
+
+        String baseName = prefix + elementType + "$qrsparamConverter$";
+        try (ClassCreator classCreator = new ClassCreator(
+                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
+                Object.class.getName(), ParameterConverter.class.getName())) {
+            MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
+            if (stringCtor != null) {
+                ResultHandle ret = mc.newInstance(stringCtor, mc.getMethodParam(0));
+                mc.returnValue(ret);
+            } else if (valueOf != null) {
+                ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
+                mc.returnValue(ret);
+            } else if (fromString != null) {
+                ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
+                mc.returnValue(ret);
+            } else {
+                throw new RuntimeException("Unknown parameter type " + elementType + " on method " + methodInfo + " on class "
+                        + methodInfo.declaringClass());
+            }
+        }
+        existingConverters.put(elementType, baseName);
+        return new GeneratedParameterConverter().setClassName(baseName);
     }
 
     private static String methodDescriptor(MethodInfo info) {
@@ -328,10 +464,13 @@ public class EndpointIndexer {
         return classProduces;
     }
 
-    private static String toClassName(Type indexType) {
+    private static String toClassName(Type indexType, ClassInfo currentClass, ClassInfo actualEndpointClass,
+            IndexView indexView) {
         switch (indexType.kind()) {
             case CLASS:
                 return indexType.asClassType().name().toString();
+            case PRIMITIVE:
+                return indexType.asPrimitiveType().primitive().name().toLowerCase(Locale.ENGLISH);
             case PARAMETERIZED_TYPE:
                 return indexType.asParameterizedType().name().toString();
             case ARRAY:
@@ -340,16 +479,33 @@ public class EndpointIndexer {
                 for (int i = 0; i < arrayType.dimensions(); ++i) {
                     sb.append("[");
                 }
-                sb.append(toClassName(arrayType.component()));
+                sb.append(toClassName(arrayType.component(), currentClass, actualEndpointClass, indexView));
                 return sb.toString();
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = indexType.asTypeVariable();
                 if (typeVariable.bounds().isEmpty()) {
                     return Object.class.getName();
                 }
-                return toClassName(typeVariable.bounds().get(0));
+                int pos = -1;
+                for (int i = 0; i < currentClass.typeParameters().size(); ++i) {
+                    if (currentClass.typeParameters().get(i).identifier().equals(typeVariable.identifier())) {
+                        pos = i;
+                        break;
+                    }
+                }
+                if (pos != -1) {
+                    List<Type> params = JandexUtil.resolveTypeParameters(actualEndpointClass.name(), currentClass.name(),
+                            indexView);
+
+                    Type resolved = params.get(pos);
+                    if (resolved.kind() != Type.Kind.TYPE_VARIABLE
+                            || !resolved.asTypeVariable().identifier().equals(typeVariable.identifier())) {
+                        return toClassName(resolved, currentClass, actualEndpointClass, indexView);
+                    }
+                }
+                return toClassName(typeVariable.bounds().get(0), currentClass, actualEndpointClass, indexView);
             default:
-                throw new RuntimeException("Unknown parameter type" + indexType);
+                throw new RuntimeException("Unknown parameter type " + indexType);
         }
     }
 

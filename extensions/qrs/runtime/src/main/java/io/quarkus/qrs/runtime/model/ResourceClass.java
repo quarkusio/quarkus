@@ -3,7 +3,6 @@ package io.quarkus.qrs.runtime.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 
 public class ResourceClass {

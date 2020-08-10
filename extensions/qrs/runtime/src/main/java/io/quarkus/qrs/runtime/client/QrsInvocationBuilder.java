@@ -27,6 +27,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpMethod;
 
 public class QrsInvocationBuilder implements Invocation.Builder {
 
@@ -146,42 +147,7 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response get() {
-        CompletableFuture<Response> result = new CompletableFuture<>();
-        HttpClientRequest httpClientRequest = httpClient.get(uri.getPort(), uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-        for (Map.Entry<String, List<String>> entry : headers.asMap().entrySet()) {
-            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
-        }
-        httpClientRequest
-                .handler(new Handler<HttpClientResponse>() {
-                    @Override
-                    public void handle(HttpClientResponse event) {
-                        event.bodyHandler(new Handler<Buffer>() {
-                            @Override
-                            public void handle(Buffer buffer) {
-                                QrsResponseBuilder response = new QrsResponseBuilder();
-                                for (String i : event.headers().names()) {
-                                    response.header(i, event.getHeader(i));
-                                }
-                                response.status(event.statusCode());
-                                response.entity(buffer.toString(StandardCharsets.UTF_8));
-
-                                result.complete(response.build());
-                            }
-                        });
-                    }
-                }).exceptionHandler(new Handler<Throwable>() {
-                    @Override
-                    public void handle(Throwable event) {
-                        result.completeExceptionally(event);
-                    }
-                }).end();
-
-        try {
-            return result.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        return method("GET");
     }
 
     @Override
@@ -246,7 +212,7 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response options() {
-        return null;
+        return method("OPTIONS");
     }
 
     @Override
@@ -276,7 +242,42 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response method(String name) {
-        return null;
+        CompletableFuture<Response> result = new CompletableFuture<>();
+        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(name), uri.getPort(), uri.getHost(),
+                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+        for (Map.Entry<String, List<String>> entry : headers.asMap().entrySet()) {
+            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
+        }
+        httpClientRequest
+                .handler(new Handler<HttpClientResponse>() {
+                    @Override
+                    public void handle(HttpClientResponse event) {
+                        event.bodyHandler(new Handler<Buffer>() {
+                            @Override
+                            public void handle(Buffer buffer) {
+                                QrsResponseBuilder response = new QrsResponseBuilder();
+                                for (String i : event.headers().names()) {
+                                    response.header(i, event.getHeader(i));
+                                }
+                                response.status(event.statusCode());
+                                response.entity(buffer.toString(StandardCharsets.UTF_8));
+
+                                result.complete(response.build());
+                            }
+                        });
+                    }
+                }).exceptionHandler(new Handler<Throwable>() {
+                    @Override
+                    public void handle(Throwable event) {
+                        result.completeExceptionally(event);
+                    }
+                }).end();
+
+        try {
+            return result.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

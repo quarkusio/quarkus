@@ -1,4 +1,4 @@
-package io.quarkus.qrs.runtime.core.parameters;
+package io.quarkus.qrs.runtime.core.parameters.converters;
 
 public interface ParameterConverter {
 

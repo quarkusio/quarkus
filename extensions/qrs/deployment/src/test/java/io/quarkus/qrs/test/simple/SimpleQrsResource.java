@@ -63,7 +63,7 @@ public class SimpleQrsResource {
     @Path("params/{p}")
     public String params(@PathParam("p") String p,
             @QueryParam("q") String q,
-            @HeaderParam("h") String h,
+            @HeaderParam("h") int h,
             @FormParam("f") String f) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f;
     }

@@ -488,9 +488,9 @@ public class QrsRequestContext implements Runnable, Closeable {
             }
             matchedURIs.add(new UriMatch(path.substring(1, pos), null, null));
         }
-            String path = context.request().path();
-            matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
-                    target, endpointInstance));
+        String path = context.request().path();
+        matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
+                target, endpointInstance));
     }
 
     public List<UriMatch> getMatchedURIs() {

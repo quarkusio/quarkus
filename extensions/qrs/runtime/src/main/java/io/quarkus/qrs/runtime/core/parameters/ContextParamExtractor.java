@@ -4,7 +4,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
-import io.quarkus.qrs.runtime.core.parameters.ParameterExtractor;
 
 public class ContextParamExtractor implements ParameterExtractor {
 

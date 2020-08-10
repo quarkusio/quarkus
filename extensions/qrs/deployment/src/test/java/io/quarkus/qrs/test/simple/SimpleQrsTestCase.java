@@ -83,10 +83,10 @@ public class SimpleQrsTestCase {
     public void testParams() {
         RestAssured.with()
                 .queryParam("q", "qv")
-                .header("h", "hv")
+                .header("h", "123")
                 .formParam("f", "fv")
                 .post("/simple/params/pv")
-                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: hv, f: fv"));
+                .then().body(Matchers.equalTo("params: p: pv, q: qv, h: 123, f: fv"));
     }
 
     @Test

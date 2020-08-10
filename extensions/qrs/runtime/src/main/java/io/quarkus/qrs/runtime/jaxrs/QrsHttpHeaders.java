@@ -12,7 +12,6 @@ import java.util.StringTokenizer;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import io.quarkus.qrs.runtime.util.CaseInsensitiveMap;

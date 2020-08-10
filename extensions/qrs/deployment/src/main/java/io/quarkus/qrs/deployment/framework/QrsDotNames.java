@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Predicate;
 
 import javax.ws.rs.ApplicationPath;
@@ -65,6 +66,9 @@ public final class QrsDotNames {
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 
     public static final DotName LIST = DotName.createSimple(List.class.getName());
+    public static final DotName SET = DotName.createSimple(Set.class.getName());
+    public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
+    public static final DotName STRING = DotName.createSimple(String.class.getName());
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));

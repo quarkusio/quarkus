@@ -1,20 +1,26 @@
 package io.quarkus.qrs.runtime.model;
 
+import java.util.function.Supplier;
+
+import io.quarkus.qrs.runtime.core.parameters.converters.ParameterConverter;
+
 public class MethodParameter {
     public String name;
     public String type;
     public ParameterType parameterType;
-    public CollectionType collectionType;
-
-    public MethodParameter(String name, String type, ParameterType parameterType, CollectionType collectionType) {
-        this.name = name;
-        this.type = type;
-        this.parameterType = parameterType;
-        this.collectionType = collectionType;
-    }
+    private boolean single;
+    public Supplier<ParameterConverter> converter;
 
     public MethodParameter() {
+    }
 
+    public MethodParameter(String name, String type, ParameterType parameterType, boolean single,
+            Supplier<ParameterConverter> converter) {
+        this.name = name;
+        this.type = type;
+        this.converter = converter;
+        this.parameterType = parameterType;
+        this.single = single;
     }
 
     public String getName() {
@@ -41,12 +47,21 @@ public class MethodParameter {
         this.parameterType = parameterType;
     }
 
-    public CollectionType getCollectionType() {
-        return collectionType;
+    public Supplier<ParameterConverter> getConverter() {
+        return converter;
     }
 
-    public MethodParameter setCollectionType(CollectionType collectionType) {
-        this.collectionType = collectionType;
+    public MethodParameter setConverter(Supplier<ParameterConverter> converter) {
+        this.converter = converter;
+        return this;
+    }
+
+    public boolean isSingle() {
+        return single;
+    }
+
+    public MethodParameter setSingle(boolean single) {
+        this.single = single;
         return this;
     }
 }

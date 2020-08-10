@@ -15,16 +15,16 @@ import javax.ws.rs.core.MediaType;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
+import io.quarkus.qrs.runtime.core.ExceptionMapping;
+import io.quarkus.qrs.runtime.core.QrsDeployment;
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.parameters.BodyParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.ContextParamExtractor;
-import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.core.parameters.FormParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.HeaderParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.qrs.runtime.core.parameters.PathParamExtractor;
-import io.quarkus.qrs.runtime.core.QrsDeployment;
 import io.quarkus.qrs.runtime.core.parameters.QueryParamExtractor;
-import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
@@ -46,7 +46,6 @@ import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
-import io.quarkus.qrs.runtime.model.CollectionType;
 import io.quarkus.qrs.runtime.model.MethodParameter;
 import io.quarkus.qrs.runtime.model.ParameterType;
 import io.quarkus.qrs.runtime.model.ResourceClass;
@@ -68,6 +67,21 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class QrsRecorder {
+
+    private static final Map<String, Class<?>> primitiveTypes;
+
+    static {
+        Map<String, Class<?>> prims = new HashMap<>();
+        prims.put(byte.class.getName(), byte.class);
+        prims.put(boolean.class.getName(), boolean.class);
+        prims.put(char.class.getName(), char.class);
+        prims.put(short.class.getName(), short.class);
+        prims.put(int.class.getName(), int.class);
+        prims.put(float.class.getName(), float.class);
+        prims.put(double.class.getName(), double.class);
+        prims.put(long.class.getName(), long.class);
+        primitiveTypes = Collections.unmodifiableMap(prims);
+    }
 
     public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {
         return new ArcBeanFactory<>(loadClass(targetClass),
@@ -171,12 +185,12 @@ public class QrsRecorder {
     }
 
     public RuntimeResource buildResourceMethod(Serialisers serialisers,
-                                               List<ResourceRequestInterceptor> requestInterceptors,
-                                               List<ResourceResponseInterceptor> responseInterceptors,
-                                               ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
-                                               ResourceRequestInterceptorHandler requestInterceptorsHandler,
-                                               ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
-                                               ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
+            List<ResourceRequestInterceptor> requestInterceptors,
+            List<ResourceResponseInterceptor> responseInterceptors,
+            ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
+            ResourceRequestInterceptorHandler requestInterceptorsHandler,
+            ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
+            ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
         List<RestHandler> handlers = new ArrayList<>();
         MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
@@ -206,7 +220,7 @@ public class QrsRecorder {
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             ParameterExtractor extractor;
-            boolean single = param.collectionType == CollectionType.NONE;
+            boolean single = param.isSingle();
             switch (param.parameterType) {
                 case HEADER:
                     extractor = new HeaderParamExtractor(param.name, single);
@@ -230,7 +244,7 @@ public class QrsRecorder {
                     extractor = new QueryParamExtractor(param.name, single);
                     break;
             }
-            handlers.add(new ParameterHandler(i, extractor, null));
+            handlers.add(new ParameterHandler(i, extractor, param.converter == null ? null : param.converter.get()));
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(new Supplier<Executor>() {
@@ -301,6 +315,9 @@ public class QrsRecorder {
 
     @SuppressWarnings("unchecked")
     private static <T> Class<T> loadClass(String name) {
+        if (primitiveTypes.containsKey(name)) {
+            return (Class<T>) primitiveTypes.get(name);
+        }
         try {
             return (Class<T>) Class.forName(name, false, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {

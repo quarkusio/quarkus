@@ -10,8 +10,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriInfo;
 
-import io.quarkus.arc.Unremovable;
 import org.junit.jupiter.api.Assertions;
+
+import io.quarkus.arc.Unremovable;
 
 @ApplicationScoped
 @Unremovable
@@ -25,8 +26,8 @@ public class ParameterSubResClassSub {
 
     @GET
     @Produces("text/plain")
-    public String get(@Context HttpHeaders headers,@Context UriInfo uriInfo) {
-        Assertions.assertEquals( "/path/subclass", uriInfo.getPath());
+    public String get(@Context HttpHeaders headers, @Context UriInfo uriInfo) {
+        Assertions.assertEquals("/path/subclass", uriInfo.getPath());
         Assertions.assertNotNull(headers.getHeaderString("Host"));
         return "resourceCounter:" + resourceCounter.incrementAndGet() + ",appscope:" + appScope.getCount() + ",requestScope:"
                 + requestScope.getCount();

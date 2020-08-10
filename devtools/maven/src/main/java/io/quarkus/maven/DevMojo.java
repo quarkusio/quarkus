@@ -1,5 +1,14 @@
 package io.quarkus.maven;
 
+import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.groupId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -64,7 +73,6 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
@@ -114,6 +122,7 @@ public class DevMojo extends AbstractMojo {
     private static final String QUARKUS_PREPARE_GOAL = "prepare";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
+    private static final String MAVEN_CLEAN_PLUGIN = "maven-clean-plugin";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
     private static final String MAVEN_RESOURCES_PLUGIN = "maven-resources-plugin";
 
@@ -401,6 +410,7 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
+            triggerClean();
             if (prepareNeeded) {
                 triggerPrepare();
             }
@@ -408,13 +418,25 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
+    private void triggerClean() throws MojoExecutionException {
+        Plugin quarkusPlugin = project.getPlugin(ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_CLEAN_PLUGIN);
+        executeMojo(
+                quarkusPlugin,
+                goal("clean"),
+                configuration(),
+                executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
+    }
+
     private void triggerPrepare() throws MojoExecutionException {
         Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
-        MojoExecutor.executeMojo(
+        executeMojo(
                 quarkusPlugin,
-                MojoExecutor.goal(QUARKUS_PREPARE_GOAL),
-                MojoExecutor.configuration(),
-                MojoExecutor.executionEnvironment(
+                goal(QUARKUS_PREPARE_GOAL),
+                configuration(),
+                executionEnvironment(
                         project,
                         session,
                         pluginManager));
@@ -450,37 +472,37 @@ public class DevMojo extends AbstractMojo {
         if (resourcesPlugin == null) {
             return;
         }
-        MojoExecutor.executeMojo(
-                MojoExecutor.plugin(
-                        MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
-                        MojoExecutor.artifactId(MAVEN_RESOURCES_PLUGIN),
-                        MojoExecutor.version(resourcesPlugin.getVersion()),
+        executeMojo(
+                plugin(
+                        groupId(ORG_APACHE_MAVEN_PLUGINS),
+                        artifactId(MAVEN_RESOURCES_PLUGIN),
+                        version(resourcesPlugin.getVersion()),
                         resourcesPlugin.getDependencies()),
-                MojoExecutor.goal("resources"),
+                goal("resources"),
                 getPluginConfig(resourcesPlugin),
-                MojoExecutor.executionEnvironment(
+                executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
     private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
-        MojoExecutor.executeMojo(
-                MojoExecutor.plugin(
-                        MojoExecutor.groupId(groupId),
-                        MojoExecutor.artifactId(artifactId),
-                        MojoExecutor.version(plugin.getVersion()),
+        executeMojo(
+                plugin(
+                        groupId(groupId),
+                        artifactId(artifactId),
+                        version(plugin.getVersion()),
                         plugin.getDependencies()),
-                MojoExecutor.goal("compile"),
+                goal("compile"),
                 getPluginConfig(plugin),
-                MojoExecutor.executionEnvironment(
+                executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
     private Xpp3Dom getPluginConfig(Plugin plugin) {
-        Xpp3Dom configuration = MojoExecutor.configuration();
+        Xpp3Dom configuration = configuration();
         Xpp3Dom pluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
         if (pluginConfiguration != null) {
             //Filter out `test*` configurations

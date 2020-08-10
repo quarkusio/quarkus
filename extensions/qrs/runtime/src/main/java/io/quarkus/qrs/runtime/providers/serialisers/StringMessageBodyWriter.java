@@ -11,6 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
+import io.quarkus.qrs.runtime.core.LazyMethod;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.http.HttpServerResponse;
@@ -28,6 +29,11 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         // FIXME: use response encoding
         entityStream.write(o.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
+        return true;
     }
 
     @Override

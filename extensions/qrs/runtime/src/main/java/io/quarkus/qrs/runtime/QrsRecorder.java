@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
 import io.quarkus.qrs.runtime.core.ExceptionMapping;
+import io.quarkus.qrs.runtime.core.LazyMethod;
 import io.quarkus.qrs.runtime.core.QrsDeployment;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.parameters.BodyParamExtractor;
@@ -280,11 +281,13 @@ public class QrsRecorder {
         }
         handlers.add(new ResponseWriterHandler());
 
+        Class<Object> resourceClass = loadClass(clazz.getClassName());
         return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
                 classPathTemplate, method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
-                nonAsyncReturnType, method.isBlocking(), loadClass(clazz.getClassName()));
+                nonAsyncReturnType, method.isBlocking(), resourceClass,
+                new LazyMethod(method.getName(), resourceClass, parameterTypes));
     }
 
     private Class<?> getRawType(Type type) {

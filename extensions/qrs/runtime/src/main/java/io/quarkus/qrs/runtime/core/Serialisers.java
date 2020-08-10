@@ -12,6 +12,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
+import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 
 public class Serialisers {
 
@@ -30,9 +31,19 @@ public class Serialisers {
                 }
                 // FIXME: spec says to use content type sorting too
                 for (MessageBodyWriter<?> writer : writers) {
-                    // FIXME: those nulls
-                    if (writer.isWriteable(response.getEntity().getClass(), null, null, response.getMediaType()))
-                        return writer;
+                    if (writer instanceof QrsMessageBodyWriter) {
+                        if (((QrsMessageBodyWriter<?>) writer).isWriteable(response.getEntity().getClass(),
+                                requestContext.getTarget().getLazyMethod(), response.getMediaType())) {
+                            return writer;
+                        }
+
+                    } else {
+                        if (writer.isWriteable(response.getEntity().getClass(),
+                                requestContext.getTarget().getLazyMethod().getGenericReturnType(),
+                                requestContext.getTarget().getLazyMethod().getAnnotations(), response.getMediaType())) {
+                            return writer;
+                        }
+                    }
                 }
                 // not found any match, look up
             }
@@ -54,8 +65,8 @@ public class Serialisers {
                 }
                 // FIXME: spec says to use content type sorting too
                 for (MessageBodyReader<?> reader : readers) {
-                    // FIXME: those nulls
-                    if (reader.isReadable(targetType, null, null, mediaType))
+                    if (reader.isReadable(targetType, requestContext.getTarget().getLazyMethod().getGenericReturnType(),
+                            requestContext.getTarget().getLazyMethod().getAnnotations(), mediaType))
                         return reader;
                 }
                 // not found any match, look up

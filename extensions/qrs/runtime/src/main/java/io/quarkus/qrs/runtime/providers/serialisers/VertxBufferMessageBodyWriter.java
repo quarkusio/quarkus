@@ -10,6 +10,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
+import io.quarkus.qrs.runtime.core.LazyMethod;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
@@ -27,6 +28,11 @@ public class VertxBufferMessageBodyWriter implements QrsMessageBodyWriter<Buffer
     public void writeTo(Buffer buffer, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         entityStream.write(buffer.getBytes());
+    }
+
+    @Override
+    public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
+        return true;
     }
 
     @Override

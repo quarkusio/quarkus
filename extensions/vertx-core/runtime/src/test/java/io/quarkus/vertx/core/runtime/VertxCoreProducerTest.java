@@ -80,10 +80,10 @@ public class VertxCoreProducerTest {
         vc.caching = true;
         vc.classpathResolving = true;
         vc.eventLoopsPoolSize = OptionalInt.empty();
-        vc.maxEventLoopExecuteTime = Optional.of(Duration.ofSeconds(2));
+        vc.maxEventLoopExecuteTime = Duration.ofSeconds(2);
         vc.warningExceptionTime = Duration.ofSeconds(2);
         vc.workerPoolSize = 20;
-        vc.maxWorkerExecuteTime = Optional.of(Duration.ofSeconds(1));
+        vc.maxWorkerExecuteTime = Duration.ofSeconds(1);
         vc.internalBlockingPoolSize = 20;
         vc.useAsyncDNS = false;
         vc.preferNativeTransport = false;

@@ -10,6 +10,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -28,6 +29,7 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
@@ -198,6 +200,16 @@ public class NativeImageAutoFeatureStep {
             for (String j : i.getResources()) {
                 overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
                         overallCatch.load(j));
+            }
+            if (i.getResourcePatterns() != null && !i.getResourcePatterns().isEmpty()) {
+                for (String pattern : i.getResourcePatterns()) {
+                    List<String> paths = getResourcePathList(pattern, i.getIdentifier());
+                    for (String path : paths) {
+                        overallCatch.invokeStaticMethod(
+                                ofMethod(ResourceHelper.class, "registerResources", void.class, String.class),
+                                overallCatch.load(path));
+                    }
+                }
             }
         }
 
@@ -402,6 +414,40 @@ public class NativeImageAutoFeatureStep {
         beforeAn.returnValue(null);
 
         file.close();
+    }
+
+    private List<String> getResourcePathList(String resourcePattern, String identifier) {
+        try {
+            ArrayList<String> resourcePaths = new ArrayList<>();
+            ClassLoader loader = QuarkusClassLoader.getSystemClassLoader();
+            Enumeration<URL> en = loader.getResources("META-INF");
+            while (en.hasMoreElements()) {
+                URL url = en.nextElement();
+                JarURLConnection urlcon = (JarURLConnection) (url.openConnection());
+                try (JarFile jar = urlcon.getJarFile();) {
+                    Enumeration<JarEntry> entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry jarEntry = entries.nextElement();
+                        if (!jarEntry.isDirectory()) {
+                            String entry = jarEntry.getName();
+
+                            if (entry.matches(resourcePattern) && !entry.endsWith(".class")) {
+                                if (identifier != null && entry.contains(identifier)) {
+                                    resourcePaths.add(entry);
+                                } else if (identifier == null) {
+                                    resourcePaths.add(entry);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return resourcePaths;
+        } catch (IOException ioException) {
+
+        } finally {
+            return null;
+        }
     }
 
     public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {

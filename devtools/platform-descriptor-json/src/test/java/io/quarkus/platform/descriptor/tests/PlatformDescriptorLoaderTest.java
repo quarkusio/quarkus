@@ -1,5 +1,6 @@
 package io.quarkus.platform.descriptor.tests;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -64,13 +65,10 @@ class PlatformDescriptorLoaderTest {
         };
 
         QuarkusJsonPlatformDescriptor load = qpd.load(context);
-
         assertNotNull(load);
-
         assertEquals(85, load.getExtensions().size());
-
         assertEquals(1, load.getCategories().size());
-
+        assertThat(load.getMetadata()).containsKeys("application-properties", "maven", "gradle");
     }
 
 }

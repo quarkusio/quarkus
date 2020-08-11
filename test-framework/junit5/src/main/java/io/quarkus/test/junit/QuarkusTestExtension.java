@@ -35,6 +35,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -608,8 +609,15 @@ public class QuarkusTestExtension
         try {
             actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
                     Thread.currentThread().getContextClassLoader());
-
-            actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+            if (extensionContext.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+                Class<?> parent = actualTestClass.getEnclosingClass();
+                Object parentInstance = runningQuarkusApplication.instance(parent);
+                Constructor<?> declaredConstructor = actualTestClass.getDeclaredConstructor(parent);
+                declaredConstructor.setAccessible(true);
+                actualTestInstance = declaredConstructor.newInstance(parentInstance);
+            } else {
+                actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+            }
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
             resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, actualTestInstance,

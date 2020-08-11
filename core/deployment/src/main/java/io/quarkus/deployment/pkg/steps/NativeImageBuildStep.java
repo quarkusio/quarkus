@@ -351,7 +351,7 @@ public class NativeImageBuildStep {
             String executableName = outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix;
             command.add(executableName);
 
-            log.info(String.join(" ", command));
+            log.info(String.join(" ", command).replace("$", "\\$"));
             CountDownLatch errorReportLatch = new CountDownLatch(1);
             final ProcessBuilder processBuilder = new ProcessBuilder(command).directory(outputDir.toFile());
             final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);

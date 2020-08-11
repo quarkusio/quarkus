@@ -126,7 +126,7 @@ public final class HibernateOrmProcessor {
 
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
-    public static final String DEFAULT_PERSISTENCE_UNIT_NAME = "default";
+    public static final String DEFAULT_PERSISTENCE_UNIT_NAME = "<default>";
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 

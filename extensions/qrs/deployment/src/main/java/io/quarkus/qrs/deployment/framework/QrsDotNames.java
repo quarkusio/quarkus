@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
@@ -61,6 +62,7 @@ public final class QrsDotNames {
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
+    public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());

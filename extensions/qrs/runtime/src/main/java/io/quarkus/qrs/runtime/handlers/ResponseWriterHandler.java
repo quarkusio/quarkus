@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 
 /**
@@ -26,18 +27,23 @@ public class ResponseWriterHandler implements RestHandler {
     public void handle(QrsRequestContext requestContext) throws Exception {
         HttpServerResponse vertxResponse = requestContext.getContext().response();
 
+        Response response = requestContext.getResponse();
         // has been converted in ResponseHandler
         //TODO: should we do this the other way around so there is no need to allocate the Response object
-        Response response = requestContext.getResponse();
-        Object entity = response.getEntity();
-        vertxResponse.setStatusCode(response.getStatus());
-        if (response.getStatusInfo().getReasonPhrase() != null)
-            vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
-        MultivaluedMap<String, String> headers = response.getStringHeaders();
-        for (Entry<String, List<String>> entry : headers.entrySet()) {
-            vertxResponse.putHeader(entry.getKey(), entry.getValue());
-        }
+        requestContext.getContext().addHeadersEndHandler(new Handler<Void>() {
+            @Override
+            public void handle(Void event) {
+                vertxResponse.setStatusCode(response.getStatus());
+                if (response.getStatusInfo().getReasonPhrase() != null)
+                    vertxResponse.setStatusMessage(response.getStatusInfo().getReasonPhrase());
+                MultivaluedMap<String, String> headers = response.getStringHeaders();
+                for (Entry<String, List<String>> entry : headers.entrySet()) {
+                    vertxResponse.putHeader(entry.getKey(), entry.getValue());
+                }
+            }
+        });
 
+        Object entity = response.getEntity();
         if (entity != null) {
             EntityWriter entityWriter = requestContext.getEntityWriter();
             if (entityWriter == null) {

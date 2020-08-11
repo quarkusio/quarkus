@@ -17,7 +17,7 @@ import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.vertx.core.http.HttpServerResponse;
 
 @Provider
-public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
+public class StringMessageBodyWriter implements QrsMessageBodyWriter<Object> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -25,7 +25,7 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
     }
 
     @Override
-    public void writeTo(String o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         // FIXME: use response encoding
         entityStream.write(o.toString().getBytes(StandardCharsets.UTF_8));
@@ -37,7 +37,7 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
     }
 
     @Override
-    public void writeResponse(String o, QrsRequestContext context) throws WebApplicationException {
+    public void writeResponse(Object o, QrsRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
         HttpServerResponse vertxResponse = context.getContext().response();
         vertxResponse.end(o.toString());

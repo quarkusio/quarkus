@@ -223,6 +223,11 @@ public class EndpointIndexer {
             AnnotationInstance headerParam = anns.get(QrsDotNames.HEADER_PARAM);
             AnnotationInstance formParam = anns.get(QrsDotNames.FORM_PARAM);
             AnnotationInstance contextParam = anns.get(QrsDotNames.CONTEXT);
+            AnnotationInstance defaultValueAnnotation = anns.get(QrsDotNames.DEFAULT_VALUE);
+            String defaultValue = null;
+            if (defaultValueAnnotation != null) {
+                defaultValue = defaultValueAnnotation.value().asString();
+            }
             ParameterType type;
             if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
                 throw new RuntimeException(
@@ -281,7 +286,7 @@ public class EndpointIndexer {
                 }
             }
             methodParameters[i] = new MethodParameter(name,
-                    elementType, type, single, converter);
+                    elementType, type, single, converter, defaultValue);
         }
 
         String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);

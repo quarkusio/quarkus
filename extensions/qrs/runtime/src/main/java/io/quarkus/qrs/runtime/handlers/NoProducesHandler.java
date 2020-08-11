@@ -1,7 +1,11 @@
-package io.quarkus.qrs.runtime.headers;
+package io.quarkus.qrs.runtime.handlers;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +23,6 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
-import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.util.MediaTypeHelper;
 
@@ -39,6 +42,7 @@ public class NoProducesHandler implements RestHandler {
             Class<?> c = aClass;
             Set<MediaType> types = new LinkedHashSet<>();
             List<ResourceWriter> writers = new ArrayList<>();
+            Set<Class<?>> seenInterfaces = new HashSet<>();
             while (c != null) {
                 List<ResourceWriter> forClass = serialisers.getWriters().get(c);
                 if (forClass != null) {
@@ -47,7 +51,13 @@ public class NoProducesHandler implements RestHandler {
                         writers.add(writer);
                     }
                 }
-                for (Class<?> iface : c.getInterfaces()) {
+                Deque<Class<?>> interfaces = new ArrayDeque<>(Arrays.asList(c.getInterfaces()));
+                while (!interfaces.isEmpty()) {
+                    Class<?> iface = interfaces.poll();
+                    if (seenInterfaces.contains(iface)) {
+                        continue;
+                    }
+                    seenInterfaces.add(iface);
                     forClass = serialisers.getWriters().get(iface);
                     if (forClass != null) {
                         for (ResourceWriter writer : forClass) {
@@ -55,6 +65,7 @@ public class NoProducesHandler implements RestHandler {
                             writers.add(writer);
                         }
                     }
+                    interfaces.addAll(Arrays.asList(iface.getInterfaces()));
                 }
                 c = c.getSuperclass();
             }

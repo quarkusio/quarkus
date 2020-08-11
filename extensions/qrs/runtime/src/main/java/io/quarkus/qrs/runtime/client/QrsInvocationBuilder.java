@@ -192,7 +192,7 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response delete() {
-        return null;
+        return method("DELETE");
     }
 
     @Override

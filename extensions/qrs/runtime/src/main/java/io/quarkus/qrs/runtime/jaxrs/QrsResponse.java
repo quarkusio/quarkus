@@ -21,6 +21,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.qrs.runtime.headers.MediaTypeHeaderDelegate;
+
 public class QrsResponse extends Response {
 
     int status;
@@ -89,8 +91,13 @@ public class QrsResponse extends Response {
 
     @Override
     public MediaType getMediaType() {
-        String contentType = (String) headers.getFirst(HttpHeaders.CONTENT_TYPE);
-        return contentType != null ? MediaType.valueOf(contentType) : null;
+        Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+        if (first instanceof String) {
+            String contentType = (String) first;
+            return contentType != null ? MediaType.valueOf(contentType) : null;
+        } else {
+            return (MediaType) first;
+        }
     }
 
     @Override
@@ -178,8 +185,12 @@ public class QrsResponse extends Response {
             for (Entry<String, List<Object>> entry : headers.entrySet()) {
                 List<String> stringValues = new ArrayList<>(entry.getValue().size());
                 for (Object value : entry.getValue()) {
-                    // FIXME: serialisation support
-                    stringValues.add((String) value);
+                    if (value instanceof MediaType) {
+                        stringValues.add(MediaTypeHeaderDelegate.INSTANCE.toString(value));
+                    } else {
+                        // FIXME: serialisation support
+                        stringValues.add((String) value);
+                    }
                 }
                 stringHeaders.put(entry.getKey(), stringValues);
             }

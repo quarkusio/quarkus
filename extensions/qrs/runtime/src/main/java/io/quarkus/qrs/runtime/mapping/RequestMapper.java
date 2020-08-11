@@ -12,9 +12,11 @@ public class RequestMapper<T> {
      * TODO: this needs a lot of work
      */
     private final PathMatcher<List<RequestPath<T>>> requestPaths;
+    private final List<RequestPath<T>> templates;
 
     public RequestMapper(List<RequestPath<T>> templates) {
         this.requestPaths = new PathMatcher<>();
+        this.templates = templates;
         Map<String, List<RequestPath<T>>> aggregates = new HashMap<>();
         for (RequestPath<T> i : templates) {
             List<RequestPath<T>> paths = aggregates.get(i.template.stem);
@@ -142,4 +144,11 @@ public class RequestMapper<T> {
         this.requestPaths.dump(0);
     }
 
+    public PathMatcher<List<RequestPath<T>>> getRequestPaths() {
+        return requestPaths;
+    }
+
+    public List<RequestPath<T>> getTemplates() {
+        return templates;
+    }
 }

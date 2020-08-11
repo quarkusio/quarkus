@@ -9,11 +9,13 @@ import io.quarkus.qrs.runtime.core.parameters.converters.ParameterConverter;
 public class ParameterHandler implements RestHandler {
 
     private final int index;
+    private final String defaultValue;
     private final ParameterExtractor extractor;
     private final ParameterConverter converter;
 
-    public ParameterHandler(int index, ParameterExtractor extractor, ParameterConverter converter) {
+    public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter) {
         this.index = index;
+        this.defaultValue = defaultValue;
         this.extractor = extractor;
         this.converter = converter;
     }
@@ -40,6 +42,9 @@ public class ParameterHandler implements RestHandler {
     }
 
     private void handleResult(Object result, QrsRequestContext requestContext) {
+        if (result == null) {
+            result = defaultValue;
+        }
         if (converter != null) {
             result = converter.convert(result);
         }

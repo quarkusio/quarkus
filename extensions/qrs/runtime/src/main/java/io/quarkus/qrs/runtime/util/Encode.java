@@ -5,7 +5,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -211,19 +210,7 @@ public class Encode {
     private static final Pattern encodedCharsMulti = Pattern.compile("((%[a-fA-F0-9][a-fA-F0-9])+)");
 
     public static String decodePath(String path) {
-        Matcher matcher = encodedCharsMulti.matcher(path);
-        int start = 0;
-        StringBuilder builder = new StringBuilder();
-        CharsetDecoder decoder = Charset.forName(UTF_8).newDecoder();
-        while (matcher.find()) {
-            builder.append(path, start, matcher.start());
-            decoder.reset();
-            String decoded = decodeBytes(matcher.group(1), decoder);
-            builder.append(decoded);
-            start = matcher.end();
-        }
-        builder.append(path, start, path.length());
-        return builder.toString();
+        return URLUtils.decode(path, StandardCharsets.UTF_8, false, null);
     }
 
     private static String decodeBytes(String enc, CharsetDecoder decoder) {

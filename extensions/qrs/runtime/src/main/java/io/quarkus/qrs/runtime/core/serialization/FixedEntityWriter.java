@@ -33,7 +33,9 @@ public class FixedEntityWriter implements EntityWriter {
             ((QrsMessageBodyWriter<Object>) writer).writeResponse(entity, context);
         } else {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            writer.writeTo(entity, null, null, null, response.getMediaType(), null, baos);
+            writer.writeTo(entity, context.getTarget().getLazyMethod().getMethod().getReturnType(),
+                    context.getTarget().getLazyMethod().getGenericReturnType(),
+                    context.getTarget().getLazyMethod().getAnnotations(), response.getMediaType(), response.getHeaders(), baos);
             context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
         }
     }

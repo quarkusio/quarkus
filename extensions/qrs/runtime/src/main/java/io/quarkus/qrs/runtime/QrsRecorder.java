@@ -38,6 +38,7 @@ import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
+import io.quarkus.qrs.runtime.handlers.NoProducesHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
@@ -50,7 +51,6 @@ import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
 import io.quarkus.qrs.runtime.headers.FixedProducesHandler;
-import io.quarkus.qrs.runtime.headers.NoProducesHandler;
 import io.quarkus.qrs.runtime.headers.VariableProducesHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
@@ -257,7 +257,8 @@ public class QrsRecorder {
                     extractor = new QueryParamExtractor(param.name, single);
                     break;
             }
-            handlers.add(new ParameterHandler(i, extractor, param.converter == null ? null : param.converter.get()));
+            handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
+                    param.converter == null ? null : param.converter.get()));
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(new Supplier<Executor>() {

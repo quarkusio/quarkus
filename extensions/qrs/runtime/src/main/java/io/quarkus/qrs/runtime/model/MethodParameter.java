@@ -10,17 +10,19 @@ public class MethodParameter {
     public ParameterType parameterType;
     private boolean single;
     public Supplier<ParameterConverter> converter;
+    private String defaultValue;
 
     public MethodParameter() {
     }
 
     public MethodParameter(String name, String type, ParameterType parameterType, boolean single,
-            Supplier<ParameterConverter> converter) {
+            Supplier<ParameterConverter> converter, String defaultValue) {
         this.name = name;
         this.type = type;
         this.converter = converter;
         this.parameterType = parameterType;
         this.single = single;
+        this.defaultValue = defaultValue;
     }
 
     public String getName() {
@@ -53,6 +55,15 @@ public class MethodParameter {
 
     public MethodParameter setConverter(Supplier<ParameterConverter> converter) {
         this.converter = converter;
+        return this;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public MethodParameter setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
         return this;
     }
 

@@ -223,6 +223,8 @@ public class QrsProcessor {
                 MediaType.APPLICATION_JSON);
         registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN);
+        registerWriter(recorder, serialisers, Object.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+                MediaType.WILDCARD);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.APPLICATION_JSON);
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
@@ -235,8 +237,8 @@ public class QrsProcessor {
                 10);
     }
 
-    private <T> void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer,
+    private void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<?> entityClass,
+            Class<? extends MessageBodyWriter<?>> writerClass, BeanContainer beanContainer,
             String mediaType) {
         ResourceWriter writer = new ResourceWriter();
         writer.setFactory(recorder.factory(writerClass.getName(), beanContainer));

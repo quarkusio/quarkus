@@ -8,6 +8,7 @@ import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -130,7 +131,7 @@ public final class HibernateReactiveProcessor {
         if (dbKindOptional.isPresent()) {
             final String dbKind = dbKindOptional.get();
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
-                    hibernateOrmConfig,
+                    hibernateOrmConfig, domainObjects,
                     dbKind, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles);
 
@@ -149,6 +150,7 @@ public final class HibernateReactiveProcessor {
      */
     private static ParsedPersistenceXmlDescriptor generateReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig,
+            JpaEntitiesBuildItem domainObjects,
             String dbKind,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
@@ -170,6 +172,8 @@ public final class HibernateReactiveProcessor {
         desc.setName("default-reactive");
         desc.setTransactionType(PersistenceUnitTransactionType.JTA);
         desc.getProperties().setProperty(AvailableSettings.DIALECT, dialectClassName);
+        desc.setExcludeUnlistedClasses(true);
+        desc.addClasses(new ArrayList<>(domainObjects.getAllModelClassNames()));
 
         // The storage engine has to be set as a system property.
         if (persistenceUnitConfig.dialectStorageEngine.isPresent()) {

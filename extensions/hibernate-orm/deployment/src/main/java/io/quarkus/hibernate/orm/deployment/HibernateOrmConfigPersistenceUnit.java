@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -20,6 +21,11 @@ public class HibernateOrmConfigPersistenceUnit {
      * If undefined, it will use the default datasource.
      */
     public Optional<String> datasource;
+
+    /**
+     * The packages in which the entities affected to this persistence unit are located.
+     */
+    public Optional<Set<String>> packages;
 
     /**
      * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the

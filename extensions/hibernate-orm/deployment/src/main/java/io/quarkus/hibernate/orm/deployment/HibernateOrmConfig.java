@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -15,6 +17,16 @@ public class HibernateOrmConfig {
      */
     @ConfigItem(name = ConfigItem.PARENT)
     public HibernateOrmConfigPersistenceUnit defaultPersistenceUnit;
+
+    /**
+     * Additional named persistence units.
+     */
+    @ConfigDocSection
+    @ConfigDocMapKey("persistence-unit-name")
+    // @ConfigItem(name = ConfigItem.PARENT)
+    // TODO MULTI-PUS for now, we keep the `persistence-units` but we will need to discuss it
+    // in most extensions, we decided to drop that part
+    public Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits;
 
     /**
      * Logging configuration.
@@ -58,6 +70,7 @@ public class HibernateOrmConfig {
 
     public boolean isAnyPropertySet() {
         return defaultPersistenceUnit.isAnyPropertySet() ||
+                !persistenceUnits.isEmpty() ||
                 log.isAnyPropertySet() ||
                 statistics.isPresent() ||
                 metricsEnabled ||

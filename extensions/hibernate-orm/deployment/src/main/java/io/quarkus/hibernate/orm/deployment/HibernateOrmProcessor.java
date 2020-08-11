@@ -55,6 +55,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -125,6 +126,9 @@ public final class HibernateOrmProcessor {
 
     public static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
+    public static final String DEFAULT_PERSISTENCE_UNIT_NAME = "default";
+
+    private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
@@ -212,14 +216,14 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
-            JpaEntitiesBuildItem domainObjects,
+            JpaEntitiesBuildItem jpaEntities,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
 
-        if (!hasEntities(domainObjects, nonJpaModelBuildItems)) {
+        if (!hasEntities(jpaEntities, nonJpaModelBuildItems)) {
             // we can bail out early as there are no entities
             return;
         }
@@ -233,7 +237,7 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, persistenceXmlDescriptors,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
         }
     }
@@ -497,9 +501,9 @@ public final class HibernateOrmProcessor {
                 .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
                 .build());
 
-        if (descriptors.size() == 1) {
-            // There is only one persistence unit - register CDI beans for EM and EMF if no
-            // producers are defined
+        if (descriptors.size() == 1 && hibernateOrmConfig.persistenceUnits.isEmpty()) {
+            // There is only one persistence unit, either via persistence.xml or it is the default one
+            // Register CDI beans for EM and EMF if no producers are defined
             if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_UNIT)) {
                 additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerFactoryProducer.class));
             }
@@ -600,12 +604,13 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            JpaEntitiesBuildItem jpaEntities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
         if (!descriptors.isEmpty()) {
-            if (hibernateOrmConfig.isAnyPropertySet()) {
+            if (hibernateOrmConfig.isAnyPropertySet() || !hibernateOrmConfig.persistenceUnits.isEmpty()) {
                 throw new ConfigurationError(
                         "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
                                 + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
@@ -615,16 +620,37 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        producePersistenceUnitDescriptorFromConfig(
-                hibernateOrmConfig, "default", hibernateOrmConfig.defaultPersistenceUnit, jdbcDataSources,
-                applicationArchivesBuildItem, launchMode,
-                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+        Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
+                jpaEntities);
+
+        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
+                .filter(i -> i.isDefault())
+                .findFirst();
+
+        if ((defaultJdbcDataSource.isPresent() && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
+                hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet()) {
+            producePersistenceUnitDescriptorFromConfig(
+                    hibernateOrmConfig, DEFAULT_PERSISTENCE_UNIT_NAME, hibernateOrmConfig.defaultPersistenceUnit,
+                    modelClassesPerPersistencesUnits.getOrDefault(DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet()),
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+        }
+
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
+                .entrySet()) {
+            producePersistenceUnitDescriptorFromConfig(
+                    hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
+                    modelClassesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(), Collections.emptySet()),
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+        }
     }
 
     private static void producePersistenceUnitDescriptorFromConfig(
             HibernateOrmConfig hibernateOrmConfig,
             String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
+            Set<String> modelClasses,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
@@ -632,7 +658,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
-
         // Find the associated datasource
         JdbcDataSourceBuildItem jdbcDataSource;
         String dataSource;
@@ -645,6 +670,12 @@ public final class HibernateOrmProcessor {
                                     persistenceUnitConfig.datasource.get(), persistenceUnitName)));
             dataSource = persistenceUnitConfig.datasource.get();
         } else {
+            if (!isDefaultPersistenceUnit(persistenceUnitName)) {
+                // if it's not the default persistence unit, we mandate a datasource to prevent common errors
+                throw new ConfigurationException(
+                        String.format("Datasource must be defined for persistence unit '%s'.", persistenceUnitName));
+            }
+
             jdbcDataSource = jdbcDataSources.stream()
                     .filter(i -> i.isDefault())
                     .findFirst()
@@ -666,6 +697,14 @@ public final class HibernateOrmProcessor {
         // we found one
         ParsedPersistenceXmlDescriptor descriptor = new ParsedPersistenceXmlDescriptor(null); //todo URL
         descriptor.setName(persistenceUnitName);
+
+        descriptor.setExcludeUnlistedClasses(true);
+        if (modelClasses.isEmpty()) {
+            LOG.warnf("Could not find any entities affected to the persistence unit '%s'.", persistenceUnitName);
+        } else {
+            descriptor.addClasses(new ArrayList<>(modelClasses));
+        }
+
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
         descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
 
@@ -794,7 +833,8 @@ public final class HibernateOrmProcessor {
         }
 
         persistenceUnitDescriptors.produce(
-                new PersistenceUnitDescriptorBuildItem(descriptor, dataSource, getMultiTenancyStrategy(hibernateOrmConfig),
+                new PersistenceUnitDescriptorBuildItem(descriptor, dataSource,
+                        getMultiTenancyStrategy(hibernateOrmConfig),
                         false));
     }
 
@@ -871,4 +911,65 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    private Map<String, Set<String>> getModelClassesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
+            JpaEntitiesBuildItem jpaEntities) {
+        if (hibernateOrmConfig.persistenceUnits.isEmpty()) {
+            // no named persistence units, all the entities will be associated with the default one
+            // so we don't need to split them
+            return Collections.singletonMap(DEFAULT_PERSISTENCE_UNIT_NAME, jpaEntities.getAllModelClassNames());
+        }
+
+        Map<String, Set<String>> modelClassesPerPersistenceUnits = new HashMap<>();
+        for (String modelClassName : jpaEntities.getAllModelClassNames()) {
+            String selectedPersistenceUnit = null;
+            int weight = -1;
+
+            // handle the default persistence unit
+            if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
+                for (String pakkage : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
+                    if (!pakkage.endsWith(".")) {
+                        pakkage = pakkage + ".";
+                    }
+                    if (modelClassName.startsWith(pakkage) && pakkage.length() > weight) {
+                        selectedPersistenceUnit = DEFAULT_PERSISTENCE_UNIT_NAME;
+                        weight = pakkage.length();
+                    }
+                }
+            } else {
+                // it will be a catch all
+                selectedPersistenceUnit = DEFAULT_PERSISTENCE_UNIT_NAME;
+                weight = 0;
+            }
+
+            for (Entry<String, HibernateOrmConfigPersistenceUnit> candidatePersistenceUnitEntry : hibernateOrmConfig.persistenceUnits
+                    .entrySet()) {
+                String candidatePersistenceUnitName = candidatePersistenceUnitEntry.getKey();
+                Set<String> candidatePersistenceUnitPackages = candidatePersistenceUnitEntry.getValue().packages
+                        .orElseThrow(() -> new ConfigurationException(String.format(
+                                "Packages must be configured for persistence unit '%s'.", candidatePersistenceUnitName)));
+
+                for (String pakkage : candidatePersistenceUnitPackages) {
+                    if (!pakkage.endsWith(".")) {
+                        pakkage = pakkage + ".";
+                    }
+                    if (modelClassName.startsWith(pakkage) && pakkage.length() > weight) {
+                        selectedPersistenceUnit = candidatePersistenceUnitName;
+                        weight = pakkage.length();
+                    }
+                }
+            }
+            if (selectedPersistenceUnit != null) {
+                modelClassesPerPersistenceUnits.putIfAbsent(selectedPersistenceUnit, new HashSet<>());
+                modelClassesPerPersistenceUnits.get(selectedPersistenceUnit).add(modelClassName);
+            } else {
+                LOG.warnf("Could not find a suitable persistence unit for model class '%s'.", modelClassName);
+            }
+        }
+
+        return modelClassesPerPersistenceUnits;
+    }
+
+    private static boolean isDefaultPersistenceUnit(String name) {
+        return DEFAULT_PERSISTENCE_UNIT_NAME.equals(name);
+    }
 }

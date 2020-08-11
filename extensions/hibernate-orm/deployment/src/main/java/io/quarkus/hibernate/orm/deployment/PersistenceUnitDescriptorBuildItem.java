@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.hibernate.MultiTenancyStrategy;
@@ -17,11 +18,13 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     private final ParsedPersistenceXmlDescriptor descriptor;
+    private final Optional<String> dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
 
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, boolean isReactive) {
         this.descriptor = descriptor;
+        this.dataSource = Optional.empty();
         this.multiTenancyStrategy = MultiTenancyStrategy.NONE;
         this.isReactive = isReactive;
     }
@@ -29,6 +32,23 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor,
             MultiTenancyStrategy multiTenancyStrategy, boolean isReactive) {
         this.descriptor = descriptor;
+        this.dataSource = Optional.empty();
+        this.multiTenancyStrategy = multiTenancyStrategy;
+        this.isReactive = isReactive;
+    }
+
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String dataSource,
+            boolean isReactive) {
+        this.descriptor = descriptor;
+        this.dataSource = Optional.of(dataSource);
+        this.multiTenancyStrategy = MultiTenancyStrategy.NONE;
+        this.isReactive = isReactive;
+    }
+
+    public PersistenceUnitDescriptorBuildItem(ParsedPersistenceXmlDescriptor descriptor, String dataSource,
+            MultiTenancyStrategy multiTenancyStrategy, boolean isReactive) {
+        this.descriptor = descriptor;
+        this.dataSource = Optional.of(dataSource);
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.isReactive = isReactive;
     }
@@ -36,7 +56,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     /**
      * Modifies the passed set by adding all explicitly listed classnames from this PU
      * into the set.
-     * 
+     *
      * @param classNames the set to modify
      */
     public void addListedEntityClassNamesTo(Set<String> classNames) {
@@ -51,7 +71,11 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         return descriptor.getName();
     }
 
+    public Optional<String> getDataSource() {
+        return dataSource;
+    }
+
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition() {
-        return new QuarkusPersistenceUnitDefinition(descriptor, multiTenancyStrategy, isReactive);
+        return new QuarkusPersistenceUnitDefinition(descriptor, dataSource, multiTenancyStrategy, isReactive);
     }
 }

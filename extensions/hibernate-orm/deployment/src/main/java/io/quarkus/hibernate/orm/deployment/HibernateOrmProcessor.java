@@ -64,6 +64,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -107,6 +108,7 @@ import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 
@@ -194,13 +196,9 @@ public final class HibernateOrmProcessor {
             return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
         }
 
-        //The default implied PU requires to bind to the default JDBC datasource, so check that we have one:
-        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSourceBuildItem = jdbcDataSourcesBuildItem.stream()
-                .filter(i -> i.isDefault())
-                .findFirst();
-        if (defaultJdbcDataSourceBuildItem.isPresent()) {
-            return ImpliedBlockingPersistenceUnitTypeBuildItem
-                    .generateImpliedPersistenceUnit(defaultJdbcDataSourceBuildItem.get());
+        // If we have some blocking datasources defined, we can have an implied PU
+        if (jdbcDataSourcesBuildItem.size() > 0) {
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
         } else {
             return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
         }
@@ -211,6 +209,7 @@ public final class HibernateOrmProcessor {
             HibernateOrmConfig hibernateOrmConfig,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
+            List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchModeBuildItem launchMode,
             JpaEntitiesBuildItem domainObjects,
@@ -234,7 +233,7 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, persistenceXmlDescriptors,
-                    impliedPU.getDatasourceBuildTimeConfiguration(), applicationArchivesBuildItem, launchMode.getLaunchMode(),
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(),
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
         }
     }
@@ -374,7 +373,7 @@ public final class HibernateOrmProcessor {
         return scanner;
     }
 
-    private MultiTenancyStrategy getMultiTenancyStrategy(HibernateOrmConfig hibernateOrmConfig) {
+    private static MultiTenancyStrategy getMultiTenancyStrategy(HibernateOrmConfig hibernateOrmConfig) {
         final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
                 .valueOf(hibernateOrmConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
         if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
@@ -598,13 +597,13 @@ public final class HibernateOrmProcessor {
     private void handleHibernateORMWithNoPersistenceXml(
             HibernateOrmConfig hibernateOrmConfig,
             List<PersistenceXmlDescriptorBuildItem> descriptors,
-            JdbcDataSourceBuildItem jdbcDataSourceBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer) {
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
         if (!descriptors.isEmpty()) {
             if (hibernateOrmConfig.isAnyPropertySet()) {
                 throw new ConfigurationError(
@@ -616,38 +615,57 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        Optional<ParsedPersistenceXmlDescriptor> defaultPersistenceUnitDescriptor = getPersistenceUnitDescriptorFromConfig(
-                hibernateOrmConfig, hibernateOrmConfig.defaultPersistenceUnit, jdbcDataSourceBuildItem,
+        producePersistenceUnitDescriptorFromConfig(
+                hibernateOrmConfig, "default", hibernateOrmConfig.defaultPersistenceUnit, jdbcDataSources,
                 applicationArchivesBuildItem, launchMode,
-                systemProperties, nativeImageResources, hotDeploymentWatchedFiles);
-        if (defaultPersistenceUnitDescriptor.isPresent()) {
-            persistenceUnitDescriptorProducer
-                    .produce(new PersistenceUnitDescriptorBuildItem(defaultPersistenceUnitDescriptor.get(),
-                            getMultiTenancyStrategy(hibernateOrmConfig), false));
-        }
-
+                systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
     }
 
-    private static Optional<ParsedPersistenceXmlDescriptor> getPersistenceUnitDescriptorFromConfig(
+    private static void producePersistenceUnitDescriptorFromConfig(
             HibernateOrmConfig hibernateOrmConfig,
+            String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
-            JdbcDataSourceBuildItem jdbcDataSourceBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
+
+        // Find the associated datasource
+        JdbcDataSourceBuildItem jdbcDataSource;
+        String dataSource;
+        if (persistenceUnitConfig.datasource.isPresent()) {
+            jdbcDataSource = jdbcDataSources.stream()
+                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
+                    .findFirst()
+                    .orElseThrow(() -> new ConfigurationException(
+                            String.format("The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it.",
+                                    persistenceUnitConfig.datasource.get(), persistenceUnitName)));
+            dataSource = persistenceUnitConfig.datasource.get();
+        } else {
+            jdbcDataSource = jdbcDataSources.stream()
+                    .filter(i -> i.isDefault())
+                    .findFirst()
+                    .orElseThrow(() -> new ConfigurationException(
+                            String.format("The default datasource is not configured but the persistence unit '%s' uses it.",
+                                    persistenceUnitName)));
+            dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+        }
+
         Optional<String> dialect = persistenceUnitConfig.dialect;
         if (!dialect.isPresent()) {
-            dialect = guessDialect(jdbcDataSourceBuildItem.getDbKind());
+            dialect = guessDialect(jdbcDataSource.getDbKind());
         }
 
         if (!dialect.isPresent()) {
-            return Optional.empty();
+            return;
         }
+
         // we found one
         ParsedPersistenceXmlDescriptor descriptor = new ParsedPersistenceXmlDescriptor(null); //todo URL
-        descriptor.setName("default");
+        descriptor.setName(persistenceUnitName);
         descriptor.setTransactionType(PersistenceUnitTransactionType.JTA);
         descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
 
@@ -775,7 +793,9 @@ public final class HibernateOrmProcessor {
             p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
         }
 
-        return Optional.of(descriptor);
+        persistenceUnitDescriptors.produce(
+                new PersistenceUnitDescriptorBuildItem(descriptor, dataSource, getMultiTenancyStrategy(hibernateOrmConfig),
+                        false));
     }
 
     @BuildStep

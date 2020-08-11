@@ -15,6 +15,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class HibernateOrmConfigPersistenceUnit {
 
     /**
+     * The name of the datasource which this persistence unit uses.
+     * <p>
+     * If undefined, it will use the default datasource.
+     */
+    public Optional<String> datasource;
+
+    /**
      * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
      * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
      *

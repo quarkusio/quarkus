@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
@@ -21,8 +22,10 @@ import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
 
+import io.quarkus.agroal.DataSource.DataSourceLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
@@ -160,7 +163,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     integrationSettings);
 
             // Inject the datasource
-            injectDataSource(persistenceUnitName, runtimeSettingsBuilder);
+            injectDataSource(persistenceUnitName, recordedState.getDataSource(), runtimeSettingsBuilder);
 
             HibernateOrmIntegrations.contributeRuntimeProperties((k, v) -> runtimeSettingsBuilder.put(k, v));
 
@@ -258,7 +261,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
     }
 
-    private void injectDataSource(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
+    private void injectDataSource(String persistenceUnitName, Optional<String> dataSource,
+            RuntimeSettings.Builder runtimeSettingsBuilder) {
         // first convert
 
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
@@ -269,13 +273,22 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             return;
         }
 
-        // for now we only support one datasource but this will change
-        InstanceHandle<DataSource> dataSourceHandle = Arc.container().instance(DataSource.class);
-        if (!dataSourceHandle.isAvailable()) {
-            throw new IllegalStateException("No datasource has been defined for persistence unit " + persistenceUnitName);
+        InstanceHandle<DataSource> dataSourceHandle;
+        if (!dataSource.isPresent()) {
+            // we are in the case of a XML-defined PU with no datasource defined, we use the default datasource
+            dataSourceHandle = Arc.container().instance(DataSource.class);
+        } else if (DataSourceUtil.isDefault(dataSource.get())) {
+            dataSourceHandle = Arc.container().instance(DataSource.class);
+        } else {
+            dataSourceHandle = Arc.container().instance(DataSource.class, new DataSourceLiteral(dataSource.get()));
         }
 
-        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, Arc.container().instance(DataSource.class).get());
+        if (!dataSourceHandle.isAvailable()) {
+            throw new IllegalStateException(
+                    "No datasource " + dataSource.get() + " has been defined for persistence unit " + persistenceUnitName);
+        }
+
+        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSourceHandle.get());
     }
 
     private final ProviderUtil providerUtil = new ProviderUtil() {

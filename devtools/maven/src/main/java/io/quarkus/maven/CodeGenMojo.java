@@ -106,8 +106,6 @@ public class CodeGenMojo extends AbstractMojo {
                     ? buildDir.toPath().resolve("generated-test-sources")
                     : buildDir.toPath().resolve("generated-sources");
 
-            sourceRegistrar.accept(generatedSourcesDir);
-
             QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
             List<CodeGenData> codeGens = CodeGenerator.init(deploymentClassLoader,
                     Collections.singleton(sourcesDir),

@@ -40,6 +40,34 @@ At the time of this writing, Cloud Functions are still in beta so make sure to i
 gcloud components install beta
 ----
 
+== The Quickstart
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `funqy-google-cloud-functions-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-quickstart[directory].
+
+== Creating the Maven Deployment Project
+
+Create an application with the `quarkus-funqy-google-cloud-functions` extension.
+You can use the following Maven command to create it:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=funqy-google-cloud-functions \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello" \
+    -Dextensions="funqy-google-cloud-functions"
+----
+
+Now, let's remove what's not needed inside the generated application:
+
+- Remove the dependency `io.quarkus:quarkus-reasteasy` from your `pom.xml` file.
+- Remove the generated `org.acme.quickstart.GreetingResource` class.
+- Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
+- Remove the existing tests.
+
 == The Code
 
 There is nothing special about the code and more importantly nothing Google Cloud specific.  Funqy functions can be deployed to many different
@@ -86,16 +114,15 @@ import io.quarkus.funqy.gcp.functions.event.StorageEvent;
 
 public class GreetingFunctions {
 
-    @Inject
-    GreetingService service;
+    @Inject GreetingService service; // <1>
 
-    @Funq // <1>
+    @Funq // <2>
     public void helloPubSubWorld(PubsubMessage pubSubEvent) {
-        String message = service.hello("world");
+        String message = service.hello(pubSubEvent.data);
         System.out.println(pubSubEvent.messageId + " - " + message);
     }
 
-    @Funq // <2>
+    @Funq // <3>
     public void helloGCSWorld(StorageEvent storageEvent) {
         String message = service.hello("world");
         System.out.println(storageEvent.name + " - " + message);
@@ -106,9 +133,10 @@ public class GreetingFunctions {
 
 NOTE: Function return type can also be Mutiny reactive types.
 
-1. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.PubsubMessage`,
+1. Injection works inside your function.
+2. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.PubsubMessage`,
 this is a convenient class to deserialize a PubSub message.
-2. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.StorageEvent`,
+3. This is a background function that takes as parameter a `io.quarkus.funqy.gcp.functions.event.StorageEvent`,
 this is a convenient class to deserialize a Google Storage event.
 
 NOTE: we provide convenience class to deserialize common Google Cloud event inside the `io.quarkus.funqy.gcp.functions.event` package.
@@ -118,7 +146,7 @@ As our project contains multiple function, we need to specify which function nee
 
 [source,property]
 ----
-quarkus.funqy.export=helloHttpWorld
+quarkus.funqy.export=helloPubSubWorld
 ----
 
 == Build and Deploy to Google Cloud
@@ -159,7 +187,7 @@ To trigger an event to this function, you can use the `gcloud functions call` co
 
 [source]
 ----
-gcloud functions call quarkus-example-funky-pubsub --data '{"data":"Hello, Pub/Sub"}'
+gcloud functions call quarkus-example-funky-pubsub --data '{"data":"Pub/Sub"}'
 ----
 
 The `--data '{"data":"Hello, Pub/Sub"}'` option allow to specify the message to be send to PubSub.
@@ -193,7 +221,7 @@ To trigger an event to this function, you can use the `gcloud functions call` co
 
 [source]
 ----
-gcloud functions call quarkus-example-funky-pubsub --data '{"name":"test.txt"}'
+gcloud functions call quarkus-example-funky-storage --data '{"name":"test.txt"}'
 ----
 
 The `--data '{"name":"test.txt"}'` option allow to specify a fake file name, a fake Cloud Storage event will be created for this name.
@@ -230,7 +258,7 @@ Then you can call your background function via an HTTP call with a payload conta
 
 [source]
 ----
-curl localhost:8080 -d '{"data":{"data":"hello"}}'
+curl localhost:8080 -d '{"data":{"data":"world"}}'
 ----
 
 This will call your PubSub background function with a PubSubMessage `{"data":"hello"}`.
@@ -254,14 +282,6 @@ curl localhost:8080 -d '{"data":{"name":"text"}}'
 ----
 
 This will call your PubSub background function with a Cloud Storage event `{"name":"file.txt"}`, so an event on the `file.txt` file.
-
-
-== Deploying HTTP Functions via Funqy
-
-You can use link:funqy-http[Funqy HTTP] on Google Cloud Functions.
-This allows you to invoke on multiple Funqy functions using HTTP deployed as one Google Cloud Function.
-
-For this you need to include both `quarkus-funqy-http` and `quarkus-google-cloud-functions` extension.
 
 == What's next?
 

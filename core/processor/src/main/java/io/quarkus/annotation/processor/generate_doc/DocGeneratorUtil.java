@@ -441,7 +441,7 @@ public class DocGeneratorUtil {
 
             ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
             if (configDocSection.equals(section)) {
-                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                appendConfigItemsIntoExistingOnes(configDocSection.getConfigDocItems(), section.getConfigDocItems());
                 return true;
             } else {
                 boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,

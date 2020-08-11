@@ -64,4 +64,12 @@ public class MethodParameter {
         this.single = single;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "MethodParameter{" +
+                "name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }

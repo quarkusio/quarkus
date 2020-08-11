@@ -61,7 +61,7 @@ public class SubResourceLocatorTest {
                 SubResourceLocatorTest.class.getSimpleName()));
         Response response = base.request().get();
         String s = response.readEntity(String.class);
-        Assertions.assertEquals(s, "bill");
+        Assertions.assertEquals("bill", s);
         response.close();
         client.close();
     }

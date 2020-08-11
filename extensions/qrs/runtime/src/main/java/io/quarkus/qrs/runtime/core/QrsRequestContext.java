@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -71,6 +72,8 @@ public class QrsRequestContext implements Runnable, Closeable {
     private QrsContainerRequestContext containerRequestContext;
     private String method;
     private String remaining;
+    private MediaType producesMediaType;
+    private MediaType consumesMediaType;
     /**
      * used for {@link UriInfo#getMatchedURIs()}
      */
@@ -451,6 +454,24 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public String getRemaining() {
         return remaining;
+    }
+
+    public MediaType getProducesMediaType() {
+        return producesMediaType;
+    }
+
+    public QrsRequestContext setProducesMediaType(MediaType producesMediaType) {
+        this.producesMediaType = producesMediaType;
+        return this;
+    }
+
+    public MediaType getConsumesMediaType() {
+        return consumesMediaType;
+    }
+
+    public QrsRequestContext setConsumesMediaType(MediaType consumesMediaType) {
+        this.consumesMediaType = consumesMediaType;
+        return this;
     }
 
     public void saveUriMatchState() {

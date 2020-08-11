@@ -28,7 +28,7 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
     public void writeTo(String o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         // FIXME: use response encoding
-        entityStream.write(o.getBytes(StandardCharsets.UTF_8));
+        entityStream.write(o.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -40,6 +40,6 @@ public class StringMessageBodyWriter implements QrsMessageBodyWriter<String> {
     public void writeResponse(String o, QrsRequestContext context) throws WebApplicationException {
         // FIXME: use response encoding
         HttpServerResponse vertxResponse = context.getContext().response();
-        vertxResponse.end(o);
+        vertxResponse.end(o.toString());
     }
 }

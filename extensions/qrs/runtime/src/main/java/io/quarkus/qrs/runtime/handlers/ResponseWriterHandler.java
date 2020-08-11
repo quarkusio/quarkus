@@ -7,6 +7,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
+import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -15,11 +16,18 @@ import io.vertx.core.http.HttpServerResponse;
  */
 public class ResponseWriterHandler implements RestHandler {
 
+    private final DynamicEntityWriter dynamicEntityWriter;
+
+    public ResponseWriterHandler(DynamicEntityWriter dynamicEntityWriter) {
+        this.dynamicEntityWriter = dynamicEntityWriter;
+    }
+
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         HttpServerResponse vertxResponse = requestContext.getContext().response();
 
         // has been converted in ResponseHandler
+        //TODO: should we do this the other way around so there is no need to allocate the Response object
         Response response = requestContext.getResponse();
         Object entity = response.getEntity();
         vertxResponse.setStatusCode(response.getStatus());
@@ -32,7 +40,11 @@ public class ResponseWriterHandler implements RestHandler {
 
         if (entity != null) {
             EntityWriter entityWriter = requestContext.getEntityWriter();
-            entityWriter.write(requestContext, entity);
+            if (entityWriter == null) {
+                dynamicEntityWriter.write(requestContext, entity);
+            } else {
+                entityWriter.write(requestContext, entity);
+            }
         } else {
             requestContext.getContext().response().end();
         }

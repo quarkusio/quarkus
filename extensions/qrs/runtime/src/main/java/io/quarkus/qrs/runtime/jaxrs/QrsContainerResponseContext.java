@@ -153,7 +153,9 @@ public class QrsContainerResponseContext implements ContainerResponseContext {
 
     @Override
     public void setEntity(Object entity) {
-        context.resetBuildTimeSerialization();
+        if (context.getResult() == null || !entity.getClass().equals(context.getResult().getClass())) {
+            context.resetBuildTimeSerialization();
+        }
         context.setResult(entity);
     }
 

@@ -26,7 +26,6 @@ import javax.ws.rs.core.Response;
 
 import io.quarkus.qrs.Blocking;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
-import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -155,20 +154,21 @@ public class SimpleQrsResource {
 
     @GET
     @Path("fast-writer")
+    @Produces("text/plain")
     public String fastWriter(@Context QrsRequestContext context) {
-        return context.getEntityWriter() instanceof FixedEntityWriter ? "OK" : "FAIL";
+        return "OK";
     }
 
     @GET
     @Path("lookup-writer")
     public Object slowWriter(@Context QrsRequestContext context) {
-        return !(context.getEntityWriter() instanceof FixedEntityWriter) ? "OK" : "FAIL";
+        return "OK";
     }
 
     @GET
     @Path("writer/vertx-buffer")
     public Buffer vertxBuffer(@Context QrsRequestContext context) {
-        return Buffer.buffer(context.getEntityWriter() instanceof FixedEntityWriter ? "VERTX-BUFFER" : "FAIL");
+        return Buffer.buffer("VERTX-BUFFER");
     }
 
     @GET

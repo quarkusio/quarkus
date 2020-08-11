@@ -23,7 +23,7 @@ public class ResponseHandler implements RestHandler {
             requestContext.setResult(response);
         }
 
-        MediaType produces = requestContext.getTarget().getProduces();
+        MediaType produces = requestContext.getProducesMediaType();
         if (produces != null) {
             response.getHeaders().add(HttpHeaders.CONTENT_TYPE, produces.toString());
         }

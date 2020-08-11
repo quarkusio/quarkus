@@ -3,6 +3,7 @@ package io.quarkus.qrs.runtime;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,10 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.MessageBodyWriter;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.qrs.runtime.core.ArcBeanFactory;
@@ -28,9 +33,9 @@ import io.quarkus.qrs.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.QueryParamExtractor;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
+import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
-import io.quarkus.qrs.runtime.handlers.EntityWriterHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
@@ -44,6 +49,9 @@ import io.quarkus.qrs.runtime.handlers.ResponseHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
+import io.quarkus.qrs.runtime.headers.FixedProducesHandler;
+import io.quarkus.qrs.runtime.headers.NoProducesHandler;
+import io.quarkus.qrs.runtime.headers.VariableProducesHandler;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
@@ -68,6 +76,8 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class QrsRecorder {
+
+    private static final Logger log = Logger.getLogger(QrsRecorder.class);
 
     private static final Map<String, Class<?>> primitiveTypes;
 
@@ -108,6 +118,7 @@ public class QrsRecorder {
             Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
             ShutdownContext shutdownContext) {
+        DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
         //pre matching interceptors are run first
         List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
         List<ResourceResponseInterceptor> responseInterceptors = interceptors.getResponseInterceptors();
@@ -129,7 +140,7 @@ public class QrsRecorder {
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        true, classPathTemplate);
+                        true, classPathTemplate, dynamicEntityWriter);
 
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(runtimeResource.getHttpMethod());
                 if (list == null) {
@@ -155,7 +166,7 @@ public class QrsRecorder {
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        false, new URITemplate(clazz.getPath()));
+                        false, new URITemplate(clazz.getPath()), dynamicEntityWriter);
                 List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getHttpMethod());
                 if (list == null) {
                     templates.put(method.getHttpMethod(), list = new ArrayList<>());
@@ -178,7 +189,7 @@ public class QrsRecorder {
         if (!responseInterceptors.isEmpty()) {
             abortHandlingChain.add(resourceResponseInterceptorHandler);
         }
-        abortHandlingChain.add(new ResponseWriterHandler());
+        abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
                 abortHandlingChain.toArray(new RestHandler[0]), new DynamicEntityWriter(serialisers));
 
@@ -191,7 +202,8 @@ public class QrsRecorder {
             ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
             ResourceRequestInterceptorHandler requestInterceptorsHandler,
             ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
-            ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate) {
+            ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
+            DynamicEntityWriter dynamicEntityWriter) {
         List<RestHandler> handlers = new ArrayList<>();
         MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
@@ -255,31 +267,81 @@ public class QrsRecorder {
                 }
             }));
         }
+        handlers.add(new InvocationHandler(invoker));
+
         Type returnType = TypeSignatureParser.parse(method.getReturnType());
         Type nonAsyncReturnType = getNonAsyncReturnType(returnType);
         Class<Object> rawNonAsyncReturnType = (Class<Object>) getRawType(nonAsyncReturnType);
-        ResourceWriter<Object> buildTimeWriter = serialisers.findBuildTimeWriter(rawNonAsyncReturnType);
-        if (buildTimeWriter == null) {
-            handlers.add(new EntityWriterHandler(new DynamicEntityWriter(serialisers)));
-        } else {
-            handlers.add(new EntityWriterHandler(
-                    new FixedEntityWriter(buildTimeWriter.getFactory().createInstance().getInstance())));
-        }
 
-        handlers.add(new InvocationHandler(invoker));
-        if (method.getHttpMethod() == null) {
-            //this is a resource locator method
-            handlers.add(resourceLocatorHandler);
-        }
         // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
         handlers.add(new CompletionStageResponseHandler());
         handlers.add(new UniResponseHandler());
+        if (method.getHttpMethod() == null) {
+            //this is a resource locator method
+            handlers.add(resourceLocatorHandler);
+        } else if (!Response.class.isAssignableFrom(rawNonAsyncReturnType)) {
+            //try and statically determine the media type and response writer
+            //we can't do this for all cases, but we can do it for the most common ones
+            //in practice this should work for the majority of endpoints
+            if (method.getProduces() != null && method.getProduces().length > 0) {
+                //the method can only produce a single content type, which is the most common case
+                if (method.getProduces().length == 1) {
+                    MediaType mediaType = MediaType.valueOf(method.getProduces()[0]);
+                    //its a wildcard type, makes it hard to determine statically
+                    if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
+                        handlers.add(new VariableProducesHandler(Collections.singletonList(mediaType), serialisers));
+                    } else {
+                        List<ResourceWriter> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
+                                method.getProduces());
+                        if (buildTimeWriters == null) {
+                            //if this is null this means that the type cannot be resolved at build time
+                            //this happens when the method returns a generic type (e.g. Object), so there
+                            //are more specific mappers that could be invoked depending on the actual return value
+                            handlers.add(new FixedProducesHandler(mediaType,
+                                    dynamicEntityWriter));
+                        } else if (buildTimeWriters.isEmpty()) {
+                            //we could not find any writers that can write a response to this endpoint
+                            log.warn("Cannot find any combination of response writers for the method " + clazz.getClassName()
+                                    + "#" + method.getName() + "(" + Arrays.toString(method.getParameters()) + ")");
+                            handlers.add(new VariableProducesHandler(Collections.singletonList(mediaType), serialisers));
+                        } else if (buildTimeWriters.size() == 1) {
+                            //only a single handler that can handle the response
+                            //this is a very common case
+                            handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
+                                    buildTimeWriters.get(0).getInstance())));
+                        } else {
+                            //multiple writers, we try them in order
+                            List<MessageBodyWriter<?>> list = new ArrayList<>();
+                            for (ResourceWriter i : buildTimeWriters) {
+                                list.add(i.getInstance());
+                            }
+                            handlers.add(new FixedProducesHandler(mediaType,
+                                    new FixedEntityWriterArray(list.toArray(new MessageBodyWriter[0]))));
+                        }
+                    }
+                } else {
+                    //there are multiple possibilities
+                    //we could optimise this more in future
+                    List<MediaType> mediaTypes = new ArrayList<>();
+                    for (String i : method.getProduces()) {
+                        MediaType mt = MediaType.valueOf(i);
+                        mediaTypes.add(mt);
+                    }
+                    handlers.add(new VariableProducesHandler(mediaTypes, serialisers));
+                }
+            } else {
+                //no type was specified, so we need to take the types produced by
+                //the message body writers into account when computing the content type
+                handlers.add(new NoProducesHandler(serialisers));
+            }
+        }
+
         handlers.add(new ResponseHandler());
 
         if (!responseInterceptors.isEmpty()) {
             handlers.add(resourceResponseInterceptorHandler);
         }
-        handlers.add(new ResponseWriterHandler());
+        handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
         return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
@@ -334,7 +396,7 @@ public class QrsRecorder {
     }
 
     public void registerWriter(Serialisers serialisers, String entityClassName,
-            ResourceWriter<?> writer) {
+            ResourceWriter writer) {
         serialisers.addWriter(loadClass(entityClassName), writer);
     }
 

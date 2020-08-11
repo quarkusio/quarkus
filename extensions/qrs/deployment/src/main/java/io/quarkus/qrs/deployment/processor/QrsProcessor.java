@@ -3,14 +3,15 @@ package io.quarkus.qrs.deployment.processor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -87,15 +88,25 @@ public class QrsProcessor {
         }
 
         Map<DotName, ClassInfo> scannedResources = new HashMap<>();
+        Map<DotName, String> scannedResourcePaths = new HashMap<>();
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
-        Set<DotName> pathInterfaces = new HashSet<>();
+        Map<DotName, String> pathInterfaces = new HashMap<>();
         for (AnnotationInstance annotation : allPaths) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 ClassInfo clazz = annotation.target().asClass();
                 if (!Modifier.isInterface(clazz.flags())) {
                     scannedResources.put(clazz.name(), clazz);
+                    scannedResourcePaths.put(clazz.name(), annotation.value().asString());
                 } else {
-                    pathInterfaces.add(clazz.name());
+                    pathInterfaces.put(clazz.name(), annotation.value().asString());
+                }
+            }
+        }
+        for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
+            for (ClassInfo clazz : beanArchiveIndexBuildItem.getIndex().getAllKnownImplementors(i.getKey())) {
+                if (!Modifier.isAbstract(clazz.flags())) {
+                    scannedResources.put(clazz.name(), clazz);
+                    scannedResourcePaths.put(clazz.name(), i.getValue());
                 }
             }
         }
@@ -104,7 +115,8 @@ public class QrsProcessor {
         List<ResourceClass> subResourceClasses = new ArrayList<>();
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), i,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters);
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
+                    scannedResourcePaths);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -124,13 +136,14 @@ public class QrsProcessor {
         while (!toScan.isEmpty()) {
             ClassInfo classInfo = toScan.poll();
             if (scannedResources.containsKey(classInfo.name()) ||
-                    pathInterfaces.contains(classInfo.name()) ||
+                    pathInterfaces.containsKey(classInfo.name()) ||
                     possibleSubResources.containsKey(classInfo.name())) {
                 continue;
             }
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), classInfo,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters);
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
+                    scannedResourcePaths);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }
@@ -178,10 +191,14 @@ public class QrsProcessor {
         Serialisers serialisers = new Serialisers();
         for (ClassInfo writerClass : writers) {
             if (writerClass.classAnnotation(QrsDotNames.PROVIDER) != null) {
+                ResourceWriter writer = new ResourceWriter();
+                AnnotationInstance producesAnnotation = writerClass.classAnnotation(QrsDotNames.PRODUCES);
+                if (producesAnnotation != null) {
+                    writer.setMediaTypeStrings(Arrays.asList(producesAnnotation.value().asStringArray()));
+                }
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
                         QrsDotNames.MESSAGE_BODY_WRITER,
                         beanArchiveIndexBuildItem.getIndex());
-                ResourceWriter<?> writer = new ResourceWriter<>();
                 writer.setFactory(recorder.factory(writerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
                 recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
@@ -200,16 +217,17 @@ public class QrsProcessor {
         }
 
         // built-ins
-        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
-                true);
         //        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
         //                false);
         registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class, beanContainerBuildItem.getValue(),
-                false);
-        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue());
+                MediaType.APPLICATION_JSON);
+        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN);
+        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
+                MediaType.APPLICATION_JSON);
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),
-                true);
+                MediaType.WILDCARD);
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses, subResourceClasses,
@@ -218,18 +236,21 @@ public class QrsProcessor {
     }
 
     private <T> void registerWriter(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer, boolean buildTimeSelectable) {
-        ResourceWriter<Object> writer = new ResourceWriter<>();
+            Class<? extends MessageBodyWriter<T>> writerClass, BeanContainer beanContainer,
+            String mediaType) {
+        ResourceWriter writer = new ResourceWriter();
         writer.setFactory(recorder.factory(writerClass.getName(), beanContainer));
-        writer.setBuildTimeSelectable(buildTimeSelectable);
+        writer.setMediaTypeStrings(Collections.singletonList(mediaType));
         recorder.registerWriter(serialisers, entityClass.getName(), writer);
     }
 
     private <T> void registerReader(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer) {
+            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer, String mediaType) {
         ResourceReader<Object> reader = new ResourceReader<>();
         reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
+        reader.setMediaTypes(Collections.singletonList(mediaType));
         recorder.registerReader(serialisers, entityClass.getName(), reader);
+
     }
 
     @BuildStep

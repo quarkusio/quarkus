@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -86,16 +87,15 @@ public class EndpointIndexer {
 
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
-            Map<String, String> existingConverters) {
+            Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths) {
         try {
+            String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, path);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
-            AnnotationInstance pathAnnotation = classInfo.classAnnotation(PATH);
-            if (pathAnnotation != null) {
-                String path = pathAnnotation.value().asString();
+            if (path != null) {
                 if (!path.startsWith("/")) {
                     path = "/" + path;
                 }
@@ -117,11 +117,10 @@ public class EndpointIndexer {
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
-            Map<String, String> existingConverters) {
+            Map<String, String> existingConverters, String endpointPath) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.PRODUCES));
         String[] classConsumes = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.CONSUMES));
-        AnnotationInstance pathAnnotation = actualEndpointInfo.classAnnotation(PATH);
 
         for (DotName httpMethod : QrsDotNames.JAXRS_METHOD_ANNOTATIONS) {
             List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
@@ -139,8 +138,8 @@ public class EndpointIndexer {
                             methodPath = "/" + methodPath;
                         }
                     }
-                    if (pathAnnotation != null) {
-                        methodPath = appendPath(pathAnnotation.value().asString(), methodPath);
+                    if (endpointPath != null) {
+                        methodPath = appendPath(endpointPath, methodPath);
                     }
                     if (methodPath == null) {
                         methodPath = "/";
@@ -170,8 +169,8 @@ public class EndpointIndexer {
                             methodPath = "/" + methodPath;
                         }
                     }
-                    if (pathAnnotation != null) {
-                        methodPath = appendPath(pathAnnotation.value().asString(), methodPath);
+                    if (endpointPath != null) {
+                        methodPath = appendPath(endpointPath, methodPath);
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
@@ -186,7 +185,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, endpointPath));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -194,7 +193,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, endpointPath));
             }
         }
         return ret;
@@ -295,7 +294,41 @@ public class EndpointIndexer {
                 .setBlocking(info.annotation(BLOCKING) != null)
                 .setParameters(methodParameters)
                 // FIXME: resolved arguments ?
-                .setReturnType(AsmUtil.getSignature(info.returnType(), v -> null))
+                .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
+                    @Override
+                    public String apply(String v) {
+                        //we attempt to resolve type variables
+                        ClassInfo declarer = info.declaringClass();
+                        int pos = -1;
+                        for (;;) {
+                            if (declarer == null) {
+                                return null;
+                            }
+                            List<TypeVariable> typeParameters = declarer.typeParameters();
+                            for (int i = 0; i < typeParameters.size(); i++) {
+                                TypeVariable tv = typeParameters.get(i);
+                                if (tv.identifier().equals(v)) {
+                                    pos = i;
+                                }
+                            }
+                            if (pos != -1) {
+                                break;
+                            }
+                            declarer = indexView.getClassByName(declarer.superName());
+                        }
+                        Type type = JandexUtil.resolveTypeParameters(info.declaringClass().name(), declarer.name(), indexView)
+                                .get(pos);
+                        if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
+                            List<Type> bounds = type.asTypeVariable().bounds();
+                            if (bounds.isEmpty()) {
+                                return "Ljava/lang/Object;";
+                            }
+                            return AsmUtil.getSignature(bounds.get(0), this);
+                        } else {
+                            return AsmUtil.getSignature(type, this);
+                        }
+                    }
+                }))
                 .setProduces(produces);
 
         StringBuilder sigBuilder = new StringBuilder();

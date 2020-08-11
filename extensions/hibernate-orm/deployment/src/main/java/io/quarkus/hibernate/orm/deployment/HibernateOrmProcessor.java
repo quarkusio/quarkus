@@ -74,6 +74,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -140,6 +141,25 @@ public final class HibernateOrmProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.HIBERNATE_ORM);
+    }
+
+    @BuildStep
+    void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
+        if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
+            for (String pakkage : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
+                additionalApplicationArchiveMarkers
+                        .produce(new AdditionalApplicationArchiveMarkerBuildItem(pakkage.replace('.', '/')));
+            }
+        }
+        for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.persistenceUnits.values()) {
+            if (persistenceUnit.packages.isPresent()) {
+                for (String pakkage : persistenceUnit.packages.get()) {
+                    additionalApplicationArchiveMarkers
+                            .produce(new AdditionalApplicationArchiveMarkerBuildItem(pakkage.replace('.', '/')));
+                }
+            }
+        }
     }
 
     // We do our own enhancement during the compilation phase, so disable any

@@ -142,9 +142,10 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                 nameAggregator.add(component.name);
             }
         }
-        if (nameAggregator != null ) {
+        if (nameAggregator != null) {
             regexAggregator.append("$");
-            components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),nameAggregator.toArray(new String[0])));
+            components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
+                    nameAggregator.toArray(new String[0])));
         }
         this.stem = stem;
         this.literalCharacterCount = litChars;
@@ -155,7 +156,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,
-                       int capturingGroups, int complexExpressions, TemplateComponent[] components) {
+            int capturingGroups, int complexExpressions, TemplateComponent[] components) {
         this.template = template;
         this.stem = stem;
         this.literalCharacterCount = literalCharacterCount;

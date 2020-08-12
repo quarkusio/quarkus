@@ -116,7 +116,7 @@ public class Serialisers {
             if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
                 for (ResourceReader goodTypeReader : goodTypeReaders) {
                     MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
-                    if (match != null|| mediaType == null) {
+                    if (match != null || mediaType == null) {
                         ret.add(goodTypeReader.getInstance());
                     }
                 }

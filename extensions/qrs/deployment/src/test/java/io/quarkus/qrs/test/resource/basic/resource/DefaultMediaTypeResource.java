@@ -1,10 +1,7 @@
 package io.quarkus.qrs.test.resource.basic.resource;
 
-import java.io.File;
-import java.io.InputStream;
 import java.util.Date;
 
-import javax.activation.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -18,7 +15,6 @@ import org.jboss.logging.Logger;
 public class DefaultMediaTypeResource {
 
     protected static final Logger logger = Logger.getLogger(DefaultMediaTypeResource.class.getName());
-
 
     @Path("postDateProduce")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)

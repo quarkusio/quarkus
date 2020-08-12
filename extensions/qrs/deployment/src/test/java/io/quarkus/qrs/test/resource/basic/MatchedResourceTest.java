@@ -99,7 +99,7 @@ public class MatchedResourceTest {
         WebTarget base = client.target(uri);
         Response response = base.request().get();
         Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
-        Assertions.assertEquals(response.readEntity(String.class),value,  "Wrong response content");
+        Assertions.assertEquals(response.readEntity(String.class), value, "Wrong response content");
     }
 
     /**

@@ -16,8 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.qrs.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import io.quarkus.qrs.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -50,6 +48,8 @@ import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.qrs.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyReader;
 import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.qrs.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
@@ -235,7 +235,8 @@ public class QrsProcessor {
                 MediaType.TEXT_PLAIN);
         registerWriter(recorder, serialisers, Object.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
-        registerWriter(recorder, serialisers, byte[].class, ByteArrayMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+        registerWriter(recorder, serialisers, byte[].class, ByteArrayMessageBodyHandler.class,
+                beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),
@@ -243,7 +244,8 @@ public class QrsProcessor {
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
-        registerReader(recorder, serialisers, InputStream.class, InputStreamMessageBodyReader.class, beanContainerBuildItem.getValue(),
+        registerReader(recorder, serialisers, InputStream.class, InputStreamMessageBodyReader.class,
+                beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);

@@ -10,6 +10,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 /**
  * Displays Quarkus application build dependency tree including the deployment ones.
  */
-@Mojo(name = "build-tree", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "build-tree", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.NONE)
 public class BuildTreeMojo extends AbstractTreeMojo {
 }

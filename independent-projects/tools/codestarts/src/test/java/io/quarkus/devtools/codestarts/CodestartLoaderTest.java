@@ -3,13 +3,17 @@ package io.quarkus.devtools.codestarts;
 import static io.quarkus.devtools.codestarts.CodestartSpec.Type.EXAMPLE;
 import static io.quarkus.devtools.codestarts.CodestartSpec.Type.PROJECT;
 import static org.apache.commons.io.IOUtils.resourceToString;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Set;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.util.collections.Sets;
 
 class CodestartLoaderTest {
 
@@ -62,24 +66,46 @@ class CodestartLoaderTest {
     void testLoadBundledCodestarts() throws IOException {
         final CodestartInput input = CodestartInput.builder(new TestCodestartResourceLoader()).build();
         final Collection<Codestart> codestarts = CodestartLoader.loadBundledCodestarts(input);
-        assertThat(codestarts).extracting(Codestart::getSpec).extracting(CodestartSpec::getName)
-                .containsExactlyInAnyOrder("y", "z", "config-properties", "config-yaml", "foo", "a", "b", "replace", "t");
+        assertThat(codestarts).extracting(Codestart::getName)
+                .containsExactlyInAnyOrder("y", "maven", "config-properties", "config-yaml", "foo", "a", "b", "replace", "t",
+                        "example-with-b");
+
+        checkLanguages(codestarts, Sets.newSet("y", "z"), "a", "b");
+        checkLanguages(codestarts, Sets.newSet("config-properties", "config-yaml", "foo", "a", "b", "replace"));
+        checkLanguages(codestarts, Sets.newSet("t"), "a");
+    }
+
+    private void checkLanguages(Collection<Codestart> codestarts, Set<String> names, String... languages) {
+        assertThat(codestarts)
+                .filteredOn(c -> names.contains(c.getName()))
+                .allSatisfy((c) -> assertThat(c)
+                        .extracting(Codestart::getImplementedLanguages, as(InstanceOfAssertFactories.ITERABLE))
+                        .containsExactlyInAnyOrder(languages));
     }
 
     @Test
     void testLoadCodestartsFromExtensions() throws IOException {
         final CodestartInput input = CodestartInput.builder(new TestCodestartResourceLoader()).build();
         final Collection<Codestart> codestarts = CodestartLoader.loadCodestartsFromExtensions(input);
-        assertThat(codestarts).extracting(Codestart::getSpec).extracting(CodestartSpec::getName)
+        assertThat(codestarts).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("example1", "example2", "example-forbidden");
+        checkLanguages(codestarts, Sets.newSet("example1"), "a");
+        checkLanguages(codestarts, Sets.newSet("example2"), "b");
+        checkLanguages(codestarts, Sets.newSet("example-forbidden"));
     }
 
     @Test
     void testLoadCodestartsFail() throws IOException {
         final CodestartInput input = CodestartInput.builder(new TestCodestartResourceLoader()).build();
         assertThatExceptionOfType(CodestartDefinitionException.class)
-                .isThrownBy(() -> CodestartLoader.loadCodestarts(input.getResourceLoader(), "codestarts-with-error"))
+                .isThrownBy(() -> CodestartLoader.loadCodestarts(input.getResourceLoader(), "codestarts-with-error-1"))
                 .withMessageContaining("codestart-1");
+        assertThatExceptionOfType(CodestartDefinitionException.class)
+                .isThrownBy(() -> CodestartLoader.loadCodestarts(input.getResourceLoader(), "codestarts-with-error-2"))
+                .withMessageContaining("codestart-2");
+        assertThatExceptionOfType(CodestartDefinitionException.class)
+                .isThrownBy(() -> CodestartLoader.loadCodestarts(input.getResourceLoader(), "codestarts-with-error-3"))
+                .withMessageContaining("codestart-3");
     }
 
 }

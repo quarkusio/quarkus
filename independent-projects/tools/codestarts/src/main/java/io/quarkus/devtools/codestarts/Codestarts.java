@@ -19,10 +19,11 @@ import java.util.stream.Stream;
 public class Codestarts {
 
     public static CodestartProject prepareProject(final CodestartInput input) throws IOException {
+        return prepareProject(input, loadAllCodestarts(input));
+    }
+
+    public static CodestartProject prepareProject(final CodestartInput input, final List<Codestart> allCodestarts) {
         final Set<String> selectedCodestartNames = new HashSet<>(input.getCodestarts());
-
-        final List<Codestart> allCodestarts = loadAllCodestarts(input);
-
         final Collection<Codestart> baseCodestarts = resolveSelectedBaseCodestarts(allCodestarts, selectedCodestartNames);
         final String languageName = baseCodestarts.stream().filter(c -> c.getType() == LANGUAGE).findFirst()
                 .orElseThrow(() -> new CodestartDefinitionException("Language codestart is required")).getName();

@@ -55,7 +55,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         try {
             return engine.parse(content).render(data);
         } catch (TemplateException e) {
-            throw new IOException("Error while rendering template: " + sourcePath.toString(), e);
+            throw new CodestartException("Error while rendering template: " + sourcePath.toString(), e);
         }
     }
 
@@ -103,7 +103,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         }
 
         public String map(Object result, Expression expression) {
-            throw new CodestartException("Missing required data: {" + expression.toOriginalString() + "}");
+            throw new TemplateException("Missing required data: {" + expression.toOriginalString() + "}");
         }
     }
 

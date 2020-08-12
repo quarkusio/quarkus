@@ -1,0 +1,12 @@
+name: maven
+type: buildtool
+language:
+  base:
+    data:
+      prop1: proppp
+      project:
+        group-id: org.acme
+        artifact-id: andy
+    shared-data:
+      buildtool:
+        foo: world maven

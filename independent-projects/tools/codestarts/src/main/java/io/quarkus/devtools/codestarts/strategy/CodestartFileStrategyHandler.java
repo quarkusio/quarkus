@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public interface CodestartFileStrategyHandler {
 
-    FailOnDuplicateCodestartFileStrategyHandler DEFAULT_STRATEGY = new FailOnDuplicateCodestartFileStrategyHandler();
+    DefaultCodestartFileStrategyHandler DEFAULT_STRATEGY = new FailOnDuplicateCodestartFileStrategyHandler();
 
     Map<String, CodestartFileStrategyHandler> BY_NAME = Stream
             .of(DEFAULT_STRATEGY,

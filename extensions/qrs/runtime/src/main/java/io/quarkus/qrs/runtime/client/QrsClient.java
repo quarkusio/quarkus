@@ -12,6 +12,7 @@ import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.jaxrs.QrsConfiguration;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;
@@ -22,8 +23,10 @@ public class QrsClient implements Client {
     final Vertx vertx = VertxCoreRecorder.getVertx().get();
     final HttpClient httpClient;
     final QrsConfiguration configuration = new QrsConfiguration();
+    final Serialisers serialisers;
 
-    public QrsClient() {
+    public QrsClient(Serialisers serialisers) {
+        this.serialisers = serialisers;
         this.httpClient = vertx.createHttpClient();
     }
 
@@ -34,22 +37,22 @@ public class QrsClient implements Client {
 
     @Override
     public WebTarget target(String uri) {
-        return new QrsWebTarget(httpClient, UriBuilder.fromUri(uri), configuration);
+        return new QrsWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers);
     }
 
     @Override
     public WebTarget target(URI uri) {
-        return null;
+        return new QrsWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers);
     }
 
     @Override
     public WebTarget target(UriBuilder uriBuilder) {
-        return null;
+        return new QrsWebTarget(httpClient, uriBuilder, configuration, serialisers);
     }
 
     @Override
     public WebTarget target(Link link) {
-        return null;
+        return new QrsWebTarget(httpClient, UriBuilder.fromLink(link), configuration, serialisers);
     }
 
     @Override

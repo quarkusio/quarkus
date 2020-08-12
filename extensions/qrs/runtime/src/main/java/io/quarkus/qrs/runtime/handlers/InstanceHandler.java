@@ -13,7 +13,7 @@ public class InstanceHandler implements RestHandler {
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        BeanFactory.BeanInstance<Object> instance = factory.createInstance(requestContext);
+        BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance);
     }
 }

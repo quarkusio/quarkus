@@ -380,7 +380,7 @@ public class QrsRequestContext implements Runnable, Closeable {
         if (throwable instanceof WebApplicationException) {
             this.result = ((WebApplicationException) throwable).getResponse();
         } else {
-            this.result = deployment.getExceptionMapping().mapException(throwable, this);
+            this.result = deployment.getExceptionMapping().mapException(throwable);
         }
     }
 

@@ -32,11 +32,11 @@ import io.vertx.core.http.HttpServerRequest;
 
 public class QrsResponseBuilder extends ResponseBuilder {
 
-    private int status;
-    private String reasonPhrase;
-    private Object entity;
-    private MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
-    private Annotation[] entityAnnotations;
+    int status;
+    String reasonPhrase;
+    Object entity;
+    MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
+    Annotation[] entityAnnotations;
 
     @Override
     public Response build() {
@@ -350,6 +350,10 @@ public class QrsResponseBuilder extends ResponseBuilder {
             return this;
         metadata.putAll(headers);
         return this;
+    }
+
+    public MultivaluedMap<String, Object> getMetadata() {
+        return metadata;
     }
 
     public static String createVaryHeader(List<Variant> variants) {

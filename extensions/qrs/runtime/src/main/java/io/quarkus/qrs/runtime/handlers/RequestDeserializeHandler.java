@@ -1,6 +1,7 @@
 package io.quarkus.qrs.runtime.handlers;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MediaType;
@@ -25,8 +26,8 @@ public class RequestDeserializeHandler implements RestHandler {
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        MessageBodyReader<?> reader = serialisers.findReader(type, mediaType, requestContext);
-        if (reader == null) {
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, mediaType);
+        if (readers.isEmpty()) {
             requestContext.setThrowable(new NotSupportedException());
             return;
         }
@@ -36,17 +37,24 @@ public class RequestDeserializeHandler implements RestHandler {
             @Override
             public void handle(Buffer event) {
                 ByteArrayInputStream in = new ByteArrayInputStream(event.getBytes());
-                try {
-                    Object result = reader.readFrom((Class) type, type, null, mediaType,
-                            requestContext.getHttpHeaders().getRequestHeaders(), in);
-                    requestContext.setRequestEntity(result);
-                    requestContext.resume();
-                } catch (Throwable e) {
-                    requestContext.setThrowable(e);
-                    requestContext.resume();
-                    return;
+                for (MessageBodyReader<?> reader : readers) {
+                    //TODO: proper params
+                    if (reader.isReadable(type, type, null, mediaType)) {
+                        try {
+                            Object result = reader.readFrom((Class) type, type, null, mediaType,
+                                    requestContext.getHttpHeaders().getRequestHeaders(), in);
+                            requestContext.setRequestEntity(result);
+                            requestContext.resume();
+                            return;
+                        } catch (Throwable e) {
+                            requestContext.setThrowable(e);
+                            requestContext.resume();
+                            return;
+                        }
+                    }
                 }
-
+                requestContext.setThrowable(new NotSupportedException());
+                requestContext.resume();
             }
         });
 

@@ -38,7 +38,7 @@ public class Serialisers {
 
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection 
     private MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
-    private MultivaluedMap<Class<?>, ResourceReader<?>> readers = new MultivaluedHashMap<>();
+    private MultivaluedMap<Class<?>, ResourceReader> readers = new MultivaluedHashMap<>();
 
     public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
     public static final MessageBodyWriter[] EMPTY = new MessageBodyWriter[0];
@@ -107,35 +107,32 @@ public class Serialisers {
         }
     }
 
-    public MessageBodyReader<?> findReader(Class<?> targetType, MediaType mediaType, QrsRequestContext requestContext) {
-        Class<?> klass = targetType;
+    public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType) {
+        List<MediaType> mt = Collections.singletonList(mediaType);
+        List<MessageBodyReader<?>> ret = new ArrayList<>();
+        Class<?> klass = entityType;
         do {
-            List<ResourceReader<?>> goodTypeReaders = readers.get(klass);
+            List<ResourceReader> goodTypeReaders = readers.get(klass);
             if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
-                List<MessageBodyReader<?>> readers = new ArrayList<>(goodTypeReaders.size());
-                for (ResourceReader<?> goodTypeReader : goodTypeReaders) {
-                    readers.add(goodTypeReader.getFactory().createInstance(requestContext).getInstance());
+                for (ResourceReader goodTypeReader : goodTypeReaders) {
+                    MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
+                    if (match != null) {
+                        ret.add(goodTypeReader.getInstance());
+                    }
                 }
-                // FIXME: spec says to use content type sorting too
-                for (MessageBodyReader<?> reader : readers) {
-                    if (reader.isReadable(targetType, requestContext.getTarget().getLazyMethod().getGenericReturnType(),
-                            requestContext.getTarget().getLazyMethod().getAnnotations(), mediaType))
-                        return reader;
-                }
-                // not found any match, look up
             }
             // FIXME: spec mentions superclasses, but surely interfaces are involved too?
             klass = klass.getSuperclass();
         } while (klass != null);
 
-        return null;
+        return ret;
     }
 
     public <T> void addWriter(Class<T> entityClass, ResourceWriter writer) {
         writers.add(entityClass, writer);
     }
 
-    public <T> void addReader(Class<T> entityClass, ResourceReader<T> reader) {
+    public <T> void addReader(Class<T> entityClass, ResourceReader reader) {
         readers.add(entityClass, reader);
     }
 
@@ -199,7 +196,7 @@ public class Serialisers {
         return writers;
     }
 
-    public MultivaluedMap<Class<?>, ResourceReader<?>> getReaders() {
+    public MultivaluedMap<Class<?>, ResourceReader> getReaders() {
         return readers;
     }
 

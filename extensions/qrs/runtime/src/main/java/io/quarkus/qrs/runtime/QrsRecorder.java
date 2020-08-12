@@ -81,6 +81,8 @@ public class QrsRecorder {
 
     private static final Map<String, Class<?>> primitiveTypes;
 
+    private static volatile QrsDeployment currentDeployment;
+
     static {
         Map<String, Class<?>> prims = new HashMap<>();
         prims.put(byte.class.getName(), byte.class);
@@ -92,6 +94,10 @@ public class QrsRecorder {
         prims.put(double.class.getName(), double.class);
         prims.put(long.class.getName(), long.class);
         primitiveTypes = Collections.unmodifiableMap(prims);
+    }
+
+    public static QrsDeployment getCurrentDeployment() {
+        return currentDeployment;
     }
 
     public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {
@@ -193,6 +199,7 @@ public class QrsRecorder {
         QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
                 abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
 
+        currentDeployment = deployment;
         return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
     }
 
@@ -401,7 +408,7 @@ public class QrsRecorder {
     }
 
     public void registerReader(Serialisers serialisers, String entityClassName,
-            ResourceReader<?> reader) {
+            ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);
     }
 }

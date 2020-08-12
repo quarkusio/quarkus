@@ -12,6 +12,8 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
+import io.quarkus.qrs.runtime.QrsRecorder;
+
 public class QrsClientBuilder extends ClientBuilder {
     @Override
     public ClientBuilder withConfig(Configuration config) {
@@ -60,7 +62,7 @@ public class QrsClientBuilder extends ClientBuilder {
 
     @Override
     public Client build() {
-        return new QrsClient();
+        return new QrsClient(QrsRecorder.getCurrentDeployment().getSerialisers());
     }
 
     @Override

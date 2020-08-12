@@ -1,10 +1,7 @@
 package io.quarkus.qrs.runtime.client;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -20,28 +17,27 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.jaxrs.QrsConfiguration;
-import io.quarkus.qrs.runtime.jaxrs.QrsResponseBuilder;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
 
 public class QrsInvocationBuilder implements Invocation.Builder {
 
-    private String method = "GET";
-    private final URI uri;
-    private final HttpClient httpClient;
-    private QrsWebTarget target;
-    private boolean chunked;
-    private final ClientRequestHeaders headers;
+    String method = "GET";
+    final URI uri;
+    final HttpClient httpClient;
+    QrsWebTarget target;
+    boolean chunked;
+    final ClientRequestHeaders headers;
+    final Serialisers serialisers;
+    final QrsAsyncInvoker invoker;
 
-    public QrsInvocationBuilder(URI uri, HttpClient httpClient, QrsConfiguration configuration) {
+    public QrsInvocationBuilder(URI uri, HttpClient httpClient, QrsConfiguration configuration, Serialisers serialisers) {
         this.uri = uri;
         this.httpClient = httpClient;
         this.headers = new ClientRequestHeaders(configuration);
+        this.serialisers = serialisers;
+        this.invoker = new QrsAsyncInvoker(this);
     }
 
     @Override
@@ -76,7 +72,7 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public AsyncInvoker async() {
-        return null;
+        return invoker;
     }
 
     @Override
@@ -137,7 +133,7 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return null;
+        return invoker;
     }
 
     @Override
@@ -147,162 +143,135 @@ public class QrsInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response get() {
-        return method("GET");
+        return unwrap(invoker.get());
     }
 
-    @Override
-    public <T> T get(Class<T> responseType) {
-        return get().readEntity(responseType);
-    }
-
-    @Override
-    public <T> T get(GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response put(Entity<?> entity) {
-        return null;
-    }
-
-    @Override
-    public <T> T put(Entity<?> entity, Class<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public <T> T put(Entity<?> entity, GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response post(Entity<?> entity) {
-        return null;
-    }
-
-    @Override
-    public <T> T post(Entity<?> entity, Class<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public <T> T post(Entity<?> entity, GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response delete() {
-        return method("DELETE");
-    }
-
-    @Override
-    public <T> T delete(Class<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public <T> T delete(GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response head() {
-        return null;
-    }
-
-    @Override
-    public Response options() {
-        return method("OPTIONS");
-    }
-
-    @Override
-    public <T> T options(Class<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public <T> T options(GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response trace() {
-        return null;
-    }
-
-    @Override
-    public <T> T trace(Class<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public <T> T trace(GenericType<T> responseType) {
-        return null;
-    }
-
-    @Override
-    public Response method(String name) {
-        CompletableFuture<Response> result = new CompletableFuture<>();
-        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(name), uri.getPort(), uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-        for (Map.Entry<String, List<String>> entry : headers.asMap().entrySet()) {
-            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
-        }
-        httpClientRequest
-                .handler(new Handler<HttpClientResponse>() {
-                    @Override
-                    public void handle(HttpClientResponse event) {
-                        event.bodyHandler(new Handler<Buffer>() {
-                            @Override
-                            public void handle(Buffer buffer) {
-                                QrsResponseBuilder response = new QrsResponseBuilder();
-                                for (String i : event.headers().names()) {
-                                    response.header(i, event.getHeader(i));
-                                }
-                                response.status(event.statusCode());
-                                response.entity(buffer.toString(StandardCharsets.UTF_8));
-
-                                result.complete(response.build());
-                            }
-                        });
-                    }
-                }).exceptionHandler(new Handler<Throwable>() {
-                    @Override
-                    public void handle(Throwable event) {
-                        result.completeExceptionally(event);
-                    }
-                }).end();
-
+    private <T> T unwrap(CompletableFuture<T> c) {
         try {
-            return result.get();
+            return c.get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
+    public <T> T get(Class<T> responseType) {
+        return unwrap(invoker.get(responseType));
+    }
+
+    @Override
+    public <T> T get(GenericType<T> responseType) {
+        return unwrap(invoker.get(responseType));
+    }
+
+    @Override
+    public Response put(Entity<?> entity) {
+        return unwrap(invoker.put(entity));
+    }
+
+    @Override
+    public <T> T put(Entity<?> entity, Class<T> responseType) {
+        return unwrap(invoker.put(entity, responseType));
+    }
+
+    @Override
+    public <T> T put(Entity<?> entity, GenericType<T> responseType) {
+        return unwrap(invoker.put(entity, responseType));
+    }
+
+    @Override
+    public Response post(Entity<?> entity) {
+        return unwrap(invoker.post(entity));
+    }
+
+    @Override
+    public <T> T post(Entity<?> entity, Class<T> responseType) {
+        return unwrap(invoker.post(entity, responseType));
+    }
+
+    @Override
+    public <T> T post(Entity<?> entity, GenericType<T> responseType) {
+        return unwrap(invoker.post(entity, responseType));
+    }
+
+    @Override
+    public Response delete() {
+        return unwrap(invoker.delete());
+    }
+
+    @Override
+    public <T> T delete(Class<T> responseType) {
+        return unwrap(invoker.delete(responseType));
+    }
+
+    @Override
+    public <T> T delete(GenericType<T> responseType) {
+        return unwrap(invoker.delete(responseType));
+    }
+
+    @Override
+    public Response head() {
+        return unwrap(invoker.head());
+    }
+
+    @Override
+    public Response options() {
+        return unwrap(invoker.options());
+    }
+
+    @Override
+    public <T> T options(Class<T> responseType) {
+        return unwrap(invoker.options(responseType));
+    }
+
+    @Override
+    public <T> T options(GenericType<T> responseType) {
+        return unwrap(invoker.options(responseType));
+    }
+
+    @Override
+    public Response trace() {
+        return unwrap(invoker.trace());
+    }
+
+    @Override
+    public <T> T trace(Class<T> responseType) {
+        return unwrap(invoker.trace(responseType));
+    }
+
+    @Override
+    public <T> T trace(GenericType<T> responseType) {
+        return unwrap(invoker.trace(responseType));
+    }
+
+    @Override
+    public Response method(String name) {
+        return unwrap(invoker.method(name));
+    }
+
+    @Override
     public <T> T method(String name, Class<T> responseType) {
-        return null;
+        return unwrap(invoker.method(name, responseType));
     }
 
     @Override
     public <T> T method(String name, GenericType<T> responseType) {
-        return null;
+        return unwrap(invoker.method(name, responseType));
     }
 
     @Override
     public Response method(String name, Entity<?> entity) {
-        return null;
+        return unwrap(invoker.method(name, entity));
     }
 
     @Override
     public <T> T method(String name, Entity<?> entity, Class<T> responseType) {
-        return null;
+        return unwrap(invoker.method(name, entity, responseType));
     }
 
     @Override
     public <T> T method(String name, Entity<?> entity, GenericType<T> responseType) {
-        return null;
+        return unwrap(invoker.method(name, entity, responseType));
     }
 
     public void setTarget(QrsWebTarget target) {
@@ -324,4 +293,5 @@ public class QrsInvocationBuilder implements Invocation.Builder {
     public ClientRequestHeaders getHeaders() {
         return headers;
     }
+
 }

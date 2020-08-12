@@ -48,7 +48,7 @@ import io.quarkus.qrs.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.JsonbMessageBodyReader;
-import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyWriter;
+import io.quarkus.qrs.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.qrs.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.qrs.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
@@ -209,7 +209,7 @@ public class QrsProcessor {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
                         QrsDotNames.MESSAGE_BODY_READER,
                         beanArchiveIndexBuildItem.getIndex());
-                ResourceReader<?> reader = new ResourceReader<>();
+                ResourceReader reader = new ResourceReader();
                 reader.setFactory(recorder.factory(readerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
                 recorder.registerReader(serialisers, typeParameters.get(0).name().toString(), reader);
@@ -221,15 +221,25 @@ public class QrsProcessor {
         //                false);
         registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 MediaType.APPLICATION_JSON);
-        registerWriter(recorder, serialisers, String.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+        registerWriter(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, Object.class, StringMessageBodyWriter.class, beanContainerBuildItem.getValue(),
+        registerWriter(recorder, serialisers, Number.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN);
+        registerWriter(recorder, serialisers, Boolean.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN);
+        registerWriter(recorder, serialisers, Character.class, StringMessageBodyHandler.class,
+                beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN);
+        registerWriter(recorder, serialisers, Object.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
-        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
-                MediaType.APPLICATION_JSON);
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
+
+        registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.WILDCARD);
+        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
+                MediaType.APPLICATION_JSON);
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses, subResourceClasses,
@@ -248,9 +258,9 @@ public class QrsProcessor {
 
     private <T> void registerReader(QrsRecorder recorder, Serialisers serialisers, Class<T> entityClass,
             Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer, String mediaType) {
-        ResourceReader<Object> reader = new ResourceReader<>();
+        ResourceReader reader = new ResourceReader();
         reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
-        reader.setMediaTypes(Collections.singletonList(mediaType));
+        reader.setMediaTypeStrings(Collections.singletonList(mediaType));
         recorder.registerReader(serialisers, entityClass.getName(), reader);
 
     }

@@ -12,6 +12,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.jaxrs.QrsConfiguration;
 import io.quarkus.qrs.runtime.jaxrs.QrsUriBuilder;
 import io.vertx.core.http.HttpClient;
@@ -21,18 +22,21 @@ public class QrsWebTarget implements WebTarget {
     protected UriBuilder uriBuilder;
     private final HttpClient client;
     private final QrsConfiguration configuration;
+    private final Serialisers serialisers;
     private boolean chunked = false;
 
-    public QrsWebTarget(UriBuilder uriBuilder, HttpClient client) {
+    public QrsWebTarget(UriBuilder uriBuilder, HttpClient client, Serialisers serialisers) {
         this.uriBuilder = uriBuilder;
         this.client = client;
+        this.serialisers = serialisers;
         configuration = new QrsConfiguration();
     }
 
-    public QrsWebTarget(HttpClient client, UriBuilder uriBuilder, QrsConfiguration configuration) {
+    public QrsWebTarget(HttpClient client, UriBuilder uriBuilder, QrsConfiguration configuration, Serialisers serialisers) {
         this.client = client;
         this.uriBuilder = uriBuilder;
         this.configuration = configuration;
+        this.serialisers = serialisers;
     }
 
     /**
@@ -256,7 +260,7 @@ public class QrsWebTarget implements WebTarget {
     }
 
     protected QrsWebTarget newInstance(HttpClient client, UriBuilder uriBuilder, QrsConfiguration configuration) {
-        return new QrsWebTarget(client, uriBuilder, configuration);
+        return new QrsWebTarget(client, uriBuilder, configuration, serialisers);
     }
 
     @Override
@@ -294,7 +298,7 @@ public class QrsWebTarget implements WebTarget {
 
     protected QrsInvocationBuilder createQrsInvocationBuilder(HttpClient client, UriBuilder uri,
             QrsConfiguration configuration) {
-        return new QrsInvocationBuilder(uri.build(), client, configuration);
+        return new QrsInvocationBuilder(uri.build(), client, configuration, serialisers);
     }
 
     @Override

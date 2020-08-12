@@ -16,13 +16,13 @@ public class ExceptionMapping {
 
     private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
-    public Response mapException(Throwable throwable, QrsRequestContext requestContext) {
+    public Response mapException(Throwable throwable) {
         Class<?> klass = throwable.getClass();
         do {
             ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
             if (mapper != null) {
                 ExceptionMapper<Throwable> instance = (ExceptionMapper<Throwable>) mapper.getFactory()
-                        .createInstance(requestContext).getInstance();
+                        .createInstance().getInstance();
                 return instance.toResponse(throwable);
             }
             klass = klass.getSuperclass();

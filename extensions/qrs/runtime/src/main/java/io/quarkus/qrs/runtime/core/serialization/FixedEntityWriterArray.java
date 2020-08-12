@@ -1,6 +1,5 @@
 package io.quarkus.qrs.runtime.core.serialization;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import javax.ws.rs.InternalServerErrorException;
@@ -8,8 +7,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
-import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
-import io.vertx.core.buffer.Buffer;
+import io.quarkus.qrs.runtime.core.Serialisers;
 
 /**
  * A fixed entity writer that iterates an array of providers until it finds one that can handle
@@ -25,21 +23,9 @@ public class FixedEntityWriterArray implements EntityWriter {
 
     @Override
     public void write(QrsRequestContext context, Object entity) throws IOException {
-        Response response = context.getResponse();
         for (int i = 0; i < writers.length; ++i) {
             MessageBodyWriter writer = writers[i];
-            if (writer.isWriteable(entity.getClass(), null, null, response.getMediaType())) {
-                if (writer instanceof QrsMessageBodyWriter) {
-                    ((QrsMessageBodyWriter<Object>) writer).writeResponse(entity, context);
-                } else {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    writer.writeTo(entity, context.getTarget().getLazyMethod().getMethod().getReturnType(),
-                            context.getTarget().getLazyMethod().getGenericReturnType(),
-                            context.getTarget().getLazyMethod().getAnnotations(), response.getMediaType(),
-                            response.getHeaders(), baos);
-
-                    context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
-                }
+            if (Serialisers.invokeWriter(context, entity, writer)) {
                 return;
             }
         }

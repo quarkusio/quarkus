@@ -1,6 +1,8 @@
 package io.quarkus.qrs.runtime.core;
 
 import java.io.Closeable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -74,6 +76,10 @@ public class QrsRequestContext implements Runnable, Closeable {
     private String remaining;
     private MediaType producesMediaType;
     private MediaType consumesMediaType;
+
+    private Annotation[] annotations;
+    private Type genericReturnType;
+
     /**
      * used for {@link UriInfo#getMatchedURIs()}
      */
@@ -471,6 +477,30 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public QrsRequestContext setConsumesMediaType(MediaType consumesMediaType) {
         this.consumesMediaType = consumesMediaType;
+        return this;
+    }
+
+    public Annotation[] getAnnotations() {
+        if (annotations == null) {
+            return target.getLazyMethod().getAnnotations();
+        }
+        return annotations;
+    }
+
+    public QrsRequestContext setAnnotations(Annotation[] annotations) {
+        this.annotations = annotations;
+        return this;
+    }
+
+    public Type getGenericReturnType() {
+        if (genericReturnType == null) {
+            return target.getLazyMethod().getGenericReturnType();
+        }
+        return genericReturnType;
+    }
+
+    public QrsRequestContext setGenericReturnType(Type genericReturnType) {
+        this.genericReturnType = genericReturnType;
         return this;
     }
 

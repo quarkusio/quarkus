@@ -46,6 +46,7 @@ public class GenericResourceTest {
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(GenericResourceStudent.class);
+                    war.addClass(PortProviderUtil.class);
                     war.addClass(GenericResourceStudentInterface.class);
                     war.addClass(GenericResourceCrudResource.class);
                     war.addClasses(GenericResourceStudentCrudResource.class, GenericResourceStudentReader.class,

@@ -1,21 +1,38 @@
 package io.quarkus.qrs.runtime.core;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
+import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
 import io.quarkus.qrs.runtime.util.MediaTypeHelper;
+import io.vertx.core.buffer.Buffer;
 
 public class Serialisers {
 
@@ -23,38 +40,71 @@ public class Serialisers {
     private MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
     private MultivaluedMap<Class<?>, ResourceReader<?>> readers = new MultivaluedHashMap<>();
 
-    public MessageBodyWriter<?> findWriter(Response response, QrsRequestContext requestContext) {
-        Class<?> klass = response.getEntity().getClass();
-        do {
-            List<ResourceWriter> goodTypeWriters = writers.get(klass);
-            if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
-                List<MessageBodyWriter<?>> writers = new ArrayList<>(goodTypeWriters.size());
-                for (ResourceWriter goodTypeWriter : goodTypeWriters) {
-                    writers.add(goodTypeWriter.getFactory().createInstance(requestContext).getInstance());
-                }
-                // FIXME: spec says to use content type sorting too
-                for (MessageBodyWriter<?> writer : writers) {
-                    if (writer instanceof QrsMessageBodyWriter) {
-                        if (((QrsMessageBodyWriter<?>) writer).isWriteable(response.getEntity().getClass(),
-                                requestContext.getTarget().getLazyMethod(), response.getMediaType())) {
-                            return writer;
-                        }
-
-                    } else {
-                        if (writer.isWriteable(response.getEntity().getClass(),
-                                requestContext.getTarget().getLazyMethod().getGenericReturnType(),
-                                requestContext.getTarget().getLazyMethod().getAnnotations(), response.getMediaType())) {
-                            return writer;
-                        }
+    public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
+    public static final MessageBodyWriter[] EMPTY = new MessageBodyWriter[0];
+    private final ConcurrentMap<Class<?>, Holder> noMediaTypeClassCache = new ConcurrentHashMap<>();
+    private Function<Class<?>, Holder> mappingFunction = new Function<Class<?>, Holder>() {
+        @Override
+        public Holder apply(Class<?> aClass) {
+            Class<?> c = aClass;
+            Set<MediaType> types = new LinkedHashSet<>();
+            List<ResourceWriter> writers = new ArrayList<>();
+            Set<Class<?>> seenInterfaces = new HashSet<>();
+            while (c != null) {
+                List<ResourceWriter> forClass = getWriters().get(c);
+                if (forClass != null) {
+                    for (ResourceWriter writer : forClass) {
+                        types.addAll(writer.mediaTypes());
+                        writers.add(writer);
                     }
                 }
-                // not found any match, look up
+                Deque<Class<?>> interfaces = new ArrayDeque<>(Arrays.asList(c.getInterfaces()));
+                while (!interfaces.isEmpty()) {
+                    Class<?> iface = interfaces.poll();
+                    if (seenInterfaces.contains(iface)) {
+                        continue;
+                    }
+                    seenInterfaces.add(iface);
+                    forClass = getWriters().get(iface);
+                    if (forClass != null) {
+                        for (ResourceWriter writer : forClass) {
+                            types.addAll(writer.mediaTypes());
+                            writers.add(writer);
+                        }
+                    }
+                    interfaces.addAll(Arrays.asList(iface.getInterfaces()));
+                }
+                c = c.getSuperclass();
             }
-            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
-            klass = klass.getSuperclass();
-        } while (klass != null);
+            return new Holder(writers, new ArrayList<>(types));
+        }
+    };
 
-        return null;
+    public static boolean invokeWriter(QrsRequestContext context, Object entity, MessageBodyWriter writer)
+            throws IOException {
+        //note that GenericEntity is not a factor here. It should have already been unwrapped
+
+        Response response = context.getResponse();
+        if (writer instanceof QrsMessageBodyWriter) {
+            QrsMessageBodyWriter<Object> qrsWriter = (QrsMessageBodyWriter<Object>) writer;
+            if (qrsWriter.isWriteable(entity.getClass(), context.getTarget().getLazyMethod(), context.getProducesMediaType())) {
+                qrsWriter.writeResponse(entity, context);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAnnotations(),
+                    context.getProducesMediaType())) {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
+                        context.getAnnotations(), response.getMediaType(), response.getHeaders(), baos);
+                context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     public MessageBodyReader<?> findReader(Class<?> targetType, MediaType mediaType, QrsRequestContext requestContext) {
@@ -172,5 +222,82 @@ public class Serialisers {
         } while (klass != null);
 
         return ret;
+    }
+
+    public MessageBodyWriter<?>[] findWriters(QrsRequestContext context, Object entity, MediaType producesMediaType) {
+
+        return null;
+    }
+
+    public NoMediaTypeResult findWriterNoMediaType(QrsRequestContext requestContext, Object entity) {
+        Holder resultForClass = noMediaTypeClassCache.computeIfAbsent(entity.getClass(), mappingFunction);
+        String accept = requestContext.getContext().request().getHeader(HttpHeaderNames.ACCEPT);
+        List<MediaType> parsed;
+        if (accept != null) {
+            //TODO: this needs to be optimised
+            parsed = MediaTypeHelper.parseHeader(accept);
+        } else {
+            //TODO: we could cache the result for no accept header, however we can't for user provided ones
+            //there are an unlimited number of possible accept headers, so it would be easy to DOS if it were cached
+            parsed = WILDCARD_LIST;
+        }
+        //TODO: more work is needed on internal default ordering
+        MediaType res = MediaTypeHelper.getBestMatch(parsed, resultForClass.mediaTypeList);
+        if (res == null) {
+            throw new WebApplicationException(Response
+                    .notAcceptable(Variant
+                            .mediaTypes(
+                                    resultForClass.mediaTypeList.toArray(new MediaType[resultForClass.mediaTypeList.size()]))
+                            .build())
+                    .build());
+        }
+        MediaType selected = res;
+        if (res.isWildcardType() || (res.getType().equals("application") && res.isWildcardSubtype())) {
+            selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
+        }
+        List<MessageBodyWriter<?>> finalResult = new ArrayList<>();
+        for (ResourceWriter i : resultForClass.writers) {
+            for (MediaType mt : i.mediaTypes()) {
+                if (mt.isCompatible(res)) {
+                    finalResult.add(i.getInstance());
+                    break;
+                }
+            }
+        }
+        return new NoMediaTypeResult(finalResult.toArray(EMPTY), selected);
+    }
+
+    public static class NoMediaTypeResult {
+        final MessageBodyWriter<?>[] writers;
+        final MediaType mediaType;
+        final EntityWriter entityWriter;
+
+        public NoMediaTypeResult(MessageBodyWriter<?>[] writers, MediaType mediaType) {
+            this.writers = writers;
+            this.mediaType = mediaType;
+            this.entityWriter = new FixedEntityWriterArray(writers);
+        }
+
+        public MessageBodyWriter<?>[] getWriters() {
+            return writers;
+        }
+
+        public MediaType getMediaType() {
+            return mediaType;
+        }
+
+        public EntityWriter getEntityWriter() {
+            return entityWriter;
+        }
+    }
+
+    static class Holder {
+        final List<ResourceWriter> writers;
+        final List<MediaType> mediaTypeList;
+
+        Holder(List<ResourceWriter> writers, List<MediaType> mediaTypeList) {
+            this.writers = writers;
+            this.mediaTypeList = mediaTypeList;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package io.quarkus.qrs.runtime.handlers;
 
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -14,18 +15,31 @@ public class ResponseHandler implements RestHandler {
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         Object result = requestContext.getResult();
-        Response response = null;
+        Response.ResponseBuilder response = null;
         if (result instanceof Response) {
-            response = (Response) result;
+            Response existing = (Response) result;
+            if (existing.getEntity() instanceof GenericEntity) {
+                GenericEntity<?> genericEntity = (GenericEntity<?>) existing.getEntity();
+                requestContext.setGenericReturnType(genericEntity.getType());
+                response = Response.fromResponse(existing).entity(genericEntity.getEntity());
+            } else {
+                //TODO: super inefficent
+                response = Response.fromResponse((Response) result);
+            }
         } else {
-            // FIXME: custom status codes depending on method?
-            response = Response.ok().entity(result).build();
-            requestContext.setResult(response);
+            if (result instanceof GenericEntity) {
+                GenericEntity<?> genericEntity = (GenericEntity<?>) result;
+                requestContext.setGenericReturnType(genericEntity.getType());
+                response = Response.ok().entity(genericEntity.getEntity());
+            } else {
+                // FIXME: custom status codes depending on method?
+                response = Response.ok().entity(result);
+            }
         }
-
         MediaType produces = requestContext.getProducesMediaType();
         if (produces != null) {
-            response.getHeaders().add(HttpHeaders.CONTENT_TYPE, produces.toString());
+            response.header(HttpHeaders.CONTENT_TYPE, produces.toString());
         }
+        requestContext.setResult(response.build());
     }
 }

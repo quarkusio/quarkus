@@ -104,7 +104,7 @@ public class EndpointIndexer {
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
             return clazz;
         } catch (Exception e) {
-            if (Modifier.isInterface(classInfo.flags())) {
+            if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
                 //kinda bogus, but we just ignore failed interfaces for now
                 //they can have methods that are not valid until they are actually extended by a concrete type
                 log.debug("Ignoring interface " + classInfo.name(), e);
@@ -265,13 +265,13 @@ public class EndpointIndexer {
                     converter = new ListConverter.ListSupplier(converter);
                 } else if (pt.name().equals(SET)) {
                     single = false;
-                    elementType = toClassName(pt.arguments().get(0), actualEndpointInfo, actualEndpointInfo, indexView);
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
                     converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                             existingEndpoints, info);
                     converter = new SetConverter.SetSupplier(converter);
                 } else if (pt.name().equals(SORTED_SET)) {
                     single = false;
-                    elementType = toClassName(pt.arguments().get(0), actualEndpointInfo, actualEndpointInfo, indexView);
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
                     converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                             existingEndpoints, info);
                     converter = new SortedSetConverter.SortedSetSupplier(converter);
@@ -279,7 +279,7 @@ public class EndpointIndexer {
                     throw new RuntimeException("Invalid parameter type " + pt);
                 }
             } else {
-                elementType = toClassName(paramType, actualEndpointInfo, actualEndpointInfo, indexView);
+                elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
                 if (type != ParameterType.CONTEXT && type != ParameterType.BODY) {
                     converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                             existingEndpoints, info);

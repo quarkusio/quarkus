@@ -11,11 +11,13 @@ import java.util.Set;
 
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
@@ -141,34 +143,41 @@ public class QrsContainerResponseContext implements ContainerResponseContext {
 
     @Override
     public Class<?> getEntityClass() {
-        // FIXME: perhaps this is the method return type?
         return getEntity().getClass();
     }
 
     @Override
     public Type getEntityType() {
-        // FIXME: perhaps this is the method return type?
-        return getEntity().getClass();
+        return context.getGenericReturnType();
     }
 
     @Override
     public void setEntity(Object entity) {
-        if (context.getResult() == null || !entity.getClass().equals(context.getResult().getClass())) {
-            context.resetBuildTimeSerialization();
+        context.resetBuildTimeSerialization();
+        if (entity instanceof GenericEntity) {
+            context.setGenericReturnType(((GenericEntity<?>) entity).getType());
+            entity = ((GenericEntity<?>) entity).getEntity();
         }
-        context.setResult(entity);
+        Response.ResponseBuilder resp = Response.fromResponse(context.getResponse()).entity(entity);
+        context.setResult(resp.build());
     }
 
     @Override
     public void setEntity(Object entity, Annotation[] annotations, MediaType mediaType) {
-        // TODO Auto-generated method stub
-
+        context.resetBuildTimeSerialization();
+        if (entity instanceof GenericEntity) {
+            context.setGenericReturnType(((GenericEntity<?>) entity).getType());
+            entity = ((GenericEntity<?>) entity).getEntity();
+        }
+        context.setProducesMediaType(mediaType);
+        context.setAnnotations(annotations);
+        Response.ResponseBuilder resp = Response.fromResponse(context.getResponse()).entity(entity);
+        context.setResult(resp.build());
     }
 
     @Override
     public Annotation[] getEntityAnnotations() {
-        // TODO Auto-generated method stub
-        return null;
+        return context.getAnnotations();
     }
 
     @Override

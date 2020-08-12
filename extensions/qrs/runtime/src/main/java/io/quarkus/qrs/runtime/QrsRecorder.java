@@ -191,7 +191,7 @@ public class QrsRecorder {
         }
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
-                abortHandlingChain.toArray(new RestHandler[0]), new DynamicEntityWriter(serialisers));
+                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
 
         return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
     }
@@ -298,8 +298,7 @@ public class QrsRecorder {
                             //if this is null this means that the type cannot be resolved at build time
                             //this happens when the method returns a generic type (e.g. Object), so there
                             //are more specific mappers that could be invoked depending on the actual return value
-                            handlers.add(new FixedProducesHandler(mediaType,
-                                    dynamicEntityWriter));
+                            handlers.add(new FixedProducesHandler(mediaType, dynamicEntityWriter));
                         } else if (buildTimeWriters.isEmpty()) {
                             //we could not find any writers that can write a response to this endpoint
                             log.warn("Cannot find any combination of response writers for the method " + clazz.getClassName()
@@ -309,7 +308,7 @@ public class QrsRecorder {
                             //only a single handler that can handle the response
                             //this is a very common case
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
-                                    buildTimeWriters.get(0).getInstance())));
+                                    buildTimeWriters.get(0).getInstance(), mediaType)));
                         } else {
                             //multiple writers, we try them in order
                             List<MessageBodyWriter<?>> list = new ArrayList<>();

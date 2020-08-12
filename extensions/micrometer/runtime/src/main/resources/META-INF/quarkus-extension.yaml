@@ -1,11 +1,12 @@
-name: "Micrometer - SLF4J for metrics"
+name: "Micrometer metrics"
 metadata:
   keywords:
   - "micrometer"
   - "metrics"
   - "metric"
   - "prometheus"
-  guide: "https://github.com/ebullient/quarkus-micrometer-extension"
+  - "monitoring"
+  guide: "https://quarkus.io/guides/micrometer-metrics"
   categories:
   - "observability"
   status: "experimental"

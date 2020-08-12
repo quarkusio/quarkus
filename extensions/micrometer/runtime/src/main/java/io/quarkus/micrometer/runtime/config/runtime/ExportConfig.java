@@ -28,22 +28,23 @@ public class ExportConfig {
      * A property source for configuration of the Datadog MeterRegistry to push
      * metrics using the Datadog API, see https://micrometer.io/docs/registry/datadog.
      *
-     * [cols="1,2", options="header"]
-     * .Properties
-     * |===
-     * | Property=Default
-     * | Description
+     * Available values:
      *
-     * | `apiKey=YOUR_KEY`
-     * | Define the key used to push data using the Datadog API
+     * [cols=2]
+     * !===
+     * h!Property=Default
+     * h!Description
      *
-     * | `publish=true`
-     * | By default, gathered metrics will be published to Datadog when the MeterRegistry is enabled.
+     * !`apiKey=YOUR_KEY`
+     * !Define the key used to push data using the Datadog API
+     *
+     * !`publish=true`
+     * !By default, gathered metrics will be published to Datadog when the MeterRegistry is enabled.
      * Use this attribute to selectively disable publication of metrics in some environments.
      *
-     * | `step=1m`
-     * | The interval at which metrics are sent to Datadog. The default is 1 minute.
-     * |===
+     * !`step=1m`
+     * !The interval at which metrics are sent to Datadog. The default is 1 minute.
+     * !===
      *
      * Other micrometer configuration attributes can also be specified.
      *
@@ -86,22 +87,23 @@ public class ExportConfig {
      * A property source for configuration of the Stackdriver MeterRegistry,
      * see https://micrometer.io/docs/registry/stackdriver.
      *
-     * [cols="1,2", options="header"]
-     * .Properties
-     * |===
-     * | Property=Default
-     * | Description
+     * Available values:
      *
-     * | `project-id=MY_PROJECT_ID`
-     * | Define the project id used to push data to Stackdriver Monitoring
+     * [cols=2]
+     * !===
+     * h!Property=Default
+     * h!Description
      *
-     * | `publish=true`
-     * | By default, gathered metrics will be published to Datadog when the MeterRegistry is enabled.
+     * !`project-id=MY_PROJECT_ID`
+     * !Define the project id used to push data to Stackdriver Monitoring
+     *
+     * !`publish=true`
+     * !By default, gathered metrics will be published to Datadog when the MeterRegistry is enabled.
      * Use this attribute to selectively disable publication of metrics in some environments.
      *
-     * | `step=1m`
-     * | The interval at which metrics are sent to Stackdriver Monitoring. The default is 1 minute.
-     * |===
+     * !`step=1m`
+     * !The interval at which metrics are sent to Stackdriver Monitoring. The default is 1 minute.
+     * !===
      *
      * Other micrometer configuration attributes can also be specified.
      *

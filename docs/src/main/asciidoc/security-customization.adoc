@@ -196,6 +196,6 @@ If you are going to use security in a reactive environment, you will likely need
 
 This will allow you to propagate the identity throughout the reactive callbacks. You also need to make sure you
 are using an executor that is capable of propagating the identity (e.g. no `CompletableFuture.supplyAsync`),
-to make sure that quarkus can propagate it. For more information see the
+to make sure that Quarkus can propagate it. For more information see the
 link:context-propagation[Context Propagation Guide].
 

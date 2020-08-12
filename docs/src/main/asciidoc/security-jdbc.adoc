@@ -171,7 +171,7 @@ quarkus.datasource.password=quarkus
 quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
-In our context, we are using PostgreSQL as identity store and we init the database with users and roles.
+In our context, we are using PostgreSQL as identity store and we initialize the database with users and roles.
 
 [source,sql]
 ----

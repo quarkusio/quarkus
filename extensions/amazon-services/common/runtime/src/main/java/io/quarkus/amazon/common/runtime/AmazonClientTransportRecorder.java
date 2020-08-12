@@ -9,6 +9,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.TlsKeyManagersProvider;
+import software.amazon.awssdk.http.TlsTrustManagersProvider;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient.Builder;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
@@ -61,7 +62,8 @@ public class AmazonClientTransportRecorder {
             builder.proxyConfiguration(proxyBuilder.build());
         }
 
-        getTlsKeyManagersProvider(asyncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsKeyManagersProvider(asyncConfig.tlsKeyManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsTrustManagersProvider(asyncConfig.tlsTrustManagersProvider).ifPresent(builder::tlsTrustManagersProvider);
 
         if (asyncConfig.eventLoop.override) {
             SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
@@ -79,18 +81,21 @@ public class AmazonClientTransportRecorder {
     public RuntimeValue<SdkHttpClient.Builder> configureSyncUrlConnectionHttpClient(String clientName,
             RuntimeValue<SyncHttpClientConfig> syncConfigRuntime) {
         SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
-        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
+        validateTlsKeyManagersProvider(clientName, syncConfig.tlsKeyManagersProvider, "sync");
+        validateTlsTrustManagersProvider(clientName, syncConfig.tlsTrustManagersProvider, "sync");
         UrlConnectionHttpClient.Builder builder = UrlConnectionHttpClient.builder();
         builder.connectionTimeout(syncConfig.connectionTimeout);
         builder.socketTimeout(syncConfig.socketTimeout);
-        getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsKeyManagersProvider(syncConfig.tlsKeyManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsTrustManagersProvider(syncConfig.tlsTrustManagersProvider).ifPresent(builder::tlsTrustManagersProvider);
         return new RuntimeValue<>(builder);
     }
 
     public RuntimeValue<SdkHttpClient.Builder> configureSyncApacheHttpClient(String clientName,
             RuntimeValue<SyncHttpClientConfig> syncConfigRuntime) {
         SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
-        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
+        validateTlsKeyManagersProvider(clientName, syncConfig.tlsKeyManagersProvider, "sync");
+        validateTlsTrustManagersProvider(clientName, syncConfig.tlsTrustManagersProvider, "sync");
         Builder builder = ApacheHttpClient.builder();
         validateApacheClientConfig(clientName, syncConfig);
 
@@ -116,11 +121,19 @@ public class AmazonClientTransportRecorder {
 
             builder.proxyConfiguration(proxyBuilder.build());
         }
-        getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsKeyManagersProvider(syncConfig.tlsKeyManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        getTlsTrustManagersProvider(syncConfig.tlsTrustManagersProvider).ifPresent(builder::tlsTrustManagersProvider);
         return new RuntimeValue<>(builder);
     }
 
-    private Optional<TlsKeyManagersProvider> getTlsKeyManagersProvider(TlsManagersProviderConfig config) {
+    private Optional<TlsKeyManagersProvider> getTlsKeyManagersProvider(TlsKeyManagersProviderConfig config) {
+        if (config.fileStore != null && config.fileStore.path.isPresent() && config.fileStore.type.isPresent()) {
+            return Optional.of(config.type.create(config));
+        }
+        return Optional.empty();
+    }
+
+    private Optional<TlsTrustManagersProvider> getTlsTrustManagersProvider(TlsTrustManagersProviderConfig config) {
         if (config.fileStore != null && config.fileStore.path.isPresent() && config.fileStore.type.isPresent()) {
             return Optional.of(config.type.create(config));
         }
@@ -169,7 +182,8 @@ public class AmazonClientTransportRecorder {
             config.proxy.endpoint.ifPresent(uri -> validateProxyEndpoint(extension, uri, "async"));
         }
 
-        validateTlsManagersProvider(extension, config.tlsManagersProvider, "async");
+        validateTlsKeyManagersProvider(extension, config.tlsKeyManagersProvider, "async");
+        validateTlsTrustManagersProvider(extension, config.tlsTrustManagersProvider, "async");
     }
 
     private void validateProxyEndpoint(String extension, URI endpoint, String clientType) {
@@ -205,32 +219,43 @@ public class AmazonClientTransportRecorder {
         }
     }
 
-    private void validateTlsManagersProvider(String extension, TlsManagersProviderConfig config, String clientType) {
-        if (config != null && config.type == TlsManagersProviderType.FILE_STORE) {
-            if (config.fileStore == null) {
+    private void validateTlsKeyManagersProvider(String extension, TlsKeyManagersProviderConfig config, String clientType) {
+        if (config != null && config.type == TlsKeyManagersProviderType.FILE_STORE) {
+            validateFileStore(extension, clientType, "key", config.fileStore);
+        }
+    }
+
+    private void validateTlsTrustManagersProvider(String extension, TlsTrustManagersProviderConfig config, String clientType) {
+        if (config != null && config.type == TlsTrustManagersProviderType.FILE_STORE) {
+            validateFileStore(extension, clientType, "trust", config.fileStore);
+        }
+    }
+
+    private void validateFileStore(String extension, String clientType, String storeType,
+            FileStoreTlsManagersProviderConfig fileStore) {
+        if (fileStore == null) {
+            throw new RuntimeConfigurationError(
+                    String.format(
+                            "quarkus.%s.%s-client.tls-%s-managers-provider.file-store must be specified if 'FILE_STORE' provider type is used",
+                            extension, clientType, storeType));
+        } else {
+            if (!fileStore.password.isPresent()) {
                 throw new RuntimeConfigurationError(
                         String.format(
-                                "quarkus.%s.%s-client.tls-managers-provider.file-store must be specified if 'FILE_STORE' provider type is used",
-                                extension, clientType));
-            } else {
-                if (!config.fileStore.password.isPresent()) {
-                    throw new RuntimeConfigurationError(
-                            String.format(
-                                    "quarkus.%s.%s-client.tls-managers-provider.file-store.path should not be empty if 'FILE_STORE' provider is used.",
-                                    extension, clientType));
-                }
-                if (!config.fileStore.type.isPresent()) {
-                    throw new RuntimeConfigurationError(
-                            String.format(
-                                    "quarkus.%s.%s-client.tls-managers-provider.file-store.type should not be empty if 'FILE_STORE' provider is used.",
-                                    extension, clientType));
-                }
-                if (!config.fileStore.password.isPresent()) {
-                    throw new RuntimeConfigurationError(
-                            String.format(
-                                    "quarkus.%s.%s-client.tls-managers-provider.file-store.password should not be empty if 'FILE_STORE' provider is used.",
-                                    extension, clientType));
-                }
+                                "quarkus.%s.%s-client.tls-%s-managers-provider.file-store.path should not be empty if 'FILE_STORE' provider is used.",
+                                extension, clientType, storeType));
+            }
+            if (!fileStore.type.isPresent()) {
+                throw new RuntimeConfigurationError(
+                        String.format(
+                                "quarkus.%s.%s-client.tls-%s-managers-provider.file-store.type should not be empty if 'FILE_STORE' provider is used.",
+                                extension, clientType, storeType));
+            }
+            if (!fileStore.password.isPresent()) {
+                throw new RuntimeConfigurationError(
+                        String.format(
+                                "quarkus.%s.%s-client.tls-%s-managers-provider.file-store.password should not be empty if 'FILE_STORE' provider is used.",
+                                extension, clientType, storeType));
             }
         }
     }

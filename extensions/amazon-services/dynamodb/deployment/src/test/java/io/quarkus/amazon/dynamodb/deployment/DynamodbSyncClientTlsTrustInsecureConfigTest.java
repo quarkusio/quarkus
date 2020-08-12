@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class DynamodbSyncClientTlsFileStoreConfigTest {
+public class DynamodbSyncClientTlsTrustInsecureConfigTest {
 
     @Inject
     DynamoDbClient client;
@@ -18,7 +18,7 @@ public class DynamodbSyncClientTlsFileStoreConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("sync-tls-filestore-config.properties", "application.properties"));
+                    .addAsResource("sync-tls-trust-insecure-config.properties", "application.properties"));
 
     @Test
     public void test() {

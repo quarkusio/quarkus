@@ -109,10 +109,16 @@ public class NettyHttpClientConfig {
     public NettyProxyConfiguration proxy;
 
     /**
-     * TLS Managers provider configuration
+     * TLS Key Managers provider configuration
      */
     @ConfigItem
-    public TlsManagersProviderConfig tlsManagersProvider;
+    public TlsKeyManagersProviderConfig tlsKeyManagersProvider;
+
+    /**
+     * TLS Trust Managers provider configuration
+     */
+    @ConfigItem
+    public TlsTrustManagersProviderConfig tlsTrustManagersProvider;
 
     /**
      * Netty event loop configuration override

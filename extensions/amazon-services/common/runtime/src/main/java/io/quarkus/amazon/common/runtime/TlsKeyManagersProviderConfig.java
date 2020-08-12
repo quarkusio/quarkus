@@ -1,17 +1,14 @@
 package io.quarkus.amazon.common.runtime;
 
-import java.nio.file.Path;
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class TlsManagersProviderConfig {
+public class TlsKeyManagersProviderConfig {
 
     // @formatter:off
     /**
-     * TLS managers provider type.
+     * TLS key managers provider type.
      *
      * Available providers:
      *
@@ -25,7 +22,7 @@ public class TlsManagersProviderConfig {
      */
     // @formatter:on
     @ConfigItem(defaultValue = "system-property")
-    public TlsManagersProviderType type;
+    public TlsKeyManagersProviderType type;
 
     /**
      * Configuration of the file store provider.
@@ -34,32 +31,5 @@ public class TlsManagersProviderConfig {
      */
     @ConfigItem
     public FileStoreTlsManagersProviderConfig fileStore;
-
-    @ConfigGroup
-    public static class FileStoreTlsManagersProviderConfig {
-
-        /**
-         * Path to the key store.
-         */
-        @ConfigItem
-        public Optional<Path> path;
-
-        /**
-         * Key store type.
-         * <p>
-         * See the KeyStore section in
-         * the https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#KeyStore[Java Cryptography
-         * Architecture Standard Algorithm Name Documentation]
-         * for information about standard keystore types.
-         */
-        @ConfigItem
-        public Optional<String> type;
-
-        /**
-         * Key store password
-         */
-        @ConfigItem
-        public Optional<String> password;
-    }
 
 }

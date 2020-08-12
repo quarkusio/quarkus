@@ -95,7 +95,11 @@ public class RequestMapper<T> {
                 if (fullMatch) {
                     remaining = "";
                 } else {
-                    remaining = path.substring(matchPos);
+                    if (initialMatch.getMatched().length() == 1) {
+                        remaining = path;
+                    } else {
+                        remaining = path.substring(matchPos);
+                    }
                 }
                 return new RequestMatch(potentialMatch.template, potentialMatch.value, params, remaining);
             } else {

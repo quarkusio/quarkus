@@ -1,0 +1,48 @@
+package io.quarkus.qrs.runtime.handlers;
+
+import java.util.Map;
+
+import io.quarkus.qrs.runtime.core.QrsRequestContext;
+import io.quarkus.qrs.runtime.mapping.RequestMapper;
+import io.quarkus.qrs.runtime.mapping.RuntimeResource;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.RoutingContext;
+
+public class ClassRoutingHandler implements RestHandler {
+    final Map<String, RequestMapper<RuntimeResource>> mappers;
+
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers) {
+        this.mappers = mappers;
+    }
+
+    @Override
+    public void handle(QrsRequestContext requestContext) throws Exception {
+        RoutingContext event = requestContext.getContext();
+        RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
+        if (mapper == null) {
+            mapper = mappers.get(null);
+            if (mapper == null) {
+                if (requestContext.getMethod().equals(HttpMethod.HEAD.name())) {
+                    mapper = mappers.get(HttpMethod.GET.name());
+                } else if (requestContext.getMethod().equals(HttpMethod.OPTIONS.name())) {
+                    //just send back 200
+                    event.response().end();
+                    return;
+                }
+                if (mapper == null) {
+                    event.next();
+                    return;
+                }
+            }
+        }
+        RequestMapper.RequestMatch<RuntimeResource> target = mapper
+                .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
+        if (target == null) {
+            event.next();
+            return;
+        }
+        requestContext.restart(target.value);
+        requestContext.setRemaining(target.remaining);
+        requestContext.setPathParamValues(target.pathParamValues);
+    }
+}

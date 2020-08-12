@@ -26,7 +26,11 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
      */
     public final TemplateComponent[] components;
 
-    public URITemplate(String template) {
+    public final boolean prefixMatch;
+
+
+    public URITemplate(String template, boolean prefixMatch) {
+        this.prefixMatch = prefixMatch;
         if (!template.startsWith("/")) {
             template = "/" + template;
         }
@@ -143,7 +147,9 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             }
         }
         if (nameAggregator != null) {
-            regexAggregator.append("$");
+            if (!this.prefixMatch) {
+                regexAggregator.append("$");
+            }
             components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
                     nameAggregator.toArray(new String[0])));
         }
@@ -156,13 +162,14 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,
-            int capturingGroups, int complexExpressions, TemplateComponent[] components) {
+                       int capturingGroups, int complexExpressions, TemplateComponent[] components, boolean prefixMatch) {
         this.template = template;
         this.stem = stem;
         this.literalCharacterCount = literalCharacterCount;
         this.capturingGroups = capturingGroups;
         this.complexExpressions = complexExpressions;
         this.components = components;
+        this.prefixMatch = prefixMatch;
     }
 
     @Override

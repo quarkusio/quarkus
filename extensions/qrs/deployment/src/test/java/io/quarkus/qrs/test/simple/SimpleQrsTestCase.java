@@ -32,10 +32,10 @@ public class SimpleQrsTestCase {
 
     @Test
     public void simpleTest() {
-        RestAssured.get("/simple/foo")
-                .then().body(Matchers.equalTo("GET:foo"));
         RestAssured.get("/simple")
                 .then().body(Matchers.equalTo("GET"));
+        RestAssured.get("/simple/foo")
+                .then().body(Matchers.equalTo("GET:foo"));
 
         RestAssured.post("/simple")
                 .then().body(Matchers.equalTo("POST"));

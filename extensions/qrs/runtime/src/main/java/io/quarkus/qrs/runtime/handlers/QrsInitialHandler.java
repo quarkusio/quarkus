@@ -14,7 +14,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
 
-    final Map<String, RequestMapper<RuntimeResource>> mappers;
+    final RequestMapper<RestHandler[]> mappers;
     final QrsDeployment deployment;
     final ResourceRequestInterceptorHandler preMappingHandler;
     final RestHandler[] initialChain;
@@ -22,7 +22,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     final CurrentVertxRequest currentVertxRequest;
     final ManagedContext requestContext;
 
-    public QrsInitialHandler(Map<String, RequestMapper<RuntimeResource>> mappers, QrsDeployment deployment,
+    public QrsInitialHandler(RequestMapper<RestHandler[]> mappers, QrsDeployment deployment,
             ResourceRequestInterceptorHandler preMappingHandler) {
         this.mappers = mappers;
         this.deployment = deployment;
@@ -45,15 +45,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         RoutingContext event = requestContext.getContext();
-        RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
-        if (mapper == null) {
-            mapper = mappers.get(null);
-            if (mapper == null) {
-                event.next();
-                return;
-            }
-        }
-        RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(event.normalisedPath());
+        RequestMapper.RequestMatch<RestHandler[]> target = mappers.map(event.normalisedPath());
         if (target == null) {
             event.next();
             return;

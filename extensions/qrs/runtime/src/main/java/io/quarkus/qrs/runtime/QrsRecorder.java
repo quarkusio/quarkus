@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.qrs.runtime.handlers.ClassRoutingHandler;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
@@ -142,7 +143,7 @@ public class QrsRecorder {
         for (ResourceClass clazz : locatableResourceClasses) {
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
             Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
-            URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath());
+            URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
@@ -166,30 +167,34 @@ public class QrsRecorder {
 
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
-        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
-        Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
+        List<RequestMapper.RequestPath<RestHandler[]>> classMappers = new ArrayList<>();
         for (ResourceClass clazz : resourceClasses) {
+            Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> perClassMappers = new HashMap<>();
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        false, new URITemplate(clazz.getPath()), dynamicEntityWriter);
-                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(method.getHttpMethod());
+                        false, new URITemplate(clazz.getPath(), false), dynamicEntityWriter);
+                List<RequestMapper.RequestPath<RuntimeResource>> list = perClassMappers.get(method.getHttpMethod());
                 if (list == null) {
-                    templates.put(method.getHttpMethod(), list = new ArrayList<>());
+                    perClassMappers.put(method.getHttpMethod(), list = new ArrayList<>());
                 }
                 list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
                         runtimeResource));
             }
+
+            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
+            List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = perClassMappers.get(null);
+            if (nullMethod == null) {
+                nullMethod = Collections.emptyList();
+            }
+            for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : perClassMappers.entrySet()) {
+                i.getValue().addAll(nullMethod);
+                mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
+            }
+            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod);
+            classMappers.add(new RequestMapper.RequestPath<>(true, new URITemplate(clazz.getPath(), true), new RestHandler[]{classRoutingHandler}));
         }
 
-        List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.get(null);
-        if (nullMethod == null) {
-            nullMethod = Collections.emptyList();
-        }
-        for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : templates.entrySet()) {
-            i.getValue().addAll(nullMethod);
-            mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
-        }
         List<RestHandler> abortHandlingChain = new ArrayList<>();
 
         if (!responseInterceptors.isEmpty()) {
@@ -200,7 +205,7 @@ public class QrsRecorder {
                 abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
 
         currentDeployment = deployment;
-        return new QrsInitialHandler(mappersByMethod, deployment, preMatchHandler);
+        return new QrsInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
     }
 
     public RuntimeResource buildResourceMethod(Serialisers serialisers,
@@ -351,7 +356,7 @@ public class QrsRecorder {
         handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath()),
+        return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath(), false),
                 classPathTemplate, method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,

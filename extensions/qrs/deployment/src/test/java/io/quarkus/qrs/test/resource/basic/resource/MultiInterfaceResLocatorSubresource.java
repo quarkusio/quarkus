@@ -1,8 +1,5 @@
 package io.quarkus.qrs.test.resource.basic.resource;
 
-import javax.ws.rs.Path;
-
-@Path("")
 public class MultiInterfaceResLocatorSubresource implements MultiInterfaceResLocatorIntf1, MultiInterfaceResLocatorIntf2 {
     @Override
     public String resourceMethod1() {

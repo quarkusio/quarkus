@@ -17,6 +17,7 @@ import io.vertx.core.http.HttpServerResponse;
  */
 public class ResponseWriterHandler implements RestHandler {
 
+    public static final String HEAD = "HEAD";
     private final DynamicEntityWriter dynamicEntityWriter;
 
     public ResponseWriterHandler(DynamicEntityWriter dynamicEntityWriter) {
@@ -44,7 +45,7 @@ public class ResponseWriterHandler implements RestHandler {
         });
 
         Object entity = response.getEntity();
-        if (entity != null) {
+        if (entity != null && !requestContext.getMethod().equals(HEAD)) {
             EntityWriter entityWriter = requestContext.getEntityWriter();
             if (entityWriter == null) {
                 dynamicEntityWriter.write(requestContext, entity);

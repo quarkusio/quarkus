@@ -34,7 +34,7 @@ public class RequestMapperTestCase {
     RequestMapper<String> mapper(String... vals) {
         List<RequestMapper.RequestPath<String>> list = new ArrayList<>();
         for (String i : vals) {
-            list.add(new RequestMapper.RequestPath<>(false, new URITemplate(i), i));
+            list.add(new RequestMapper.RequestPath<>(false, new URITemplate(i, false), i));
         }
         return new RequestMapper<>(list);
     }

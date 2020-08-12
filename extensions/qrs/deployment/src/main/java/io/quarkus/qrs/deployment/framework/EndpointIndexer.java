@@ -96,6 +96,9 @@ public class EndpointIndexer {
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
             if (path != null) {
+                if (path.endsWith("/")) {
+                    path = path.substring(0, path.length() - 1);
+                }
                 if (!path.startsWith("/")) {
                     path = "/" + path;
                 }
@@ -137,11 +140,7 @@ public class EndpointIndexer {
                         if (!methodPath.startsWith("/")) {
                             methodPath = "/" + methodPath;
                         }
-                    }
-                    if (endpointPath != null) {
-                        methodPath = appendPath(endpointPath, methodPath);
-                    }
-                    if (methodPath == null) {
+                    } else {
                         methodPath = "/";
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
@@ -168,9 +167,6 @@ public class EndpointIndexer {
                         if (!methodPath.startsWith("/")) {
                             methodPath = "/" + methodPath;
                         }
-                    }
-                    if (endpointPath != null) {
-                        methodPath = appendPath(endpointPath, methodPath);
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,

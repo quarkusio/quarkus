@@ -185,17 +185,6 @@ public final class HibernateOrmProcessor {
         return watchedFiles;
     }
 
-    /**
-     * Undocumented feature: we allow setting the System property
-     * "SKIP_PARSE_PERSISTENCE_XML" to fully ignore any persistence.xml
-     * resource.
-     *
-     * @return true if we're expected to ignore them
-     */
-    private boolean shouldIgnorePersistenceXmlResources() {
-        return Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
-    }
-
     //Integration point: allow other extensions to define additional PersistenceXmlDescriptorBuildItem
     @BuildStep
     public void parsePersistenceXmlDescriptors(
@@ -378,93 +367,6 @@ public final class HibernateOrmProcessor {
                                 proxyDefinitions.getProxies())));
     }
 
-    /**
-     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
-     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
-     *
-     * @param domainObjects the previously discovered domain objects
-     * @return a new QuarkusScanner with all domainObjects registered
-     */
-    public static QuarkusScanner buildQuarkusScanner(JpaEntitiesBuildItem domainObjects) {
-        QuarkusScanner scanner = new QuarkusScanner();
-        Set<ClassDescriptor> classDescriptors = new HashSet<>();
-        for (String i : domainObjects.getAllModelClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
-                    ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
-        }
-        scanner.setClassDescriptors(classDescriptors);
-        return scanner;
-    }
-
-    private static MultiTenancyStrategy getMultiTenancyStrategy(HibernateOrmConfig hibernateOrmConfig) {
-        final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
-                .valueOf(hibernateOrmConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
-        if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
-            // See https://hibernate.atlassian.net/browse/HHH-6054
-            throw new ConfigurationError("The Hibernate ORM multi tenancy strategy "
-                    + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
-        }
-        return multiTenancyStrategy;
-    }
-
-    private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
-        //create a map of entity to proxy type
-        PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
-        Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(DotName.createSimple(Proxy.class.getName()))) {
-            AnnotationValue proxyClass = i.value("proxyClass");
-            if (proxyClass == null) {
-                continue;
-            }
-            proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
-        }
-        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
-            for (String entity : entityClassNames) {
-                Set<Class<?>> proxyInterfaces = new HashSet<>();
-                proxyInterfaces.add(HibernateProxy.class); //always added
-                Class<?> mappedClass = proxyHelper.uninitializedClass(entity);
-                String proxy = proxyAnnotations.get(entity);
-                if (proxy != null) {
-                    proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
-                } else if (!proxyHelper.isProxiable(mappedClass)) {
-                    //if there is no @Proxy we need to make sure the actual class is proxiable
-                    continue;
-                }
-                for (ClassInfo subclass : combinedIndex.getAllKnownSubclasses(DotName.createSimple(entity))) {
-                    String subclassName = subclass.name().toString();
-                    if (!entityClassNames.contains(subclassName)) {
-                        //not an entity
-                        continue;
-                    }
-                    proxy = proxyAnnotations.get(subclassName);
-                    if (proxy != null) {
-                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
-                    }
-                }
-                DynamicType.Unloaded<?> proxyDef = proxyHelper.buildUnloadedProxy(mappedClass,
-                        toArray(proxyInterfaces));
-
-                for (Entry<TypeDescription, byte[]> i : proxyDef.getAllTypes().entrySet()) {
-                    generatedClassBuildItemBuildProducer
-                            .produce(new GeneratedClassBuildItem(true, i.getKey().getName(), i.getValue()));
-                }
-                preGeneratedProxies.getProxies().put(entity,
-                        new PreGeneratedProxies.ProxyClassDetailsHolder(proxyDef.getTypeDescription().getName(),
-                                proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet())));
-            }
-        }
-        return preGeneratedProxies;
-    }
-
-    private static Class[] toArray(final Set<Class<?>> interfaces) {
-        if (interfaces == null) {
-            return ArrayHelper.EMPTY_CLASS_ARRAY;
-        }
-        return interfaces.toArray(new Class[interfaces.size()]);
-    }
-
     @BuildStep
     void handleNativeImageImportSql(BuildProducer<NativeImageResourceBuildItem> resources,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
@@ -580,6 +482,28 @@ public final class HibernateOrmProcessor {
         }
 
         recorder.startAllPersistenceUnits(beanContainer.getValue());
+    }
+
+    @BuildStep
+    public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<LogCategoryBuildItem> categories) {
+        if (hibernateOrmConfig.log.bindParam) {
+            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
+        }
+    }
+
+    @BuildStep(onlyIf = NativeBuild.class)
+    public void registerStaticMetamodelClassesForReflection(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflective) {
+        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(STATIC_METAMODEL);
+        if (!annotationInstances.isEmpty()) {
+
+            String[] metamodel = annotationInstances.stream()
+                    .map(a -> a.target().asClass().name().toString())
+                    .toArray(String[]::new);
+
+            reflective.produce(new ReflectiveClassBuildItem(false, false, true, metamodel));
+        }
     }
 
     private static Optional<String> getSqlLoadScript(Optional<String> sqlLoadScript, LaunchMode launchMode) {
@@ -858,28 +782,6 @@ public final class HibernateOrmProcessor {
                         false));
     }
 
-    @BuildStep
-    public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<LogCategoryBuildItem> categories) {
-        if (hibernateOrmConfig.log.bindParam) {
-            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
-        }
-    }
-
-    @BuildStep(onlyIf = NativeBuild.class)
-    public void test(CombinedIndexBuildItem index,
-            BuildProducer<ReflectiveClassBuildItem> reflective) {
-        Collection<AnnotationInstance> annotationInstances = index.getIndex().getAnnotations(STATIC_METAMODEL);
-        if (!annotationInstances.isEmpty()) {
-
-            String[] metamodel = annotationInstances.stream()
-                    .map(a -> a.target().asClass().name().toString())
-                    .toArray(String[]::new);
-
-            reflective.produce(new ReflectiveClassBuildItem(false, false, true, metamodel));
-        }
-    }
-
     public static Optional<String> guessDialect(String resolvedDbKind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
@@ -991,5 +893,103 @@ public final class HibernateOrmProcessor {
 
     private static boolean isDefaultPersistenceUnit(String name) {
         return DEFAULT_PERSISTENCE_UNIT_NAME.equals(name);
+    }
+
+    /**
+     * Undocumented feature: we allow setting the System property
+     * "SKIP_PARSE_PERSISTENCE_XML" to fully ignore any persistence.xml
+     * resource.
+     *
+     * @return true if we're expected to ignore them
+     */
+    private boolean shouldIgnorePersistenceXmlResources() {
+        return Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
+    }
+
+    /**
+     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
+     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
+     *
+     * @param domainObjects the previously discovered domain objects
+     * @return a new QuarkusScanner with all domainObjects registered
+     */
+    public static QuarkusScanner buildQuarkusScanner(JpaEntitiesBuildItem domainObjects) {
+        QuarkusScanner scanner = new QuarkusScanner();
+        Set<ClassDescriptor> classDescriptors = new HashSet<>();
+        for (String i : domainObjects.getAllModelClassNames()) {
+            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i,
+                    ClassDescriptor.Categorization.MODEL);
+            classDescriptors.add(desc);
+        }
+        scanner.setClassDescriptors(classDescriptors);
+        return scanner;
+    }
+
+    private static MultiTenancyStrategy getMultiTenancyStrategy(HibernateOrmConfig hibernateOrmConfig) {
+        final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
+                .valueOf(hibernateOrmConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
+        if (multiTenancyStrategy == MultiTenancyStrategy.DISCRIMINATOR) {
+            // See https://hibernate.atlassian.net/browse/HHH-6054
+            throw new ConfigurationError("The Hibernate ORM multi tenancy strategy "
+                    + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
+        }
+        return multiTenancyStrategy;
+    }
+
+    private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+        //create a map of entity to proxy type
+        PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
+        Map<String, String> proxyAnnotations = new HashMap<>();
+        for (AnnotationInstance i : combinedIndex.getAnnotations(DotName.createSimple(Proxy.class.getName()))) {
+            AnnotationValue proxyClass = i.value("proxyClass");
+            if (proxyClass == null) {
+                continue;
+            }
+            proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
+        }
+        try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(Thread.currentThread().getContextClassLoader())) {
+            for (String entity : entityClassNames) {
+                Set<Class<?>> proxyInterfaces = new HashSet<>();
+                proxyInterfaces.add(HibernateProxy.class); //always added
+                Class<?> mappedClass = proxyHelper.uninitializedClass(entity);
+                String proxy = proxyAnnotations.get(entity);
+                if (proxy != null) {
+                    proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                } else if (!proxyHelper.isProxiable(mappedClass)) {
+                    //if there is no @Proxy we need to make sure the actual class is proxiable
+                    continue;
+                }
+                for (ClassInfo subclass : combinedIndex.getAllKnownSubclasses(DotName.createSimple(entity))) {
+                    String subclassName = subclass.name().toString();
+                    if (!entityClassNames.contains(subclassName)) {
+                        //not an entity
+                        continue;
+                    }
+                    proxy = proxyAnnotations.get(subclassName);
+                    if (proxy != null) {
+                        proxyInterfaces.add(proxyHelper.uninitializedClass(proxy));
+                    }
+                }
+                DynamicType.Unloaded<?> proxyDef = proxyHelper.buildUnloadedProxy(mappedClass,
+                        toArray(proxyInterfaces));
+
+                for (Entry<TypeDescription, byte[]> i : proxyDef.getAllTypes().entrySet()) {
+                    generatedClassBuildItemBuildProducer
+                            .produce(new GeneratedClassBuildItem(true, i.getKey().getName(), i.getValue()));
+                }
+                preGeneratedProxies.getProxies().put(entity,
+                        new PreGeneratedProxies.ProxyClassDetailsHolder(proxyDef.getTypeDescription().getName(),
+                                proxyInterfaces.stream().map(Class::getName).collect(Collectors.toSet())));
+            }
+        }
+        return preGeneratedProxies;
+    }
+
+    private static Class[] toArray(final Set<Class<?>> interfaces) {
+        if (interfaces == null) {
+            return ArrayHelper.EMPTY_CLASS_ARRAY;
+        }
+        return interfaces.toArray(new Class[interfaces.size()]);
     }
 }

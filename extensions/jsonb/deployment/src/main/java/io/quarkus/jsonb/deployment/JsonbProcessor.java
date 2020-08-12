@@ -25,11 +25,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -103,8 +104,14 @@ public class JsonbProcessor {
     }
 
     @BuildStep
-    void unremovableJsonbAdapters(BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BeanArchiveIndexBuildItem beanArchiveIndex) {
+    void processJsonbAdapters(BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<AutoAddScopeBuildItem> autoScopes) {
+
+        // An adapter with an injection point but no scope is @Singleton
+        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(JSONB_ADAPTER_NAME).requiresContainerServices()
+                .defaultScope(BuiltinScope.SINGLETON).build());
+
+        // Make all adapters unremovable
         unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
 
             @Override

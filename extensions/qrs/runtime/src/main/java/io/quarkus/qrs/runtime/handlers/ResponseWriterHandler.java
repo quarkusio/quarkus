@@ -9,6 +9,7 @@ import javax.ws.rs.core.Response;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
+import io.quarkus.qrs.runtime.util.HttpResponseCodes;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 

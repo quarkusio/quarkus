@@ -4,7 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.util.List;
 
 import javax.ws.rs.NotSupportedException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
@@ -26,7 +29,17 @@ public class RequestDeserializeHandler implements RestHandler {
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, mediaType);
+        MediaType requestType = mediaType;
+        String requestTypeString = requestContext.getContext().request().getHeader(HttpHeaders.CONTENT_TYPE);
+        if (requestTypeString != null) {
+            try {
+                requestType = MediaType.valueOf(requestTypeString);
+            } catch (Exception e) {
+                requestContext.setThrowable(new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build()));
+                return;
+            }
+        }
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, requestType);
         if (readers.isEmpty()) {
             requestContext.setThrowable(new NotSupportedException());
             return;

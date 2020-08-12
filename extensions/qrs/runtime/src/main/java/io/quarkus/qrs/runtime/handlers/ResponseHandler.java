@@ -31,6 +31,9 @@ public class ResponseHandler implements RestHandler {
                 GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                 requestContext.setGenericReturnType(genericEntity.getType());
                 response = Response.ok().entity(genericEntity.getEntity());
+            } else if (result == null) {
+                // FIXME: custom status codes depending on method?
+                response = Response.noContent().entity(result);
             } else {
                 // FIXME: custom status codes depending on method?
                 response = Response.ok().entity(result);

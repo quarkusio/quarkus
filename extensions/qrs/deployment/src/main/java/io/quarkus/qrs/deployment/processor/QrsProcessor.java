@@ -1,5 +1,6 @@
 package io.quarkus.qrs.deployment.processor;
 
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.qrs.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -241,8 +243,10 @@ public class QrsProcessor {
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
+        registerReader(recorder, serialisers, InputStream.class, InputStreamMessageBodyReader.class, beanContainerBuildItem.getValue(),
+                MediaType.WILDCARD);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
-                MediaType.APPLICATION_JSON);
+                MediaType.WILDCARD);
 
         return new FilterBuildItem(
                 recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses, subResourceClasses,

@@ -48,7 +48,7 @@ public class ByteArrayMessageBodyHandler implements QrsMessageBodyWriter<byte[]>
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type.equals(String.class);
+        return true;
     }
 
     @Override

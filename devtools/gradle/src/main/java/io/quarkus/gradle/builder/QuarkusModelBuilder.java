@@ -237,11 +237,13 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 continue;
             }
             final DependencyImpl dep = initDependency(a);
-            if (LaunchMode.DEVELOPMENT.equals(mode) &&
+            // Dev mode uses needs sources for hot reload,
+            // Tests needs sources when running from IDE
+            if (mode.isDevOrTest() &&
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 Project projectDep = project.getRootProject()
                         .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-                addDevModePaths(dep, a, projectDep);
+                addSourceSetsPath(dep, a, projectDep);
             } else {
                 dep.addPath(a.getFile());
             }
@@ -249,7 +251,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         }
     }
 
-    private void addDevModePaths(final DependencyImpl dep, ResolvedArtifact a, Project project) {
+    private void addSourceSetsPath(final DependencyImpl dep, ResolvedArtifact a, Project project) {
         final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
         if (javaConvention != null) {
             SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);

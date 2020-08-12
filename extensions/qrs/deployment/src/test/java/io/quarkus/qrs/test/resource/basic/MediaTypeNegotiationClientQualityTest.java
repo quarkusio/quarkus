@@ -6,7 +6,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.function.Supplier;
 
+import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
@@ -18,6 +20,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -36,6 +39,7 @@ public class MediaTypeNegotiationClientQualityTest {
 
     @Produces({ "application/x;qs=0.9", "application/y;qs=0.7" })
     @DisplayName("Custom Message Body Writer 1")
+    @Provider
     public static class CustomMessageBodyWriter1 implements MessageBodyWriter<Object> {
 
         @Override
@@ -55,12 +59,11 @@ public class MediaTypeNegotiationClientQualityTest {
         }
     }
 
-    @DisplayName("Not Found Exception Mapper")
-    public static class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
-
-        @Override
-        public Response toResponse(NotFoundException notFoundException) {
-            return Response.status(Status.NOT_FOUND).entity(new Object()).build();
+    @Path("/echo")
+    public static class Resource {
+        @GET
+        public Object nothing() {
+            return new Object();
         }
     }
 
@@ -74,7 +77,7 @@ public class MediaTypeNegotiationClientQualityTest {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter1.class, NotFoundExceptionMapper.class);
+                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter1.class, Resource.class);
                     return war;
                 }
             });
@@ -100,7 +103,7 @@ public class MediaTypeNegotiationClientQualityTest {
                 "application/y;q=0.9");
         Response response = request.get();
         try {
-            Assertions.assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());
+            Assertions.assertEquals(Status.OK.getStatusCode(), response.getStatus());
             MediaType mediaType = response.getMediaType();
             Assertions.assertEquals(mediaType.getType(), "application");
             Assertions.assertEquals(mediaType.getSubtype(), "y");

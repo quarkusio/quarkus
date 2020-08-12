@@ -2,10 +2,11 @@ package io.quarkus.qrs.runtime.mapping;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class URITemplate implements Dumpable {
+public class URITemplate implements Dumpable, Comparable<URITemplate> {
 
     public final String template;
 
@@ -15,6 +16,10 @@ public class URITemplate implements Dumpable {
      * The number of characters that are literals in the path. According to the spec we need to sort by this.
      */
     public final int literalCharacterCount;
+
+    public final int capturingGroups;
+
+    public final int complexExpressions;
 
     /**
      * The components, first one is always the stem, so if the stem has been matched it can be ignored
@@ -30,6 +35,8 @@ public class URITemplate implements Dumpable {
         String name = null;
         String stem = null;
         int litChars = 0;
+        int capGroups = 0;
+        int complexGroups = 0;
         StringBuilder sb = new StringBuilder();
         int state = 0; //0 = start, 1 = parsing name, 2 = parsing regex
         for (int i = 0; i < template.length(); ++i) {
@@ -43,7 +50,7 @@ public class URITemplate implements Dumpable {
                             if (components.isEmpty()) {
                                 stem = literal;
                             }
-                            components.add(new TemplateComponent(Type.LITERAL, literal, null, null));
+                            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
                         }
                         sb.setLength(0);
                     } else {
@@ -55,7 +62,13 @@ public class URITemplate implements Dumpable {
                     if (c == '}') {
                         state = 0;
                         if (sb.length() > 0) {
-                            components.add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString(), null));
+                            capGroups++;
+                            if (i + 1 == template.length() || template.charAt(i + 1) == '/') {
+                                components.add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString(), null, null));
+                            } else {
+                                components.add(new TemplateComponent(Type.CUSTOM_REGEX, "[^/]+?", sb.toString(),
+                                        null, null));
+                            }
                         } else {
                             throw new IllegalArgumentException("Invalid template " + template);
                         }
@@ -72,8 +85,11 @@ public class URITemplate implements Dumpable {
                     if (c == '}') {
                         state = 0;
                         if (sb.length() > 0) {
+                            capGroups++;
+                            complexGroups++;
                             components
-                                    .add(new TemplateComponent(Type.CUSTOM_REGEX, null, name, Pattern.compile(sb.toString())));
+                                    .add(new TemplateComponent(Type.CUSTOM_REGEX, sb.toString(), name, null,
+                                            null));
                         } else {
                             throw new IllegalArgumentException("Invalid template " + template);
                         }
@@ -91,25 +107,82 @@ public class URITemplate implements Dumpable {
                     if (components.isEmpty()) {
                         stem = literal;
                     }
-                    components.add(new TemplateComponent(Type.LITERAL, literal, null, null));
+                    components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
                 }
                 break;
             case 1:
             case 2:
                 throw new IllegalArgumentException("Invalid template " + template);
         }
+
+        //coalesce the components
+        //once we have a CUSTOM_REGEX everything goes out the window, so we need to turn the remainder of the
+        //template into a single CUSTOM_REGEX
+        List<String> nameAggregator = null;
+        StringBuilder regexAggregator = null;
+        Iterator<TemplateComponent> it = components.iterator();
+        while (it.hasNext()) {
+            TemplateComponent component = it.next();
+            if (nameAggregator != null) {
+                it.remove();
+                if (component.type == Type.LITERAL) {
+                    regexAggregator.append(Pattern.quote(component.literalText));
+                } else if (component.type == Type.DEFAULT_REGEX) {
+                    regexAggregator.append("(?<" + component.name + ">[^/]+?)");
+                    nameAggregator.add(component.name);
+                } else if (component.type == Type.CUSTOM_REGEX) {
+                    regexAggregator.append("(?<" + component.name + ">" + component.literalText + ")");
+                    nameAggregator.add(component.name);
+                }
+            } else if (component.type == Type.CUSTOM_REGEX) {
+                it.remove();
+                regexAggregator = new StringBuilder();
+                nameAggregator = new ArrayList<>();
+                regexAggregator.append("(?<" + component.name + ">" + component.literalText + ")");
+                nameAggregator.add(component.name);
+            }
+        }
+        if (nameAggregator != null ) {
+            regexAggregator.append("$");
+            components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),nameAggregator.toArray(new String[0])));
+        }
         this.stem = stem;
         this.literalCharacterCount = litChars;
         this.components = components.toArray(new TemplateComponent[0]);
+        this.capturingGroups = capGroups;
+        this.complexExpressions = complexGroups;
 
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,
-            TemplateComponent[] components) {
+                       int capturingGroups, int complexExpressions, TemplateComponent[] components) {
         this.template = template;
         this.stem = stem;
         this.literalCharacterCount = literalCharacterCount;
+        this.capturingGroups = capturingGroups;
+        this.complexExpressions = complexExpressions;
         this.components = components;
+    }
+
+    @Override
+    public int compareTo(URITemplate uriTemplate) {
+        int val = stem.compareTo(uriTemplate.stem);
+        if (val != 0) {
+            return val;
+        }
+        val = Integer.compare(literalCharacterCount, uriTemplate.literalCharacterCount);
+        if (val != 0) {
+            return val;
+        }
+        val = Integer.compare(capturingGroups, uriTemplate.capturingGroups);
+        if (val != 0) {
+            return val;
+        }
+        val = Integer.compare(complexExpressions, uriTemplate.complexExpressions);
+        if (val != 0) {
+            return val;
+        }
+        return template.compareTo(uriTemplate.template);
     }
 
     public enum Type {
@@ -149,11 +222,17 @@ public class URITemplate implements Dumpable {
          */
         public final Pattern pattern;
 
-        public TemplateComponent(Type type, String literalText, String name, Pattern pattern) {
+        /**
+         * The names of all the capturing groups. Only used for CUSTOM_REGEX
+         */
+        public final String[] names;
+
+        public TemplateComponent(Type type, String literalText, String name, Pattern pattern, String[] names) {
             this.type = type;
             this.literalText = literalText;
             this.name = name;
             this.pattern = pattern;
+            this.names = names;
         }
 
         @Override

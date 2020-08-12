@@ -75,7 +75,7 @@ public class MatchedResourceTest {
         response = base.request().post(Entity.entity("<xml/>", "application/xml"));
         Assertions.assertEquals(response.getStatus(), HttpResponseCodes.SC_OK);
         rtn = response.readEntity(String.class);
-        Assertions.assertEquals(rtn, "<xml/>", "Wrong response content");
+        Assertions.assertEquals("<xml/>", rtn, "Wrong response content");
         response.close();
     }
 
@@ -89,7 +89,7 @@ public class MatchedResourceTest {
         WebTarget base = client.target(generateURL("/match"));
         Response response = base.request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .get();
-        Assertions.assertEquals(response.getHeaders().getFirst("Content-Type"), "text/html;charset=UTF-8");
+        Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
         String res = response.readEntity(String.class);
         Assertions.assertEquals("*/*", res, "Wrong response content");
         response.close();
@@ -99,7 +99,7 @@ public class MatchedResourceTest {
         WebTarget base = client.target(uri);
         Response response = base.request().get();
         Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
-        Assertions.assertEquals(response.readEntity(String.class), value, "Wrong response content");
+        Assertions.assertEquals(response.readEntity(String.class),value,  "Wrong response content");
     }
 
     /**
@@ -109,7 +109,7 @@ public class MatchedResourceTest {
     @Test
     @DisplayName("Test Post")
     public void testPost() {
-        generalPostTest(generateURL("/test1/foo.xml.en"), "complex");
         generalPostTest(generateURL("/test2/foo.xml.en"), "complex2");
+        generalPostTest(generateURL("/test1/foo.xml.en"), "complex");
     }
 }

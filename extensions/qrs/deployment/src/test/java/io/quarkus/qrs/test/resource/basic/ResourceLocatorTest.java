@@ -143,7 +143,7 @@ public class ResourceLocatorTest {
             Builder request = client.target(generateURL("/collection/annotation_free_subresource")).request();
             Response response = request.post(Entity.entity("hello!".getBytes(), MediaType.TEXT_PLAIN));
             Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
-            Assertions.assertEquals(response.readEntity(String.class), "posted: hello!");
+            Assertions.assertEquals("posted: hello!", response.readEntity(String.class));
         }
     }
 }

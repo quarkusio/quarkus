@@ -1,6 +1,8 @@
 package io.quarkus.qrs.runtime.mapping;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,14 @@ public class RequestMapper<T> {
                 aggregates.put(i.template.stem, paths = new ArrayList<>());
             }
             paths.add(i);
+        }
+        for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
+            Collections.sort(entry.getValue(), new Comparator<RequestPath<T>>() {
+                @Override
+                public int compare(RequestPath<T> t1, RequestPath<T> t2) {
+                    return t2.template.compareTo(t1.template);
+                }
+            });
         }
         for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
             requestPaths.addPrefixPath(entry.getKey(), entry.getValue());
@@ -51,7 +61,9 @@ public class RequestMapper<T> {
                         break;
                     }
                     matchPos = matcher.end();
-                    params.put(segment.name, matcher.group());
+                    for (String name : segment.names) {
+                        params.put(name, matcher.group(name));
+                    }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same
                     if (matchPos + segment.literalText.length() > pathLength) {

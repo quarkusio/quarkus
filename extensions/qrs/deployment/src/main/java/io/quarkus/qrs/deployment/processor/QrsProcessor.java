@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.qrs.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -231,6 +232,8 @@ public class QrsProcessor {
                 beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN);
         registerWriter(recorder, serialisers, Object.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.WILDCARD);
+        registerWriter(recorder, serialisers, byte[].class, ByteArrayMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),

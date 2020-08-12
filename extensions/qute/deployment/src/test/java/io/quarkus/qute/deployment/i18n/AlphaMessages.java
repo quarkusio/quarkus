@@ -12,4 +12,7 @@ public interface AlphaMessages {
     @Message(value = "Hello!", key = "hello_alpha")
     String hello();
 
+    @Message("Hello {name} from alpha!")
+    String helloWithParam(String name);
+
 }

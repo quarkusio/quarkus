@@ -277,10 +277,10 @@ public class KafkaStreamsProducer {
                         lastMissingTopics = missingTopics;
                     }
                 }
-
-                Thread.sleep(1_000);
             } catch (ExecutionException | TimeoutException e) {
                 LOGGER.error("Failed to get topic names from broker", e);
+            } finally {
+                Thread.sleep(1_000);
             }
         }
     }

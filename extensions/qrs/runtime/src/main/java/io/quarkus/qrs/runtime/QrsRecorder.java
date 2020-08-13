@@ -16,7 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.qrs.runtime.handlers.ClassRoutingHandler;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
@@ -25,6 +24,7 @@ import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.core.LazyMethod;
 import io.quarkus.qrs.runtime.core.QrsDeployment;
 import io.quarkus.qrs.runtime.core.Serialisers;
+import io.quarkus.qrs.runtime.core.parameters.AsyncResponseExtractor;
 import io.quarkus.qrs.runtime.core.parameters.BodyParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.ContextParamExtractor;
 import io.quarkus.qrs.runtime.core.parameters.FormParamExtractor;
@@ -36,6 +36,7 @@ import io.quarkus.qrs.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
+import io.quarkus.qrs.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
@@ -192,7 +193,8 @@ public class QrsRecorder {
                 mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
             }
             ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod);
-            classMappers.add(new RequestMapper.RequestPath<>(true, new URITemplate(clazz.getPath(), true), new RestHandler[]{classRoutingHandler}));
+            classMappers.add(new RequestMapper.RequestPath<>(true, new URITemplate(clazz.getPath(), true),
+                    new RestHandler[] { classRoutingHandler }));
         }
 
         List<RestHandler> abortHandlingChain = new ArrayList<>();
@@ -258,6 +260,9 @@ public class QrsRecorder {
                     break;
                 case CONTEXT:
                     extractor = new ContextParamExtractor(param.type);
+                    break;
+                case ASYNC_RESPONSE:
+                    extractor = new AsyncResponseExtractor();
                     break;
                 case QUERY:
                     extractor = new QueryParamExtractor(param.name, single);

@@ -2,9 +2,6 @@ package io.quarkus.qrs.runtime.model;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
 
 /**
@@ -45,9 +42,7 @@ public class ResourceMethod {
 
     private boolean blocking;
 
-    //TODO: fix this
-    private MessageBodyWriter<?> writer;
-    private MessageBodyReader<?> reader;
+    private boolean suspended;
 
     public boolean isResourceLocator() {
         return httpMethod == null;
@@ -131,6 +126,15 @@ public class ResourceMethod {
 
     public ResourceMethod setBlocking(boolean blocking) {
         this.blocking = blocking;
+        return this;
+    }
+
+    public boolean isSuspended() {
+        return suspended;
+    }
+
+    public ResourceMethod setSuspended(boolean suspended) {
+        this.suspended = suspended;
         return this;
     }
 }

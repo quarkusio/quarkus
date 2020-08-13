@@ -9,6 +9,7 @@ import static io.quarkus.qrs.deployment.framework.QrsDotNames.QUERY_PARAM;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.SET;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.SORTED_SET;
 import static io.quarkus.qrs.deployment.framework.QrsDotNames.STRING;
+import static io.quarkus.qrs.deployment.framework.QrsDotNames.SUSPENDED;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import javax.ws.rs.container.AsyncResponse;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -199,170 +202,185 @@ public class EndpointIndexer {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
             String[] classProduces, String[] classConsumes, DotName httpMethod, MethodInfo info, String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints) {
-        Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
-        MethodParameter[] methodParameters = new MethodParameter[info.parameters()
-                .size()];
-        for (int paramPos = 0; paramPos < info.parameters().size(); ++paramPos) {
-            parameterAnnotations[paramPos] = new HashMap<>();
-        }
-        for (AnnotationInstance i : info.annotations()) {
-            if (i.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                parameterAnnotations[i.target().asMethodParameter().position()].put(i.name(), i);
+        try {
+            Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
+            MethodParameter[] methodParameters = new MethodParameter[info.parameters()
+                    .size()];
+            for (int paramPos = 0; paramPos < info.parameters().size(); ++paramPos) {
+                parameterAnnotations[paramPos] = new HashMap<>();
             }
-        }
-        for (int i = 0; i < methodParameters.length; ++i) {
-            Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
+            for (AnnotationInstance i : info.annotations()) {
+                if (i.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                    parameterAnnotations[i.target().asMethodParameter().position()].put(i.name(), i);
+                }
+            }
+            boolean suspended = false;
+            for (int i = 0; i < methodParameters.length; ++i) {
+                Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
 
-            String name = null;
-            AnnotationInstance pathParam = anns.get(QrsDotNames.PATH_PARAM);
-            AnnotationInstance queryParam = anns.get(QUERY_PARAM);
-            AnnotationInstance headerParam = anns.get(QrsDotNames.HEADER_PARAM);
-            AnnotationInstance formParam = anns.get(QrsDotNames.FORM_PARAM);
-            AnnotationInstance contextParam = anns.get(QrsDotNames.CONTEXT);
-            AnnotationInstance defaultValueAnnotation = anns.get(QrsDotNames.DEFAULT_VALUE);
-            String defaultValue = null;
-            if (defaultValueAnnotation != null) {
-                defaultValue = defaultValueAnnotation.value().asString();
-            }
-            ParameterType type;
-            if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
-                throw new RuntimeException(
-                        "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
-                                + info);
-            } else if (pathParam != null) {
-                name = pathParam.value().asString();
-                type = ParameterType.PATH;
-            } else if (queryParam != null) {
-                name = queryParam.value().asString();
-                type = ParameterType.QUERY;
-            } else if (headerParam != null) {
-                name = headerParam.value().asString();
-                type = ParameterType.HEADER;
-            } else if (formParam != null) {
-                name = formParam.value().asString();
-                type = ParameterType.FORM;
-            } else if (contextParam != null) {
-                // no name required
-                type = ParameterType.CONTEXT;
-            } else {
-                type = ParameterType.BODY;
-            }
-            String elementType;
-            boolean single = true;
-            Supplier<ParameterConverter> converter = null;
-            Type paramType = info.parameters().get(i);
-            if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                ParameterizedType pt = paramType.asParameterizedType();
-                if (pt.name().equals(LIST)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, info);
-                    converter = new ListConverter.ListSupplier(converter);
-                } else if (pt.name().equals(SET)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, info);
-                    converter = new SetConverter.SetSupplier(converter);
-                } else if (pt.name().equals(SORTED_SET)) {
-                    single = false;
-                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, info);
-                    converter = new SortedSetConverter.SortedSetSupplier(converter);
+                String name = null;
+                AnnotationInstance pathParam = anns.get(QrsDotNames.PATH_PARAM);
+                AnnotationInstance queryParam = anns.get(QUERY_PARAM);
+                AnnotationInstance headerParam = anns.get(QrsDotNames.HEADER_PARAM);
+                AnnotationInstance formParam = anns.get(QrsDotNames.FORM_PARAM);
+                AnnotationInstance contextParam = anns.get(QrsDotNames.CONTEXT);
+                AnnotationInstance defaultValueAnnotation = anns.get(QrsDotNames.DEFAULT_VALUE);
+                AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
+                String defaultValue = null;
+                if (defaultValueAnnotation != null) {
+                    defaultValue = defaultValueAnnotation.value().asString();
+                }
+                ParameterType type;
+                if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
+                    throw new RuntimeException(
+                            "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
+                                    + info);
+                } else if (pathParam != null) {
+                    name = pathParam.value().asString();
+                    type = ParameterType.PATH;
+                } else if (queryParam != null) {
+                    name = queryParam.value().asString();
+                    type = ParameterType.QUERY;
+                } else if (headerParam != null) {
+                    name = headerParam.value().asString();
+                    type = ParameterType.HEADER;
+                } else if (formParam != null) {
+                    name = formParam.value().asString();
+                    type = ParameterType.FORM;
+                } else if (contextParam != null) {
+                    // no name required
+                    type = ParameterType.CONTEXT;
+                } else if (suspendedAnnotation != null) {
+                    // no name required
+                    type = ParameterType.ASYNC_RESPONSE;
+                    suspended = true;
                 } else {
-                    throw new RuntimeException("Invalid parameter type " + pt);
+                    type = ParameterType.BODY;
                 }
-            } else {
-                elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
-                if (type != ParameterType.CONTEXT && type != ParameterType.BODY) {
-                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                            existingEndpoints, info);
-                }
-            }
-            methodParameters[i] = new MethodParameter(name,
-                    elementType, type, single, converter, defaultValue);
-        }
-
-        String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
-        String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
-        ResourceMethod method = new ResourceMethod()
-                .setHttpMethod(annotationToMethod(httpMethod))
-                .setPath(methodPath)
-                .setConsumes(consumes)
-                .setName(info.name())
-                .setBlocking(info.annotation(BLOCKING) != null)
-                .setParameters(methodParameters)
-                // FIXME: resolved arguments ?
-                .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
-                    @Override
-                    public String apply(String v) {
-                        //we attempt to resolve type variables
-                        ClassInfo declarer = info.declaringClass();
-                        int pos = -1;
-                        for (;;) {
-                            if (declarer == null) {
-                                return null;
-                            }
-                            List<TypeVariable> typeParameters = declarer.typeParameters();
-                            for (int i = 0; i < typeParameters.size(); i++) {
-                                TypeVariable tv = typeParameters.get(i);
-                                if (tv.identifier().equals(v)) {
-                                    pos = i;
-                                }
-                            }
-                            if (pos != -1) {
-                                break;
-                            }
-                            declarer = indexView.getClassByName(declarer.superName());
-                        }
-                        Type type = JandexUtil.resolveTypeParameters(info.declaringClass().name(), declarer.name(), indexView)
-                                .get(pos);
-                        if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
-                            List<Type> bounds = type.asTypeVariable().bounds();
-                            if (bounds.isEmpty()) {
-                                return "Ljava/lang/Object;";
-                            }
-                            return AsmUtil.getSignature(bounds.get(0), this);
-                        } else {
-                            return AsmUtil.getSignature(type, this);
-                        }
+                String elementType;
+                boolean single = true;
+                Supplier<ParameterConverter> converter = null;
+                Type paramType = info.parameters().get(i);
+                if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType pt = paramType.asParameterizedType();
+                    if (pt.name().equals(LIST)) {
+                        single = false;
+                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                                existingEndpoints, info);
+                        converter = new ListConverter.ListSupplier(converter);
+                    } else if (pt.name().equals(SET)) {
+                        single = false;
+                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                                existingEndpoints, info);
+                        converter = new SetConverter.SetSupplier(converter);
+                    } else if (pt.name().equals(SORTED_SET)) {
+                        single = false;
+                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                                existingEndpoints, info);
+                        converter = new SortedSetConverter.SortedSetSupplier(converter);
+                    } else {
+                        throw new RuntimeException("Invalid parameter type " + pt);
                     }
-                }))
-                .setProduces(produces);
+                } else {
+                    elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
+                    if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
+                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                                existingEndpoints, info);
+                    }
+                }
+                if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
+                    throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+                }
+                methodParameters[i] = new MethodParameter(name,
+                        elementType, type, single, converter, defaultValue);
+            }
 
-        StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(method.getName())
-                .append(method.getReturnType());
-        for (MethodParameter t : method.getParameters()) {
-            sigBuilder.append(t);
+            String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
+            String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
+            ResourceMethod method = new ResourceMethod()
+                    .setHttpMethod(annotationToMethod(httpMethod))
+                    .setPath(methodPath)
+                    .setConsumes(consumes)
+                    .setName(info.name())
+                    .setBlocking(info.annotation(BLOCKING) != null)
+                    .setSuspended(suspended)
+                    .setParameters(methodParameters)
+                    // FIXME: resolved arguments ?
+                    .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
+                        @Override
+                        public String apply(String v) {
+                            //we attempt to resolve type variables
+                            ClassInfo declarer = info.declaringClass();
+                            int pos = -1;
+                            for (;;) {
+                                if (declarer == null) {
+                                    return null;
+                                }
+                                List<TypeVariable> typeParameters = declarer.typeParameters();
+                                for (int i = 0; i < typeParameters.size(); i++) {
+                                    TypeVariable tv = typeParameters.get(i);
+                                    if (tv.identifier().equals(v)) {
+                                        pos = i;
+                                    }
+                                }
+                                if (pos != -1) {
+                                    break;
+                                }
+                                declarer = indexView.getClassByName(declarer.superName());
+                            }
+                            Type type = JandexUtil
+                                    .resolveTypeParameters(info.declaringClass().name(), declarer.name(), indexView)
+                                    .get(pos);
+                            if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
+                                List<Type> bounds = type.asTypeVariable().bounds();
+                                if (bounds.isEmpty()) {
+                                    return "Ljava/lang/Object;";
+                                }
+                                return AsmUtil.getSignature(bounds.get(0), this);
+                            } else {
+                                return AsmUtil.getSignature(type, this);
+                            }
+                        }
+                    }))
+                    .setProduces(produces);
+
+            StringBuilder sigBuilder = new StringBuilder();
+            sigBuilder.append(method.getName())
+                    .append(method.getReturnType());
+            for (MethodParameter t : method.getParameters()) {
+                sigBuilder.append(t);
+            }
+            String baseName = currentClassInfo.name() + "$qrsinvoker$" + method.getName() + "_"
+                    + HashUtil.sha1(sigBuilder.toString());
+            try (ClassCreator classCreator = new ClassCreator(
+                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
+                    Object.class.getName(), EndpointInvoker.class.getName())) {
+                MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
+                ResultHandle[] args = new ResultHandle[method.getParameters().length];
+                ResultHandle array = mc.getMethodParam(1);
+                for (int i = 0; i < method.getParameters().length; ++i) {
+                    args[i] = mc.readArrayValue(array, i);
+                }
+                ResultHandle res;
+                if (Modifier.isInterface(currentClassInfo.flags())) {
+                    res = mc.invokeInterfaceMethod(info, mc.getMethodParam(0), args);
+                } else {
+                    res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
+                }
+                if (info.returnType().kind() == Type.Kind.VOID) {
+                    mc.returnValue(mc.loadNull());
+                } else {
+                    mc.returnValue(res);
+                }
+            }
+            method.setInvoker(recorder.invoker(baseName));
+            return method;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
-        String baseName = currentClassInfo.name() + "$qrsinvoker$" + method.getName() + "_"
-                + HashUtil.sha1(sigBuilder.toString());
-        try (ClassCreator classCreator = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
-                Object.class.getName(), EndpointInvoker.class.getName())) {
-            MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
-            ResultHandle[] args = new ResultHandle[method.getParameters().length];
-            ResultHandle array = mc.getMethodParam(1);
-            for (int i = 0; i < method.getParameters().length; ++i) {
-                args[i] = mc.readArrayValue(array, i);
-            }
-            ResultHandle res;
-            if (Modifier.isInterface(currentClassInfo.flags())) {
-                res = mc.invokeInterfaceMethod(info, mc.getMethodParam(0), args);
-            } else {
-                res = mc.invokeVirtualMethod(info, mc.getMethodParam(0), args);
-            }
-            if (info.returnType().kind() == Type.Kind.VOID) {
-                mc.returnValue(mc.loadNull());
-            } else {
-                mc.returnValue(res);
-            }
-        }
-        method.setInvoker(recorder.invoker(baseName));
-        return method;
     }
 
     private static Supplier<ParameterConverter> extractConverter(String elementType, IndexView indexView,

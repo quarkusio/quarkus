@@ -19,6 +19,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -105,6 +107,21 @@ public class SimpleQrsResource {
         person.setFirst("Bob");
         person.setLast("Builder");
         return person;
+    }
+
+    @GET
+    @Path("/async-person")
+    @Produces(MediaType.APPLICATION_JSON)
+    public void getPerson(@Suspended AsyncResponse response) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Person person = new Person();
+                person.setFirst("Bob");
+                person.setLast("Builder");
+                response.resume(person);
+            }
+        }).start();
     }
 
     @POST

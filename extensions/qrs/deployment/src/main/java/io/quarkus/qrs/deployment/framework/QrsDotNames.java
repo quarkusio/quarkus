@@ -21,6 +21,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -65,6 +66,7 @@ public final class QrsDotNames {
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 
     public static final DotName LIST = DotName.createSimple(List.class.getName());

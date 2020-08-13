@@ -17,11 +17,22 @@ public class InvocationHandler implements RestHandler {
             //but we still follow through with the handler chain
             return;
         }
+        //suspend processing
+        //need to do it here to avoid a race
+        boolean async = requestContext.getAsyncResponse() != null;
+        if (async) {
+            requestContext.suspend();
+        }
         try {
             Object result = invoker.invoke(requestContext.getEndpointInstance(), requestContext.getParameters());
-            requestContext.setResult(result);
+            if (!async) {
+                requestContext.setResult(result);
+            }
         } catch (Throwable t) {
             requestContext.setThrowable(t);
+            if (async) {
+                requestContext.resume();
+            }
         }
     }
 }

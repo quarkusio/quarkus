@@ -28,7 +28,6 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
 
     public final boolean prefixMatch;
 
-
     public URITemplate(String template, boolean prefixMatch) {
         this.prefixMatch = prefixMatch;
         if (!template.startsWith("/")) {
@@ -162,7 +161,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,
-                       int capturingGroups, int complexExpressions, TemplateComponent[] components, boolean prefixMatch) {
+            int capturingGroups, int complexExpressions, TemplateComponent[] components, boolean prefixMatch) {
         this.template = template;
         this.stem = stem;
         this.literalCharacterCount = literalCharacterCount;

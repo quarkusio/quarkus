@@ -24,6 +24,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.jaxrs.QrsAsyncResponse;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
@@ -84,6 +85,8 @@ public class QrsRequestContext implements Runnable, Closeable {
      * used for {@link UriInfo#getMatchedURIs()}
      */
     private List<UriMatch> matchedURIs;
+
+    private QrsAsyncResponse asyncResponse;
 
     public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
             CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
@@ -501,6 +504,18 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public QrsRequestContext setGenericReturnType(Type genericReturnType) {
         this.genericReturnType = genericReturnType;
+        return this;
+    }
+
+    public QrsAsyncResponse getAsyncResponse() {
+        return asyncResponse;
+    }
+
+    public QrsRequestContext setAsyncResponse(QrsAsyncResponse asyncResponse) {
+        if (this.asyncResponse != null) {
+            throw new RuntimeException("Async can only be started once");
+        }
+        this.asyncResponse = asyncResponse;
         return this;
     }
 

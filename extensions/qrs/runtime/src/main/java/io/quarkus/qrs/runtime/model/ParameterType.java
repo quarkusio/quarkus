@@ -8,4 +8,5 @@ public enum ParameterType {
     FORM,
     BODY,
     CONTEXT,
+    ASYNC_RESPONSE
 }

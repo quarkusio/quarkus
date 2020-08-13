@@ -16,7 +16,7 @@ import io.quarkus.hibernate.orm.multiplepersistenceunits.model.inventory.Plane;
 import io.quarkus.hibernate.orm.multiplepersistenceunits.model.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultiplePersistenceUnitsTest {
+public class MultiplePersistenceResourceInjectionUnitsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()

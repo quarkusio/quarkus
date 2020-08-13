@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.enhancer.Address;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -44,7 +44,7 @@ public class ExcludePersistenceXmlConfigTest {
         Arc.container().requestContext().activate();
         try {
             // it is the default entity manager from application.properties, not templatePU from the persistence.xml
-            Assertions.assertEquals(HibernateOrmProcessor.DEFAULT_PERSISTENCE_UNIT_NAME,
+            Assertions.assertEquals(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     entityManager.getEntityManagerFactory().getProperties().get("hibernate.ejb.persistenceUnitName"));
         } finally {
             Arc.container().requestContext().deactivate();

@@ -47,7 +47,6 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -706,25 +705,22 @@ public final class HibernateOrmProcessor {
                 // sql-load-script
                 Optional<String> importFile = getSqlLoadScript(launchMode);
 
-                if (!importFile.isPresent()) {
-                    // explicitly set a no file and ignore all other operations
-                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, NO_SQL_LOAD_SCRIPT_FILE);
-                } else {
+                if (importFile.isPresent()) {
                     Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
 
                     if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                         // enlist resource if present
                         resourceProducer.produce(new NativeImageResourceBuildItem(importFile.get()));
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
-                        desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
-                                MultipleLinesSqlCommandExtractor.class.getName());
-
                     } else if (hibernateConfig.sqlLoadScript.isPresent()) {
                         //raise exception if explicit file is not present (i.e. not the default)
                         throw new ConfigurationError(
                                 "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
                                         + hibernateConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
                     }
+                } else {
+                    //Disable implicit loading of the default import script (import.sql)
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
                 }
 
                 // Caching

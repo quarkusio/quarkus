@@ -14,6 +14,11 @@ public class ResponseHandler implements RestHandler {
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
+        Throwable error = requestContext.getThrowable();
+        if (error != null) {
+            requestContext.setThrowable(null);
+            requestContext.setResult(requestContext.getDeployment().getExceptionMapping().mapException(error));
+        }
         Object result = requestContext.getResult();
         Response.ResponseBuilder response = null;
         if (result instanceof Response) {

@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -213,9 +212,9 @@ public class QrsRequestContext implements Runnable, Closeable {
                         return;
                     }
                 }
-            }
-            if (throwable != null) {
-                handleException(throwable);
+                if (position == handlers.length && throwable != null) {
+                    restart(deployment.getAbortHandlerChain());
+                }
             }
         } catch (Throwable t) {
             handleException(t);
@@ -413,17 +412,8 @@ public class QrsRequestContext implements Runnable, Closeable {
      * ATM this can only be called by the InvocationHandler
      */
     public QrsRequestContext setThrowable(Throwable throwable) {
-        invokeExceptionMapper(throwable);
         this.throwable = throwable;
         return this;
-    }
-
-    private void invokeExceptionMapper(Throwable throwable) {
-        if (throwable instanceof WebApplicationException) {
-            this.result = ((WebApplicationException) throwable).getResponse();
-        } else {
-            this.result = deployment.getExceptionMapping().mapException(throwable);
-        }
     }
 
     private void handleException(Throwable throwable) {
@@ -524,6 +514,9 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public Annotation[] getAnnotations() {
         if (annotations == null) {
+            if (target == null) {
+                return null;
+            }
             return target.getLazyMethod().getAnnotations();
         }
         return annotations;
@@ -536,6 +529,9 @@ public class QrsRequestContext implements Runnable, Closeable {
 
     public Type getGenericReturnType() {
         if (genericReturnType == null) {
+            if (target == null) {
+                return null;
+            }
             return target.getLazyMethod().getGenericReturnType();
         }
         return genericReturnType;

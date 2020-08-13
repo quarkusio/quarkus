@@ -3,6 +3,7 @@ package io.quarkus.qrs.runtime.core;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
@@ -27,7 +28,9 @@ public class ExceptionMapping {
             }
             klass = klass.getSuperclass();
         } while (klass != null);
-
+        if (throwable instanceof WebApplicationException) {
+            return ((WebApplicationException) throwable).getResponse();
+        }
         log.error("Request failed ", throwable);
         // FIXME: configurable? stack trace?
         return Response.serverError().build();

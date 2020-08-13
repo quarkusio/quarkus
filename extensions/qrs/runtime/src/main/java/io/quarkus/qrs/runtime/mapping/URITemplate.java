@@ -192,6 +192,18 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         return template.compareTo(uriTemplate.template);
     }
 
+    public int countPathParamNames() {
+        int classTemplateNameCount = 0;
+        for (URITemplate.TemplateComponent i : components) {
+            if (i.name != null) {
+                classTemplateNameCount++;
+            } else if (i.names != null) {
+                classTemplateNameCount += i.names.length;
+            }
+        }
+        return classTemplateNameCount;
+    }
+
     public enum Type {
         /**
          * An actual literal

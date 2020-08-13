@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
 
-    final RequestMapper<RestHandler[]> mappers;
+    final RequestMapper<InitialMatch> mappers;
     final QrsDeployment deployment;
     final ResourceRequestInterceptorHandler preMappingHandler;
     final RestHandler[] initialChain;
@@ -19,7 +19,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     final CurrentVertxRequest currentVertxRequest;
     final ManagedContext requestContext;
 
-    public QrsInitialHandler(RequestMapper<RestHandler[]> mappers, QrsDeployment deployment,
+    public QrsInitialHandler(RequestMapper<InitialMatch> mappers, QrsDeployment deployment,
             ResourceRequestInterceptorHandler preMappingHandler) {
         this.mappers = mappers;
         this.deployment = deployment;
@@ -42,13 +42,30 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         RoutingContext event = requestContext.getContext();
-        RequestMapper.RequestMatch<RestHandler[]> target = mappers.map(event.normalisedPath());
+        RequestMapper.RequestMatch<InitialMatch> target = mappers.map(event.normalisedPath());
         if (target == null) {
             event.next();
             return;
         }
-        requestContext.restart(target.value);
+        requestContext.restart(target.value.handlers);
+        requestContext.setMaxPathParams(target.value.maxPathParams);
         requestContext.setRemaining(target.remaining);
-        requestContext.setPathParamValues(target.pathParamValues);
+        for (int i = 0; i < target.pathParamValues.length; ++i) {
+            String pathParamValue = target.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            requestContext.setPathParamValue(i, target.pathParamValues[i]);
+        }
+    }
+
+    public static class InitialMatch {
+        public final RestHandler[] handlers;
+        public final int maxPathParams;
+
+        public InitialMatch(RestHandler[] handlers, int maxPathParams) {
+            this.handlers = handlers;
+            this.maxPathParams = maxPathParams;
+        }
     }
 }

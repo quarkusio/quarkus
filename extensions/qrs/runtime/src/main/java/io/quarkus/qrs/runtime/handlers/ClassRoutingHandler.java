@@ -10,9 +10,11 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ClassRoutingHandler implements RestHandler {
     final Map<String, RequestMapper<RuntimeResource>> mappers;
+    private final int parameterOffset;
 
-    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers) {
+    public ClassRoutingHandler(Map<String, RequestMapper<RuntimeResource>> mappers, int parameterOffset) {
         this.mappers = mappers;
+        this.parameterOffset = parameterOffset;
     }
 
     @Override
@@ -43,6 +45,12 @@ public class ClassRoutingHandler implements RestHandler {
         }
         requestContext.restart(target.value);
         requestContext.setRemaining(target.remaining);
-        requestContext.setPathParamValues(target.pathParamValues);
+        for (int i = 0; i < target.pathParamValues.length; ++i) {
+            String pathParamValue = target.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            requestContext.setPathParamValue(i + parameterOffset, pathParamValue);
+        }
     }
 }

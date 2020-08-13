@@ -16,18 +16,18 @@ public class RequestMapperTestCase {
 
         RequestMapper.RequestMatch<String> result = mapper.map("/bar/34/44");
         Assertions.assertEquals("/bar/{p1}/{p2}", result.value);
-        Assertions.assertEquals("34", result.pathParamValues.get("p1"));
-        Assertions.assertEquals("44", result.pathParamValues.get("p2"));
+        Assertions.assertEquals("34", result.pathParamValues[0]);
+        Assertions.assertEquals("44", result.pathParamValues[1]);
         Assertions.assertNull(mapper.map("/foo"));
         Assertions.assertEquals("/id", mapper.map("/id").value);
         result = mapper.map("/id/34");
         Assertions.assertEquals("/id/{param}", result.value);
-        Assertions.assertEquals("34", result.pathParamValues.get("param"));
+        Assertions.assertEquals("34", result.pathParamValues[0]);
         result = mapper.map("/id/34/");
         Assertions.assertNull(result);
         result = mapper.map("/bar/34");
         Assertions.assertEquals("/bar/{p1}", result.value);
-        Assertions.assertEquals("34", result.pathParamValues.get("p1"));
+        Assertions.assertEquals("34", result.pathParamValues[0]);
 
     }
 

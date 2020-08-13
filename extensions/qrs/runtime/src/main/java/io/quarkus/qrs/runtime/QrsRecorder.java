@@ -168,17 +168,22 @@ public class QrsRecorder {
 
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
-        List<RequestMapper.RequestPath<RestHandler[]>> classMappers = new ArrayList<>();
+        List<RequestMapper.RequestPath<QrsInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
         for (ResourceClass clazz : resourceClasses) {
+            URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
+            int classTemplateNameCount = classTemplate.countPathParamNames();
+            int maxMethodTemplateNameCount = 0;
             Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> perClassMappers = new HashMap<>();
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
-                        false, new URITemplate(clazz.getPath(), false), dynamicEntityWriter);
+                        false, classTemplate, dynamicEntityWriter);
                 List<RequestMapper.RequestPath<RuntimeResource>> list = perClassMappers.get(method.getHttpMethod());
                 if (list == null) {
                     perClassMappers.put(method.getHttpMethod(), list = new ArrayList<>());
                 }
+                maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount,
+                        runtimeResource.getPath().countPathParamNames());
                 list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
                         runtimeResource));
             }
@@ -192,9 +197,10 @@ public class QrsRecorder {
                 i.getValue().addAll(nullMethod);
                 mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
             }
-            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod);
-            classMappers.add(new RequestMapper.RequestPath<>(true, new URITemplate(clazz.getPath(), true),
-                    new RestHandler[] { classRoutingHandler }));
+            ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount);
+            classMappers.add(new RequestMapper.RequestPath<>(true, classTemplate,
+                    new QrsInitialHandler.InitialMatch(new RestHandler[] { classRoutingHandler },
+                            maxMethodTemplateNameCount + classTemplateNameCount)));
         }
 
         List<RestHandler> abortHandlingChain = new ArrayList<>();
@@ -218,6 +224,9 @@ public class QrsRecorder {
             ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
             DynamicEntityWriter dynamicEntityWriter) {
+        URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
+
+        Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<RestHandler> handlers = new ArrayList<>();
         MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
 
@@ -256,7 +265,7 @@ public class QrsRecorder {
                     extractor = new FormParamExtractor(param.name, single);
                     break;
                 case PATH:
-                    extractor = new PathParamExtractor(param.name);
+                    extractor = new PathParamExtractor(pathParameterIndexes.get(param.name));
                     break;
                 case CONTEXT:
                     extractor = new ContextParamExtractor(param.type);
@@ -361,12 +370,38 @@ public class QrsRecorder {
         handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        return new RuntimeResource(method.getHttpMethod(), new URITemplate(method.getPath(), false),
+        return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate, method.getProduces() == null ? null : MediaType.valueOf(method.getProduces()[0]),
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 new LazyMethod(method.getName(), resourceClass, parameterTypes));
+    }
+
+    public Map<String, Integer> buildParamIndexMap(URITemplate classPathTemplate, URITemplate methodPathTemplate) {
+        Map<String, Integer> pathParameterIndexes = new HashMap<>();
+        int pathCount = 0;
+        if (classPathTemplate != null) {
+            for (URITemplate.TemplateComponent i : classPathTemplate.components) {
+                if (i.name != null) {
+                    pathParameterIndexes.put(i.name, pathCount++);
+                } else if (i.names != null) {
+                    for (String nm : i.names) {
+                        pathParameterIndexes.put(nm, pathCount++);
+                    }
+                }
+            }
+        }
+        for (URITemplate.TemplateComponent i : methodPathTemplate.components) {
+            if (i.name != null) {
+                pathParameterIndexes.put(i.name, pathCount++);
+            } else if (i.names != null) {
+                for (String nm : i.names) {
+                    pathParameterIndexes.put(nm, pathCount++);
+                }
+            }
+        }
+        return pathParameterIndexes;
     }
 
     private Class<?> getRawType(Type type) {

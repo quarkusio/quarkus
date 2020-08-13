@@ -15,10 +15,12 @@ public class RequestMapper<T> {
      */
     private final PathMatcher<List<RequestPath<T>>> requestPaths;
     private final List<RequestPath<T>> templates;
+    final int maxParams;
 
     public RequestMapper(List<RequestPath<T>> templates) {
         this.requestPaths = new PathMatcher<>();
         this.templates = templates;
+        int max = 0;
         Map<String, List<RequestPath<T>>> aggregates = new HashMap<>();
         for (RequestPath<T> i : templates) {
             List<RequestPath<T>> paths = aggregates.get(i.template.stem);
@@ -26,6 +28,7 @@ public class RequestMapper<T> {
                 aggregates.put(i.template.stem, paths = new ArrayList<>());
             }
             paths.add(i);
+            max = Math.max(max, i.template.countPathParamNames());
         }
         for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
             Collections.sort(entry.getValue(), new Comparator<RequestPath<T>>() {
@@ -38,6 +41,7 @@ public class RequestMapper<T> {
         for (Map.Entry<String, List<RequestPath<T>>> entry : aggregates.entrySet()) {
             requestPaths.addPrefixPath(entry.getKey(), entry.getValue());
         }
+        maxParams = max;
     }
 
     public RequestMatch<T> map(String path) {
@@ -47,7 +51,8 @@ public class RequestMapper<T> {
             return null;
         }
 
-        Map<String, String> params = new HashMap<>();
+        String[] params = new String[maxParams];
+        int paramCount = 0;
         for (RequestPath<T> potentialMatch : initialMatch.getValue()) {
             boolean matched = true;
             boolean prefixAllowed = potentialMatch.prefixTemplate;
@@ -62,7 +67,7 @@ public class RequestMapper<T> {
                     }
                     matchPos = matcher.end();
                     for (String name : segment.names) {
-                        params.put(name, matcher.group(name));
+                        params[paramCount++] = matcher.group(name);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same
@@ -85,9 +90,11 @@ public class RequestMapper<T> {
                     while (matchPos < pathLength && path.charAt(matchPos) != '/') {
                         matchPos++;
                     }
-                    params.put(segment.name, path.substring(start, matchPos));
+                    params[paramCount++] = path.substring(start, matchPos);
                 }
-
+            }
+            if (paramCount < params.length) {
+                params[paramCount] = null;
             }
             boolean fullMatch = matchPos == pathLength;
             if (matched && (fullMatch || prefixAllowed)) {
@@ -102,8 +109,6 @@ public class RequestMapper<T> {
                     }
                 }
                 return new RequestMatch(potentialMatch.template, potentialMatch.value, params, remaining);
-            } else {
-                params.clear();
             }
         }
         return null;
@@ -140,10 +145,15 @@ public class RequestMapper<T> {
     public static class RequestMatch<T> {
         public final URITemplate template;
         public final T value;
-        public final Map<String, String> pathParamValues;
+        /**
+         * The matched parameters in order.
+         *
+         * Note that this array may be larger than required, and padded with null values at the end
+         */
+        public final String[] pathParamValues;
         public final String remaining;
 
-        public RequestMatch(URITemplate template, T value, Map<String, String> pathParamValues, String remaining) {
+        public RequestMatch(URITemplate template, T value, String[] pathParamValues, String remaining) {
             this.template = template;
             this.value = value;
             this.pathParamValues = pathParamValues;

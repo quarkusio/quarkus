@@ -52,7 +52,21 @@ public class QrsRequestContext implements Runnable, Closeable {
     private Object[] parameters;
     private RuntimeResource target;
     private RestHandler[] handlers;
-    private Map<String, String> pathParamValues;
+
+    /**
+     * The parameter values extracted from the path.
+     *
+     * This is not a map, for two reasons. One is raw performance, as an array causes
+     * less allocations and is generally faster. The other is that it is possible
+     * that you can have equivalent templates with different names. This allows the
+     * mapper to ignore the names, as everything is resolved in terms of indexes.
+     * 
+     * If there is only a single path param then it is stored directly into the field,
+     * while multiple params this will be an array. This optimisation allows us to avoid
+     * allocating anything in the common case that there is zero or one path param.
+     */
+    private Object pathParamValues;
+
     private UriInfo uriInfo;
     /**
      * The endpoint to invoke
@@ -271,12 +285,34 @@ public class QrsRequestContext implements Runnable, Closeable {
         return parameters;
     }
 
-    public Map<String, String> getPathParamValues() {
-        return pathParamValues;
+    public void setMaxPathParams(int maxPathParams) {
+        if (maxPathParams > 1) {
+            pathParamValues = new String[maxPathParams];
+        } else {
+            pathParamValues = null;
+        }
     }
 
-    public void setPathParamValues(Map<String, String> pathParamValues) {
-        this.pathParamValues = pathParamValues;
+    public String getPathParam(int index) {
+        if (pathParamValues instanceof String[]) {
+            return ((String[]) pathParamValues)[index];
+        }
+        if (index > 1) {
+            throw new IndexOutOfBoundsException();
+        }
+        return (String) pathParamValues;
+    }
+
+    public QrsRequestContext setPathParamValue(int index, String value) {
+        if (pathParamValues instanceof String[]) {
+            ((String[]) pathParamValues)[index] = value;
+        } else {
+            if (index > 1) {
+                throw new IndexOutOfBoundsException();
+            }
+            pathParamValues = value;
+        }
+        return this;
     }
 
     public void setUriInfo(UriInfo uriInfo) {
@@ -563,4 +599,5 @@ public class QrsRequestContext implements Runnable, Closeable {
         saveUriMatchState();
         return matchedURIs;
     }
+
 }

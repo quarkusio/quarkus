@@ -60,10 +60,17 @@ public class ResourceLocatorHandler implements RestHandler {
         }
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);
-        requestContext.setPathParamValues(res.pathParamValues);
         requestContext.setEndpointInstance(new FixedBeanInstance(locator));
         requestContext.setResult(null);
         requestContext.restart(res.value);
+        requestContext.setMaxPathParams(res.pathParamValues.length);
+        for (int i = 0; i < res.pathParamValues.length; ++i) {
+            String pathParamValue = res.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            requestContext.setPathParamValue(i, pathParamValue);
+        }
 
     }
 

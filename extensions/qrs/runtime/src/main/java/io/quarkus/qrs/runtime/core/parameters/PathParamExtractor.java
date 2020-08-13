@@ -4,14 +4,14 @@ import io.quarkus.qrs.runtime.core.QrsRequestContext;
 
 public class PathParamExtractor implements ParameterExtractor {
 
-    private final String name;
+    private final int index;
 
-    public PathParamExtractor(String name) {
-        this.name = name;
+    public PathParamExtractor(int index) {
+        this.index = index;
     }
 
     @Override
     public Object extractParameter(QrsRequestContext context) {
-        return context.getPathParamValues().get(name);
+        return context.getPathParam(index);
     }
 }

@@ -86,10 +86,7 @@ public abstract class TreeMojoTestBase {
                 app.getType(), app.getClassifier(), new DefaultArtifactHandler("jar")));
         mojo.project.setModel(appModel);
         mojo.project.setOriginalModel(appModel);
-
-        mojo.repoSystem = mvnResolver.getSystem();
-        mojo.repoSession = mvnResolver.getSession();
-        mojo.repos = mvnResolver.getRepositories();
+        mojo.resolver = mvnResolver;
 
         final Path mojoLog = workDir.resolve("mojo.log");
         final PrintStream defaultOut = System.out;

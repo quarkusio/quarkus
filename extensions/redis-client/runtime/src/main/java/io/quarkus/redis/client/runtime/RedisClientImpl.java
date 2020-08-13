@@ -1023,6 +1023,10 @@ class RedisClientImpl implements RedisClient {
     }
 
     private Response await(Uni<io.vertx.mutiny.redis.client.Response> mutinyResponse) {
-        return mutinyResponse.await().atMost(Duration.ofSeconds(timeout)).getDelegate();
+        io.vertx.mutiny.redis.client.Response response = mutinyResponse.await().atMost(Duration.ofSeconds(timeout));
+        if (response == null) {
+            return null;
+        }
+        return response.getDelegate();
     }
 }

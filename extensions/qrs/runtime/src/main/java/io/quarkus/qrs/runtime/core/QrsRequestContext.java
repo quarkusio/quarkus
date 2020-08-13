@@ -214,6 +214,9 @@ public class QrsRequestContext implements Runnable, Closeable {
                     }
                 }
             }
+            if (throwable != null) {
+                handleException(throwable);
+            }
         } catch (Throwable t) {
             handleException(t);
         } finally {

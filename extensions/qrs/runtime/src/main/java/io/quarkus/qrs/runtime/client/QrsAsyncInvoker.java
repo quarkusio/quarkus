@@ -16,6 +16,7 @@ import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -246,6 +247,9 @@ public class QrsAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
             MultivaluedMap<String, String> headerMap = headers.asMap();
             for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
                 httpClientRequest.headers().add(entry.getKey(), entry.getValue());
+            }
+            if (entity!= null && entity.getMediaType() != null) {
+                httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
             }
 
             Buffer actualEntity = EMPTY_BUFFER;

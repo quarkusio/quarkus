@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -40,6 +42,7 @@ import io.quarkus.qrs.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
+import io.quarkus.qrs.runtime.handlers.MediaTypeMapper;
 import io.quarkus.qrs.runtime.handlers.NoProducesHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
@@ -142,30 +145,16 @@ public class QrsRecorder {
         }
         ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler();
         for (ResourceClass clazz : locatableResourceClasses) {
-            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
-            Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> templates = new HashMap<>();
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
                         true, classPathTemplate, dynamicEntityWriter);
 
-                List<RequestMapper.RequestPath<RuntimeResource>> list = templates.get(runtimeResource.getHttpMethod());
-                if (list == null) {
-                    templates.put(runtimeResource.getHttpMethod(), list = new ArrayList<>());
-                }
-                list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
-                        runtimeResource));
+                buildMethodMapper(templates, method, runtimeResource);
             }
-            List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = templates.remove(null);
-            if (nullMethod == null) {
-                nullMethod = Collections.emptyList();
-            }
-            for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : templates.entrySet()) {
-                i.getValue().addAll(nullMethod);
-                mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
-            }
-
+            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = buildClassMapper(templates);
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
         List<RequestMapper.RequestPath<QrsInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
@@ -173,30 +162,18 @@ public class QrsRecorder {
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
             int classTemplateNameCount = classTemplate.countPathParamNames();
             int maxMethodTemplateNameCount = 0;
-            Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> perClassMappers = new HashMap<>();
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = new HashMap<>();
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
                         false, classTemplate, dynamicEntityWriter);
-                List<RequestMapper.RequestPath<RuntimeResource>> list = perClassMappers.get(method.getHttpMethod());
-                if (list == null) {
-                    perClassMappers.put(method.getHttpMethod(), list = new ArrayList<>());
-                }
+
+                buildMethodMapper(perClassMappers, method, runtimeResource);
                 maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount,
                         runtimeResource.getPath().countPathParamNames());
-                list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
-                        runtimeResource));
             }
 
-            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
-            List<RequestMapper.RequestPath<RuntimeResource>> nullMethod = perClassMappers.get(null);
-            if (nullMethod == null) {
-                nullMethod = Collections.emptyList();
-            }
-            for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : perClassMappers.entrySet()) {
-                i.getValue().addAll(nullMethod);
-                mappersByMethod.put(i.getKey(), new RequestMapper<>(i.getValue()));
-            }
+            Map<String, RequestMapper<RuntimeResource>> mappersByMethod = buildClassMapper(perClassMappers);
             ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount);
             classMappers.add(new RequestMapper.RequestPath<>(true, classTemplate,
                     new QrsInitialHandler.InitialMatch(new RestHandler[] { classRoutingHandler },
@@ -214,6 +191,65 @@ public class QrsRecorder {
 
         currentDeployment = deployment;
         return new QrsInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
+    }
+
+    public void buildMethodMapper(
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers,
+            ResourceMethod method, RuntimeResource runtimeResource) {
+        TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> templateMap = perClassMappers
+                .get(method.getHttpMethod());
+        if (templateMap == null) {
+            perClassMappers.put(method.getHttpMethod(), templateMap = new TreeMap<>());
+        }
+        List<RequestMapper.RequestPath<RuntimeResource>> list = templateMap.get(runtimeResource.getPath());
+        if (list == null) {
+            templateMap.put(runtimeResource.getPath(), list = new ArrayList<>());
+        }
+        list.add(new RequestMapper.RequestPath<>(method.getHttpMethod() == null, runtimeResource.getPath(),
+                runtimeResource));
+    }
+
+    public Map<String, RequestMapper<RuntimeResource>> buildClassMapper(
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers) {
+        Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new HashMap<>();
+        SortedMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nullMethod = perClassMappers.get(null);
+        if (nullMethod == null) {
+            nullMethod = Collections.emptySortedMap();
+        }
+        for (Map.Entry<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> i : perClassMappers
+                .entrySet()) {
+            for (Map.Entry<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> nm : nullMethod.entrySet()) {
+                TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> templateMap = i.getValue();
+                if (!templateMap.containsKey(nm.getKey())) {
+                    //resource methods take precedence
+                    //just skip sub resource locators for now
+                    //may need to be revisited if we want to pass the TCK 100%
+                    templateMap.put(nm.getKey(), nm.getValue());
+                }
+            }
+            //now we have all our possible resources
+            List<RequestMapper.RequestPath<RuntimeResource>> result = new ArrayList<>();
+            for (Map.Entry<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> entry : i.getValue().entrySet()) {
+                if (entry.getValue().size() == 1) {
+                    //simple case, only one match
+                    result.addAll(entry.getValue());
+                } else {
+                    List<RuntimeResource> resources = new ArrayList<>();
+                    for (RequestMapper.RequestPath<RuntimeResource> val : entry.getValue()) {
+                        resources.add(val.value);
+                    }
+                    MediaTypeMapper mapper = new MediaTypeMapper(resources);
+                    //now we just create a fake RuntimeResource
+                    //we could add another layer of indirection, however this is not a common case
+                    //so we don't want to add any extra latency into the common case
+                    RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, null, null, null,
+                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null);
+                    result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
+                }
+            }
+            mappersByMethod.put(i.getKey(), new RequestMapper<>(result));
+        }
+        return mappersByMethod;
     }
 
     public RuntimeResource buildResourceMethod(Serialisers serialisers,

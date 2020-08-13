@@ -1,6 +1,7 @@
 package io.quarkus.cache.runtime;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,7 +42,11 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             return getValueLoader(context, executor);
                         }
                     });
-            return cacheValue.get();
+            try {
+                return cacheValue.get();
+            } catch (ExecutionException e) {
+                throw getExceptionToThrow(e);
+            }
         } else {
 
             // The lock timeout logic starts here.
@@ -66,12 +71,18 @@ public class CacheResultInterceptor extends CacheInterceptor {
             if (isCurrentThreadComputation[0]) {
                 // The value is missing and its computation was started from the current thread.
                 // We'll wait for the result no matter how long it takes.
-                return cacheValue.get();
+                try {
+                    return cacheValue.get();
+                } catch (ExecutionException e) {
+                    throw getExceptionToThrow(e);
+                }
             } else {
                 // The value is either already present in the cache or missing and its computation was started from another thread.
                 // We want to retrieve it from the cache within the lock timeout delay.
                 try {
                     return cacheValue.get(binding.lockTimeout(), TimeUnit.MILLISECONDS);
+                } catch (ExecutionException e) {
+                    throw getExceptionToThrow(e);
                 } catch (TimeoutException e) {
                     // Timeout triggered! We don't want to wait any longer for the value computation and we'll simply invoke the
                     // cached method and return its result without caching it.
@@ -88,12 +99,25 @@ public class CacheResultInterceptor extends CacheInterceptor {
             public Object get() {
                 try {
                     return context.proceed();
-                } catch (RuntimeException e) {
-                    throw e;
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    throw new CacheException(e);
                 }
             }
         }, executor);
+    }
+
+    private Exception getExceptionToThrow(ExecutionException e) {
+        if (e.getCause() instanceof CacheException && e.getCause().getCause() instanceof Exception) {
+            return (Exception) e.getCause().getCause();
+        } else {
+            /*
+             * If:
+             * - the cause is not a CacheException
+             * - the cause is a CacheException which doesn't have a cause itself
+             * - the cause is a CacheException which was caused itself by an Error
+             * ... then we'll throw the original ExecutionException.
+             */
+            return e;
+        }
     }
 }

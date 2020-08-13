@@ -51,10 +51,11 @@
 - labels: [area/kotlin]
   title: "(?i).*kotlin.*"
   description: "(?i).*kotlin.*"
+  notify: [evanchooly]
 - labels: [area/mongodb]
   title: "(?i).*mongo.*"
   description: "(?i).*mongo.*"
-  notify: [loicmathieu]
+  notify: [loicmathieu,evanchooly]
 - labels: [area/openapi, area/smallrye]
   title: "(?i).*openapi.*"
   description: "(?i).*openapi.*"

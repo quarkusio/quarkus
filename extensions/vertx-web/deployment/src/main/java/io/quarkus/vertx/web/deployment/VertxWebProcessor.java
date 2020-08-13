@@ -23,7 +23,6 @@ import java.util.function.Function;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
-import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -39,9 +38,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -49,7 +47,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.Annotations;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -332,30 +329,13 @@ class VertxWebProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                if (!scopes.isScopeIn(context.getAnnotations())) {
-                    // Class with no scope annotation but with a method annotated with @Route, @RouteFilter
-                    ClassInfo target = context.getTarget().asClass();
-                    if (target.annotations().containsKey(io.quarkus.vertx.web.deployment.DotNames.ROUTE)
-                            || target.annotations().containsKey(io.quarkus.vertx.web.deployment.DotNames.ROUTES)
-                            || target.annotations().containsKey(io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER)) {
-                        LOGGER.debugf(
-                                "Found route handler business methods on a class %s with no scope annotation - adding @Singleton",
-                                context.getTarget());
-                        context.transform().add(Singleton.class).done();
-                    }
-                }
-            }
-        });
+    AutoAddScopeBuildItem autoAddScope() {
+        return AutoAddScopeBuildItem.builder()
+                .containsAnnotations(io.quarkus.vertx.web.deployment.DotNames.ROUTE,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTES,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER)
+                .defaultScope(BuiltinScope.SINGLETON)
+                .reason("Found route handler business methods").build();
     }
 
     private void validateRouteFilterMethod(BeanInfo bean, MethodInfo method) {

@@ -289,6 +289,20 @@ class Parser implements Function<String, Expression>, ParserHelper {
                 || Character.isAlphabetic(character);
     }
 
+    static boolean isValidIdentifier(String value) {
+        int offset = 0;
+        int length = value.length();
+        while (offset < length) {
+            int c = value.codePointAt(offset);
+            if (!Character.isWhitespace(c)) {
+                offset += Character.charCount(c);
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
     private boolean isLineSeparatorStart(char character) {
         return character == LINE_SEPARATOR_CR || character == LINE_SEPARATOR_LF;
     }
@@ -670,6 +684,15 @@ class Parser implements Function<String, Expression>, ParserHelper {
         Part first = null;
         for (String strPart : strParts) {
             Part part = createPart(namespace, first, strPart, scope, origin);
+            if (!isValidIdentifier(part.getName())) {
+                StringBuilder builder = new StringBuilder("Invalid identifier found [");
+                builder.append(value).append("]");
+                if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                    builder.append(" in template [").append(origin.getTemplateId()).append("]");
+                }
+                builder.append(" on line ").append(origin.getLine());
+                throw new TemplateException(builder.toString());
+            }
             if (first == null) {
                 first = part;
             }
@@ -701,7 +724,7 @@ class Parser implements Function<String, Expression>, ParserHelper {
                     builder.append(" in template [").append(origin.getTemplateId()).append("]");
                 }
                 builder.append(" on line ").append(origin.getLine());
-                throw new IllegalArgumentException(builder.toString());
+                throw new TemplateException(builder.toString());
             }
         }
 

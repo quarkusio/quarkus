@@ -29,6 +29,10 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.context-propagation:microprofile-context-propagation-tck</dependency>
                     </dependenciesToScan>
+                    <!-- We need this file to be able to skip two tests that will be fixed in the next MP-CP release -->
+                    <suiteXmlFiles>
+                        <suiteXmlFile>tck-tests.xml</suiteXmlFile>
+                    </suiteXmlFiles>
                 </configuration>
             </plugin>
         </plugins>

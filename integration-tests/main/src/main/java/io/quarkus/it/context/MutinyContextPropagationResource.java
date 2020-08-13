@@ -11,7 +11,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
-import org.eclipse.microprofile.context.ManagedExecutor;
 import org.wildfly.common.Assert;
 
 import io.quarkus.arc.Arc;
@@ -23,8 +22,6 @@ public class MutinyContextPropagationResource {
 
     @Inject
     RequestBean doNotRemove;
-    @Inject
-    ManagedExecutor allExec;
     @Inject
     TransactionManager transactionManager;
 

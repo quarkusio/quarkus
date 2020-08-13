@@ -21,6 +21,9 @@ public class ContextPropagationTestCase {
     }
 
     private static List<String> endpoints() {
-        return Arrays.asList("/context-propagation", "/context-propagation-mutiny");
+        return Arrays.asList("/context-propagation/managed-executor/created",
+                "/context-propagation/managed-executor/obtained",
+                "/context-propagation/thread-context",
+                "/context-propagation-mutiny");
     }
 }

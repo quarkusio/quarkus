@@ -1,6 +1,7 @@
 package io.quarkus.devtools.project;
 
-import io.quarkus.devtools.project.buildfile.GenericGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFile;
+import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFile;
 import io.quarkus.devtools.project.buildfile.MavenBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -19,7 +20,12 @@ public enum BuildTool {
     /** Gradle build tool */
     GRADLE("\n# Gradle\n.gradle/\nbuild/",
             "build",
-            new String[] { "build.gradle", "settings.gradle", "gradle.properties" });
+            new String[] { "build.gradle", "settings.gradle", "gradle.properties" }),
+
+    /** Gradle build tool with Kotlin DSL */
+    GRADLE_KOTLIN_DSL("\n# Gradle\n.gradle/\nbuild/",
+            "build",
+            new String[] { "build.gradle.kts", "settings.gradle.kts", "gradle.properties" });
 
     private final String gitIgnoreEntries;
 
@@ -56,7 +62,9 @@ public enum BuildTool {
             final QuarkusPlatformDescriptor platformDescriptor) {
         switch (this) {
             case GRADLE:
-                return new GenericGradleBuildFile();
+                return new GroovyGradleBuildFile();
+            case GRADLE_KOTLIN_DSL:
+                return new KotlinGradleBuildFile();
             case MAVEN:
             default:
                 return new MavenBuildFile(projectDirPath, platformDescriptor);
@@ -70,6 +78,8 @@ public enum BuildTool {
     public static BuildTool findTool(String tool) {
         if ("GRADLE".equalsIgnoreCase(tool))
             return GRADLE;
+        else if ("GRADLE_KOTLIN_DSL".equalsIgnoreCase(tool) || "gradle-kotlin-dsl".equalsIgnoreCase(tool))
+            return GRADLE_KOTLIN_DSL;
         else if ("MAVEN".equalsIgnoreCase(tool))
             return MAVEN;
         else

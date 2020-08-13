@@ -72,6 +72,8 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
                 .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
                 .addCodestarts(codestarts)
                 .putData("buildtool.name", buildtool)
+                // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
+                .putData("java.version", System.getProperty("java.specification.version"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         Path projectDir = testDirPath.resolve(name);

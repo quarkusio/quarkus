@@ -211,6 +211,68 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
     }
 
     @Test
+    void generateCodestartProjectGradleWithKotlinDslResteasyJava() throws IOException {
+        final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .includeExamples()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addData(getTestInputData())
+                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .build();
+        final CodestartProject codestartProject = Codestarts.prepareProject(input);
+        final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-java");
+        Codestarts.generateProject(codestartProject, projectDir);
+
+        checkGradleWithKotlinDsl(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/java/org/acme/resteasy/ExampleResource.java")).exists();
+    }
+
+    @Test
+    void generateCodestartProjectGradleWithKotlinDslResteasyKotlin() throws IOException {
+        final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .includeExamples()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
+                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .addData(getTestInputData())
+                .build();
+        final CodestartProject codestartProject = Codestarts.prepareProject(input);
+        final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-kotlin");
+        Codestarts.generateProject(codestartProject, projectDir);
+
+        checkGradleWithKotlinDsl(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/kotlin/org/acme/resteasy/ExampleResource.kt")).exists();
+    }
+
+    @Test
+    void generateCodestartProjectGradleWithKotlinDslResteasyScala() throws IOException {
+        final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .includeExamples()
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
+                .addData(getTestInputData())
+                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .build();
+        final CodestartProject codestartProject = Codestarts.prepareProject(input);
+        final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-scala");
+        Codestarts.generateProject(codestartProject, projectDir);
+
+        checkGradleWithKotlinDsl(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir);
+        checkConfigProperties(projectDir);
+
+        assertThat(projectDir.resolve("src/main/scala/org/acme/resteasy/ExampleResource.scala")).exists();
+    }
+
+    @Test
     void generateCodestartProjectQute() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
                 .includeExamples()
@@ -271,6 +333,8 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
 
     private void checkGradle(Path projectDir) {
         assertThat(projectDir.resolve("pom.xml")).doesNotExist();
+        assertThat(projectDir.resolve("build.gradle.kts")).doesNotExist();
+        assertThat(projectDir.resolve("settings.gradle.kts")).doesNotExist();
         assertThat(projectDir.resolve("build.gradle"))
                 .exists()
                 .satisfies(checkContains("group 'org.test'"))
@@ -279,6 +343,20 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
         assertThat(projectDir.resolve("settings.gradle"))
                 .exists()
                 .satisfies(checkContains("rootProject.name='test-codestart'"));
+    }
+
+    private void checkGradleWithKotlinDsl(Path projectDir) {
+        assertThat(projectDir.resolve("pom.xml")).doesNotExist();
+        assertThat(projectDir.resolve("build.gradle")).doesNotExist();
+        assertThat(projectDir.resolve("settings.gradle")).doesNotExist();
+        assertThat(projectDir.resolve("build.gradle.kts"))
+                .exists()
+                .satisfies(checkContains("group = \"org.test\""))
+                .satisfies(checkContains("version = \"1.0.0-codestart\""));
+        assertThat(projectDir.resolve("gradle.properties")).exists();
+        assertThat(projectDir.resolve("settings.gradle.kts"))
+                .exists()
+                .satisfies(checkContains("rootProject.name=\"test-codestart\""));
     }
 
     private Consumer<Path> checkContains(String s) {

@@ -78,12 +78,14 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             testMainPath = writer.mkdirs(type.getTestSrcDir());
             // for gradle we want to place the native tests in under 'src/native-test/java'
             // since gradle's idiomatic way of running integration tests is to create a new source set
-            if (getBuildTool() == BuildTool.GRADLE) {
-                nativeTestMainPath = writer.mkdirs(type.getTestSrcDir().replace("test", "native-test"));
-            } else {
-                nativeTestMainPath = testMainPath;
+            switch (getBuildTool()) {
+                case GRADLE:
+                case GRADLE_KOTLIN_DSL:
+                    nativeTestMainPath = writer.mkdirs(type.getTestSrcDir().replace("test", "native-test"));
+                    break;
+                default:
+                    nativeTestMainPath = testMainPath;
             }
-
             return newProject;
         }
 
@@ -154,7 +156,8 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
 
                 // do some nasty replacements for Java target if we want to generate Java 11 projects
                 if ("11".equals(invocation.getValue(JAVA_TARGET))) {
-                    if (BuildTool.GRADLE.equals(invocation.getQuarkusProject().getBuildTool())) {
+                    if (BuildTool.GRADLE.equals(invocation.getQuarkusProject().getBuildTool())
+                            || BuildTool.GRADLE_KOTLIN_DSL.equals(invocation.getQuarkusProject().getBuildTool())) {
                         template = template.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_11");
                     } else {
                         template = template.replace("<maven.compiler.source>1.8</maven.compiler.source>",
@@ -201,6 +204,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                     generate("templates/README.maven.ftl", invocation, readme, "read me");
                     break;
                 case GRADLE:
+                case GRADLE_KOTLIN_DSL:
                     generate("templates/README.gradle.ftl", invocation, readme, "read me");
                     break;
                 default:

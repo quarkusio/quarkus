@@ -2,6 +2,8 @@ package io.quarkus.qrs.runtime.handlers;
 
 import java.util.Map;
 
+import javax.ws.rs.NotFoundException;
+
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
@@ -32,7 +34,7 @@ public class ClassRoutingHandler implements RestHandler {
                     return;
                 }
                 if (mapper == null) {
-                    event.next();
+                    requestContext.setThrowable(new NotFoundException());
                     return;
                 }
             }
@@ -40,7 +42,7 @@ public class ClassRoutingHandler implements RestHandler {
         RequestMapper.RequestMatch<RuntimeResource> target = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (target == null) {
-            event.next();
+            requestContext.setThrowable(new NotFoundException());
             return;
         }
         requestContext.restart(target.value);

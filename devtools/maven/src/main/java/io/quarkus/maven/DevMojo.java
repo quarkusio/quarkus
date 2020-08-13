@@ -418,6 +418,9 @@ public class DevMojo extends AbstractMojo {
 
     private void triggerPrepare() throws MojoExecutionException {
         Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
+        if (quarkusPlugin == null) {
+            return;
+        }
         executeMojo(
                 quarkusPlugin,
                 goal(QUARKUS_PREPARE_GOAL),

@@ -44,6 +44,7 @@
 
         <!-- External projects -->
         <module>independent-projects/ide-config</module>
+        <module>independent-projects/revapi</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/qute</module>

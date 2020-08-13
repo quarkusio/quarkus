@@ -239,5 +239,5 @@ interface PanacheQuery<Entity: Any> {
      * @throws NonUniqueResultException if there are more than one result
      * @see [PanacheQuery.firstResult]
      */
-    fun singleResult(): Entity?
+    fun singleResult(): Entity
 }

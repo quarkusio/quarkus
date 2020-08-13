@@ -108,6 +108,7 @@ import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 
@@ -176,7 +177,7 @@ public class QuteProcessor {
                 .setUnremovable()
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, ResourcePath.class,
                         Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
-                        MapTemplateExtensions.class, NumberTemplateExtensions.class)
+                        MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class)
                 .build();
     }
 
@@ -462,10 +463,15 @@ public class QuteProcessor {
         }
 
         Iterator<Info> parts = TypeInfos.create(expression, index, templateIdToPathFun).iterator();
+        Info root = parts.next();
 
         if (rootClazz == null) {
             // {foo.name} 
-            Info root = parts.next();
+            if (!root.isTypeInfo()) {
+                // No type info available
+                results.put(expression.toOriginalString(), match);
+                return;
+            }
             match.clazz = root.asTypeInfo().rawClass;
             match.type = root.asTypeInfo().resolvedType;
             if (root.asTypeInfo().hint != null) {
@@ -473,7 +479,6 @@ public class QuteProcessor {
             }
         } else {
             // The first part is skipped, e.g. for {inject:foo.name} the first part is the name of the bean
-            parts.next();
             match.clazz = rootClazz;
             match.type = Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
         }
@@ -631,7 +636,8 @@ public class QuteProcessor {
             matchRegex = matchRegexValue.asString();
         }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName, matchRegex,
-                index.getClassByName(method.parameters().get(0).name()), priority, namespace));
+                namespace.isEmpty() ? index.getClassByName(method.parameters().get(0).name()) : null,
+                priority, namespace));
     }
 
     @BuildStep
@@ -818,7 +824,8 @@ public class QuteProcessor {
         // Generate a namespace resolver for extension methods declared on the same class
         for (Entry<DotName, List<TemplateExtensionMethodBuildItem>> entry : classToNamespaceExtensions.entrySet()) {
             List<TemplateExtensionMethodBuildItem> methods = entry.getValue();
-            methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority));
+            // Methods with higher priority take precedence
+            methods.sort(Comparator.comparingInt(TemplateExtensionMethodBuildItem::getPriority).reversed());
             try (NamespaceResolverCreator namespaceResolverCreator = extensionMethodGenerator
                     .createNamespaceResolver(methods.get(0).getMethod().declaringClass(), methods.get(0).getNamespace())) {
                 try (ResolveCreator resolveCreator = namespaceResolverCreator.implementResolve()) {

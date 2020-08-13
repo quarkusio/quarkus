@@ -233,11 +233,7 @@ public final class HibernateReactiveProcessor {
         // sql-load-script
         Optional<String> importFile = getSqlLoadScript(launchMode);
 
-        if (!importFile.isPresent()) {
-            // explicitly set a no file and ignore all other operations
-            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES,
-                    HibernateOrmProcessor.NO_SQL_LOAD_SCRIPT_FILE);
-        } else {
+        if (importFile.isPresent()) {
             Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
 
             if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
@@ -251,6 +247,9 @@ public final class HibernateReactiveProcessor {
                                 + "sql-load-script="
                                 + hibernateConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
             }
+        } else {
+            //Disable implicit loading of the default import script (import.sql)
+            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
         }
 
         // Caching

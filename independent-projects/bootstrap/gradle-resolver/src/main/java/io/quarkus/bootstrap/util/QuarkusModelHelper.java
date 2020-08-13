@@ -151,6 +151,10 @@ public class QuarkusModelHelper {
                     new AppArtifactKey(coords.getGroupId(), coords.getArtifactId(), null, coords.getType()));
         }
 
+        if (!model.getPlatformProperties().isEmpty()) {
+            appBuilder.addPlatformProperties(model.getPlatformProperties());
+        }
+
         appBuilder.addRuntimeDeps(userDeps)
                 .addFullDeploymentDeps(fullDeploymentDeps)
                 .addDeploymentDeps(deploymentDeps)
@@ -159,10 +163,14 @@ public class QuarkusModelHelper {
     }
 
     public static AppDependency toAppDependency(Dependency dependency) {
+        return new AppDependency(toAppArtifact(dependency), "runtime");
+    }
+
+    private static AppArtifact toAppArtifact(Dependency dependency) {
         AppArtifact artifact = new AppArtifact(dependency.getGroupId(), dependency.getName(), dependency.getClassifier(),
                 dependency.getType(), dependency.getVersion());
         artifact.setPaths(QuarkusModelHelper.toPathsCollection(dependency.getPaths()));
-        return new AppDependency(artifact, "runtime");
+        return artifact;
     }
 
     public static PathsCollection toPathsCollection(Collection<File> files) {

@@ -22,6 +22,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -47,6 +48,9 @@ public class GenerateConfigMojo extends AbstractMojo {
      */
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    private RemoteRepositoryManager remoteRepoManager;
 
     @Component
     private MavenProjectHelper projectHelper;
@@ -117,6 +121,7 @@ public class GenerateConfigMojo extends AbstractMojo {
                     .setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(repoSession)
                     .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
                     .build();
 
             final Artifact projectArtifact = project.getArtifact();

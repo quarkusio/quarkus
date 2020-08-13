@@ -22,6 +22,8 @@ public class DependencyAddedInProfileTest extends ExecutableOutputOutcomeTestBas
         addToExpectedLib(extB_100_rt);
 
         final TsArtifact appJar = TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(extA_100);
 
         final Profile profile = new Profile();

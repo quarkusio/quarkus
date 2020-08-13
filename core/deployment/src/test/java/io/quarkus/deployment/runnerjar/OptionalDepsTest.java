@@ -58,6 +58,8 @@ public class OptionalDepsTest extends ExecutableOutputOutcomeTestBase {
         addToExpectedLib(extD.getRuntime());
 
         return TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(extA, true)
                 .addDependency(new TsDependency(appOptionalDep, true))
                 .addDependency(extD.getRuntime());

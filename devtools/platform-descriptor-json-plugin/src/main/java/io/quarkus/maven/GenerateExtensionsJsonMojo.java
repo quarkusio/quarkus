@@ -124,7 +124,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final Artifact jsonArtifact = new DefaultArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion(),
                 "json", project.getVersion());
         if (!skipArtifactIdCheck) {
-            final String expectedArtifactId = bomArtifactId + "-" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
+            final String expectedArtifactId = bomArtifactId + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
             if (!jsonArtifact.getArtifactId().equals(expectedArtifactId)) {
                 throw new MojoExecutionException(
                         "The project's artifactId " + project.getArtifactId() + " is expected to be " + expectedArtifactId);

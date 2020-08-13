@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,17 +16,21 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.TsArtifact.ContentProvider;
+import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.update.CreatorOutcomeTestBase;
 
 public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTestBase {
@@ -32,12 +39,66 @@ public abstract class ExecutableOutputOutcomeTestBase extends CreatorOutcomeTest
     private static final String MAIN_CLS = "io.quarkus.runner.GeneratedMain";
 
     protected List<String> expectedLib = new ArrayList<>();
+    protected TsDependency platformDescriptor;
+    protected TsDependency platformPropsDep;
 
     protected void addToExpectedLib(TsArtifact entry) {
         expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
     }
 
     protected void assertAppModel(AppModel appModel) throws Exception {
+    }
+
+    protected TsDependency platformDescriptor() {
+        if (platformDescriptor == null) {
+            TsArtifact platformDescr = new TsArtifact("org.acme",
+                    "acme" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, "1.0", "json",
+                    "1.0");
+            platformDescr.setContent(new ContentProvider() {
+                Path platformJson;
+
+                @Override
+                public Path getPath(Path workDir) throws IOException {
+                    if (platformJson == null) {
+                        platformJson = workDir.resolve("platform-descriptor.json");
+                        try (BufferedWriter writer = Files.newBufferedWriter(platformJson)) {
+                            writer.write("platform descriptor");
+                        }
+                    }
+                    return platformJson;
+                }
+            });
+            platformDescr.install(repo);
+            platformDescriptor = new TsDependency(platformDescr);
+        }
+        return platformDescriptor;
+    }
+
+    protected TsDependency platformProperties() {
+        if (platformPropsDep == null) {
+            TsArtifact platformProps = new TsArtifact("org.acme",
+                    "acme" + BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX, null, "properties",
+                    "1.0");
+            platformProps.setContent(new ContentProvider() {
+                Path propsFile;
+
+                @Override
+                public Path getPath(Path workDir) throws IOException {
+                    if (propsFile == null) {
+                        Properties props = new Properties();
+                        props.setProperty("platform.quarkus.native.builder-image", "builder-image-url");
+                        propsFile = workDir.resolve("platform-properties.properties");
+                        try (OutputStream os = Files.newOutputStream(propsFile)) {
+                            props.store(os, "Test Quarkus platform properties");
+                        }
+                    }
+                    return propsFile;
+                }
+            });
+            platformProps.install(repo);
+            platformPropsDep = new TsDependency(platformProps);
+        }
+        return platformPropsDep;
     }
 
     @Override

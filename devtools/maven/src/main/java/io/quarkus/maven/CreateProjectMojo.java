@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -61,8 +60,6 @@ import io.quarkus.platform.tools.ToolsUtils;
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
-
-    final private static boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
 
     private static final String DEFAULT_GROUP_ID = "org.acme.quarkus.sample";
 

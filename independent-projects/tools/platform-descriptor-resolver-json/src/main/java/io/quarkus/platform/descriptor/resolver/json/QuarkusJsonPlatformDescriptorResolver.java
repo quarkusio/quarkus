@@ -63,7 +63,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
     static {
         jsonDescriptorResolver = new ChainedJsonDescriptorResolver(
                 ((bomGroupId, bomArtifactId, bomVersion, jsonResolver, log) -> jsonResolver.resolveArtifact(bomGroupId,
-                        bomArtifactId + "-" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, bomVersion, "json",
+                        bomArtifactId + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, bomVersion, "json",
                         bomVersion, log)),
                 ((bomGroupId, bomArtifactId, bomVersion, jsonResolver, log) -> jsonResolver.resolveArtifact(bomGroupId,
                         bomArtifactId, null, "json", bomVersion, log)),
@@ -89,7 +89,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
     }
 
     private static boolean isDefaultArtifactId(String artifactId, String defaultPrefix) {
-        return artifactId.equals(defaultPrefix + "-" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
+        return artifactId.equals(defaultPrefix + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)
                 || artifactId.equals(defaultPrefix);
     }
 

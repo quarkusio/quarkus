@@ -123,6 +123,9 @@
         <revapi.skip>true</revapi.skip>
         <!-- By default don't check dependencies -->
         <revapi.checkdeps>false</revapi.checkdeps>
+
+        <!-- platform properties -->
+        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:20.2.0-java11</platform.quarkus.native.builder-image>
     </properties>
 
     <dependencyManagement>

@@ -7,6 +7,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -166,7 +167,8 @@ public class AugmentActionImpl implements AugmentAction {
             final BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(classLoader);
 
-            ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            ExtensionLoader.loadStepsFrom(classLoader, new Properties(),
+                    curatedApplication.getAppModel().getPlatformProperties(), LaunchMode.NORMAL, null).accept(chainBuilder);
             chainBuilder.loadProviders(classLoader);
 
             for (Consumer<BuildChainBuilder> c : chainCustomizers) {

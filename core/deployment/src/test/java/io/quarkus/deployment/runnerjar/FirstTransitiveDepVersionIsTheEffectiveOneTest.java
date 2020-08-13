@@ -27,6 +27,8 @@ public class FirstTransitiveDepVersionIsTheEffectiveOneTest extends ExecutableOu
         addToExpectedLib(directAppDep);
 
         final TsArtifact appJar = TsArtifact.jar("app")
+                .addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties())
                 .addDependency(ext1)
                 .addDependency(directAppDep)
                 .addDependency(ext2);

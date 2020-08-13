@@ -119,7 +119,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
                     // since it will already be included in the platform that's built on top of it
                     int i = 0;
                     Artifact platformArtifact = descrArtifactList.get(0);
-                    final String quarkusBomPlatformArtifactId = "quarkus-bom-"
+                    final String quarkusBomPlatformArtifactId = "quarkus-bom"
                             + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX;
                     Artifact quarkusBomPlatformArtifact = null;
                     if (quarkusBomPlatformArtifactId.equals(platformArtifact.getArtifactId())) {

@@ -3,8 +3,10 @@ package io.quarkus.bootstrap.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -52,9 +54,19 @@ public class AppModel implements Serializable {
      */
     private final Set<AppArtifactKey> localProjectArtifacts;
 
+    private final Map<String, String> platformProperties;
+
     private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
             List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
             Set<AppArtifactKey> lesserPriorityArtifacts, Set<AppArtifactKey> localProjectArtifacts) {
+        this(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps, parentFirstArtifacts, lesserPriorityArtifacts,
+                localProjectArtifacts, Collections.emptyMap());
+    }
+
+    private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
+            List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
+            Set<AppArtifactKey> lesserPriorityArtifacts, Set<AppArtifactKey> localProjectArtifacts,
+            Map<String, String> platformProperties) {
         this.appArtifact = appArtifact;
         this.runtimeDeps = runtimeDeps;
         this.deploymentDeps = deploymentDeps;
@@ -62,6 +74,11 @@ public class AppModel implements Serializable {
         this.parentFirstArtifacts = parentFirstArtifacts;
         this.lesserPriorityArtifacts = lesserPriorityArtifacts;
         this.localProjectArtifacts = localProjectArtifacts;
+        this.platformProperties = platformProperties;
+    }
+
+    public Map<String, String> getPlatformProperties() {
+        return platformProperties;
     }
 
     public AppArtifact getAppArtifact() {
@@ -122,9 +139,19 @@ public class AppModel implements Serializable {
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> localProjectArtifacts = new HashSet<>();
+        private Map<String, String> platformProperties = Collections.emptyMap();
 
         public Builder setAppArtifact(AppArtifact appArtifact) {
             this.appArtifact = appArtifact;
+            return this;
+        }
+
+        public Builder addPlatformProperties(Map<String, String> platformProperties) {
+            if (this.platformProperties.isEmpty()) {
+                this.platformProperties = platformProperties;
+            } else {
+                this.platformProperties.putAll(platformProperties);
+            }
             return this;
         }
 
@@ -244,7 +271,7 @@ public class AppModel implements Serializable {
             List<AppDependency> fullDeploymentDeps = this.fullDeploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());
             AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
-                    parentFirstArtifacts, lesserPriorityArtifacts, localProjectArtifacts);
+                    parentFirstArtifacts, lesserPriorityArtifacts, localProjectArtifacts, platformProperties);
             log.debugf("Created AppModel %s", appModel);
             return appModel;
 

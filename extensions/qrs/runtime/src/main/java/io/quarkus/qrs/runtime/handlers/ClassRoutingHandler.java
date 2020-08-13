@@ -34,16 +34,14 @@ public class ClassRoutingHandler implements RestHandler {
                     return;
                 }
                 if (mapper == null) {
-                    requestContext.setThrowable(new NotFoundException());
-                    return;
+                    throw new NotFoundException();
                 }
             }
         }
         RequestMapper.RequestMatch<RuntimeResource> target = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (target == null) {
-            requestContext.setThrowable(new NotFoundException());
-            return;
+            throw new NotFoundException();
         }
         requestContext.restart(target.value);
         requestContext.setRemaining(target.remaining);

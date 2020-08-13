@@ -35,14 +35,12 @@ public class RequestDeserializeHandler implements RestHandler {
             try {
                 requestType = MediaType.valueOf(requestTypeString);
             } catch (Exception e) {
-                requestContext.setThrowable(new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build()));
-                return;
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
         }
         List<MessageBodyReader<?>> readers = serialisers.findReaders(type, requestType);
         if (readers.isEmpty()) {
-            requestContext.setThrowable(new NotSupportedException());
-            return;
+            throw new NotSupportedException();
         }
         requestContext.suspend();
         //TODO: size limits

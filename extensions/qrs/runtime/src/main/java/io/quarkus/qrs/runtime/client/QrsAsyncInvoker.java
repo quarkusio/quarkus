@@ -248,7 +248,7 @@ public class QrsAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
             for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
                 httpClientRequest.headers().add(entry.getKey(), entry.getValue());
             }
-            if (entity!= null && entity.getMediaType() != null) {
+            if (entity != null && entity.getMediaType() != null) {
                 httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
             }
 

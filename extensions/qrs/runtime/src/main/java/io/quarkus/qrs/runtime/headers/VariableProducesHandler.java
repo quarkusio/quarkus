@@ -47,19 +47,17 @@ public class VariableProducesHandler implements RestHandler {
         } else {
             //TODO: this needs to be optimised, its super inefficient
             List<MediaType> parsed = MediaTypeHelper.parseHeader(accept);
-            MediaType res = MediaTypeHelper.getBestMatch(parsed, mediaTypeList);
+            MediaType res = MediaTypeHelper.getBestConcreteMatch(mediaTypeList, parsed);
             if (res == null) {
-                requestContext.setThrowable(new WebApplicationException(Response
+                throw new WebApplicationException(Response
                         .notAcceptable(Variant.mediaTypes(mediaTypeList.toArray(new MediaType[mediaTypeList.size()])).build())
-                        .build()));
-                return;
+                        .build());
             }
             List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res);
             if (writers == null || writers.isEmpty()) {
-                requestContext.setThrowable(new WebApplicationException(Response
+                throw new WebApplicationException(Response
                         .notAcceptable(Variant.mediaTypes(mediaTypeList.toArray(new MediaType[mediaTypeList.size()])).build())
-                        .build()));
-                return;
+                        .build());
             }
             requestContext.setProducesMediaType(res);
             requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY)));

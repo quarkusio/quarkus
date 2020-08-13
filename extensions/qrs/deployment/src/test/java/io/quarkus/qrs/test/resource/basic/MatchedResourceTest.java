@@ -69,7 +69,7 @@ public class MatchedResourceTest {
         Response response = base.request().post(Entity.text(""));
         Assertions.assertEquals(response.getStatus(), HttpResponseCodes.SC_OK);
         String rtn = response.readEntity(String.class);
-        Assertions.assertEquals("started",rtn);
+        Assertions.assertEquals("started", rtn);
         response.close();
         base = client.target(generateURL("/start"));
         response = base.request().post(Entity.entity("<xml/>", "application/xml"));
@@ -89,7 +89,7 @@ public class MatchedResourceTest {
         WebTarget base = client.target(generateURL("/match"));
         Response response = base.request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                 .get();
-        Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
+        Assertions.assertEquals("text/html", response.getHeaders().getFirst("Content-Type"));
         String res = response.readEntity(String.class);
         Assertions.assertEquals("*/*", res, "Wrong response content");
         response.close();

@@ -168,6 +168,35 @@ public class MediaTypeHelper {
         return null;
     }
 
+    public static MediaType getBestConcreteMatch(List<MediaType> desired, List<MediaType> provided) {
+        sortByWeight(desired);
+        sortByWeight(provided);
+        boolean emptyDesired = desired == null || desired.size() == 0;
+        boolean emptyProvided = provided == null || provided.size() == 0;
+
+        if (emptyDesired && emptyProvided)
+            return null;
+        if (emptyDesired && !emptyProvided)
+            return provided.get(0);
+        if (emptyProvided && !emptyDesired)
+            return desired.get(0);
+
+        for (int i = 0; i < desired.size(); i++) {
+            MediaType desire = desired.get(i);
+            for (int j = 0; j < provided.size(); j++) {
+                MediaType provide = provided.get(j);
+                if (provide.isCompatible(desire)) {
+                    if (provide.isWildcardType()) {
+                        return desire;
+                    } else {
+                        return provide;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public static List<MediaType> parseHeader(String header) {
         ArrayList<MediaType> types = new ArrayList<MediaType>();
         String[] medias = header.split(",");

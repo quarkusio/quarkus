@@ -155,7 +155,9 @@ public class QrsRequestContext implements Runnable, Closeable {
     }
 
     public synchronized void resume(Executor executor, Throwable throwable) {
-        this.throwable = throwable;
+        if (throwable != null) {
+            this.throwable = throwable;
+        }
         if (running) {
             this.executor = executor;
             if (executor == null) {
@@ -186,34 +188,37 @@ public class QrsRequestContext implements Runnable, Closeable {
             }
         }
         try {
-            if (throwable != null) {
-                handleException(throwable);
-                return;
-            }
             while (position < handlers.length) {
                 int pos = position;
                 position++; //increment before, as reset may reset it to zero
-                handlers[pos].handle(this);
-                if (suspended) {
-                    Executor exec = null;
-                    synchronized (this) {
-                        if (this.executor != null) {
-                            //resume happened in the meantime
-                            suspended = false;
-                            exec = this.executor;
-                        } else if (suspended) {
-                            running = false;
+                try {
+                    handlers[pos].handle(this);
+                    if (suspended) {
+                        Executor exec = null;
+                        synchronized (this) {
+                            if (this.executor != null) {
+                                //resume happened in the meantime
+                                suspended = false;
+                                exec = this.executor;
+                            } else if (suspended) {
+                                running = false;
+                                return;
+                            }
+                        }
+                        if (exec != null) {
+                            //outside sync block
+                            exec.execute(this);
                             return;
                         }
                     }
-                    if (exec != null) {
-                        //outside sync block
-                        exec.execute(this);
+                } catch (Throwable t) {
+                    if (handlers == deployment.getAbortHandlerChain()) {
+                        handleException(t);
                         return;
+                    } else {
+                        invokeExceptionMapper(t);
+                        restart(deployment.getAbortHandlerChain());
                     }
-                }
-                if (position == handlers.length && throwable != null) {
-                    restart(deployment.getAbortHandlerChain());
                 }
             }
         } catch (Throwable t) {
@@ -414,6 +419,11 @@ public class QrsRequestContext implements Runnable, Closeable {
     public QrsRequestContext setThrowable(Throwable throwable) {
         this.throwable = throwable;
         return this;
+    }
+
+    private void invokeExceptionMapper(Throwable throwable) {
+        this.producesMediaType = null;
+        this.result = deployment.getExceptionMapping().mapException(throwable);
     }
 
     private void handleException(Throwable throwable) {

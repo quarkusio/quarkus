@@ -31,32 +31,24 @@ public class ResourceLocatorHandler implements RestHandler {
             try {
                 locator = Arc.container().instance(locatorClass).get();
             } catch (Exception e) {
-                requestContext.setThrowable(
-                        new RuntimeException("Could not instantiate resource bean " + locatorClass
-                                + " make sure it has a bean defining annotation", e));
-                return;
+                throw new RuntimeException("Could not instantiate resource bean " + locatorClass
+                                + " make sure it has a bean defining annotation", e);
             }
         } else {
             locatorClass = locator.getClass();
         }
         Map<String, RequestMapper<RuntimeResource>> target = findTarget(locatorClass);
         if (target == null) {
-            requestContext.setThrowable(
-                    new RuntimeException("Resource locator method returned object that was not a resource: " + locator));
-            return;
+            throw new RuntimeException("Resource locator method returned object that was not a resource: " + locator);
         }
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
         if (mapper == null) {
-            requestContext.setThrowable(
-                    new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build()));
-            return;
+            throw new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
         }
         RequestMapper.RequestMatch<RuntimeResource> res = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
-            requestContext.setThrowable(
-                    new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build()));
-            return;
+            throw  new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
         }
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);

@@ -12,7 +12,7 @@ public class InvocationHandler implements RestHandler {
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        if (requestContext.getResult() != null) {
+        if (requestContext.getResult() != null || requestContext.getThrowable() != null) {
             //processing was aborted
             //but we still follow through with the handler chain
             return;

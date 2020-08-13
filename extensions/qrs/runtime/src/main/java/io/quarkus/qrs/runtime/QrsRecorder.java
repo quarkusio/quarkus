@@ -43,7 +43,6 @@ import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.MediaTypeMapper;
-import io.quarkus.qrs.runtime.handlers.NoProducesHandler;
 import io.quarkus.qrs.runtime.handlers.ParameterHandler;
 import io.quarkus.qrs.runtime.handlers.QrsInitialHandler;
 import io.quarkus.qrs.runtime.handlers.ReadBodyHandler;
@@ -185,6 +184,7 @@ public class QrsRecorder {
         if (!responseInterceptors.isEmpty()) {
             abortHandlingChain.add(resourceResponseInterceptorHandler);
         }
+        abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QrsDeployment deployment = new QrsDeployment(exceptionMapping, serialisers,
                 abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
@@ -391,10 +391,6 @@ public class QrsRecorder {
                     }
                     handlers.add(new VariableProducesHandler(mediaTypes, serialisers));
                 }
-            } else {
-                //no type was specified, so we need to take the types produced by
-                //the message body writers into account when computing the content type
-                handlers.add(new NoProducesHandler(serialisers));
             }
         }
 

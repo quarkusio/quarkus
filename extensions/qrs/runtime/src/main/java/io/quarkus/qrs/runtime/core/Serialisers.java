@@ -28,6 +28,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
+import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.model.ResourceReader;
 import io.quarkus.qrs.runtime.model.ResourceWriter;
 import io.quarkus.qrs.runtime.spi.QrsMessageBodyWriter;
@@ -80,14 +81,23 @@ public class Serialisers {
         }
     };
 
-    public static boolean invokeWriter(QrsRequestContext context, Object entity, MessageBodyWriter writer)
+    public static boolean invokeWriter(QrsRequestContext context, Object entity, MessageBodyWriter writer) throws IOException {
+        return invokeWriter(context, entity, writer, null);
+    }
+
+    public static boolean invokeWriter(QrsRequestContext context, Object entity, MessageBodyWriter writer, MediaType mediaType)
             throws IOException {
         //note that GenericEntity is not a factor here. It should have already been unwrapped
 
         Response response = context.getResponse();
         if (writer instanceof QrsMessageBodyWriter) {
             QrsMessageBodyWriter<Object> qrsWriter = (QrsMessageBodyWriter<Object>) writer;
-            if (qrsWriter.isWriteable(entity.getClass(), context.getTarget().getLazyMethod(), context.getProducesMediaType())) {
+            RuntimeResource target = context.getTarget();
+            if (qrsWriter.isWriteable(entity.getClass(), target == null ? null : target.getLazyMethod(),
+                    context.getProducesMediaType())) {
+                if (mediaType != null) {
+                    context.setProducesMediaType(mediaType);
+                }
                 qrsWriter.writeResponse(entity, context);
                 return true;
             } else {
@@ -96,6 +106,9 @@ public class Serialisers {
         } else {
             if (writer.isWriteable(entity.getClass(), context.getGenericReturnType(), context.getAnnotations(),
                     context.getProducesMediaType())) {
+                if (mediaType != null) {
+                    context.setProducesMediaType(mediaType);
+                }
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
                         context.getAnnotations(), response.getMediaType(), response.getHeaders(), baos);
@@ -219,11 +232,6 @@ public class Serialisers {
         } while (klass != null);
 
         return ret;
-    }
-
-    public MessageBodyWriter<?>[] findWriters(QrsRequestContext context, Object entity, MediaType producesMediaType) {
-
-        return null;
     }
 
     public NoMediaTypeResult findWriterNoMediaType(QrsRequestContext requestContext, Object entity) {

@@ -66,8 +66,7 @@ public class MediaTypeMapper implements RestHandler {
             }
         }
         if (selected == null) {
-            requestContext.setThrowable(new WebApplicationException(Response.status(416).build()));
-            return;
+            throw new WebApplicationException(Response.status(416).build());
         }
         RuntimeResource selectedResource = null;
         if (selected.resources.size() == 1) {
@@ -84,8 +83,7 @@ public class MediaTypeMapper implements RestHandler {
         }
 
         if (selectedResource == null) {
-            requestContext.setThrowable(new WebApplicationException(Response.status(416).build()));
-            return;
+            throw new WebApplicationException(Response.status(416).build());
         }
         requestContext.restart(selectedResource);
     }

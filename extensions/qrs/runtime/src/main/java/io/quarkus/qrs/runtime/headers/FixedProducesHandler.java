@@ -41,9 +41,7 @@ public class FixedProducesHandler implements RestHandler {
             List<MediaType> parsed = MediaTypeHelper.parseHeader(accept);
             MediaType res = MediaTypeHelper.getBestMatch(parsed, mediaTypeList);
             if (res == null) {
-                requestContext.setThrowable(
-                        new WebApplicationException(Response.notAcceptable(Variant.mediaTypes(mediaType).build()).build()));
-                return;
+                throw new WebApplicationException(Response.notAcceptable(Variant.mediaTypes(mediaType).build()).build());
             }
             requestContext.setProducesMediaType(res);
             requestContext.setEntityWriter(writer);

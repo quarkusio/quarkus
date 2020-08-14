@@ -6,6 +6,7 @@ import static io.quarkus.cache.runtime.NullValueConverter.toCacheValue;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -13,6 +14,8 @@ import java.util.function.Supplier;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
+import io.quarkus.cache.runtime.CacheException;
 
 public class CaffeineCache {
 
@@ -55,7 +58,15 @@ public class CaffeineCache {
 
     public Object get(Object key, Callable<Object> valueLoader, long lockTimeout) throws Exception {
         if (lockTimeout <= 0) {
-            return fromCacheValue(cache.synchronous().get(key, k -> new MappingSupplier(valueLoader).get()));
+            try {
+                return fromCacheValue(cache.synchronous().get(key, k -> new MappingSupplier(valueLoader).get()));
+            } catch (CacheException e) {
+                if (e.getCause() instanceof Exception) {
+                    throw (Exception) e.getCause();
+                } else {
+                    throw e;
+                }
+            }
         }
 
         // The lock timeout logic starts here.
@@ -75,12 +86,18 @@ public class CaffeineCache {
         if (isCurrentThreadComputation[0]) {
             // The value is missing and its computation was started from the current thread.
             // We'll wait for the result no matter how long it takes.
-            return fromCacheValue(future.get());
+            try {
+                return fromCacheValue(future.get());
+            } catch (ExecutionException e) {
+                throw getExceptionToThrow(e);
+            }
         } else {
             // The value is either already present in the cache or missing and its computation was started from another thread.
             // We want to retrieve it from the cache within the lock timeout delay.
             try {
                 return fromCacheValue(future.get(lockTimeout, TimeUnit.MILLISECONDS));
+            } catch (ExecutionException e) {
+                throw getExceptionToThrow(e);
             } catch (TimeoutException e) {
                 // Timeout triggered! We don't want to wait any longer for the value computation and we'll simply invoke the
                 // cached method and return its result without caching it.
@@ -122,6 +139,21 @@ public class CaffeineCache {
         return expireAfterAccess;
     }
 
+    private Exception getExceptionToThrow(ExecutionException e) {
+        if (e.getCause() instanceof CacheException && e.getCause().getCause() instanceof Exception) {
+            return (Exception) e.getCause().getCause();
+        } else {
+            /*
+             * If:
+             * - the cause is not a CacheException
+             * - the cause is a CacheException which doesn't have a cause itself
+             * - the cause is a CacheException which was caused itself by an Error
+             * ... then we'll throw the original ExecutionException.
+             */
+            return e;
+        }
+    }
+
     private static class MappingSupplier implements Supplier<Object> {
 
         private final Callable<?> valueLoader;
@@ -134,10 +166,8 @@ public class CaffeineCache {
         public Object get() {
             try {
                 return toCacheValue(valueLoader.call());
-            } catch (RuntimeException e) {
-                throw e;
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new CacheException(e);
             }
         }
     }

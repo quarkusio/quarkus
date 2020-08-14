@@ -48,4 +48,30 @@ public class RedisConfig {
      */
     @ConfigItem(defaultValue = "standalone")
     public RedisClientType clientType;
+
+    /**
+     * The maximum size of the connection pool. When working with cluster or sentinel.
+     * <p>
+     * This value should be at least the total number of cluster member (or number of sentinels + 1)
+     */
+    @ConfigItem(defaultValue = "6")
+    public int maxPoolSize;
+
+    /**
+     * The maximum waiting requests for a connection from the pool.
+     */
+    @ConfigItem(defaultValue = "24")
+    public int maxPoolWaiting;
+
+    /**
+     * The duration indicating how often should the connection pool cleaner executes.
+     */
+    @ConfigItem
+    public Optional<Duration> poolCleanerInterval;
+
+    /**
+     * The timeout for a connection recycling.
+     */
+    @ConfigItem(defaultValue = "15")
+    public Duration poolRecycleTimeout;
 }

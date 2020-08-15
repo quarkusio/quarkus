@@ -58,7 +58,7 @@ It generates:
 
 == The main method
 
-By default Quarkus will automatically generate a main method, that will boostrap Quarkus and then just wait for
+By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----

@@ -42,12 +42,12 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
     @Override
     protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
-        MethodCreator methodCreator = classCreator
-                .getMethodCreator(NAME, HalEntityWrapper.class.getName(), resourceInfo.getIdClassName());
+        MethodCreator methodCreator = classCreator.getMethodCreator(NAME, HalEntityWrapper.class.getName(),
+                resourceInfo.getEntityInfo().getIdType());
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, MethodImplementor.APPLICATION_HAL_JSON);
         addPathAnnotation(methodCreator, propertiesAccessor
-                .getPath(resourceInfo.getClassInfo(), getStandardMethodMetadata(resourceInfo), "{id}"));
+                .getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo), "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
 
         ResultHandle entity = resourceInfo.getDataAccessImplementor().findById(methodCreator, methodCreator.getMethodParam(0));
@@ -60,6 +60,6 @@ public final class GetHalMethodImplementor extends HalMethodImplementor {
 
     @Override
     protected MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(GetMethodImplementor.NAME, resourceInfo.getIdClassName());
+        return new MethodMetadata(GetMethodImplementor.NAME, resourceInfo.getEntityInfo().getIdType());
     }
 }

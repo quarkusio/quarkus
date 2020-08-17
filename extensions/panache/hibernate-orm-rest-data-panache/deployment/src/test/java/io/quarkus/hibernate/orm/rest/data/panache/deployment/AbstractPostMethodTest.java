@@ -18,7 +18,7 @@ public abstract class AbstractPostMethodTest {
     void shouldCreateSimpleObject() {
         Response response = given().accept("application/json")
                 .and().contentType("application/json")
-                .and().body("{\"name\": \"test-simple\", \"collection\": {\"name\": \"full\"}}")
+                .and().body("{\"name\": \"test-simple\", \"collection\": {\"id\": \"full\"}}")
                 .when().post("/items")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
@@ -33,7 +33,7 @@ public abstract class AbstractPostMethodTest {
     void shouldCreateSimpleHalObject() {
         Response response = given().accept("application/hal+json")
                 .and().contentType("application/json")
-                .and().body("{\"name\": \"test-simple-hal\", \"collection\": {\"name\": \"full\"}}")
+                .and().body("{\"name\": \"test-simple-hal\", \"collection\": {\"id\": \"full\"}}")
                 .when().post("/items")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
@@ -53,11 +53,12 @@ public abstract class AbstractPostMethodTest {
     void shouldCreateComplexObjects() {
         given().accept("application/json")
                 .and().contentType("application/json")
-                .and().body("{\"name\": \"test-complex\"}")
+                .and().body("{\"id\": \"test-complex\", \"name\": \"test collection\"}")
                 .when().post("/collections")
                 .then().statusCode(201)
                 .and().header("Location", endsWith("/test-complex"))
-                .and().body("name", is(equalTo("test-complex")))
+                .and().body("id", is(equalTo("test-complex")))
+                .and().body("name", is(equalTo("test collection")))
                 .and().body("items", is(empty()));
     }
 
@@ -65,11 +66,12 @@ public abstract class AbstractPostMethodTest {
     void shouldCreateComplexHalObjects() {
         given().accept("application/hal+json")
                 .and().contentType("application/json")
-                .and().body("{\"name\": \"test-complex-hal\"}")
+                .and().body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}")
                 .when().post("/collections")
                 .then().statusCode(201)
                 .and().header("Location", endsWith("/test-complex-hal"))
-                .and().body("name", is(equalTo("test-complex-hal")))
+                .and().body("id", is(equalTo("test-complex-hal")))
+                .and().body("name", is(equalTo("test collection")))
                 .and().body("items", is(empty()))
                 .and().body("_links.add.href", endsWith("/collections"))
                 .and().body("_links.list.href", endsWith("/collections"))

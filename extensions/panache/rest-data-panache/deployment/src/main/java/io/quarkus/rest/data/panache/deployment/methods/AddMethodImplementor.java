@@ -56,10 +56,10 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
                 .getMethodCreator(methodMetadata.getName(), Response.class.getName(), methodMetadata.getParameterTypes());
         addTransactionalAnnotation(methodCreator);
         addPostAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getClassInfo(), methodMetadata));
+        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityClassName(), REL);
+        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
 
         ResultHandle entity = methodCreator.getMethodParam(0);
         resourceInfo.getDataAccessImplementor().persist(methodCreator, entity);
@@ -70,6 +70,6 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
 
     @Override
     protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME, resourceInfo.getEntityClassName());
+        return new MethodMetadata(NAME, resourceInfo.getEntityInfo().getType());
     }
 }

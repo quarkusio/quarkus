@@ -20,4 +20,9 @@ class ResourceNameTest {
     void testControllerName() {
         assertThat(ResourceName.fromClass("SomeEntityController")).isEqualTo("some-entity");
     }
+
+    @Test
+    void testComplexName() {
+        assertThat(ResourceName.fromClass("com.example.Entity")).isEqualTo("entity");
+    }
 }

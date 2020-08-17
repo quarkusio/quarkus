@@ -67,7 +67,7 @@ public final class ListHalMethodImplementor extends HalMethodImplementor {
         MethodCreator methodCreator = classCreator.getMethodCreator(NAME, Response.class);
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getClassInfo(), getStandardMethodMetadata(resourceInfo)));
+                propertiesAccessor.getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo)));
         addProducesAnnotation(methodCreator, MethodImplementor.APPLICATION_HAL_JSON);
 
         FieldDescriptor uriInfoField = of(methodCreator.getMethodDescriptor().getDeclaringClass(), URI_INFO.getName(),

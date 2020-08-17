@@ -18,37 +18,38 @@ public class ResourcePropertiesAccessor {
         this.index = index;
     }
 
-    public boolean isHal(ClassInfo classInfo) {
-        AnnotationInstance annotation = getAnnotation(classInfo);
+    public boolean isHal(String type) {
+        AnnotationInstance annotation = getAnnotation(DotName.createSimple(type));
         return annotation != null
                 && annotation.value("hal") != null
                 && annotation.value("hal").asBoolean();
     }
 
-    public String path(ClassInfo classInfo) {
-        AnnotationInstance annotation = getAnnotation(classInfo);
-        if (annotation == null || annotation.value("path") == null || annotation.value("path").asString().isEmpty()) {
-            return ResourceName.fromClass(classInfo.simpleName());
+    public String path(String type) {
+        AnnotationInstance annotation = getAnnotation(DotName.createSimple(type));
+        if (annotation == null || annotation.value("path") == null || "".equals(annotation.value("path").asString())) {
+            return ResourceName.fromClass(type);
         }
         return annotation.value("path").asString();
     }
 
-    public boolean isPaged(ClassInfo classInfo) {
-        AnnotationInstance annotation = getAnnotation(classInfo);
+    public boolean isPaged(String type) {
+        AnnotationInstance annotation = getAnnotation(DotName.createSimple(type));
         return annotation == null
                 || annotation.value("paged") == null
                 || annotation.value("paged").asBoolean();
     }
 
-    private AnnotationInstance getAnnotation(ClassInfo classInfo) {
+    private AnnotationInstance getAnnotation(DotName type) {
+        ClassInfo classInfo = index.getClassByName(type);
+        if (classInfo == null) {
+            return null;
+        }
         if (classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION) != null) {
             return classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION);
         }
         if (classInfo.superName() != null) {
-            ClassInfo superControllerInterface = index.getClassByName(classInfo.superName());
-            if (superControllerInterface != null) {
-                return getAnnotation(superControllerInterface);
-            }
+            return getAnnotation(classInfo.superName());
         }
         return null;
     }

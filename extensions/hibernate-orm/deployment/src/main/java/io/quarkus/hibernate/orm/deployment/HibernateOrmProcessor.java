@@ -24,6 +24,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.inject.Singleton;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
@@ -58,6 +59,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -91,6 +93,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
+import io.quarkus.hibernate.orm.runtime.JPAConfigSupport;
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
@@ -288,7 +291,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
         Set<String> entitiesToGenerateProxiesFor = new HashSet<>(domainObjects.getEntityClassNames());
         for (PersistenceUnitDescriptorBuildItem pud : persistenceUnitDescriptorBuildItems) {
-            pud.addListedEntityClassNamesTo(entitiesToGenerateProxiesFor);
+            entitiesToGenerateProxiesFor.addAll(pud.getManagedClassNames());
         }
         PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, indexBuildItem.getIndex(),
                 generatedClassBuildItemBuildProducer);
@@ -412,23 +415,35 @@ public final class HibernateOrmProcessor {
     @Record(STATIC_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<BeanContainerListenerBuildItem> buildProducer,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
-        MultiTenancyStrategy strategy = MultiTenancyStrategy
-                .valueOf(hibernateOrmConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
-        buildProducer.produce(new BeanContainerListenerBuildItem(
-                recorder.initializeJpa(strategy,
-                        hibernateOrmConfig.multitenantSchemaDatasource.orElse(null))));
 
-        // Bootstrap all persistence units
-        for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : descriptors) {
-            buildProducer.produce(new BeanContainerListenerBuildItem(
-                    recorder.registerPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())));
+        MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
+                .valueOf(hibernateOrmConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
+
+        Set<String> persistenceUnitNames = new HashSet<>();
+
+        Map<String, Set<String>> entityPersistenceUnitMapping = new HashMap<>();
+        for (PersistenceUnitDescriptorBuildItem descriptor : descriptors) {
+            persistenceUnitNames.add(descriptor.getPersistenceUnitName());
+
+            for (String entityClass : descriptor.getManagedClassNames()) {
+                entityPersistenceUnitMapping.putIfAbsent(entityClass, new HashSet<>());
+                entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
+            }
         }
-        buildProducer.produce(new BeanContainerListenerBuildItem(recorder.initDefaultPersistenceUnit()));
+
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(JPAConfigSupport.class)
+                .scope(Singleton.class)
+                .unremovable()
+                .supplier(recorder.jpaConfigSupportSupplier(
+                        new JPAConfigSupport(persistenceUnitNames, entityPersistenceUnitMapping, multiTenancyStrategy,
+                                hibernateOrmConfig.multitenantSchemaDatasource.orElse(null))))
+                .done());
     }
 
     @BuildStep

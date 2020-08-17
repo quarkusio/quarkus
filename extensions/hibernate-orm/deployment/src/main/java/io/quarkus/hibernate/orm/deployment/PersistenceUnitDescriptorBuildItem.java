@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
@@ -53,14 +53,8 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
         this.isReactive = isReactive;
     }
 
-    /**
-     * Modifies the passed set by adding all explicitly listed classnames from this PU
-     * into the set.
-     *
-     * @param classNames the set to modify
-     */
-    public void addListedEntityClassNamesTo(Set<String> classNames) {
-        classNames.addAll(descriptor.getManagedClassNames());
+    public Collection<String> getManagedClassNames() {
+        return descriptor.getManagedClassNames();
     }
 
     public String getExplicitSqlImportScriptResourceName() {

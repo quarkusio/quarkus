@@ -1,14 +1,15 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -21,52 +22,29 @@ public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final AtomicReference<MultiTenancyStrategy> multiTenancyStrategy;
+    private final Map<String, Set<String>> entityPersistenceUnitMapping;
 
-    private final AtomicReference<String> multiTenancySchemaDataSource;
+    private final MultiTenancyStrategy multiTenancyStrategy;
+    private final String multiTenancySchemaDataSource;
 
     private final Map<String, LazyPersistenceUnit> persistenceUnits;
 
-    private final AtomicReference<String> defaultPersistenceUnitName;
+    @Inject
+    public JPAConfig(JPAConfigSupport jpaConfigSupport) {
+        this.entityPersistenceUnitMapping = Collections.unmodifiableMap(jpaConfigSupport.entityPersistenceUnitMapping);
+        this.multiTenancyStrategy = jpaConfigSupport.multiTenancyStrategy;
+        this.multiTenancySchemaDataSource = jpaConfigSupport.multiTenancySchemaDataSource;
 
-    public JPAConfig() {
-        this.multiTenancyStrategy = new AtomicReference<MultiTenancyStrategy>();
-        this.multiTenancySchemaDataSource = new AtomicReference<String>();
-        this.persistenceUnits = new ConcurrentHashMap<>();
-        this.defaultPersistenceUnitName = new AtomicReference<String>();
-    }
-
-    /**
-     * Sets the strategy for multitenancy.
-     *
-     * @param strategy Strategy to use.
-     */
-    void setMultiTenancyStrategy(MultiTenancyStrategy strategy) {
-        multiTenancyStrategy.set(strategy);
-    }
-
-    /**
-     * Sets the name of the data source that should be used in case of {@link MultiTenancyStrategy#SCHEMA} approach.
-     *
-     * @param dataSourceName Name to use or {@literal null} for the default data source.
-     */
-    void setMultiTenancySchemaDataSource(String dataSourceName) {
-        multiTenancySchemaDataSource.set(dataSourceName);
-    }
-
-    void registerPersistenceUnit(String unitName) {
-        persistenceUnits.put(unitName, new LazyPersistenceUnit(unitName));
+        Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
+        for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
+            persistenceUnitsBuilder.put(persistenceUnitName, new LazyPersistenceUnit(persistenceUnitName));
+        }
+        this.persistenceUnits = Collections.unmodifiableMap(persistenceUnitsBuilder);
     }
 
     void startAll() {
         for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             i.getValue().get();
-        }
-    }
-
-    void initDefaultPersistenceUnit() {
-        if (persistenceUnits.size() == 1) {
-            defaultPersistenceUnitName.set(persistenceUnits.keySet().iterator().next());
         }
     }
 
@@ -103,7 +81,7 @@ public class JPAConfig {
      * @return Strategy to use.
      */
     public MultiTenancyStrategy getMultiTenancyStrategy() {
-        return multiTenancyStrategy.get();
+        return multiTenancyStrategy;
     }
 
     /**
@@ -112,7 +90,14 @@ public class JPAConfig {
      * @return Data source name or {@link null} in case the default data source should be used.
      */
     public String getMultiTenancySchemaDataSource() {
-        return multiTenancySchemaDataSource.get();
+        return multiTenancySchemaDataSource;
+    }
+
+    /**
+     * Returns the set of persistence units an entity is attached to.
+     */
+    public Set<String> getPersistenceUnitsForEntity(String entityClass) {
+        return entityPersistenceUnitMapping.getOrDefault(entityClass, Collections.emptySet());
     }
 
     /**

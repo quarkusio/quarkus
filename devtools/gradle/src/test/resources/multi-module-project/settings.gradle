@@ -16,4 +16,4 @@ pluginManagement {
 }
 rootProject.name='mutli-module-project'
 
-include 'common', 'application'
+include 'common', 'application', 'nomain'

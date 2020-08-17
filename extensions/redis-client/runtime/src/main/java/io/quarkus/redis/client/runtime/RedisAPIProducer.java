@@ -68,6 +68,13 @@ class RedisAPIProducer {
             timeout = config.timeout.get().getSeconds();
         }
 
+        options.setMaxPoolSize(config.maxPoolSize);
+        options.setMaxPoolWaiting(config.maxPoolWaiting);
+        options.setPoolRecycleTimeout(Math.toIntExact(config.poolRecycleTimeout.toMillis()));
+        if (config.poolCleanerInterval.isPresent()) {
+            options.setPoolCleanerInterval(Math.toIntExact(config.poolCleanerInterval.get().toMillis()));
+        }
+
         vertxRedisClient = Redis.createClient(vertx, options);
         redisAPI = RedisAPI.api(vertxRedisClient);
         mutinyRedisClient = io.vertx.mutiny.redis.client.Redis.newInstance(vertxRedisClient);

@@ -134,6 +134,13 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    void checkTransactionsSupport(Capabilities capabilities) {
+        if (capabilities.isMissing(Capability.TRANSACTIONS)) {
+            throw new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.");
+        }
+    }
+
+    @BuildStep
     void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
         if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {

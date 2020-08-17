@@ -16,6 +16,7 @@ public class JacksonTest {
     public void testJsonIgnoreHonoured() {
         List<Book> books = RestAssured.when().get("/book/Berlin/Beevor").then().extract().body().jsonPath().getList(".",
                 Book.class);
+
         assertThat(books).hasSize(1).filteredOn(book -> book.author != null).isEmpty();
     }
 }

@@ -104,6 +104,7 @@
         <module>scala</module>
         <module>kotlin</module>
         <module>mongodb-panache</module>
+        <module>mongodb-panache-kotlin</module>
         <module>narayana-stm</module>
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>

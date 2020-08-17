@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.runtime;
 
 public class PersistenceUnitUtil {
 

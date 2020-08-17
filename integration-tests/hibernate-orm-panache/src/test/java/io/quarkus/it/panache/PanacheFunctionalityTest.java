@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -182,7 +183,8 @@ public class PanacheFunctionalityTest {
         RestAssured.when()
                 .get("/metrics")
                 .then()
-                .body(containsString("vendor_hibernate_orm_timestamps_cache_hits_total{entityManagerFactory=\"<default>\"}"));
+                .body(containsString("vendor_hibernate_orm_timestamps_cache_hits_total{entityManagerFactory=\""
+                        + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\"}"));
     }
 
     @DisabledOnNativeImage

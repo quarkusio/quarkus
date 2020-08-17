@@ -26,6 +26,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 public class HibernateOrmCdiProcessor {
 

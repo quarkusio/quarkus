@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.enhancer.Address;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ExcludePersistenceXmlConfigTest {

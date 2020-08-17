@@ -32,7 +32,7 @@ public class ResourceLocatorHandler implements RestHandler {
                 locator = Arc.container().instance(locatorClass).get();
             } catch (Exception e) {
                 throw new RuntimeException("Could not instantiate resource bean " + locatorClass
-                                + " make sure it has a bean defining annotation", e);
+                        + " make sure it has a bean defining annotation", e);
             }
         } else {
             locatorClass = locator.getClass();
@@ -48,7 +48,7 @@ public class ResourceLocatorHandler implements RestHandler {
         RequestMapper.RequestMatch<RuntimeResource> res = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
-            throw  new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
+            throw new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
         }
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);

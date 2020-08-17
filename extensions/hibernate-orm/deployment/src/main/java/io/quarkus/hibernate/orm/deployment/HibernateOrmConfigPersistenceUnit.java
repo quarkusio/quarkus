@@ -28,31 +28,11 @@ public class HibernateOrmConfigPersistenceUnit {
     public Optional<Set<String>> packages;
 
     /**
-     * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
-     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM JavaDoc].
-     *
-     * [NOTE]
-     * ====
-     * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for PostgreSQL,
-     * MariaDB, Microsoft SQL Server and H2.
-     * ====
-     *
-     * @asciidoclet
+     * Dialect related configuration.
      */
-    // TODO should it be dialects
-    //TODO should it be shortcuts like "postgresql" "h2" etc
     @ConfigItem
-    public Optional<String> dialect;
-
-    /**
-     * The storage engine to use when the dialect supports multiple storage engines.
-     *
-     * E.g. `MyISAM` or `InnoDB` for MySQL.
-     *
-     * @asciidoclet
-     */
-    @ConfigItem(name = "dialect.storage-engine")
-    public Optional<String> dialectStorageEngine;
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitDialect dialect;
 
     // @formatter:off
     /**
@@ -162,8 +142,7 @@ public class HibernateOrmConfigPersistenceUnit {
     public boolean secondLevelCachingEnabled;
 
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() ||
-                dialectStorageEngine.isPresent() ||
+        return dialect.isAnyPropertySet() ||
                 sqlLoadScript.isPresent() ||
                 batchFetchSize > 0 ||
                 query.isAnyPropertySet() ||
@@ -171,6 +150,43 @@ public class HibernateOrmConfigPersistenceUnit {
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
                 !cache.isEmpty();
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitDialect {
+
+        /**
+         * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
+         * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM
+         * JavaDoc].
+         *
+         * [NOTE]
+         * ====
+         * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for
+         * PostgreSQL,
+         * MariaDB, Microsoft SQL Server and H2.
+         * ====
+         *
+         * @asciidoclet
+         */
+        // TODO should it be dialects
+        //TODO should it be shortcuts like "postgresql" "h2" etc
+        @ConfigItem(name = ConfigItem.PARENT)
+        public Optional<String> dialect;
+
+        /**
+         * The storage engine to use when the dialect supports multiple storage engines.
+         *
+         * E.g. `MyISAM` or `InnoDB` for MySQL.
+         *
+         * @asciidoclet
+         */
+        @ConfigItem
+        public Optional<String> storageEngine;
+
+        public boolean isAnyPropertySet() {
+            return dialect.isPresent() || storageEngine.isPresent();
+        }
     }
 
     @ConfigGroup

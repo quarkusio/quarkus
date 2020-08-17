@@ -161,7 +161,7 @@ public final class HibernateReactiveProcessor {
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit;
 
         //we have no persistence.xml so we will create a default one
-        Optional<String> dialect = persistenceUnitConfig.dialect;
+        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
         if (!dialect.isPresent()) {
             dialect = HibernateOrmProcessor.guessDialect(dbKind);
         }
@@ -176,9 +176,9 @@ public final class HibernateReactiveProcessor {
         desc.addClasses(new ArrayList<>(domainObjects.getAllModelClassNames()));
 
         // The storage engine has to be set as a system property.
-        if (persistenceUnitConfig.dialectStorageEngine.isPresent()) {
+        if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
             systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
-                    persistenceUnitConfig.dialectStorageEngine.get()));
+                    persistenceUnitConfig.dialect.storageEngine.get()));
         }
         // Physical Naming Strategy
         persistenceUnitConfig.physicalNamingStrategy.ifPresent(

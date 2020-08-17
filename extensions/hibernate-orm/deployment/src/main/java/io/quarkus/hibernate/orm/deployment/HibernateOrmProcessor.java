@@ -538,6 +538,8 @@ public final class HibernateOrmProcessor {
                 .filter(i -> i.isDefault())
                 .findFirst();
 
+        Set<Optional<String>> storageEngines = new HashSet<>();
+
         if ((defaultJdbcDataSource.isPresent() && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
                 hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet()) {
             producePersistenceUnitDescriptorFromConfig(
@@ -547,6 +549,8 @@ public final class HibernateOrmProcessor {
                             Collections.emptySet()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+
+            storageEngines.add(hibernateOrmConfig.defaultPersistenceUnit.dialect.storageEngine);
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
@@ -556,6 +560,13 @@ public final class HibernateOrmProcessor {
                     modelClassesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(), Collections.emptySet()),
                     jdbcDataSources, applicationArchivesBuildItem, launchMode,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
+
+            storageEngines.add(persistenceUnitEntry.getValue().dialect.storageEngine);
+        }
+
+        if (storageEngines.size() > 1) {
+            throw new ConfigurationException(
+                    "The dialect storage engine is a global configuration property: it must be consistent across all persistence units.");
         }
     }
 
@@ -598,7 +609,7 @@ public final class HibernateOrmProcessor {
             dataSource = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
         }
 
-        Optional<String> dialect = persistenceUnitConfig.dialect;
+        Optional<String> dialect = persistenceUnitConfig.dialect.dialect;
         if (!dialect.isPresent()) {
             dialect = guessDialect(jdbcDataSource.getDbKind());
         }
@@ -622,10 +633,9 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.DIALECT, dialect.get());
 
         // The storage engine has to be set as a system property.
-        if (persistenceUnitConfig.dialectStorageEngine.isPresent()) {
-            // TODO MULTI-PUS: this won't work with multiple persistence units...
+        if (persistenceUnitConfig.dialect.storageEngine.isPresent()) {
             systemProperties.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
-                    persistenceUnitConfig.dialectStorageEngine.get()));
+                    persistenceUnitConfig.dialect.storageEngine.get()));
         }
         // Physical Naming Strategy
         persistenceUnitConfig.physicalNamingStrategy.ifPresent(

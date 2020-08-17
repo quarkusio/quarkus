@@ -42,7 +42,7 @@ Quarkus provides Mutual TLS authentication so that you can authenticate users ba
 
 Please see link:security-built-in-authentication#mutual-tls[Mutual TLS Authentication] for more information.
 
-== OpenId Connect
+=== OpenId Connect
 
 `quarkus-oidc` extension provides a reactive, interoperable, multi-tenant enabled OpenId Connect adapter which supports `Bearer Token` and `Authorization Code Flow` authentication mechanisms.
 
@@ -65,7 +65,7 @@ See link:security-openid-connect-multitenancy[Using OpenID Connect Multi-Tenancy
 If you use Keycloak and Bearer tokens then also see the link:security-keycloak-authorization[Using Keycloak to Centralize Authorization] guide.  
 
 [[smallrye-jwt]]
-== SmallRye JWT
+=== SmallRye JWT
 
 `quarkus-smallrye-jwt` provides Microprofile JWT 1.1.1 implementation and many more options to verify signed and encrypted `JWT` tokens and represent them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
@@ -75,13 +75,13 @@ Additionally it provides `JWT Generation API` for creating `signed`, `inner-sign
 
 See the link:security-jwt[Using SmallRye JWT] guide for more information.
 
-== OAuth2
+=== OAuth2
 
 `quarkus-elytron-security-oauth2` provides an alternative to `quarkus-oidc` Bearer Token Authentication Mechanism. It is based on `Elytron` and is primarily meant for introspecting the opaque tokens remotely.
 
 See the link:security-oauth2[Using OAuth2] guide for more information.
 
-== LDAP
+=== LDAP
 
 Please see the link:security-ldap[Authenticate with LDAP] guide for more information about LDAP authentication mechanism.
 

@@ -7,8 +7,10 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -81,10 +83,10 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
     @Override
     public Object buildAll(String modelName, ModelParameter parameter, Project project) {
-        LaunchMode mode = LaunchMode.valueOf(((ModelParameter) parameter).getMode());
+        LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
         final Set<org.gradle.api.artifacts.Dependency> deploymentDeps = getEnforcedPlatforms(project);
-        final Map<ArtifactCoords, Dependency> appDependencies = new HashMap<>();
+        final Map<ArtifactCoords, Dependency> appDependencies = new LinkedHashMap<>();
         final Set<ArtifactCoords> visitedDeps = new HashSet<>();
 
         final ResolvedConfiguration configuration = classpathConfig(project, mode).getResolvedConfiguration();
@@ -92,13 +94,13 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         collectFirstMetDeploymentDeps(configuration.getFirstLevelModuleDependencies(), appDependencies,
                 deploymentDeps, visitedDeps);
 
-        final Set<Dependency> extensionDependencies = collectExtensionDependencies(project, deploymentDeps);
+        final List<Dependency> extensionDependencies = collectExtensionDependencies(project, deploymentDeps);
 
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
 
         return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode)),
-                new HashSet<>(appDependencies.values()),
+                new LinkedList<>(appDependencies.values()),
                 extensionDependencies);
     }
 
@@ -211,9 +213,9 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return null;
     }
 
-    private Set<Dependency> collectExtensionDependencies(Project project,
+    private List<Dependency> collectExtensionDependencies(Project project,
             Collection<org.gradle.api.artifacts.Dependency> extensions) {
-        final Set<Dependency> platformDependencies = new HashSet<>();
+        final List<Dependency> platformDependencies = new LinkedList<>();
 
         final Configuration deploymentConfig = project.getConfigurations()
                 .detachedConfiguration(extensions.toArray(new org.gradle.api.artifacts.Dependency[0]));

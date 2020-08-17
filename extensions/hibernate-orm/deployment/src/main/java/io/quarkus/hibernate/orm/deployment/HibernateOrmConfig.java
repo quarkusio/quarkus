@@ -23,9 +23,7 @@ public class HibernateOrmConfig {
      */
     @ConfigDocSection
     @ConfigDocMapKey("persistence-unit-name")
-    // @ConfigItem(name = ConfigItem.PARENT)
-    // TODO MULTI-PUS for now, we keep the `persistence-units` but we will need to discuss it
-    // in most extensions, we decided to drop that part
+    @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits;
 
     /**

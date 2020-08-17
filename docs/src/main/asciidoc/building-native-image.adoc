@@ -11,6 +11,7 @@ This guide covers:
 
 * Compiling the application to a native executable
 * Packaging the native executable in a container
+* Debugging native executable
 
 This guide takes as input the application developed in the link:getting-started[Getting Started Guide].
 
@@ -534,6 +535,32 @@ If you need SSL support in your native executable, you can easily include the ne
 
 Please see link:native-and-ssl#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
+
+== Debugging native executable
+
+Starting with Oracle GraalVM 20.2 or Mandrel 20.1,
+debug symbols for native executables can be generated for Linux environments
+(Windows support is still under development).
+These symbols can be used to debug native executables with tools such as `gdb`.
+
+To generate debug symbols,
+add `-Dquarkus.native.debug.enabled=true` flag when generating the native executable.
+You will find the debug symbols for the native executable in a `.debug` file next to the native executable.
+
+Aside from debug symbols,
+setting `-Dquarkus.native.debug.enabled=true` flag generates a cache of source files
+for any JDK runtime classes, GraalVM classes and application classes resolved during native executable generation.
+This source cache is useful for native debugging tools,
+to establish the link between the symbols and matching source code.
+It provides a convenient way of making just the necessary sources available to the debugger/IDE when debugging a native executable.
+
+Sources for third party jar dependencies, including Quarkus source code,
+are not added to the source cache by default.
+To include those, make sure you invoke `mvn dependency:sources` first.
+This step is required in order to pull the sources for these dependencies,
+and get them included in the source cache.
+
+The location of source cache is `target/sources-cache` folder.
 
 [[configuration-reference]]
 == Configuring the Native Executable

@@ -70,6 +70,36 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testRestEndPointInterfaceValidation() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/plop/")
+                .then()
+                // 500 until this is fixed: https://github.com/quarkusio/quarkus/issues/11341#issuecomment-673146350
+                .statusCode(500)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidationWithAnnotationOnImplMethod() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
+                .then()
+                // 500 until this is fixed: https://github.com/quarkusio/quarkus/issues/11341#issuecomment-673146350
+                .statusCode(500)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
     public void testRestEndPointGenericMethodValidation() {
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-generic-method-validation/9999999/")

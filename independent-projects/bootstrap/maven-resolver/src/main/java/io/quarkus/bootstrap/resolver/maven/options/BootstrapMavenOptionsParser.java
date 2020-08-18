@@ -27,6 +27,8 @@ public class BootstrapMavenOptionsParser {
         putBoolean(cmdLine, map, CLIManager.UPDATE_SNAPSHOTS);
         putBoolean(cmdLine, map, CLIManager.CHECKSUM_FAILURE_POLICY);
         putBoolean(cmdLine, map, CLIManager.CHECKSUM_WARNING_POLICY);
+        putBoolean(cmdLine, map, CLIManager.BATCH_MODE);
+        putBoolean(cmdLine, map, CLIManager.NO_TRANSFER_PROGRESS);
 
         return map;
     }

@@ -20,7 +20,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
+import org.apache.maven.cli.transfer.QuietMavenTransferListener;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
@@ -68,6 +70,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transfer.TransferListener;
 import org.eclipse.aether.transport.wagon.WagonConfigurator;
 import org.eclipse.aether.transport.wagon.WagonProvider;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
@@ -386,7 +389,16 @@ public class BootstrapMavenContext {
         }
 
         if (session.getTransferListener() == null && artifactTransferLogging) {
-            session.setTransferListener(new ConsoleMavenTransferListener(System.out, true));
+            TransferListener transferListener;
+            if (mvnArgs.hasOption(BootstrapMavenOptions.NO_TRANSFER_PROGRESS)) {
+                transferListener = new QuietMavenTransferListener();
+            } else if (mvnArgs.hasOption(BootstrapMavenOptions.BATCH_MODE)) {
+                transferListener = new BatchModeMavenTransferListener(System.out);
+            } else {
+                transferListener = new ConsoleMavenTransferListener(System.out, true);
+            }
+
+            session.setTransferListener(transferListener);
         }
 
         return session;

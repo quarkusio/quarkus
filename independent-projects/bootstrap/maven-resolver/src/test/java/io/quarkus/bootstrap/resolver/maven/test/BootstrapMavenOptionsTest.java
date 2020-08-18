@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import org.apache.maven.cli.CLIManager;
 import org.junit.jupiter.api.Test;
 
 public class BootstrapMavenOptionsTest {
@@ -56,6 +57,20 @@ public class BootstrapMavenOptionsTest {
     public void testChecksumWarningPolicy() throws Exception {
         final BootstrapMavenOptions parseOptions = parseOptions("clean install -c");
         assertTrue(parseOptions.hasOption(BootstrapMavenOptions.CHECKSUM_WARNING_POLICY));
+    }
+
+    @Test
+    public void testBatchMode() {
+        assertEquals("" + CLIManager.BATCH_MODE, BootstrapMavenOptions.BATCH_MODE);
+        assertTrue(parseOptions("clean install -B").hasOption(BootstrapMavenOptions.BATCH_MODE));
+        assertTrue(parseOptions("clean install --batch-mode").hasOption(BootstrapMavenOptions.BATCH_MODE));
+    }
+
+    @Test
+    public void testNoTransferProgress() {
+        assertEquals(CLIManager.NO_TRANSFER_PROGRESS, BootstrapMavenOptions.NO_TRANSFER_PROGRESS);
+        assertTrue(parseOptions("clean install -ntp").hasOption(BootstrapMavenOptions.NO_TRANSFER_PROGRESS));
+        assertTrue(parseOptions("clean install --no-transfer-progress").hasOption(BootstrapMavenOptions.NO_TRANSFER_PROGRESS));
     }
 
     private BootstrapMavenOptions parseOptions(String line) {

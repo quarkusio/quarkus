@@ -29,6 +29,8 @@ import java.util.zip.ZipEntry;
  */
 public class SerializedApplication {
 
+    public static final String META_INF_VERSIONS = "META-INF/versions/";
+
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 1;
 
@@ -160,6 +162,20 @@ public class SerializedApplication {
                     //looking at you h2
                     final int index = entry.getName().lastIndexOf('/');
                     dirs.add(entry.getName().substring(0, index));
+
+                    if (entry.getName().startsWith(META_INF_VERSIONS)) {
+                        //multi release jar
+                        //we add all packages here
+                        //they may no be relevant for some versions, but that is fine
+                        String part = entry.getName().substring(META_INF_VERSIONS.length());
+                        int slash = part.indexOf("/");
+                        if (slash != -1) {
+                            final int subIndex = part.lastIndexOf('/');
+                            if (subIndex != slash) {
+                                dirs.add(part.substring(slash + 1, subIndex));
+                            }
+                        }
+                    }
                 }
             }
             if (hasDefaultPackge) {

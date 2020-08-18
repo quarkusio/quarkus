@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -157,6 +158,13 @@ public class SmallRyeOpenApiProcessor {
                 new FilteredIndexView(
                         compositeIndex,
                         new OpenApiConfigImpl(ConfigProvider.getConfig())));
+    }
+
+    @BuildStep
+    public List<AllowedJaxRsAnnotationPrefixBuildItem> registerJaxRsSupportedAnnotation() {
+        List<AllowedJaxRsAnnotationPrefixBuildItem> prefixes = new ArrayList<>();
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("org.eclipse.microprofile.openapi.annotations"));
+        return prefixes;
     }
 
     @BuildStep

@@ -16,7 +16,7 @@ public class OpenApiHttpRootDefaultPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(OpenApiResource.class)
+                    .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
 
     @Test

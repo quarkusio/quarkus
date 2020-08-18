@@ -16,7 +16,7 @@ public class OpenApiWithConfigTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(OpenApiResource.class)
+                    .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsManifestResource("test-openapi.yaml", "openapi.yaml")
                     .addAsResource(new StringAsset("mp.openapi.scan.disable=true\nmp.openapi.servers=https://api.acme.org/"),
                             "application.properties"));

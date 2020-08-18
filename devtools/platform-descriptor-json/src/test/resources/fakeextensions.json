@@ -6,20 +6,30 @@
             "quarkus.native.builder-image" : "foo-bar"
         },
         "maven" :  {
-            "repositories" : {
-                "id": "redhat",
-                "url": "https://maven.repository.redhat.com"
-            },
-            "plugin-repositories" : {
-                "id": "redhat",
-                "url": "https://maven.repository.redhat.com"
-            }
+            "repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com",
+                    "releases-enabled": "true",
+                    "snapshots-enabled": "false"
+                }
+            ],
+            "plugin-repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com",
+                    "releases-enabled": "true",
+                    "snapshots-enabled": "false"
+                }
+            ]
         },
         "gradle" :  {
-            "repositories" : {
-                "id": "redhat",
-                "url": "https://maven.repository.redhat.com"
-            }
+            "repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com"
+                }
+            ]
         }
     },
     "bom": {

@@ -123,11 +123,12 @@ jobs:
             java-version: 11,
             maven_args: "-pl !integration-tests/gradle"
           }
-          - {
-            name: Java 14,
-            java-version: 14,
-            maven_args: "-pl !integration-tests/gradle"
-          }
+          # Disabled for now as totally unstable
+          #- {
+          #  name: Java 14,
+          #  java-version: 14,
+          #  maven_args: "-pl !integration-tests/gradle"
+          #}
 
     services:
       keycloak:

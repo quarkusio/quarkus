@@ -451,6 +451,8 @@ quarkus.http.port=9090
 %dev.quarkus.http.port=8181
 ----
 
+You can also have multiple configuration files that is going to be selected by the profile name in the filename (i.e. `application-{profile}.properties`)
+
 The Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
 
 By default Quarkus has three profiles, although it is possible to use as many as you like. The default profiles are:

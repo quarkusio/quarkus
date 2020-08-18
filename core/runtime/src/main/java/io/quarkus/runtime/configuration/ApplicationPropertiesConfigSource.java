@@ -25,7 +25,9 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
     private static final long serialVersionUID = -4694780118527396798L;
 
     static final String APPLICATION_PROPERTIES = "application.properties";
+    static final String APPLICATION_PROPERTIES_PROFILE = "application-%s.properties";
     static final String MP_PROPERTIES = "META-INF/microprofile-config.properties";
+    static final String MP_PROPERTIES_PROFILE = "META-INF/microprofile-config-%s.properties";
 
     ApplicationPropertiesConfigSource(InputStream is, int ordinal) {
         super(readProperties(is), APPLICATION_PROPERTIES, ordinal);
@@ -54,19 +56,25 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
 
     public static final class InJar extends ApplicationPropertiesConfigSource {
         public InJar() {
-            super(openStream(), 250);
+            super(openStream(null), 250);
         }
 
-        private static InputStream openStream() {
+        public InJar(String profile) {
+            super(openStream(profile), 251);
+        }
+
+        private static InputStream openStream(String profile) {
+            final String filename = profile == null ? APPLICATION_PROPERTIES
+                    : String.format(APPLICATION_PROPERTIES_PROFILE, profile);
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
                 cl = ApplicationPropertiesConfigSource.class.getClassLoader();
             }
             InputStream is;
             if (cl == null) {
-                is = ClassLoader.getSystemResourceAsStream(APPLICATION_PROPERTIES);
+                is = ClassLoader.getSystemResourceAsStream(filename);
             } else {
-                is = cl.getResourceAsStream(APPLICATION_PROPERTIES);
+                is = cl.getResourceAsStream(filename);
             }
             return is;
         }
@@ -77,19 +85,25 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
      */
     public static final class MpConfigInJar extends ApplicationPropertiesConfigSource {
         public MpConfigInJar() {
-            super(openStream(), MP_PROPERTIES, 240);
+            super(openStream(null), MP_PROPERTIES, 240);
         }
 
-        private static InputStream openStream() {
+        public MpConfigInJar(String profile) {
+            super(openStream(profile), MP_PROPERTIES, 241);
+        }
+
+        private static InputStream openStream(String profile) {
+            final String filename = profile == null ? MP_PROPERTIES
+                    : String.format(MP_PROPERTIES_PROFILE, profile);
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
                 cl = ApplicationPropertiesConfigSource.class.getClassLoader();
             }
             InputStream is;
             if (cl == null) {
-                is = ClassLoader.getSystemResourceAsStream(MP_PROPERTIES);
+                is = ClassLoader.getSystemResourceAsStream(filename);
             } else {
-                is = cl.getResourceAsStream(MP_PROPERTIES);
+                is = cl.getResourceAsStream(filename);
             }
             return is;
         }
@@ -97,11 +111,16 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
 
     public static final class InFileSystem extends ApplicationPropertiesConfigSource {
         public InFileSystem() {
-            super(openStream(), 260);
+            super(openStream(null), 260);
         }
 
-        private static InputStream openStream() {
-            final Path path = Paths.get("config", APPLICATION_PROPERTIES);
+        public InFileSystem(String profile) {
+            super(openStream(profile), 261);
+        }
+
+        private static InputStream openStream(final String profile) {
+            final Path path = Paths.get("config",
+                    profile == null ? APPLICATION_PROPERTIES : String.format(APPLICATION_PROPERTIES_PROFILE, profile));
             if (Files.exists(path)) {
                 try {
                     return Files.newInputStream(path);

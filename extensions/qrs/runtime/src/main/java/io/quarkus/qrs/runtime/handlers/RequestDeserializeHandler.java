@@ -43,7 +43,7 @@ public class RequestDeserializeHandler implements RestHandler {
         InputStream in = requestContext.getInputStream();
         for (MessageBodyReader<?> reader : readers) {
             //TODO: proper params
-            if (reader.isReadable(type, type, null, mediaType)) {
+            if (reader.isReadable(type, type, requestContext.getAnnotations(), mediaType)) {
                 Object result = reader.readFrom((Class) type, type, null, mediaType,
                         requestContext.getHttpHeaders().getRequestHeaders(), in);
                 requestContext.setRequestEntity(result);

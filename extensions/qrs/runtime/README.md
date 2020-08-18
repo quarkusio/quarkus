@@ -3,7 +3,6 @@
 - Lots of methods in the JAX-RS types
     - HttpHeaders
     - RuntimeDelegate
-    - ResponseBuilder
     - Response
     - ContainerRequestContext
     - ContainerResponseContext

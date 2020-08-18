@@ -116,6 +116,19 @@ class RestClientProcessor {
     }
 
     @BuildStep
+    void registerRestClientListenerForTracing(
+            Capabilities capabilities,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
+            resource.produce(new NativeImageResourceBuildItem(
+                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setup(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,

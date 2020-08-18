@@ -78,25 +78,20 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
     }
 
     private boolean requiresValidation(MethodInfo method) {
-        if (method.annotations().isEmpty()) {
-            // This method has no annotations of its own: look for inherited annotations
-            ClassInfo clazz = method.declaringClass();
-            String methodName = method.name().toString();
-            for (Map.Entry<DotName, Set<String>> validatedMethod : inheritedAnnotationsToBeValidated.entrySet()) {
-                if (clazz.interfaceNames().contains(validatedMethod.getKey())
-                        && validatedMethod.getValue().contains(methodName)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         for (DotName consideredAnnotation : consideredAnnotations) {
             if (method.hasAnnotation(consideredAnnotation)) {
                 return true;
             }
         }
-
+        // This method has no annotations of its own: look for inherited annotations
+        ClassInfo clazz = method.declaringClass();
+        String methodName = method.name().toString();
+        for (Map.Entry<DotName, Set<String>> validatedMethod : inheritedAnnotationsToBeValidated.entrySet()) {
+            if (clazz.interfaceNames().contains(validatedMethod.getKey())
+                    && validatedMethod.getValue().contains(methodName)) {
+                return true;
+            }
+        }
         return false;
     }
 

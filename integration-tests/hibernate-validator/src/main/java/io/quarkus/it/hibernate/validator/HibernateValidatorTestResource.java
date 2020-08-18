@@ -1,5 +1,9 @@
 package io.quarkus.it.hibernate.validator;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +13,7 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.interceptor.InterceptorBinding;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
@@ -35,7 +40,7 @@ import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource
-        implements HibernateValidatorTestResourceGenericInterface<Integer> {
+        implements HibernateValidatorTestResourceGenericInterface<Integer>, HibernateValidatorTestResourceInterface {
 
     @Inject
     Validator validator;
@@ -117,6 +122,19 @@ public class HibernateValidatorTestResource
     @Path("/rest-end-point-validation/{id}/")
     @Produces(MediaType.TEXT_PLAIN)
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+        return id;
+    }
+
+    // all JAX-RS annotations are defined in the interface
+    @Override
+    public String testRestEndPointInterfaceValidation(String id) {
+        return id;
+    }
+
+    // all JAX-RS annotations are defined in the interface
+    @Override
+    @SomeInterceptorBindingAnnotation
+    public String testRestEndPointInterfaceValidationWithAnnotationOnImplMethod(String id) {
         return id;
     }
 
@@ -306,6 +324,12 @@ public class HibernateValidatorTestResource
         public String getValue() {
             return value;
         }
+    }
+
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    @InterceptorBinding
+    public static @interface SomeInterceptorBindingAnnotation {
     }
 
     private static class ResultBuilder {

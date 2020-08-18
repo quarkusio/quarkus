@@ -48,6 +48,12 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
+  ci-sanity-check:
+    name: "CI Sanity Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build
+        run: sleep 30
   build-jdk11:
     name: "JDK 11 Build"
     runs-on: ubuntu-latest

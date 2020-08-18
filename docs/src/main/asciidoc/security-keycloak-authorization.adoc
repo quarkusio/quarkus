@@ -359,3 +359,4 @@ include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security[Quarkus Security]

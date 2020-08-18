@@ -242,3 +242,8 @@ user%
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-elytron-security-ldap.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol[LDAP]
+* link:security[Quarkus Security]

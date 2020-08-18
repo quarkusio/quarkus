@@ -87,9 +87,17 @@ You should also be able to get the certificate as follows:
 .Obtaining the certificate
 [source,java]
 ----
+import java.security.cert.X509Certificate;
+import io.quarkus.security.credential.CertificateCredential;
+
 CertificateCredential credential = identity.getCredential(CertificateCredential.class);
 X509Certificate certificate = credential.getCertificate();
 ----
+
+=== Authorization
+
+The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, one can add new roles after checking a client certificate subject name, etc.
+Please see the link:security-customization#security-identity-customization[SecurityIdentity Customization] section for more information about customizing Quarkus `SecurityIdentity`.
 
 [[proactive-authentication]]
 == Proactive Authentication
@@ -100,3 +108,6 @@ credential then that request will always be authenticated (even if the target pa
 This means that requests with an invalid credential will always be rejected, even for public pages. You can change
 this behavior and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
 
+== References
+
+* link:security[Quarkus Security]

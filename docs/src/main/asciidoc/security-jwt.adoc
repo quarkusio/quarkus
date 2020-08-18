@@ -866,3 +866,4 @@ Smallrye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
+* link:security[Quarkus Security]

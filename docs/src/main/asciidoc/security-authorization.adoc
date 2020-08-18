@@ -211,3 +211,7 @@ public class SubjectExposingResource {
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
+
+== References
+
+* link:security[Quarkus Security]

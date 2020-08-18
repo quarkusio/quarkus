@@ -17,6 +17,8 @@ import io.quarkus.registry.DefaultExtensionRegistry;
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private boolean all = true;
+    private boolean installed = false;
+    private boolean fromCli = false;
 
     private String format = "concise";
 
@@ -32,6 +34,26 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     @Option(description = "List all extensions or just the installable.", option = "all")
     public void setAll(boolean all) {
         this.all = all;
+    }
+
+    @Input
+    public boolean isFromCli() {
+        return fromCli;
+    }
+
+    @Option(description = "List only installed extensions.", option = "fromCli")
+    public void setFromCli(boolean fromCli) {
+        this.fromCli = fromCli;
+    }
+
+    @Input
+    public boolean isInstalled() {
+        return installed;
+    }
+
+    @Option(description = "List only installed extensions.", option = "installed")
+    public void setInstalled(boolean installed) {
+        this.installed = installed;
     }
 
     @Optional
@@ -75,8 +97,10 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
     public void listExtensions() {
         try {
             ListExtensions listExtensions = new ListExtensions(getQuarkusProject())
-                    .all(isAll())
+                    .all(isFromCli() ? false : isAll())
+                    .fromCli(isFromCli())
                     .format(getFormat())
+                    .installed(isInstalled())
                     .search(getSearchPattern());
             if (registries != null && !registries.isEmpty()) {
                 List<URL> urls = registries.stream()

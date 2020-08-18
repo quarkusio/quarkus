@@ -19,6 +19,8 @@ public class ListExtensions {
     public static final String NAME = "list-extensions";
     private static final String PARAM_PREFIX = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME);
     public static final String ALL = ToolsUtils.dotJoin(PARAM_PREFIX, "all");
+    public static final String INSTALLED = ToolsUtils.dotJoin(PARAM_PREFIX, "installed");
+    public static final String FROM_CLI = ToolsUtils.dotJoin(PARAM_PREFIX, "fromCli");
     public static final String FORMAT = ToolsUtils.dotJoin(PARAM_PREFIX, "format");
     public static final String SEARCH = ToolsUtils.dotJoin(PARAM_PREFIX, "search");
     public static final String EXTENSION_MANAGER = ToolsUtils.dotJoin(PARAM_PREFIX, "extension-manager");
@@ -33,6 +35,16 @@ public class ListExtensions {
 
     public ListExtensions all(boolean all) {
         invocation.setValue(ALL, all);
+        return this;
+    }
+
+    public ListExtensions installed(boolean installed) {
+        invocation.setValue(INSTALLED, installed);
+        return this;
+    }
+
+    public ListExtensions fromCli(boolean cli) {
+        invocation.setValue(FROM_CLI, cli);
         return this;
     }
 

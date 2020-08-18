@@ -32,6 +32,9 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
         }
 
         final List<AppArtifactCoords> extensionsToRemove = computeCoordsFromQuery(invocation, extensionsQuery);
+        if (extensionsToRemove == null) {
+            return new QuarkusCommandOutcome(false).setValue(RemoveExtensions.OUTCOME_UPDATED, false);
+        }
         final ExtensionManager extensionManager = invocation.getValue(EXTENSION_MANAGER,
                 invocation.getQuarkusProject().getExtensionManager());
         try {
@@ -46,7 +49,7 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
                 return new QuarkusCommandOutcome(true).setValue(RemoveExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
             }
         } catch (IOException e) {
-            throw new QuarkusCommandException("Failed to add extensions", e);
+            throw new QuarkusCommandException("Failed to remove extensions", e);
         }
 
         return new QuarkusCommandOutcome(true).setValue(RemoveExtensions.OUTCOME_UPDATED, false);

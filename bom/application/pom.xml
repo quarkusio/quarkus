@@ -14,7 +14,6 @@
     <packaging>pom</packaging>
 
     <properties>
-        <aesh.version>2.5</aesh.version>
         <jandex.version>2.2.1.Final</jandex.version>
         <resteasy.version>4.5.6.Final</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
@@ -3039,11 +3038,6 @@
                 <groupId>org.jboss</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${jandex.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.aesh</groupId>
-                <artifactId>aesh</artifactId>
-                <version>${aesh.version}</version>
             </dependency>
 
             <dependency>

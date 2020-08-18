@@ -120,6 +120,14 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         return new Builder();
     }
 
+    public static Builder builder(SecurityIdentity identity) {
+        return new Builder()
+                .addAttributes(identity.getAttributes())
+                .addCredentials(identity.getCredentials())
+                .addRoles(identity.getRoles())
+                .setPrincipal(identity.getPrincipal());
+    }
+
     public static class Builder {
 
         Principal principal;

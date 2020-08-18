@@ -376,3 +376,7 @@ they're all stored in the hashed value.
 
 WARN: you can also store passwords in clear text with `@Password(PasswordType.CLEAR)` but we strongly recommend against
 it in production.
+
+== References
+
+* link:security[Quarkus Security]

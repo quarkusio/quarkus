@@ -513,3 +513,8 @@ credentials), which goes a long way towards creating secured applications.
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-vault.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* https://www.vaultproject.io/[HashiCorp Vault]
+* link:security[Quarkus Security]

@@ -134,3 +134,7 @@ quarkus.security.users.embedded.roles.noadmin=user
 ----
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
+
+== References
+
+* link:security[Quarkus Security]

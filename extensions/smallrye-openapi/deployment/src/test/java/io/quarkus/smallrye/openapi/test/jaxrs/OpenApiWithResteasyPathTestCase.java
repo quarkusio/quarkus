@@ -16,7 +16,7 @@ public class OpenApiWithResteasyPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(OpenApiResource.class)
+                    .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.resteasy.path=/foo/bar"),
                             "application.properties"));
 

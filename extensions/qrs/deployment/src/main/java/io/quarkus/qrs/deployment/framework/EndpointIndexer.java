@@ -27,6 +27,7 @@ import javax.ws.rs.container.AsyncResponse;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -48,6 +49,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.qrs.runtime.QrsConfig;
 import io.quarkus.qrs.runtime.QrsRecorder;
 import io.quarkus.qrs.runtime.core.parameters.converters.GeneratedParameterConverter;
 import io.quarkus.qrs.runtime.core.parameters.converters.ListConverter;
@@ -90,11 +92,11 @@ public class EndpointIndexer {
 
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
-            Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths) {
+            Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QrsConfig config) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, path);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -123,7 +125,7 @@ public class EndpointIndexer {
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
-            Map<String, String> existingConverters, String endpointPath) {
+            Map<String, String> existingConverters, QrsConfig config) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.PRODUCES));
         String[] classConsumes = readStringArrayValue(currentClassInfo.classAnnotation(QrsDotNames.CONSUMES));
@@ -148,7 +150,8 @@ public class EndpointIndexer {
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, httpMethod, info, methodPath, index, existingConverters);
+                            recorder, classProduces, classConsumes, httpMethod, info, methodPath, index, existingConverters,
+                            config);
 
                     ret.add(method);
                 }
@@ -173,7 +176,7 @@ public class EndpointIndexer {
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, null, info, methodPath, index, existingConverters);
+                            recorder, classProduces, classConsumes, null, info, methodPath, index, existingConverters, config);
                     ret.add(method);
                 }
             }
@@ -184,7 +187,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, endpointPath));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -192,7 +195,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, endpointPath));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config));
             }
         }
         return ret;
@@ -201,7 +204,7 @@ public class EndpointIndexer {
     private static ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QrsRecorder recorder,
             String[] classProduces, String[] classConsumes, DotName httpMethod, MethodInfo info, String methodPath,
-            IndexView indexView, Map<String, String> existingEndpoints) {
+            IndexView indexView, Map<String, String> existingEndpoints, QrsConfig config) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -300,12 +303,25 @@ public class EndpointIndexer {
 
             String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
             String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
+            boolean blocking = config.blocking;
+            AnnotationInstance blockingAnnotation = info.annotation(BLOCKING);
+            if (blockingAnnotation == null) {
+                blockingAnnotation = info.declaringClass().classAnnotation(BLOCKING);
+            }
+            if (blockingAnnotation != null) {
+                AnnotationValue value = blockingAnnotation.value();
+                if (value != null) {
+                    blocking = value.asBoolean();
+                } else {
+                    blocking = true;
+                }
+            }
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(annotationToMethod(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
                     .setName(info.name())
-                    .setBlocking(info.annotation(BLOCKING) != null)
+                    .setBlocking(blocking)
                     .setSuspended(suspended)
                     .setParameters(methodParameters)
                     // FIXME: resolved arguments ?

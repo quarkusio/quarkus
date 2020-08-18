@@ -40,6 +40,7 @@ import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.handlers.BlockingHandler;
 import io.quarkus.qrs.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.qrs.runtime.handlers.CompletionStageResponseHandler;
+import io.quarkus.qrs.runtime.handlers.InputHandler;
 import io.quarkus.qrs.runtime.handlers.InstanceHandler;
 import io.quarkus.qrs.runtime.handlers.InvocationHandler;
 import io.quarkus.qrs.runtime.handlers.MediaTypeMapper;
@@ -84,6 +85,12 @@ public class QrsRecorder {
     private static final Logger log = Logger.getLogger(QrsRecorder.class);
 
     private static final Map<String, Class<?>> primitiveTypes;
+    public static final Supplier<Executor> EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+        @Override
+        public Executor get() {
+            return ExecutorRecorder.getCurrent();
+        }
+    };
 
     private static volatile QrsDeployment currentDeployment;
 
@@ -127,7 +134,7 @@ public class QrsRecorder {
             ExceptionMapping exceptionMapping,
             Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
-            ShutdownContext shutdownContext) {
+            ShutdownContext shutdownContext, QrsConfig qrsConfig) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
         //pre matching interceptors are run first
         List<ResourceRequestInterceptor> requestInterceptors = interceptors.getRequestInterceptors();
@@ -147,7 +154,8 @@ public class QrsRecorder {
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {
-                RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, qrsConfig, requestInterceptors,
+                        responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
                         true, classPathTemplate, dynamicEntityWriter);
 
@@ -163,7 +171,8 @@ public class QrsRecorder {
             int maxMethodTemplateNameCount = 0;
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = new HashMap<>();
             for (ResourceMethod method : clazz.getMethods()) {
-                RuntimeResource runtimeResource = buildResourceMethod(serialisers, requestInterceptors, responseInterceptors,
+                RuntimeResource runtimeResource = buildResourceMethod(serialisers, qrsConfig, requestInterceptors,
+                        responseInterceptors,
                         resourceResponseInterceptorHandler, requestInterceptorsHandler, clazz, resourceLocatorHandler, method,
                         false, classTemplate, dynamicEntityWriter);
 
@@ -253,6 +262,7 @@ public class QrsRecorder {
     }
 
     public RuntimeResource buildResourceMethod(Serialisers serialisers,
+            QrsConfig qrsConfig,
             List<ResourceRequestInterceptor> requestInterceptors,
             List<ResourceResponseInterceptor> responseInterceptors,
             ResourceResponseInterceptorHandler resourceResponseInterceptorHandler,
@@ -286,6 +296,7 @@ public class QrsRecorder {
                 handlers.add(new ReadBodyHandler());
                 break;
             } else if (param.parameterType == ParameterType.BODY) {
+                handlers.add(new InputHandler(qrsConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
                 handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
             }
         }
@@ -323,12 +334,7 @@ public class QrsRecorder {
                     param.converter == null ? null : param.converter.get()));
         }
         if (method.isBlocking()) {
-            handlers.add(new BlockingHandler(new Supplier<Executor>() {
-                @Override
-                public Executor get() {
-                    return ExecutorRecorder.getCurrent();
-                }
-            }));
+            handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
         }
         handlers.add(new InvocationHandler(invoker));
 

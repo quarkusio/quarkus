@@ -1,6 +1,6 @@
 package io.quarkus.qrs.runtime.handlers;
 
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.List;
 
 import javax.ws.rs.NotSupportedException;
@@ -12,8 +12,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 
 public class RequestDeserializeHandler implements RestHandler {
 
@@ -42,32 +40,17 @@ public class RequestDeserializeHandler implements RestHandler {
         if (readers.isEmpty()) {
             throw new NotSupportedException();
         }
-        requestContext.suspend();
-        //TODO: size limits
-        requestContext.getContext().request().bodyHandler(new Handler<Buffer>() {
-            @Override
-            public void handle(Buffer event) {
-                ByteArrayInputStream in = new ByteArrayInputStream(event.getBytes());
-                for (MessageBodyReader<?> reader : readers) {
-                    //TODO: proper params
-                    if (reader.isReadable(type, type, null, mediaType)) {
-                        try {
-                            Object result = reader.readFrom((Class) type, type, null, mediaType,
-                                    requestContext.getHttpHeaders().getRequestHeaders(), in);
-                            requestContext.setRequestEntity(result);
-                            requestContext.resume();
-                            return;
-                        } catch (Throwable e) {
-                            requestContext.setThrowable(e);
-                            requestContext.resume();
-                            return;
-                        }
-                    }
-                }
-                requestContext.setThrowable(new NotSupportedException());
+        InputStream in = requestContext.getInputStream();
+        for (MessageBodyReader<?> reader : readers) {
+            //TODO: proper params
+            if (reader.isReadable(type, type, null, mediaType)) {
+                Object result = reader.readFrom((Class) type, type, null, mediaType,
+                        requestContext.getHttpHeaders().getRequestHeaders(), in);
+                requestContext.setRequestEntity(result);
                 requestContext.resume();
+                return;
             }
-        });
-
+        }
+        throw new NotSupportedException();
     }
 }

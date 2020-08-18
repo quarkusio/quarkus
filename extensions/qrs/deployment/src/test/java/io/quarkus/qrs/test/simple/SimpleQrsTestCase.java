@@ -102,6 +102,20 @@ public class SimpleQrsTestCase {
     }
 
     @Test
+    public void testLargeJsonPost() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10000; ++i) {
+            sb.append("abc");
+        }
+        String longString = sb.toString();
+        Person person = new Person();
+        person.setFirst(longString);
+        person.setLast(longString);
+        RestAssured.with().body(person).post("/simple/person-large")
+                .then().body("first", Matchers.equalTo(longString)).body("last", Matchers.equalTo(longString));
+    }
+
+    @Test
     public void testAsyncJson() {
         RestAssured.get("/simple/async-person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));

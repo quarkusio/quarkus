@@ -8,10 +8,5 @@ import java.lang.annotation.Target;
 //TODO: there should just be one Quarkus blocking annotation
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
-public @interface Blocking {
-
-    /**
-     * true if this endpoint is blocking.
-     */
-    boolean value() default true;
+public @interface NonBlocking {
 }

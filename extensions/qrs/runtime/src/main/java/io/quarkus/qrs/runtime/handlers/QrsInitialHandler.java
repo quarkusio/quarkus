@@ -43,7 +43,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
         RoutingContext event = requestContext.getContext();
-        RequestMapper.RequestMatch<InitialMatch> target = mappers.map(event.normalisedPath());
+        RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPath());
         if (target == null) {
             event.next();
             return;

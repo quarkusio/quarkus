@@ -1,6 +1,7 @@
 package io.quarkus.qrs.runtime.core;
 
 import java.io.Closeable;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -31,6 +32,7 @@ import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
+import io.quarkus.qrs.runtime.util.EmptyInputStream;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -87,12 +89,18 @@ public class QrsRequestContext implements Runnable, Closeable {
     private EntityWriter entityWriter;
     private QrsContainerRequestContext containerRequestContext;
     private String method;
+    private String path;
     private String remaining;
     private MediaType producesMediaType;
     private MediaType consumesMediaType;
 
     private Annotation[] annotations;
     private Type genericReturnType;
+
+    /**
+     * The input stream, if an entity is present.
+     */
+    private InputStream inputStream = EmptyInputStream.INSTANCE;
 
     /**
      * used for {@link UriInfo#getMatchedURIs()}
@@ -504,6 +512,18 @@ public class QrsRequestContext implements Runnable, Closeable {
         return remaining;
     }
 
+    public String getPath() {
+        if (path == null) {
+            return context.normalisedPath();
+        }
+        return path;
+    }
+
+    public QrsRequestContext setPath(String path) {
+        this.path = path;
+        return this;
+    }
+
     public MediaType getProducesMediaType() {
         return producesMediaType;
     }
@@ -609,4 +629,12 @@ public class QrsRequestContext implements Runnable, Closeable {
         return matchedURIs;
     }
 
+    public InputStream getInputStream() {
+        return inputStream;
+    }
+
+    public QrsRequestContext setInputStream(InputStream inputStream) {
+        this.inputStream = inputStream;
+        return this;
+    }
 }

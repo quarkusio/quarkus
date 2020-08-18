@@ -129,6 +129,21 @@ public class SimpleQrsResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Person getPerson(Person person) {
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should not have dispatched");
+        }
+        return person;
+    }
+
+    @POST
+    @Path("/person-large")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Person personTest(Person person) {
+        //large requests should get bumped from the IO thread
+        if (!BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should have dispatched");
+        }
         return person;
     }
 

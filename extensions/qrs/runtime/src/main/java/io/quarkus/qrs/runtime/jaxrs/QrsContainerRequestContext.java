@@ -18,6 +18,7 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
+import io.quarkus.qrs.runtime.util.EmptyInputStream;
 
 public class QrsContainerRequestContext implements ContainerRequestContext {
 
@@ -58,13 +59,15 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
     @Override
     public void setRequestUri(URI requestUri) {
         assertPreMatch();
-        throw new RuntimeException("NYI");
+        //TODO: this implementation is not complete
+        context.setPath(requestUri.getPath());
     }
 
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) {
         assertPreMatch();
-        throw new RuntimeException("NYI");
+        //TODO: this implementation is not complete
+        context.setPath(requestUri.getPath());
     }
 
     @Override
@@ -90,7 +93,7 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
     }
 
     public void assertNotResponse() {
-        if (!isPreMatch()) {
+        if (!isResponse()) {
             throw new IllegalStateException("Cannot be called from response filter");
         }
     }
@@ -142,21 +145,19 @@ public class QrsContainerRequestContext implements ContainerRequestContext {
 
     @Override
     public boolean hasEntity() {
-        // TODO Auto-generated method stub
-        return false;
+        //TODO: this could be better
+        return !(context.getInputStream() instanceof EmptyInputStream);
     }
 
     @Override
     public InputStream getEntityStream() {
-        // TODO Auto-generated method stub
-        return null;
+        return context.getInputStream();
     }
 
     @Override
     public void setEntityStream(InputStream input) {
         assertNotResponse();
-        // TODO Auto-generated method stub
-
+        context.setInputStream(input);
     }
 
     @Override

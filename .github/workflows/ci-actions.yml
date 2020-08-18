@@ -243,7 +243,7 @@ jobs:
           path: 'test-reports.tgz'
 
   linux-jvm-gradle-tests:
-    name: JDK ${{matrix.java.name}} JVM Gradle Tests
+    name: Gradle Tests JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     needs: build-jdk11
     timeout-minutes: 60
@@ -327,7 +327,7 @@ jobs:
           path: 'test-reports.tgz'
 
   windows-jdk11-jvm-gradle-tests:
-    name: Windows JDK 11 JVM Gradle Tests
+    name: Gradle Tests Windows JDK 11
     needs: build-jdk11
     runs-on: windows-latest
     timeout-minutes: 80
@@ -358,7 +358,7 @@ jobs:
           arguments: clean test -i -S --stacktrace --no-daemon
 
   tcks-test:
-    name: TCKS Test
+    name: MicroProfile TCKs Tests
     needs: build-jdk11
     runs-on: ubuntu-latest
     timeout-minutes: 120

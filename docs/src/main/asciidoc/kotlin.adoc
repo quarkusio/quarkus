@@ -117,7 +117,7 @@ class GreetingResourceTest {
 The generated `pom.xml` contains the following modifications compared to its counterpart when Kotlin is not selected:
 
 * The `quarkus-kotlin` artifact is added to the dependencies. This artifact provides support for Kotlin in the live reload mode (more about this later on)
-* The `kotlin-stdlib-jdk8` is also added as a dependency.
+* The `kotlin-stdlib` is also added as a dependency.
 * Maven's `sourceDirectory` and `testSourceDirectory` build properties are configured to point to Kotlin sources (`src/main/kotlin` and `src/test/kotlin` respectively)
 * The `kotlin-maven-plugin` is configured as follows:
 
@@ -180,7 +180,7 @@ Future versions of Quarkus will configure the Kotlin compiler plugin in a way th
 Similar to the Maven configuration, when using Gradle, the following modifications are required when Kotlin is selected:
 
 * The `quarkus-kotlin` artifact is added to the dependencies. This artifact provides support for Kotlin in the live reload mode (more about this later on)
-* The `kotlin-stdlib-jdk8` is also added as a dependency.
+* The `kotlin-stdlib` is also added as a dependency.
 * The Kotlin plugin is activated, which implicitly adds `sourceDirectory` and `testSourceDirectory` build properties to point to Kotlin sources (`src/main/kotlin` and `src/test/kotlin` respectively)
 * The all-open Kotlin plugin tells the compiler not to mark as final, those classes with the annotations highlighted (customize as required)
 * When using native-image, the use of http (or https) protocol(s) must be declared
@@ -204,7 +204,7 @@ group = '...' // set your group
 version = '1.0.0-SNAPSHOT'
 
 dependencies { 
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:{kotlin-version}'
 
     // <3>
     implementation enforcedPlatform('io.quarkus:quarkus-bom:{quarkus-version}')

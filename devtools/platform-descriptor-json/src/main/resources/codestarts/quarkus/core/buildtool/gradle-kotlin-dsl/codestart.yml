@@ -24,7 +24,7 @@ language:
           build-ci: build
   kotlin:
     dependencies:
-      - org.jetbrains.kotlin:kotlin-stdlib-jdk8
+      - org.jetbrains.kotlin:kotlin-stdlib
   scala:
     dependencies:
       - org.scala-lang:scala-library:2.12.8

@@ -38,7 +38,7 @@ allprojects {
 
     dependencies {
         implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib'
         implementation 'io.quarkus:quarkus-kotlin'
         testImplementation 'io.quarkus:quarkus-junit5'
         testImplementation 'io.rest-assured:kotlin-extensions'

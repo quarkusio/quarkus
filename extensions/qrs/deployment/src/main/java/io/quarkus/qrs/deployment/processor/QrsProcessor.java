@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -23,6 +24,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -41,6 +44,7 @@ import io.quarkus.qrs.deployment.framework.QrsDotNames;
 import io.quarkus.qrs.runtime.QrsRecorder;
 import io.quarkus.qrs.runtime.core.ExceptionMapping;
 import io.quarkus.qrs.runtime.core.Serialisers;
+import io.quarkus.qrs.runtime.injection.ContextProducers;
 import io.quarkus.qrs.runtime.model.ResourceClass;
 import io.quarkus.qrs.runtime.model.ResourceExceptionMapper;
 import io.quarkus.qrs.runtime.model.ResourceInterceptors;
@@ -62,6 +66,15 @@ public class QrsProcessor {
     @BuildStep
     public FeatureBuildItem buildSetup() {
         return new FeatureBuildItem("qrs");
+    }
+
+    @BuildStep
+    AutoInjectAnnotationBuildItem contextInjection(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
+        additionalBeanBuildItemBuildProducer
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class).build());
+        return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()));
+
     }
 
     @BuildStep

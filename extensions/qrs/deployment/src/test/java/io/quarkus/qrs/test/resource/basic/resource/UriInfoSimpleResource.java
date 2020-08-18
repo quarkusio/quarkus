@@ -16,9 +16,8 @@ import io.quarkus.qrs.test.simple.PortProviderUtil;
 @Path("/UriInfoSimpleResource")
 public class UriInfoSimpleResource {
     private static Logger logger = Logger.getLogger(UriInfoSimpleResource.class);
-    //todo: field injection
-    //    @Context
-    //    UriInfo myInfo;
+    @Context
+    UriInfo myInfo;
 
     @Path("/simple")
     @GET
@@ -41,7 +40,7 @@ public class UriInfoSimpleResource {
 
     @Path("/simple/fromField")
     @GET
-    public String getField(@Context UriInfo myInfo, @QueryParam("abs") String abs) {
+    public String getField(@QueryParam("abs") String abs) {
         logger.info("abs query: " + abs);
         URI base = null;
         if (abs == null) {

@@ -19,9 +19,7 @@
         <module>hibernate-orm-panache-common</module>
         <module>hibernate-orm-panache</module>
         <module>hibernate-orm-panache-kotlin</module>
-        <module>mongodb-panache-common</module>
         <module>mongodb-panache</module>
-        <module>mongodb-panache-kotlin</module>
         <module>panacheql</module>
         <module>rest-data-panache</module>
         <module>hibernate-orm-rest-data-panache</module>

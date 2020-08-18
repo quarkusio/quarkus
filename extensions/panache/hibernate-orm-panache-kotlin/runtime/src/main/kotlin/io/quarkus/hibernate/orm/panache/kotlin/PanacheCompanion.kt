@@ -56,7 +56,7 @@ interface PanacheCompanion<Entity : PanacheEntityBase, Id: Any> {
     fun find(query: String, vararg params: Any): PanacheQuery<Entity> = injectionMissing()
 
     /**
-     * Find entities using a query and the given sort options with optional indexed parameters.
+     * Find entities using a query and the given sort options, with optional indexed parameters.
      *
      * @param query a query string
      * @param sort the sort strategy to use

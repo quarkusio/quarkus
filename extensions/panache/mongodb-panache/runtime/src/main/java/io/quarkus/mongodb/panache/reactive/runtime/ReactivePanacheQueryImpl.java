@@ -2,38 +2,74 @@ package io.quarkus.mongodb.panache.reactive.runtime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.model.Collation;
 
+import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.mongodb.panache.runtime.MongoPropertyUtil;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Range;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@SuppressWarnings("unchecked")
 public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<Entity> {
-    private final CommonReactivePanacheQueryImpl<Entity> delegate;
+    private ReactiveMongoCollection collection;
+    private Bson mongoQuery;
+    private Bson sort;
+    private Bson projections;
+
+    private Page page;
+    private Uni<Long> count;
+
+    private Range range;
+
+    private Collation collation;
 
     ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
-        this.delegate = new CommonReactivePanacheQueryImpl<>(collection, mongoQuery, sort);
+        this.collection = collection;
+        this.mongoQuery = mongoQuery;
+        this.sort = sort;
     }
 
-    private ReactivePanacheQueryImpl(CommonReactivePanacheQueryImpl<Entity> delegate) {
-        this.delegate = delegate;
+    private ReactivePanacheQueryImpl(ReactivePanacheQueryImpl previousQuery, Bson projections, Class<?> type) {
+        this.collection = previousQuery.collection.withDocumentClass(type);
+        this.mongoQuery = previousQuery.mongoQuery;
+        this.sort = previousQuery.sort;
+        this.projections = projections;
+        this.page = previousQuery.page;
+        this.count = previousQuery.count;
+        this.range = previousQuery.range;
+        this.collation = previousQuery.collation;
     }
+
+    // Builder
 
     @Override
     public <T> ReactivePanacheQuery<T> project(Class<T> type) {
-        return new ReactivePanacheQueryImpl<>(delegate.project(type));
+        // collect field names from public fields and getters
+        Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
+
+        // create the projection document
+        Document projections = new Document();
+        for (String fieldName : fieldNames) {
+            projections.append(fieldName, 1);
+        }
+
+        return new ReactivePanacheQueryImpl(this, projections, type);
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> ReactivePanacheQuery<T> page(Page page) {
-        delegate.page(page);
+        this.page = page;
+        this.range = null; // reset the range to be able to switch from range to page
         return (ReactivePanacheQuery<T>) this;
     }
 
@@ -44,92 +80,179 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> nextPage() {
-        delegate.nextPage();
-        return (ReactivePanacheQuery<T>) this;
+        checkPagination();
+        return page(page.next());
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> previousPage() {
-        delegate.previousPage();
-        return (ReactivePanacheQuery<T>) this;
+        checkPagination();
+        return page(page.previous());
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> firstPage() {
-        delegate.firstPage();
-        return (ReactivePanacheQuery<T>) this;
+        checkPagination();
+        return page(page.first());
     }
 
     @Override
     public <T extends Entity> Uni<ReactivePanacheQuery<T>> lastPage() {
-        Uni<CommonReactivePanacheQueryImpl<T>> uni = delegate.lastPage();
-        return uni.map(q -> (ReactivePanacheQuery<T>) this);
+        checkPagination();
+        return pageCount().map(pageCount -> page(page.index(pageCount - 1)));
     }
 
     @Override
     public Uni<Boolean> hasNextPage() {
-        return delegate.hasNextPage();
+        checkPagination();
+        return pageCount().map(pageCount -> page.index < (pageCount - 1));
     }
 
     @Override
     public boolean hasPreviousPage() {
-        return delegate.hasPreviousPage();
+        checkPagination();
+        return page.index > 0;
     }
 
     @Override
     public Uni<Integer> pageCount() {
-        return delegate.pageCount();
+        checkPagination();
+        return count().map(count -> {
+            if (count == 0)
+                return 1; // a single page of zero results
+            return (int) Math.ceil((double) count / (double) page.size);
+        });
     }
 
     @Override
     public Page page() {
-        return delegate.page();
+        checkPagination();
+        return page;
+    }
+
+    private void checkPagination() {
+        if (page == null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call a page related method, "
+                            + "call page(Page) or page(int, int) to initiate pagination first");
+        }
+        if (range != null) {
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
+                    "call page(Page) or page(int, int) to initiate pagination first");
+        }
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> range(int startIndex, int lastIndex) {
-        delegate.range(startIndex, lastIndex);
+        this.range = Range.of(startIndex, lastIndex);
+        // reset the page to its default to be able to switch from page to range
+        this.page = null;
         return (ReactivePanacheQuery<T>) this;
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> withCollation(Collation collation) {
-        delegate.withCollation(collation);
+        this.collation = collation;
         return (ReactivePanacheQuery<T>) this;
     }
 
+    // Results
+
     @Override
+    @SuppressWarnings("unchecked")
     public Uni<Long> count() {
-        return delegate.count();
+        if (count == null) {
+            count = collection.countDocuments(mongoQuery);
+        }
+        return count;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<List<T>> list() {
-        return delegate.list();
+        Multi<T> results = stream();
+        return results.collectItems().asList();
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends Entity> Multi<T> stream() {
-        return delegate.stream();
+        FindOptions options = buildOptions();
+        return mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
     }
 
     @Override
     public <T extends Entity> Uni<T> firstResult() {
-        return delegate.firstResult();
+        Uni<Optional<T>> optionalEntity = firstResultOptional();
+        return optionalEntity.map(optional -> optional.orElse(null));
     }
 
     @Override
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
-        return delegate.firstResultOptional();
+        FindOptions options = buildOptions(1);
+        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        return results.collectItems().first().map(o -> Optional.ofNullable(o));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
-        return delegate.singleResult();
+        FindOptions options = buildOptions(2);
+        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        return results.collectItems().asList().map(list -> {
+            if (list.size() != 1) {
+                throw new PanacheQueryException("There should be only one result");
+            } else {
+                return list.get(0);
+            }
+        });
     }
 
     @Override
     public <T extends Entity> Uni<Optional<T>> singleResultOptional() {
-        return delegate.singleResultOptional();
+        FindOptions options = buildOptions(2);
+        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        return results.collectItems().asList().map(list -> {
+            if (list.size() == 2) {
+                throw new PanacheQueryException("There should be no more than one result");
+            }
+            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        });
+    }
+
+    private FindOptions buildOptions() {
+        FindOptions options = new FindOptions();
+        options.sort(sort);
+        if (range != null) {
+            // range is 0 based, so we add 1 to the limit
+            options.skip(range.getStartIndex()).limit(range.getLastIndex() - range.getStartIndex() + 1);
+        } else if (page != null) {
+            options.skip(page.index * page.size).limit(page.size);
+        }
+        if (projections != null) {
+            options.projection(this.projections);
+        }
+        if (this.collation != null) {
+            options.collation(collation);
+        }
+        return options;
+    }
+
+    private FindOptions buildOptions(int maxResults) {
+        FindOptions options = new FindOptions();
+        options.sort(sort);
+        if (range != null) {
+            // range is 0 based, so we add 1 to the limit
+            options.skip(range.getStartIndex());
+        } else if (page != null) {
+            options.skip(page.index * page.size);
+        }
+        if (projections != null) {
+            options.projection(this.projections);
+        }
+        if (this.collation != null) {
+            options.collation(collation);
+        }
+        return options.limit(maxResults);
     }
 }

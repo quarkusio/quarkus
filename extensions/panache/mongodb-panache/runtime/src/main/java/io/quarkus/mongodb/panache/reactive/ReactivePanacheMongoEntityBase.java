@@ -8,8 +8,8 @@ import java.util.stream.Stream;
 import org.bson.Document;
 
 import io.quarkus.mongodb.panache.PanacheUpdate;
-import io.quarkus.mongodb.panache.reactive.runtime.JavaReactiveMongoOperations;
 import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.quarkus.panache.common.Parameters;
@@ -26,20 +26,20 @@ import io.smallrye.mutiny.Uni;
  *
  * @see ReactivePanacheMongoEntity
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class ReactivePanacheMongoEntityBase {
-    protected static final ReactiveMongoOperations operations = new JavaReactiveMongoOperations();
+
+    // Operations
 
     /**
      * Persist this entity in the database.
-     * This will set its ID field if not already set.
+     * This will set it's ID field if not already set.
      *
      * @see #persist(Iterable)
      * @see #persist(Stream)
      * @see #persist(Object, Object...)
      */
     public Uni<Void> persist() {
-        return operations.persist(this);
+        return ReactiveMongoOperations.persist(this);
     }
 
     /**
@@ -50,7 +50,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Object, Object...)
      */
     public Uni<Void> update() {
-        return operations.update(this);
+        return ReactiveMongoOperations.update(this);
     }
 
     /**
@@ -61,7 +61,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Object, Object...)
      */
     public Uni<Void> persistOrUpdate() {
-        return operations.persistOrUpdate(this);
+        return ReactiveMongoOperations.persistOrUpdate(this);
     }
 
     /**
@@ -73,7 +73,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #deleteAll()
      */
     public Uni<Void> delete() {
-        return operations.delete(this);
+        return ReactiveMongoOperations.delete(this);
     }
 
     // Queries
@@ -86,7 +86,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<T> findById(Object id) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<Optional<T>> findByIdOptional(Object id) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -114,7 +114,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -133,7 +133,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Sort sort,
             Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -151,7 +151,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query,
             Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -170,7 +170,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Sort sort,
             Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -187,7 +187,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -206,7 +206,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Sort sort,
             Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -222,7 +222,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Document query) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -239,7 +239,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(Document query, Document sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -252,7 +252,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> findAll() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -266,7 +266,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> findAll(Sort sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -284,7 +284,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -304,7 +304,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query, Sort sort,
             Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -323,7 +323,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query,
             Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -343,7 +343,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query, Sort sort,
             Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -361,7 +361,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -381,7 +381,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(String query, Sort sort,
             Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -398,7 +398,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Document query) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -416,7 +416,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> list(Document query, Document sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -430,7 +430,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> listAll() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -445,7 +445,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Uni<List<T>> listAll(Sort sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -463,7 +463,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -482,7 +482,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -500,7 +500,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -520,7 +520,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort,
             Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -538,7 +538,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -557,7 +557,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -574,7 +574,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Document query) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -592,7 +592,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(Document query, Document sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -606,7 +606,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> streamAll() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -621,7 +621,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> Multi<T> streamAll(Sort sort) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -634,7 +634,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> count() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -649,7 +649,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> count(String query, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -664,7 +664,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> count(String query, Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -679,7 +679,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> count(String query, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -693,7 +693,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> count(Document query) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -706,7 +706,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> deleteAll() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -717,7 +717,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Boolean> deleteById(Object id) {
-        throw operations.implementationInjectionMissing();
+        throw MongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -732,7 +732,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> delete(String query, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -747,7 +747,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> delete(String query, Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -762,7 +762,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> delete(String query, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -776,7 +776,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static Uni<Long> delete(Document query) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -788,7 +788,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Object,Object...)
      */
     public static Uni<Void> persist(Iterable<?> entities) {
-        return operations.persist(entities);
+        return ReactiveMongoOperations.persist(entities);
     }
 
     /**
@@ -800,7 +800,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Object,Object...)
      */
     public static Uni<Void> persist(Stream<?> entities) {
-        return operations.persist(entities);
+        return ReactiveMongoOperations.persist(entities);
     }
 
     /**
@@ -812,7 +812,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persist(Iterable)
      */
     public static Uni<Void> persist(Object firstEntity, Object... entities) {
-        return operations.persist(firstEntity, entities);
+        return ReactiveMongoOperations.persist(firstEntity, entities);
     }
 
     /**
@@ -824,7 +824,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Object,Object...)
      */
     public static Uni<Void> update(Iterable<?> entities) {
-        return operations.update(entities);
+        return ReactiveMongoOperations.update(entities);
     }
 
     /**
@@ -836,7 +836,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Object,Object...)
      */
     public static Uni<Void> update(Stream<?> entities) {
-        return operations.update(entities);
+        return ReactiveMongoOperations.update(entities);
     }
 
     /**
@@ -848,7 +848,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #update(Iterable)
      */
     public static Uni<Void> update(Object firstEntity, Object... entities) {
-        return operations.update(firstEntity, entities);
+        return ReactiveMongoOperations.update(firstEntity, entities);
     }
 
     /**
@@ -860,7 +860,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Object,Object...)
      */
     public static Uni<Void> persistOrUpdate(Iterable<?> entities) {
-        return operations.persistOrUpdate(entities);
+        return ReactiveMongoOperations.persistOrUpdate(entities);
     }
 
     /**
@@ -872,7 +872,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Object,Object...)
      */
     public static Uni<Void> persistOrUpdate(Stream<?> entities) {
-        return operations.persistOrUpdate(entities);
+        return ReactiveMongoOperations.persistOrUpdate(entities);
     }
 
     /**
@@ -884,7 +884,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #persistOrUpdate(Iterable)
      */
     public static Uni<Void> persistOrUpdate(Object firstEntity, Object... entities) {
-        return operations.persistOrUpdate(firstEntity, entities);
+        return ReactiveMongoOperations.persistOrUpdate(firstEntity, entities);
     }
 
     /**
@@ -900,7 +900,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static ReactivePanacheUpdate update(String update, Object... params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -917,7 +917,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static ReactivePanacheUpdate update(String update, Map<String, Object> params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -933,7 +933,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static ReactivePanacheUpdate update(String update, Parameters params) {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -941,7 +941,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static <T extends ReactivePanacheMongoEntityBase> ReactiveMongoCollection<T> mongoCollection() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 
     /**
@@ -949,6 +949,6 @@ public abstract class ReactivePanacheMongoEntityBase {
      */
     @GenerateBridge
     public static ReactiveMongoDatabase mongoDatabase() {
-        throw operations.implementationInjectionMissing();
+        throw ReactiveMongoOperations.implementationInjectionMissing();
     }
 }

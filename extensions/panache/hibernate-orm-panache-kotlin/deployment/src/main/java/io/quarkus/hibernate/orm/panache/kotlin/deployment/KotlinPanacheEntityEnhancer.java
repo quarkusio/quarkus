@@ -1,10 +1,9 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_ENTITY_BASE;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.TRANSIENT;
-
 import java.lang.reflect.Modifier;
 import java.util.List;
+
+import javax.persistence.Transient;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -25,15 +24,16 @@ public class KotlinPanacheEntityEnhancer extends PanacheEntityEnhancer<Metamodel
     private final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
     public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
 
+    private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
+
     public KotlinPanacheEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, methodCustomizers);
+        super(index, KotlinPanacheResourceProcessor.PANACHE_ENTITY_BASE_DOTNAME, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheEntityClassVisitor(className, outputClassVisitor, modelInfo,
-                indexView.getClassByName(PANACHE_ENTITY_BASE),
+        return new KotlinPanacheEntityClassVisitor(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo,
                 indexView.getClassByName(DotName.createSimple(className)), methodCustomizers);
     }
 
@@ -43,7 +43,7 @@ public class KotlinPanacheEntityEnhancer extends PanacheEntityEnhancer<Metamodel
             String name = fieldInfo.name();
             if (Modifier.isPublic(fieldInfo.flags())
                     && !Modifier.isStatic(fieldInfo.flags())
-                    && !fieldInfo.hasAnnotation(TRANSIENT)) {
+                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
                 entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
             }
         }

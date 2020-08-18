@@ -6,17 +6,18 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import io.quarkus.mongodb.panache.PanacheMongoRepository;
-import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
-public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
-    public final static DotName PANACHE_REPOSITORY_BASE_NAME = DotName.createSimple(PanacheMongoRepositoryBase.class.getName());
+public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
+    public final static DotName PANACHE_REPOSITORY_BASE_NAME = DotName
+            .createSimple(ReactivePanacheMongoRepositoryBase.class.getName());
 
-    public final static DotName PANACHE_REPOSITORY_NAME = DotName.createSimple(PanacheMongoRepository.class.getName());
+    public final static DotName PANACHE_REPOSITORY_NAME = DotName.createSimple(ReactivePanacheMongoRepository.class.getName());
 
-    public PanacheMongoRepositoryEnhancer(IndexView index) {
-        super(index, PanacheMongoResourceProcessor.DOTNAME_PANACHE_REPOSITORY_BASE);
+    public ReactivePanacheMongoRepositoryEnhancer(IndexView index) {
+        super(index, PanacheMongoResourceProcessor.DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
         @Override
         protected String getPanacheOperationsBinaryName() {
-            return PanacheMongoEntityEnhancer.MONGO_OPERATIONS_BINARY_NAME;
+            return ReactivePanacheMongoEntityEnhancer.MONGO_OPERATIONS_BINARY_NAME;
         }
 
         @Override

@@ -23,7 +23,7 @@ public class KotlinPanacheCompanionEnhancer extends PanacheEntityEnhancer<Metamo
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     public KotlinPanacheCompanionEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, methodCustomizers);
+        super(index, KotlinPanacheResourceProcessor.PANACHE_ENTITY_BASE_DOTNAME, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 

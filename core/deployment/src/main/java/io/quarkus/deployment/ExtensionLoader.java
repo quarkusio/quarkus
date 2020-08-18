@@ -10,7 +10,6 @@ import static io.quarkus.deployment.util.ReflectUtil.rawTypeExtends;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeIs;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOf;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
-import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
@@ -254,9 +253,6 @@ public final class ExtensionLoader {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
-        if (Modifier.isAbstract(clazz.getModifiers())) {
-            return chainConfig;
-        }
         // this is the step configuration that applies to all steps on this class
         Consumer<BuildStepBuilder> stepConfig = Functions.discardingConsumer();
         // this is the build step instance setup that applies to all steps on this class
@@ -486,7 +482,7 @@ public final class ExtensionLoader {
         }
 
         // now iterate the methods
-        final List<Method> methods = getMethods(clazz);
+        final Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             final int mods = method.getModifiers();
             if (Modifier.isStatic(mods)) {
@@ -965,15 +961,6 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
-    }
-
-    protected static List<Method> getMethods(Class<?> clazz) {
-        List<Method> declaredMethods = new ArrayList<>();
-        if (!clazz.getName().equals(Object.class.getName())) {
-            declaredMethods.addAll(getMethods(clazz.getSuperclass()));
-            declaredMethods.addAll(asList(clazz.getDeclaredMethods()));
-        }
-        return declaredMethods;
     }
 
     private static BooleanSupplier and(BooleanSupplier a, BooleanSupplier b) {

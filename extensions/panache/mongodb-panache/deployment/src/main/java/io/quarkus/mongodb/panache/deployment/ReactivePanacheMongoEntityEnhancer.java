@@ -15,23 +15,23 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.mongodb.panache.runtime.MongoOperations;
+import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 
-public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
-    public final static String MONGO_OPERATIONS_NAME = MongoOperations.class.getName();
+public class ReactivePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
+    public final static String MONGO_OPERATIONS_NAME = ReactiveMongoOperations.class.getName();
     public final static String MONGO_OPERATIONS_BINARY_NAME = MONGO_OPERATIONS_NAME.replace('.', '/');
 
     private static final DotName DOTNAME_BSON_IGNORE = DotName.createSimple(BsonIgnore.class.getName());
 
     final Map<String, EntityModel> entities = new HashMap<>();
 
-    public PanacheMongoEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, PanacheMongoResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE, methodCustomizers);
+    public ReactivePanacheMongoEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
+        super(index, PanacheMongoResourceProcessor.DOTNAME_MUTINY_PANACHE_ENTITY_BASE, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 

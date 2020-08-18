@@ -31,7 +31,6 @@ public enum Capability {
     JWT,
     TIKA,
     MONGODB_PANACHE,
-    MONGODB_PANACHE_KOTLIN,
     FLYWAY,
     LIQUIBASE,
     SECURITY,

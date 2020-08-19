@@ -17,6 +17,8 @@ import javax.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 
@@ -54,18 +56,23 @@ public final class ResteasyDotNames {
             .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INSTANCE = DotName
             .createSimple(javax.enterprise.inject.Instance.class.getName());
+    public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
+    public static final DotName JSONB_TRANSIENT = DotName.createSimple("javax.json.bind.annotation.JsonbTransient");
+    public static final DotName XML_TRANSIENT = DotName.createSimple("javax.xml.bind.annotation.XmlTransient");
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));
 
-    public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
+    public static final IgnoreTypeForReflectionPredicate IGNORE_TYPE_FOR_REFLECTION_PREDICATE = new IgnoreTypeForReflectionPredicate();
+    public static final IgnoreFieldForReflectionPredicate IGNORE_FIELD_FOR_REFLECTION_PREDICATE = new IgnoreFieldForReflectionPredicate();
+    public static final IgnoreMethodForReflectionPredicate IGNORE_METHOD_FOR_REFLECTION_PREDICATE = new IgnoreMethodForReflectionPredicate();
 
-    private static class IgnoreForReflectionPredicate implements Predicate<DotName> {
+    private static class IgnoreTypeForReflectionPredicate implements Predicate<DotName> {
 
         @Override
         public boolean test(DotName dotName) {
             if (ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(dotName)
-                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(dotName)) {
+                    || ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(dotName)) {
                 return true;
             }
             String name = dotName.toString();
@@ -75,6 +82,26 @@ public final class ResteasyDotNames {
                 }
             }
             return false;
+        }
+    }
+
+    private static class IgnoreFieldForReflectionPredicate implements Predicate<FieldInfo> {
+
+        @Override
+        public boolean test(FieldInfo fieldInfo) {
+            return fieldInfo.hasAnnotation(JSON_IGNORE)
+                    || fieldInfo.hasAnnotation(JSONB_TRANSIENT)
+                    || fieldInfo.hasAnnotation(XML_TRANSIENT);
+        }
+    }
+
+    private static class IgnoreMethodForReflectionPredicate implements Predicate<MethodInfo> {
+
+        @Override
+        public boolean test(MethodInfo methodInfo) {
+            return methodInfo.hasAnnotation(JSON_IGNORE)
+                    || methodInfo.hasAnnotation(JSONB_TRANSIENT)
+                    || methodInfo.hasAnnotation(XML_TRANSIENT);
         }
     }
 

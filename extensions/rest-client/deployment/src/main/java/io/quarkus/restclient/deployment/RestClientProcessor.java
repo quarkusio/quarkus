@@ -202,7 +202,13 @@ class RestClientProcessor {
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
             reflectiveHierarchy
-                    .produce(new ReflectiveHierarchyBuildItem(returnType, ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+                    .produce(new ReflectiveHierarchyBuildItem.Builder()
+                            .type(returnType)
+                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                            .source(returnType.toString())
+                            .build());
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {

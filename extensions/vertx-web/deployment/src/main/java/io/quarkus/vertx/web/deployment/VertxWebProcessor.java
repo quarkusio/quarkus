@@ -624,7 +624,7 @@ class VertxWebProcessor {
             return;
         }
         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(contentType,
-                ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.or(TYPES_IGNORED_FOR_REFLECTION::contains)));
+                ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.or(TYPES_IGNORED_FOR_REFLECTION::contains)));
     }
 
     private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,

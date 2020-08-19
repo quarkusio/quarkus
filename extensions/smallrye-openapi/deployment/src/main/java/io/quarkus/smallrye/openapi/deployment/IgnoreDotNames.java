@@ -23,7 +23,7 @@ public final class IgnoreDotNames {
         @Override
         public boolean test(DotName name) {
             return IgnoreDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name)
-                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(name);
+                    || ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(name);
         }
     }
 

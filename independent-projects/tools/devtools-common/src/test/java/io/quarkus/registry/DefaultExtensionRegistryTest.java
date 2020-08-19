@@ -50,9 +50,7 @@ class DefaultExtensionRegistryTest {
         assertThat(extensionRegistry.getQuarkusCoreVersions()).containsExactly(
                 "1.6.0.Final",
                 "1.5.2.Final",
-                "1.3.2.Final",
-                "1.3.1.Final",
-                "1.1.0.CR1");
+                "1.3.2.Final");
     }
 
     @Test

@@ -5,39 +5,27 @@ on:
     branches-ignore:
       - 'dependabot/**'
     paths-ignore:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
       - 'docs/src/main/asciidoc/**'
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'ADOPTERS.md'
-      - 'TROUBLESHOOTING.md'
-      - 'SECURITY.md'
-      - 'MAINTAINERS.adoc'
-      - 'DECISIONS.adoc'
-      - 'LICENSE.txt'
-      - 'dco.txt'
       - '.github/ISSUE_TEMPLATE/**'
-      - '.github/autoissuelabeler.yml'
-      - '.github/boring-cyborg.yml'
-      - '.github/NativeBuildReport.java'
-      - '.github/dependabot.yml'
+      - '.github/*.yml'
+      - '.github/*.java'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
+      - '.gitignore'
+      - '.dockerignore'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
       - 'docs/src/main/asciidoc/**'
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - 'ADOPTERS.md'
-      - 'TROUBLESHOOTING.md'
-      - 'SECURITY.md'
-      - 'DECISIONS.adoc'
-      - 'MAINTAINERS.adoc'
-      - 'LICENSE.txt'
-      - 'dco.txt'
       - '.github/ISSUE_TEMPLATE/**'
-      - '.github/autoissuelabeler.yml'
-      - '.github/boring-cyborg.yml'
-      - '.github/NativeBuildReport.java'
-      - '.github/dependabot.yml'
+      - '.github/*.yml'
+      - '.github/*.java'
 
 env:
   # Workaround testsuite locale issue
@@ -48,6 +36,12 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
+  ci-sanity-check:
+    name: "CI Sanity Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build
+        run: sleep 30
   build-jdk11:
     name: "JDK 11 Build"
     runs-on: ubuntu-latest
@@ -107,7 +101,7 @@ jobs:
     name: JDK ${{matrix.java.name}} JVM Tests
     runs-on: ubuntu-latest
     needs: build-jdk11
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       MAVEN_OPTS: -Xmx2048m
     strategy:
@@ -129,11 +123,12 @@ jobs:
             java-version: 11,
             maven_args: "-pl !integration-tests/gradle"
           }
-          - {
-            name: Java 14,
-            java-version: 14,
-            maven_args: "-pl !integration-tests/gradle"
-          }
+          # Disabled for now as totally unstable
+          #- {
+          #  name: Java 14,
+          #  java-version: 14,
+          #  maven_args: "-pl !integration-tests/gradle"
+          #}
 
     services:
       keycloak:
@@ -219,7 +214,7 @@ jobs:
 
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293
         with:
           java-version: ${{ matrix.java.java-version }}
           release: ${{ matrix.java.release }}
@@ -246,7 +241,7 @@ jobs:
           path: 'test-reports.tgz'
 
   linux-jvm-gradle-tests:
-    name: JDK ${{matrix.java.name}} JVM Gradle Tests
+    name: Gradle Tests JDK ${{matrix.java.name}}
     runs-on: ubuntu-latest
     needs: build-jdk11
     timeout-minutes: 60
@@ -330,7 +325,7 @@ jobs:
           path: 'test-reports.tgz'
 
   windows-jdk11-jvm-gradle-tests:
-    name: Windows JDK 11 JVM Gradle Tests
+    name: Gradle Tests Windows JDK 11
     needs: build-jdk11
     runs-on: windows-latest
     timeout-minutes: 80
@@ -361,7 +356,7 @@ jobs:
           arguments: clean test -i -S --stacktrace --no-daemon
 
   tcks-test:
-    name: TCKS Test
+    name: MicroProfile TCKs Tests
     needs: build-jdk11
     runs-on: ubuntu-latest
     timeout-minutes: 120

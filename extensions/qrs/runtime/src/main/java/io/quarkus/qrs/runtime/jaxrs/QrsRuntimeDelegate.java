@@ -49,19 +49,19 @@ public class QrsRuntimeDelegate extends RuntimeDelegate {
     @Override
     public <T> HeaderDelegate<T> createHeaderDelegate(Class<T> type) throws IllegalArgumentException {
         if (type.equals(MediaType.class)) {
-            return new MediaTypeHeaderDelegate<T>();
+            return MediaTypeHeaderDelegate.INSTANCE;
         } else if (type.equals(Date.class)) {
-            return (HeaderDelegate<T>) new DateDelegate();
+            return (HeaderDelegate<T>) DateDelegate.INSTANCE;
         } else if (type.equals(CacheControl.class)) {
-            return (HeaderDelegate<T>) new CacheControlDelegate();
+            return (HeaderDelegate<T>) CacheControlDelegate.INSTANCE;
         } else if (type.equals(NewCookie.class)) {
-            return (HeaderDelegate<T>) new NewCookieHeaderDelegate();
+            return (HeaderDelegate<T>) NewCookieHeaderDelegate.INSTANCE;
         } else if (type.equals(Cookie.class)) {
-            return (HeaderDelegate<T>) new CookieHeaderDelegate();
+            return (HeaderDelegate<T>) CookieHeaderDelegate.INSTANCE;
         } else if (type.equals(EntityTag.class)) {
-            return (HeaderDelegate<T>) new EntityTagDelegate();
+            return (HeaderDelegate<T>) EntityTagDelegate.INSTANCE;
         } else if (type.equals(Locale.class)) {
-            return (HeaderDelegate<T>) new LocaleDelegate();
+            return (HeaderDelegate<T>) LocaleDelegate.INSTANCE;
         }
         throw new IllegalArgumentException();
     }

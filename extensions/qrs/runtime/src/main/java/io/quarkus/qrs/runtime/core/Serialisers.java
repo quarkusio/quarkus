@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +24,6 @@ import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.qrs.runtime.core.serialization.EntityWriter;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
@@ -43,19 +41,17 @@ public class Serialisers {
 
     public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
     public static final MessageBodyWriter[] EMPTY = new MessageBodyWriter[0];
-    private final ConcurrentMap<Class<?>, Holder> noMediaTypeClassCache = new ConcurrentHashMap<>();
-    private Function<Class<?>, Holder> mappingFunction = new Function<Class<?>, Holder>() {
+    private final ConcurrentMap<Class<?>, List<ResourceWriter>> noMediaTypeClassCache = new ConcurrentHashMap<>();
+    private Function<Class<?>, List<ResourceWriter>> mappingFunction = new Function<Class<?>, List<ResourceWriter>>() {
         @Override
-        public Holder apply(Class<?> aClass) {
+        public List<ResourceWriter> apply(Class<?> aClass) {
             Class<?> c = aClass;
-            Set<MediaType> types = new LinkedHashSet<>();
             List<ResourceWriter> writers = new ArrayList<>();
             Set<Class<?>> seenInterfaces = new HashSet<>();
             while (c != null) {
                 List<ResourceWriter> forClass = getWriters().get(c);
                 if (forClass != null) {
                     for (ResourceWriter writer : forClass) {
-                        types.addAll(writer.mediaTypes());
                         writers.add(writer);
                     }
                 }
@@ -69,7 +65,6 @@ public class Serialisers {
                     forClass = getWriters().get(iface);
                     if (forClass != null) {
                         for (ResourceWriter writer : forClass) {
-                            types.addAll(writer.mediaTypes());
                             writers.add(writer);
                         }
                     }
@@ -77,7 +72,7 @@ public class Serialisers {
                 }
                 c = c.getSuperclass();
             }
-            return new Holder(writers, new ArrayList<>(types));
+            return writers;
         }
     };
 
@@ -235,35 +230,35 @@ public class Serialisers {
     }
 
     public NoMediaTypeResult findWriterNoMediaType(QrsRequestContext requestContext, Object entity) {
-        Holder resultForClass = noMediaTypeClassCache.computeIfAbsent(entity.getClass(), mappingFunction);
-        String accept = requestContext.getContext().request().getHeader(HttpHeaderNames.ACCEPT);
-        List<MediaType> parsed;
-        if (accept != null) {
-            //TODO: this needs to be optimised
-            parsed = MediaTypeHelper.parseHeader(accept);
-        } else {
-            //TODO: we could cache the result for no accept header, however we can't for user provided ones
-            //there are an unlimited number of possible accept headers, so it would be easy to DOS if it were cached
-            parsed = WILDCARD_LIST;
-        }
+        List<ResourceWriter> resultForClass = noMediaTypeClassCache.computeIfAbsent(entity.getClass(), mappingFunction);
         //TODO: more work is needed on internal default ordering
-        MediaType res = MediaTypeHelper.getBestMatch(parsed, resultForClass.mediaTypeList);
-        if (res == null) {
+        MediaType selected = null;
+        for (ResourceWriter writer : resultForClass) {
+            selected = writer.serverMediaType().negotiateProduces(requestContext.getContext().request());
+            if (selected != null) {
+                break;
+            }
+        }
+        if (selected == null) {
+            Set<MediaType> acceptable = new HashSet<>();
+            for (ResourceWriter i : resultForClass) {
+                acceptable.addAll(i.mediaTypes());
+            }
+
             throw new WebApplicationException(Response
                     .notAcceptable(Variant
                             .mediaTypes(
-                                    resultForClass.mediaTypeList.toArray(new MediaType[resultForClass.mediaTypeList.size()]))
+                                    acceptable.toArray(new MediaType[0]))
                             .build())
                     .build());
         }
-        MediaType selected = res;
-        if (res.isWildcardType() || (res.getType().equals("application") && res.isWildcardSubtype())) {
+        if (selected.isWildcardType() || (selected.getType().equals("application") && selected.isWildcardSubtype())) {
             selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         List<MessageBodyWriter<?>> finalResult = new ArrayList<>();
-        for (ResourceWriter i : resultForClass.writers) {
+        for (ResourceWriter i : resultForClass) {
             for (MediaType mt : i.mediaTypes()) {
-                if (mt.isCompatible(res)) {
+                if (mt.isCompatible(selected)) {
                     finalResult.add(i.getInstance());
                     break;
                 }
@@ -293,16 +288,6 @@ public class Serialisers {
 
         public EntityWriter getEntityWriter() {
             return entityWriter;
-        }
-    }
-
-    static class Holder {
-        final List<ResourceWriter> writers;
-        final List<MediaType> mediaTypeList;
-
-        Holder(List<ResourceWriter> writers, List<MediaType> mediaTypeList) {
-            this.writers = writers;
-            this.mediaTypeList = mediaTypeList;
         }
     }
 }

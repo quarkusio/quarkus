@@ -8,13 +8,14 @@ import io.quarkus.qrs.runtime.core.LazyMethod;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.spi.EndpointInvoker;
+import io.quarkus.qrs.runtime.util.ServerMediaType;
 
 public class RuntimeResource {
 
     private final String httpMethod;
     private final URITemplate path;
     private final URITemplate classPath;
-    private final MediaType produces;
+    private final ServerMediaType produces;
     private final MediaType consumes;
     private final EndpointInvoker invoker;
     private final BeanFactory<Object> endpointFactory;
@@ -26,7 +27,8 @@ public class RuntimeResource {
     private final Class<?> resourceClass;
     private final LazyMethod lazyMethod;
 
-    public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, MediaType produces, MediaType consumes,
+    public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
+            MediaType consumes,
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod) {
@@ -70,7 +72,7 @@ public class RuntimeResource {
         return path;
     }
 
-    public MediaType getProduces() {
+    public ServerMediaType getProduces() {
         return produces;
     }
 

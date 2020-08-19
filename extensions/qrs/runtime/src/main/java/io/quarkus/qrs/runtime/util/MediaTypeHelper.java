@@ -15,7 +15,7 @@ import javax.ws.rs.core.MediaType;
  */
 @SuppressWarnings(value = "rawtypes")
 public class MediaTypeHelper {
-    private static final MediaTypeComparator COMPARATOR = new MediaTypeComparator();
+    public static final MediaTypeComparator COMPARATOR = new MediaTypeComparator();
 
     public static float getQ(MediaType type) {
         float rtn = getQWithParamInfo(type);

@@ -1,5 +1,6 @@
 package io.quarkus.qrs.runtime.model;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,12 +9,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.qrs.runtime.spi.BeanFactory;
+import io.quarkus.qrs.runtime.util.ServerMediaType;
 
 public class ResourceWriter {
 
     private BeanFactory<MessageBodyWriter<?>> factory;
     private List<String> mediaTypeStrings = new ArrayList<>();
     private volatile List<MediaType> mediaTypes;
+    private volatile ServerMediaType serverMediaType;
     private volatile MessageBodyWriter<?> instance;
 
     public void setFactory(BeanFactory<MessageBodyWriter<?>> factory) {
@@ -57,5 +60,14 @@ public class ResourceWriter {
             }
         }
         return mediaTypes;
+    }
+
+    public ServerMediaType serverMediaType() {
+        if (serverMediaType == null) {
+            synchronized (this) {
+                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name());
+            }
+        }
+        return serverMediaType;
     }
 }

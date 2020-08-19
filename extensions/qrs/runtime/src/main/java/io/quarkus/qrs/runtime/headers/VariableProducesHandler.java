@@ -8,12 +8,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
-import io.quarkus.qrs.runtime.util.MediaTypeHelper;
+import io.quarkus.qrs.runtime.util.ServerMediaType;
 
 /**
  * Handler that negotiates the content type for endpoints that
@@ -23,17 +22,16 @@ import io.quarkus.qrs.runtime.util.MediaTypeHelper;
 public class VariableProducesHandler implements RestHandler {
 
     public static final MessageBodyWriter[] EMPTY = new MessageBodyWriter[0];
-    final List<MediaType> mediaTypeList;
+    final ServerMediaType mediaTypeList;
     final Serialisers serialisers;
 
-    public VariableProducesHandler(List<MediaType> mediaTypeList, Serialisers serialisers) {
+    public VariableProducesHandler(ServerMediaType mediaTypeList, Serialisers serialisers) {
         this.mediaTypeList = mediaTypeList;
         this.serialisers = serialisers;
     }
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        String accept = requestContext.getContext().request().getHeader(HttpHeaderNames.ACCEPT);
         Object entity = requestContext.getResult();
         if (entity instanceof Response) {
             return;
@@ -42,25 +40,19 @@ public class VariableProducesHandler implements RestHandler {
             //TODO?
             return;
         }
-        if (accept == null) {
-            requestContext.setProducesMediaType(mediaTypeList.get(0));
-        } else {
-            //TODO: this needs to be optimised, its super inefficient
-            List<MediaType> parsed = MediaTypeHelper.parseHeader(accept);
-            MediaType res = MediaTypeHelper.getBestConcreteMatch(mediaTypeList, parsed);
-            if (res == null) {
-                throw new WebApplicationException(Response
-                        .notAcceptable(Variant.mediaTypes(mediaTypeList.toArray(new MediaType[mediaTypeList.size()])).build())
-                        .build());
-            }
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res);
-            if (writers == null || writers.isEmpty()) {
-                throw new WebApplicationException(Response
-                        .notAcceptable(Variant.mediaTypes(mediaTypeList.toArray(new MediaType[mediaTypeList.size()])).build())
-                        .build());
-            }
-            requestContext.setProducesMediaType(res);
-            requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY)));
+        MediaType res = mediaTypeList.negotiateProduces(requestContext.getContext().request());
+        if (res == null) {
+            throw new WebApplicationException(Response
+                    .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
+                    .build());
         }
+        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res);
+        if (writers == null || writers.isEmpty()) {
+            throw new WebApplicationException(Response
+                    .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
+                    .build());
+        }
+        requestContext.setProducesMediaType(res);
+        requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY)));
     }
 }

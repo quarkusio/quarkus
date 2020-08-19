@@ -1,9 +1,8 @@
 /**
  *
  */
-package io.quarkus.bootstrap.workspace.test;
+package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Path;

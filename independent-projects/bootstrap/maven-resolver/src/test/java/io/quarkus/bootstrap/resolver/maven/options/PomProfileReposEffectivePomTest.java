@@ -1,4 +1,4 @@
-package io.quarkus.bootstrap.resolver.maven.test;
+package io.quarkus.bootstrap.resolver.maven.options;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -6,14 +6,15 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-public class SettingsProfileReposAndPomReposEffectivePomTest extends BootstrapMavenContextTestBase {
+public class PomProfileReposEffectivePomTest extends BootstrapMavenContextTestBase {
 
     @Test
-    public void settingsProfileReposAndPomRepos() throws Exception {
-        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("effective-pom/settings-profile-and-pom-repos");
+    public void basicPomRepos() throws Exception {
+        setSystemProp("another-profile", "yes");
+        final BootstrapMavenContext mvn = bootstrapMavenContextForProject("effective-pom/pom-profile-repos");
         assertEquals(
                 Arrays.asList(
-                        newRepo("settings-central", "https://settings.central"),
+                        newRepo("another-profile-repo", "https://another-profile.repo"),
                         newRepo("central", "https://pom.central"),
                         newRepo("other-pom-repo", "https://pom.other")),
                 mvn.getRemoteRepositories());

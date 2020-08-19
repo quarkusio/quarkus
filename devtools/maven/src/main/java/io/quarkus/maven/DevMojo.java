@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -277,6 +278,10 @@ public class DevMojo extends AbstractMojo {
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
 
+        // MAVEN_CMD_LINE_ARGS env doesn't preserve quotes which breaks quarkus.args processing so we need to make
+        // sure we get a proper command line to process
+        List<String> args = new LinkedList<>(BootstrapMavenOptions.getMavenCmdLine(true).userProps);
+
         //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
         handleAutoCompile();
 
@@ -297,7 +302,6 @@ public class DevMojo extends AbstractMojo {
         }
 
         try {
-            List<String> args = new ArrayList<>();
             String javaTool = JavaBinFinder.findBin();
             getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
@@ -762,43 +766,10 @@ public class DevMojo extends AbstractMojo {
                 args.add(DevModeContext.ENABLE_PREVIEW_FLAG);
             }
 
-            propagateUserProperties();
-
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             if (argsString != null) {
                 args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(argsString)));
-            }
-        }
-
-        private void propagateUserProperties() {
-            final String mavenCmdLine = BootstrapMavenOptions.getMavenCmdLine();
-            if (mavenCmdLine == null || mavenCmdLine.isEmpty()) {
-                return;
-            }
-            int i = mavenCmdLine.indexOf("-D");
-            if (i < 0) {
-                return;
-            }
-            final StringBuilder buf = new StringBuilder();
-            buf.append("-D");
-            i += 2;
-            while (i < mavenCmdLine.length()) {
-                final char ch = mavenCmdLine.charAt(i++);
-                if (!Character.isWhitespace(ch)) {
-                    buf.append(ch);
-                } else if (buf.length() > 2) {
-                    args.add(buf.toString());
-                    buf.setLength(2);
-                    i = mavenCmdLine.indexOf("-D", i);
-                    if (i < 0) {
-                        break;
-                    }
-                    i += 2;
-                }
-            }
-            if (buf.length() > 2) {
-                args.add(buf.toString());
             }
         }
 

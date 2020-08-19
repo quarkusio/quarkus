@@ -12,11 +12,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.maven.cli.CLIManager;
+import org.apache.maven.shared.utils.cli.CommandLineException;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 
 /**
  * This class resolves relevant Maven command line options in case it's called
@@ -42,11 +46,18 @@ public class BootstrapMavenOptions {
     public static final String BATCH_MODE = "B";
     public static final String NO_TRANSFER_PROGRESS = "ntp";
 
+    private static final String USER_PROP_PREFIX = "-" + CLIManager.SET_SYSTEM_PROPERTY;
+
     public static Map<String, Object> parse(String cmdLine) {
         if (cmdLine == null) {
             return Collections.emptyMap();
         }
-        final String[] args = cmdLine.split("\\s+");
+        final String[] args;
+        try {
+            args = CommandLineUtils.translateCommandline(cmdLine);
+        } catch (CommandLineException e) {
+            throw new IllegalArgumentException("Invalid command line: " + cmdLine, e);
+        }
         if (args.length == 0) {
             return Collections.emptyMap();
         }
@@ -108,9 +119,108 @@ public class BootstrapMavenOptions {
         return new BootstrapMavenOptions(parse(cmdLine));
     }
 
+    public static class MavenCmdInfo {
+        public final String cmdLine;
+        public final List<String> userProps;
+
+        public MavenCmdInfo(String cmdLine, List<String> userProps) {
+            this.cmdLine = cmdLine;
+            this.userProps = userProps;
+        }
+    }
+
     public static String getMavenCmdLine() {
+        return getMavenCmdLine(false).cmdLine;
+    }
+
+    public static MavenCmdInfo getMavenCmdLine(boolean getUserProps) {
         final String mvnCmd = PropertyUtils.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
-        return mvnCmd == null ? System.getenv(MAVEN_CMD_LINE_ARGS) : mvnCmd;
+        if (mvnCmd == null || getUserProps) {
+            final List<String> props = updateMavenCmdLineAndExtractUserProperties(System.getenv(MAVEN_CMD_LINE_ARGS),
+                    System.getProperties());
+            return new MavenCmdInfo(System.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS), props);
+        }
+        return new MavenCmdInfo(mvnCmd, Collections.emptyList());
+    }
+
+    static List<String> updateMavenCmdLineAndExtractUserProperties(String currentCmdLine,
+            Map<Object, Object> properties) {
+        try {
+            currentCmdLine = currentCmdLine.trim();
+            int i = currentCmdLine.indexOf(USER_PROP_PREFIX);
+            if (i < 0) {
+                // set the command line as-is
+                System.setProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS, currentCmdLine);
+                return Collections.emptyList();
+            }
+
+            // list of user-defined quoted properties
+            final List<String> props = new LinkedList<>();
+            // StringBuilder to build updated command line
+            StringBuilder sb = new StringBuilder(currentCmdLine.length() + 10);
+            sb.append(currentCmdLine, 0, i);
+            while (true) {
+                // move to after prefix
+                i = i + USER_PROP_PREFIX.length();
+                // find and extract property name
+                final int equalsIndex = currentCmdLine.indexOf('=', i);
+                // skip all white spaces after user property prefix but before the property name
+                while (Character.isWhitespace(currentCmdLine.charAt(i))) {
+                    i++;
+                }
+                // need to check if there is no equal sign (for example in the case of boolean props such as -DskipTests)
+                final int nextSpaceIndex = currentCmdLine.indexOf(' ', i);
+
+                // we are considering a boolean prop if we don't have an equals sign or there is at least a space before it
+                // i.e. a valued property must be adjacent to the associated equals sign: -Dfoo=bar NOT -Dfoo = bar
+                final boolean isBoolProp = equalsIndex < 0 || (nextSpaceIndex >= i && nextSpaceIndex < equalsIndex);
+                // if we have a boolean property, the property name ends when the next space is found or the end of the string
+                // is reached, otherwise, the property name ends when we reach the equals sign
+                final int propEnd = isBoolProp ? (nextSpaceIndex > i ? nextSpaceIndex : currentCmdLine.length()) : equalsIndex;
+                final String prop = currentCmdLine.substring(i, propEnd).trim();
+
+                // get the value from the given properties
+                final Object valueFromProps = properties.get(prop);
+                if (valueFromProps == null) {
+                    throw new IllegalArgumentException("Unknown user property: '" + prop + "'");
+                }
+                final String value = valueFromProps.toString();
+
+                // compute the quoted property and value
+                final String quote = value.contains("\"") ? "'" : "\"";
+                final String quotedPropValue = isBoolProp ? USER_PROP_PREFIX + prop
+                        : USER_PROP_PREFIX + prop + "=" + quote + value + quote;
+                // add it to the list we return
+                props.add(quotedPropValue);
+                // and append it to our newly built command line
+                sb.append(quotedPropValue);
+
+                // move past the prop value by looking for the next white space after
+                int nextProp = propEnd + (isBoolProp ? 0 : value.length());
+                nextProp = currentCmdLine.indexOf(' ', nextProp);
+                if (nextProp < 0) {
+                    // we've reached the end of the string
+                    break;
+                }
+
+                // look for next prop starting from after the previous one
+                i = currentCmdLine.indexOf(USER_PROP_PREFIX, nextProp);
+                if (i > 0 && i < currentCmdLine.length()) {
+                    // if we found one, append all the command line args between the previous prop and the next one,
+                    // unchanged
+                    sb.append(currentCmdLine, nextProp, i);
+                } else {
+                    // append rest of command line
+                    sb.append(currentCmdLine, nextProp, currentCmdLine.length());
+                    break;
+                }
+            }
+
+            System.setProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS, sb.toString());
+            return props;
+        } catch (Exception e) {
+            throw new RuntimeException("Couldn't process '" + currentCmdLine + "'", e);
+        }
     }
 
     private final Map<String, Object> options;

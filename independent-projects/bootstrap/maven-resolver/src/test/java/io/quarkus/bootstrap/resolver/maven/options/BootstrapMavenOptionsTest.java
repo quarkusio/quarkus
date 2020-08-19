@@ -1,13 +1,33 @@
-package io.quarkus.bootstrap.resolver.maven.test;
+package io.quarkus.bootstrap.resolver.maven.options;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.maven.cli.CLIManager;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class BootstrapMavenOptionsTest {
+class BootstrapMavenOptionsTest {
+    private static String toRestore;
+
+    @BeforeAll
+    static void recordPreviousCmdLineProperty() {
+        toRestore = System.getProperty(BootstrapMavenOptions.QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
+    }
+
+    @AfterAll
+    static void restorePreviousCmdLineProperty() {
+        if (toRestore != null) {
+            System.setProperty(BootstrapMavenOptions.QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS, toRestore);
+        } else {
+            System.clearProperty(BootstrapMavenOptions.QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
+        }
+    }
 
     @Test
     public void testOffline() throws Exception {
@@ -75,5 +95,57 @@ public class BootstrapMavenOptionsTest {
 
     private BootstrapMavenOptions parseOptions(String line) {
         return BootstrapMavenOptions.newInstance(line);
+    }
+
+    @Test
+    void updateMavenCmdLineAndExtractUserProperties() {
+        Map<Object, Object> props = new HashMap<>();
+        props.put("quarkus.args", "get -u foo");
+        props.put("foo", "bar boo");
+        props.put("empty", "");
+        props.put("BOOL", "true");
+        final List<String> got = BootstrapMavenOptions.updateMavenCmdLineAndExtractUserProperties("quarkus:dev " +
+                "-Dquarkus.args=get -u foo " +
+                "-Dfoo=bar boo -x -DBOOL -Dempty=", props);
+        final String[] expect = { "-Dquarkus.args=\"get -u foo\"", "-Dfoo=\"bar boo\"", "-DBOOL", "-Dempty=\"\"" };
+        assertEquals(Arrays.asList(expect), got);
+        assertEquals("quarkus:dev -Dquarkus.args=\"get -u foo\" -Dfoo=\"bar boo\" -x -DBOOL -Dempty=\"\"",
+                BootstrapMavenOptions.getMavenCmdLine());
+
+    }
+
+    @Test
+    void defaultQuarkusBuildOptionsShouldWork() {
+        Map<Object, Object> props = new HashMap<>();
+        props.put("skipTests", "true");
+        props.put("skipITs", "true");
+        props.put("no-format", "true");
+        props.put("documentation-pdf", "true");
+        BootstrapMavenOptions.updateMavenCmdLineAndExtractUserProperties(
+                "  -e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install", props);
+        assertEquals("-e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install",
+                BootstrapMavenOptions.getMavenCmdLine());
+    }
+
+    @Test
+    void quicklyShouldWork() {
+        Map<Object, Object> props = new HashMap<>();
+        props.put("quickly", "true");
+        BootstrapMavenOptions.updateMavenCmdLineAndExtractUserProperties(
+                "-Dquickly", props);
+        assertEquals("-Dquickly",
+                BootstrapMavenOptions.getMavenCmdLine());
+    }
+
+    @Test
+    void shouldAllowSpacesAfterUserOptionPrefix() {
+        String cmd = "-B -D maven.repo.local=/home/runner/.m2/repository -s /tmp/invoker-settings13193518626400815622.xml clean package -Dquarkus.kubernetes.deploy=true";
+        Map<Object, Object> props = new HashMap<>();
+        props.put("maven.repo.local", "/home/runner/.m2/repository");
+        props.put("quarkus.kubernetes.deploy", "true");
+        BootstrapMavenOptions.updateMavenCmdLineAndExtractUserProperties(cmd, props);
+        assertEquals(
+                "-B -Dmaven.repo.local=\"/home/runner/.m2/repository\" -s /tmp/invoker-settings13193518626400815622.xml clean package -Dquarkus.kubernetes.deploy=\"true\"",
+                BootstrapMavenOptions.getMavenCmdLine());
     }
 }

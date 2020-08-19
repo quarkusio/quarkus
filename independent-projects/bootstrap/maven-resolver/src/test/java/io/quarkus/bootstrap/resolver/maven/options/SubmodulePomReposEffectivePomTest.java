@@ -1,4 +1,4 @@
-package io.quarkus.bootstrap.resolver.maven.test;
+package io.quarkus.bootstrap.resolver.maven.options;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -1,14 +1,6 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.IS_SPRING;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.JAVA_TARGET;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_ARTIFACT_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_PLUGIN_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.SOURCE_TYPE;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -67,8 +59,13 @@ public class CreateProject {
         return this;
     }
 
-    public CreateProject quarkusPluginVersion(String version) {
-        setValue(QUARKUS_PLUGIN_VERSION, version);
+    public CreateProject quarkusMavenPluginVersion(String version) {
+        setValue(QUARKUS_MAVEN_PLUGIN_VERSION, version);
+        return this;
+    }
+
+    public CreateProject quarkusGradlePluginVersion(String version) {
+        setValue(QUARKUS_GRADLE_PLUGIN_VERSION, version);
         return this;
     }
 

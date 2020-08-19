@@ -1,6 +1,7 @@
 package io.quarkus.devtools.commands;
 
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
+import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -42,7 +43,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         final Map<AppArtifactKey, AppArtifactCoords> installed = readByKey(project);
 
-        Assertions.assertNotNull(installed.get(AppArtifactKey.fromString(getPluginGroupId() + ":quarkus-agroal")));
+        Assertions.assertNotNull(installed.get(AppArtifactKey.fromString(IO_QUARKUS + ":quarkus-agroal")));
     }
 
     /**
@@ -60,8 +61,9 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         final Map<AppArtifactKey, AppArtifactCoords> installed = readByKey(quarkusProject);
 
-        Assertions.assertNotNull(installed.get(AppArtifactKey.fromString(getPluginGroupId() + ":quarkus-resteasy")));
-        Assertions.assertNotNull(installed.get(AppArtifactKey.fromString(getPluginGroupId() + ":quarkus-hibernate-validator")));
+        Assertions.assertNotNull(installed.get(AppArtifactKey.fromString(IO_QUARKUS + ":quarkus-resteasy")));
+        Assertions.assertNotNull(
+                installed.get(AppArtifactKey.fromString(IO_QUARKUS + ":quarkus-hibernate-validator")));
     }
 
     @Test
@@ -77,7 +79,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         MojoUtils.write(model, pom);
 
         addExtensions(quarkusProject, "commons-io:commons-io:2.5", "Agroal",
-                "io.quarkus:quarkus-hibernate-orm-panache:" + getPluginVersion());
+                "io.quarkus:quarkus-hibernate-orm-panache:" + getMavenPluginVersion());
 
         model = readPom(pom);
 
@@ -106,14 +108,14 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
                 assertTrue(line.startsWith("custom*"), "RESTEasy should list as being custom*: " + line);
                 assertTrue(
                         line.endsWith(
-                                String.format("%-15s", getPluginVersion())),
+                                String.format("%-15s", getMavenPluginVersion())),
                         "RESTEasy should list as being custom*: " + line);
                 resteasy = true;
                 checkGuideInLineAfter = true;
             } else if (line.contains("quarkus-hibernate-orm-panache ")) {
                 assertTrue(line.startsWith("custom"), "Panache should list as being custom: " + line);
                 assertTrue(
-                        line.endsWith(String.format("%-25s", getPluginVersion())),
+                        line.endsWith(String.format("%-25s", getMavenPluginVersion())),
                         "Panache should list as being custom*: " + line);
                 panache = true;
             } else if (line.contains("hibernate-validator")) {

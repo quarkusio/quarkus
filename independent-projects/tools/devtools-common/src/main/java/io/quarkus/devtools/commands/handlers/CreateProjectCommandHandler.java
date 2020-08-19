@@ -6,11 +6,12 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartData;
 import io.quarkus.devtools.codestarts.CodestartInput;
 import io.quarkus.devtools.codestarts.CodestartProject;
 import io.quarkus.devtools.codestarts.CodestartSpec;
 import io.quarkus.devtools.codestarts.Codestarts;
+import io.quarkus.devtools.codestarts.NestedMaps;
+import io.quarkus.devtools.codestarts.QuarkusCodestartData.LegacySupport;
 import io.quarkus.devtools.codestarts.QuarkusCodestarts;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -28,7 +29,10 @@ import io.quarkus.platform.tools.ConsoleMessageFormats;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,11 +66,18 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .collect(Collectors.toList());
 
             try {
+                Map<String, Object> platformData = new HashMap<>();
+                if (platformDescr.getMetadata().get("maven") != null) {
+                    platformData.put("maven", platformDescr.getMetadata().get("maven"));
+                }
+                if (platformDescr.getMetadata().get("gradle") != null) {
+                    platformData.put("gradle", platformDescr.getMetadata().get("gradle"));
+                }
                 final CodestartInput input = QuarkusCodestarts.inputBuilder(platformDescr)
                         .addExtensions(extensionsToAdd)
-                        .addData(CodestartData.LegacySupport.convertFromLegacy(invocation.getValues()))
-                        .putData(CodestartData.DataKey.BUILDTOOL.getKey(),
-                                invocation.getQuarkusProject().getBuildTool().toString().toLowerCase().replace("_", "-"))
+                        .addCodestart(invocation.getQuarkusProject().getBuildTool().getKey())
+                        .addData(platformData)
+                        .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
                         .includeExamples(invocation.getValue("codestarts.with-example-code", true))
                         .build();
                 invocation.log().info("Generating Quarkus Codestart Project with data: " + input.getData().toString());
@@ -80,6 +91,8 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
             return QuarkusCommandOutcome.success();
         }
+
+        addPlatformDataToLegacyCodegen(invocation);
 
         try {
             String className = invocation.getStringValue(CLASS_NAME);
@@ -135,4 +148,91 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
         }
         return QuarkusCommandOutcome.success();
     }
+
+    // # CLOSE YOUR EYES PLEASE
+    static void addPlatformDataToLegacyCodegen(QuarkusCommandInvocation invocation) {
+        final BuildTool buildTool = invocation.getQuarkusProject().getBuildTool();
+        if (BuildTool.MAVEN == buildTool) {
+            final Optional<List> mavenRepositories = NestedMaps.getValue(invocation.getPlatformDescriptor().getMetadata(),
+                    "maven.repositories");
+            if (mavenRepositories.isPresent()
+                    && !mavenRepositories.get().isEmpty()) {
+                // We only take the first one here to make things simpler:
+                final Map<String, Object> repo = (Map<String, Object>) mavenRepositories.get().get(0);
+                if (repo != null && repo.get("id") instanceof String && repo.get("url") instanceof String) {
+                    final StringBuilder repositories = new StringBuilder()
+                            .append("\n")
+                            .append("    <repositories>\n")
+                            .append("        <repository>\n")
+                            .append("            <id>").append(repo.get("id")).append("</id>\n")
+                            .append("            <url>").append(repo.get("url")).append("</url>\n")
+                            .append("            <releases>\n")
+                            .append("                <enabled>").append(repo.getOrDefault("releases-enabled", true))
+                            .append("</enabled>\n")
+                            .append("            </releases>\n")
+                            .append("            <snapshots>\n")
+                            .append("                <enabled>").append(repo.getOrDefault("snapshots-enabled", true))
+                            .append("</enabled>\n")
+                            .append("            </snapshots>\n")
+                            .append("        </repository>\n")
+                            .append("    </repositories>\n");
+                    invocation.setValue(MAVEN_REPOSITORIES, repositories.toString());
+                }
+            }
+            final Optional<List> mavenPluginRepositories = NestedMaps
+                    .getValue(invocation.getPlatformDescriptor().getMetadata(), "maven.plugin-repositories");
+            if (mavenPluginRepositories.isPresent()
+                    && !mavenPluginRepositories.get().isEmpty()) {
+                // We only take the first one here to make things simpler:
+                final Map<String, Object> repo = (Map<String, Object>) mavenPluginRepositories.get().get(0);
+                if (repo != null && repo.get("id") instanceof String && repo.get("url") instanceof String) {
+                    final StringBuilder pluginRepositories = new StringBuilder()
+                            .append("\n")
+                            .append("    <pluginRepositories>\n")
+                            .append("        <pluginRepository>\n")
+                            .append("            <id>").append(repo.get("id")).append("</id>\n")
+                            .append("            <url>").append(repo.get("url")).append("</url>\n")
+                            .append("            <releases>\n")
+                            .append("                <enabled>").append(repo.getOrDefault("releases-enabled", true))
+                            .append("</enabled>\n")
+                            .append("            </releases>\n")
+                            .append("            <snapshots>\n")
+                            .append("                <enabled>").append(repo.getOrDefault("snapshots-enabled", true))
+                            .append("</enabled>\n")
+                            .append("            </snapshots>\n")
+                            .append("        </pluginRepository>\n")
+                            .append("    </pluginRepositories>\n");
+                    invocation.setValue(MAVEN_PLUGIN_REPOSITORIES, pluginRepositories.toString());
+                }
+            }
+        } else if (BuildTool.GRADLE == buildTool || BuildTool.GRADLE_KOTLIN_DSL == buildTool) {
+            final Optional<List> gradleRepositories = NestedMaps
+                    .getValue(invocation.getPlatformDescriptor().getMetadata(), "gradle.repositories");
+            if (gradleRepositories.isPresent()
+                    && !gradleRepositories.get().isEmpty()) {
+                // We only take the first one here to make things simpler:
+                final Map<String, Object> repo = (Map<String, Object>) gradleRepositories.get().get(0);
+                if (repo != null && repo.get("url") instanceof String) {
+                    final String repositories = buildTool == BuildTool.GRADLE
+                            ? "\n     maven { url \"" + repo.get("url") + "\" }"
+                            : "\n     maven { url = uri(\"" + repo.get("url") + "\") }";
+                    invocation.setValue(MAVEN_REPOSITORIES, repositories);
+                }
+            }
+            final Optional<List> gradlePluginRepositories = NestedMaps
+                    .getValue(invocation.getPlatformDescriptor().getMetadata(), "gradle.plugin-repositories");
+            if (gradlePluginRepositories.isPresent()
+                    && !gradlePluginRepositories.get().isEmpty()) {
+                // We only take the first one here to make things simpler:
+                final Map<String, Object> repo = (Map<String, Object>) gradlePluginRepositories.get().get(0);
+                if (repo != null && repo.get("url") instanceof String) {
+                    final String pluginRepositories = buildTool == BuildTool.GRADLE
+                            ? "\n     maven { url \"" + repo.get("url") + "\" }"
+                            : "\n     maven { url = uri(\"" + repo.get("url") + "\") }";
+                    invocation.setValue(MAVEN_PLUGIN_REPOSITORIES, pluginRepositories);
+                }
+            }
+        }
+    }
+    // # YOU CAN OPEN NOW :)
 }

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
+import static io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey.*;
 import static io.quarkus.devtools.codestarts.QuarkusCodestarts.inputBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,17 +41,19 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
     static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,
             final Map<String, Object> override) {
         final HashMap<String, Object> data = new HashMap<>();
-        data.put("project.group-id", "org.test");
-        data.put("project.artifact-id", "test-codestart");
-        data.put("project.version", "1.0.0-codestart");
-        data.put("quarkus.platform.group-id", descriptor.getBomGroupId());
-        data.put("quarkus.platform.artifact-id", descriptor.getBomArtifactId());
-        data.put("quarkus.platform.version", descriptor.getBomVersion());
-        data.put("quarkus.version", descriptor.getQuarkusVersion());
-        data.put("quarkus.plugin.group-id", "io.quarkus");
-        data.put("quarkus.plugin.artifact-id", "quarkus-maven-plugin");
-        data.put("quarkus.plugin.version", descriptor.getQuarkusVersion());
-        data.put("java.version", "11");
+        data.put(PROJECT_GROUP_ID.getKey(), "org.test");
+        data.put(PROJECT_ARTIFACT_ID.getKey(), "test-codestart");
+        data.put(PROJECT_VERSION.getKey(), "1.0.0-codestart");
+        data.put(BOM_GROUP_ID.getKey(), descriptor.getBomGroupId());
+        data.put(BOM_ARTIFACT_ID.getKey(), descriptor.getBomArtifactId());
+        data.put(BOM_VERSION.getKey(), descriptor.getBomVersion());
+        data.put(QUARKUS_VERSION.getKey(), descriptor.getQuarkusVersion());
+        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.getKey(), "io.quarkus");
+        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.getKey(), "quarkus-maven-plugin");
+        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.getKey(), descriptor.getQuarkusVersion());
+        data.put(QUARKUS_GRADLE_PLUGIN_ID.getKey(), "io.quarkus");
+        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.getKey(), descriptor.getQuarkusVersion());
+        data.put(JAVA_VERSION.getKey(), "11");
         if (override != null)
             data.putAll(override);
         return data;
@@ -152,9 +155,9 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
     void generateCodestartProjectGradleResteasyJava() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
                 .includeExamples()
+                .addCodestart("gradle")
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
-                .putData("buildtool.name", "gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-resteasy-java");
@@ -174,7 +177,7 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
                 .includeExamples()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .putData("buildtool.name", "gradle")
+                .addCodestart("gradle")
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -196,7 +199,7 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .addData(getTestInputData())
-                .putData("buildtool.name", "gradle")
+                .addCodestart("gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-resteasy-scala");
@@ -216,7 +219,7 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
                 .includeExamples()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
-                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .addCodestart("gradle-kotlin-dsl")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-java");
@@ -236,7 +239,7 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
                 .includeExamples()
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .addCodestart("gradle-kotlin-dsl")
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -258,7 +261,7 @@ class CodestartProjectGenerationTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .addData(getTestInputData())
-                .putData("buildtool.name", "gradle-kotlin-dsl")
+                .addCodestart("gradle-kotlin-dsl")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-scala");

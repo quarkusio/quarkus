@@ -40,6 +40,7 @@ public final class CodestartProjectTestRunner {
                 case "maven":
                     return MAVEN;
                 case "gradle":
+                case "gradle-kotlin-dsl":
                     return GRADLE;
                 default:
                     throw new IllegalStateException("No wrapper linked to buildtool: " + buildtool);

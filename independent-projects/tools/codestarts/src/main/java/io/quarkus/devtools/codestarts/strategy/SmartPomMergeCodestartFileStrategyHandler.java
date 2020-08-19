@@ -2,8 +2,8 @@ package io.quarkus.devtools.codestarts.strategy;
 
 import io.fabric8.maven.Maven;
 import io.fabric8.maven.merge.SmartModelMerger;
+import io.quarkus.devtools.codestarts.CodestartData;
 import io.quarkus.devtools.codestarts.CodestartDefinitionException;
-import io.quarkus.devtools.codestarts.NestedMaps;
 import io.quarkus.devtools.codestarts.reader.CodestartFile;
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,7 +27,7 @@ final class SmartPomMergeCodestartFileStrategyHandler implements CodestartFileSt
         checkNotEmptyCodestartFiles(codestartFiles);
         checkTargetDoesNotExist(targetDirectory.resolve(relativePath));
 
-        NestedMaps.<String> getValue(data, "codestart-project.buildtool.name")
+        CodestartData.getBuildtool(data)
                 .filter(b -> Objects.equals(b, "maven"))
                 .orElseThrow(() -> new CodestartDefinitionException(
                         "something is wrong, smart-pom-merge file strategy must only be used on maven projects"));

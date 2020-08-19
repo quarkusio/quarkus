@@ -10,9 +10,6 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
 
     private QuarkusPlatformDescriptor platformDescr;
     private Properties quarkusProps;
-    private String pluginGroupId;
-    private String pluginArtifactId;
-    private String pluginVersion;
 
     protected QuarkusPlatformDescriptor getPlatformDescriptor() {
         return platformDescr == null ? platformDescr = QuarkusJsonPlatformDescriptorResolver.newInstance().resolveBundled()
@@ -26,17 +23,20 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
         return quarkusProps;
     }
 
-    protected String getPluginGroupId() {
-        return pluginGroupId == null ? pluginGroupId = getQuarkusProperties().getProperty("plugin-groupId") : pluginGroupId;
+    protected String getMavenPluginGroupId() {
+        return ToolsUtils.getMavenPluginGroupId(getQuarkusProperties());
     }
 
-    protected String getPluginArtifactId() {
-        return pluginArtifactId == null ? pluginArtifactId = getQuarkusProperties().getProperty("plugin-artifactId")
-                : pluginArtifactId;
+    protected String getMavenPluginArtifactId() {
+        return ToolsUtils.getMavenPluginArtifactId(getQuarkusProperties());
     }
 
-    protected String getPluginVersion() {
-        return pluginVersion == null ? pluginVersion = getQuarkusProperties().getProperty("plugin-version") : pluginVersion;
+    protected String getMavenPluginVersion() {
+        return ToolsUtils.getMavenPluginVersion(getQuarkusProperties());
+    }
+
+    protected String getQuarkusCoreVersion() {
+        return ToolsUtils.getQuarkusCoreVersion(getQuarkusProperties());
     }
 
     protected String getBomGroupId() {

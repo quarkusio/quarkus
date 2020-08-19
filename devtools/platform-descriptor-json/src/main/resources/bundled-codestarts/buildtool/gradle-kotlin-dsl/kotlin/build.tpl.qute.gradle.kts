@@ -3,7 +3,7 @@
 plugins {
     kotlin("jvm") version "{kotlin.version}"
     kotlin("plugin.allopen") version "{kotlin.version}"
-    id("{quarkus.plugin.id}")
+    id("{quarkus.gradle-plugin.id}")
 }
 {/plugins}
 {/include}

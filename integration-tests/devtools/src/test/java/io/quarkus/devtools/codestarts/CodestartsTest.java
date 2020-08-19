@@ -77,7 +77,7 @@ class CodestartsTest extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestGradle() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .putData("buildtool.name", "gradle")
+                .addCodestart("gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(Type.BUILDTOOL)).extracting(Codestart::getResourceDir)

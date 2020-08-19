@@ -123,7 +123,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .groupId(groupId)
                 .artifactId(artifactId)
                 .version(version)
-                .quarkusPluginVersion("2.3.5")
+                .quarkusMavenPluginVersion("2.3.5")
+                .quarkusGradlePluginVersion("2.3.5-gradle")
                 .execute();
         assertTrue(result.isSuccess());
     }

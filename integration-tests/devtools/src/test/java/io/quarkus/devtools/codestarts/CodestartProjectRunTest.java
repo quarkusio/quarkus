@@ -78,6 +78,12 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
         generateProjectRunTests("gradle", language, codestarts);
     }
 
+    @ParameterizedTest
+    @MethodSource("provideGenerateCombinations")
+    public void generateGradleKotlinProjectRun(String language, List<String> codestarts) throws Exception {
+        generateProjectRunTests("gradle-kotlin-dsl", language, codestarts);
+    }
+
     @Test
     public void generateAzureFunctionsHttpExampleProjectRun() throws Exception {
         generateProjectRunTests("maven", "java", Collections.singletonList("azure-functions-http-example"));
@@ -94,7 +100,7 @@ class CodestartProjectRunTest extends PlatformAwareTestBase {
                 .includeExamples()
                 .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
                 .addCodestarts(codestarts)
-                .putData("buildtool.name", buildtool)
+                .addCodestart(buildtool)
                 // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
                 .putData("java.version", System.getProperty("java.specification.version"))
                 .build();

@@ -1,18 +1,15 @@
 package io.quarkus.devtools;
 
-import java.io.IOException;
 import java.util.Properties;
 
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
+import io.quarkus.platform.tools.ToolsUtils;
 
 public class PlatformAwareTestBase {
 
     private QuarkusPlatformDescriptor platformDescr;
     private Properties quarkusProps;
-    private String pluginGroupId;
-    private String pluginArtifactId;
-    private String pluginVersion;
 
     protected QuarkusPlatformDescriptor getPlatformDescriptor() {
         return platformDescr == null
@@ -22,30 +19,25 @@ public class PlatformAwareTestBase {
 
     private Properties getQuarkusProperties() {
         if (quarkusProps == null) {
-            try {
-                quarkusProps = getPlatformDescriptor().loadResource("quarkus.properties", is -> {
-                    final Properties props = new Properties();
-                    props.load(is);
-                    return props;
-                });
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to load quarkus.properties", e);
-            }
+            quarkusProps = ToolsUtils.readQuarkusProperties(getPlatformDescriptor());
         }
         return quarkusProps;
     }
 
-    protected String getPluginGroupId() {
-        return pluginGroupId == null ? pluginGroupId = getQuarkusProperties().getProperty("plugin-groupId") : pluginGroupId;
+    protected String getMavenPluginGroupId() {
+        return ToolsUtils.getMavenPluginGroupId(getQuarkusProperties());
     }
 
-    protected String getPluginArtifactId() {
-        return pluginArtifactId == null ? pluginArtifactId = getQuarkusProperties().getProperty("plugin-artifactId")
-                : pluginArtifactId;
+    protected String getMavenPluginArtifactId() {
+        return ToolsUtils.getMavenPluginArtifactId(getQuarkusProperties());
     }
 
-    protected String getPluginVersion() {
-        return pluginVersion == null ? pluginVersion = getQuarkusProperties().getProperty("plugin-version") : pluginVersion;
+    protected String getMavenPluginVersion() {
+        return ToolsUtils.getMavenPluginVersion(getQuarkusProperties());
+    }
+
+    protected String getQuarkusCoreVersion() {
+        return ToolsUtils.getQuarkusCoreVersion(getQuarkusProperties());
     }
 
     protected String getBomGroupId() {

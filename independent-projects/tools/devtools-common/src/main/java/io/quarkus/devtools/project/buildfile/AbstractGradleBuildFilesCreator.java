@@ -125,7 +125,8 @@ abstract class AbstractGradleBuildFilesCreator {
         final QuarkusPlatformDescriptor platform = quarkusProject.getPlatformDescriptor();
         Properties props = getModel().getPropertiesContent();
         if (props.getProperty("quarkusPluginVersion") == null) {
-            props.setProperty("quarkusPluginVersion", ToolsUtils.getPluginVersion(ToolsUtils.readQuarkusProperties(platform)));
+            props.setProperty("quarkusPluginVersion",
+                    ToolsUtils.getGradlePluginVersion(ToolsUtils.readQuarkusProperties(platform)));
         }
         if (props.getProperty("quarkusPlatformGroupId") == null) {
             props.setProperty("quarkusPlatformGroupId", platform.getBomGroupId());

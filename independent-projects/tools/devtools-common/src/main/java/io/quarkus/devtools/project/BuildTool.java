@@ -71,18 +71,20 @@ public enum BuildTool {
         }
     }
 
+    public String getKey() {
+        return toString().toLowerCase().replace("_", "-");
+    }
+
     public static BuildTool resolveExistingProject(Path path) {
         return QuarkusProject.resolveExistingProjectBuildTool(path);
     }
 
     public static BuildTool findTool(String tool) {
-        if ("GRADLE".equalsIgnoreCase(tool))
-            return GRADLE;
-        else if ("GRADLE_KOTLIN_DSL".equalsIgnoreCase(tool) || "gradle-kotlin-dsl".equalsIgnoreCase(tool))
-            return GRADLE_KOTLIN_DSL;
-        else if ("MAVEN".equalsIgnoreCase(tool))
-            return MAVEN;
-        else
-            return null;
+        for (BuildTool value : BuildTool.values()) {
+            if (value.toString().equalsIgnoreCase(tool) || value.getKey().equalsIgnoreCase(tool)) {
+                return value;
+            }
+        }
+        return null;
     }
 }

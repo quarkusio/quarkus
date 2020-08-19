@@ -2,7 +2,7 @@
 {#plugins}
 plugins {
     java
-    id("{quarkus.plugin.id}")
+    id("{quarkus.gradle-plugin.id}")
 }
 {/plugins}
 {/include}

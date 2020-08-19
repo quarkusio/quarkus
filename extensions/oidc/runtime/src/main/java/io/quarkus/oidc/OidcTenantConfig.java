@@ -626,13 +626,20 @@ public class OidcTenantConfig {
         public boolean removeRedirectParameters = true;
 
         /**
-         * Both ID and access tokens are verified as part of the authorization code flow and every time
-         * these tokens are retrieved from the user session. One should disable the access token verification if
-         * it is only meant to be propagated to the downstream services.
-         * Note the ID token will always be verified.
+         * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
+         * ID token is always verified on every user request as the primary token which is used
+         * to represent the principal and extract the roles.
+         * Access token is not verified by default since it is meant to be propagated to the downstream services.
+         * The verification of the access token should be enabled if it is injected as a JWT token.
+         *
+         * Access tokens obtained as part of the code flow will always be verified if `quarkus.oidc.roles.source`
+         * property is set to `accesstoken` which means the authorization decision will be based on the roles extracted from the
+         * access token.
+         * 
+         * Bearer access tokens are always verified.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean verifyAccessToken = true;
+        @ConfigItem(defaultValue = "false")
+        public boolean verifyAccessToken;
 
         /**
          * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.

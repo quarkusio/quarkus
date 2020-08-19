@@ -227,7 +227,10 @@ public class KafkaProcessor {
         final Type loginModuleType = Type
                 .create(DotName.createSimple(LoginModule.class.getName()), Kind.CLASS);
 
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(loginModuleType));
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                .type(loginModuleType)
+                .source(getClass().getSimpleName() + " > " + loginModuleType.name().toString())
+                .build());
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

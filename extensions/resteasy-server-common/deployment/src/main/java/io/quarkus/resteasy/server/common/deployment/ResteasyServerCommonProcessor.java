@@ -785,7 +785,8 @@ public class ResteasyServerCommonProcessor {
             }
             processedAnnotations.add(instance);
             MethodInfo method = instance.target().asMethod();
-            String source = method.declaringClass() + "[" + method + "]";
+            String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
+                    + "]";
 
             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                     .type(method.returnType())

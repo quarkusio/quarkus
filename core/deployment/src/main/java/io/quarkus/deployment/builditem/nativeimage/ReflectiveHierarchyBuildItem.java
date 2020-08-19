@@ -49,7 +49,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index) {
@@ -57,7 +57,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignoreTypePredicate) {
@@ -65,7 +65,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate) {
@@ -73,7 +73,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, String source) {
@@ -81,7 +81,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, String source) {
@@ -89,7 +89,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignoreTypePredicate, String source) {
@@ -97,7 +97,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated Use the Builder instead.
+     * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate, String source) {

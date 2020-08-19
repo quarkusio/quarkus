@@ -207,7 +207,7 @@ class RestClientProcessor {
                             .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                             .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(returnType.toString())
+                            .source(getClass().getSimpleName() + " > " + returnType.toString())
                             .build());
         }
 

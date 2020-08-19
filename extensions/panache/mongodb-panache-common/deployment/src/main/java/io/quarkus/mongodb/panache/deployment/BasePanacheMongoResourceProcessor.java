@@ -20,11 +20,9 @@ import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -40,8 +38,6 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
@@ -323,14 +319,8 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     @BuildStep
-    protected ReflectiveHierarchyBuildItem registerForReflection(CombinedIndexBuildItem index) {
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        IndexingUtil.indexClass(ObjectId.class.getName(), indexer, index.getIndex(), additionalIndex,
-                BasePanacheMongoResourceProcessor.class.getClassLoader());
-        CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
-        Type type = Type.create(OBJECT_ID, Type.Kind.CLASS);
-        return new ReflectiveHierarchyBuildItem(type, compositeIndex);
+    ReflectiveClassBuildItem registerForReflection() {
+        return new ReflectiveClassBuildItem(true, true, OBJECT_ID.toString());
     }
 
     @BuildStep

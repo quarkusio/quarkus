@@ -48,6 +48,7 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 }
 ----
 
+[[security-identity-customization]]
 == Security Identity Customization
 
 Internally, the identity providers create and update an instance of the `io.quarkus.security.identity.SecurityIdentity` class which holds the principal, roles, credentials which were used to authenticate the client (user) and other security attributes. An easy option to customize `SecurityIdentity` is to register a custom `SecurityIdentityAugmentor`. For example, the augmentor below adds an addition role:
@@ -73,23 +74,77 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        return context.runBlocking(build(identity));
+        return Uni.createFrom().item(build(identity));
+
+        // Do 'return context.runBlocking(build(identity));'
+        // if a blocking call is required to customize the identity
     }
 
     private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
         if(identity.isAnonymous()) {
             return () -> identity;
         } else {
-            // create a new builder and copy principal, attributes, credentials and roles from the original
-            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
-                    .setPrincipal(identity.getPrincipal())
-                    .addAttributes(identity.getAttributes())
-                    .addCredentials(identity.getCredentials())
-                    .addRoles(identity.getRoles());
+            // create a new builder and copy principal, attributes, credentials and roles from the original identity
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
 
             // add custom role source here
             builder.addRole("dummy");
             return builder::build;
+        }
+    }
+}
+----
+
+Here is another example showing how to use the client certificate available in the current link:security-built-in-authentication#mutual-tls[Mutual TLS] request to add more roles:
+
+[source,java]
+----
+import java.security.cert.X509Certificate;
+import io.quarkus.security.credential.CertificateCredential;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.function.Supplier;
+import java.util.Set;
+
+@ApplicationScoped
+public class RolesAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public int priority() {
+        return 0;
+    }
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
+        return Uni.createFrom().item(build(identity));
+    }
+
+    private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
+        // create a new builder and copy principal, attributes, credentials and roles from the original identity
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
+
+        CertificateCredential certificate = identity.getCredential(CertificateCredential.class);
+        if (certificate != null) {
+            builder.addRoles(extractRoles(certificate.getCertificate()));
+        }
+        return builder::build;
+    }
+
+    private Set<String> extractRoles(X509Certificate certificate) {
+        String name = certificate.getSubjectX500Principal().getName();
+
+        switch (name) {
+            case "CN=client":
+                return Collections.singleton("user");
+            case "CN=guest-client":
+                return Collections.singleton("guest");
+            default:
+                return Collections.emptySet();
         }
     }
 }
@@ -199,3 +254,6 @@ are using an executor that is capable of propagating the identity (e.g. no `Comp
 to make sure that Quarkus can propagate it. For more information see the
 link:context-propagation[Context Propagation Guide].
 
+== References
+
+* link:security[Quarkus Security]

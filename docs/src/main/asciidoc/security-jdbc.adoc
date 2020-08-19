@@ -310,7 +310,6 @@ quarkus.security.jdbc.principal-query.roles.attribute-mappings.0.to=groups
 
 include::{generated-dir}/config/quarkus-elytron-security-jdbc.adoc[opts=optional, leveloffset=+1]
 
-== Future Work
+== References
 
-* Propose more password mappers.
-* Provide an opinionated configuration.
+* link:security[Quarkus Security]

@@ -4,6 +4,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Repeatable;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -91,6 +93,16 @@ class HibernateValidatorProcessor {
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
+
+    private static final DotName[] JAXRS_METHOD_ANNOTATIONS = {
+            DotName.createSimple("javax.ws.rs.GET"),
+            DotName.createSimple("javax.ws.rs.HEAD"),
+            DotName.createSimple("javax.ws.rs.DELETE"),
+            DotName.createSimple("javax.ws.rs.OPTIONS"),
+            DotName.createSimple("javax.ws.rs.PATCH"),
+            DotName.createSimple("javax.ws.rs.POST"),
+            DotName.createSimple("javax.ws.rs.PUT"),
+    };
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
 
@@ -188,7 +200,7 @@ class HibernateValidatorProcessor {
         consideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
-        Map<DotName, Set<String>> inheritedAnnotationsToBeValidated = new HashMap<>();
+        Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated = new HashMap<>();
         Set<String> detectedBuiltinConstraints = new HashSet<>();
 
         for (DotName consideredAnnotation : consideredAnnotations) {
@@ -236,15 +248,18 @@ class HibernateValidatorProcessor {
             }
         }
 
+        // JAX-RS methods are handled differently by the transformer so those need to be gathered here.
+        // Note: The focus only on methods is basically an incomplete solution, since there could also be
+        // class-level JAX-RS annotations but currently the transformer only looks at methods.
+        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = gatherJaxRsMethods(additionalJaxRsResourceMethodAnnotations,
+                indexView);
+
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
-        Set<DotName> additionalJaxRsMethodAnnotationsDotNames = new HashSet<>(additionalJaxRsResourceMethodAnnotations.size());
-        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
-            additionalJaxRsMethodAnnotationsDotNames.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
-        }
+
         annotationsTransformers
                 .produce(new AnnotationsTransformerBuildItem(
                         new MethodValidatedAnnotationsTransformer(consideredAnnotations,
-                                additionalJaxRsMethodAnnotationsDotNames,
+                                jaxRsMethods,
                                 inheritedAnnotationsToBeValidated)));
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
@@ -317,14 +332,45 @@ class HibernateValidatorProcessor {
         }
     }
 
-    private static void contributeMethodsWithInheritedValidation(Map<DotName, Set<String>> inheritedAnnotationsToBeValidated,
+    private static void contributeMethodsWithInheritedValidation(
+            Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated,
             IndexView indexView, MethodInfo method) {
         ClassInfo clazz = method.declaringClass();
         if (Modifier.isInterface(clazz.flags())) {
             // Remember annotated interface methods that must be validated
-            inheritedAnnotationsToBeValidated.computeIfAbsent(clazz.name(), k -> new HashSet<String>())
-                    .add(method.name().toString());
+            inheritedAnnotationsToBeValidated.computeIfAbsent(clazz.name(), k -> new HashSet<>())
+                    .add(new SimpleMethodSignatureKey(method));
         }
+    }
+
+    private static Map<DotName, Set<SimpleMethodSignatureKey>> gatherJaxRsMethods(
+            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
+            IndexView indexView) {
+        Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = new HashMap<>();
+
+        Collection<DotName> jaxRsMethodDefiningAnnotations = new ArrayList<>(
+                JAXRS_METHOD_ANNOTATIONS.length + additionalJaxRsResourceMethodAnnotations.size());
+        jaxRsMethodDefiningAnnotations.addAll(Arrays.asList(JAXRS_METHOD_ANNOTATIONS));
+        for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
+            jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
+        }
+
+        for (DotName jaxRsAnnotation : jaxRsMethodDefiningAnnotations) {
+            Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(jaxRsAnnotation);
+
+            if (annotationInstances.isEmpty()) {
+                continue;
+            }
+
+            for (AnnotationInstance annotation : annotationInstances) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    MethodInfo method = annotation.target().asMethod();
+                    jaxRsMethods.computeIfAbsent(method.declaringClass().name(), k -> new HashSet<>())
+                            .add(new SimpleMethodSignatureKey(method));
+                }
+            }
+        }
+        return jaxRsMethods;
     }
 
     private static DotName getClassName(Type type) {
@@ -342,4 +388,5 @@ class HibernateValidatorProcessor {
     private static boolean hasXmlConfiguration() {
         return Thread.currentThread().getContextClassLoader().getResource(META_INF_VALIDATION_XML) != null;
     }
+
 }

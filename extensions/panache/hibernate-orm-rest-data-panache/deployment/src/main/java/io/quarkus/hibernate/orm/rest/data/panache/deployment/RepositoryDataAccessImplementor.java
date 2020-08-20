@@ -17,8 +17,10 @@ import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
+/**
+ * Implement data access using repository.
+ */
 final class RepositoryDataAccessImplementor implements DataAccessImplementor {
 
     private final String repositoryClassName;
@@ -27,18 +29,18 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         this.repositoryClassName = repositoryClassName;
     }
 
+    /**
+     * Implements <code>repository.findById(id)</code>
+     */
     @Override
     public ResultHandle findById(BytecodeCreator creator, ResultHandle id) {
         return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findById", Object.class, Object.class),
                 getRepositoryInstance(creator), id);
     }
 
-    @Override
-    public ResultHandle listAll(BytecodeCreator creator, ResultHandle sort) {
-        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "listAll", List.class, Sort.class),
-                getRepositoryInstance(creator), sort);
-    }
-
+    /**
+     * Implements <code>repository.findAll(sort).page(page).list()</code>
+     */
     @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
         ResultHandle query = creator.invokeInterfaceMethod(
@@ -48,6 +50,9 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }
 
+    /**
+     * Implements <code>repository.persist(entity)</code>
+     */
     @Override
     public ResultHandle persist(BytecodeCreator creator, ResultHandle entity) {
         creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "persist", void.class, Object.class),
@@ -55,6 +60,9 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         return entity;
     }
 
+    /**
+     * Implements <code>JpaOperations.getEntityManager().merge(entity)</code>
+     */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
         ResultHandle entityManager = creator.invokeStaticMethod(
@@ -64,12 +72,18 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
     }
 
+    /**
+     * Implements <code>repository.deleteById(id)</code>
+     */
     @Override
     public ResultHandle deleteById(BytecodeCreator creator, ResultHandle id) {
         return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "deleteById", boolean.class, Object.class),
                 getRepositoryInstance(creator), id);
     }
 
+    /**
+     * Implements <code>repository.findAll().page(page).pageCount()</code>
+     */
     @Override
     public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
         ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
@@ -78,6 +92,10 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
     }
 
+    /**
+     * Implements getting repository from Arc container.
+     * <code>Arc.container().instance(Repository.class, new Annotation[0]).get()</code>
+     */
     private ResultHandle getRepositoryInstance(BytecodeCreator creator) {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(

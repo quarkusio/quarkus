@@ -10,7 +10,6 @@ import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class EntityDataAccessImplementor implements DataAccessImplementor {
 
@@ -27,15 +26,11 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle listAll(BytecodeCreator creator, ResultHandle sort) {
-        return creator.invokeStaticMethod(ofMethod(entityClassName, "listAll", List.class, Sort.class), sort);
-    }
-
-    @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
         ResultHandle query = creator.invokeStaticMethod(
                 ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }
 
@@ -46,7 +41,7 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
+    public ResultHandle persistOrUpdate(BytecodeCreator creator, ResultHandle entity) {
         creator.invokeVirtualMethod(ofMethod(entityClassName, "persistOrUpdate", void.class), entity);
         return entity;
     }
@@ -59,7 +54,8 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
         ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
     }
 }

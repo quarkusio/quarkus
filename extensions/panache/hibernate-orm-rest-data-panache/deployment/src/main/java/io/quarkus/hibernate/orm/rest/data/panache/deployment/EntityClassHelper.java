@@ -12,20 +12,17 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.rest.data.panache.deployment.RestDataEntityInfo;
 
-final class RestDataEntityInfoProvider {
+public class EntityClassHelper {
 
     private final IndexView index;
 
-    RestDataEntityInfoProvider(IndexView index) {
+    public EntityClassHelper(IndexView index) {
         this.index = index;
     }
 
-    RestDataEntityInfo get(String entityType, String idType) {
-        ClassInfo classInfo = index.getClassByName(DotName.createSimple(entityType));
-        FieldInfo idField = getIdField(classInfo);
-        return new RestDataEntityInfo(classInfo.toString(), idType, idField, getSetter(classInfo, idField));
+    public FieldInfo getIdField(String className) {
+        return getIdField(index.getClassByName(DotName.createSimple(className)));
     }
 
     private FieldInfo getIdField(ClassInfo classInfo) {
@@ -43,6 +40,10 @@ final class RestDataEntityInfoProvider {
             }
         }
         throw new IllegalArgumentException("Couldn't find id field of " + classInfo);
+    }
+
+    public MethodDescriptor getSetter(String className, FieldInfo field) {
+        return getSetter(index.getClassByName(DotName.createSimple(className)), field);
     }
 
     private MethodDescriptor getSetter(ClassInfo entityClass, FieldInfo field) {

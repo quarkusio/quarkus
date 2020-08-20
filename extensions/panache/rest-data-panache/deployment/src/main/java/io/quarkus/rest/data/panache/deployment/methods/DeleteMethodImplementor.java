@@ -1,24 +1,27 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
-import org.jboss.jandex.IndexView;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.data.panache.RestDataResource;
-import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
-import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
+import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
+import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
 
 public final class DeleteMethodImplementor extends StandardMethodImplementor {
 
-    private static final String NAME = "delete";
+    private static final String METHOD_NAME = "delete";
+
+    private static final String RESOURCE_METHOD_NAME = "delete";
 
     private static final String REL = "remove";
 
     /**
-     * Implements {@link RestDataResource#delete(Object)}.
+     * Generate JAX-RS DELETE method that exposes {@link RestDataResource#delete(Object)}.
      * Generated code looks more or less like this:
      *
      * <pre>
@@ -31,7 +34,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      *         entityClassName = "com.example.Entity"
      *     )
      *     public void delete(@PathParam("id") ID id) {
-     *         if (!BookEntity.deleteById(id)) {
+     *         if (!restDataResource.delete(id)) {
      *             throw new WebApplicationException(404);
      *         }
      *     }
@@ -39,28 +42,35 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      * </pre>
      */
     @Override
-    protected void implementInternal(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
-            RestDataResourceInfo resourceInfo) {
-        MethodMetadata methodMetadata = getMethodMetadata(resourceInfo);
-        MethodCreator methodCreator = classCreator
-                .getMethodCreator(methodMetadata.getName(), void.class.getName(), methodMetadata.getParameterTypes());
+    protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, FieldDescriptor resourceField) {
+        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, void.class.getName(),
+                resourceMetadata.getIdType());
+
+        // Add method annotations
+        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getMethodPath(RESOURCE_METHOD_NAME), "{id}"));
         addTransactionalAnnotation(methodCreator);
         addDeleteAnnotation(methodCreator);
-        addPathAnnotation(methodCreator, propertiesAccessor.getPath(resourceInfo.getType(), methodMetadata, "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
-        addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
+        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
 
-        ResultHandle result = resourceInfo.getDataAccessImplementor()
-                .deleteById(methodCreator, methodCreator.getMethodParam(0));
+        // Invoke resource methods
+        ResultHandle resource = methodCreator.readInstanceField(resourceField, methodCreator.getThis());
+        ResultHandle id = methodCreator.getMethodParam(0);
+        ResultHandle result = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, boolean.class, Object.class),
+                resource, id);
         BranchResult entityWasDeleted = methodCreator.ifNonZero(result);
 
+        // Return response
         entityWasDeleted.trueBranch().returnValue(null);
-        entityWasDeleted.falseBranch().throwException(ResponseImplementor.notFoundException(entityWasDeleted.falseBranch()));
+        entityWasDeleted.falseBranch()
+                .throwException(ResponseImplementor.notFoundException(entityWasDeleted.falseBranch()));
         methodCreator.close();
     }
 
     @Override
-    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
-        return new MethodMetadata(NAME, resourceInfo.getEntityInfo().getIdType());
+    protected String getResourceMethodName() {
+        return RESOURCE_METHOD_NAME;
     }
 }

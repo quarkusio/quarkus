@@ -14,7 +14,6 @@ import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class RepositoryDataAccessImplementor implements DataAccessImplementor {
 
@@ -26,14 +25,9 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
 
     @Override
     public ResultHandle findById(BytecodeCreator creator, ResultHandle id) {
-        return creator.invokeInterfaceMethod(ofMethod(PanacheMongoRepositoryBase.class, "findById", Object.class, Object.class),
+        return creator.invokeInterfaceMethod(
+                ofMethod(PanacheMongoRepositoryBase.class, "findById", Object.class, Object.class),
                 getRepositoryInstance(creator), id);
-    }
-
-    @Override
-    public ResultHandle listAll(BytecodeCreator creator, ResultHandle sort) {
-        return creator.invokeInterfaceMethod(ofMethod(PanacheMongoRepositoryBase.class, "listAll", List.class, Sort.class),
-                getRepositoryInstance(creator), sort);
     }
 
     @Override
@@ -41,7 +35,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle query = creator.invokeInterfaceMethod(
                 ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class, Sort.class),
                 getRepositoryInstance(creator), sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }
 
@@ -53,8 +48,9 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        creator.invokeInterfaceMethod(ofMethod(PanacheMongoRepositoryBase.class, "persistOrUpdate", void.class, Object.class),
+    public ResultHandle persistOrUpdate(BytecodeCreator creator, ResultHandle entity) {
+        creator.invokeInterfaceMethod(
+                ofMethod(PanacheMongoRepositoryBase.class, "persistOrUpdate", void.class, Object.class),
                 getRepositoryInstance(creator), entity);
         return entity;
     }
@@ -69,8 +65,10 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
         ResultHandle query = creator.invokeInterfaceMethod(
-                ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class), getRepositoryInstance(creator));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+                ofMethod(PanacheMongoRepositoryBase.class, "findAll", PanacheQuery.class),
+                getRepositoryInstance(creator));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
     }
 

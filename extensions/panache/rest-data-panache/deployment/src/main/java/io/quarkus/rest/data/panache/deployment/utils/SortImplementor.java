@@ -5,13 +5,9 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -26,14 +22,14 @@ public final class SortImplementor {
      * '-' sign before the field name indicates a descending order.
      *
      * @param creator Bytecode creator instance.
-     * @param uriInfo UriInfo instance
+     * @param sortParams List of sort query strings
      * @return Panache Sort instance
      */
-    public ResultHandle getSort(BytecodeCreator creator, ResultHandle uriInfo) {
+    public ResultHandle getSort(BytecodeCreator creator, ResultHandle sortParams) {
         ResultHandle sort = creator.invokeStaticMethod(
                 ofMethod(Sort.class, "by", Sort.class, String[].class), creator.newArray(String.class, 0));
         ResultHandle fieldsIterator = creator.invokeInterfaceMethod(
-                ofMethod(List.class, "iterator", Iterator.class), getSortFields(creator, uriInfo));
+                ofMethod(List.class, "iterator", Iterator.class), getSortFields(creator, sortParams));
         // Iterate through the sort fields
         BytecodeCreator loopCreator = creator.whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
         ResultHandle field = loopCreator.invokeInterfaceMethod(
@@ -61,10 +57,10 @@ public final class SortImplementor {
                 ofMethod(String.class, "startsWith", boolean.class, String.class), field, creator.load("-")));
     }
 
-    private ResultHandle getSortFields(BytecodeCreator creator, ResultHandle uriInfo) {
+    private ResultHandle getSortFields(BytecodeCreator creator, ResultHandle sortParamsList) {
         ResultHandle sortFieldsList = creator.newInstance(ofConstructor(LinkedList.class));
         ResultHandle sortParamsIterator = creator.invokeInterfaceMethod(
-                ofMethod(List.class, "iterator", Iterator.class), getSortQueryParams(creator, uriInfo));
+                ofMethod(List.class, "iterator", Iterator.class), sortParamsList);
         // Iterate through the sort query parameters
         BytecodeCreator loopCreator = creator.whileLoop(c -> iteratorHasNext(c, sortParamsIterator)).block();
         ResultHandle sortParam = loopCreator.invokeInterfaceMethod(
@@ -73,22 +69,6 @@ public final class SortImplementor {
         loopCreator.invokeInterfaceMethod(
                 ofMethod(List.class, "addAll", boolean.class, Collection.class), sortFieldsList, extractedSortFields);
         return sortFieldsList;
-    }
-
-    /**
-     * Extracts the sort query parameters from a UriInfo instance.
-     *
-     * @param creator A bytecode creator instance
-     * @param uriInfo UriInfo instance
-     * @return A list of sort paramters. Never a null.
-     */
-    private ResultHandle getSortQueryParams(BytecodeCreator creator, ResultHandle uriInfo) {
-        ResultHandle queryParams = creator.invokeInterfaceMethod(
-                ofMethod(UriInfo.class, "getQueryParameters", MultivaluedMap.class), uriInfo);
-        ResultHandle emptyList = creator.invokeStaticMethod(ofMethod(Collections.class, "emptyList", List.class));
-        return creator.invokeInterfaceMethod(
-                ofMethod(MultivaluedMap.class, "getOrDefault", Object.class, Object.class, Object.class),
-                queryParams, creator.load("sort"), emptyList);
     }
 
     /**

@@ -59,7 +59,7 @@ class ConfigMapConfigSourceUtilTest {
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
-        assertThat(configSources).isEmpty();
+        assertThat(configSources).isNotEmpty();
     }
 
     @Test
@@ -83,7 +83,7 @@ class ConfigMapConfigSourceUtilTest {
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
-        assertThat(configSources).isEmpty();
+        assertThat(configSources).isNotEmpty();
     }
 
     @Test
@@ -101,10 +101,18 @@ class ConfigMapConfigSourceUtilTest {
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).hasSize(4);
-        assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("literal"))
+
+        assertThat(configSources.get(0).getClass().getName().contains("ConfigMapLiteralDataPropertiesConfigSource")).isTrue();
+
+        assertThat(configSources).filteredOn(c -> !c.getName().toLowerCase().contains("application"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"));
+                    assertThat(c.getProperties()).containsOnly(
+                            entry("some.key", "someValue"),
+                            entry("app.properties", "ignored1=ignoredValue1"),
+                            entry("app.yaml", "ignored2: ignoredValue2"),
+                            entry("app.yml", "ignored3: ignoredValue3"));
                 });
+
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.properties"))
                 .hasOnlyOneElementSatisfying(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("app.key", "val"));

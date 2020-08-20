@@ -110,13 +110,7 @@ jobs:
         java :
           - { name: Java8,
               java-version: 8,
-              maven_args: "-pl !integration-tests/vault-app,!integration-tests/vault-agroal,!integration-tests/vault,!integration-tests/google-cloud-functions-http,!integration-tests/gradle,!integration-tests/google-cloud-functions,!integration-tests/funqy-google-cloud-functions"
-          }
-          - {
-            name: "Java 8 - 242",
-            java-version: 8,
-            release: "jdk8u242-b08",
-            maven_args: "-pl !integration-tests/google-cloud-functions-http,!integration-tests/gradle,!integration-tests/google-cloud-functions,!integration-tests/funqy-google-cloud-functions"
+              maven_args: "-pl !integration-tests/google-cloud-functions-http,!integration-tests/gradle,!integration-tests/google-cloud-functions,!integration-tests/funqy-google-cloud-functions"
           }
           - {
             name: Java 11,

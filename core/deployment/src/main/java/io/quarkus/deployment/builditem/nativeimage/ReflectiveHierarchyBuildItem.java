@@ -33,6 +33,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
+    private static final String UNKNOWN_SOURCE = "<unknown>";
+
     private final Type type;
     private final IndexView index;
     private final Predicate<DotName> ignoreTypePredicate;
@@ -61,7 +63,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignoreTypePredicate) {
-        this(type, ignoreTypePredicate, null);
+        this(type, ignoreTypePredicate, UNKNOWN_SOURCE);
     }
 
     /**
@@ -69,7 +71,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
      */
     @Deprecated
     public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate) {
-        this(type, index, ignoreTypePredicate, null);
+        this(type, index, ignoreTypePredicate, UNKNOWN_SOURCE);
     }
 
     /**
@@ -150,7 +152,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private Predicate<DotName> ignoreTypePredicate = DefaultIgnoreTypePredicate.INSTANCE;
         private Predicate<FieldInfo> ignoreFieldPredicate = DefaultIgnoreFieldPredicate.INSTANCE;
         private Predicate<MethodInfo> ignoreMethodPredicate = DefaultIgnoreMethodPredicate.INSTANCE;
-        private String source;
+        private String source = UNKNOWN_SOURCE;
 
         public Builder type(Type type) {
             this.type = type;

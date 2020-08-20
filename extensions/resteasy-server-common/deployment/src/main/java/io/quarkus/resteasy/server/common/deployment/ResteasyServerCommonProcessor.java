@@ -68,8 +68,8 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
-import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;

@@ -19,7 +19,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
@@ -156,11 +155,7 @@ public class SmallRyeGraphQLProcessor {
         recorder.createExecutionService(beanContainer.getValue(), schema);
 
         // Make sure the complex object from the application can work in native mode
-        for (String c : getClassesToRegisterForReflection(schema)) {
-            DotName name = DotName.createSimple(c);
-            org.jboss.jandex.Type type = org.jboss.jandex.Type.create(name, org.jboss.jandex.Type.Kind.CLASS);
-            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index));
-        }
+        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getSchemaJavaClasses(schema)));
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
         reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getGraphQLJavaClasses()));
@@ -246,7 +241,7 @@ public class SmallRyeGraphQLProcessor {
         }
     }
 
-    private Set<String> getClassesToRegisterForReflection(Schema schema) {
+    private String[] getSchemaJavaClasses(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();
 
@@ -256,7 +251,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
 
-        return classes;
+        return classes.toArray(new String[] {});
     }
 
     private Class[] getGraphQLJavaClasses() {

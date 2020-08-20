@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
+import static io.quarkus.devtools.codestarts.QuarkusCodestarts.getToolingCodestarts;
 import static io.quarkus.devtools.codestarts.QuarkusCodestarts.inputBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +16,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.codestarts.CodestartSpec.Type;
+import io.quarkus.devtools.project.BuildTool;
 
 class CodestartsIT extends PlatformAwareTestBase {
 
@@ -29,7 +31,7 @@ class CodestartsIT extends PlatformAwareTestBase {
     void loadBundledCodestartsTest() throws IOException {
         final Collection<Codestart> codestarts = CodestartLoader
                 .loadBundledCodestarts(inputBuilder(getPlatformDescriptor()).build());
-        assertThat(codestarts).hasSize(11);
+        assertThat(codestarts).hasSize(13);
         assertThat(codestarts)
                 .filteredOn(c -> c.getType().isBase())
                 .extracting(Codestart::getImplementedLanguages)
@@ -60,7 +62,7 @@ class CodestartsIT extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestEmpty() throws IOException {
         final CodestartProject codestartProject = Codestarts
-                .prepareProject(inputBuilder(getPlatformDescriptor()).build());
+                .prepareProject(inputBuilder(getPlatformDescriptor()).includeExamples(false).build());
         assertThat(codestartProject.getRequiredCodestart(Type.PROJECT)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/project/quarkus");
         assertThat(codestartProject.getRequiredCodestart(Type.BUILDTOOL)).extracting(Codestart::getResourceDir)
@@ -71,13 +73,13 @@ class CodestartsIT extends PlatformAwareTestBase {
                 .isEqualTo("bundled-codestarts/language/java");
         assertThat(codestartProject.getBaseCodestarts()).hasSize(4);
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/tooling/dockerfiles");
+                .isEmpty();
     }
 
     @Test
     void prepareProjectTestGradle() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .addCodestart("gradle")
+                .addCodestarts(getToolingCodestarts(BuildTool.GRADLE, false, false))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(Type.BUILDTOOL)).extracting(Codestart::getResourceDir)
@@ -87,7 +89,7 @@ class CodestartsIT extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestKotlin() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -98,7 +100,7 @@ class CodestartsIT extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestScala() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -109,7 +111,7 @@ class CodestartsIT extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestConfigYaml() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -120,21 +122,21 @@ class CodestartsIT extends PlatformAwareTestBase {
     @Test
     void prepareProjectTestResteasy() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(getToolingCodestarts(BuildTool.MAVEN, false, true))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)
                 .contains("bundled-codestarts/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/tooling/dockerfiles",
+                .containsExactlyInAnyOrder("bundled-codestarts/tooling/maven-wrapper",
                         "codestarts/resteasy-example");
     }
 
     @Test
     void prepareProjectTestCommandMode() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(getToolingCodestarts(BuildTool.MAVEN, true, false))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)

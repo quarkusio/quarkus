@@ -1,5 +1,9 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.commands.CreateProject.CODESTARTS_ENABLED;
+import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
+import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.NO_EXAMPLES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 
@@ -60,7 +64,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
         });
 
-        if (invocation.getValue("codestarts.enabled", false)) {
+        if (invocation.getValue(CODESTARTS_ENABLED, false)) {
             final List<AppArtifactKey> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery).stream()
                     .map(AppArtifactCoords::getKey)
                     .collect(Collectors.toList());
@@ -75,10 +79,10 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 }
                 final CodestartInput input = QuarkusCodestarts.inputBuilder(platformDescr)
                         .addExtensions(extensionsToAdd)
-                        .addCodestart(invocation.getQuarkusProject().getBuildTool().getKey())
+                        .addCodestarts(getToolingCodestarts(invocation))
                         .addData(platformData)
                         .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
-                        .includeExamples(invocation.getValue("codestarts.with-example-code", true))
+                        .includeExamples(!invocation.getValue(NO_EXAMPLES, false))
                         .build();
                 invocation.log().info("Generating Quarkus Codestart Project with data: " + input.getData().toString());
                 final CodestartProject codestartProject = Codestarts
@@ -147,6 +151,13 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             throw new QuarkusCommandException("Failed to create project", e);
         }
         return QuarkusCommandOutcome.success();
+    }
+
+    private List<String> getToolingCodestarts(final QuarkusCommandInvocation invocation) {
+        return QuarkusCodestarts.getToolingCodestarts(
+                invocation.getQuarkusProject().getBuildTool(),
+                invocation.getValue(NO_BUILDTOOL_WRAPPER, false),
+                invocation.getValue(NO_DOCKERFILES, false));
     }
 
     // # CLOSE YOUR EYES PLEASE

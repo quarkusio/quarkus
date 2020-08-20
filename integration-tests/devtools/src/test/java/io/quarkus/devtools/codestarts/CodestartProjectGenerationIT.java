@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 class CodestartProjectGenerationIT extends PlatformAwareTestBase {
@@ -62,6 +63,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectEmpty() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .includeExamples(false)
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -70,14 +72,17 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
 
         checkMaven(projectDir);
         checkReadme(projectDir);
-        checkDockerfiles(projectDir);
+
+        assertThat(projectDir.resolve(".mvnw")).doesNotExist();
+        assertThat(projectDir.resolve(".dockerignore")).doesNotExist();
+
         checkNoExample(projectDir);
     }
 
     @Test
     void generateCodestartProjectEmptyWithExamples() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -95,7 +100,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectMavenResteasyJava() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
                 .build();
@@ -112,9 +117,28 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     }
 
     @Test
+    void generateCodestartProjectMavenConfigYamlJava() throws IOException {
+        final CodestartInput input = inputBuilder(getPlatformDescriptor())
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
+                .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
+                .addData(getTestInputData())
+                .build();
+        final CodestartProject codestartProject = Codestarts.prepareProject(input);
+        final Path projectDir = testDirPath.resolve("maven-yaml-java");
+        Codestarts.generateProject(codestartProject, projectDir);
+
+        checkMaven(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir);
+        checkConfigYaml(projectDir);
+
+        assertThat(projectDir.resolve("src/main/java/org/acme/config/ExampleResource.java")).exists();
+    }
+
+    @Test
     void generateCodestartProjectMavenResteasyKotlin() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .addData(getTestInputData())
@@ -134,7 +158,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectMavenResteasyScala() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .addData(getTestInputData())
@@ -154,7 +178,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleResteasyJava() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE, false, false))
                 .addCodestart("gradle")
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
@@ -174,7 +198,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleResteasyKotlin() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .addCodestart("gradle")
@@ -195,11 +219,10 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleResteasyScala() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .addData(getTestInputData())
-                .addCodestart("gradle")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-resteasy-scala");
@@ -216,10 +239,9 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleWithKotlinDslResteasyJava() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE_KOTLIN_DSL, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getTestInputData())
-                .addCodestart("gradle-kotlin-dsl")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-java");
@@ -236,10 +258,9 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleWithKotlinDslResteasyKotlin() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE_KOTLIN_DSL, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
-                .addCodestart("gradle-kotlin-dsl")
                 .addData(getTestInputData())
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
@@ -257,11 +278,10 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectGradleWithKotlinDslResteasyScala() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.GRADLE_KOTLIN_DSL, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .addData(getTestInputData())
-                .addCodestart("gradle-kotlin-dsl")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         final Path projectDir = testDirPath.resolve("gradle-kotlin-dsl-resteasy-scala");
@@ -278,7 +298,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
     @Test
     void generateCodestartProjectQute() throws IOException {
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
+                .addCodestarts(QuarkusCodestarts.getToolingCodestarts(BuildTool.MAVEN, false, false))
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-qute"))
                 .addCodestart("qute")
                 .addData(getTestInputData())

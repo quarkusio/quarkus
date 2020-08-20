@@ -36,6 +36,7 @@ public class QuarkusModelHelper {
     }
 
     public final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
+    public final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
 
     public static void exportModel(QuarkusModel model) throws AppModelResolverException, IOException {
         Path serializedModel = QuarkusModelHelper

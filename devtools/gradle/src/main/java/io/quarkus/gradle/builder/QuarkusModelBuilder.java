@@ -12,12 +12,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
@@ -102,7 +105,9 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
         return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode)),
                 new LinkedList<>(appDependencies.values()),
-                extensionDependencies);
+                extensionDependencies,
+                deploymentDeps.stream().map(QuarkusModelBuilder::toEnforcedPlatformDependency)
+                        .filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
     public Set<WorkspaceModule> getWorkspace(Project project, LaunchMode mode) {
@@ -342,6 +347,18 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         final DependencyImpl dependency = initDependency(a);
         dependency.addPath(a.getFile());
         return dependency;
+    }
+
+    static Dependency toEnforcedPlatformDependency(org.gradle.api.artifacts.Dependency dependency) {
+        if (dependency instanceof ExternalModuleDependency) {
+            ExternalModuleDependency emd = (ExternalModuleDependency) dependency;
+            Category category = emd.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+            if (category != null && Category.ENFORCED_PLATFORM.equals(category.getName())) {
+                return new DependencyImpl(emd.getName(), emd.getGroup(), emd.getVersion(),
+                        "compile", "pom", null);
+            }
+        }
+        return null;
     }
 
     /**

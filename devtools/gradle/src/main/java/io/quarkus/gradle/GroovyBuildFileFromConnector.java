@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.apache.maven.model.Dependency;
-
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.buildfile.AbstractGroovyGradleBuildFile;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
@@ -23,7 +22,7 @@ public class GroovyBuildFileFromConnector extends AbstractGroovyGradleBuildFile 
     }
 
     @Override
-    public List<Dependency> getDependencies() throws IOException {
+    public List<AppArtifactCoords> getDependencies() throws IOException {
         return dependencyResolver.getDependencies(getBuildContent(), getProjectDirPath());
     }
 

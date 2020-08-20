@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.maven.model.Dependency;
-
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -71,18 +70,26 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
         }
 
         @Override
-        protected List<Dependency> getDependencies() throws IOException {
+        protected List<AppArtifactCoords> getDependencies() throws IOException {
             final Matcher matcher = Pattern.compile("\\s*implementation\\s+'([^\\v:]+):([^\\v:]+)(:[^:\\v]+)?'")
                     .matcher(getBuildContent());
-            final ArrayList<Dependency> builder = new ArrayList<>();
+            final ArrayList<AppArtifactCoords> builder = new ArrayList<>();
             while (matcher.find()) {
-                final Dependency dep = new Dependency();
-                dep.setGroupId(matcher.group(1));
-                dep.setArtifactId(matcher.group(2));
-                dep.setVersion(matcher.group(3));
-                builder.add(dep);
+                builder.add(createDependency(matcher.group(1), matcher.group(2), matcher.group(3), "jar"));
+            }
+            if (getBuildContent().contains(
+                    "implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")) {
+                builder.add(createDependency(
+                        getProperty("quarkusPlatformGroupId"),
+                        getProperty("quarkusPlatformArtifactId"),
+                        getProperty("quarkusPlatformVersion"),
+                        "pom"));
             }
             return builder;
+        }
+
+        private AppArtifactCoords createDependency(String groupId, String artifactId, String version, String type) {
+            return new AppArtifactCoords(groupId, artifactId, type, version);
         }
     }
 }

@@ -35,8 +35,8 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
-import io.quarkus.deployment.util.JavaVersionUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.JavaVersionUtil;
 
 public class QuarkusAugmentor {
 

@@ -335,7 +335,8 @@ public class UndertowBuildStep {
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath,
                 servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
-                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive);
+                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
+                webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null);
 
         if (webMetaData.getContextParams() != null) {
             for (ParamValueMetaData i : webMetaData.getContextParams()) {

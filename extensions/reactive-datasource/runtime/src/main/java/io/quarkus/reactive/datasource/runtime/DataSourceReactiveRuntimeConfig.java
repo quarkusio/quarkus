@@ -1,5 +1,6 @@
 package io.quarkus.reactive.datasource.runtime;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -94,4 +95,22 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem
     public Optional<Boolean> threadLocal;
+
+    /**
+     * The number of reconnection attempts when a pooled connection cannot be established on first try.
+     */
+    @ConfigItem(defaultValue = "0")
+    public int reconnectAttempts;
+
+    /**
+     * The interval between reconnection attempts when a pooled connection cannot be established on first try.
+     */
+    @ConfigItem(defaultValue = "PT1S")
+    public Duration reconnectInterval;
+
+    /**
+     * The maximum time without data written to or read from a connection before it is removed from the pool.
+     */
+    @ConfigItem(defaultValueDocumentation = "no timeout")
+    public Optional<Duration> idleTimeout;
 }

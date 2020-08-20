@@ -42,7 +42,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     @Test
     void testPartialMatches() throws Exception {
         createProject();
-        addExtensions(asList("mongodb-pana", "hibernate-val", "agro"));
+        addExtensions(asList("mongodb-panache", "hibernate-val", "agro"));
 
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");

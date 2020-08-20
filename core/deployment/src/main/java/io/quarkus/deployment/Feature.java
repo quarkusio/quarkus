@@ -59,6 +59,7 @@ public enum Feature {
     MAILER,
     MONGODB_CLIENT,
     MONGODB_PANACHE,
+    MONGODB_PANACHE_KOTLIN,
     MUTINY,
     NARAYANA_JTA,
     NARAYANA_STM,

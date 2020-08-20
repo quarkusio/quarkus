@@ -46,7 +46,7 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
     @Test
     void testPartialMatches() throws Exception {
         createProject();
-        List<String> extensions = asList("mongodb-pana", "hibernate-val", "agro");
+        List<String> extensions = asList("mongodb-panache", "hibernate-val", "agro");
 
         addExtensions(extensions);
         final T project = readProject();

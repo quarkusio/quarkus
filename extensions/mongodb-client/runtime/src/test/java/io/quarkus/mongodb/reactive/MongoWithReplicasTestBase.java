@@ -108,10 +108,10 @@ public class MongoWithReplicasTestBase {
     }
 
     private static void initializeReplicaSet(final List<IMongodConfig> mongodConfigList) throws UnknownHostException {
-        final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
+        final String arbiterAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
                 + mongodConfigList.get(0).net().getPort();
         final MongoClientSettings mo = MongoClientSettings.builder()
-                .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
+                .applyConnectionString(new ConnectionString(arbiterAddress)).build();
 
         try (MongoClient mongo = MongoClients.create(mo)) {
             final MongoDatabase mongoAdminDB = mongo.getDatabase("admin");

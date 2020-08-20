@@ -1,11 +1,11 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
+import static io.quarkus.deployment.util.AsmUtil.autobox;
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.JPA_OPERATIONS;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE_DOTNAME;
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.autobox;
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.sanitize;
-import static io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer.PanacheRepositoryClassVisitor.findEntityTypeArgumentsForPanacheRepository;
+import static io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor.findEntityTypeArgumentsForPanacheRepository;
 import static org.jboss.jandex.DotName.createSimple;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -57,7 +57,7 @@ class KotlinPanacheRepositoryClassVisitor extends ClassVisitor {
         final String repositoryClassName = name.replace('/', '.');
 
         String[] foundTypeArguments = findEntityTypeArgumentsForPanacheRepository(indexView, repositoryClassName,
-                PANACHE_REPOSITORY_BASE_DOTNAME);
+                PANACHE_REPOSITORY_BASE);
 
         String entityBinaryType = foundTypeArguments[0];
         entitySignature = "L" + entityBinaryType + ";";

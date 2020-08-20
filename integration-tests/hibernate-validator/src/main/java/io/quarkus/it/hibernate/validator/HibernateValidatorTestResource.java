@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.interceptor.InterceptorBinding;
+import javax.persistence.EntityManager;
+import javax.transaction.Transactional;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
@@ -36,6 +38,7 @@ import org.hibernate.validator.constraints.Length;
 import io.quarkus.it.hibernate.validator.custom.MyOtherBean;
 import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorConstraint;
 import io.quarkus.it.hibernate.validator.injection.MyService;
+import io.quarkus.it.hibernate.validator.orm.TestEntity;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
@@ -53,6 +56,9 @@ public class HibernateValidatorTestResource
 
     @Inject
     ZipCodeService zipCodeResource;
+
+    @Inject
+    EntityManager em;
 
     public void testValidationOutsideOfResteasyContext(@Observes StartupEvent startupEvent) {
         validator.validate(new MyOtherBean(null));
@@ -226,6 +232,15 @@ public class HibernateValidatorTestResource
         }
 
         return result.build();
+    }
+
+    @GET
+    @Path("/test-hibernate-orm-integration")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    public String testHibernateOrmIntegration() {
+        em.persist(new TestEntity());
+        return "FAILED";
     }
 
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {

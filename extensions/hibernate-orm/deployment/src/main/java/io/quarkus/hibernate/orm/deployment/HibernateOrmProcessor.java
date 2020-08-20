@@ -37,6 +37,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
@@ -150,6 +151,17 @@ public final class HibernateOrmProcessor {
     public SystemPropertyBuildItem enforceDisableRuntimeEnhancer() {
         return new SystemPropertyBuildItem(AvailableSettings.BYTECODE_PROVIDER,
                 org.hibernate.cfg.Environment.BYTECODE_PROVIDER_NAME_NONE);
+    }
+
+    @BuildStep
+    public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
+                    "org.hibernate.cfg.beanvalidation.TypeSafeActivator"));
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
+                    BeanValidationIntegrator.BV_CHECK_CLASS));
+        }
     }
 
     @BuildStep

@@ -45,6 +45,7 @@ public enum Capability {
     CONTAINER_IMAGE_S2I,
     HIBERNATE_ORM,
     HIBERNATE_REACTIVE,
+    HIBERNATE_VALIDATOR,
     /**
      * Presence of an io.opentracing tracer (for example, Jaeger).
      */
@@ -56,7 +57,7 @@ public enum Capability {
     SPRING_WEB;
 
     /**
-     * 
+     *
      * @return the name
      */
     public String getName() {

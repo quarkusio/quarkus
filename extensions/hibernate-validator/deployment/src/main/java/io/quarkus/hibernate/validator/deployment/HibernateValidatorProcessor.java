@@ -50,6 +50,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -92,6 +93,11 @@ class HibernateValidatorProcessor {
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.HIBERNATE_VALIDATOR);
+    }
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {

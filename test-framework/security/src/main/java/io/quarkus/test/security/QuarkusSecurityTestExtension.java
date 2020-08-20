@@ -26,7 +26,6 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
             //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
             ClassLoader cl = QuarkusSecurityTestExtension.class.getClassLoader();
             Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
-            Class<?> test = cl.loadClass(context.getTestInstance().getClass().getName());
             Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
                     Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
                         try {
@@ -37,7 +36,11 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                     }).toArray(Class<?>[]::new));
             TestSecurity testSecurity = method.getAnnotation(TestSecurity.class);
             if (testSecurity == null) {
-                testSecurity = test.getAnnotation(TestSecurity.class);
+                testSecurity = original.getAnnotation(TestSecurity.class);
+                while (testSecurity == null && original != Object.class) {
+                    original = original.getSuperclass();
+                    testSecurity = original.getAnnotation(TestSecurity.class);
+                }
             }
             if (testSecurity == null) {
                 return;

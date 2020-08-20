@@ -1,4 +1,4 @@
-package io.quarkus.deployment.util;
+package io.quarkus.runtime.util;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

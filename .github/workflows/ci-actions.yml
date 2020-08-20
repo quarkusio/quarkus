@@ -253,11 +253,6 @@ jobs:
               java-version: 8
           }
           - {
-            name: "Java 8 - 242",
-            java-version: 8,
-            release: "jdk8u242-b08"
-          }
-          - {
             name: Java 11,
             java-version: 11
           }

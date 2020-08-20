@@ -164,7 +164,7 @@
         <mongo-crypt.version>1.0.1</mongo-crypt.version>
         <artemis.version>2.11.0</artemis.version>
         <proton-j.version>0.33.6</proton-j.version>
-        <okhttp.version>3.14.6</okhttp.version>
+        <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>1.7.30</sentry.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>

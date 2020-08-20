@@ -51,6 +51,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -190,7 +191,9 @@ public class SmallRyeOpenApiProcessor {
                 reflectiveHierarchy
                         .produce(new ReflectiveHierarchyBuildItem.Builder()
                                 .type(Type.create(typeTarget.asClass().name(), Type.Kind.CLASS))
-                                .ignoreTypePredicate(IgnoreDotNames.IGNORE_FOR_REFLECTION_PREDICATE)
+                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                 .source(getClass().getSimpleName() + " > " + typeTarget.asClass().name())
                                 .build());
             }
@@ -238,7 +241,9 @@ public class SmallRyeOpenApiProcessor {
                 if (schemaImplementationClass != null) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                             .type(schemaImplementationClass.asClass())
-                            .ignoreTypePredicate(IgnoreDotNames.IGNORE_FOR_REFLECTION_PREDICATE)
+                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                             .source(source)
                             .build());
                 }
@@ -253,7 +258,9 @@ public class SmallRyeOpenApiProcessor {
                     for (Type schemaOneOfClass : schemaOneOfClasses.asClassArray()) {
                         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                 .type(schemaOneOfClass)
-                                .ignoreTypePredicate(IgnoreDotNames.IGNORE_FOR_REFLECTION_PREDICATE)
+                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                 .source(source)
                                 .build());
                     }
@@ -264,7 +271,9 @@ public class SmallRyeOpenApiProcessor {
                     for (Type schemaAnyOfClass : schemaAnyOfClasses.asClassArray()) {
                         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                 .type(schemaAnyOfClass)
-                                .ignoreTypePredicate(IgnoreDotNames.IGNORE_FOR_REFLECTION_PREDICATE)
+                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                 .source(source)
                                 .build());
                     }
@@ -275,7 +284,9 @@ public class SmallRyeOpenApiProcessor {
                     for (Type schemaAllOfClass : schemaAllOfClasses.asClassArray()) {
                         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                                 .type(schemaAllOfClass)
-                                .ignoreTypePredicate(IgnoreDotNames.IGNORE_FOR_REFLECTION_PREDICATE)
+                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
                                 .source(source)
                                 .build());
                     }

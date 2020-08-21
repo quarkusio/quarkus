@@ -59,13 +59,13 @@ public class BuildToolHelper {
         return null;
     }
 
-    public static QuarkusModel enableGradleAppModel(Path projectRoot, String mode)
+    public static QuarkusModel enableGradleAppModel(Path projectRoot, String mode, String... tasks)
             throws IOException, AppModelResolverException {
         if (isMavenProject(projectRoot)) {
             return null;
         }
         final QuarkusModel model = QuarkusGradleModelFactory.create(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
-                mode);
+                mode, tasks);
         QuarkusModelHelper.exportModel(model);
         return model;
     }

@@ -8,10 +8,11 @@ import org.gradle.tooling.ProjectConnection;
 
 public class QuarkusGradleModelFactory {
 
-    public static QuarkusModel create(File projectDir, String mode) {
+    public static QuarkusModel create(File projectDir, String mode, String... tasks) {
         try (ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(projectDir)
                 .connect()) {
+            connection.newBuild().forTasks(tasks).run();
             return connection.action(new QuarkusModelBuildAction(mode)).run();
         }
     }

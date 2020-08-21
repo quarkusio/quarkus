@@ -136,7 +136,9 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     void checkTransactionsSupport(Capabilities capabilities) {
-        if (capabilities.isMissing(Capability.TRANSACTIONS)) {
+        // JTA is necessary for blocking Hibernate ORM but not necessarily for Hibernate Reactive
+        if (capabilities.isMissing(Capability.TRANSACTIONS)
+                && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             throw new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.");
         }
     }

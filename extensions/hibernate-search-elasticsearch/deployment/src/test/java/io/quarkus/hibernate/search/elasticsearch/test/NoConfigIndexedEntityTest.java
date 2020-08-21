@@ -10,11 +10,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NoConfigIndexedNonEntityTest {
+public class NoConfigIndexedEntityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedNonEntity.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .setExpectedException(ConfigurationError.class);
 
     @Test

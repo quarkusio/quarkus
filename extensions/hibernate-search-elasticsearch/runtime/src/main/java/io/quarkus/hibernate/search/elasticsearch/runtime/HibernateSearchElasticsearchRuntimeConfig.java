@@ -32,11 +32,11 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**
-     * Additional backends
+     * Named backends
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchAdditionalBackendsRuntimeConfig additionalBackends;
+    public ElasticsearchNamedBackendsRuntimeConfig namedBackends;
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -58,10 +58,10 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     AutomaticIndexingConfig automaticIndexing;
 
     @ConfigGroup
-    public static class ElasticsearchAdditionalBackendsRuntimeConfig {
+    public static class ElasticsearchNamedBackendsRuntimeConfig {
 
         /**
-         * Additional backends
+         * Named backends
          */
         @ConfigDocMapKey("backend-name")
         public Map<String, ElasticsearchBackendRuntimeConfig> backends;
@@ -128,7 +128,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The default configuration for the Elasticsearch indexes.
          */
-        @ConfigItem
+        @ConfigItem(name = ConfigItem.PARENT)
         ElasticsearchIndexConfig indexDefaults;
 
         /**
@@ -374,7 +374,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.8/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          */
         // We can't set an actual default value here: see comment on this class.
@@ -400,7 +400,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.8/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          * <p>
          * Note that raising this number above the queue size has no effect,

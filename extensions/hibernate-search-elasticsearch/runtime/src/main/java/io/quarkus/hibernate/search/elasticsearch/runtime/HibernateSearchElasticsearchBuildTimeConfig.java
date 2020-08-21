@@ -23,11 +23,11 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
     public ElasticsearchBackendBuildTimeConfig defaultBackend;
 
     /**
-     * Additional backends
+     * Named backends
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchAdditionalBackendsBuildTimeConfig additionalBackends;
+    public ElasticsearchNamedBackendsBuildTimeConfig namedBackends;
 
     /**
      * The class or the name of the bean that should be notified of any failure occurring in a background process
@@ -39,19 +39,10 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
     public Optional<Class<?>> backgroundFailureHandler;
 
     @ConfigGroup
-    public static class ElasticsearchAdditionalBackendsBuildTimeConfig {
+    public static class ElasticsearchNamedBackendsBuildTimeConfig {
 
         /**
-         * Only useful when defining {@link #backends additional backends}:
-         * the name of the default backend,
-         * i.e. the backend that will be assigned to {@code @Indexed} entities
-         * that do not specify a backend explicitly through {@code @Indexed(backend = ...)}.
-         */
-        @ConfigItem
-        public Optional<String> defaultBackend;
-
-        /**
-         * Additional backends
+         * Named backends
          */
         @ConfigDocMapKey("backend-name")
         public Map<String, ElasticsearchBackendBuildTimeConfig> backends;

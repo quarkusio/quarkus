@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.elasticsearch.runtime;
 
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendConfig;
-import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendDefaultIndexConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
@@ -30,8 +29,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
 
-    public static final String DEFAULT_BACKEND = "_quarkus_";
-
     private static HibernateSearchElasticsearchRuntimeConfig runtimeConfig;
 
     public void registerHibernateSearchIntegration(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
@@ -44,7 +41,7 @@ public class HibernateSearchElasticsearchRecorder {
 
     private static final class HibernateSearchIntegrationListener implements HibernateOrmIntegrationListener {
 
-        private HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
+        private final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
 
         private HibernateSearchIntegrationListener(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
             this.buildTimeConfig = buildTimeConfig;
@@ -59,20 +56,9 @@ public class HibernateSearchElasticsearchRecorder {
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     buildTimeConfig.backgroundFailureHandler);
 
-            if (buildTimeConfig.additionalBackends.defaultBackend.isPresent()) {
-                // we have a named default backend
-                addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
-                        buildTimeConfig.additionalBackends.defaultBackend.get());
-            } else if (buildTimeConfig.defaultBackend.version.isPresent()) {
-                // we use the default backend configuration
-                addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
-                        HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND);
-            }
+            contributeBackendBuildTimeProperties(propertyCollector, null, buildTimeConfig.defaultBackend);
 
-            contributeBackendBuildTimeProperties(propertyCollector, HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND,
-                    buildTimeConfig.defaultBackend);
-
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.additionalBackends.backends
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.namedBackends.backends
                     .entrySet()) {
                 contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
@@ -103,9 +89,9 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
                     runtimeConfig.queryLoading.fetchSize);
 
-            contributeBackendRuntimeProperties(propertyCollector, DEFAULT_BACKEND, runtimeConfig.defaultBackend);
+            contributeBackendRuntimeProperties(propertyCollector, null, runtimeConfig.defaultBackend);
 
-            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.additionalBackends.backends
+            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.namedBackends.backends
                     .entrySet()) {
                 contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
@@ -153,44 +139,35 @@ public class HibernateSearchElasticsearchRecorder {
                         elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
             }
 
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
-                    elasticsearchBackendConfig.indexDefaults.schemaManagement.requiredStatus);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                    elasticsearchBackendConfig.indexDefaults.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
-                    d -> d.get().toMillis());
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
-                    elasticsearchBackendConfig.indexDefaults.indexing.queueCount);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
-                    elasticsearchBackendConfig.indexDefaults.indexing.queueSize);
-            addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
-                    elasticsearchBackendConfig.indexDefaults.indexing.maxBulkSize);
+            // Index defaults at the backend level
+            contributeBackendIndexRuntimeProperties(propertyCollector, backendName, null,
+                    elasticsearchBackendConfig.indexDefaults);
 
             for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();
                 ElasticsearchIndexConfig indexConfig = indexConfigEntry.getValue();
-
-                addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
-                        indexConfig.schemaManagement.requiredStatus);
-                addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                        indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
-                        d -> d.get().toMillis());
-                addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
-                        indexConfig.indexing.queueCount);
-                addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
-                        indexConfig.indexing.queueSize);
-                addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
-                        indexConfig.indexing.maxBulkSize);
+                contributeBackendIndexRuntimeProperties(propertyCollector, backendName, indexName, indexConfig);
             }
+        }
+
+        private void contributeBackendIndexRuntimeProperties(BiConsumer<String, Object> propertyCollector,
+                String backendName, String indexName, ElasticsearchIndexConfig indexConfig) {
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
+                    indexConfig.schemaManagement.requiredStatus);
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
+                    indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
+                    d -> d.get().toMillis());
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
+                    indexConfig.indexing.queueCount);
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
+                    indexConfig.indexing.queueSize);
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
+                    indexConfig.indexing.maxBulkSize);
         }
     }
 }

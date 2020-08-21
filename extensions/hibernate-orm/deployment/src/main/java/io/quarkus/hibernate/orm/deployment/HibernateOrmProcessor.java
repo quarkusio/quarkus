@@ -688,6 +688,9 @@ public final class HibernateOrmProcessor {
             descriptor.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
         }
 
+        persistenceUnitConfig.maxFetchDepth.ifPresent(
+                depth -> descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(depth)));
+
         persistenceUnitConfig.query.queryPlanCacheMaxSize.ifPresent(
                 maxSize -> descriptor.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
 

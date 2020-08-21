@@ -81,6 +81,14 @@ public class HibernateOrmConfigPersistenceUnit {
     public int batchFetchSize;
 
     /**
+     * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
+     *
+     * A `0` disables default outer join fetching.
+     */
+    @ConfigItem
+    public OptionalInt maxFetchDepth;
+
+    /**
      * Pluggable strategy contract for applying physical naming rules for database object names.
      *
      * Class name of the Hibernate PhysicalNamingStrategy implementation
@@ -145,6 +153,7 @@ public class HibernateOrmConfigPersistenceUnit {
         return dialect.isAnyPropertySet() ||
                 sqlLoadScript.isPresent() ||
                 batchFetchSize > 0 ||
+                maxFetchDepth.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||

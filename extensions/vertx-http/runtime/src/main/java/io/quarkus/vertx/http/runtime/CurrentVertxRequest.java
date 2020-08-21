@@ -9,6 +9,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CurrentVertxRequest {
 
     private RoutingContext current;
+    private Object otherHttpContextObject;
 
     @Produces
     @RequestScoped
@@ -21,4 +22,17 @@ public class CurrentVertxRequest {
         return this;
     }
 
+    public CurrentVertxRequest setCurrent(RoutingContext current, Object otherHttpContextObject) {
+        this.current = current;
+        this.otherHttpContextObject = otherHttpContextObject;
+        return this;
+    }
+
+    public Object getOtherHttpContextObject() {
+        return otherHttpContextObject;
+    }
+
+    public void setOtherHttpContextObject(Object otherHttpContextObject) {
+        this.otherHttpContextObject = otherHttpContextObject;
+    }
 }

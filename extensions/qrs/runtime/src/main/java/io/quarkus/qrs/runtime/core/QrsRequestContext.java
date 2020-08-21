@@ -37,7 +37,6 @@ import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 public class QrsRequestContext implements Runnable, Closeable {
-    public static final String CURRENT_REQUEST_KEY = QrsRequestContext.class.getName();
     private static final Logger log = Logger.getLogger(QrsRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QrsDeployment deployment;
@@ -176,7 +175,7 @@ public class QrsRequestContext implements Runnable, Closeable {
         if (activationRequired) {
             if (currentRequestScope == null) {
                 requestContext.activate();
-                currentVertxRequest.setCurrent(context);
+                currentVertxRequest.setCurrent(context, this);
             } else {
                 requestContext.activate(currentRequestScope);
             }

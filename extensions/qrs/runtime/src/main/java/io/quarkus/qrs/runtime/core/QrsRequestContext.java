@@ -75,6 +75,7 @@ public class QrsRequestContext implements Runnable, Closeable {
      */
     private Object result;
     private boolean suspended = false;
+    private volatile boolean resetRequestContext = false;
     private volatile boolean running = false;
     private volatile Executor executor;
     private int position;
@@ -158,6 +159,7 @@ public class QrsRequestContext implements Runnable, Closeable {
             }
         } else {
             suspended = false;
+            resetRequestContext = true;
             if (executor == null) {
                 ((ConnectionBase) context.request().connection()).getContext().nettyEventLoop().execute(this);
             } else {
@@ -171,7 +173,7 @@ public class QrsRequestContext implements Runnable, Closeable {
         running = true;
         //if this is a blocking target we don't activate for the initial non-blocking part
         //unless there are pre-mapping filters as these may require CDI
-        boolean activationRequired = target == null || (target.isBlocking() && executor == null);
+        boolean activationRequired = target == null || (target.isBlocking() && executor == null) || resetRequestContext;
         if (activationRequired) {
             if (currentRequestScope == null) {
                 requestContext.activate();
@@ -179,6 +181,7 @@ public class QrsRequestContext implements Runnable, Closeable {
             } else {
                 requestContext.activate(currentRequestScope);
             }
+            resetRequestContext = false;
         }
         try {
             while (position < handlers.length) {

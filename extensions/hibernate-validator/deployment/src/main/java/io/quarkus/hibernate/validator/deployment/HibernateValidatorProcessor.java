@@ -41,10 +41,12 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -114,6 +116,7 @@ class HibernateValidatorProcessor {
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean,
+            BuildProducer<AutoAddScopeBuildItem> autoScopes,
             Capabilities capabilities) {
         // The bean encapsulating the Validator and ValidatorFactory
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
@@ -128,6 +131,10 @@ class HibernateValidatorProcessor {
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
         }
+
+        // A constraint validator with an injection point but no scope is added as @Singleton
+        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(CONSTRAINT_VALIDATOR).requiresContainerServices()
+                .defaultScope(BuiltinScope.SINGLETON).build());
 
         // Do not remove the Bean Validation beans
         unremovableBean.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {

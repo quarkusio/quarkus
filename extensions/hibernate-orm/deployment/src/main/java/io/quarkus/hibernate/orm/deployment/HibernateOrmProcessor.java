@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
@@ -48,6 +49,7 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.proxy.HibernateProxy;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -74,6 +76,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -92,6 +95,7 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
@@ -128,6 +132,7 @@ public final class HibernateOrmProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
+    private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
@@ -162,6 +167,11 @@ public final class HibernateOrmProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    AdditionalIndexedClassesBuildItem addPersistenceUnitAnnotationToIndex() {
+        return new AdditionalIndexedClassesBuildItem(PersistenceUnit.class.getName());
     }
 
     // We do our own enhancement during the compilation phase, so disable any
@@ -233,6 +243,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void configurationDescriptorBuilding(
             HibernateOrmConfig hibernateOrmConfig,
+            CombinedIndexBuildItem index,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedPU,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
@@ -259,7 +270,7 @@ public final class HibernateOrmProcessor {
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
-            handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, persistenceXmlDescriptors,
+            handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, index, persistenceXmlDescriptors,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
         }
@@ -528,6 +539,7 @@ public final class HibernateOrmProcessor {
 
     private void handleHibernateORMWithNoPersistenceXml(
             HibernateOrmConfig hibernateOrmConfig,
+            CombinedIndexBuildItem index,
             List<PersistenceXmlDescriptorBuildItem> descriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -550,7 +562,7 @@ public final class HibernateOrmProcessor {
         }
 
         Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
-                jpaEntities);
+                jpaEntities, index.getIndex());
 
         Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
                 .filter(i -> i.isDefault())
@@ -844,8 +856,8 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private Map<String, Set<String>> getModelClassesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
-            JpaEntitiesBuildItem jpaEntities) {
+    private static Map<String, Set<String>> getModelClassesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
+            JpaEntitiesBuildItem jpaEntities, IndexView index) {
         if (hibernateOrmConfig.persistenceUnits.isEmpty()) {
             // no named persistence units, all the entities will be associated with the default one
             // so we don't need to split them
@@ -854,53 +866,130 @@ public final class HibernateOrmProcessor {
         }
 
         Map<String, Set<String>> modelClassesPerPersistenceUnits = new HashMap<>();
-        for (String modelClassName : jpaEntities.getAllModelClassNames()) {
-            String selectedPersistenceUnit = null;
-            int weight = -1;
+        Set<String> unaffectedModelClasses = new TreeSet<>();
 
-            // handle the default persistence unit
-            if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
-                for (String pakkage : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
-                    if (!pakkage.endsWith(".")) {
-                        pakkage = pakkage + ".";
-                    }
-                    if (modelClassName.startsWith(pakkage) && pakkage.length() > weight) {
-                        selectedPersistenceUnit = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-                        weight = pakkage.length();
-                    }
-                }
-            } else {
-                // it will be a catch all
-                selectedPersistenceUnit = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
-                weight = 0;
+        boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
+        Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
+                index);
+
+        Map<String, Set<String>> packageRules = new HashMap<>();
+
+        if (hasPackagesInQuarkusConfig) {
+            // Config based packages have priorities over annotations.
+            // As long as there is one defined, annotations are ignored.
+            if (!packageLevelPersistenceUnitAnnotations.isEmpty()) {
+                LOG.warn(
+                        "Mixing Quarkus configuration and @PersistenceUnit annotations to define the persistence units is not supported. Ignoring the annotations.");
             }
 
+            // handle the default persistence unit
+            if (!hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
+                throw new ConfigurationException("Packages must be configured for the default persistence unit.");
+            }
+
+            for (String packageName : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
+                packageRules.computeIfAbsent(normalizePackage(packageName), p -> new HashSet<>())
+                        .add(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+            }
+
+            // handle the named persistence units
             for (Entry<String, HibernateOrmConfigPersistenceUnit> candidatePersistenceUnitEntry : hibernateOrmConfig.persistenceUnits
                     .entrySet()) {
                 String candidatePersistenceUnitName = candidatePersistenceUnitEntry.getKey();
+
                 Set<String> candidatePersistenceUnitPackages = candidatePersistenceUnitEntry.getValue().packages
                         .orElseThrow(() -> new ConfigurationException(String.format(
                                 "Packages must be configured for persistence unit '%s'.", candidatePersistenceUnitName)));
 
-                for (String pakkage : candidatePersistenceUnitPackages) {
-                    if (!pakkage.endsWith(".")) {
-                        pakkage = pakkage + ".";
-                    }
-                    if (modelClassName.startsWith(pakkage) && pakkage.length() > weight) {
-                        selectedPersistenceUnit = candidatePersistenceUnitName;
-                        weight = pakkage.length();
-                    }
+                for (String packageName : candidatePersistenceUnitPackages) {
+                    packageRules.computeIfAbsent(normalizePackage(packageName), p -> new HashSet<>())
+                            .add(candidatePersistenceUnitName);
                 }
             }
-            if (selectedPersistenceUnit != null) {
-                modelClassesPerPersistenceUnits.putIfAbsent(selectedPersistenceUnit, new HashSet<>());
-                modelClassesPerPersistenceUnits.get(selectedPersistenceUnit).add(modelClassName);
-            } else {
-                LOG.warnf("Could not find a suitable persistence unit for model class '%s'.", modelClassName);
+        } else if (!packageLevelPersistenceUnitAnnotations.isEmpty()) {
+            for (AnnotationInstance packageLevelPersistenceUnitAnnotation : packageLevelPersistenceUnitAnnotations) {
+                String className = packageLevelPersistenceUnitAnnotation.target().asClass().name().toString();
+                String packageName;
+                if (className == null || className.isEmpty() || className.indexOf('.') == -1) {
+                    packageName = "";
+                } else {
+                    packageName = normalizePackage(className.substring(0, className.lastIndexOf('.')));
+                }
+
+                String persistenceUnitName = packageLevelPersistenceUnitAnnotation.value().asString();
+                if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
+                    packageRules.computeIfAbsent(packageName, p -> new HashSet<>())
+                            .add(persistenceUnitName);
+                }
+            }
+        } else {
+            throw new ConfigurationException(
+                    "Multiple persistence units are defined but the entities are not mapped to them. You should either use the .packages Quarkus configuration property or package-level @PersistenceUnit annotations.");
+        }
+
+        for (String modelClassName : jpaEntities.getAllModelClassNames()) {
+            boolean affected = false;
+
+            for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
+                if (modelClassName.startsWith(packageRuleEntry.getKey())) {
+                    for (String persistenceUnitName : packageRuleEntry.getValue()) {
+                        modelClassesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
+                        modelClassesPerPersistenceUnits.get(persistenceUnitName).add(modelClassName);
+                    }
+                    affected = true;
+                }
+            }
+
+            if (!affected) {
+                unaffectedModelClasses.add(modelClassName);
             }
         }
 
+        if (!unaffectedModelClasses.isEmpty()) {
+            LOG.warnf("Could not find a suitable persistence unit for model classes: %s.",
+                    String.join(", ", unaffectedModelClasses));
+        }
+
         return modelClassesPerPersistenceUnits;
+    }
+
+    private static String normalizePackage(String pakkage) {
+        if (pakkage.endsWith(".")) {
+            return pakkage;
+        }
+        return pakkage + ".";
+    }
+
+    private static boolean hasPackagesInQuarkusConfig(HibernateOrmConfig hibernateOrmConfig) {
+        if (hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
+            return true;
+        }
+
+        for (HibernateOrmConfigPersistenceUnit persistenceUnitConfig : hibernateOrmConfig.persistenceUnits.values()) {
+            if (persistenceUnitConfig.packages.isPresent()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Collection<AnnotationInstance> getPackageLevelPersistenceUnitAnnotations(IndexView index) {
+        Collection<AnnotationInstance> persistenceUnitAnnotations = index.getAnnotationsWithRepeatable(PERSISTENCE_UNIT, index);
+        Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = new ArrayList<>();
+
+        for (AnnotationInstance persistenceUnitAnnotation : persistenceUnitAnnotations) {
+            if (persistenceUnitAnnotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+
+            if (!"package-info".equals(persistenceUnitAnnotation.target().asClass().simpleName())) {
+                continue;
+            }
+            packageLevelPersistenceUnitAnnotations.add(persistenceUnitAnnotation);
+        }
+
+        return packageLevelPersistenceUnitAnnotations;
     }
 
     /**

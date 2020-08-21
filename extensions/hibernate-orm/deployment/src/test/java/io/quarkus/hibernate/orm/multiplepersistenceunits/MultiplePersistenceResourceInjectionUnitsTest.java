@@ -12,8 +12,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.inventory.Plane;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.user.User;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiplePersistenceResourceInjectionUnitsTest {

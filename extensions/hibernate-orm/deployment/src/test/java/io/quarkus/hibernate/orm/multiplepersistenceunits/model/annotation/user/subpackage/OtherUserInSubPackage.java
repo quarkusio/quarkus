@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.multiplepersistenceunits.model;
+package io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.user.subpackage;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -6,21 +6,21 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-public class DefaultEntity {
+public class OtherUserInSubPackage {
 
     private long id;
 
     private String name;
 
-    public DefaultEntity() {
+    public OtherUserInSubPackage() {
     }
 
-    public DefaultEntity(String name) {
+    public OtherUserInSubPackage(String name) {
         this.name = name;
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "defaultSeq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "userSeq")
     public long getId() {
         return id;
     }
@@ -39,6 +39,6 @@ public class DefaultEntity {
 
     @Override
     public String toString() {
-        return "Plane:" + name;
+        return "User:" + name;
     }
 }

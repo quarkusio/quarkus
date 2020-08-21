@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 import javax.persistence.SharedCacheMode;
+import javax.persistence.ValidationMode;
 import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
@@ -238,6 +239,7 @@ public final class HibernateOrmProcessor {
             LaunchModeBuildItem launchMode,
             JpaEntitiesBuildItem jpaEntities,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -257,7 +259,7 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, persistenceXmlDescriptors,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
         }
     }
@@ -530,6 +532,7 @@ public final class HibernateOrmProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             JpaEntitiesBuildItem jpaEntities,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -561,7 +564,7 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig.defaultPersistenceUnit,
                     modelClassesPerPersistencesUnits.getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                             Collections.emptySet()),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
 
             if (hibernateOrmConfig.defaultPersistenceUnit.dialect.storageEngine.isPresent()) {
@@ -574,7 +577,7 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
                     modelClassesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(), Collections.emptySet()),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
 
             if (persistenceUnitEntry.getValue().dialect.storageEngine.isPresent()) {
@@ -596,6 +599,7 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -774,6 +778,12 @@ public final class HibernateOrmProcessor {
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
             p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+        }
+
+        // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
+        // if there is any issue when bootstrapping Hibernate Validator.
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
         }
 
         persistenceUnitDescriptors.produce(

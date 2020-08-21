@@ -98,6 +98,9 @@ public class SmallRyeOpenApiProcessor {
     private static final String OPENAPI_SCHEMA_ANY_OF = "anyOf";
     private static final String OPENAPI_SCHEMA_ALL_OF = "allOf";
     private static final String OPENAPI_SCHEMA_IMPLEMENTATION = "implementation";
+    private static final String JAX_RS = "JAX-RS";
+    private static final String SPRING = "Spring";
+    private static final String VERT_X = "Vert.x";
 
     SmallRyeOpenApiConfig openapi;
 
@@ -355,7 +358,22 @@ public class SmallRyeOpenApiProcessor {
             extensions.add(new CustomPathExtension(defaultPath));
         }
 
-        return new OpenApiAnnotationScanner(openApiConfig, indexView, extensions).scan();
+        OpenApiAnnotationScanner openApiAnnotationScanner = new OpenApiAnnotationScanner(openApiConfig, indexView, extensions);
+        return openApiAnnotationScanner.scan(getScanners(capabilities, indexView));
+    }
+
+    private String[] getScanners(Capabilities capabilities, IndexView index) {
+        List<String> scanners = new ArrayList<>();
+        if (capabilities.isPresent(Capability.RESTEASY)) {
+            scanners.add(JAX_RS);
+        }
+        if (capabilities.isPresent(Capability.SPRING_WEB)) {
+            scanners.add(SPRING);
+        }
+        if (isUsingVertxRoute(index)) {
+            scanners.add(VERT_X);
+        }
+        return scanners.toArray(new String[] {});
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

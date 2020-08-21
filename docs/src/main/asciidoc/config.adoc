@@ -435,6 +435,8 @@ _will also_ be taken into account.
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 
+NOTE: Environment variables without a configuration profile defined in `.env` file will overwrite all its related profiles in `application.properties`, e.g. `%test.application.value` is overwritten by `APPLICATION_VALUE` in `.env` file.
+
 NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build/classes/java/main` for Gradle).
 Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
 
@@ -452,6 +454,14 @@ quarkus.http.port=9090
 ----
 
 The Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
+
+To use profiles in `.env` file, you can follow a `_{PROFILE}_CONFIG_KEY=value` pattern. A equivalent of the above example in `.env` file would be:
+
+[source,.env]
+----
+QUARKUS_HTTP_PORT=9090
+_DEV_QUARKUS_HTTP_PORT=8181
+----
 
 By default Quarkus has three profiles, although it is possible to use as many as you like. The default profiles are:
 

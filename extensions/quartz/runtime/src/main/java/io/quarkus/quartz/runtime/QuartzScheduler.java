@@ -429,6 +429,10 @@ public class QuartzScheduler implements Scheduler {
             if (jobClass.equals(InvokerJob.class)) {
                 return new InvokerJob(invokers);
             }
+            InstanceHandle<? extends Job> instance = Arc.container().instance(jobClass);
+            if (instance.isAvailable()) {
+                return instance.get();
+            }
             return super.newJob(bundle, Scheduler);
         }
 

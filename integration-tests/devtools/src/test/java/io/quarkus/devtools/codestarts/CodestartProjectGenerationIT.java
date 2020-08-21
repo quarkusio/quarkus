@@ -132,7 +132,7 @@ class CodestartProjectGenerationIT extends PlatformAwareTestBase {
         checkDockerfiles(projectDir);
         checkConfigYaml(projectDir);
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/config/ExampleResource.java")).exists();
+        assertThat(projectDir.resolve("src/main/java/org/acme/config/GreetingResource.java")).exists();
     }
 
     @Test

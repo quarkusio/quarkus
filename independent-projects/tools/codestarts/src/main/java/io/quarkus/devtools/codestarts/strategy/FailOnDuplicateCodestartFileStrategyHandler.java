@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodestartFileStrategyHandler {
+
+    static final String NAME = "fail-on-duplicate";
+
     @Override
     public String name() {
-        return "fail-on-duplicate";
+        return NAME;
     }
 
     @Override

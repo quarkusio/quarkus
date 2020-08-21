@@ -13,7 +13,6 @@ import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.core.UriMatch;
-import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.util.MultivaluedMapImpl;
 import io.quarkus.qrs.runtime.util.UnmodifiableMultivaluedMap;
 import io.vertx.core.MultiMap;
@@ -161,9 +160,9 @@ public class QrsUriInfo implements UriInfo {
         List<UriMatch> oldMatches = currentRequest.getMatchedURIs();
         List<Object> matched = new ArrayList<>();
         for (int i = 0; i < oldMatches.size(); ++i) {
-            BeanFactory.BeanInstance<?> target = oldMatches.get(i).target;
+            Object target = oldMatches.get(i).target;
             if (target != null) {
-                matched.add(target.getInstance());
+                matched.add(target);
             }
         }
         return matched;

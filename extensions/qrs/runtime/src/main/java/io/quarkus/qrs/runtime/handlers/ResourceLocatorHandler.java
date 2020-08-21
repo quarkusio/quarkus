@@ -16,7 +16,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.qrs.runtime.core.QrsRequestContext;
 import io.quarkus.qrs.runtime.mapping.RequestMapper;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
-import io.quarkus.qrs.runtime.spi.BeanFactory;
 
 public class ResourceLocatorHandler implements RestHandler {
 
@@ -52,7 +51,7 @@ public class ResourceLocatorHandler implements RestHandler {
         }
         requestContext.saveUriMatchState();
         requestContext.setRemaining(res.remaining);
-        requestContext.setEndpointInstance(new FixedBeanInstance(locator));
+        requestContext.setEndpointInstance(locator);
         requestContext.setResult(null);
         requestContext.restart(res.value);
         requestContext.setMaxPathParams(res.pathParamValues.length);
@@ -132,23 +131,5 @@ public class ResourceLocatorHandler implements RestHandler {
         Class<?> c = resourceClass;
         resourceLocatorHandlers.put(c, requestMapper);
 
-    }
-
-    private static class FixedBeanInstance implements BeanFactory.BeanInstance<Object> {
-        private final Object locator;
-
-        public FixedBeanInstance(Object locator) {
-            this.locator = locator;
-        }
-
-        @Override
-        public Object getInstance() {
-            return locator;
-        }
-
-        @Override
-        public void close() {
-
-        }
     }
 }

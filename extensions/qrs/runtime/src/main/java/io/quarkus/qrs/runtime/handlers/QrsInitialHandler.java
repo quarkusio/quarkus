@@ -36,7 +36,7 @@ public class QrsInitialHandler implements Handler<RoutingContext>, RestHandler {
     @Override
     public void handle(RoutingContext event) {
         QrsRequestContext rq = new QrsRequestContext(deployment, event, requestContext, currentVertxRequest, initialChain);
-        event.data().put(QrsRequestContext.class.getName(), rq);
+        event.data().put(QrsRequestContext.CURRENT_REQUEST_KEY, rq);
         rq.run();
     }
 

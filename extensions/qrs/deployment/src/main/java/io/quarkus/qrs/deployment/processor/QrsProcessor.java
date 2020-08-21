@@ -123,8 +123,11 @@ public class QrsProcessor {
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             for (ClassInfo clazz : beanArchiveIndexBuildItem.getIndex().getAllKnownImplementors(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
-                    scannedResources.put(clazz.name(), clazz);
-                    scannedResourcePaths.put(clazz.name(), i.getValue());
+                    if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
+                            clazz.enclosingMethod() == null) {
+                        scannedResources.put(clazz.name(), clazz);
+                        scannedResourcePaths.put(clazz.name(), i.getValue());
+                    }
                 }
             }
         }

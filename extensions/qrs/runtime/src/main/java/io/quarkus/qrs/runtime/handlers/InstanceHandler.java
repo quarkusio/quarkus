@@ -5,15 +5,18 @@ import io.quarkus.qrs.runtime.spi.BeanFactory;
 
 public class InstanceHandler implements RestHandler {
 
-    private final BeanFactory<Object> factory;
+    /**
+     * CDI Manages the lifecycle. If this is a per request resource then this will be a client proxy
+     *
+     */
+    private final Object instance;
 
     public InstanceHandler(BeanFactory<Object> factory) {
-        this.factory = factory;
+        this.instance = factory.createInstance().getInstance();
     }
 
     @Override
     public void handle(QrsRequestContext requestContext) throws Exception {
-        BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance);
     }
 }

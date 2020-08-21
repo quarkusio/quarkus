@@ -15,8 +15,8 @@
     <description>Module that contains JPA related tests running with the MySQL database</description>
 
     <properties>
-        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
-        <mysql.image>mysql:8.0.17</mysql.image>
+        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
+        <mysql.image>mysql:8.0.21</mysql.image>
     </properties>
 
     <dependencies>
@@ -172,7 +172,7 @@
                 </property>
             </activation>
             <properties>
-                <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
+                <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
             </properties>
             <build>
                 <plugins>

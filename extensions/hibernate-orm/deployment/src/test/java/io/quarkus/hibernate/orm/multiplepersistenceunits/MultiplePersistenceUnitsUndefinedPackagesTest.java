@@ -17,7 +17,8 @@ public class MultiplePersistenceUnitsUndefinedPackagesTest {
             .setExpectedException(ConfigurationException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(User.class)
-                    .addAsResource("application-multiple-persistence-units-invalid.properties", "application.properties"));
+                    .addAsResource("application-multiple-persistence-units-undefined-packages.properties",
+                            "application.properties"));
 
     @Test
     public void testInvalidConfiguration() {

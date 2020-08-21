@@ -166,12 +166,18 @@ public class QrsRecorder {
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = buildClassMapper(templates);
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
-        List<RequestMapper.RequestPath<QrsInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
+
+        //it is possible that multiple resource classes use the same path
+        //we use this map to merge them
+        Map<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
+
         for (ResourceClass clazz : resourceClasses) {
             URITemplate classTemplate = new URITemplate(clazz.getPath(), true);
-            int classTemplateNameCount = classTemplate.countPathParamNames();
-            int maxMethodTemplateNameCount = 0;
-            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = new HashMap<>();
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = mappers
+                    .get(classTemplate);
+            if (perClassMappers == null) {
+                mappers.put(classTemplate, perClassMappers = new HashMap<>());
+            }
             for (ResourceMethod method : clazz.getMethods()) {
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, qrsConfig, requestInterceptors,
                         responseInterceptors,
@@ -179,12 +185,25 @@ public class QrsRecorder {
                         false, classTemplate, dynamicEntityWriter);
 
                 buildMethodMapper(perClassMappers, method, runtimeResource);
-                maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount,
-                        runtimeResource.getPath().countPathParamNames());
             }
 
+        }
+        List<RequestMapper.RequestPath<QrsInitialHandler.InitialMatch>> classMappers = new ArrayList<>();
+        for (Map.Entry<URITemplate, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> entry : mappers
+                .entrySet()) {
+            URITemplate classTemplate = entry.getKey();
+            int classTemplateNameCount = classTemplate.countPathParamNames();
+            Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> perClassMappers = entry
+                    .getValue();
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = buildClassMapper(perClassMappers);
             ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(mappersByMethod, classTemplateNameCount);
+
+            int maxMethodTemplateNameCount = 0;
+            for (TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>> i : perClassMappers.values()) {
+                for (URITemplate j : i.keySet()) {
+                    maxMethodTemplateNameCount = Math.max(maxMethodTemplateNameCount, j.countPathParamNames());
+                }
+            }
             classMappers.add(new RequestMapper.RequestPath<>(true, classTemplate,
                     new QrsInitialHandler.InitialMatch(new RestHandler[] { classRoutingHandler },
                             maxMethodTemplateNameCount + classTemplateNameCount)));

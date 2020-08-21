@@ -25,7 +25,7 @@ public class SimpleQrsTestCase {
                             .addClasses(SimpleQrsResource.class, Person.class, TestRequestFilter.class,
                                     TestResponseFilter.class, HelloService.class, TestException.class,
                                     TestExceptionMapper.class, TestPreMatchRequestFilter.class,
-                                    SubResource.class,
+                                    SubResource.class, RootAResource.class, RootBResource.class,
                                     TestWriter.class, TestClass.class);
                 }
             });
@@ -183,5 +183,17 @@ public class SimpleQrsTestCase {
         RestAssured.get("/simple/async/uni/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
+    }
+
+    @Test
+    public void testMultiResourceSamePath() {
+        RestAssured.get("/a")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("a"));
+        RestAssured.get("/b")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("b"));
     }
 }

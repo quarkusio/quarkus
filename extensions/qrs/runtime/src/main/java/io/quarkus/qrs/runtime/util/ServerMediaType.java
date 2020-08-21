@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.core.MediaType;
 
-import com.sun.org.apache.xerces.internal.dom.PSVIElementNSImpl;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.http.HttpServerRequest;
 

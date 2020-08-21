@@ -1,4 +1,3 @@
----
 name: y
 type: buildtool
 fallback: true
@@ -9,3 +8,6 @@ language:
     shared-data:
       buildtool:
         foo: world y
+  b:
+    data:
+      test: b

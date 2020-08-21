@@ -2,6 +2,7 @@ package io.quarkus.devtools.codestarts.strategy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.NestedMaps;
 import io.quarkus.devtools.codestarts.reader.CodestartFile;
@@ -16,7 +17,8 @@ import java.util.Optional;
 
 final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 
-    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
+    private static final ObjectMapper YAML_MAPPER = new ObjectMapper(
+            new YAMLFactory().configure(YAMLGenerator.Feature.WRITE_DOC_START_MARKER, false));
 
     @Override
     public String name() {

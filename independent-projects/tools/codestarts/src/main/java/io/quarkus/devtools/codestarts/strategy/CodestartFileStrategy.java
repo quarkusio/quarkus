@@ -13,12 +13,13 @@ public class CodestartFileStrategy implements Predicate<String> {
         this.handler = handler;
     }
 
+    public String getFilter() {
+        return filter;
+    }
+
     @Override
     public boolean test(String t) {
         if (Objects.equals(filter, t)) {
-            return true;
-        }
-        if (Objects.equals("*", t)) {
             return true;
         }
         // TODO SUPPORT FOR GLOB

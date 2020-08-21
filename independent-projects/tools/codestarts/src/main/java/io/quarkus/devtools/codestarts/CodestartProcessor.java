@@ -6,18 +6,19 @@ import io.quarkus.devtools.codestarts.reader.CodestartFile;
 import io.quarkus.devtools.codestarts.reader.CodestartFileReader;
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategy;
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategyHandler;
+import io.quarkus.devtools.codestarts.strategy.DefaultCodestartFileStrategyHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -82,9 +83,8 @@ final class CodestartProcessor {
                 final boolean hasFileStrategyHandler = getStrategy(relativeTargetPath.toString()).isPresent();
                 try {
                     if (!possibleReader.isPresent() && !hasFileStrategyHandler) {
-                        // Copy static files
                         final Path targetPath = targetDirectory.resolve(relativeTargetPath.toString());
-                        processStaticFile(sourcePath, targetPath);
+                        getSelectedDefaultStrategy().copyStaticFile(sourcePath, targetPath);
                         continue;
                     }
                     final Optional<String> content = reader.read(sourceDirectory, relativeSourcePath,
@@ -111,11 +111,6 @@ final class CodestartProcessor {
         }
     }
 
-    private static void processStaticFile(Path path, Path targetPath) throws IOException {
-        Files.createDirectories(targetPath.getParent());
-        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
-    }
-
     void checkTargetDir() throws IOException {
         if (!Files.exists(targetDirectory)) {
             boolean mkdirStatus = targetDirectory.toFile().mkdirs();
@@ -137,12 +132,25 @@ final class CodestartProcessor {
         for (Map.Entry<String, List<CodestartFile>> e : files.entrySet()) {
             final String relativePath = e.getKey();
             Files.createDirectories(targetDirectory.resolve(relativePath).getParent());
-            getStrategy(relativePath).orElse(CodestartFileStrategyHandler.DEFAULT_STRATEGY)
+            getStrategy(relativePath).orElse(getSelectedDefaultStrategy())
                     .process(targetDirectory, relativePath, e.getValue(), data);
         }
     }
 
-    private Optional<CodestartFileStrategyHandler> getStrategy(final String key) {
+    DefaultCodestartFileStrategyHandler getSelectedDefaultStrategy() {
+        for (CodestartFileStrategy codestartFileStrategy : strategies) {
+            if (Objects.equals(codestartFileStrategy.getFilter(), "*")) {
+                if (codestartFileStrategy.getHandler() instanceof DefaultCodestartFileStrategyHandler) {
+                    return (DefaultCodestartFileStrategyHandler) codestartFileStrategy.getHandler();
+                }
+                throw new CodestartDefinitionException(
+                        codestartFileStrategy.getHandler().name() + " can't be used as '*' file strategy");
+            }
+        }
+        return CodestartFileStrategyHandler.DEFAULT_STRATEGY;
+    }
+
+    Optional<CodestartFileStrategyHandler> getStrategy(final String key) {
         for (CodestartFileStrategy codestartFileStrategy : strategies) {
             if (codestartFileStrategy.test(key)) {
                 return Optional.of(codestartFileStrategy.getHandler());

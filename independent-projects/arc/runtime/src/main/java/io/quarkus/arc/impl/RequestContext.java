@@ -2,7 +2,6 @@ package io.quarkus.arc.impl;
 
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.impl.EventImpl.Notifier;
 import java.lang.annotation.Annotation;
@@ -167,11 +166,11 @@ class RequestContext implements ManagedContext {
                 } catch (Exception e) {
                     LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
                 }
-                for (InstanceHandle<?> instance : currentContext.values()) {
+                for (Map.Entry<Contextual<?>, ContextInstanceHandle<?>> entry : currentContext.entrySet()) {
                     try {
-                        instance.destroy();
+                        entry.getValue().destroy();
                     } catch (Exception e) {
-                        throw new IllegalStateException("Unable to destroy instance" + instance.get(), e);
+                        throw new IllegalStateException("Unable to destroy instance" + entry.getValue().get(), e);
                     }
                 }
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it

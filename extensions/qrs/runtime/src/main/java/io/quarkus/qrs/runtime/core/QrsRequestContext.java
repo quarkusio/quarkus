@@ -34,8 +34,6 @@ import io.quarkus.qrs.runtime.mapping.URITemplate;
 import io.quarkus.qrs.runtime.spi.BeanFactory;
 import io.quarkus.qrs.runtime.util.EmptyInputStream;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -118,12 +116,6 @@ public class QrsRequestContext implements Runnable, Closeable {
         this.target = target;
         this.handlers = target.getHandlerChain();
         this.parameters = new Object[target.getParameterTypes().length];
-        context.addEndHandler(new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                close();
-            }
-        });
     }
 
     public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
@@ -134,12 +126,6 @@ public class QrsRequestContext implements Runnable, Closeable {
         this.currentVertxRequest = currentVertxRequest;
         this.handlers = handlerChain;
         this.parameters = EMPTY_ARRAY;
-        context.addEndHandler(new Handler<AsyncResult<Void>>() {
-            @Override
-            public void handle(AsyncResult<Void> event) {
-                close();
-            }
-        });
     }
 
     public QrsDeployment getDeployment() {
@@ -231,11 +217,13 @@ public class QrsRequestContext implements Runnable, Closeable {
             }
         } catch (Throwable t) {
             handleException(t);
+            close();
         } finally {
             running = false;
             if (activationRequired) {
                 if (position == handlers.length) {
                     requestContext.terminate();
+                    close();
                 } else {
                     currentRequestScope = requestContext.getState();
                     requestContext.deactivate();

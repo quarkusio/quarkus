@@ -40,9 +40,6 @@ public class PanacheMongoRepositoryClassVisitor extends PanacheRepositoryClassVi
     @Override
     protected void generateModelBridge(MethodInfo method, AnnotationValue targetReturnTypeErased) {
         String descriptor = AsmUtil.getDescriptor(method, name -> typeArguments.get(name));
-        // JpaOperations erases the Id type to Object
-        String descriptorForJpaOperations = AsmUtil.getDescriptor(method,
-                name -> name.equals("Entity") ? entitySignature : null);
         String signature = AsmUtil.getSignature(method, name -> typeArguments.get(name));
         List<Type> parameters = method.parameters();
 

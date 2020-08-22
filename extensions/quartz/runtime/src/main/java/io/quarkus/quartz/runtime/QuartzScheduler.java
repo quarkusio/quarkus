@@ -335,11 +335,10 @@ public class QuartzScheduler implements Scheduler {
 
     private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzAdditionalPropsConfig> config) {
         Properties props = new Properties();
-        for (String key : config.keySet()) {
-            props.put(String.format("%s.%s.class", prefix, key), config.get(key).clazz);
-            for (String propsName : config.get(key).propsValue.keySet()) {
-                props.put(String.format("%s.%s.%s", prefix, key, propsName),
-                        config.get(key).propsValue.get(propsName));
+        for (Map.Entry<String, QuartzAdditionalPropsConfig> configEntry : config.entrySet()) {
+            props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
+            for (Map.Entry<String, String> propsEntry : configEntry.getValue().propsValue.entrySet()) {
+                props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
             }
         }
         return props;

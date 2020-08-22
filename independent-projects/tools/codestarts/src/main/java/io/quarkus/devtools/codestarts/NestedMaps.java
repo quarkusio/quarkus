@@ -36,26 +36,27 @@ public final class NestedMaps {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static void deepMerge(Map left, Map right) {
         for (Object key : right.keySet()) {
-            if (right.get(key) instanceof Map && left.get(key) instanceof Map) {
-                Map leftChild = (Map) left.get(key);
-                Map rightChild = (Map) right.get(key);
-                deepMerge(leftChild, rightChild);
-            } else if (right.get(key) instanceof Collection && left.get(key) instanceof Collection) {
+            Object rightValue = right.get(key);
+            Object leftValue = left.get(key);
+
+            if (rightValue instanceof Map && leftValue instanceof Map) {
+                deepMerge((Map) leftValue, (Map) rightValue);
+            } else if (rightValue instanceof Collection && leftValue instanceof Collection) {
                 Collection c = new LinkedHashSet();
-                c.addAll((Collection) left.get(key));
-                c.addAll((Collection) right.get(key));
+                c.addAll((Collection) leftValue);
+                c.addAll((Collection) rightValue);
                 left.put(key, c);
             } else {
                 // Override
-                left.put(key, right.get(key));
+                left.put(key, rightValue);
             }
         }
     }
 
     public static Map<String, Object> unflatten(Map<String, Object> flattened) {
         Map<String, Object> unflattened = new HashMap<>();
-        for (String key : flattened.keySet()) {
-            doUnflatten(unflattened, key, flattened.get(key));
+        for (Map.Entry<String, Object> entry : flattened.entrySet()) {
+            doUnflatten(unflattened, entry.getKey(), entry.getValue());
         }
         return unflattened;
     }

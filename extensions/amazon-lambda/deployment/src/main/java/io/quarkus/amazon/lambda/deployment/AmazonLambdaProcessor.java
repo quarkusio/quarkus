@@ -118,8 +118,16 @@ public final class AmazonLambdaProcessor {
                             break;
                         } else if (method.parameters().size() == 2
                                 && !method.parameters().get(0).name().equals(DotName.createSimple(Object.class.getName()))) {
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.parameters().get(0)));
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
+                            String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
+
+                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(method.parameters().get(0))
+                                    .source(source)
+                                    .build());
+                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(method.returnType())
+                                    .source(source)
+                                    .build());
                             done = true;
                             break;
                         }

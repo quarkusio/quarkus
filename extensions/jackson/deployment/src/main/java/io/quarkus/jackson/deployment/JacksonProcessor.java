@@ -148,7 +148,10 @@ public class JacksonProcessor {
 
     private void addReflectiveHierarchyClass(DotName className) {
         Type jandexType = Type.create(className, Type.Kind.CLASS);
-        reflectiveHierarchyClass.produce(new ReflectiveHierarchyBuildItem(jandexType));
+        reflectiveHierarchyClass.produce(new ReflectiveHierarchyBuildItem.Builder()
+                .type(jandexType)
+                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
+                .build());
     }
 
     private void addReflectiveClass(boolean methods, boolean fields, String... className) {

@@ -36,7 +36,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBuildItem;
@@ -63,7 +62,6 @@ class HibernateSearchElasticsearchProcessor {
     public void build(HibernateSearchElasticsearchRecorder recorder,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<HibernateOrmIntegrationBuildItem> integrations,
             BuildProducer<FeatureBuildItem> feature) throws Exception {
         feature.produce(new FeatureBuildItem(Feature.HIBERNATE_SEARCH_ELASTICSEARCH));
@@ -90,7 +88,7 @@ class HibernateSearchElasticsearchProcessor {
         integrations.produce(new HibernateOrmIntegrationBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH));
 
         // Register the required reflection declarations
-        registerReflection(index, reflectiveClass, reflectiveHierarchy);
+        registerReflection(index, reflectiveClass);
 
         // Register the Hibernate Search integration listener
         recorder.registerHibernateSearchIntegration(buildTimeConfig);
@@ -130,8 +128,7 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
-    private void registerReflection(IndexView index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+    private void registerReflection(IndexView index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
 
         if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
@@ -149,8 +146,6 @@ class HibernateSearchElasticsearchProcessor {
                     new ReflectiveClassBuildItem(true, false, buildTimeConfig.backgroundFailureHandler.get()));
         }
 
-        Set<Type> reflectiveHierarchyCollector = new HashSet<>();
-
         for (AnnotationInstance propertyMappingMetaAnnotationInstance : index
                 .getAnnotations(PROPERTY_MAPPING_META_ANNOTATION)) {
             for (AnnotationInstance propertyMappingAnnotationInstance : index
@@ -158,24 +153,19 @@ class HibernateSearchElasticsearchProcessor {
                 AnnotationTarget annotationTarget = propertyMappingAnnotationInstance.target();
                 if (annotationTarget.kind() == Kind.FIELD) {
                     FieldInfo fieldInfo = annotationTarget.asField();
-                    addReflectiveClass(index, reflectiveClassCollector, reflectiveHierarchyCollector,
-                            fieldInfo.declaringClass());
-                    addReflectiveType(index, reflectiveClassCollector, reflectiveHierarchyCollector,
-                            fieldInfo.type());
+                    addReflectiveClass(index, reflectiveClassCollector, fieldInfo.declaringClass());
+                    addReflectiveType(index, reflectiveClassCollector, fieldInfo.type());
                 } else if (annotationTarget.kind() == Kind.METHOD) {
                     MethodInfo methodInfo = annotationTarget.asMethod();
-                    addReflectiveClass(index, reflectiveClassCollector, reflectiveHierarchyCollector,
-                            methodInfo.declaringClass());
-                    addReflectiveType(index, reflectiveClassCollector, reflectiveHierarchyCollector,
-                            methodInfo.returnType());
+                    addReflectiveClass(index, reflectiveClassCollector, methodInfo.declaringClass());
+                    addReflectiveType(index, reflectiveClassCollector, methodInfo.returnType());
                 }
             }
         }
 
         for (AnnotationInstance typeBridgeMappingInstance : index.getAnnotations(TYPE_MAPPING_META_ANNOTATION)) {
             for (AnnotationInstance typeBridgeInstance : index.getAnnotations(typeBridgeMappingInstance.name())) {
-                addReflectiveClass(index, reflectiveClassCollector, reflectiveHierarchyCollector,
-                        typeBridgeInstance.target().asClass());
+                addReflectiveClass(index, reflectiveClassCollector, typeBridgeInstance.target().asClass());
             }
         }
 
@@ -183,14 +173,10 @@ class HibernateSearchElasticsearchProcessor {
 
         String[] reflectiveClasses = reflectiveClassCollector.stream().map(DotName::toString).toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
-
-        for (Type reflectiveHierarchyType : reflectiveHierarchyCollector) {
-            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(reflectiveHierarchyType));
-        }
     }
 
     private static void addReflectiveClass(IndexView index, Set<DotName> reflectiveClassCollector,
-            Set<Type> reflectiveTypeCollector, ClassInfo classInfo) {
+            ClassInfo classInfo) {
         if (skipClass(classInfo.name(), reflectiveClassCollector)) {
             return;
         }
@@ -212,27 +198,26 @@ class HibernateSearchElasticsearchProcessor {
             } else if (superClassType instanceof ParameterizedType) {
                 ParameterizedType parameterizedType = superClassType.asParameterizedType();
                 for (Type typeArgument : parameterizedType.arguments()) {
-                    addReflectiveType(index, reflectiveClassCollector, reflectiveTypeCollector, typeArgument);
+                    addReflectiveType(index, reflectiveClassCollector, typeArgument);
                 }
                 superClassType = parameterizedType.owner();
             }
         }
     }
 
-    private static void addReflectiveType(IndexView index, Set<DotName> reflectiveClassCollector,
-            Set<Type> reflectiveTypeCollector, Type type) {
+    private static void addReflectiveType(IndexView index, Set<DotName> reflectiveClassCollector, Type type) {
         if (type instanceof VoidType || type instanceof PrimitiveType || type instanceof UnresolvedTypeVariable) {
             return;
         } else if (type instanceof ClassType) {
             ClassInfo classInfo = index.getClassByName(type.name());
-            addReflectiveClass(index, reflectiveClassCollector, reflectiveTypeCollector, classInfo);
+            addReflectiveClass(index, reflectiveClassCollector, classInfo);
         } else if (type instanceof ArrayType) {
-            addReflectiveType(index, reflectiveClassCollector, reflectiveTypeCollector, type.asArrayType().component());
+            addReflectiveType(index, reflectiveClassCollector, type.asArrayType().component());
         } else if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = type.asParameterizedType();
-            addReflectiveType(index, reflectiveClassCollector, reflectiveTypeCollector, parameterizedType.owner());
+            addReflectiveType(index, reflectiveClassCollector, parameterizedType.owner());
             for (Type typeArgument : parameterizedType.arguments()) {
-                addReflectiveType(index, reflectiveClassCollector, reflectiveTypeCollector, typeArgument);
+                addReflectiveType(index, reflectiveClassCollector, typeArgument);
             }
         }
     }

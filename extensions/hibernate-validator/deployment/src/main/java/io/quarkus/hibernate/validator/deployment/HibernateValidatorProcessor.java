@@ -5,7 +5,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.lang.annotation.Repeatable;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,6 +65,7 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
@@ -93,16 +93,6 @@ class HibernateValidatorProcessor {
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
-
-    private static final DotName[] JAXRS_METHOD_ANNOTATIONS = {
-            DotName.createSimple("javax.ws.rs.GET"),
-            DotName.createSimple("javax.ws.rs.HEAD"),
-            DotName.createSimple("javax.ws.rs.DELETE"),
-            DotName.createSimple("javax.ws.rs.OPTIONS"),
-            DotName.createSimple("javax.ws.rs.PATCH"),
-            DotName.createSimple("javax.ws.rs.POST"),
-            DotName.createSimple("javax.ws.rs.PUT"),
-    };
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
 
@@ -349,8 +339,8 @@ class HibernateValidatorProcessor {
         Map<DotName, Set<SimpleMethodSignatureKey>> jaxRsMethods = new HashMap<>();
 
         Collection<DotName> jaxRsMethodDefiningAnnotations = new ArrayList<>(
-                JAXRS_METHOD_ANNOTATIONS.length + additionalJaxRsResourceMethodAnnotations.size());
-        jaxRsMethodDefiningAnnotations.addAll(Arrays.asList(JAXRS_METHOD_ANNOTATIONS));
+                ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS.size() + additionalJaxRsResourceMethodAnnotations.size());
+        jaxRsMethodDefiningAnnotations.addAll(ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS);
         for (AdditionalJaxRsResourceMethodAnnotationsBuildItem additionalJaxRsResourceMethodAnnotation : additionalJaxRsResourceMethodAnnotations) {
             jaxRsMethodDefiningAnnotations.addAll(additionalJaxRsResourceMethodAnnotation.getAnnotationClasses());
         }

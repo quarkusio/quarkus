@@ -24,7 +24,7 @@ public class DefaultPicocliCommandLineFactory implements PicocliCommandLineFacto
 
     private Class<?> classForName(String name) {
         try {
-            return Class.forName(name);
+            return Class.forName(name, false, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException ex) {
             throw new IllegalArgumentException(ex);
         }

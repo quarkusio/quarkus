@@ -31,7 +31,8 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private void scanAsyncResponseProvidersFromServices() {
         try {
-            Class<?> asyncResponseProvider = Class.forName("org.jboss.resteasy.spi.AsyncResponseProvider");
+            Class<?> asyncResponseProvider = Class.forName("org.jboss.resteasy.spi.AsyncResponseProvider", false,
+                    Thread.currentThread().getContextClassLoader());
             // can't use the ServiceLoader API because Providers is not an interface
             for (String provider : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                     "META-INF/services/javax.ws.rs.ext.Providers")) {

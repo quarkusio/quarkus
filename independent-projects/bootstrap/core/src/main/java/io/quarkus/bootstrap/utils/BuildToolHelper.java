@@ -57,6 +57,20 @@ public class BuildToolHelper {
         return false;
     }
 
+    public static boolean isGradleProject(Path project) {
+        Path currentPath = project;
+        while (currentPath != null) {
+            if (BuildTool.MAVEN.exists(currentPath)) {
+                return false;
+            }
+            if (BuildTool.GRADLE.exists(currentPath)) {
+                return true;
+            }
+            currentPath = currentPath.getParent();
+        }
+        return false;
+    }
+
     public static Path getBuildFile(Path project, BuildTool tool) {
         Path currentPath = project;
         while (currentPath != null) {

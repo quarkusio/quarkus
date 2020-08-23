@@ -30,7 +30,7 @@ public class IDELauncherImpl {
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.DEV);
 
-            if (!BuildToolHelper.isMavenProject(projectRoot)) {
+            if (BuildToolHelper.isGradleProject(projectRoot)) {
                 final QuarkusModel quarkusModel = BuildToolHelper.enableGradleAppModelForDevMode(projectRoot);
                 context.put(QuarkusModelHelper.SERIALIZED_QUARKUS_MODEL,
                         QuarkusModelHelper.serializeQuarkusModel(quarkusModel));

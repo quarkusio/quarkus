@@ -176,7 +176,8 @@ public class QuartzProcessor {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
         for (QuartzAdditionalPropsConfig props : config.values()) {
             try {
-                if (!clazz.isAssignableFrom(Class.forName(props.clazz))) {
+                if (!clazz
+                        .isAssignableFrom(Class.forName(props.clazz, false, Thread.currentThread().getContextClassLoader()))) {
                     throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz, clazz));
                 }
             } catch (ClassNotFoundException e) {

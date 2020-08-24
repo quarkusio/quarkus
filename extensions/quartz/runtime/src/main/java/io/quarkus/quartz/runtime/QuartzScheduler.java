@@ -12,6 +12,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
@@ -78,7 +79,7 @@ public class QuartzScheduler implements Scheduler {
     }
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config,
-            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent) {
+            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs) {
         enabled = schedulerRuntimeConfig.enabled;
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
@@ -102,7 +103,7 @@ public class QuartzScheduler implements Scheduler {
                 scheduler = schedulerFactory.getScheduler();
 
                 // Set custom job factory
-                scheduler.setJobFactory(new InvokerJobFactory(invokers));
+                scheduler.setJobFactory(new InvokerJobFactory(invokers, jobs));
 
                 CronType cronType = context.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
@@ -417,9 +418,11 @@ public class QuartzScheduler implements Scheduler {
     static class InvokerJobFactory extends SimpleJobFactory {
 
         final Map<String, ScheduledInvoker> invokers;
+        final Instance<Job> jobs;
 
-        InvokerJobFactory(Map<String, ScheduledInvoker> invokers) {
+        InvokerJobFactory(Map<String, ScheduledInvoker> invokers, Instance<Job> jobs) {
             this.invokers = invokers;
+            this.jobs = jobs;
         }
 
         @Override
@@ -428,9 +431,9 @@ public class QuartzScheduler implements Scheduler {
             if (jobClass.equals(InvokerJob.class)) {
                 return new InvokerJob(invokers);
             }
-            InstanceHandle<? extends Job> instance = Arc.container().instance(jobClass);
-            if (instance.isAvailable()) {
-                return instance.get();
+            Instance<?> instance = jobs.select(jobClass);
+            if (instance.isResolvable()) {
+                return (Job) instance.get();
             }
             return super.newJob(bundle, Scheduler);
         }

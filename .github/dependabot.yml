@@ -113,6 +113,8 @@ updates:
       - dependency-name: software.amazon.awssdk:apache-client
       - dependency-name: com.amazon.alexa:ask-sdk
       - dependency-name: com.amazon.alexa:ask-sdk-apache-client
+      # Apache Commons
+      - dependency-name: commons-io:commons-io
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

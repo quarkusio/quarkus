@@ -131,7 +131,6 @@ final class CodestartProcessor {
     public void writeFiles() throws IOException {
         for (Map.Entry<String, List<CodestartFile>> e : files.entrySet()) {
             final String relativePath = e.getKey();
-            Files.createDirectories(targetDirectory.resolve(relativePath).getParent());
             getStrategy(relativePath).orElse(getSelectedDefaultStrategy())
                     .process(targetDirectory, relativePath, e.getValue(), data);
         }

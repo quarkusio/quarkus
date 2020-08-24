@@ -26,6 +26,7 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
             throw new CodestartDefinitionException(
                     "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + relativePath);
         }
+        createDirectories(targetPath);
         Files.write(targetPath, codestartFiles.get(0).getContent().getBytes());
     }
 

@@ -39,19 +39,20 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
                 NestedMaps.deepMerge(config, o);
             }
         }
+        final Path targetPath = targetDirectory.resolve(relativePath);
+        createDirectories(targetPath);
         if (Objects.equals(configType, "config-properties")) {
-            writePropertiesConfig(targetDirectory.resolve(relativePath), config);
+            writePropertiesConfig(targetPath, config);
             return;
         }
         if (Objects.equals(configType, "config-yaml")) {
-            writeYamlConfig(targetDirectory, relativePath, config);
+            writeYamlConfig(targetPath, config);
             return;
         }
         throw new CodestartException("Unsupported config type: " + configType);
     }
 
-    private void writeYamlConfig(Path targetDirectory, String relativePath, Map<String, Object> config) throws IOException {
-        final Path targetPath = targetDirectory.resolve(relativePath);
+    private void writeYamlConfig(Path targetPath, Map<String, Object> config) throws IOException {
         checkTargetDoesNotExist(targetPath);
         YAML_MAPPER.writerFor(Map.class).writeValue(targetPath.toFile(), config);
     }

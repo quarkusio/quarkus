@@ -44,4 +44,8 @@ public interface CodestartFileStrategyHandler {
         }
     }
 
+    default void createDirectories(Path targetPath) throws IOException {
+        Files.createDirectories(targetPath.getParent());
+    }
+
 }

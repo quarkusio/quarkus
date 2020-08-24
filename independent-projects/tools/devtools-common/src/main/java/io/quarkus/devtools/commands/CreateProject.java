@@ -13,7 +13,6 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -154,7 +153,7 @@ public class CreateProject {
         return this;
     }
 
-    public boolean doCreateProject(final Map<String, Object> context) throws IOException {
+    public boolean doCreateProject(final Map<String, Object> context) throws QuarkusCommandException {
         if (context != null && !context.isEmpty()) {
             for (Map.Entry<String, Object> entry : context.entrySet()) {
                 if (entry.getValue() != null) {
@@ -162,12 +161,7 @@ public class CreateProject {
                 }
             }
         }
-
-        try {
-            return execute().isSuccess();
-        } catch (QuarkusCommandException e) {
-            throw new IOException("Failed to create project", e);
-        }
+        return execute().isSuccess();
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {

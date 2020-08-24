@@ -19,8 +19,10 @@ final class AppendCodestartFileStrategyHandler implements CodestartFileStrategyH
     public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
-        checkTargetDoesNotExist(targetDirectory.resolve(relativePath));
+        final Path targetPath = targetDirectory.resolve(relativePath);
+        checkTargetDoesNotExist(targetPath);
+        createDirectories(targetPath);
         final String content = codestartFiles.stream().map(CodestartFile::getContent).collect(Collectors.joining("\n"));
-        Files.write(targetDirectory.resolve(relativePath), content.getBytes());
+        Files.write(targetPath, content.getBytes());
     }
 }

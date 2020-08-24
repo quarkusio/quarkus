@@ -26,7 +26,6 @@ import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
@@ -58,11 +57,6 @@ public class MongoClientProcessor {
     private static final DotName MONGO_CLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
-
-    @BuildStep
-    BeanDefiningAnnotationBuildItem registerConnectionBean() {
-        return new BeanDefiningAnnotationBuildItem(MONGO_CLIENT_ANNOTATION);
-    }
 
     @BuildStep
     CodecProviderBuildItem collectCodecProviders(CombinedIndexBuildItem indexBuildItem) {
@@ -143,6 +137,9 @@ public class MongoClientProcessor {
             BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+
+        // add the @MongoClientName class otherwise it won't registered as a qualifier
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
 
         List<ConnectionPoolListener> poolListenerList = connectionPoolListenerProvider.stream()
                 .map(MongoConnectionPoolListenerBuildItem::getConnectionPoolListener)

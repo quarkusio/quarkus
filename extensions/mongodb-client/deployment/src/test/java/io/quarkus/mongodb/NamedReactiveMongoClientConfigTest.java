@@ -3,6 +3,7 @@ package io.quarkus.mongodb;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 
 import javax.enterprise.inject.Default;
 import javax.inject.Inject;
@@ -14,9 +15,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import com.mongodb.reactivestreams.client.MongoClient;
+import com.mongodb.reactivestreams.client.internal.MongoClientImpl;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.test.QuarkusUnitTest;
@@ -48,10 +53,34 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
 
     @Test
     public void testNamedDataSourceInjection() {
+        assertProperConnection(client, 27018);
+        assertProperConnection(client2, 27019);
+
         assertThat(client.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
         assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
 
         assertNoDefaultClient();
+    }
+
+    private void assertProperConnection(ReactiveMongoClient client, int expectedPort) {
+        assertThat(client).isInstanceOfSatisfying(ReactiveMongoClientImpl.class, rc -> {
+            Field mongoClientField;
+            try {
+                mongoClientField = ReactiveMongoClientImpl.class.getDeclaredField("client");
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+            mongoClientField.setAccessible(true);
+            MongoClient c;
+            try {
+                c = (MongoClientImpl) mongoClientField.get(rc);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            assertThat(c.getClusterDescription().getClusterSettings().getHosts()).hasOnlyOneElementSatisfying(sa -> {
+                assertThat(sa.getPort()).isEqualTo(expectedPort);
+            });
+        });
     }
 
     private void assertNoDefaultClient() {

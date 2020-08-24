@@ -214,7 +214,7 @@ public class NativeImageBuildStep {
                 final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled);
                 process.waitFor();
             }
-            Boolean enableSslNative = false;
+            boolean enableSslNative = false;
             for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                 //todo: this should be specific build items
                 if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
@@ -254,7 +254,8 @@ public class NativeImageBuildStep {
                     .map(re -> "-H:IncludeResources=" + re.trim())
                     .forEach(command::add));
             command.add("--initialize-at-build-time=");
-            command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+            command.add(
+                    "-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-H:+JNI");
             command.add("-jar");
             command.add(runnerJarName);
@@ -579,8 +580,9 @@ public class NativeImageBuildStep {
                     intr = true;
                 }
         } finally {
-            if (intr)
+            if (intr) {
                 Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -667,8 +669,12 @@ public class NativeImageBuildStep {
                     Distribution.ORACLE);
             static final Version SNAPSHOT_MANDREL = new Version("Snapshot", Integer.MAX_VALUE, Integer.MAX_VALUE,
                     Distribution.MANDREL);
+
             static final Version VERSION_20_1 = new Version("GraalVM 20.1", 20, 1, Distribution.ORACLE);
-            static final Version CURRENT = VERSION_20_1;
+            static final Version VERSION_20_2 = new Version("GraalVM 20.2", 20, 2, Distribution.ORACLE);
+
+            static final Version MINIMUM = VERSION_20_1;
+            static final Version CURRENT = VERSION_20_2;
 
             final String fullVersion;
             final int major;
@@ -691,7 +697,7 @@ public class NativeImageBuildStep {
             }
 
             boolean isObsolete() {
-                return this.compareTo(CURRENT) < 0;
+                return this.compareTo(MINIMUM) < 0;
             }
 
             boolean isMandrel() {
@@ -708,14 +714,16 @@ public class NativeImageBuildStep {
 
             @Override
             public int compareTo(Version o) {
-                if (major > o.major)
+                if (major > o.major) {
                     return 1;
+                }
 
                 if (major == o.major) {
-                    if (minor > o.minor)
+                    if (minor > o.minor) {
                         return 1;
-                    else if (minor == o.minor)
+                    } else if (minor == o.minor) {
                         return 0;
+                    }
                 }
 
                 return -1;

@@ -137,8 +137,13 @@ public class LocalProject {
             if (parent != null) {
                 parent.modules.add(project);
             }
-            if (workspace.getCurrentProject() == null && currentProjectPom.getParent().equals(project.getDir())) {
-                workspace.setCurrentProject(project);
+            try {
+                if (workspace.getCurrentProject() == null
+                        && Files.isSameFile(currentProjectPom.getParent(), project.getDir())) {
+                    workspace.setCurrentProject(project);
+                }
+            } catch (IOException e) {
+                throw new BootstrapMavenException("Failed to load current project", e);
             }
             final List<String> modules = project.getRawModel().getModules();
             if (!modules.isEmpty()) {

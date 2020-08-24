@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.assertj.core.api.AbstractObjectAssert;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -65,7 +67,8 @@ public class OpenshiftWithS2iTest {
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
             });
 
-            assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
+            AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
+            specAssert.extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                             List<EnvVar> envVars = container.getEnv();
@@ -89,6 +92,10 @@ public class OpenshiftWithS2iTest {
                             });
                         });
                     });
+
+            specAssert.extracting("triggers").isInstanceOfSatisfying(Collection.class, c -> {
+                assertThat(c).hasSize(1);
+            });
         });
 
         assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {

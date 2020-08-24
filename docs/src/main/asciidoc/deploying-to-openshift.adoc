@@ -79,16 +79,16 @@ When a non-s2i container image extension is used, an ImageStream is created that
 To select which extension will be used for building the image:
 
 [source]
----
+----
 quarkus.container-image.builder=docker
----
+----
 
 or
 
 [source]
----
+----
 quarkus.container-image.builder=jib
----
+----
 
 === Deploying
 
@@ -207,3 +207,27 @@ quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 ----
 quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-secret
 ----
+
+=== Knative - OpenShift Serverless
+
+OpenShift also provides the ability to use Knative via the link:https://www.openshift.com/learn/topics/serverless[OpenShift Serverless] functionality.
+
+The first order of business is to instruct Quarkus to generate Knative resources by setting:
+
+[source]
+----
+quarkus.kubernetes.deployment-target=knative
+----
+
+In order to leverage OpenShift S2I to build the container image on the cluster and use the resulting container image for the Knative application,
+we need to set a couple of configuration properties:
+
+[source]
+----
+# set the Kubernetes namespace which will be used to run the application
+quarkus.container-image.group=geoand
+# set the container image registry - this is the standard URL used to refer to the internal OpenShift registry
+quarkus.container-image.registry=image-registry.openshift-image-registry.svc:5000
+----
+
+The application can then be deployed to OpenShift Serverless by enabling the standard `quarkus.kubernetes.deploy=true` property.

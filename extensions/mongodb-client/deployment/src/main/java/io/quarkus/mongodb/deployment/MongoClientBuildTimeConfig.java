@@ -17,4 +17,10 @@ public class MongoClientBuildTimeConfig {
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
+
+    /**
+     * If set to true, the default clients will always be created even if there are no injection points that use them
+     */
+    @ConfigItem(name = "force-default-clients")
+    public boolean forceDefaultClients;
 }

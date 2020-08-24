@@ -5,11 +5,12 @@ import java.util.Map;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
 
 public final class QuarkusImportSqlCommandExtractorInitiator implements StandardServiceInitiator<ImportSqlCommandExtractor> {
-    public static final ImportSqlCommandExtractorInitiator INSTANCE = new ImportSqlCommandExtractorInitiator();
+
+    public static final QuarkusImportSqlCommandExtractorInitiator INSTANCE = new QuarkusImportSqlCommandExtractorInitiator();
+
     private static final MultipleLinesSqlCommandExtractor SERVICE_INSTANCE = new MultipleLinesSqlCommandExtractor();
 
     @Override

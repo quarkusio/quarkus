@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -92,7 +91,6 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
-import io.quarkus.qute.api.CheckedTemplate;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
@@ -114,22 +112,9 @@ import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 
 public class QuteProcessor {
 
+    public static final DotName RESOURCE_PATH = Names.RESOURCE_PATH;
+
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
-
-    public static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
-    public static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
-
-    static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
-    static final DotName ITERATOR = DotName.createSimple(Iterator.class.getName());
-    static final DotName STREAM = DotName.createSimple(Stream.class.getName());
-    static final DotName MAP = DotName.createSimple(Map.class.getName());
-
-    static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
-    static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
-    static final DotName STRING = DotName.createSimple(String.class.getName());
-
-    static final DotName DOTNAME_CHECKED_TEMPLATE = DotName.createSimple(CheckedTemplate.class.getName());
-    static final DotName DOTNAME_TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -195,9 +180,9 @@ public class QuteProcessor {
         }
         String supportedAdaptors;
         if (adaptors.isEmpty()) {
-            supportedAdaptors = DOTNAME_TEMPLATE_INSTANCE + " is supported";
+            supportedAdaptors = Names.TEMPLATE_INSTANCE + " is supported";
         } else {
-            StringBuffer strbuf = new StringBuffer(DOTNAME_TEMPLATE_INSTANCE.toString());
+            StringBuffer strbuf = new StringBuffer(Names.TEMPLATE_INSTANCE.toString());
             List<String> adaptorsList = new ArrayList<>(adaptors.size());
             for (DotName name : adaptors.keySet()) {
                 adaptorsList.add(name.toString());
@@ -209,7 +194,7 @@ public class QuteProcessor {
             supportedAdaptors = strbuf.append(" are supported").toString();
         }
 
-        for (AnnotationInstance annotation : index.getIndex().getAnnotations(DOTNAME_CHECKED_TEMPLATE)) {
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(Names.CHECKED_TEMPLATE)) {
             if (annotation.target().kind() != Kind.CLASS)
                 continue;
             ClassInfo classInfo = annotation.target().asClass();
@@ -228,7 +213,7 @@ public class QuteProcessor {
                 DotName returnTypeName = methodInfo.returnType().asClassType().name();
                 CheckedTemplateAdapter adaptor = null;
                 // if it's not the default template instance, try to find an adapter
-                if (!returnTypeName.equals(DOTNAME_TEMPLATE_INSTANCE)) {
+                if (!returnTypeName.equals(Names.TEMPLATE_INSTANCE)) {
                     adaptor = adaptors.get(returnTypeName);
                     if (adaptor == null)
                         throw new TemplateException("Incompatible checked template return type: " + methodInfo.returnType()
@@ -881,9 +866,9 @@ public class QuteProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
 
-            if (injectionPoint.getRequiredType().name().equals(TEMPLATE)) {
+            if (injectionPoint.getRequiredType().name().equals(Names.TEMPLATE)) {
 
-                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(RESOURCE_PATH);
+                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(Names.RESOURCE_PATH);
                 String name;
                 if (resourcePath != null) {
                     name = resourcePath.value().asString();
@@ -942,7 +927,7 @@ public class QuteProcessor {
                     return true;
                 }
                 // Collection.contains()
-                if (check.numberOfParameters == 1 && check.classNameEquals(COLLECTION) && check.name.equals("contains")) {
+                if (check.numberOfParameters == 1 && check.classNameEquals(Names.COLLECTION) && check.name.equals("contains")) {
                     return true;
                 }
                 return false;
@@ -1036,23 +1021,23 @@ public class QuteProcessor {
                     match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
             Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
             // Iterable<Item> => Item
-            matchType = extractMatchType(closure, ITERABLE, firstParamType);
+            matchType = extractMatchType(closure, Names.ITERABLE, firstParamType);
             if (matchType == null) {
                 // Stream<Long> => Long
-                matchType = extractMatchType(closure, STREAM, firstParamType);
+                matchType = extractMatchType(closure, Names.STREAM, firstParamType);
             }
             if (matchType == null) {
                 // Entry<K,V> => Entry<String,Item>
-                matchType = extractMatchType(closure, MAP, t -> {
+                matchType = extractMatchType(closure, Names.MAP, t -> {
                     Type[] args = new Type[2];
                     args[0] = t.asParameterizedType().arguments().get(0);
                     args[1] = t.asParameterizedType().arguments().get(1);
-                    return ParameterizedType.create(MAP_ENTRY, args, null);
+                    return ParameterizedType.create(Names.MAP_ENTRY, args, null);
                 });
             }
             if (matchType == null) {
                 // Iterator<Item> => Item
-                matchType = extractMatchType(closure, ITERATOR, firstParamType);
+                matchType = extractMatchType(closure, Names.ITERATOR, firstParamType);
             }
         }
         if (matchType != null) {

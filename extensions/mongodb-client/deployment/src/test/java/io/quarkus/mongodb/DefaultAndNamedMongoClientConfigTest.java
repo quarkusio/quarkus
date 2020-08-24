@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.internal.MongoClientImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.runtime.MongoClientName;
@@ -44,6 +45,9 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
 
     @Test
     public void testNamedDataSourceInjection() {
+        assertProperConnection(client, 27018);
+        assertProperConnection(client2, 27019);
+
         assertThat(client.listDatabases().first()).isNotEmpty();
         assertThat(client2.listDatabases().first()).isNotEmpty();
 
@@ -51,5 +55,13 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
         assertThat(Arc.container().instance(MongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster2")).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster3")).get()).isNull();
+    }
+
+    private void assertProperConnection(MongoClient client, int expectedPort) {
+        assertThat(client).isInstanceOfSatisfying(MongoClientImpl.class, c -> {
+            assertThat(c.getCluster().getSettings().getHosts()).hasOnlyOneElementSatisfying(sa -> {
+                assertThat(sa.getPort()).isEqualTo(expectedPort);
+            });
+        });
     }
 }

@@ -26,7 +26,6 @@ import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
@@ -38,6 +37,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusJdbcEnvironmentInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 
@@ -161,8 +161,8 @@ public class PreconfiguredServiceRegistryBuilder {
         // TODO (optional): assume entities are already enhanced?
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
-        // TODO (optional): not a priority
-        serviceInitiators.add(ImportSqlCommandExtractorInitiator.INSTANCE);
+        // Custom one!
+        serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
 
         // TODO disable?
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);

@@ -2,7 +2,6 @@ package io.quarkus.quartz.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,6 @@ import java.util.Optional;
 
 import javax.inject.Singleton;
 
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.quartz.Job;
 import org.quartz.JobListener;
@@ -35,7 +33,9 @@ import org.quartz.spi.SchedulerPlugin;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -43,7 +43,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -58,7 +57,7 @@ import io.quarkus.quartz.runtime.QuartzScheduler;
 import io.quarkus.quartz.runtime.QuartzSupport;
 
 /**
- * @author Martin Kouba
+ * 
  */
 public class QuartzProcessor {
 
@@ -75,17 +74,10 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem jobs(CombinedIndexBuildItem combinedIndexBuildItem) {
-        // Jobs need to be marked as unremovable otherwise ArC will automatically remove them because they are not @Injected anywhere
-        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
-        // Register Jobs
-        for (ClassInfo info : combinedIndexBuildItem.getIndex().getAllKnownImplementors(JOB)) {
-            if (Modifier.isAbstract(info.flags())) {
-                continue;
-            }
-            builder.addBeanClass(info.name().toString());
-        }
-        return builder.build();
+    AutoAddScopeBuildItem addScope() {
+        // Add @Dependent to a Job implementation that has no scope defined but requires CDI services
+        return AutoAddScopeBuildItem.builder().implementsInterface(JOB).requiresContainerServices()
+                .defaultScope(BuiltinScope.DEPENDENT).build();
     }
 
     @BuildStep

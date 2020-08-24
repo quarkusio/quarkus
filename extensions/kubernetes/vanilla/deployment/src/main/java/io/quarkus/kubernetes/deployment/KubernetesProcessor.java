@@ -866,7 +866,7 @@ class KubernetesProcessor {
                 session);
 
         //For knative we want the port to be null
-        String port = KNATIVE.equals(target) ? null : String.valueOf(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT));
+        Integer port = KNATIVE.equals(target) ? null : ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT);
         session.resources().decorate(target, new ApplyHttpGetActionPortDecorator(port));
     }
 

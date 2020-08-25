@@ -577,6 +577,8 @@ It can run as a server, based on a file, or live completely in memory.
 All of these options are available as listed above.
 You can find more information at the https://db.apache.org/derby/docs/10.8/devguide/cdevdvlp17453.html#cdevdvlp17453[official documentation].
 
+:no-duration-note: true
+
 [[reactive-configuration]]
 == Reactive Datasource Configuration Reference
 

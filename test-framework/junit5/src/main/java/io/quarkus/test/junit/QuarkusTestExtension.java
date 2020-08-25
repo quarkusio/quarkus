@@ -57,6 +57,7 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -181,7 +182,7 @@ public class QuarkusTestExtension
             Path root = Paths.get("").normalize().toAbsolutePath();
             // If gradle project running directly with IDE
             if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
-                BuildToolHelper.enableGradleAppModel(root, "TEST");
+                BuildToolHelper.enableGradleAppModel(root, "TEST", QuarkusModelHelper.TEST_REQUIRED_TASKS);
             }
 
             runnerBuilder.setApplicationRoot(rootBuilder.build());

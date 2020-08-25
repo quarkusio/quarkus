@@ -465,3 +465,8 @@ class TokenSecuredResourceTest {
 ====
 `@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
 ====
+
+== References
+
+* https://tools.ietf.org/html/rfc6749[OAuth2]
+* link:security[Quarkus Security]

@@ -848,7 +848,8 @@ Extension methods can be used to extend the data classes with new functionality 
 For example, it is possible to add _computed properties_ and _virtual methods_.
 
 A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
-If a  class is annotated with `@TemplateExtension` then a value resolver is generated for every method declared on the class.
+If a  class is annotated with `@TemplateExtension` then a value resolver is generated for every non-private static method declared on the class.
+Method-level annotations override the behavior defined on the class.
 Methods that do not meet the following requirements are ignored.
 
 A template extension method:
@@ -860,10 +861,14 @@ A template extension method:
  
 The class of the first parameter is used to match the base object unless the namespace is specified. 
 In such case, the namespace is used to match an expression.
+
 The method name is used to match the property name by default. 
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
+A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name.
+It is also possible to match the name against a regular expression specified in `TemplateExtension#matchRegex()`.
+In both cases, a string method parameter is used to pass the property name.
+If both `matchName()` and `matchRegex()` are set the regular expression is used for matching.
 
-NOTE: A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name. In that case, a method parameter is used to pass the property name.
 If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. 
 If no namespace is specified the method must declare at least two parameters and the second parameter must be a string. 
 
@@ -961,7 +966,7 @@ These extension methods can be used as follows.
 
 Quarkus provides a set of built-in extension methods.
 
-===== Map extension methods:
+===== Maps
 
 * `keys` or `keySet`: Returns a Set view of the keys contained in a map
 ** `{#for key in map.keySet}`
@@ -976,17 +981,29 @@ Quarkus provides a set of built-in extension methods.
 ** `{#if map.isEmpty}`
 
 * `get(key)`: Returns the value to which the specified key is mapped
-** `{map.get('foo')}` or `{map['foo']}`
+** `{map.get('foo')}`
 
-===== Collection extension methods:
+TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket notation for keys that are not legal identifiers: `{map['my key']}`.
+
+===== Collections
 
 * `get(index)`: Returns the element at the specified position in a list
-** `{list.get(0)}` or `{list[0]}`
+** `{list.get(0)}`
 
-===== Number extension methods:
+TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
+
+===== Numbers
 
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
+
+===== Config 
+
+* `config:<name>` or `config:[<name>]`: Returns the config value for the given property name
+** `{config:foo}` or `{config:['property.with.dot.in.name']}`
+
+* `config:property(name)`: Returns the config value for the given property name; the name can be obtained dynamically by an expression 
+** `{config:property('quarkus.foo')}` or `{config:property(foo.getPropertyName())}`
 
 [[template_data]]
 === @TemplateData

@@ -523,6 +523,46 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
         .onItem().ignore().andContinueWithNull());
 ----
 
+== UNIX Domain Socket connections
+
+The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
+
+First make sure that https://quarkus.io/guides/vertx#native-transport[native transport support] is enabled.
+
+Then configure the database connection url.
+This step depends on the database type.
+
+=== PostgreSQL
+
+PostgresSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
+
+The database connection url must be configured so that:
+
+* the `host` is the `directory` in the socket path
+* the `port` is the `port` in the socket path
+
+Consider the following socket path: `/var/run/postgresql/.s.PGSQL.5432`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=postgresql://:5432/quarkus_test?host=/var/run/postgresql
+----
+
+=== MariaDB/MySQL
+
+The database connection url must be configured so that the `host` is the socket path.
+
+Consider the following socket path: `/var/run/mysqld/mysqld.sock`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
+----
+
 == Configuration Reference
 
 === Common Datasource

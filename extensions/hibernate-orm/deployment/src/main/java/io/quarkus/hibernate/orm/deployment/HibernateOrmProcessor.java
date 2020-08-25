@@ -37,6 +37,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
@@ -150,6 +151,17 @@ public final class HibernateOrmProcessor {
     public SystemPropertyBuildItem enforceDisableRuntimeEnhancer() {
         return new SystemPropertyBuildItem(AvailableSettings.BYTECODE_PROVIDER,
                 org.hibernate.cfg.Environment.BYTECODE_PROVIDER_NAME_NONE);
+    }
+
+    @BuildStep
+    public void enrollBeanValidationTypeSafeActivatorForReflection(Capabilities capabilities,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true,
+                    "org.hibernate.cfg.beanvalidation.TypeSafeActivator"));
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, false,
+                    BeanValidationIntegrator.BV_CHECK_CLASS));
+        }
     }
 
     @BuildStep
@@ -706,10 +718,7 @@ public final class HibernateOrmProcessor {
                 // sql-load-script
                 Optional<String> importFile = getSqlLoadScript(launchMode);
 
-                if (!importFile.isPresent()) {
-                    // explicitly set a no file and ignore all other operations
-                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, NO_SQL_LOAD_SCRIPT_FILE);
-                } else {
+                if (importFile.isPresent()) {
                     Path loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile.get());
 
                     if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
@@ -725,6 +734,9 @@ public final class HibernateOrmProcessor {
                                 "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX + "sql-load-script="
                                         + hibernateConfig.sqlLoadScript.get() + "'. Remove property or add file to your path.");
                     }
+                } else {
+                    //Disable implicit loading of the default import script (import.sql)
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
                 }
 
                 // Caching

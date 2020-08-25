@@ -97,3 +97,6 @@ for example by setting `quarkus.http.auth.basic=true` or `%test.quarkus.http.aut
 You can also use Wiremock to mock the authorization OAuth2 and OIDC services: 
 See link:security-oauth#integration-testing[OAuth2 Integration testing] for more details.
 
+== References
+
+* link:security[Quarkus Security]

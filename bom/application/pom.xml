@@ -36,7 +36,7 @@
         <smallrye-config.version>1.8.5</smallrye-config.version>
         <smallrye-health.version>2.2.3</smallrye-health.version>
         <smallrye-metrics.version>2.4.2</smallrye-metrics.version>
-        <smallrye-open-api.version>2.0.6</smallrye-open-api.version>
+        <smallrye-open-api.version>2.0.7</smallrye-open-api.version>
         <smallrye-graphql.version>1.0.7</smallrye-graphql.version>
         <smallrye-opentracing.version>1.3.4</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>4.3.0</smallrye-fault-tolerance.version>
@@ -142,7 +142,7 @@
         <aws-lambda-java-events.version>3.1.0</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
         <aws-xray.version>2.4.0</aws-xray.version>
-        <awssdk.version>2.13.68</awssdk.version>
+        <awssdk.version>2.13.75</awssdk.version>
         <aws-alexa-sdk.version>2.31.0</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.3.72</kotlin.version>
@@ -155,7 +155,7 @@
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
         <jgit.version>5.8.0.202006091008-r</jgit.version>
         <flyway.version>6.5.3</flyway.version>
-        <yasson.version>1.0.7</yasson.version>
+        <yasson.version>1.0.8</yasson.version>
         <liquibase.version>3.10.1</liquibase.version>
         <snakeyaml.version>1.26</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
@@ -164,7 +164,7 @@
         <mongo-crypt.version>1.0.1</mongo-crypt.version>
         <artemis.version>2.11.0</artemis.version>
         <proton-j.version>0.33.6</proton-j.version>
-        <okhttp.version>3.14.6</okhttp.version>
+        <okhttp.version>3.14.9</okhttp.version>
         <sentry.version>1.7.30</sentry.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>

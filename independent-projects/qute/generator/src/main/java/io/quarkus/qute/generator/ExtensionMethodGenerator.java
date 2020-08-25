@@ -3,6 +3,8 @@ package io.quarkus.qute.generator;
 import static io.quarkus.qute.generator.ValueResolverGenerator.generatedNameFromTarget;
 import static io.quarkus.qute.generator.ValueResolverGenerator.packageName;
 import static io.quarkus.qute.generator.ValueResolverGenerator.simpleName;
+import static org.objectweb.asm.Opcodes.ACC_FINAL;
+import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -11,6 +13,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -31,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -52,10 +56,13 @@ public class ExtensionMethodGenerator {
     static final DotName STRING = DotName.createSimple(String.class.getName());
 
     public static final String SUFFIX = "_Extension" + ValueResolverGenerator.SUFFIX;
+    public static final String NAMESPACE_SUFFIX = "_Namespace" + SUFFIX;
 
     public static final String MATCH_NAME = "matchName";
+    public static final String MATCH_REGEX = "matchRegex";
     public static final String PRIORITY = "priority";
     public static final String NAMESPACE = "namespace";
+    public static final String PATTERN = "pattern";
 
     private final Set<String> generatedTypes;
     private final ClassOutput classOutput;
@@ -81,7 +88,7 @@ public class ExtensionMethodGenerator {
         }
     }
 
-    public void generate(MethodInfo method, String matchName, Integer priority) {
+    public void generate(MethodInfo method, String matchName, String matchRegex, Integer priority) {
 
         AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
         List<Type> parameters = method.parameters();
@@ -120,6 +127,13 @@ public class ExtensionMethodGenerator {
             priority = TemplateExtension.DEFAULT_PRIORITY;
         }
 
+        if (matchRegex == null && extensionAnnotation != null) {
+            AnnotationValue matchRegexValue = extensionAnnotation.value(MATCH_REGEX);
+            if (matchRegexValue != null) {
+                matchRegex = matchRegexValue.asString();
+            }
+        }
+
         String baseName;
         if (declaringClass.enclosingClass() != null) {
             baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
@@ -136,9 +150,22 @@ public class ExtensionMethodGenerator {
         ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ValueResolver.class).build();
 
+        FieldDescriptor patternField = null;
+        if (matchRegex != null && !matchRegex.isEmpty()) {
+            patternField = valueResolver.getFieldCreator(PATTERN, Pattern.class)
+                    .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
+            MethodCreator constructor = valueResolver.getMethodCreator("<init>", "V");
+            // Invoke super()
+            constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
+            // Compile the regex pattern
+            constructor.writeInstanceField(patternField, constructor.getThis(),
+                    constructor.invokeStaticMethod(Descriptors.PATTERN_COMPILE, constructor.load(matchRegex)));
+            constructor.returnValue(null);
+        }
+
         implementGetPriority(valueResolver, priority);
-        implementAppliesTo(valueResolver, method, matchName);
-        implementResolve(valueResolver, declaringClass, method, matchName);
+        implementAppliesTo(valueResolver, method, matchName, patternField);
+        implementResolve(valueResolver, declaringClass, method, matchName, patternField);
 
         valueResolver.close();
     }
@@ -159,22 +186,23 @@ public class ExtensionMethodGenerator {
         getPriority.returnValue(getPriority.load(priority));
     }
 
-    private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName) {
+    private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName,
+            FieldDescriptor patternField) {
         MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
         ResultHandle evalContext = resolve.getMethodParam(0);
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-        boolean matchAny = matchName.equals(TemplateExtension.ANY);
+        boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
         List<Type> parameters = method.parameters();
 
         ResultHandle ret;
         int paramSize = parameters.size();
-        if (paramSize == 1 || (paramSize == 2 && matchAny)) {
-            // Single parameter or two parameters and matches any name - the first param is the base object and the second param is the name
+        if (paramSize == 1 || (paramSize == 2 && matchAnyOrRegex)) {
+            // Single parameter or two parameters and matches any name or regex - the first param is the base object and the second param is the name
             ResultHandle[] args = new ResultHandle[paramSize];
             args[0] = base;
-            if (matchAny) {
+            if (matchAnyOrRegex) {
                 args[1] = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
             }
             ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, resolve
@@ -186,7 +214,7 @@ public class ExtensionMethodGenerator {
             ret = resolve
                     .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
             // The real number of evaluated params, i.e. skip the base object and name if matchAny==true
-            int realParamSize = paramSize - (matchAny ? 2 : 1);
+            int realParamSize = paramSize - (matchAnyOrRegex ? 2 : 1);
             // Evaluate params first
             ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
             // The CompletionStage upon which we invoke whenComplete()
@@ -202,7 +230,7 @@ public class ExtensionMethodGenerator {
             AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
             whenComplete.assign(whenBase, base);
             AssignableResultHandle whenName = null;
-            if (matchAny) {
+            if (matchAnyOrRegex) {
                 whenName = whenComplete.createVariable(String.class);
                 whenComplete.assign(whenName, name);
             }
@@ -250,7 +278,7 @@ public class ExtensionMethodGenerator {
             // Base object
             args[shift] = whenBase;
             shift++;
-            if (matchAny) {
+            if (matchAnyOrRegex) {
                 args[shift] = whenName;
                 shift++;
             }
@@ -293,14 +321,15 @@ public class ExtensionMethodGenerator {
         resolve.returnValue(ret);
     }
 
-    private void implementAppliesTo(ClassCreator valueResolver, MethodInfo method, String matchName) {
+    private void implementAppliesTo(ClassCreator valueResolver, MethodInfo method, String matchName,
+            FieldDescriptor patternField) {
         MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
         List<Type> parameters = method.parameters();
-        boolean matchAny = matchName.equals(TemplateExtension.ANY);
+        boolean matchAny = patternField == null && matchName.equals(TemplateExtension.ANY);
         boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
-        int realParamSize = parameters.size() - (matchAny ? 2 : 1);
+        int realParamSize = parameters.size() - (matchAny || patternField != null ? 2 : 1);
         ResultHandle evalContext = appliesTo.getMethodParam(0);
         ResultHandle base = appliesTo.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
         ResultHandle name = appliesTo.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
@@ -317,10 +346,21 @@ public class ExtensionMethodGenerator {
 
         // Test property name
         if (!matchAny) {
-            ResultHandle nameTest = appliesTo.invokeVirtualMethod(Descriptors.EQUALS, name,
-                    appliesTo.load(matchName));
-            BytecodeCreator nameNotMatched = appliesTo.ifTrue(nameTest).falseBranch();
-            nameNotMatched.returnValue(nameNotMatched.load(false));
+            if (patternField != null) {
+                // if (!pattern.matcher(value).match()) {
+                //   return false;
+                // }
+                ResultHandle pattern = appliesTo.readInstanceField(patternField, appliesTo.getThis());
+                ResultHandle matcher = appliesTo.invokeVirtualMethod(Descriptors.PATTERN_MATCHER, pattern, name);
+                BytecodeCreator nameNotMatched = appliesTo
+                        .ifFalse(appliesTo.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch();
+                nameNotMatched.returnValue(appliesTo.load(false));
+            } else {
+                ResultHandle nameTest = appliesTo.invokeVirtualMethod(Descriptors.EQUALS, name,
+                        appliesTo.load(matchName));
+                BytecodeCreator nameNotMatched = appliesTo.ifTrue(nameTest).falseBranch();
+                nameNotMatched.returnValue(nameNotMatched.load(false));
+            }
         }
 
         // Test number of parameters
@@ -354,7 +394,7 @@ public class ExtensionMethodGenerator {
             }
             String targetPackage = packageName(declaringClass.name());
 
-            String suffix = "_Namespace" + SUFFIX + sha1(namespace);
+            String suffix = NAMESPACE_SUFFIX + sha1(namespace);
             String generatedName = generatedNameFromTarget(targetPackage, baseName, suffix);
             generatedTypes.add(generatedName.replace('/', '.'));
 
@@ -376,6 +416,7 @@ public class ExtensionMethodGenerator {
         public class ResolveCreator implements AutoCloseable {
 
             private final MethodCreator resolve;
+            private final MethodCreator constructor;
             private final ResultHandle evalContext;
             private final ResultHandle name;
             private final ResultHandle params;
@@ -388,20 +429,33 @@ public class ExtensionMethodGenerator {
                 this.name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
                 this.params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
                 this.paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+                this.constructor = namespaceResolver.getMethodCreator("<init>", "V");
+                // Invoke super()
+                this.constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             }
 
-            public void addMethod(MethodInfo method, String matchName) {
+            public void addMethod(MethodInfo method, String matchName, String matchRegex) {
                 List<Type> parameters = method.parameters();
                 int paramSize = parameters.size();
-                boolean matchAny = matchName.equals(TemplateExtension.ANY);
-                // The real number of evaluated params, i.e. skip the name if matchAny==true
-                int realParamSize = paramSize - (matchAny ? 1 : 0);
 
-                BytecodeCreator matchScope = createNamespaceExtensionMatchScope(resolve, method, realParamSize, matchName, name,
+                FieldDescriptor patternField = null;
+                if (matchRegex != null && !matchRegex.isEmpty()) {
+                    patternField = namespaceResolver.getFieldCreator(PATTERN + "_" + sha1(method.toString()), Pattern.class)
+                            .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
+                    constructor.writeInstanceField(patternField, constructor.getThis(),
+                            constructor.invokeStaticMethod(Descriptors.PATTERN_COMPILE, constructor.load(matchRegex)));
+                }
+
+                boolean matchAnyOrRegex = patternField != null || matchName.equals(TemplateExtension.ANY);
+                // The real number of evaluated params, i.e. skip the name if matchAny==true
+                int realParamSize = paramSize - (matchAnyOrRegex ? 1 : 0);
+
+                BytecodeCreator matchScope = createNamespaceExtensionMatchScope(resolve, method, realParamSize, matchName,
+                        patternField, name,
                         params, paramsCount);
 
                 ResultHandle ret = matchScope.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
-                if (paramSize == 1 && matchAny) {
+                if (paramSize == 1 && matchAnyOrRegex) {
                     // Single parameter and matches any name - the first param is the name
                     ResultHandle[] args = new ResultHandle[1];
                     args[0] = name;
@@ -421,7 +475,7 @@ public class ExtensionMethodGenerator {
                     matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
                     BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
                     AssignableResultHandle whenName = null;
-                    if (matchAny) {
+                    if (matchAnyOrRegex) {
                         whenName = whenComplete.createVariable(String.class);
                         whenComplete.assign(whenName, name);
                     }
@@ -465,7 +519,7 @@ public class ExtensionMethodGenerator {
                     // n minus 1 - adapted arg for varargs methods
                     ResultHandle[] args = new ResultHandle[paramSize];
                     int shift = 0;
-                    if (matchAny) {
+                    if (matchAnyOrRegex) {
                         args[shift] = whenName;
                         shift++;
                     }
@@ -508,6 +562,7 @@ public class ExtensionMethodGenerator {
 
             @Override
             public void close() {
+                constructor.returnValue(null);
                 resolve.returnValue(resolve.readStaticField(Descriptors.RESULTS_NOT_FOUND));
             }
 
@@ -516,19 +571,26 @@ public class ExtensionMethodGenerator {
     }
 
     private BytecodeCreator createNamespaceExtensionMatchScope(BytecodeCreator bytecodeCreator, MethodInfo method,
-            int realParamSize, String matchName, ResultHandle name, ResultHandle params,
+            int realParamSize, String matchName, FieldDescriptor patternField, ResultHandle name, ResultHandle params,
             ResultHandle paramsCount) {
 
-        boolean matchAny = matchName.equals(TemplateExtension.ANY);
+        boolean matchAny = patternField == null && matchName.equals(TemplateExtension.ANY);
         boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
 
         BytecodeCreator matchScope = bytecodeCreator.createScope();
         // Test property name
         if (!matchAny) {
-            matchScope.ifNonZero(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
-                    matchScope.load(matchName),
-                    name))
-                    .falseBranch().breakScope(matchScope);
+            if (patternField != null) {
+                ResultHandle pattern = matchScope.readInstanceField(patternField, matchScope.getThis());
+                ResultHandle matcher = matchScope.invokeVirtualMethod(Descriptors.PATTERN_MATCHER, pattern, name);
+                matchScope.ifFalse(matchScope.invokeVirtualMethod(Descriptors.MATCHER_MATCHES, matcher)).trueBranch()
+                        .breakScope(matchScope);
+            } else {
+                matchScope.ifTrue(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
+                        matchScope.load(matchName),
+                        name))
+                        .falseBranch().breakScope(matchScope);
+            }
         }
         // Test number of parameters
         if (!isVarArgs || realParamSize > 1) {

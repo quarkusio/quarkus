@@ -38,12 +38,12 @@ public class MockTestCase {
 
     @Test
     public void testPerTestMock() {
-        QuarkusMock.installMockForInstance(new BonourGreeter(), mockableBean2);
+        QuarkusMock.installMockForInstance(new BonjourGreeter(), mockableBean2);
         Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
         Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
     }
 
-    public static class BonourGreeter extends MockableBean2 {
+    public static class BonjourGreeter extends MockableBean2 {
         @Override
         public String greet(String name) {
             return BONJOUR + name;

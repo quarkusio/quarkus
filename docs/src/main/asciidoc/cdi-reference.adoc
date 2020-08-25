@@ -483,7 +483,7 @@ Quarkus adds a capability that CDI currently does not support which is to condit
 via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
 
-Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but work in its normal capacity for the production artifact.
+Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but works in its normal capacity for the production artifact.
 An elegant way to create such beans is the following:
 
 [source,java]
@@ -505,7 +505,7 @@ public class TracerConfiguration {
 }
 ----
 
-If instead, it is required that the `Tracer` bean also work in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
+If instead, it is required that the `Tracer` bean also works in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
 
 [source,java]
 ----
@@ -513,13 +513,13 @@ If instead, it is required that the `Tracer` bean also work in dev-mode and only
 public class TracerConfiguration {
 
     @Produces
-    @DefaultBean
+    @UnlessBuildProfile("test") // this will be enabled for both prod and dev build time profiles
     public Tracer realTracer(Reporter reporter, Configuration configuration) {
         return new RealTracer(reporter, configuration);
     }
 
     @Produces
-    @UnlessBuildProfile("prod") // this will be enabled for both test and dev build time profiles
+    @DefaultBean
     public Tracer noopTracer() {
         return new NoopTracer();
     }

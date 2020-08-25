@@ -72,9 +72,9 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
-import io.quarkus.deployment.util.JavaVersionUtil;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 /**
@@ -410,6 +410,9 @@ public class DevMojo extends AbstractMojo {
 
     private void triggerPrepare() throws MojoExecutionException {
         Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
+        if (quarkusPlugin == null) {
+            return;
+        }
         MojoExecutor.executeMojo(
                 quarkusPlugin,
                 MojoExecutor.goal(QUARKUS_PREPARE_GOAL),

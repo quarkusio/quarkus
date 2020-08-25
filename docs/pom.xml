@@ -108,6 +108,8 @@
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <graalvm-flavor>${graal-sdk.version-for-documentation}-java11</graalvm-flavor>
+                        <mandrel-version>${mandrel.version-for-documentation}</mandrel-version>
+                        <mandrel-flavor>${mandrel.version-for-documentation}-java11</mandrel-flavor>
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <maven-version>${proposed-maven-version}</maven-version>
                         <gradle-version>${gradle-wrapper.version}</gradle-version>

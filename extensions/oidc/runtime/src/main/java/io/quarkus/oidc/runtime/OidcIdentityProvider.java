@@ -79,7 +79,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
         if (request.getToken() instanceof IdTokenCredential
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
-                        || resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken)) {
+                        || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
             vertxContext.put("code_flow_access_token_result",
                     verifyCodeFlowAccessToken(vertxContext, request, resolvedContext));
         }

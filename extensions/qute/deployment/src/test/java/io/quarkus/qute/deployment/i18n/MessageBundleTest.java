@@ -25,7 +25,7 @@ public class MessageBundleTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
                     .addAsResource(new StringAsset(
-                            "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha}"),
+                            "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha} {alpha:hello-with-param('foo')}"),
                             "templates/foo.html")
                     .addAsResource(new StringAsset(
                             "hello=Hallo Welt!\nhello_name=Hallo {name}!"),
@@ -64,10 +64,11 @@ public class MessageBundleTest {
 
     @Test
     public void testResolvers() {
-        assertEquals("Hello world! Hello Jachym! Hello you guys! Hello alpha! Hello!", foo.instance().render());
-        assertEquals("Hello world! Ahoj Jachym! Hello you guys! Hello alpha! Hello!",
+        assertEquals("Hello world! Hello Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
+                foo.instance().render());
+        assertEquals("Hello world! Ahoj Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
-        assertEquals("Hallo Welt! Hallo Jachym! Hello you guys! Hello alpha! Hello!",
+        assertEquals("Hallo Welt! Hallo Jachym! Hello you guys! Hello alpha! Hello! Hello foo from alpha!",
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.GERMAN).render());
         assertEquals("Dot test!", engine.parse("{msg:['dot.test']}").render());
     }

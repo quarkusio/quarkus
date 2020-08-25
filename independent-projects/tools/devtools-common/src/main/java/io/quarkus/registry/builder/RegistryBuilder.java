@@ -61,7 +61,6 @@ public class RegistryBuilder implements IndexVisitor {
         if (extension.isUnlisted()) {
             return;
         }
-        registryBuilder.putCoreVersions(new ComparableVersion(quarkusCore), new HashMap<>());
         ArtifactKey extensionKey = ImmutableArtifactKey.of(extension.getGroupId(), extension.getArtifactId());
         ModifiableExtension extensionBuilder = extensions
                 .computeIfAbsent(extensionKey, key -> ModifiableExtension.create()

@@ -1,16 +1,19 @@
 package io.quarkus.devtools.codestarts;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public final class Codestart {
     public static final String BASE_LANGUAGE = "base";
     private final String resourceDir;
     private final CodestartSpec spec;
+    private final Set<String> implementedLanguages;
 
-    public Codestart(final String resourceName, final CodestartSpec spec) {
+    public Codestart(final String resourceName, final CodestartSpec spec, Set<String> implementedLanguages) {
         this.resourceDir = resourceName;
         this.spec = spec;
+        this.implementedLanguages = implementedLanguages;
     }
 
     public String getResourceDir() {
@@ -25,12 +28,24 @@ public final class Codestart {
         return spec.getName();
     }
 
+    public String getRef() {
+        return spec.getRef();
+    }
+
+    public boolean isSelected(Set<String> selection) {
+        return selection.contains(getName()) || selection.contains(spec.getRef());
+    }
+
     public CodestartSpec.Type getType() {
         return spec.getType();
     }
 
+    public Set<String> getImplementedLanguages() {
+        return implementedLanguages;
+    }
+
     public boolean implementsLanguage(String languageName) {
-        return spec.getMissingLanguages().isEmpty() || !spec.getMissingLanguages().contains(languageName);
+        return implementedLanguages.isEmpty() || implementedLanguages.contains(languageName);
     }
 
     public Map<String, Object> getLocalData(String languageName) {

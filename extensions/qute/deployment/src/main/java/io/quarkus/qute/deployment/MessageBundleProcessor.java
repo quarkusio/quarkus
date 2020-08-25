@@ -270,8 +270,10 @@ public class MessageBundleProcessor {
             bundleInterfaces.put(bundle.getName(), localeToInterface);
         }
 
-        Map<String, String> templateIdToContent = messageBundleMethods.stream().collect(
-                Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, MessageBundleMethodBuildItem::getTemplate));
+        Map<String, String> templateIdToContent = messageBundleMethods.stream()
+                .filter(MessageBundleMethodBuildItem::isValidatable).collect(
+                        Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId,
+                                MessageBundleMethodBuildItem::getTemplate));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessageBundleRecorder.BundleContext.class)
                 .supplier(recorder.createContext(templateIdToContent, bundleInterfaces)).done());
@@ -283,6 +285,7 @@ public class MessageBundleProcessor {
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
 
         Map<String, MessageBundleMethodBuildItem> bundleMethods = messageBundleMethods.stream()
+                .filter(MessageBundleMethodBuildItem::isValidatable)
                 .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
@@ -588,13 +591,9 @@ public class MessageBundleProcessor {
             if (messageTemplate == null) {
                 messageTemplate = messageAnnotation.value().asString();
             }
-            if (!messageTemplate.contains("}")) {
-                // No expression/tag - no need to use qute
-                bundleMethod.returnValue(bundleMethod.load(messageTemplate));
-            } else {
-                // Obtain the template, e.g. msg_hello_name
-                String templateId;
 
+            String templateId = null;
+            if (messageTemplate.contains("}")) {
                 if (defaultBundleInterface != null) {
                     if (locale == null) {
                         AnnotationInstance localizedAnnotation = bundleInterface.classAnnotation(LOCALIZED);
@@ -604,10 +603,18 @@ public class MessageBundleProcessor {
                 } else {
                     templateId = bundleName + "_" + key;
                 }
+            }
 
-                messageTemplateMethods
-                        .produce(new MessageBundleMethodBuildItem(bundleName, key, templateId, method, messageTemplate));
+            MessageBundleMethodBuildItem messageBundleMethod = new MessageBundleMethodBuildItem(bundleName, key, templateId,
+                    method, messageTemplate);
+            messageTemplateMethods
+                    .produce(messageBundleMethod);
 
+            if (!messageBundleMethod.isValidatable()) {
+                // No expression/tag - no need to use qute
+                bundleMethod.returnValue(bundleMethod.load(messageTemplate));
+            } else {
+                // Obtain the template, e.g. msg_hello_name
                 ResultHandle template = bundleMethod.invokeStaticMethod(BUNDLES_GET_TEMPLATE,
                         bundleMethod.load(templateId));
                 // Create a template instance

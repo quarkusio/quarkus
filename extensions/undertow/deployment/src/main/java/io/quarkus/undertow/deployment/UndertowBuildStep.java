@@ -258,6 +258,19 @@ public class UndertowBuildStep {
                         for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownImplementors(typeName)) {
                             handledTypes.add(classInfo.name().toString());
                         }
+                        for (AnnotationInstance annotationInstance : combinedIndexBuildItem.getIndex()
+                                .getAnnotations(typeName)) {
+                            if (annotationInstance.target().kind() == AnnotationTarget.Kind.CLASS) {
+                                handledTypes.add(annotationInstance.target().asClass().name().toString());
+                            } else if (annotationInstance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                                handledTypes.add(annotationInstance.target().asMethod().declaringClass().name().toString());
+                            } else if (annotationInstance.target().kind() == AnnotationTarget.Kind.FIELD) {
+                                handledTypes.add(annotationInstance.target().asField().declaringClass().name().toString());
+                            } else if (annotationInstance.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                                handledTypes.add(annotationInstance.target().asMethodParameter().method().declaringClass()
+                                        .name().toString());
+                            }
+                        }
                     }
                 }
                 ret.add(new ServletContainerInitializerBuildItem(initializer, handledTypes));
@@ -322,7 +335,8 @@ public class UndertowBuildStep {
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath,
                 servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
-                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive);
+                webMetaData.getResponseCharacterEncoding(), httpBuildTimeConfig.auth.proactive,
+                webMetaData.getWelcomeFileList() != null ? webMetaData.getWelcomeFileList().getWelcomeFiles() : null);
 
         if (webMetaData.getContextParams() != null) {
             for (ParamValueMetaData i : webMetaData.getContextParams()) {
@@ -417,14 +431,29 @@ public class UndertowBuildStep {
         }
         if (webMetaData.getFilterMappings() != null) {
             for (FilterMappingMetaData mapping : webMetaData.getFilterMappings()) {
-                for (String m : mapping.getUrlPatterns()) {
-                    if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
-                        recorder.addFilterURLMapping(deployment, mapping.getFilterName(), m, REQUEST);
-                    } else {
-
-                        for (DispatcherType dispatcher : mapping.getDispatchers()) {
-                            recorder.addFilterURLMapping(deployment, mapping.getFilterName(), m,
-                                    javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                List<String> urlPatterns = mapping.getUrlPatterns();
+                List<String> servletNames = mapping.getServletNames();
+                if (urlPatterns != null && !urlPatterns.isEmpty()) {
+                    for (String m : urlPatterns) {
+                        if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
+                            recorder.addFilterURLMapping(deployment, mapping.getFilterName(), m, REQUEST);
+                        } else {
+                            for (DispatcherType dispatcher : mapping.getDispatchers()) {
+                                recorder.addFilterURLMapping(deployment, mapping.getFilterName(), m,
+                                        javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                            }
+                        }
+                    }
+                } else if (servletNames != null && !servletNames.isEmpty()) {
+                    // No URL Patterns found, map to servlet name instead
+                    for (String name : servletNames) {
+                        if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
+                            recorder.addFilterServletNameMapping(deployment, mapping.getFilterName(), name, REQUEST);
+                        } else {
+                            for (DispatcherType dispatcher : mapping.getDispatchers()) {
+                                recorder.addFilterServletNameMapping(deployment, mapping.getFilterName(), name,
+                                        javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                            }
                         }
                     }
                 }
@@ -991,14 +1020,17 @@ public class UndertowBuildStep {
         if (description.length() > 0 || displayName.length() > 0 || smallIcon.length() > 0 || largeIcon.length() > 0) {
             dg = new DescriptionGroupMetaData();
             Descriptions descriptions = getDescription(description);
-            if (descriptions != null)
+            if (descriptions != null) {
                 dg.setDescriptions(descriptions);
+            }
             DisplayNames displayNames = getDisplayName(displayName);
-            if (displayNames != null)
+            if (displayNames != null) {
                 dg.setDisplayNames(displayNames);
+            }
             Icons icons = getIcons(smallIcon, largeIcon);
-            if (icons != null)
+            if (icons != null) {
                 dg.setIcons(icons);
+            }
         }
         return dg;
     }

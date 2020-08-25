@@ -204,7 +204,7 @@ public class NativeImageBuildStep {
 
         try {
             List<String> command = new ArrayList<>(nativeImage);
-            if (nativeConfig.cleanupServer) {
+            if (nativeConfig.cleanupServer && !graalVMVersion.isMandrel()) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
                 final ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));

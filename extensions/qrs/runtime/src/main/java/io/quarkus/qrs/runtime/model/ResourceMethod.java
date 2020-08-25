@@ -44,6 +44,8 @@ public class ResourceMethod {
 
     private boolean suspended;
 
+    private boolean isSse;
+
     public boolean isResourceLocator() {
         return httpMethod == null;
     }
@@ -135,6 +137,15 @@ public class ResourceMethod {
 
     public ResourceMethod setSuspended(boolean suspended) {
         this.suspended = suspended;
+        return this;
+    }
+
+    public boolean isSse() {
+        return isSse;
+    }
+
+    public ResourceMethod setSse(boolean isSse) {
+        this.isSse = isSse;
         return this;
     }
 }

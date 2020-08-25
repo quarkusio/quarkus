@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.sse.SseEventSink;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -218,6 +219,7 @@ public class EndpointIndexer {
                 }
             }
             boolean suspended = false;
+            boolean sse = false;
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
 
@@ -293,6 +295,9 @@ public class EndpointIndexer {
                         converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                                 existingEndpoints, info);
                     }
+                    if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
+                        sse = true;
+                    }
                 }
                 if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
                     throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
@@ -323,6 +328,7 @@ public class EndpointIndexer {
                     .setName(info.name())
                     .setBlocking(blocking)
                     .setSuspended(suspended)
+                    .setSse(sse)
                     .setParameters(methodParameters)
                     // FIXME: resolved arguments ?
                     .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {

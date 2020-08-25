@@ -55,6 +55,7 @@ import io.quarkus.qrs.runtime.handlers.ResourceResponseInterceptorHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseHandler;
 import io.quarkus.qrs.runtime.handlers.ResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.RestHandler;
+import io.quarkus.qrs.runtime.handlers.SseResponseWriterHandler;
 import io.quarkus.qrs.runtime.handlers.UniResponseHandler;
 import io.quarkus.qrs.runtime.headers.FixedProducesHandler;
 import io.quarkus.qrs.runtime.headers.VariableProducesHandler;
@@ -418,12 +419,16 @@ public class QrsRecorder {
             }
         }
 
-        handlers.add(new ResponseHandler());
+        if (method.isSse()) {
+            handlers.add(new SseResponseWriterHandler());
+        } else {
+            handlers.add(new ResponseHandler());
 
-        if (!responseInterceptors.isEmpty()) {
-            handlers.add(resourceResponseInterceptorHandler);
+            if (!responseInterceptors.isEmpty()) {
+                handlers.add(resourceResponseInterceptorHandler);
+            }
+            handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
-        handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,

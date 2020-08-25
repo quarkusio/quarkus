@@ -28,6 +28,7 @@ import io.quarkus.qrs.runtime.jaxrs.QrsAsyncResponse;
 import io.quarkus.qrs.runtime.jaxrs.QrsContainerRequestContext;
 import io.quarkus.qrs.runtime.jaxrs.QrsHttpHeaders;
 import io.quarkus.qrs.runtime.jaxrs.QrsRequest;
+import io.quarkus.qrs.runtime.jaxrs.QrsSseEventSink;
 import io.quarkus.qrs.runtime.jaxrs.QrsUriInfo;
 import io.quarkus.qrs.runtime.mapping.RuntimeResource;
 import io.quarkus.qrs.runtime.mapping.URITemplate;
@@ -106,6 +107,7 @@ public class QrsRequestContext implements Runnable, Closeable {
     private List<UriMatch> matchedURIs;
 
     private QrsAsyncResponse asyncResponse;
+    private QrsSseEventSink sseEventSink;
 
     public QrsRequestContext(QrsDeployment deployment, RoutingContext context, ManagedContext requestContext,
             CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
@@ -620,5 +622,13 @@ public class QrsRequestContext implements Runnable, Closeable {
     public QrsRequestContext setInputStream(InputStream inputStream) {
         this.inputStream = inputStream;
         return this;
+    }
+
+    public QrsSseEventSink getSseEventSink() {
+        return sseEventSink;
+    }
+
+    public void setSseEventSink(QrsSseEventSink sseEventSink) {
+        this.sseEventSink = sseEventSink;
     }
 }

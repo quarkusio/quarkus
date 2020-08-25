@@ -51,6 +51,7 @@ public class ClassLevelMediaTypeTest {
     @DisplayName("Test Application Json Media Type")
     public void testApplicationJsonMediaType() {
         WebTarget base = client.target(generateURL("/test"));
+        System.err.println(base.getClass());
         try {
             Response response = base.request().get();
             Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.ws.rs.client.AsyncInvoker;
@@ -23,7 +24,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import io.quarkus.qrs.runtime.core.Serialisers;
 import io.quarkus.qrs.runtime.jaxrs.QrsResponseBuilder;
 import io.quarkus.qrs.runtime.util.HttpHeaderNames;
 import io.vertx.core.Handler;
@@ -228,100 +228,48 @@ public class QrsAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
         throw new RuntimeException("NYI");
     }
 
-    private <T> CompletableFuture<Response> performRequestInternal(String name, Entity<?> entity, GenericType<T> rt) {
+    private <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<T> rt) {
+        return performRequestInternal(httpMethodName, entity, rt, null);
+    }
+
+    @SuppressWarnings("deprecation")
+    <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<T> rt,
+            Consumer<HttpClientResponse> clientConsumer) {
 
         CompletableFuture<Response> result = new CompletableFuture<>();
         try {
-            GenericType<T> responseType;
-            if (rt == null) {
-                responseType = new GenericType<>(String.class);
-            } else {
-                responseType = rt;
-            }
-            HttpClient httpClient = builder.httpClient;
-            URI uri = builder.uri;
-            ClientRequestHeaders headers = builder.headers;
-            Serialisers serializers = builder.serialisers;
-            HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(name), uri.getPort(), uri.getHost(),
-                    uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-            MultivaluedMap<String, String> headerMap = headers.asMap();
-            for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
-                httpClientRequest.headers().add(entry.getKey(), entry.getValue());
-            }
-            if (entity != null && entity.getMediaType() != null) {
-                httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
-            }
-
-            Buffer actualEntity = EMPTY_BUFFER;
-            if (entity != null) {
-
-                Class<?> entityType = entity.getEntity().getClass();
-                List<MessageBodyWriter<?>> writers = serializers.findWriters(entityType, entity.getMediaType());
-                for (MessageBodyWriter writer : writers) {
-                    if (writer.isWriteable(entityType, entityType, entity.getAnnotations(), entity.getMediaType())) {
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        try {
-                            writer.writeTo(entity.getEntity(), entityType, entityType, entity.getAnnotations(),
-                                    entity.getMediaType(), headerMap, baos);
-                            actualEntity = Buffer.buffer(baos.toByteArray());
-                            break;
-                        } catch (IOException e) {
-                            result.completeExceptionally(e);
-                            return result;
-                        }
-                    }
-                }
-
-            }
-
+            GenericType<T> responseType = getResponseType(rt);
+            HttpClientRequest httpClientRequest = createRequest(httpMethodName);
+            Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest, entity, responseType);
             httpClientRequest
                     .handler(new Handler<HttpClientResponse>() {
                         @Override
                         public void handle(HttpClientResponse event) {
-                            event.bodyHandler(new Handler<Buffer>() {
-                                @Override
-                                public void handle(Buffer buffer) {
-                                    try {
-                                        QrsResponseBuilder response = new QrsResponseBuilder();
-                                        MediaType mediaType = MediaType.WILDCARD_TYPE;
-                                        for (String i : event.headers().names()) {
-                                            response.header(i, event.getHeader(i));
-
+                            QrsResponseBuilder response;
+                            MediaType mediaType;
+                            try {
+                                response = new QrsResponseBuilder();
+                                mediaType = initialiseResponse(event, response);
+                            } catch (Throwable t) {
+                                result.completeExceptionally(t);
+                                return;
+                            }
+                            if (clientConsumer != null) {
+                                clientConsumer.accept(event);
+                                result.complete(response.build());
+                            } else {
+                                event.bodyHandler(new Handler<Buffer>() {
+                                    @Override
+                                    public void handle(Buffer buffer) {
+                                        try {
+                                            readEntity(event, response, buffer, responseType, mediaType);
+                                            result.complete(response.build());
+                                        } catch (Throwable t) {
+                                            result.completeExceptionally(t);
                                         }
-                                        String mediaTypeHeader = event.getHeader(HttpHeaderNames.CONTENT_TYPE);
-                                        if (mediaTypeHeader != null) {
-                                            mediaType = MediaType.valueOf(mediaTypeHeader);
-                                        }
-                                        response.status(event.statusCode());
-
-                                        List<MessageBodyReader<?>> readers = serializers.findReaders(responseType.getRawType(),
-                                                mediaType);
-                                        for (MessageBodyReader reader : readers) {
-                                            if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
-                                                    mediaType)) {
-                                                ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
-                                                try {
-                                                    response.entity(
-                                                            reader.readFrom(responseType.getRawType(), responseType.getType(),
-                                                                    null, mediaType, response.getMetadata(), in));
-                                                    break;
-                                                } catch (IOException e) {
-                                                    result.completeExceptionally(e);
-                                                    return;
-                                                }
-                                            }
-
-                                        }
-
-                                        response.entity(buffer.toString(StandardCharsets.UTF_8));
-
-                                        result.complete(response.build());
-
-                                    } catch (Throwable t) {
-                                        result.completeExceptionally(t);
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     }).exceptionHandler(new Handler<Throwable>() {
                         @Override
@@ -334,5 +282,83 @@ public class QrsAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
         }
 
         return result;
+    }
+
+    private <T> void readEntity(HttpClientResponse event, QrsResponseBuilder response, Buffer buffer,
+            GenericType<T> responseType, MediaType mediaType)
+            throws IOException {
+        List<MessageBodyReader<?>> readers = builder.serialisers.findReaders(responseType.getRawType(),
+                mediaType);
+        for (MessageBodyReader reader : readers) {
+            if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
+                    mediaType)) {
+                ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
+                response.entity(
+                        reader.readFrom(responseType.getRawType(), responseType.getType(),
+                                null, mediaType, response.getMetadata(), in));
+                return;
+            }
+        }
+
+        response.entity(buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    private MediaType initialiseResponse(HttpClientResponse event, QrsResponseBuilder response) {
+        MediaType mediaType = MediaType.WILDCARD_TYPE;
+        for (String i : event.headers().names()) {
+            response.header(i, event.getHeader(i));
+
+        }
+        String mediaTypeHeader = event.getHeader(HttpHeaderNames.CONTENT_TYPE);
+        if (mediaTypeHeader != null) {
+            mediaType = MediaType.valueOf(mediaTypeHeader);
+        }
+        response.status(event.statusCode());
+        return mediaType;
+    }
+
+    private <T> GenericType<T> getResponseType(GenericType<T> rt) {
+        if (rt == null) {
+            return new GenericType<>(String.class);
+        }
+        return rt;
+    }
+
+    private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, Entity<?> entity, GenericType<T> rt)
+            throws IOException {
+        ClientRequestHeaders headers = builder.headers;
+        MultivaluedMap<String, String> headerMap = headers.asMap();
+        for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
+            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
+        }
+        if (entity != null && entity.getMediaType() != null) {
+            httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
+        }
+        Buffer actualEntity = EMPTY_BUFFER;
+        if (entity != null) {
+
+            Class<?> entityType = entity.getEntity().getClass();
+            List<MessageBodyWriter<?>> writers = builder.serialisers.findWriters(entityType, entity.getMediaType());
+            for (MessageBodyWriter writer : writers) {
+                if (writer.isWriteable(entityType, entityType, entity.getAnnotations(), entity.getMediaType())) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    writer.writeTo(entity.getEntity(), entityType, entityType, entity.getAnnotations(),
+                            entity.getMediaType(), headerMap, baos);
+                    actualEntity = Buffer.buffer(baos.toByteArray());
+                    break;
+                }
+            }
+        }
+        return actualEntity;
+    }
+
+    private <T> HttpClientRequest createRequest(String httpMethodName) {
+        HttpClient httpClient = builder.httpClient;
+        URI uri = builder.uri;
+        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(httpMethodName), uri.getPort(),
+                uri.getHost(),
+                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
+
+        return httpClientRequest;
     }
 }

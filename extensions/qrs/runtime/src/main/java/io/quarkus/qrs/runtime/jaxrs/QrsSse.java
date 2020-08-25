@@ -15,6 +15,6 @@ public class QrsSse implements Sse {
 
     @Override
     public SseBroadcaster newBroadcaster() {
-        return null;
+        return new QrsSseBroadcasterImpl();
     }
 }

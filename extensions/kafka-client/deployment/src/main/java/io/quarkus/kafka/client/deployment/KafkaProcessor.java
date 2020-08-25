@@ -43,6 +43,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -254,5 +255,14 @@ public class KafkaProcessor {
     HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
                 buildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem ensureJsonParserAvailable() {
+        return UnremovableBeanBuildItem.beanClassNames(
+                "io.quarkus.jackson.ObjectMapperProducer",
+                "com.fasterxml.jackson.databind.ObjectMapper",
+                "io.quarkus.jsonb.JsonbProducer",
+                "javax.json.bind.Jsonb");
     }
 }

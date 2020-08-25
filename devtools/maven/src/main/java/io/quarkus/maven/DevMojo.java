@@ -111,7 +111,7 @@ public class DevMojo extends AbstractMojo {
 
     private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
     private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
-    private static final String QUARKUS_PREPARE_GOAL = "prepare";
+    private static final String QUARKUS_PREPARE_GOAL = "generate-code";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";

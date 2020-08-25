@@ -72,8 +72,8 @@
                     <execution>
                         <goals>
                             <goal>build</goal>
-                            <goal>prepare</goal>
-                            <goal>prepare-tests</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
                         </goals>
                     </execution>
                 </executions>

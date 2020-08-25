@@ -1,5 +1,7 @@
 package io.quarkus.neo4j.deployment;
 
+import java.util.function.Consumer;
+
 import org.neo4j.driver.Driver;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -12,10 +14,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.neo4j.runtime.Neo4jConfiguration;
 import io.quarkus.neo4j.runtime.Neo4jDriverProducer;
 import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class Neo4jDriverProcessor {
@@ -50,4 +54,16 @@ class Neo4jDriverProcessor {
         return new HealthBuildItem("io.quarkus.neo4j.runtime.health.Neo4jHealthCheck",
                 buildTimeConfig.healthEnabled);
     }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void metrics(Neo4jConfiguration configuration,
+            Neo4jDriverRecorder recorder,
+            BuildProducer<MetricsFactoryConsumerBuildItem> metrics) {
+        Consumer<MetricsFactory> metricsFactoryConsumer = recorder.registerMetrics(configuration);
+        if (metricsFactoryConsumer != null) {
+            metrics.produce(new MetricsFactoryConsumerBuildItem(metricsFactoryConsumer));
+        }
+    }
+
 }

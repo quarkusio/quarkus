@@ -76,6 +76,7 @@
         <!-- Defaults for integration tests -->
         <elasticsearch-server.version>7.8.0</elasticsearch-server.version>
         <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
+        <elasticsearch.protocol>http</elasticsearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>

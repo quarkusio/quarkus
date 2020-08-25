@@ -42,6 +42,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -104,7 +110,8 @@
                 </property>
             </activation>
             <properties>
-                <elasticsearch.url>http://localhost:9200</elasticsearch.url>
+                <elasticsearch.hosts>localhost:9200</elasticsearch.hosts>
+                <elasticsearch.protocol>http</elasticsearch.protocol>
             </properties>
             <build>
                 <plugins>

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
+import static io.quarkus.devtools.codestarts.QuarkusCodestarts.getToolingCodestarts;
 import static io.quarkus.devtools.codestarts.QuarkusCodestarts.inputBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,6 +25,8 @@ import com.google.common.collect.Sets;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey;
+import io.quarkus.devtools.project.BuildTool;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CodestartProjectRunIT extends PlatformAwareTestBase {
@@ -96,13 +99,13 @@ class CodestartProjectRunIT extends PlatformAwareTestBase {
         } else {
             name += "-" + String.join("-", codestarts);
         }
+        final BuildTool buildTool = BuildTool.findTool(buildtool);
         final CodestartInput input = inputBuilder(getPlatformDescriptor())
-                .includeExamples()
                 .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
+                .addCodestarts(getToolingCodestarts(buildTool, false, false))
                 .addCodestarts(codestarts)
-                .addCodestart(buildtool)
                 // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
-                .putData("java.version", System.getProperty("java.specification.version"))
+                .putData(DataKey.JAVA_VERSION.getKey(), System.getProperty("java.specification.version"))
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
         Path projectDir = testDirPath.resolve(name);

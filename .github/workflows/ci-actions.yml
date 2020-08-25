@@ -242,7 +242,7 @@ jobs:
       fail-fast: false
       matrix:
         java:
-          - {
+          {
             name: Java 11,
             java-version: 11
           }

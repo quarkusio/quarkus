@@ -242,10 +242,11 @@ jobs:
       fail-fast: false
       matrix:
         java:
-          {
+         - {
             name: Java 11,
             java-version: 11
           }
+    steps:
       - uses: actions/checkout@v2
       - name: Download Maven Repo
         uses: actions/download-artifact@v1

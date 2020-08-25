@@ -37,7 +37,7 @@ Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom
             <executions>
                 <execution>
                     <goals>
-                        <goal>prepare</goal>
+                        <goal>generate-code</goal>
                         <goal>build</goal>
                     </goals>
                 </execution>

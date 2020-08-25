@@ -19,7 +19,7 @@ test {
     forkEvery 1
 }
 
-quarkusPrepare {
+quarkusGenerateCode {
     dependsOn 'publishAcmeExt'
 }
 

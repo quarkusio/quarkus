@@ -31,7 +31,7 @@ dependencies {
     testImplementation "io.quarkus:quarkus-devtools-common:${version}"
     testImplementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
     testImplementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
-    testImplementation 'org.assertj:assertj-core:3.16.1'
+    testImplementation 'org.assertj:assertj-core:3.17.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.6.2'
     testImplementation 'org.awaitility:awaitility:4.0.3'
 }

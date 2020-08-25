@@ -134,7 +134,7 @@
 - labels: [area/kafka-streams]
   title: "(?i).*k(afka)?(\\s|-)?stream.*"
   description: "(?i).*k(afka)?(\\s|-)?stream.*"
-  notify: [gunnarmorling]
+  notify: [gunnarmorling,rquinio]
 - labels: [area/infinispan]
   title: "(?i).*infinispan.*"
   description: "(?i).*infinispan.*"

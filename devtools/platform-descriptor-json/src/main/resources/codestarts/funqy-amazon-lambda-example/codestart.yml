@@ -1,7 +1,9 @@
----
 name: funqy-amazon-lambda-example
 ref: funqy-amazon-lambda
-type: example
+type: code
+tags:
+  - example
+  - compatibility-issues
 language:
   base:
     shared-data:

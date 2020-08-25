@@ -19,7 +19,8 @@ import org.apache.commons.io.FilenameUtils;
 
 final class CodestartLoader {
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
             .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 
@@ -30,12 +31,20 @@ final class CodestartLoader {
     }
 
     public static List<Codestart> loadAllCodestarts(CodestartInput input) throws IOException {
-        return Stream.concat(loadBundledCodestarts(input).stream(),
-                loadCodestartsFromExtensions(input).stream()).collect(Collectors.toList());
+        return loadAllCodestarts(input.getResourceLoader());
+    }
+
+    public static List<Codestart> loadAllCodestarts(CodestartResourceLoader resourceLoader) throws IOException {
+        return Stream.concat(loadBundledCodestarts(resourceLoader).stream(),
+                loadCodestartsFromExtensions(resourceLoader).stream()).collect(Collectors.toList());
     }
 
     public static Collection<Codestart> loadBundledCodestarts(CodestartInput input) throws IOException {
-        return loadCodestarts(input.getResourceLoader(), CODESTARTS_DIR_BUNDLED);
+        return loadBundledCodestarts(input.getResourceLoader());
+    }
+
+    public static Collection<Codestart> loadBundledCodestarts(CodestartResourceLoader resourceLoader) throws IOException {
+        return loadCodestarts(resourceLoader, CODESTARTS_DIR_BUNDLED);
     }
 
     public static Collection<Codestart> loadCodestartsFromExtensions(CodestartInput input)

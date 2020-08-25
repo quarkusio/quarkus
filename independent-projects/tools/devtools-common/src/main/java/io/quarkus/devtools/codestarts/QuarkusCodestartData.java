@@ -2,6 +2,8 @@ package io.quarkus.devtools.codestarts;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +26,14 @@ public final class QuarkusCodestartData {
         QUARKUS_GRADLE_PLUGIN_VERSION("quarkus.gradle-plugin.version"),
         QUARKUS_VERSION("quarkus.version"),
         JAVA_VERSION("java.version"),
+
+        RESTEASY_EXAMPLE_RESOURCE_PATH("resteasy-example.resource.path"),
+        RESTEASY_EXAMPLE_PACKAGE_NAME("resteasy-example.package-name"),
+        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME("resteasy-example.resource.class-name"),
+
+        COMMANDMODE_EXAMPLE_PACKAGE_NAME("commandmode-example.package-name"),
+        COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME("commandmode-example.main.class-name"),
+
         ;
 
         private final String key;
@@ -50,30 +60,62 @@ public final class QuarkusCodestartData {
         QUARKUS_GRADLE_PLUGIN_ID("gradle_plugin_id"),
         QUARKUS_GRADLE_PLUGIN_VERSION("gradle_plugin_version"),
         QUARKUS_VERSION("quarkus_version"),
-        JAVA_VERSION("java_target");
+        JAVA_VERSION("java_target"),
 
-        private final String legacyKey;
+        RESTEASY_EXAMPLE_RESOURCE_PATH("path"),
+        RESTEASY_EXAMPLE_PACKAGE_NAME(QuarkusCodestartData::convertPackageName),
+        RESTEASY_EXAMPLE_RESOURCE_CLASS_NAME(QuarkusCodestartData::convertClassName);
+
         private final String key;
+        private final Function<Map<String, Object>, Object> converter;
 
         LegacySupport(String legacyKey) {
+            this((m) -> m.get(legacyKey));
+        }
+
+        LegacySupport(Function<Map<String, Object>, Object> converter) {
             this.key = DataKey.valueOf(this.name()).getKey();
-            this.legacyKey = legacyKey;
+            this.converter = converter;
         }
 
         public String getKey() {
             return key;
         }
 
-        public String getLegacyKey() {
-            return legacyKey;
-        }
-
         public static Map<String, Object> convertFromLegacy(Map<String, Object> legacy) {
             return NestedMaps.unflatten(Stream.of(values())
-                    .filter(v -> v.getLegacyKey() != null)
-                    .filter(v -> legacy.containsKey(v.getLegacyKey()))
-                    .map(v -> new HashMap.SimpleImmutableEntry<>(v.getKey(), legacy.get(v.getLegacyKey())))
+                    .map(v -> new HashMap.SimpleImmutableEntry<>(v.getKey(), v.converter.apply(legacy)))
+                    .filter(v -> v.getValue() != null)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         }
+    }
+
+    private static String convertClassName(final Map<String, Object> legacyData) {
+        Optional<String> classNameValue = NestedMaps.getValue(legacyData, "class_name");
+        if (classNameValue.isPresent()) {
+            final String className = classNameValue.get();
+            int idx = classNameValue.get().lastIndexOf('.');
+            if (idx < 0) {
+                return className;
+            }
+            return className.substring(idx + 1);
+        }
+        return null;
+    }
+
+    private static String convertPackageName(final Map<String, Object> legacyData) {
+        Optional<String> packageNameValue = NestedMaps.getValue(legacyData, "package_name");
+        if (packageNameValue.isPresent()) {
+            return packageNameValue.get();
+        }
+        Optional<String> classNameValue = NestedMaps.getValue(legacyData, "class_name");
+        if (classNameValue.isPresent()) {
+            final String className = classNameValue.get();
+            int idx = className.lastIndexOf('.');
+            if (idx >= 0) {
+                return className.substring(0, idx);
+            }
+        }
+        return null;
     }
 }

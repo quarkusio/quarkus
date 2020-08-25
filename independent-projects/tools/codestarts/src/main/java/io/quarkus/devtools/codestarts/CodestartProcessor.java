@@ -82,17 +82,20 @@ final class CodestartProcessor {
 
                 final boolean hasFileStrategyHandler = getStrategy(relativeTargetPath.toString()).isPresent();
                 try {
+                    final String processedRelativeTargetPath = CodestartPathProcessor.process(relativeTargetPath.toString(),
+                            finalData);
                     if (!possibleReader.isPresent() && !hasFileStrategyHandler) {
-                        final Path targetPath = targetDirectory.resolve(relativeTargetPath.toString());
+                        final Path targetPath = targetDirectory.resolve(processedRelativeTargetPath);
                         getSelectedDefaultStrategy().copyStaticFile(sourcePath, targetPath);
                         continue;
                     }
                     final Optional<String> content = reader.read(sourceDirectory, relativeSourcePath,
                             languageName, finalData);
                     if (content.isPresent()) {
-                        final String key = relativeTargetPath.toString();
-                        this.files.putIfAbsent(key, new ArrayList<>());
-                        this.files.get(key).add(new CodestartFile(relativeSourcePath.toString(), content.get()));
+
+                        this.files.putIfAbsent(processedRelativeTargetPath, new ArrayList<>());
+                        this.files.get(processedRelativeTargetPath)
+                                .add(new CodestartFile(processedRelativeTargetPath, content.get()));
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);

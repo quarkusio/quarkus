@@ -1,7 +1,10 @@
----
 name: azure-functions-http-example
 ref: azure-functions-http
-type: example
+type: code
+tags:
+  - example
+  - compatibility-issues
+  - maven-only
 language:
   base:
     shared-data:

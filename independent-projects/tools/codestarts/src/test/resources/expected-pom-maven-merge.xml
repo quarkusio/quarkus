@@ -2,10 +2,11 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.acme</groupId>
+  <groupId>org.toto</groupId>
   <artifactId>quarkus-project</artifactId>
   <version>1.2.3</version>
   <properties>
+    <prop2>prop-2-namespaced</prop2>
     <prop1>proppp</prop1>
   </properties>
   <dependencies>

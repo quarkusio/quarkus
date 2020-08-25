@@ -1,7 +1,9 @@
----
 name: funqy-knative-events-example
 ref: funqy-knative-events
-type: example
+type: code
+tags:
+  - example
+  - compatibility-issues
 language:
   base:
     data:

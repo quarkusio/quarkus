@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.codestarts.QuarkusCodestarts.prepareProject;
 import static io.quarkus.devtools.commands.CreateProject.CODESTARTS_ENABLED;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
@@ -10,13 +11,12 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartInput;
 import io.quarkus.devtools.codestarts.CodestartProject;
 import io.quarkus.devtools.codestarts.CodestartSpec;
 import io.quarkus.devtools.codestarts.Codestarts;
 import io.quarkus.devtools.codestarts.NestedMaps;
 import io.quarkus.devtools.codestarts.QuarkusCodestartData.LegacySupport;
-import io.quarkus.devtools.codestarts.QuarkusCodestarts;
+import io.quarkus.devtools.codestarts.QuarkusCodestartInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -77,16 +77,18 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 if (platformDescr.getMetadata().get("gradle") != null) {
                     platformData.put("gradle", platformDescr.getMetadata().get("gradle"));
                 }
-                final CodestartInput input = QuarkusCodestarts.inputBuilder(platformDescr)
+                final QuarkusCodestartInput input = QuarkusCodestartInput.builder(platformDescr)
                         .addExtensions(extensionsToAdd)
-                        .addCodestarts(getToolingCodestarts(invocation))
+                        .buildTool(invocation.getQuarkusProject().getBuildTool())
+                        .noExamples(invocation.getValue(NO_EXAMPLES, false))
+                        .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
+                        .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                         .addData(platformData)
                         .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
-                        .includeExamples(!invocation.getValue(NO_EXAMPLES, false))
                         .build();
-                invocation.log().info("Generating Quarkus Codestart Project with data: " + input.getData().toString());
-                final CodestartProject codestartProject = Codestarts
-                        .prepareProject(input);
+                invocation.log().info(
+                        "Generating Quarkus Codestart Project with data: " + input.getCodestartInput().getData().toString());
+                final CodestartProject codestartProject = prepareProject(input);
                 invocation.log().info("Codestarts: " + codestartProject.getCodestarts().stream().map(Codestart::getSpec)
                         .map(CodestartSpec::getName).collect(Collectors.joining(", ")));
                 Codestarts.generateProject(codestartProject, invocation.getQuarkusProject().getProjectDirPath());
@@ -151,13 +153,6 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             throw new QuarkusCommandException("Failed to create project", e);
         }
         return QuarkusCommandOutcome.success();
-    }
-
-    private List<String> getToolingCodestarts(final QuarkusCommandInvocation invocation) {
-        return QuarkusCodestarts.getToolingCodestarts(
-                invocation.getQuarkusProject().getBuildTool(),
-                invocation.getValue(NO_BUILDTOOL_WRAPPER, false),
-                invocation.getValue(NO_DOCKERFILES, false));
     }
 
     // # CLOSE YOUR EYES PLEASE

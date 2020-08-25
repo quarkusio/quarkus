@@ -131,7 +131,7 @@ class EventBusConsumer {
             invoke(bean, method, messageHandle, tryBlock);
             tryBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), tryBlock.loadNull());
             CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-            catchBlock.invokeInterfaceMethod(FUTURE_FAIL, funcBytecode.getMethodParam(0), catchBlock.getMethodParam(0));
+            catchBlock.invokeInterfaceMethod(FUTURE_FAIL, funcBytecode.getMethodParam(0), catchBlock.getCaughtException());
             funcBytecode.returnValue(null);
 
             invoke.invokeInterfaceMethod(VERTX_EXECUTE_BLOCKING, vertxHandle, func.getInstance(), invoke.load(false),

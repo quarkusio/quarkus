@@ -15,6 +15,8 @@ import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -35,6 +37,7 @@ public class QuarkusModelHelper {
 
     }
 
+    public final static String SERIALIZED_QUARKUS_MODEL = "quarkus-internal.serialized-quarkus-model.path";
     public final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
     public final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
 
@@ -54,6 +57,28 @@ public class QuarkusModelHelper {
             out.writeObject(QuarkusModelHelper.convert(model, appArtifact));
         }
         return serializedModel;
+    }
+
+    public static Path serializeQuarkusModel(QuarkusModel model) throws IOException {
+        final Path serializedModel = File.createTempFile("quarkus-model", ".dat").toPath();
+        try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
+            out.writeObject(model);
+        }
+        return serializedModel;
+    }
+
+    public static QuarkusModel deserializeQuarkusModel(Path modelPath) throws BootstrapGradleException {
+        if (Files.exists(modelPath)) {
+            try (InputStream existing = Files.newInputStream(modelPath);
+                    ObjectInputStream object = new ObjectInputStream(existing)) {
+                QuarkusModel model = (QuarkusModel) object.readObject();
+                IoUtils.recursiveDelete(modelPath);
+                return model;
+            } catch (IOException | ClassNotFoundException e) {
+                throw new BootstrapGradleException("Failed to deserialize quarkus model", e);
+            }
+        }
+        throw new BootstrapGradleException("Unable to locate quarkus model");
     }
 
     public static Path getClassPath(WorkspaceModule model) throws BootstrapGradleException {

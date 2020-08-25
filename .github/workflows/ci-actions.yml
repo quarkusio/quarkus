@@ -209,6 +209,10 @@ jobs:
         shell: bash
         run: sudo sysctl -w vm.overcommit_memory=2
 
+      - name: Disable OOM killer
+        shell: bash
+        run: sudo sysctl -w vm.oom-kill = 0
+
       - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@68381f2c0646f942f70b69f8e81fe10e1ed5d293

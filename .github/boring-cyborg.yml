@@ -49,7 +49,6 @@
 ### area/core
 ### area/dev-mode
 ### area/housekeeping
-### area/infra
 ### area/new-http
 ### area/oidc-interoperability
 ### area/openapi
@@ -131,6 +130,8 @@ labelPRBasedOnFilePath:
         - extensions/infinispan-client/**/*
         - integration-tests/infinispan-cache-jpa/**/*
         - integration-tests/infinispan-client/**/*
+    area/infra:
+        - .mvn/**/*
     area/infra-automation:
         - .github/**/*
     area/jaeger:

@@ -83,6 +83,11 @@ public class QuarkusBuild extends QuarkusTask {
         return new File(getProject().getBuildDir(), extension().finalName() + "-runner.jar");
     }
 
+    @OutputFile
+    public File getNativeRunner() {
+        return new File(getProject().getBuildDir(), extension().finalName() + "-runner");
+    }
+
     @OutputDirectory
     public File getFastJar() {
         return new File(getProject().getBuildDir(), "quarkus-app");

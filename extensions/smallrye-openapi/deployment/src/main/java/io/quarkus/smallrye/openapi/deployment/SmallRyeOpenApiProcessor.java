@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -81,6 +84,8 @@ import io.smallrye.openapi.vertx.VertxConstants;
  */
 public class SmallRyeOpenApiProcessor {
 
+    private static final Logger log = Logger.getLogger("io.quarkus.smallrye.openapi");
+
     private static final String META_INF_OPENAPI_YAML = "META-INF/openapi.yaml";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YAML = "WEB-INF/classes/META-INF/openapi.yaml";
     private static final String META_INF_OPENAPI_YML = "META-INF/openapi.yml";
@@ -103,7 +108,7 @@ public class SmallRyeOpenApiProcessor {
     private static final String SPRING = "Spring";
     private static final String VERT_X = "Vert.x";
 
-    SmallRyeOpenApiConfig openapi;
+    SmallRyeOpenApiConfig openApiConfig;
 
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
@@ -143,9 +148,9 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.setupClDevMode(shutdownContext);
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openapi.path));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path));
         }
-        return new RouteBuildItem(openapi.path, new OpenApiHandler(), HandlerType.BLOCKING);
+        return new RouteBuildItem(openApiConfig.path, new OpenApiHandler(), HandlerType.BLOCKING);
     }
 
     @BuildStep
@@ -317,11 +322,16 @@ public class SmallRyeOpenApiProcessor {
             annotationModel = null;
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
         for (Format format : Format.values()) {
             String name = OpenApiHandler.BASE_NAME + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
-                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            byte[] schemaDocument = OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8);
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name, schemaDocument));
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
+
+            if (shouldStore) {
+                storeGeneratedSchema(schemaDocument, format);
+            }
         }
     }
 
@@ -329,6 +339,21 @@ public class SmallRyeOpenApiProcessor {
     LogCleanupFilterBuildItem logCleanup() {
         return new LogCleanupFilterBuildItem("io.smallrye.openapi.api.OpenApiDocument",
                 "OpenAPI document initialized:");
+    }
+
+    private void storeGeneratedSchema(byte[] schemaDocument, Format format) throws IOException {
+        Path directory = openApiConfig.storeSchemaDirectory.get();
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+        }
+
+        Path file = Paths.get(directory.toString(), "openapi." + format.toString().toLowerCase());
+        if (!Files.exists(file)) {
+            Files.createFile(file);
+        }
+        Files.write(file, schemaDocument, StandardOpenOption.WRITE);
+
+        log.info("OpenAPI " + format.toString() + " saved: " + file.toString());
     }
 
     private boolean shouldScanAnnotations(Capabilities capabilities, IndexView index) {

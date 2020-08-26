@@ -60,7 +60,7 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_AUTH_TOKEN", jaeger.authToken, token -> token);
         initTracerProperty("JAEGER_USER", jaeger.user, user -> user);
         initTracerProperty("JAEGER_PASSWORD", jaeger.password, pw -> pw);
-        initTracerProperty("JAEGER_AGENT_HOST", jaeger.agentHostPort, address -> address.getHostName());
+        initTracerProperty("JAEGER_AGENT_HOST", jaeger.agentHostPort, address -> address.getHostString());
         initTracerProperty("JAEGER_AGENT_PORT", jaeger.agentHostPort, address -> String.valueOf(address.getPort()));
         initTracerProperty("JAEGER_REPORTER_LOG_SPANS", jaeger.reporterLogSpans, log -> log.toString());
         initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize, size -> size.toString());

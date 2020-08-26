@@ -25,14 +25,14 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.deployment.CodeGenerator;
 
-public class QuarkusPrepare extends QuarkusTask {
+public class QuarkusGenerateCode extends QuarkusTask {
 
     public static final String INIT_AND_RUN = "initAndRun";
     private Set<Path> sourcesDirectories;
     private Consumer<Path> sourceRegistrar;
     private boolean test = false;
 
-    public QuarkusPrepare() {
+    public QuarkusGenerateCode() {
         super("Performs Quarkus pre-build preparations, such as sources generation");
     }
 

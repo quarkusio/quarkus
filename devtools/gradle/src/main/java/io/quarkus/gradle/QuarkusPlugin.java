@@ -35,9 +35,9 @@ import io.quarkus.gradle.builder.QuarkusModelBuilder;
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
 import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
+import io.quarkus.gradle.tasks.QuarkusGenerateCode;
 import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
-import io.quarkus.gradle.tasks.QuarkusPrepare;
 import io.quarkus.gradle.tasks.QuarkusRemoteDev;
 import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
@@ -52,8 +52,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
     public static final String REMOVE_EXTENSION_TASK_NAME = "removeExtension";
-    public static final String QUARKUS_PREPARE_TASK_NAME = "quarkusGenerateCode";
-    public static final String QUARKUS_PREPARE_TESTS_TASK_NAME = "quarkusGenerateCodeTests";
+    public static final String QUARKUS_GENERATE_CODE_TASK_NAME = "quarkusGenerateCode";
+    public static final String QUARKUS_GENERATE_CODE_TESTS_TASK_NAME = "quarkusGenerateCodeTests";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
@@ -96,12 +96,13 @@ public class QuarkusPlugin implements Plugin<Project> {
         tasks.create(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);
         tasks.create(GENERATE_CONFIG_TASK_NAME, QuarkusGenerateConfig.class);
 
-        QuarkusPrepare quarkusPrepare = tasks.create(QUARKUS_PREPARE_TASK_NAME, QuarkusPrepare.class);
-        QuarkusPrepare quarkusPrepareTests = tasks.create(QUARKUS_PREPARE_TESTS_TASK_NAME, QuarkusPrepare.class);
-        quarkusPrepareTests.setTest(true);
+        QuarkusGenerateCode quarkusGenerateCode = tasks.create(QUARKUS_GENERATE_CODE_TASK_NAME, QuarkusGenerateCode.class);
+        QuarkusGenerateCode quarkusGenerateCodeTests = tasks.create(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
+                QuarkusGenerateCode.class);
+        quarkusGenerateCodeTests.setTest(true);
 
         Task quarkusBuild = tasks.create(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class);
-        quarkusBuild.dependsOn(quarkusPrepare);
+        quarkusBuild.dependsOn(quarkusGenerateCode);
         Task quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
         Task quarkusRemoteDev = tasks.create(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class);
         tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
@@ -136,21 +137,21 @@ public class QuarkusPlugin implements Plugin<Project> {
                 javaPlugin -> {
                     project.afterEvaluate(this::afterEvaluate);
                     JavaCompile compileJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
-                    compileJavaTask.mustRunAfter(quarkusPrepare);
-                    quarkusPrepare.setSourceRegistrar(compileJavaTask::source);
+                    compileJavaTask.mustRunAfter(quarkusGenerateCode);
+                    quarkusGenerateCode.setSourceRegistrar(compileJavaTask::source);
 
                     try {
                         // TODO: support kotlin
                         tasks.getByName("compileTestKotlin");
                     } catch (UnknownTaskException noKotlin) {
                         JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
-                        compileTestJavaTask.dependsOn(quarkusPrepareTests);
-                        quarkusPrepareTests.setSourceRegistrar(compileTestJavaTask::source);
+                        compileTestJavaTask.dependsOn(quarkusGenerateCodeTests);
+                        quarkusGenerateCodeTests.setSourceRegistrar(compileTestJavaTask::source);
                     }
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
-                    quarkusDev.dependsOn(classesTask, resourcesTask, quarkusPrepare);
+                    quarkusDev.dependsOn(classesTask, resourcesTask, quarkusGenerateCode);
                     quarkusRemoteDev.dependsOn(classesTask, resourcesTask);
                     quarkusBuild.dependsOn(classesTask, resourcesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
 
@@ -160,8 +161,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                     SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
                     SourceSet testSourceSet = sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME);
 
-                    quarkusPrepare.setSourcesDirectories(getSourcesParents(mainSourceSet));
-                    quarkusPrepareTests.setSourcesDirectories(getSourcesParents(testSourceSet));
+                    quarkusGenerateCode.setSourcesDirectories(getSourcesParents(mainSourceSet));
+                    quarkusGenerateCodeTests.setSourcesDirectories(getSourcesParents(testSourceSet));
 
                     nativeTestSourceSet.setCompileClasspath(
                             nativeTestSourceSet.getCompileClasspath()
@@ -249,8 +250,8 @@ public class QuarkusPlugin implements Plugin<Project> {
         if (quarkusBuild != null) {
             final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
             if (jarTask != null) {
-                final Task quarkusPrepare = project.getTasks().findByName(QUARKUS_PREPARE_TASK_NAME);
-                final Task quarkusPrepareTests = project.getTasks().findByName(QUARKUS_PREPARE_TESTS_TASK_NAME);
+                final Task quarkusPrepare = project.getTasks().findByName(QUARKUS_GENERATE_CODE_TASK_NAME);
+                final Task quarkusPrepareTests = project.getTasks().findByName(QUARKUS_GENERATE_CODE_TESTS_TASK_NAME);
                 quarkusBuild.dependsOn(jarTask);
                 if (quarkusPrepare != null) {
                     quarkusPrepare.dependsOn(jarTask);

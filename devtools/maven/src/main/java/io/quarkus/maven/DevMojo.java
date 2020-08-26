@@ -111,7 +111,7 @@ public class DevMojo extends AbstractMojo {
 
     private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
     private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
-    private static final String QUARKUS_PREPARE_GOAL = "generate-code";
+    private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
@@ -415,7 +415,7 @@ public class DevMojo extends AbstractMojo {
         }
         MojoExecutor.executeMojo(
                 quarkusPlugin,
-                MojoExecutor.goal(QUARKUS_PREPARE_GOAL),
+                MojoExecutor.goal(QUARKUS_GENERATE_CODE_GOAL),
                 MojoExecutor.configuration(),
                 MojoExecutor.executionEnvironment(
                         project,

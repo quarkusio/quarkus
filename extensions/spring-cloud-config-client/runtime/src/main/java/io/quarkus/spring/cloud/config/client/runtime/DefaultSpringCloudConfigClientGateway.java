@@ -1,10 +1,21 @@
 package io.quarkus.spring.cloud.config.client.runtime;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.http.HttpEntity;
@@ -19,10 +30,15 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -34,6 +50,7 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final SpringCloudConfigClientConfig springCloudConfigClientConfig;
+    private final SSLConnectionSocketFactory sslSocketFactory;
     private final URI baseURI;
 
     public DefaultSpringCloudConfigClientGateway(SpringCloudConfigClientConfig springCloudConfigClientConfig) {
@@ -43,6 +60,13 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url
                     + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
+        }
+
+        if (springCloudConfigClientConfig.trustStore.isPresent() || springCloudConfigClientConfig.keyStore.isPresent()
+                || springCloudConfigClientConfig.trustCerts) {
+            this.sslSocketFactory = createFactoryFromAgentConfig(springCloudConfigClientConfig);
+        } else {
+            this.sslSocketFactory = null;
         }
     }
 
@@ -58,13 +82,81 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
         return new URI(url);
     }
 
+    // The SSL code is basically a copy of the code in the Consul extension
+    // Normally we would consider moving this code to one place, but as I want
+    // to stop using Apache HTTP Client when we move to JDK 11, lets not do the
+    // extra work
+
+    private SSLConnectionSocketFactory createFactoryFromAgentConfig(
+            SpringCloudConfigClientConfig springCloudConfigClientConfig) {
+        try {
+            SSLContextBuilder sslContextBuilder = SSLContexts.custom();
+            if (springCloudConfigClientConfig.trustStore.isPresent()) {
+                sslContextBuilder = sslContextBuilder
+                        .loadTrustMaterial(readStore(springCloudConfigClientConfig.trustStore.get(),
+                                springCloudConfigClientConfig.trustStorePassword), null);
+            } else if (springCloudConfigClientConfig.trustCerts) {
+                sslContextBuilder = sslContextBuilder.loadTrustMaterial(TrustAllStrategy.INSTANCE);
+            }
+            if (springCloudConfigClientConfig.keyStore.isPresent()) {
+                String keyPassword = springCloudConfigClientConfig.keyPassword
+                        .orElse(springCloudConfigClientConfig.keyStorePassword.orElse(""));
+                sslContextBuilder = sslContextBuilder.loadKeyMaterial(
+                        readStore(springCloudConfigClientConfig.keyStore.get(), springCloudConfigClientConfig.keyStorePassword),
+                        keyPassword.toCharArray());
+            }
+            return new SSLConnectionSocketFactory(sslContextBuilder.build(), NoopHostnameVerifier.INSTANCE);
+        } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException | IOException | CertificateException
+                | UnrecoverableKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String findKeystoreFileType(Path keyStorePath) {
+        String pathName = keyStorePath.toString().toLowerCase();
+        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+            return "PKS12";
+        }
+        return "JKS";
+    }
+
+    private static KeyStore readStore(Path keyStorePath, Optional<String> keyStorePassword)
+            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+
+        String keyStoreType = findKeystoreFileType(keyStorePath);
+
+        InputStream classPathResource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(keyStorePath.toString());
+        if (classPathResource != null) {
+            try (InputStream is = classPathResource) {
+                return doReadStore(is, keyStoreType, keyStorePassword);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(keyStorePath)) {
+                return doReadStore(is, keyStoreType, keyStorePassword);
+            }
+        }
+    }
+
+    private static KeyStore doReadStore(InputStream keyStoreStream, String keyStoreType, Optional<String> keyStorePassword)
+            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+        KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+        keyStore.load(keyStoreStream, keyStorePassword.isPresent() ? keyStorePassword.get().toCharArray() : null);
+        return keyStore;
+    }
+
     @Override
     public Response exchange(String applicationName, String profile) throws Exception {
         final RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectionRequestTimeout((int) springCloudConfigClientConfig.connectionTimeout.toMillis())
                 .setSocketTimeout((int) springCloudConfigClientConfig.readTimeout.toMillis())
                 .build();
+
         final HttpClientBuilder httpClientBuilder = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig);
+        if (sslSocketFactory != null) {
+            httpClientBuilder.setSSLSocketFactory(sslSocketFactory);
+        }
+
         try (CloseableHttpClient client = httpClientBuilder.build()) {
             final URI finalURI = finalURI(applicationName, profile);
             final HttpGet request = new HttpGet(finalURI);

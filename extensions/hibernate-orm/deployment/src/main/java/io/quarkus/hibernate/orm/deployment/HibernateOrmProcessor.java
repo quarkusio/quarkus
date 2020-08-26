@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 import javax.persistence.SharedCacheMode;
+import javax.persistence.ValidationMode;
 import javax.persistence.metamodel.StaticMetamodel;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 import javax.transaction.TransactionManager;
@@ -136,7 +138,9 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     void checkTransactionsSupport(Capabilities capabilities) {
-        if (capabilities.isMissing(Capability.TRANSACTIONS)) {
+        // JTA is necessary for blocking Hibernate ORM but not necessarily for Hibernate Reactive
+        if (capabilities.isMissing(Capability.TRANSACTIONS)
+                && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
             throw new ConfigurationException("The Hibernate ORM extension is only functional in a JTA environment.");
         }
     }
@@ -236,6 +240,7 @@ public final class HibernateOrmProcessor {
             LaunchModeBuildItem launchMode,
             JpaEntitiesBuildItem jpaEntities,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -255,7 +260,7 @@ public final class HibernateOrmProcessor {
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
             handleHibernateORMWithNoPersistenceXml(hibernateOrmConfig, persistenceXmlDescriptors,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities,
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), jpaEntities, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
         }
     }
@@ -528,6 +533,7 @@ public final class HibernateOrmProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
             JpaEntitiesBuildItem jpaEntities,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -550,7 +556,7 @@ public final class HibernateOrmProcessor {
                 .filter(i -> i.isDefault())
                 .findFirst();
 
-        Set<Optional<String>> storageEngines = new HashSet<>();
+        Set<String> storageEngineCollector = new HashSet<>();
 
         if ((defaultJdbcDataSource.isPresent() && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
                 hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet()) {
@@ -559,10 +565,9 @@ public final class HibernateOrmProcessor {
                     hibernateOrmConfig.defaultPersistenceUnit,
                     modelClassesPerPersistencesUnits.getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                             Collections.emptySet()),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
-
-            storageEngines.add(hibernateOrmConfig.defaultPersistenceUnit.dialect.storageEngine);
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
+                    storageEngineCollector);
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
@@ -570,13 +575,12 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, persistenceUnitEntry.getKey(), persistenceUnitEntry.getValue(),
                     modelClassesPerPersistencesUnits.getOrDefault(persistenceUnitEntry.getKey(), Collections.emptySet()),
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode,
-                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors);
-
-            storageEngines.add(persistenceUnitEntry.getValue().dialect.storageEngine);
+                    jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
+                    systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
+                    storageEngineCollector);
         }
 
-        if (storageEngines.size() > 1) {
+        if (storageEngineCollector.size() > 1) {
             throw new ConfigurationException(
                     "The dialect storage engine is a global configuration property: it must be consistent across all persistence units.");
         }
@@ -590,10 +594,12 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
+            Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors) {
+            BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            Set<String> storageEngineCollector) {
         // Find the associated datasource
         JdbcDataSourceBuildItem jdbcDataSource;
         String dataSource;
@@ -768,6 +774,17 @@ public final class HibernateOrmProcessor {
             p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
             p.put(USE_QUERY_CACHE, Boolean.FALSE);
             p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
+        }
+
+        // Hibernate Validator integration: we force the callback mode to have bootstrap errors reported rather than validation ignored
+        // if there is any issue when bootstrapping Hibernate Validator.
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
+            descriptor.getProperties().setProperty(AvailableSettings.JPA_VALIDATION_MODE, ValidationMode.CALLBACK.name());
+        }
+
+        // Collect the storage engines if MySQL or MariaDB
+        if (isMySQLOrMariaDB(dialect.get()) && persistenceUnitConfig.dialect.storageEngine.isPresent()) {
+            storageEngineCollector.add(persistenceUnitConfig.dialect.storageEngine.get());
         }
 
         persistenceUnitDescriptors.produce(
@@ -982,5 +999,10 @@ public final class HibernateOrmProcessor {
             return ArrayHelper.EMPTY_CLASS_ARRAY;
         }
         return interfaces.toArray(new Class[interfaces.size()]);
+    }
+
+    private static boolean isMySQLOrMariaDB(String dialect) {
+        String lowercaseDialect = dialect.toLowerCase(Locale.ROOT);
+        return lowercaseDialect.contains("mysql") || lowercaseDialect.contains("mariadb");
     }
 }

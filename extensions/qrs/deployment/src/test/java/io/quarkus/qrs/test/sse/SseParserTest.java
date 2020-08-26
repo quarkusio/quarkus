@@ -34,7 +34,7 @@ public class SseParserTest {
         // split data line with empty data in the middle
         testParser("data:foo\ndata\ndata:bar\n\n", "foo\n\nbar", null, null, null, SseEvent.RECONNECT_NOT_SET);
         testParser("data:foo\ndata:\ndata:bar\n\n", "foo\n\nbar", null, null, null, SseEvent.RECONNECT_NOT_SET);
-        
+
         // no data: no event
         testParser("\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
         testParser("data:\n\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
@@ -44,99 +44,106 @@ public class SseParserTest {
         testParser("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", "DATA", "COMMENT", "ID", "NAME", 23);
         // all fields and no data: no event
         testParser("id:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
-        
+
         // optional space after colon
         testParser("data:foo\n\n", "foo", null, null, null, SseEvent.RECONNECT_NOT_SET);
         testParser("data: foo\n\n", "foo", null, null, null, SseEvent.RECONNECT_NOT_SET);
         testParser("data:  foo\n\n", " foo", null, null, null, SseEvent.RECONNECT_NOT_SET);
-        
+
         // UTF-8
         testParser("data: a¢€𐍈\n\n", "a¢€𐍈", null, null, null, SseEvent.RECONNECT_NOT_SET);
 
         // invalid retry is ignored
         testParser("data:DATA\nretry:-23\n\n", "DATA", null, null, null, SseEvent.RECONNECT_NOT_SET);
         testParser("data:DATA\nretry:ASD\n\n", "DATA", null, null, null, SseEvent.RECONNECT_NOT_SET);
-        
+
         // two events
-        testParser(Arrays.asList("data:foo\n\ndata:bar\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("foo"),
-                                 new QrsInboundSseEvent()
-                                 .setData("bar")));
+        testParser(Arrays.asList("data:foo\n\ndata:bar\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("foo"),
+                        new QrsInboundSseEvent()
+                                .setData("bar")));
         // two events with data
         testParser(Arrays.asList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
-                                 +"data:DATA2\nid:ID2\n:COMMENT2\nretry:232\nevent:NAME2\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("DATA")
-                                 .setId("ID")
-                                 .setComment("COMMENT")
-                                 .setReconnectDelay(23)
-                                 .setName("NAME"),
-                                 new QrsInboundSseEvent()
-                                 .setData("DATA2")
-                                 .setId("ID2")
-                                 .setComment("COMMENT2")
-                                 .setReconnectDelay(232)
-                                 .setName("NAME2")));
+                + "data:DATA2\nid:ID2\n:COMMENT2\nretry:232\nevent:NAME2\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("DATA")
+                        .setId("ID")
+                        .setComment("COMMENT")
+                        .setReconnectDelay(23)
+                        .setName("NAME"),
+                        new QrsInboundSseEvent()
+                                .setData("DATA2")
+                                .setId("ID2")
+                                .setComment("COMMENT2")
+                                .setReconnectDelay(232)
+                                .setName("NAME2")));
         // two events with data, only ID is persistent
         testParser(Arrays.asList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
-                                 +"data:DATA2\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("DATA")
-                                 .setId("ID")
-                                 .setComment("COMMENT")
-                                 .setReconnectDelay(23)
-                                 .setName("NAME"),
-                                 new QrsInboundSseEvent()
-                                 .setData("DATA2")
-                                 .setId("ID")));
-        
+                + "data:DATA2\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("DATA")
+                        .setId("ID")
+                        .setComment("COMMENT")
+                        .setReconnectDelay(23)
+                        .setName("NAME"),
+                        new QrsInboundSseEvent()
+                                .setData("DATA2")
+                                .setId("ID")));
+
         // two events in two buffers
-        testParser(Arrays.asList("data:foo\n\n", "data:bar\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("foo"),
-                                 new QrsInboundSseEvent()
-                                 .setData("bar")));
+        testParser(Arrays.asList("data:foo\n\n", "data:bar\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("foo"),
+                        new QrsInboundSseEvent()
+                                .setData("bar")));
         // two events in two buffers at awkward places
-        testParser(Arrays.asList("data:foo\n\ndata:b", "ar\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("foo"),
-                                 new QrsInboundSseEvent()
-                                 .setData("bar")));
+        testParser(Arrays.asList("data:foo\n\ndata:b", "ar\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("foo"),
+                        new QrsInboundSseEvent()
+                                .setData("bar")));
         // one event in two buffers
-        testParser(Arrays.asList("data:f", "oo\n\n"), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("foo")));
+        testParser(Arrays.asList("data:f", "oo\n\n"),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("foo")));
         // one event in two buffers within a utf-8 char
-        testParserWithBytes(Arrays.asList(new byte[] {'d','a','t','a',':',(byte)0b11000010}, new byte[] {(byte)0b10100010,'\n','\n'}), 
-                   Arrays.asList(new QrsInboundSseEvent()
-                                 .setData("¢")));
+        testParserWithBytes(
+                Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },
+                        new byte[] { (byte) 0b10100010, '\n', '\n' }),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("¢")));
 
         // BOM
-        testParserWithBytes(Arrays.asList(new byte[] {(byte)0xFE, (byte)0xFF, 'd','a','t','a',':','f','o','o','\n','\n'}), 
-                            Arrays.asList(new QrsInboundSseEvent()
-                                          .setData("foo")));
+        testParserWithBytes(
+                Arrays.asList(new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' }),
+                Arrays.asList(new QrsInboundSseEvent()
+                        .setData("foo")));
 
         // invalid BOM location
-        Assertions.assertThrows(IllegalStateException.class, () ->
-            testParserWithBytes(Arrays.asList(new byte[] {'d','a','t','a',':','f','o','o','\n','\n'},
-                                              new byte[] {(byte)0xFE, (byte)0xFF, 'd','a','t','a',':','f','o','o','\n','\n'}), 
+        Assertions
+                .assertThrows(IllegalStateException.class,
+                        () -> testParserWithBytes(
+                                Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
+                                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
+                                                '\n' }),
                                 Arrays.asList(new QrsInboundSseEvent()
-                                              .setData("foo"))));
+                                        .setData("foo"))));
         // invalid UTF-8
-        Assertions.assertThrows(IllegalStateException.class, () ->
-            testParserWithBytes(Arrays.asList(new byte[] {'d','a','t','a',':',(byte)0b1111_1000,'f','o','o','\n','\n'}), 
-                                Arrays.asList()));
+        Assertions.assertThrows(IllegalStateException.class,
+                () -> testParserWithBytes(
+                        Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b1111_1000, 'f', 'o', 'o', '\n', '\n' }),
+                        Arrays.asList()));
     }
-    
+
     private void testParser(String event, String data, String comment, String lastId, String name, long reconnectDelay) {
-        if(data != null) {
+        if (data != null) {
             testParser(Arrays.asList(event), Arrays.asList(new QrsInboundSseEvent()
-                       .setData(data)
-                       .setComment(comment)
-                       .setId(lastId)
-                       .setName(name)
-                       .setReconnectDelay(reconnectDelay)));
+                    .setData(data)
+                    .setComment(comment)
+                    .setId(lastId)
+                    .setName(name)
+                    .setReconnectDelay(reconnectDelay)));
         } else {
             testParser(Arrays.asList(event), Collections.emptyList());
         }
@@ -151,7 +158,7 @@ public class SseParserTest {
         QrsSseEventSource parser = new QrsSseEventSource(null, 0, null);
         CountDownLatch latch = new CountDownLatch(expectedEvents.size());
         List<InboundSseEvent> receivedEvents = new ArrayList<>(expectedEvents.size());
-        parser.register(evt-> {
+        parser.register(evt -> {
             latch.countDown();
             receivedEvents.add(evt);
         });

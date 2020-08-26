@@ -214,8 +214,8 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
     private void parseEvent() {
         // optional BOM
         if (firstByte && i == 0 && 1 < bytes.length) {
-            if (bytes[0] == (byte)0xFE
-                    && bytes[1] == (byte)0xFF) {
+            if (bytes[0] == (byte) 0xFE
+                    && bytes[1] == (byte) 0xFF) {
                 i = 2;
             }
         }

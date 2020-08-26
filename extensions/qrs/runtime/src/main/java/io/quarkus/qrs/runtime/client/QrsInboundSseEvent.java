@@ -98,15 +98,15 @@ public class QrsInboundSseEvent implements InboundSseEvent {
         // TODO Auto-generated method stub
         return null;
     }
-    
+
     @Override
     public String toString() {
-        return "InboundSseEvent[data: "+data
-                +", name: "+name
-                +", id: "+id
-                +", comment: "+comment
-                +", reconnectDelay: "+reconnectDelay
-                +"]";
+        return "InboundSseEvent[data: " + data
+                + ", name: " + name
+                + ", id: " + id
+                + ", comment: " + comment
+                + ", reconnectDelay: " + reconnectDelay
+                + "]";
     }
 
     @Override

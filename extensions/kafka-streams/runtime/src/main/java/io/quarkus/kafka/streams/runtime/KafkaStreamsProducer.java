@@ -254,8 +254,12 @@ public class KafkaStreamsProducer {
 
     private static String asString(List<InetSocketAddress> addresses) {
         return addresses.stream()
-                .map(InetSocketAddress::toString)
+                .map(KafkaStreamsProducer::toHostPort)
                 .collect(Collectors.joining(","));
+    }
+
+    private static String toHostPort(InetSocketAddress inetSocketAddress) {
+        return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
     private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait)

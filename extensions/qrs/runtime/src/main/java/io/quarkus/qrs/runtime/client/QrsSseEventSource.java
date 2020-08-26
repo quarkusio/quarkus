@@ -10,6 +10,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.InboundSseEvent;
+import javax.ws.rs.sse.SseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
 import io.vertx.core.Handler;
@@ -63,7 +64,7 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
     /**
      * True if we're at the very beginning of the data stream and could see a BOM
      */
-    private boolean firstByte;
+    private boolean firstByte = true;
 
     /**
      * The event type we're reading. Defaults to "message" and changes with "event" fields
@@ -80,7 +81,7 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
     /**
      * The event connect time we're reading. Defaults to -1 and changes with "retry" fields (in ms)
      */
-    private int reconnectTime;
+    private long eventReconnectTime;
 
     public QrsSseEventSource(WebTarget endpoint, long reconnectDelay, TimeUnit reconnectUnit) {
         this.endpoint = endpoint;
@@ -175,7 +176,7 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
         // check if we have partial data remaining
         if (bytes != null) {
             // concat old and new data
-            byte[] totalBytes = new byte[bytes.length + newBytes.length];
+            byte[] totalBytes = new byte[bytes.length - i + newBytes.length];
             System.arraycopy(bytes, i, totalBytes, 0, bytes.length - i);
             System.arraycopy(newBytes, 0, totalBytes, bytes.length - i, newBytes.length);
             bytes = totalBytes;
@@ -185,20 +186,24 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
         i = 0;
 
         while (hasByte()) {
+            boolean lastFirstByte = firstByte;
             nameBuffer.setLength(0);
             valueBuffer.setLength(0);
             commentBuffer.setLength(0);
             dataBuffer.setLength(0);
-            eventType = "message";
-            reconnectDelay = -1;
+            // SSE spec says default is "message" but JAX-RS says null
+            eventType = null;
+            eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
+            // SSE spec says ID is persistent
 
             int lastEventStart = i;
             try {
                 parseEvent();
             } catch (NeedsMoreDataException x) {
                 // save the remaining bytes for later
-                System.err.println("Not enough data, need to restart at " + lastEventStart);
                 i = lastEventStart;
+                // be ready to rescan the BOM, but only if we didn't already see it in a previous event
+                firstByte = lastFirstByte;
                 return;
             }
         }
@@ -208,25 +213,26 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
 
     private void parseEvent() {
         // optional BOM
-        if (firstByte && hasByte()) {
-            if (peekByte() == 0xFEFF) {
-                i++;
+        if (firstByte && i == 0 && 1 < bytes.length) {
+            if (bytes[0] == (byte)0xFE
+                    && bytes[1] == (byte)0xFF) {
+                i = 2;
             }
-            firstByte = false;
         }
         // comment or field
         while (hasByte()) {
             int c = readChar();
+            firstByte = false;
             if (c == COLON) {
                 parseComment();
             } else if (isNameChar(c)) {
                 parseField(c);
             } else if (isEofWithSideEffect(c)) {
                 dispatchEvent();
+                return;
             } else {
                 throw illegalEventException();
             }
-
         }
     }
 
@@ -235,11 +241,14 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
         if (dataBuffer.length() == 0)
             return;
         QrsInboundSseEvent event = new QrsInboundSseEvent();
-        event.setComment(commentBuffer.toString());
+        // SSE spec says empty string is the default, but JAX-RS says null if not specified
+        event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
+        // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setId(lastEventId);
         event.setData(dataBuffer.toString());
+        // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
-        event.setReconnectDelay(reconnectTime);
+        event.setReconnectDelay(eventReconnectTime);
         fireEvent(event);
     }
 
@@ -326,7 +335,7 @@ public class QrsSseEventSource implements SseEventSource, Handler<Buffer> {
                 break;
             case "retry":
                 try {
-                    reconnectTime = Integer.parseUnsignedInt(value, 10);
+                    eventReconnectTime = Long.parseUnsignedLong(value, 10);
                 } catch (NumberFormatException x) {
                     // spec says to ignore it
                 }

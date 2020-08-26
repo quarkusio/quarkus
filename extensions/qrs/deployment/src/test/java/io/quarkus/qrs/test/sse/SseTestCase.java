@@ -2,6 +2,7 @@ package io.quarkus.qrs.test.sse;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.ws.rs.client.Client;
@@ -12,6 +13,7 @@ import javax.ws.rs.sse.SseEventSource;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -48,8 +50,7 @@ public class SseTestCase {
                 }
             });
             eventSource.open();
-            res.get();
-            //            Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
+            Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
         }
     }
 }

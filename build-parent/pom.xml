@@ -16,8 +16,6 @@
 
     <properties>
         <!-- Maven plugin versions -->
-        <elasticsearch-maven-plugin.version>6.15</elasticsearch-maven-plugin.version>
-        <elasticsearch-server.version>7.8.0</elasticsearch-server.version>
         <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
@@ -74,6 +72,11 @@
 
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>
+
+        <!-- Defaults for integration tests -->
+        <elasticsearch-server.version>7.8.0</elasticsearch-server.version>
+        <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
+        <elasticsearch.protocol>http</elasticsearch.protocol>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
@@ -482,14 +485,6 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
                         <parameters>true</parameters>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>com.github.alexcojocaru</groupId>
-                    <artifactId>elasticsearch-maven-plugin</artifactId>
-                    <version>${elasticsearch-maven-plugin.version}</version>
-                    <configuration>
-                        <version>${elasticsearch-server.version}</version>
                     </configuration>
                 </plugin>
                 <plugin>

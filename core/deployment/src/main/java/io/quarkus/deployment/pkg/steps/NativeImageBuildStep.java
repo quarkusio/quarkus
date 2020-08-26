@@ -105,54 +105,7 @@ public class NativeImageBuildStep {
 
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
         if (isContainerBuild) {
-            String containerRuntime = nativeConfig.containerRuntime.orElse("docker");
-            // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
-            nativeImage = new ArrayList<>();
-
-            String outputPath = outputDir.toAbsolutePath().toString();
-            if (SystemUtils.IS_OS_WINDOWS) {
-                outputPath = FileUtil.translateToVolumePath(outputPath);
-            }
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v",
-                    outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
-
-            if (SystemUtils.IS_OS_LINUX) {
-                String uid = getLinuxID("-ur");
-                String gid = getLinuxID("-gr");
-                if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
-                    Collections.addAll(nativeImage, "--user", uid + ":" + gid);
-                    if ("podman".equals(containerRuntime)) {
-                        // Needed to avoid AccessDeniedExceptions
-                        nativeImage.add("--userns=keep-id");
-                    }
-                }
-            }
-            nativeConfig.containerRuntimeOptions.ifPresent(nativeImage::addAll);
-            if (nativeConfig.debugBuildProcess && nativeConfig.publishDebugBuildProcessPort) {
-                // publish the debug port onto the host if asked for
-                nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
-            }
-            Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
-
-            if ("docker".equals(containerRuntime) || "podman".equals(containerRuntime)) {
-                // we pull the docker image in order to give users an indication of which step the process is at
-                // it's not strictly necessary we do this, however if we don't the subsequent version command
-                // will appear to block and no output will be shown
-                log.info("Checking image status " + nativeConfig.builderImage);
-                Process pullProcess = null;
-                try {
-                    final ProcessBuilder pb = new ProcessBuilder(
-                            Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage));
-                    pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
-                    pullProcess.waitFor();
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
-                } finally {
-                    if (pullProcess != null) {
-                        pullProcess.destroy();
-                    }
-                }
-            }
+            nativeImage = setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
 
         } else {
             if (SystemUtils.IS_OS_LINUX) {
@@ -177,7 +130,7 @@ public class NativeImageBuildStep {
                     java = new File(home);
                 }
             }
-            nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
+            nativeImage = getNativeImageExecutable(graal, java, env, nativeConfig, processInheritIODisabled, outputDir);
         }
 
         final GraalVM.Version graalVMVersion;
@@ -395,6 +348,60 @@ public class NativeImageBuildStep {
         }
     }
 
+    public static List<String> setupContainerBuild(NativeConfig nativeConfig,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled, Path outputDir) {
+        List<String> nativeImage;
+        String containerRuntime = nativeConfig.containerRuntime.orElse("docker");
+        // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
+        nativeImage = new ArrayList<>();
+
+        String outputPath = outputDir.toAbsolutePath().toString();
+        if (SystemUtils.IS_OS_WINDOWS) {
+            outputPath = FileUtil.translateToVolumePath(outputPath);
+        }
+        Collections.addAll(nativeImage, containerRuntime, "run", "-v",
+                outputPath + ":" + CONTAINER_BUILD_VOLUME_PATH + ":z", "--env", "LANG=C");
+
+        if (SystemUtils.IS_OS_LINUX) {
+            String uid = getLinuxID("-ur");
+            String gid = getLinuxID("-gr");
+            if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
+                Collections.addAll(nativeImage, "--user", uid + ":" + gid);
+                if ("podman".equals(containerRuntime)) {
+                    // Needed to avoid AccessDeniedExceptions
+                    nativeImage.add("--userns=keep-id");
+                }
+            }
+        }
+        nativeConfig.containerRuntimeOptions.ifPresent(nativeImage::addAll);
+        if (nativeConfig.debugBuildProcess && nativeConfig.publishDebugBuildProcessPort) {
+            // publish the debug port onto the host if asked for
+            nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
+        }
+        Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
+
+        if ("docker".equals(containerRuntime) || "podman".equals(containerRuntime)) {
+            // we pull the docker image in order to give users an indication of which step the process is at
+            // it's not strictly necessary we do this, however if we don't the subsequent version command
+            // will appear to block and no output will be shown
+            log.info("Checking image status " + nativeConfig.builderImage);
+            Process pullProcess = null;
+            try {
+                final ProcessBuilder pb = new ProcessBuilder(
+                        Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage));
+                pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
+                pullProcess.waitFor();
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
+            } finally {
+                if (pullProcess != null) {
+                    pullProcess.destroy();
+                }
+            }
+        }
+        return nativeImage;
+    }
+
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
@@ -503,19 +510,20 @@ public class NativeImageBuildStep {
         }
     }
 
-    private static File getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env) {
+    private static List<String> getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env,
+            NativeConfig nativeConfig, Optional<ProcessInheritIODisabled> processInheritIODisabled, Path outputDir) {
         String imageName = SystemUtils.IS_OS_WINDOWS ? "native-image.cmd" : "native-image";
         if (graalVmHome.isPresent()) {
             File file = Paths.get(graalVmHome.get(), "bin", imageName).toFile();
             if (file.exists()) {
-                return file;
+                return Collections.singletonList(file.getAbsolutePath());
             }
         }
 
         if (javaHome != null) {
             File file = new File(javaHome, "bin/" + imageName);
             if (file.exists()) {
-                return file;
+                return Collections.singletonList(file.getAbsolutePath());
             }
         }
 
@@ -528,15 +536,20 @@ public class NativeImageBuildStep {
                 if (dir.isDirectory()) {
                     File file = new File(dir, imageName);
                     if (file.exists()) {
-                        return file;
+                        return Collections.singletonList(file.getAbsolutePath());
                     }
                 }
             }
         }
 
-        throw new RuntimeException("Cannot find the `" + imageName + "` in the GRAALVM_HOME, JAVA_HOME and System " +
-                "PATH. Install it using `gu install native-image`");
-
+        if (SystemUtils.IS_OS_LINUX) {
+            log.warn("Cannot find the `" + imageName + "` in the GRAALVM_HOME, JAVA_HOME and System " +
+                    "PATH. Install it using `gu install native-image`. Attempting to fall back to docker.");
+            return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
+        } else {
+            throw new RuntimeException("Cannot find the `" + imageName + "` in the GRAALVM_HOME, JAVA_HOME and System " +
+                    "PATH. Install it using `gu install native-image`");
+        }
     }
 
     private static String getLinuxID(String option) {

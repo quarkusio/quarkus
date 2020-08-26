@@ -75,7 +75,7 @@ To complete this guide, you need:
 
 * less than 15 minutes
 * an IDE
-* JDK 8 installed with `JAVA_HOME` configured appropriately
+* JDK 11 installed with `JAVA_HOME` configured appropriately
 * A xref:configuring-c-development[working C development environment]
 * GraalVM version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
@@ -395,6 +395,9 @@ Building with Mandrel requires a custom builder image parameter to be passed add
 ./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
 ----
 
+Please note that the above command points to a floating tag for ease of use,
+and to make sure you get the newest Mandrel version supported by Quarkus.
+Consider using specific tags when going into production.
 Check https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[here] to find out about available tags.
 
 ====

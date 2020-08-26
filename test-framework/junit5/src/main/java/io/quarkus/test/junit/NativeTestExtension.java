@@ -36,6 +36,7 @@ public class NativeTestExtension
     private static boolean failedBoot;
 
     private static List<Function<Class<?>, String>> testHttpEndpointProviders;
+    private static boolean ssl;
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
@@ -48,7 +49,7 @@ public class NativeTestExtension
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
-            RestAssuredURLManager.setURL(false, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
+            RestAssuredURLManager.setURL(ssl, QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
             TestScopeManager.setup(true);
         }
     }
@@ -78,6 +79,9 @@ public class NativeTestExtension
                     } catch (Throwable t) {
                     }
                     throw e;
+                }
+                if (launcher.isDefaultSsl()) {
+                    ssl = true;
                 }
                 state = new ExtensionState(testResourceManager, launcher, true);
                 store.put(ExtensionState.class.getName(), state);

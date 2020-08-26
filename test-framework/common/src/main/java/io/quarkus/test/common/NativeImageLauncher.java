@@ -246,16 +246,34 @@ public class NativeImageLauncher implements Closeable {
                         return;
                     }
                 }
+                try {
+                    try (Socket s = new Socket()) {
+                        s.connect(new InetSocketAddress("localhost", port));
+                        //SSL is bound after https
+                        //we add a small delay to make sure SSL is available if installed
+                        Thread.sleep(100);
+                        return;
+                    }
+                } catch (Exception expected) {
+                }
                 try (Socket s = new Socket()) {
-                    s.connect(new InetSocketAddress("localhost", port));
+                    s.connect(new InetSocketAddress("localhost", httpsPort));
                     return;
                 }
             } catch (Exception expected) {
             }
         }
-
-        quarkusProcess.destroy();
+        quarkusProcess.destroyForcibly();
         throw new RuntimeException("Unable to start native image in " + imageWaitTime + "s");
+    }
+
+    public boolean isDefaultSsl() {
+        try (Socket s = new Socket()) {
+            s.connect(new InetSocketAddress("localhost", port));
+            return false;
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     public void addSystemProperties(Map<String, String> systemProps) {

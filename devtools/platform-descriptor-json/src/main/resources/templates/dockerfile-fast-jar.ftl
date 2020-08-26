@@ -7,18 +7,18 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.jvm -t quarkus/${project_artifactId}-jvm .
+# docker build -f src/main/docker/Dockerfile.fast-jar -t quarkus/${project_artifactId}-fast-jar .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}-jvm
+# docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}-fast-jar
 #
 # If you want to include the debug port into your docker image
 # you will have to expose the debug port (default 5005) like this :  EXPOSE 8080 5050
 # 
 # Then run the container using : 
 #
-# docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/${project_artifactId}-jvm
+# docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/${project_artifactId}-fast-jar
 #
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1

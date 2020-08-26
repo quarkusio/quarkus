@@ -59,6 +59,16 @@ public final class Descriptors {
             "evaluate",
             EvaluatedParams.class,
             EvalContext.class);
+    public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY = MethodDescriptor.ofMethod(
+            EvaluatedParams.class,
+            "evaluateMessageKey",
+            EvaluatedParams.class,
+            EvalContext.class);
+    public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE_MESSAGE_PARAMS = MethodDescriptor.ofMethod(
+            EvaluatedParams.class,
+            "evaluateMessageParams",
+            EvaluatedParams.class,
+            EvalContext.class);
     public static final MethodDescriptor EVALUATED_PARAMS_GET_RESULT = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "getResult",
             Object.class,

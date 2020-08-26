@@ -1185,7 +1185,17 @@ Subsequently, the bundles can be used at runtime:
 
 1. Directly in your code via `io.quarkus.qute.i18n.MessageBundles#get()`; e.g. `MessageBundles.get(AppMessages.class).hello_name("Lucie")`
 2. Injected in your beans via `@Inject`; e.g. `@Inject AppMessages`
-3. Referenced in the templates via the message bundle name; e.g. `{msg:hello_name('Lucie')}`
+3. Referenced in the templates via the message bundle namespace:
++
+[source,html]
+----
+ {msg:hello_name('Lucie')} <1> <2> <3>
+ {msg:message(myKey,'Lu')} <4>
+----
+<1> `msg` is the default namespace.
+<2> `hello_name` is the message key.
+<3> `Lucie` is the parameter of the message bundle interface method.  
+<4> It is also possible to obtain a localized message for a key resolved at runtime using a reserved key `message`. The validation is skipped in this case though.
 
 .Message Bundle Interface Example
 [source,java]

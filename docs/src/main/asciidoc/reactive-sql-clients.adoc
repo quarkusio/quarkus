@@ -88,8 +88,16 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
+=== Mutiny
+
+Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
+----
+
 [TIP]
-.Mutiny
 ====
 In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
 If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.

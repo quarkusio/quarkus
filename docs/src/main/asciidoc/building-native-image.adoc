@@ -395,11 +395,12 @@ Building with Mandrel requires a custom builder image parameter to be passed add
 ./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:{mandrel-flavor}
 ----
 
-Please note that the above command points to a floating tag for ease of use,
-and to make sure you get the newest Mandrel version supported by Quarkus.
-Consider using specific tags when going into production.
-Check https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[here] to find out about available tags.
-
+Please note that the above command points to a floating tag.
+It is highly recommended to use the floating tag,
+so that your builder image remains up-to-date and secure.
+If you absolutely must, you may hard-code to a specific tag
+(see https://quay.io/repository/quarkus/ubi-quarkus-mandrel?tab=tags[here] for available tags),
+but be aware that you won't get security updates that way and it's unsupported.
 ====
 
 == Creating a container

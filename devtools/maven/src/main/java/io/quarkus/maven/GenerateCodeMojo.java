@@ -33,8 +33,8 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.deployment.CodeGenerator;
 import io.quarkus.deployment.codegen.CodeGenData;
 
-@Mojo(name = "prepare", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
-public class CodeGenMojo extends AbstractMojo {
+@Mojo(name = "generate-code", defaultPhase = LifecyclePhase.GENERATE_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+public class GenerateCodeMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
@@ -51,8 +51,10 @@ public class CodeGenMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
 
-    /** Skip the execution of this mojo */
-    @Parameter(defaultValue = "false", property = "quarkus.prepare.skip")
+    /**
+     * Skip the execution of this mojo
+     */
+    @Parameter(defaultValue = "false", property = "quarkus.generate-code.skip", alias = "quarkus.prepare.skip")
     private boolean skipSourceGeneration = false;
 
     @Override
@@ -70,7 +72,8 @@ public class CodeGenMojo extends AbstractMojo {
             return;
         }
         if (skipSourceGeneration) {
-            getLog().info("Skipping quarkus:" + (test ? "prepare-tests" : "prepare") + " (Quarkus code generation)");
+            getLog().info(
+                    "Skipping quarkus:" + (test ? "generate-code-tests" : "generate-code") + " (Quarkus code generation)");
             return;
         }
 

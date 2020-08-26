@@ -25,7 +25,8 @@ Edit the `pom.xml` file to add the Quarkus gRPC extension dependency (just under
 </dependency>
 ----
 
-Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom.xml`:
+Make sure you have `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.
+If you wish to generate code from different `proto` files for tests, also add the `generate-code-tests` goal:
 
 [source,xml]
 ----
@@ -37,7 +38,8 @@ Make sure you have `prepare` goal of `quarkus-maven-plugin` enabled in your `pom
             <executions>
                 <execution>
                     <goals>
-                        <goal>prepare</goal>
+                        <goal>generate-code</goal>
+                        <goal>generate-code-tests</goal>
                         <goal>build</goal>
                     </goals>
                 </execution>

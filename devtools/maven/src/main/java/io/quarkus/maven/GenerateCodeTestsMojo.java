@@ -9,8 +9,8 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-@Mojo(name = "prepare-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class CodeGenTestMojo extends CodeGenMojo {
+@Mojo(name = "generate-code-tests", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class GenerateCodeTestsMojo extends GenerateCodeMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         String projectDir = project.getBasedir().getAbsolutePath();

@@ -30,8 +30,8 @@ on:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-keycloak -Dtest-amazon-services -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-redis -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install"
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dtest-redis -Dformat.skip"
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-keycloak -Dtest-amazon-services -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-redis -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dtest-redis -Dformat.skip -DskipDocs"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test

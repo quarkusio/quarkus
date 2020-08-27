@@ -7,7 +7,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
+import org.assertj.core.api.AbstractObjectAssert;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -48,14 +50,18 @@ public class OpenshiftWithApplicationPropertiesTest {
                 assertThat(m.getLabels()).contains(entry("foo", "bar"));
                 assertThat(m.getNamespace()).isEqualTo("applications");
             });
-            assertThat(h).extracting("spec").extracting("replicas").isEqualTo(3);
-            assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
+            AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
+            specAssert.extracting("replicas").isEqualTo(3);
+            specAssert.extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv()).extracting("name", "value")
                                     .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
                         });
                     });
+            specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
+                assertThat(selectorsMap).containsOnly(entry("app.kubernetes.io/name", "test-it"));
+            });
         });
 
         assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
@@ -65,6 +71,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                 });
 
                 assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getPort()).isEqualTo(9090);
                     });

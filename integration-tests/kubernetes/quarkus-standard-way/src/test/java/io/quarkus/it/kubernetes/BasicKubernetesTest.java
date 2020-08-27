@@ -2,6 +2,7 @@ package io.quarkus.it.kubernetes;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -69,6 +70,11 @@ public class BasicKubernetesTest {
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                assertThat(deploymentSpec.getSelector()).isNotNull().satisfies(labelSelector -> {
+                    assertThat(labelSelector.getMatchLabels()).containsOnly(entry("app.kubernetes.io/name", "basic"),
+                            entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
+                });
+
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
@@ -87,6 +93,9 @@ public class BasicKubernetesTest {
                 assertThat(m.getNamespace()).isNull();
             });
             assertThat(s.getSpec()).satisfies(spec -> {
+                assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic"),
+                        entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
+
                 assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                     assertThat(p.getPort()).isEqualTo(8080);
                 });

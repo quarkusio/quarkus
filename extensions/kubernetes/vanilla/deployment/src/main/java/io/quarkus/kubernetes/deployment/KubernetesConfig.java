@@ -219,6 +219,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem
     boolean expose;
 
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
+
     public Optional<String> getPartOf() {
         return partOf;
     }

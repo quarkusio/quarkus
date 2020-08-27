@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.DefaultEntity;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.inventory.Plane;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.user.User;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.DefaultEntity;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiplePersistenceUnitsCdiTest {

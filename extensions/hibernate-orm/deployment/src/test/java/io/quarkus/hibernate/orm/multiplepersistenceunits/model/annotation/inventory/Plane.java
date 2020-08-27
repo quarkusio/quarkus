@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.multiplepersistenceunits.model.inventory;
+package io.quarkus.hibernate.orm.multiplepersistenceunits.model.annotation.inventory;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

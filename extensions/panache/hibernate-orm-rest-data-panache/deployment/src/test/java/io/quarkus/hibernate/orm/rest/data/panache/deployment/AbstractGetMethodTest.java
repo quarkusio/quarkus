@@ -103,6 +103,24 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListSimpleAscendingObjects() {
+        given().accept("application/json")
+                .when().get("/items?sort=name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(1, 2))
+                .and().body("name", contains("first", "second"));
+    }
+
+    @Test
+    void shouldListSimpleDescendingObjects() {
+        given().accept("application/json")
+                .when().get("/items?sort=-name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(2, 1))
+                .and().body("name", contains("second", "first"));
+    }
+
+    @Test
     void shouldListComplexObjects() {
         given().accept("application/json")
                 .when().get("/collections")

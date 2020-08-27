@@ -65,7 +65,7 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
         addTransactionalAnnotation(methodCreator);
         addPutAnnotation(methodCreator);
         addPathAnnotation(methodCreator, propertiesAccessor
-                .getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo), "{id}"));
+                .getPath(resourceInfo.getType(), getMethodMetadata(resourceInfo), "{id}"));
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
         addConsumesAnnotation(methodCreator, MethodImplementor.APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
@@ -82,7 +82,7 @@ public final class UpdateHalMethodImplementor extends HalMethodImplementor {
     }
 
     @Override
-    protected MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo) {
+    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
         return new MethodMetadata(UpdateMethodImplementor.NAME, resourceInfo.getEntityInfo().getIdType(),
                 resourceInfo.getEntityInfo().getType());
     }

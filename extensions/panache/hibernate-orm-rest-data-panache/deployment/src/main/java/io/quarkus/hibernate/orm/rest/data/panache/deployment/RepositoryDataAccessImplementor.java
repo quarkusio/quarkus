@@ -16,6 +16,7 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class RepositoryDataAccessImplementor implements DataAccessImplementor {
@@ -33,15 +34,16 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle listAll(BytecodeCreator creator) {
-        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "listAll", List.class),
-                getRepositoryInstance(creator));
+    public ResultHandle listAll(BytecodeCreator creator, ResultHandle sort) {
+        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "listAll", List.class, Sort.class),
+                getRepositoryInstance(creator), sort);
     }
 
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class),
-                getRepositoryInstance(creator));
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
+        ResultHandle query = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class, Sort.class),
+                getRepositoryInstance(creator), sort);
         creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }

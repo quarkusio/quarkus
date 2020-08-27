@@ -1,6 +1,5 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
-import static io.quarkus.gizmo.FieldDescriptor.of;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.rest.data.panache.deployment.PrivateFields.URI_INFO;
 import static io.quarkus.rest.data.panache.deployment.PrivateMethods.IS_PAGED;
@@ -12,7 +11,6 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -22,12 +20,17 @@ import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.utils.PaginationImplementor;
 import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SortImplementor;
 
 public final class ListMethodImplementor extends StandardMethodImplementor {
 
     public static final String NAME = "list";
 
     private static final String REL = "list";
+
+    private final PaginationImplementor paginationImplementor = new PaginationImplementor();
+
+    private final SortImplementor sortImplementor = new SortImplementor();
 
     /**
      * Implements {@link RestDataResource#list()}.
@@ -69,14 +72,10 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
         addLinksAnnotation(methodCreator, resourceInfo.getEntityInfo().getType(), REL);
 
-        FieldDescriptor uriInfoField = of(methodCreator.getMethodDescriptor().getDeclaringClass(), URI_INFO.getName(),
-                URI_INFO.getType());
-        MethodDescriptor isPagedMethod = ofMethod(methodCreator.getMethodDescriptor().getDeclaringClass(), IS_PAGED.getName(),
-                IS_PAGED.getType(), IS_PAGED.getParams());
-
-        BranchResult isPaged = methodCreator.ifTrue(methodCreator.invokeVirtualMethod(isPagedMethod, methodCreator.getThis()));
-        returnPaged(isPaged.trueBranch(), resourceInfo.getDataAccessImplementor(), uriInfoField);
-        returnNotPaged(isPaged.falseBranch(), resourceInfo.getDataAccessImplementor());
+        ResultHandle uriInfo = getInstanceField(methodCreator, URI_INFO.getName(), URI_INFO.getType());
+        BranchResult isPagedBranch = isPaged(methodCreator);
+        returnPaged(isPagedBranch.trueBranch(), resourceInfo.getDataAccessImplementor(), uriInfo);
+        returnNotPaged(isPagedBranch.falseBranch(), resourceInfo.getDataAccessImplementor(), uriInfo);
         methodCreator.close();
     }
 
@@ -85,18 +84,24 @@ public final class ListMethodImplementor extends StandardMethodImplementor {
         return new MethodMetadata(NAME);
     }
 
-    private void returnPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor,
-            FieldDescriptor uriInfoField) {
-        ResultHandle uriInfo = creator.readInstanceField(uriInfoField, creator.getThis());
-        ResultHandle page = PaginationImplementor.getRequestPage(creator, uriInfo);
+    private void returnPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
+        ResultHandle page = paginationImplementor.getRequestPage(creator, uriInfo);
         ResultHandle pageCount = dataAccessImplementor.pageCount(creator, page);
-        ResultHandle links = PaginationImplementor.getLinks(creator, uriInfo, page, pageCount);
-        ResultHandle entities = dataAccessImplementor.findAll(creator, page);
+        ResultHandle links = paginationImplementor.getLinks(creator, uriInfo, page, pageCount);
+        ResultHandle entities = dataAccessImplementor.findAll(creator, page, sort);
 
         creator.returnValue(ResponseImplementor.ok(creator, entities, links));
     }
 
-    private void returnNotPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor) {
-        creator.returnValue(ResponseImplementor.ok(creator, dataAccessImplementor.listAll(creator)));
+    private void returnNotPaged(BytecodeCreator creator, DataAccessImplementor dataAccessImplementor, ResultHandle uriInfo) {
+        ResultHandle sort = sortImplementor.getSort(creator, uriInfo);
+        creator.returnValue(ResponseImplementor.ok(creator, dataAccessImplementor.listAll(creator, sort)));
+    }
+
+    private BranchResult isPaged(MethodCreator creator) {
+        MethodDescriptor method = ofMethod(creator.getMethodDescriptor().getDeclaringClass(), IS_PAGED.getName(),
+                IS_PAGED.getType(), IS_PAGED.getParams());
+        return creator.ifTrue(creator.invokeVirtualMethod(method, creator.getThis()));
     }
 }

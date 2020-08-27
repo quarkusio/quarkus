@@ -7,9 +7,9 @@ public interface DataAccessImplementor {
 
     ResultHandle findById(BytecodeCreator creator, ResultHandle id);
 
-    ResultHandle listAll(BytecodeCreator creator);
+    ResultHandle listAll(BytecodeCreator creator, ResultHandle sort);
 
-    ResultHandle findAll(BytecodeCreator creator, ResultHandle page);
+    ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort);
 
     ResultHandle persist(BytecodeCreator creator, ResultHandle entity);
 

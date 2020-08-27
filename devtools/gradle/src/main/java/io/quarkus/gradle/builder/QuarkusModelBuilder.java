@@ -49,6 +49,7 @@ import io.quarkus.bootstrap.resolver.model.impl.WorkspaceModuleImpl;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.HashUtil;
 
 public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<ModelParameter> {
 
@@ -234,7 +235,14 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
 
     private void collectDependencies(ResolvedConfiguration configuration,
             LaunchMode mode, Project project, Map<ArtifactCoords, Dependency> appDependencies) {
-        for (ResolvedArtifact a : configuration.getResolvedArtifacts()) {
+        final Set<ResolvedArtifact> artifacts = configuration.getResolvedArtifacts();
+        Set<File> artifactFiles = null;
+        // if the number of artifacts is less than the number of files then probably
+        // the project includes direct file dependencies
+        if (artifacts.size() < configuration.getFiles().size()) {
+            artifactFiles = new HashSet<>(artifacts.size());
+        }
+        for (ResolvedArtifact a : artifacts) {
             if (!isDependency(a)) {
                 continue;
             }
@@ -248,6 +256,38 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 dep.addPath(a.getFile());
             }
             appDependencies.put((ArtifactCoords) new ArtifactCoordsImpl(dep.getGroupId(), dep.getName(), ""), dep);
+            if (artifactFiles != null) {
+                artifactFiles.add(a.getFile());
+            }
+        }
+
+        if (artifactFiles != null) {
+            // detect FS paths that aren't provided by the resolved artifacts
+            for (File f : configuration.getFiles()) {
+                if (artifactFiles.contains(f)) {
+                    continue;
+                }
+                // here we are trying to represent a direct FS path dependency
+                // as an artifact dependency
+                // SHA1 hash is used to avoid long file names in the lib dir
+                final String parentPath = f.getParent();
+                final String group = HashUtil.sha1(parentPath == null ? f.getName() : parentPath);
+                String name = f.getName();
+                String type = "jar";
+                if (!f.isDirectory()) {
+                    final int dot = f.getName().lastIndexOf('.');
+                    if (dot > 0) {
+                        name = f.getName().substring(0, dot);
+                        type = f.getName().substring(dot + 1);
+                    }
+                }
+                // hash could be a better way to represent the version
+                final String version = String.valueOf(f.lastModified());
+                final ArtifactCoords key = new ArtifactCoordsImpl(group, name, "");
+                final DependencyImpl dep = new DependencyImpl(name, group, version, "copmile", type, null);
+                dep.addPath(f);
+                appDependencies.put(key, dep);
+            }
         }
     }
 

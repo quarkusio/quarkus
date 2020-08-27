@@ -42,6 +42,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.spring.data.deployment.DotNames;
 import io.quarkus.spring.data.runtime.FunctionalityNotImplemented;
@@ -887,7 +888,8 @@ public class StockMethodsAdder {
                 try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllDescriptor)) {
                     deleteAll.addAnnotation(Transactional.class);
                     deleteAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaOperations.class, "deleteAll", long.class, Class.class.getName()),
+                            MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "deleteAllWithCascade", long.class,
+                                    Class.class.getName()),
                             deleteAll.readInstanceField(entityClassFieldDescriptor, deleteAll.getThis()));
                     deleteAll.returnValue(null);
                 }

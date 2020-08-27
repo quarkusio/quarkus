@@ -16,7 +16,6 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
@@ -137,13 +136,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                 javaPlugin -> {
                     project.afterEvaluate(this::afterEvaluate);
                     JavaCompile compileJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME);
-                    compileJavaTask.mustRunAfter(quarkusGenerateCode);
+                    compileJavaTask.dependsOn(quarkusGenerateCode);
                     quarkusGenerateCode.setSourceRegistrar(compileJavaTask::source);
 
-                    try {
-                        // TODO: support kotlin
-                        tasks.getByName("compileTestKotlin");
-                    } catch (UnknownTaskException noKotlin) {
+                    Task compileKotlinTask = tasks.findByName("compileKotlin");
+                    // TODO: proper support of kotlin
+                    if (compileKotlinTask == null) {
                         JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
                         compileTestJavaTask.dependsOn(quarkusGenerateCodeTests);
                         quarkusGenerateCodeTests.setSourceRegistrar(compileTestJavaTask::source);
@@ -188,6 +186,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.withType(Test.class).forEach(configureTestTask);
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
                 });
+        project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
+            Task compileKotlinTask = tasks.findByName("compileKotlin");
+            compileKotlinTask.dependsOn(quarkusGenerateCode, quarkusGenerateCodeTests);
+        });
     }
 
     private Set<Path> getSourcesParents(SourceSet mainSourceSet) {

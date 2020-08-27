@@ -110,17 +110,17 @@ jobs:
         java :
           - { name: Java8,
               java-version: 8,
-              maven_args: "-pl !integration-tests/gradle -pl !integration-tests/kubernetes/quarkus-standard-way"
+              maven_args: "-pl !integration-tests/gradle,!integration-tests/kubernetes"
           }
           - {
             name: Java 11,
             java-version: 11,
-            maven_args: "-pl !integration-tests/gradle"
+            maven_args: "-pl !integration-tests/gradle,!integration-tests/kubernetes"
           }
           - {
             name: Java 14,
             java-version: 14,
-            maven_args: "-pl !integration-tests/gradle -pl !integration-tests/kubernetes/quarkus-standard-way"
+            maven_args: "-pl !integration-tests/gradle,!integration-tests/kubernetes"
           }
 
     services:

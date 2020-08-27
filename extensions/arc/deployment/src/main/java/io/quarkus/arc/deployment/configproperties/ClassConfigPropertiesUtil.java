@@ -202,7 +202,7 @@ final class ClassConfigPropertiesUtil {
 
     private static boolean isHibernateValidatorInClasspath() {
         try {
-            Class.forName(HIBERNATE_VALIDATOR_IMPL_CLASS);
+            Class.forName(HIBERNATE_VALIDATOR_IMPL_CLASS, false, Thread.currentThread().getContextClassLoader());
             return true;
         } catch (ClassNotFoundException e) {
             return false;

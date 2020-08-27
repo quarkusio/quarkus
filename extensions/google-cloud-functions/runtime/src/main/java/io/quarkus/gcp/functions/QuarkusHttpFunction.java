@@ -50,7 +50,7 @@ public final class QuarkusHttpFunction implements HttpFunction {
     static void setDelegate(String selectedDelegate) {
         if (selectedDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedDelegate);
+                Class<?> clazz = Class.forName(selectedDelegate, false, Thread.currentThread().getContextClassLoader());
                 delegate = (HttpFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);

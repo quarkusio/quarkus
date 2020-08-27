@@ -115,7 +115,16 @@ public final class PathTestHelper {
         }
         return TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
                 .filter(e -> testClassLocation.contains(e.getKey()))
-                .map(e -> Paths.get(testClassLocation.replace(e.getKey(), e.getValue())))
+                .map(e -> {
+                    // we should replace only the last occurrence of the fragment
+                    final int i = testClassLocation.lastIndexOf(e.getKey());
+                    final StringBuilder buf = new StringBuilder(testClassLocation.length());
+                    buf.append(testClassLocation.substring(0, i)).append(e.getValue());
+                    if (i + e.getKey().length() + 1 < testClassLocation.length()) {
+                        buf.append(testClassLocation.substring(i + e.getKey().length()));
+                    }
+                    return Paths.get(buf.toString());
+                })
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Unable to translate path for " + testClassLocation));
     }

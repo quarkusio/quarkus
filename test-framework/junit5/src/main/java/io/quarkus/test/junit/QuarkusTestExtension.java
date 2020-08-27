@@ -171,7 +171,17 @@ public class QuarkusTestExtension
                 }
             }
 
-            runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+            final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
+            runnerBuilder.setProjectRoot(projectRoot);
+            Path outputDir;
+            try {
+                // this should work for both maven and gradle
+                outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
+            } catch (Exception e) {
+                // this shouldn't happen since testClassLocation is usually found under the project dir
+                outputDir = projectRoot;
+            }
+            runnerBuilder.setTargetDirectory(outputDir);
 
             rootBuilder.add(appClassLocation);
             final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
@@ -179,10 +189,9 @@ public class QuarkusTestExtension
                 rootBuilder.add(appResourcesLocation);
             }
 
-            Path root = Paths.get("").normalize().toAbsolutePath();
             // If gradle project running directly with IDE
             if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
-                BuildToolHelper.enableGradleAppModel(root, "TEST", QuarkusModelHelper.TEST_REQUIRED_TASKS);
+                BuildToolHelper.enableGradleAppModel(projectRoot, "TEST", QuarkusModelHelper.TEST_REQUIRED_TASKS);
             }
 
             runnerBuilder.setApplicationRoot(rootBuilder.build());

@@ -14,6 +14,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.SseEventSource;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -79,6 +80,7 @@ public class MutinyTest {
     }
 
     @Test
+    @Disabled("https://github.com/quarkusio/quarkus/issues/11687")
     public void testSSE() {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target("http://localhost:" + RestAssured.port + "/mutiny/pets");

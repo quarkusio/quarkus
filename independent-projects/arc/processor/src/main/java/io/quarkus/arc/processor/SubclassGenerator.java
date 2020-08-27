@@ -75,12 +75,7 @@ public class SubclassGenerator extends AbstractGenerator {
     private final Set<String> existingClasses;
 
     static String generatedName(DotName providerTypeName, String baseName) {
-        String packageName = DotNames.packageName(providerTypeName).replace('.', '/');
-        if (packageName.isEmpty()) {
-            return baseName + SUBCLASS_SUFFIX;
-        } else {
-            return packageName + "/" + baseName + SUBCLASS_SUFFIX;
-        }
+        return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
     }
 
     private final AnnotationLiteralProcessor annotationLiterals;

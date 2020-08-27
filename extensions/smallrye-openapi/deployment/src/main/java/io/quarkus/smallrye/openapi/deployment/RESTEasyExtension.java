@@ -46,7 +46,8 @@ public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private void scanAsyncResponseProvidersFromClassName(Class<?> asyncResponseProviderClass, String name) {
         try {
-            Class<?> klass = Class.forName(name);
+            Class<?> klass = Class.forName(name, false,
+                    Thread.currentThread().getContextClassLoader());
             if (asyncResponseProviderClass.isAssignableFrom(klass)) {
                 for (java.lang.reflect.Type type : klass.getGenericInterfaces()) {
                     if (type instanceof java.lang.reflect.ParameterizedType) {

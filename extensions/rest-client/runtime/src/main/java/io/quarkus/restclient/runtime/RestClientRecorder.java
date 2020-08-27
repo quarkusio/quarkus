@@ -69,6 +69,7 @@ public class RestClientRecorder {
         }
 
         RestClientBuilderImpl.setProviderFactory(clientProviderFactory);
+        ResteasyProviderFactory.setInstance(clientProviderFactory);
         providerFactory = clientProviderFactory;
     }
 

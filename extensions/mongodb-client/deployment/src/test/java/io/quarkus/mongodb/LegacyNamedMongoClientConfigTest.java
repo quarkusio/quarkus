@@ -19,9 +19,10 @@ import com.mongodb.client.MongoClient;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
+public class LegacyNamedMongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

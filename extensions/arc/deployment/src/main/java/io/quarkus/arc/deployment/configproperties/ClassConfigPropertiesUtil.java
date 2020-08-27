@@ -19,6 +19,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -238,10 +239,15 @@ final class ClassConfigPropertiesUtil {
                 if (field.hasAnnotation(DotNames.CONFIG_IGNORE)) {
                     continue;
                 }
-                if (field.hasAnnotation(DotNames.CONFIG_PROPERTY)) {
-                    LOGGER.warn(
-                            "'@ConfigProperty' is ignored when added to a field of a class annotated with '@ConfigProperties'. Offending field is '"
-                                    + field.name() + "' of class '" + field.declaringClass().toString() + "'");
+                AnnotationInstance configPropertyAnnotation = field.annotation(DotNames.CONFIG_PROPERTY);
+                if (configPropertyAnnotation != null) {
+                    AnnotationValue configPropertyDefaultValue = configPropertyAnnotation.value("defaultValue");
+                    if ((configPropertyDefaultValue == null)
+                            || configPropertyDefaultValue.asString().equals(ConfigProperty.UNCONFIGURED_VALUE)) {
+                        LOGGER.warn(
+                                "'defaultValue' of '@ConfigProperty' is ignored when added to a field of a class annotated with '@ConfigProperties'. Offending field is '"
+                                        + field.name() + "' of class '" + field.declaringClass().toString() + "'");
+                    }
                 }
                 boolean useFieldAccess = false;
 
@@ -419,7 +425,15 @@ final class ClassConfigPropertiesUtil {
     }
 
     private static String getFullConfigName(String prefixStr, ConfigProperties.NamingStrategy namingStrategy, FieldInfo field) {
-        return prefixStr + "." + namingStrategy.getName(field.name());
+        String nameToUse = field.name();
+        AnnotationInstance configPropertyAnnotation = field.annotation(DotNames.CONFIG_PROPERTY);
+        if (configPropertyAnnotation != null) {
+            AnnotationValue configPropertyNameValue = configPropertyAnnotation.value("name");
+            if ((configPropertyNameValue != null) && !configPropertyNameValue.asString().isEmpty()) {
+                nameToUse = configPropertyNameValue.asString();
+            }
+        }
+        return prefixStr + "." + namingStrategy.getName(nameToUse);
     }
 
     private static void createWriteValue(BytecodeCreator bytecodeCreator, ResultHandle configObject, FieldInfo field,

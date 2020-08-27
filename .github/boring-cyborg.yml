@@ -83,6 +83,11 @@ labelPRBasedOnFilePath:
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/**/*
     area/core:
         - core/**/*
+    area/codestarts:
+        - independent-projects/tools/codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/bundled-codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/templates/**/*
     area/dependencies:
         - .github/dependabot.yml
         - bom/**/*

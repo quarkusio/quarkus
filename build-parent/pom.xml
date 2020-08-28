@@ -287,7 +287,7 @@
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
                         </systemPropertyVariables>
-                        <argLine>${jacoco.agent.argLine}</argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m</argLine> <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                     </configuration>
                 </plugin>
                 <plugin>

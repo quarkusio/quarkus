@@ -20,7 +20,7 @@ To complete this guide, you need:
 
 * less than 20 minutes
 * an IDE
-* GraalVM installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
+* GraalVM (Java 11) installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 This guide is based on the REST client guide so you should get this Maven project first.

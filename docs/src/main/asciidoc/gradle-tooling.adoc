@@ -298,7 +298,7 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 
 Create a native executable using: `./gradlew build -Dquarkus.package.type=native`.
 A native executable will be present in `build/`.

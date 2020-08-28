@@ -39,12 +39,6 @@ This means that it does not profit from a few small enhancements that Oracle hav
 This enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
 This is particularly important when it comes to conformance and security.
 
-* Mandrel is only available for projects that can be compiled with Java 11.
-If you are using Java 8,
-you should consider using Oracle GraalVM instead.
-The reason for not using Java 8 is because it's a legacy release,
-which most Quarkus users are unlikely to need.
-
 * Mandrel is currently only recommended for building native executables that target Linux containerized environments.
 This means that Mandrel users should use containers to build their native executables.
 If you are building native executables for macOS or Windows target platforms,
@@ -55,6 +49,13 @@ with details available in the https://github.com/graalvm/mandrel/blob/master/REA
 and https://github.com/graalvm/mandrel/releases[Mandrel releases].
 
 The prerequisites vary slightly depending on whether you are using Oracle GraalVM CE/EE or Mandrel.
+
+[IMPORTANT]
+.Install the Java 11 version of GraalVM
+====
+While Oracle GraalVM is available for both Java 8 and Java 11 (Mandrel only supports Java 11), Quarkus only works with the Java 11 version.
+If you use the Oracle distribution, make sure to install the Java 11 version.
+====
 
 == Prerequisites for Mandrel
 
@@ -77,7 +78,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 11 installed with `JAVA_HOME` configured appropriately
 * A xref:configuring-c-development[working C development environment]
-* GraalVM version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
+* GraalVM version {graalvm-version} (be sure to install the Java 11 support) installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
 * The code of the application developed in the link:getting-started[Getting Started Guide].
 
@@ -115,9 +116,10 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 
 Version {graalvm-version} is required. Using the community edition is enough.
 
-1. Install GraalVM if you haven't already. You have a few options for this:
+1. Install GraalVM (pick the java 11 version) if you haven't already. You have a few options for this:
 ** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew], https://sdkman.io/jdks#Oracle[sdkman], or https://github.com/ScoopInstaller/Java[scoop].
 ** Download the appropriate Community Edition archive from <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
+Make sure to download and install at Java 11 version.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,shell]

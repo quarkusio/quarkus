@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -81,6 +82,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
         PLATFORM_CLASS_LOADER = cl;
     }
+
+    private boolean closed;
 
     private QuarkusClassLoader(Builder builder) {
         //we need the parent to be null
@@ -461,6 +464,21 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public void close() {
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+        }
+        //DriverManager only lets you remove drivers with the same CL as the caller
+        //so we need do define the cleaner in this class loader
+        try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
+            byte[] data = JarClassPathElement.readStreamContents(is);
+            Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length).newInstance();
+            r.run();
+        } catch (Exception e) {
+            log.debug("Failed to clean up DB drivers");
+        }
         for (ClassPathElement element : elements) {
             //note that this is a 'soft' close
             //all resources are closed, however the CL can still be used
@@ -471,6 +489,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.error("Failed to close " + element, e);
             }
         }
+        ResourceBundle.clearCache(this);
+
     }
 
     @Override

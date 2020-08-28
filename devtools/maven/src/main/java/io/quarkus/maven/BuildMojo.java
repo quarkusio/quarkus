@@ -135,7 +135,6 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-
         if (skip) {
             getLog().info("Skipping Quarkus build");
             return;
@@ -201,6 +200,7 @@ public class BuildMojo extends AbstractMojo {
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setAppArtifact(appArtifact)
                     .setMavenArtifactResolver(resolver)
+                    .setIsolateDeployment(true)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())
                     .setBuildSystemProperties(effectiveProperties)
                     .setLocalProjectDiscovery(false)

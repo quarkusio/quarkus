@@ -33,6 +33,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -66,8 +67,8 @@ public class JDBCMySQLProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void abandonedConnectionCleanUp(MySQLRecorder recorder) {
-        recorder.startAbandonedConnectionCleanup();
+    void abandonedConnectionCleanUp(MySQLRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
+        recorder.startAbandonedConnectionCleanup(shutdownContextBuildItem);
     }
 
     @BuildStep

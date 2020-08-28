@@ -6,7 +6,9 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
-import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.reactive.runtime.JavaReactiveMongoOperations;
+import io.quarkus.panache.common.deployment.ByteCodeType;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class ReactiveTypeBundle implements TypeBundle {
     @Override
@@ -17,11 +19,6 @@ public class ReactiveTypeBundle implements TypeBundle {
     @Override
     public ByteCodeType entityBase() {
         return new ByteCodeType(ReactivePanacheMongoEntityBase.class);
-    }
-
-    @Override
-    public ByteCodeType entityBaseCompanion() {
-        throw new UnsupportedOperationException("Companions are not supported in Java.");
     }
 
     @Override
@@ -36,7 +33,7 @@ public class ReactiveTypeBundle implements TypeBundle {
 
     @Override
     public ByteCodeType operations() {
-        return new ByteCodeType(ReactiveMongoOperations.class);
+        return new ByteCodeType(JavaReactiveMongoOperations.class);
     }
 
     @Override

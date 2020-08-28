@@ -37,12 +37,14 @@ public class PanacheMongoResourceProcessor extends BasePanacheMongoResourceProce
     }
 
     @Override
-    public PanacheMongoRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index) {
+    public PanacheMongoRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers) {
         return new PanacheMongoRepositoryEnhancer(index.getIndex(), getReactiveTypeBundle());
     }
 
     @Override
-    public PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index) {
+    public PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers) {
         return new PanacheMongoRepositoryEnhancer(index.getIndex(), getImperativeTypeBundle());
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.panache.kotlin.deployment;
 
 import static io.quarkus.mongodb.panache.deployment.BasePanacheMongoResourceProcessor.BSON_IGNORE;
+import static java.util.Collections.emptyList;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -12,13 +13,13 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.mongodb.panache.deployment.TypeBundle;
-import io.quarkus.mongodb.panache.deployment.visitors.PanacheMongoEntityClassVisitor;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.TypeBundle;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
 
 public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
     private final TypeBundle types;
@@ -32,10 +33,9 @@ public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer<Meta
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheMongoEntityClassVisitor(className, outputClassVisitor, this.modelInfo,
-                this.indexView.getClassByName(this.types.entityBase().dotName()),
-                this.indexView.getClassByName(DotName.createSimple(className)),
-                this.methodCustomizers, this.types);
+        return new KotlinPanacheClassVisitor(outputClassVisitor,
+                indexView.getClassByName(DotName.createSimple(className)), indexView, types,
+                types.entityBase(), emptyList());
     }
 
     @Override

@@ -62,11 +62,11 @@ class ReactivePersonEntityResource {
     @DELETE
     @Path("/{id}")
     fun deletePerson(@PathParam("id") id: String): Uni<Void> =
-            ReactivePersonEntity.findById(id.toLong()).flatMap { person -> person.delete() }
+            ReactivePersonEntity.findById(id.toLong()).flatMap { person -> person?.delete() }
 
     @GET
     @Path("/{id}")
-    fun getPerson(@PathParam("id") id: String): Uni<ReactivePersonEntity> =
+    fun getPerson(@PathParam("id") id: String): Uni<ReactivePersonEntity?> =
             ReactivePersonEntity.findById(id.toLong())
 
     @GET

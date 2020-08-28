@@ -6,7 +6,9 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.mongodb.panache.PanacheUpdate;
-import io.quarkus.mongodb.panache.runtime.MongoOperations;
+import io.quarkus.mongodb.panache.runtime.JavaMongoOperations;
+import io.quarkus.panache.common.deployment.ByteCodeType;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class ImperativeTypeBundle implements TypeBundle {
     @Override
@@ -20,23 +22,8 @@ public class ImperativeTypeBundle implements TypeBundle {
     }
 
     @Override
-    public ByteCodeType entityBaseCompanion() {
-        throw new UnsupportedOperationException("Companions are not supported in Java.");
-    }
-
-    @Override
-    public ByteCodeType entityCompanion() {
-        throw new UnsupportedOperationException("Companions are not supported in Java.");
-    }
-
-    @Override
-    public ByteCodeType entityCompanionBase() {
-        throw new UnsupportedOperationException("Companions are not supported in Java.");
-    }
-
-    @Override
     public ByteCodeType operations() {
-        return new ByteCodeType(MongoOperations.class);
+        return new ByteCodeType(JavaMongoOperations.class);
     }
 
     @Override

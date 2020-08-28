@@ -3,6 +3,7 @@ package io.quarkus.it.mongodb.panache.book
 import io.quarkus.mongodb.panache.MongoEntity
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoCompanion
 import io.quarkus.mongodb.panache.kotlin.PanacheMongoEntity
+import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations.Companion.INSTANCE
 import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
@@ -13,7 +14,7 @@ import javax.json.bind.annotation.JsonbDateFormat
 class BookEntity : PanacheMongoEntity() {
     companion object : PanacheMongoCompanion<BookEntity> {
         override fun findById(id: ObjectId): BookEntity {
-            return operations.findById(BookEntity::class.java, id) as BookEntity
+            return INSTANCE.findById(BookEntity::class.java, id) as BookEntity
         }
     }
 

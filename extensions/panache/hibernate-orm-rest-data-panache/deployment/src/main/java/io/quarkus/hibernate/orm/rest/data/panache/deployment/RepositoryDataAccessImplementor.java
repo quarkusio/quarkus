@@ -11,10 +11,10 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 
@@ -65,8 +65,9 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        ResultHandle entityManager = creator.invokeStaticMethod(
-                ofMethod(JpaOperations.class, "getEntityManager", EntityManager.class, Class.class),
+        MethodDescriptor getEntityManager = ofMethod(PanacheRepositoryBase.class, "getEntityManager",
+                EntityManager.class, Class.class);
+        ResultHandle entityManager = creator.invokeInterfaceMethod(getEntityManager, getRepositoryInstance(creator),
                 creator.invokeVirtualMethod(ofMethod(Object.class, "getClass", Class.class), entity));
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);

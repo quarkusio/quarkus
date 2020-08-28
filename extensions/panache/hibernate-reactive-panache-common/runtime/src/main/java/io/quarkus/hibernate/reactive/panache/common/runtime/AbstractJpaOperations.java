@@ -82,7 +82,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     //
     // Private stuff
 
-    public Mutiny.Session getSession() {
+    public static Mutiny.Session getSession() {
         Mutiny.Session session = Arc.container().instance(Mutiny.Session.class).get();
         // FIXME: handle null or exception?
         if (session == null) {
@@ -322,13 +322,13 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 "This method is normally automatically overridden in subclasses: did you forget to annotate your entity with @Entity?");
     }
 
-    public Uni<Integer> executeUpdate(String query, Object... params) {
+    public static Uni<Integer> executeUpdate(String query, Object... params) {
         Mutiny.Query<?> jpaQuery = getSession().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
 
-    public Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
+    public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
         Mutiny.Query<?> jpaQuery = getSession().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();

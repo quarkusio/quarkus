@@ -1,20 +1,31 @@
 package io.quarkus.panache.common.deployment.visitors;
 
+import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
 import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.JSON_IGNORE_DOT_NAME;
 import static io.quarkus.panache.common.deployment.PanacheEntityEnhancer.JSON_PROPERTY_SIGNATURE;
+import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.OBJECT;
+import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor.recursivelyFindEntityTypeArguments;
+import static io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor.CLASS;
+import static org.objectweb.asm.Opcodes.CHECKCAST;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -24,6 +35,7 @@ import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.gizmo.Gizmo;
+import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 import io.quarkus.panache.common.deployment.EntityModel;
@@ -33,6 +45,7 @@ import io.quarkus.panache.common.deployment.PanacheFieldAccessMethodVisitor;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerVisitor;
 import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityField> extends ClassVisitor {
 
@@ -40,27 +53,54 @@ public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityFi
     protected final Map<String, ? extends EntityFieldType> fields;
     private final Set<String> userMethods = new HashSet<>();
     private final MetamodelInfo<?> modelInfo;
+    protected TypeBundle typeBundle;
     protected final ClassInfo panacheEntityBaseClassInfo;
     protected ClassInfo entityInfo;
     protected List<PanacheMethodCustomizer> methodCustomizers;
+    protected final Map<String, ByteCodeType> typeArguments = new HashMap<>();
+    protected final Function<String, String> argMapper;
+    protected final ByteCodeType entityUpperBound;
+    private final Map<String, String> erasures = new HashMap<>();
 
-    public PanacheEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
+    public PanacheEntityClassVisitor(ClassVisitor outputClassVisitor,
             MetamodelInfo<? extends EntityModel<? extends EntityFieldType>> modelInfo,
-            ClassInfo panacheEntityBaseClassInfo, ClassInfo entityInfo,
-            List<PanacheMethodCustomizer> methodCustomizers) {
+            TypeBundle typeBundle,
+            ClassInfo entityInfo,
+            List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
 
+        String className = entityInfo.name().toString();
         thisClass = Type.getType("L" + className.replace('.', '/') + ";");
         this.modelInfo = modelInfo;
+        this.typeBundle = typeBundle;
         EntityModel<? extends EntityFieldType> entityModel = modelInfo.getEntityModel(className);
         fields = entityModel != null ? entityModel.fields : null;
-        this.panacheEntityBaseClassInfo = panacheEntityBaseClassInfo;
+        this.panacheEntityBaseClassInfo = indexView.getClassByName(typeBundle.entityBase().dotName());
         this.entityInfo = entityInfo;
         this.methodCustomizers = methodCustomizers;
+
+        ByteCodeType baseType = typeBundle.entityBase();
+        List<TypeVariable> typeVariables = indexView.getClassByName(baseType.dotName()).typeParameters();
+        if (!typeVariables.isEmpty()) {
+            entityUpperBound = new ByteCodeType(typeVariables.get(0).bounds().get(0));
+        } else {
+            entityUpperBound = null;
+        }
+
+        discoverTypeParameters(entityInfo, indexView, typeBundle, baseType);
+        argMapper = type -> {
+            ByteCodeType byteCodeType = typeArguments.get(type);
+            return byteCodeType != null
+                    ? byteCodeType.descriptor()
+                    : OBJECT.descriptor();
+        };
     }
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+        if (fields == null || fields.isEmpty()) {
+            return super.visitField(access, name, descriptor, signature, value);
+        }
         EntityField ef = fields.get(name);
         if (ef == null) {
             return super.visitField(access, name, descriptor, signature, value);
@@ -145,58 +185,122 @@ public abstract class PanacheEntityClassVisitor<EntityFieldType extends EntityFi
         super.visitEnd();
     }
 
-    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased) {
-        String descriptor = AsmUtil.getDescriptor(method, name -> null);
-        String signature = AsmUtil.getSignature(method, name -> null);
-        List<org.jboss.jandex.Type> parameters = method.parameters();
-        String castTo = null;
-        if (targetReturnTypeErased != null && targetReturnTypeErased.asBoolean()) {
-            castTo = method.returnType().name().toString('/');
+    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types, ByteCodeType baseType) {
+        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView,
+                classInfo.name(), baseType.dotName());
+
+        ByteCodeType entityType = (foundTypeArguments.size() > 0) ? foundTypeArguments.get(0) : OBJECT;
+        ByteCodeType idType = (foundTypeArguments.size() > 1) ? foundTypeArguments.get(1) : OBJECT;
+
+        typeArguments.put("Entity", entityType);
+        typeArguments.put("Id", idType);
+        typeArguments.keySet().stream()
+                .filter(k -> !k.equals("Id"))
+                .forEach(k -> erasures.put(k, OBJECT.descriptor()));
+        try {
+            ByteCodeType entity = typeArguments.get("Entity");
+            if (entity != null) {
+                erasures.put(entity.dotName().toString(), entity.descriptor());
+            }
+            erasures.put(types.queryType().dotName().toString(), OBJECT.descriptor());
+            erasures.put(types.updateType().dotName().toString(), OBJECT.descriptor());
+        } catch (UnsupportedOperationException ignored) {
         }
+    }
+
+    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased) {
+        List<org.jboss.jandex.Type> parameters = method.parameters();
 
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
                 method.name(),
-                descriptor,
-                signature,
+                AsmUtil.getDescriptor(method, name -> null),
+                AsmUtil.getSignature(method, name1 -> null),
                 null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
             customizer.customize(thisClass, method, mv);
         }
-        // inject model
-        injectModel(mv);
-        for (int i = 0; i < parameters.size(); i++) {
-            mv.visitIntInsn(Opcodes.ALOAD, i);
-        }
-        // inject Class
-        String forwardingDescriptor = "(" + getModelDescriptor() + descriptor.substring(1);
-        if (castTo != null) {
-            // return type is erased to Object
-            int lastParen = forwardingDescriptor.lastIndexOf(')');
-            forwardingDescriptor = forwardingDescriptor.substring(0, lastParen + 1) + "Ljava/lang/Object;";
-        }
-        invokeOperation(method, mv, forwardingDescriptor);
-        if (castTo != null)
-            mv.visitTypeInsn(Opcodes.CHECKCAST, castTo);
-        String returnTypeDescriptor = descriptor.substring(descriptor.lastIndexOf(")") + 1);
-        mv.visitInsn(AsmUtil.getReturnInstruction(returnTypeDescriptor));
+        loadOperations(mv);
+        loadArguments(mv, parameters);
+        invokeOperations(mv, method);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
     }
 
-    protected void invokeOperation(MethodInfo method, MethodVisitor mv, String forwardingDescriptor) {
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                getPanacheOperationsInternalName(),
-                method.name(),
-                forwardingDescriptor, false);
+    private void loadOperations(MethodVisitor mv) {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, typeBundle.operations().internalName(), "INSTANCE",
+                typeBundle.operations().descriptor());
     }
 
-    protected String getModelDescriptor() {
-        return "Ljava/lang/Class;";
+    private void loadArguments(MethodVisitor mv, List<org.jboss.jandex.Type> parameters) {
+        // inject Class
+        injectModel(mv);
+        for (int i = 0; i < parameters.size(); i++) {
+            mv.visitIntInsn(Opcodes.ALOAD, i);
+        }
     }
 
-    protected abstract String getPanacheOperationsInternalName();
+    private void invokeOperations(MethodVisitor mv, MethodInfo method) {
+        String operationDescriptor;
+
+        StringJoiner joiner = new StringJoiner("", "(", ")");
+        joiner.add(CLASS.descriptor());
+        descriptors(method, joiner);
+
+        org.jboss.jandex.Type returnType = method.returnType();
+        String descriptor = getDescriptor(returnType, argMapper);
+        String key = returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
+                ? returnType.asTypeVariable().identifier()
+                : returnType.name().toString();
+        operationDescriptor = joiner + erasures.getOrDefault(key, descriptor);
+
+        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
+                operationDescriptor, false);
+        if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
+            String cast;
+            if (returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+                TypeVariable typeVariable = returnType.asTypeVariable();
+                ByteCodeType type = typeArguments.get(typeVariable.identifier());
+                if (type == null && typeVariable.bounds().size() != 1) {
+                    type = OBJECT;
+                } else {
+                    type = new ByteCodeType(typeVariable.bounds().get(0));
+                }
+                cast = type.internalName();
+            } else {
+                cast = returnType.name().toString().replace('.', '/');
+            }
+            mv.visitTypeInsn(CHECKCAST, cast);
+        }
+        mv.visitInsn(AsmUtil.getReturnInstruction(returnType));
+    }
+
+    private void descriptors(MethodInfo method, StringJoiner joiner) {
+        for (org.jboss.jandex.Type parameter : method.parameters()) {
+            if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
+                    || method.name().endsWith("ById")
+                            && parameter.name().equals(typeArguments.get("Id").dotName())) {
+                joiner.add(OBJECT.descriptor());
+            } else {
+                joiner.add(mapType(parameter));
+            }
+        }
+    }
+
+    private String mapType(org.jboss.jandex.Type parameter) {
+        String descriptor;
+        switch (parameter.kind()) {
+            case PRIMITIVE:
+            case TYPE_VARIABLE:
+                descriptor = OBJECT.descriptor();
+                break;
+            default:
+                String value = getDescriptor(parameter, argMapper);
+                descriptor = erasures.getOrDefault(value, value);
+        }
+        return descriptor;
+    }
 
     protected void injectModel(MethodVisitor mv) {
         mv.visitLdcInsn(thisClass);

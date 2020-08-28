@@ -1,7 +1,8 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations
+import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.KotlinJpaOperations.INSTANCE
 import javax.json.bind.annotation.JsonbTransient
 import javax.persistence.EntityManager
 
@@ -14,7 +15,6 @@ import javax.persistence.EntityManager
  * @see PanacheEntity
  */
 interface PanacheEntityBase {
-
     // Operations
 
     /**
@@ -24,7 +24,7 @@ interface PanacheEntityBase {
      */
     @JsonbTransient
     @JsonIgnore
-    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager(this.javaClass)
+    fun getEntityManager(): EntityManager = AbstractJpaOperations.getEntityManager(this.javaClass)
 
     /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to
@@ -35,7 +35,7 @@ interface PanacheEntityBase {
      */
     @JsonbTransient
     @JsonIgnore
-    fun isPersistent(): Boolean = JpaOperations.isPersistent(this)
+    fun isPersistent(): Boolean = INSTANCE.isPersistent(this)
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
@@ -45,7 +45,7 @@ interface PanacheEntityBase {
      * @see PanacheEntityBase.persistAndFlush
      */
     fun persist() {
-        JpaOperations.persist(this)
+        INSTANCE.persist(this)
     }
 
     /**
@@ -57,8 +57,8 @@ interface PanacheEntityBase {
      * @see [PanacheEntityBase.persist]
      */
     fun persistAndFlush() {
-        JpaOperations.persist(this)
-        JpaOperations.flush(this)
+        INSTANCE.persist(this)
+        INSTANCE.flush(this)
     }
 
     /**
@@ -68,13 +68,13 @@ interface PanacheEntityBase {
      * @see [PanacheCompanion.deleteAll]
      */
     fun delete() {
-        JpaOperations.delete(this)
+        INSTANCE.delete(this)
     }
 
     /**
      * Flushes all pending changes to the database.
      */
     fun flush() {
-        JpaOperations.flush()
+        getEntityManager().flush()
     }
 }

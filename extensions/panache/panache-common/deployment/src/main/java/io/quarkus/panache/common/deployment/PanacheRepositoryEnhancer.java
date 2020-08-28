@@ -4,17 +4,14 @@ import java.lang.reflect.Modifier;
 import java.util.function.BiFunction;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
 public abstract class PanacheRepositoryEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    protected final ClassInfo panacheRepositoryBaseClassInfo;
     protected final IndexView indexView;
 
-    public PanacheRepositoryEnhancer(IndexView index, DotName panacheRepositoryBaseName) {
-        panacheRepositoryBaseClassInfo = index.getClassByName(panacheRepositoryBaseName);
+    public PanacheRepositoryEnhancer(IndexView index) {
         this.indexView = index;
     }
 

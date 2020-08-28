@@ -1,5 +1,7 @@
 package io.quarkus.it.panache.reactive;
 
+import static io.quarkus.hibernate.reactive.panache.runtime.JpaOperations.INSTANCE;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.smallrye.mutiny.Uni;
 
 @XmlRootElement
@@ -62,7 +63,7 @@ public class Person extends PanacheEntity {
 
     // For https://github.com/quarkusio/quarkus/issues/9635
     public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Object... params) {
-        return (PanacheQuery<T>) JpaOperations.find(Person.class, query, params);
+        return (PanacheQuery<T>) INSTANCE.find(Person.class, query, params);
     }
 
     // For JAXB: both getter and setter are required

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 
-import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.PANACHE_ENTITY_BASE;
+import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinJpaTypeBundle.BUNDLE;
 import static io.quarkus.hibernate.orm.panache.kotlin.deployment.KotlinPanacheResourceProcessor.TRANSIENT;
 
 import java.lang.reflect.Modifier;
@@ -13,17 +13,14 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassVisitor;
 
 public class KotlinPanacheEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
-
-    private final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
-    public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
 
     public KotlinPanacheEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
         super(index, methodCustomizers);
@@ -32,9 +29,9 @@ public class KotlinPanacheEntityEnhancer extends PanacheEntityEnhancer<Metamodel
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new KotlinPanacheEntityClassVisitor(className, outputClassVisitor, modelInfo,
-                indexView.getClassByName(PANACHE_ENTITY_BASE),
-                indexView.getClassByName(DotName.createSimple(className)), methodCustomizers);
+        return new KotlinPanacheClassVisitor(outputClassVisitor,
+                indexView.getClassByName(DotName.createSimple(className)), indexView, BUNDLE,
+                BUNDLE.entityBase(), methodCustomizers);
     }
 
     public void collectFields(ClassInfo classInfo) {

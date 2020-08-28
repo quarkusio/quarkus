@@ -54,6 +54,7 @@ import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.TypeBundle;
 
 public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName BSON_ID = createSimple(BsonId.class.getName());
@@ -61,12 +62,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final DotName BSON_PROPERTY = createSimple(BsonProperty.class.getName());
     public static final DotName MONGO_ENTITY = createSimple(MongoEntity.class.getName());
     public static final DotName OBJECT_ID = createSimple(ObjectId.class.getName());
-    public static final String OBJECT_SIGNATURE = toBinarySignature(Object.class);
     public static final DotName PROJECTION_FOR = createSimple(ProjectionFor.class.getName());
-
-    protected static String toBinarySignature(Class<?> type) {
-        return org.objectweb.asm.Type.getType(type).getDescriptor();
-    }
 
     @BuildStep
     public void buildImperative(CombinedIndexBuildItem index, ApplicationIndexBuildItem applicationIndex,
@@ -79,7 +75,7 @@ public abstract class BasePanacheMongoResourceProcessor {
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         processTypes(index, transformers, reflectiveClass, propertyMappingClass, getImperativeTypeBundle(),
-                createRepositoryEnhancer(index), createEntityEnhancer(index, methodCustomizers));
+                createRepositoryEnhancer(index, methodCustomizers), createEntityEnhancer(index, methodCustomizers));
     }
 
     @BuildStep
@@ -92,7 +88,8 @@ public abstract class BasePanacheMongoResourceProcessor {
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         processTypes(index, transformers, reflectiveClass, propertyMappingClass, getReactiveTypeBundle(),
-                createReactiveRepositoryEnhancer(index), createReactiveEntityEnhancer(index, methodCustomizers));
+                createReactiveRepositoryEnhancer(index, methodCustomizers),
+                createReactiveEntityEnhancer(index, methodCustomizers));
     }
 
     @BuildStep
@@ -144,9 +141,11 @@ public abstract class BasePanacheMongoResourceProcessor {
     protected abstract PanacheEntityEnhancer<?> createReactiveEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers);
 
-    protected abstract PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index);
+    protected abstract PanacheRepositoryEnhancer createReactiveRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers);
 
-    protected abstract PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index);
+    protected abstract PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
+            List<PanacheMethodCustomizer> methodCustomizers);
 
     private void extractMappings(Map<String, String> classPropertyMapping, ClassInfo target, CombinedIndexBuildItem index) {
         for (FieldInfo fieldInfo : target.fields()) {
@@ -275,7 +274,8 @@ public abstract class BasePanacheMongoResourceProcessor {
 
         Set<String> daoClasses = new HashSet<>();
         Set<Type> daoTypeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.repositoryBase().dotName())) {
+        DotName dotName = typeBundle.repositoryBase().dotName();
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(dotName)) {
             // Skip PanacheMongoRepository and abstract repositories
             if (classInfo.name().equals(typeBundle.repository().dotName()) || repositoryEnhancer.skipRepository(classInfo)) {
                 continue;

@@ -41,7 +41,7 @@ public class BasicOpenshiftTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic-openshift");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
@@ -54,7 +54,7 @@ public class BasicOpenshiftTest {
             });
         });
 
-        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
                     assertThat(m.getNamespace()).isNull();

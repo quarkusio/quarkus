@@ -76,7 +76,7 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-            assertThat(c.getClusterDescription().getClusterSettings().getHosts()).hasOnlyOneElementSatisfying(sa -> {
+            assertThat(c.getClusterDescription().getClusterSettings().getHosts()).singleElement().satisfies(sa -> {
                 assertThat(sa.getPort()).isEqualTo(expectedPort);
             });
         });

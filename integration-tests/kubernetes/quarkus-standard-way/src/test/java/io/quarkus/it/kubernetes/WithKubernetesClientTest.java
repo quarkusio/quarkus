@@ -62,11 +62,11 @@ public class WithKubernetesClientTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client");
         });
 
-        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client:view");
         });
     }

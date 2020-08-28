@@ -59,7 +59,7 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
 
     private void assertProperConnection(MongoClient client, int expectedPort) {
         assertThat(client).isInstanceOfSatisfying(MongoClientImpl.class, c -> {
-            assertThat(c.getCluster().getSettings().getHosts()).hasOnlyOneElementSatisfying(sa -> {
+            assertThat(c.getCluster().getSettings().getHosts()).singleElement().satisfies(sa -> {
                 assertThat(sa.getPort()).isEqualTo(expectedPort);
             });
         });

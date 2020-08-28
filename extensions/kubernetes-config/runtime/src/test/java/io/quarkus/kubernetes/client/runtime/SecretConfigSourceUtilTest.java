@@ -32,7 +32,7 @@ class SecretConfigSourceUtilTest {
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
-        assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).singleElement().satisfies(c -> {
             assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"),
                     entry("some.other", "someOtherValue"));
             assertThat(c.getName()).contains("testOnlyLiteralData");
@@ -46,7 +46,7 @@ class SecretConfigSourceUtilTest {
 
         List<ConfigSource> configSources = sut.toConfigSources(secret.getMetadata().getName(), secret.getData());
 
-        assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).singleElement().satisfies(c -> {
             assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
                     entry("some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingPropertiesData");
@@ -70,7 +70,7 @@ class SecretConfigSourceUtilTest {
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
-        assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).singleElement().satisfies(c -> {
             assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
                     entry("some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingYamlData");
@@ -103,20 +103,20 @@ class SecretConfigSourceUtilTest {
 
         assertThat(configSources).hasSize(4);
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("literal"))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.properties"))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("app.key", "val"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yaml"))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key2", "value2"),
                             entry("some.otherKey", "someOtherValue"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yml"))
-                .hasOnlyOneElementSatisfying(c -> {
+                .singleElement().satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key3", "value3"));
                 });
     }

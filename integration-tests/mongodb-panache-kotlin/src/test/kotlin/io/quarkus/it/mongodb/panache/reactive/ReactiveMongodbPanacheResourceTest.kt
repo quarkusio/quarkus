@@ -200,7 +200,7 @@ internal open class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment()
             }
             source.open()
-            await().atMost(Duration.ofSeconds(1)).until({ nbEvent.count() == 3 })
+            await().atMost(Duration.ofSeconds(10)).until({ nbEvent.count() == 3 })
         }
 
         //delete all

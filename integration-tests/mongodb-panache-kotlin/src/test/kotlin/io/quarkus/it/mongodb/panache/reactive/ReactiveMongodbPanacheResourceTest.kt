@@ -20,6 +20,7 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.time.Duration
@@ -34,6 +35,7 @@ import javax.ws.rs.sse.SseEventSource
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource::class)
+@Disabled("See https://github.com/quarkusio/quarkus/issues/11711")
 internal open class ReactiveMongodbPanacheResourceTest {
     companion object {
         private val LIST_OF_BOOK_TYPE_REF: TypeRef<List<BookDTO>> = object : TypeRef<List<BookDTO>>() {}

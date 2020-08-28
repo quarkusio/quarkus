@@ -97,6 +97,8 @@ public class QuarkusProdModeTest
 
     private String logFileName;
     private Map<String, String> runtimeProperties;
+    // by default, we use these lower heap settings
+    private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
     private Map<String, String> testResourceProperties = new HashMap<>();
 
     private Process process;
@@ -178,6 +180,14 @@ public class QuarkusProdModeTest
      */
     public QuarkusProdModeTest setLogFileName(String logFileName) {
         this.logFileName = logFileName;
+        return this;
+    }
+
+    /**
+     * The complete set of JVM args to be used if the built artifact is configured to be run
+     */
+    public QuarkusProdModeTest setJVMArgs(final List<String> jvmArgs) {
+        this.jvmArgs = jvmArgs;
         return this;
     }
 
@@ -458,16 +468,21 @@ public class QuarkusProdModeTest
         List<String> command = new ArrayList<>(systemProperties.size() + 3);
         if (builtResultArtifact.getFileName().toString().endsWith(".jar")) {
             command.add(JavaBinFinder.findBin());
+            if (this.jvmArgs != null) {
+                command.addAll(this.jvmArgs);
+            }
             command.addAll(systemProperties);
             command.add("-jar");
             command.add(builtResultArtifact.toAbsolutePath().toString());
         } else {
             command.add(builtResultArtifact.toAbsolutePath().toString());
+            if (this.jvmArgs != null) {
+                command.addAll(this.jvmArgs);
+            }
             command.addAll(systemProperties);
         }
 
         command.addAll(Arrays.asList(commandLineParameters));
-
         process = new ProcessBuilder(command)
                 .redirectErrorStream(true)
                 .directory(builtResultArtifactParentDir.toFile())

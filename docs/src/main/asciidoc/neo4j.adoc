@@ -403,6 +403,11 @@ So when you access the `/health/ready` endpoint of your application you will hav
 
 This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` property to `false` in your `application.properties`.
 
+=== Driver metrics
+
+If you are using a metrics extension and specify the config property `quarkus.neo4j.pool.metrics-enabled=true`, the Neo4j extension will
+expose several metrics related to the Neo4j connection pool.
+
 === Explore Cypher and the Graph
 
 There are tons of options to model your domain within a Graph.

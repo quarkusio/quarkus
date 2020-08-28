@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -134,23 +135,35 @@ final class Methods {
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses) {
+        return addInterceptedMethodCandidates(beanDeployment, classInfo, candidates, classLevelBindings,
+                bytecodeTransformerConsumer, transformUnproxyableClasses, Methods::skipForSubclass, false);
+    }
+
+    static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
+            Map<MethodKey, Set<AnnotationInstance>> candidates,
+            List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
+            boolean transformUnproxyableClasses, Predicate<MethodInfo> skipPredicate, boolean ignoreMethodLevelBindings) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
         for (MethodInfo method : classInfo.methods()) {
-            if (skipForSubclass(method)) {
+            if (skipPredicate.test(method)) {
                 continue;
             }
-            Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
-            List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
-                    .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
-                    .collect(Collectors.toList());
             Set<AnnotationInstance> merged = new HashSet<>();
-            merged.addAll(methodLevelBindings);
-            for (AnnotationInstance classLevelBinding : classLevelBindings) {
-                if (methodLevelBindings.isEmpty()
-                        || methodLevelBindings.stream().noneMatch(a -> classLevelBinding.name().equals(a.name()))) {
-                    merged.add(classLevelBinding);
+            if (ignoreMethodLevelBindings) {
+                merged.addAll(classLevelBindings);
+            } else {
+                Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
+                List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
+                        .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
+                        .collect(Collectors.toList());
+                merged.addAll(methodLevelBindings);
+                for (AnnotationInstance classLevelBinding : classLevelBindings) {
+                    if (methodLevelBindings.isEmpty()
+                            || methodLevelBindings.stream().noneMatch(a -> classLevelBinding.name().equals(a.name()))) {
+                        merged.add(classLevelBinding);
+                    }
                 }
             }
             if (!merged.isEmpty()) {
@@ -173,6 +186,7 @@ final class Methods {
                     new BytecodeTransformer(classInfo.name().toString(),
                             new RemoveFinalFromMethod(classInfo.name().toString(), methodsFromWhichToRemoveFinal)));
         }
+
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
             if (superClassInfo != null) {
@@ -180,15 +194,30 @@ final class Methods {
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
             }
         }
+
+        // Interface default methods can be intercepted too
         for (DotName i : classInfo.interfaceNames()) {
             ClassInfo interfaceInfo = getClassByName(beanDeployment.getIndex(), i);
             if (interfaceInfo != null) {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, candidates,
-                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses);
+                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses,
+                        Methods::skipForDefaultMethods, true);
             }
         }
         return finalMethodsFoundAndNotChanged;
+    }
+
+    private static boolean skipForDefaultMethods(MethodInfo method) {
+        if (skipForSubclass(method)) {
+            return true;
+        }
+        if (Modifier.isInterface(method.declaringClass().flags()) && Modifier.isPublic(method.flags())
+                && !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags())) {
+            // Do not skip default methods - public non-abstract instance methods declared in an interface
+            return false;
+        }
+        return true;
     }
 
     static class NameAndDescriptor {

@@ -103,7 +103,7 @@ jobs:
     needs: build-jdk11
     timeout-minutes: 240
     env:
-      MAVEN_OPTS: -Xmx2048m
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=500m
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +173,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 180
     env:
-      MAVEN_OPTS: -Xmx1408m
+      MAVEN_OPTS: -Xmx1408m  -XX:MaxMetaspaceSize=500m
 
     steps:
       - uses: actions/checkout@v2

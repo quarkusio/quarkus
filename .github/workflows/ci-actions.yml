@@ -31,7 +31,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-keycloak -Dtest-amazon-services -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-redis -Dnative-image.xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dtest-redis -Dformat.skip -DskipDocs"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Delasticsearch.hosts='localhost:9200' -Dtest-db2 -Dtest-mysql -Dtest-mariadb -Dmariadb.base_url='jdbc:mariadb://localhost:3308' -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dtest-redis -Dformat.skip -DskipDocs -Ddocker"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -84,7 +84,7 @@ jobs:
           restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: |
-          mvn -e -B -DskipTests -DskipITs -Dno-format -Ddocumentation-pdf clean install
+          mvn -e -B -DskipTests -DskipITs -Dno-format -DskipDocs clean install
       - name: Tar Maven Repo
         shell: bash
         run: tar -czf maven-repo.tgz -C ~ .m2/repository
@@ -123,84 +123,12 @@ jobs:
             maven_args: "-pl !integration-tests/gradle -pl !integration-tests/kubernetes/quarkus-standard-way"
           }
 
-    services:
-      keycloak:
-        image: quay.io/keycloak/keycloak:11.0.1
-        env:
-          KEYCLOAK_USER: admin
-          KEYCLOAK_PASSWORD: admin
-          JAVA_OPTS: "-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled"
-        ports:
-          - 127.0.0.1:8180:8080
-          - 127.0.0.1:8543:8443
-      postgres:
-        image: postgres:10.5
-        env:
-          POSTGRES_USER: hibernate_orm_test
-          POSTGRES_PASSWORD: hibernate_orm_test
-          POSTGRES_DB: hibernate_orm_test
-        ports:
-          - 127.0.0.1:5432:5432
-      mariadb:
-        image: mariadb:10.4
-        env:
-          MYSQL_USER: hibernate_orm_test
-          MYSQL_PASSWORD: hibernate_orm_test
-          MYSQL_DATABASE: hibernate_orm_test
-          MYSQL_ROOT_PASSWORD: secret
-        ports:
-          - 127.0.0.1:3308:3306
-      mssql:
-        image: microsoft/mssql-server-linux:2017-CU13
-        env:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: ActuallyRequired11Complexity
-        ports:
-          - 127.0.0.1:1433:1433
-      neo4j:
-        image: neo4j/neo4j-experimental:4.0.0-rc01
-        env:
-          NEO4J_AUTH: neo4j/secret
-          NEO4J_dbms_memory_pagecache_size: 10M
-          NEO4J_dbms_memory_heap_initial__size: 10M
-        ports:
-          - 127.0.0.1:7687:7687
-      amazonServices:
-        image: localstack/localstack:0.11.1
-        env:
-          SERVICES: s3,dynamodb,sns,sqs,kms,ses
-          START_WEB: 0
-        ports:
-          - 127.0.0.1:8000:4569
-          - 127.0.0.1:8008:4572
-          - 127.0.0.1:8009:4575
-          - 127.0.0.1:8010:4576
-          - 127.0.0.1:8011:4599
-          - 127.0.0.1:8012:4566
-      redis:
-        image: redis:5.0.8-alpine
-        ports:
-          - 127.0.0.1:6379:6379
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.8.0
-        env:
-          discovery.type: single-node
-        ports:
-          - 127.0.0.1:9200:9200
     steps:
-      - name: Start mysql
+      - name: Stop mysql
         shell: bash
         run: |
           netstat -ln
           sudo service mysql stop || true
-          docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:8.0.21 --skip-ssl
-      - name: Start DB2
-        # Cannot run as a service becuase the service schema does not support --privileged mode
-        shell: bash
-        run: |
-          docker run --rm --publish 50000:50000 --name build-db2 --privileged=true \
-            -e DB2INSTANCE=hreact -e DB2INST1_PASSWORD=hreact -e DBNAME=hreact -e LICENSE=accept -e AUTOCONFIG=false -e ARCHIVE_LOGS=false \
-            -d ibmcom/db2:11.5.0.0a
 
       - uses: actions/checkout@v2
 
@@ -239,41 +167,8 @@ jobs:
           name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
 
-  linux-jvm-gradle-tests:
-    name: Gradle Tests JDK ${{matrix.java.name}}
-    runs-on: ubuntu-latest
-    needs: build-jdk11
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        java:
-         - {
-            name: Java 11,
-            java-version: 11
-          }
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build with Gradle
-        uses: eskatos/gradle-command-action@v1
-        env:
-          GRADLE_OPTS: -Xmx1408m
-        with:
-          gradle-version: wrapper
-          wrapper-directory: integration-tests/gradle
-          build-root-directory: integration-tests/gradle
-          arguments: clean test -i -S --stacktrace --no-daemon
-
   windows-jdk11-jvm-tests:
-    name: Windows JDK 11 JVM Tests
+    name: JDK 11 Windows JVM Tests
     needs: build-jdk11
     runs-on: windows-latest
     timeout-minutes: 180
@@ -311,8 +206,41 @@ jobs:
           name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
 
+  linux-jvm-gradle-tests:
+    name: Gradle Tests JDK ${{matrix.java.name}}
+    runs-on: ubuntu-latest
+    needs: build-jdk11
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+         - {
+            name: Java 11,
+            java-version: 11
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Build with Gradle
+        uses: eskatos/gradle-command-action@v1
+        env:
+          GRADLE_OPTS: -Xmx1408m
+        with:
+          gradle-version: wrapper
+          wrapper-directory: integration-tests/gradle
+          build-root-directory: integration-tests/gradle
+          arguments: clean test -i -S --stacktrace --no-daemon
+
   windows-jdk11-jvm-gradle-tests:
-    name: Gradle Tests Windows JDK 11
+    name: Gradle Tests JDK 11 Windows
     needs: build-jdk11
     runs-on: windows-latest
     timeout-minutes: 80

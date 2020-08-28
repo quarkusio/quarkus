@@ -46,19 +46,19 @@ public class KubernetesWithEnvFromConfigMapTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
 
                             assertThat(container.getEnvFrom()).filteredOn(env -> env.getConfigMapRef() != null
                                     && env.getConfigMapRef().getName() != null
                                     && env.getConfigMapRef().getName().equals("my-configmap"))
-                                    .hasOnlyOneElementSatisfying(env -> {
+                                    .singleElement().satisfies(env -> {
                                         assertThat(env.getConfigMapRef()).satisfies(configmapRef -> {
                                             assertThat(configmapRef.getOptional()).isNull();
                                         });
                                     });
 
                             assertThat(container.getEnv()).filteredOn(env -> "DB_DATABASE".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(env -> {
+                                    .singleElement().satisfies(env -> {
                                         assertThat(env.getValueFrom()).satisfies(valueFrom -> {
                                             assertThat(valueFrom.getConfigMapKeyRef()).satisfies(configMapKeyRef -> {
                                                 assertThat(configMapKeyRef.getKey()).isEqualTo("database.name");

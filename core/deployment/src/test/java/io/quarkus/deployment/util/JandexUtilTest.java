@@ -321,7 +321,7 @@ public class JandexUtilTest {
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, String expectedArg) {
         List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
                 index);
-        assertThat(args).hasOnlyOneElementSatisfying(t -> {
+        assertThat(args).singleElement().satisfies(t -> {
             assertThat(t.toString()).isEqualTo(expectedArg);
         });
     }

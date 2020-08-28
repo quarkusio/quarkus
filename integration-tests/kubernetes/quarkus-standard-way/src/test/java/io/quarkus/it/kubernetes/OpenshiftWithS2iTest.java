@@ -61,7 +61,7 @@ public class OpenshiftWithS2iTest {
 
         assertThat(openshiftList).filteredOn(h -> "BuildConfig".equals(h.getKind())).hasSize(1);
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-s2i");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
@@ -70,7 +70,7 @@ public class OpenshiftWithS2iTest {
             AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
             specAssert.extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             List<EnvVar> envVars = container.getEnv();
                             assertThat(envVars).anySatisfy(envVar -> {
                                 assertThat(envVar.getName()).isEqualTo("JAVA_APP_JAR");
@@ -98,10 +98,10 @@ public class OpenshiftWithS2iTest {
             });
         });
 
-        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
-                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getPort()).isEqualTo(8080);
                     });
                 });

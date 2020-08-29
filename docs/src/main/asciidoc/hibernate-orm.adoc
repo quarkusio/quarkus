@@ -113,7 +113,9 @@ public class Gift {
     private Long id;
     private String name;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
+    @Id
+    @SequenceGenerator(name = "giftSeq", sequenceName = "gift_id_seq", allocationSize = 1, initialValue = 1)
+    @GeneratedValue(generator = "giftSeq")
     public Long getId() {
         return id;
     }

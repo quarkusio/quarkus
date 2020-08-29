@@ -725,7 +725,8 @@ public class ResteasyServerCommonProcessor {
                 } else {
                     //might be a framework class, which should be loadable
                     try {
-                        Class<?> typeClass = Class.forName(annotatedType.name().toString());
+                        Class<?> typeClass = Class.forName(annotatedType.name().toString(), false,
+                                Thread.currentThread().getContextClassLoader());
                         if (typeClass.isInterface()) {
                             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
                         }

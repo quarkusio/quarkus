@@ -145,7 +145,8 @@ public class KafkaProcessor {
 
         // Avro - for both Confluent and Apicurio
         try {
-            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer");
+            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
+                    Thread.currentThread().getContextClassLoader());
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
                             "io.confluent.kafka.serializers.KafkaAvroDeserializer",
@@ -181,7 +182,8 @@ public class KafkaProcessor {
         }
 
         try {
-            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer");
+            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer", false,
+                    Thread.currentThread().getContextClassLoader());
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, true, false,
                             "io.apicurio.registry.utils.serde.AvroKafkaDeserializer",

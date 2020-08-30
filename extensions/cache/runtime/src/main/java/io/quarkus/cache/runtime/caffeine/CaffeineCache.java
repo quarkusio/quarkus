@@ -10,12 +10,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import io.quarkus.cache.runtime.CacheException;
+import io.quarkus.cache.runtime.NullValueConverter;
 
 public class CaffeineCache {
 
@@ -58,14 +60,13 @@ public class CaffeineCache {
 
     public Object get(Object key, Callable<Object> valueLoader, long lockTimeout) throws Exception {
         if (lockTimeout <= 0) {
+            CompletableFuture<Object> cacheValue = cache.get(key, (k, executor) -> {
+                return preventCaffeineWarning(CompletableFuture.supplyAsync(new MappingSupplier(valueLoader), executor));
+            });
             try {
-                return fromCacheValue(cache.synchronous().get(key, k -> new MappingSupplier(valueLoader).get()));
-            } catch (CacheException e) {
-                if (e.getCause() instanceof Exception) {
-                    throw (Exception) e.getCause();
-                } else {
-                    throw e;
-                }
+                return rethrowCacheComputationException(key, cacheValue).get();
+            } catch (ExecutionException e) {
+                throw getExceptionToThrow(e);
             }
         }
 
@@ -78,16 +79,16 @@ public class CaffeineCache {
          */
         boolean[] isCurrentThreadComputation = { false };
 
-        CompletableFuture<Object> future = cache.get(key, (k, executor) -> {
+        CompletableFuture<Object> cacheValue = cache.get(key, (k, executor) -> {
             isCurrentThreadComputation[0] = true;
-            return CompletableFuture.supplyAsync(new MappingSupplier(valueLoader), executor);
+            return preventCaffeineWarning(CompletableFuture.supplyAsync(new MappingSupplier(valueLoader), executor));
         });
 
         if (isCurrentThreadComputation[0]) {
             // The value is missing and its computation was started from the current thread.
             // We'll wait for the result no matter how long it takes.
             try {
-                return fromCacheValue(future.get());
+                return rethrowCacheComputationException(key, cacheValue).get();
             } catch (ExecutionException e) {
                 throw getExceptionToThrow(e);
             }
@@ -95,7 +96,7 @@ public class CaffeineCache {
             // The value is either already present in the cache or missing and its computation was started from another thread.
             // We want to retrieve it from the cache within the lock timeout delay.
             try {
-                return fromCacheValue(future.get(lockTimeout, TimeUnit.MILLISECONDS));
+                return rethrowCacheComputationException(key, cacheValue).get(lockTimeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException e) {
                 throw getExceptionToThrow(e);
             } catch (TimeoutException e) {
@@ -137,6 +138,41 @@ public class CaffeineCache {
     // For testing purposes only.
     public Duration getExpireAfterAccess() {
         return expireAfterAccess;
+    }
+
+    private CompletableFuture<Object> preventCaffeineWarning(CompletableFuture<Object> cacheValue) {
+        return cacheValue.exceptionally(new Function<Throwable, Object>() {
+            @Override
+            public Object apply(Throwable cause) {
+                // This is required to prevent Caffeine from logging unwanted warnings.
+                return new CaffeineComputationThrowable(cause);
+            }
+        });
+    }
+
+    private CompletableFuture<Object> rethrowCacheComputationException(Object key, CompletableFuture<Object> cacheValue) {
+        return cacheValue.thenApply(new Function<Object, Object>() {
+            @Override
+            @SuppressWarnings("finally")
+            public Object apply(Object value) {
+                // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
+                if (value instanceof CaffeineComputationThrowable) {
+                    try {
+                        // The cache entry needs to be removed from Caffeine explicitly (this would usually happen automatically).
+                        cache.asMap().remove(key, cacheValue);
+                    } finally {
+                        Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                        if (cause instanceof RuntimeException) {
+                            throw (RuntimeException) cause;
+                        } else {
+                            throw new CacheException(cause);
+                        }
+                    }
+                } else {
+                    return NullValueConverter.fromCacheValue(value);
+                }
+            }
+        });
     }
 
     private Exception getExceptionToThrow(ExecutionException e) {

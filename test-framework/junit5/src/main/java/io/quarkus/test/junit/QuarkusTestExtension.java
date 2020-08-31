@@ -141,6 +141,9 @@ public class QuarkusTestExtension
             sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
                     System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
 
+            // clear the test.url system property as the value leaks into the run when using different profiles
+            System.clearProperty("test.url");
+
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);

@@ -5,7 +5,7 @@ import io.quarkus.panache.common.Sort
 import javax.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
-class MockablePersonRepository : PanacheMongoRepositoryBase<PersonEntity, Long> {
+open class MockablePersonRepository : PanacheMongoRepositoryBase<PersonEntity, Long> {
     open fun findOrdered(): List<PersonEntity>? {
         val sort = Sort.by("lastname", "firstname")
         val found = findAll(sort)

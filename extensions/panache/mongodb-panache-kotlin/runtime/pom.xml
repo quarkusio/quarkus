@@ -136,6 +136,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <javaParameters>true</javaParameters>
                     <jvmTarget>1.8</jvmTarget>
                 </configuration>
             </plugin>

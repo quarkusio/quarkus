@@ -56,7 +56,6 @@ public class SomeService {
                 new Pet().setName("indy").setKind("dog"),
                 new Pet().setName("plume").setKind("dog"),
                 new Pet().setName("titi").setKind("bird"),
-                new Pet().setName("rex").setKind("mouse"))
-                .emitOn(executor);
+                new Pet().setName("rex").setKind("mouse"));
     }
 }

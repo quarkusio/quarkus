@@ -39,7 +39,7 @@ public class JPAConfig {
         for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
             persistenceUnitsBuilder.put(persistenceUnitName, new LazyPersistenceUnit(persistenceUnitName));
         }
-        this.persistenceUnits = Collections.unmodifiableMap(persistenceUnitsBuilder);
+        this.persistenceUnits = persistenceUnitsBuilder;
     }
 
     void startAll() {

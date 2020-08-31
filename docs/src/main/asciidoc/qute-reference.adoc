@@ -107,7 +107,9 @@ A section may declare nested section blocks: `{#if item.valid} Valid. {#else} In
 
 ==== Unparsed Character Data
 It is used to mark the content that should be rendered but not parsed.
-It starts with `{[` and ends with `]}`: `{[ <script>if(true){alert('Qute is cute!')};</script> ]}`, and could be multi-line.
+It starts with `{|` and ends with `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
+
+NOTE: Previously, unparsed character data had to start with `{[` and end with `]}`. This syntax is still supported but we encourage users to switch to the new syntax to avoid some common collisions with constructs from other languages.
 
 [[identifiers]]
 === Identifiers and Tags

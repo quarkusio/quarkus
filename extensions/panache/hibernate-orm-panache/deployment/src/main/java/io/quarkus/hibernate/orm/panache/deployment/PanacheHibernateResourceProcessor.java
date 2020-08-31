@@ -1,13 +1,14 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -208,26 +209,43 @@ public final class PanacheHibernateResourceProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void persistenceUnits(PanacheHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            List<PanacheEntityClassBuildItem> entityClasses) {
+            List<PanacheEntityClassBuildItem> panacheEntityClasses) {
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
                     .getEntityToPersistenceUnits();
+
+            Map<String, Set<String>> violatingPanacheEntities = new TreeMap<>();
+
             for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
                 String entityName = entry.getKey();
-                List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
-                boolean isPanacheEntity = entityClasses.stream()
+                Set<String> selectedPersistenceUnits = entry.getValue();
+                boolean isPanacheEntity = panacheEntityClasses.stream()
                         .anyMatch(entity -> entity.get().name().toString().equals(entityName));
 
-                if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
-                    throw new IllegalStateException(String.format(
-                            "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",
-                            entityName, String.join(",", selectedPersistenceUnits)));
+                if (!isPanacheEntity) {
+                    continue;
                 }
 
-                panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
+                if (selectedPersistenceUnits.size() == 1) {
+                    panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.iterator().next());
+                } else {
+                    violatingPanacheEntities.put(entityName, selectedPersistenceUnits);
+                }
+            }
+
+            if (violatingPanacheEntities.size() > 0) {
+                StringBuilder message = new StringBuilder(
+                        "Panache entities do not support being attached to several persistence units:\n");
+                for (Entry<String, Set<String>> violatingEntityEntry : violatingPanacheEntities
+                        .entrySet()) {
+                    message.append("\t- ").append(violatingEntityEntry.getKey()).append(" is attached to: ")
+                            .append(String.join(",", violatingEntityEntry.getValue()));
+                    throw new IllegalStateException(message.toString());
+                }
             }
         }
+
         recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
     }
 }

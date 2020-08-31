@@ -3,14 +3,15 @@ package io.quarkus.hibernate.orm.panache.kotlin.deployment;
 import static java.util.Arrays.asList;
 import static org.jboss.jandex.DotName.createSimple;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -146,7 +147,6 @@ public final class KotlinPanacheResourceProcessor {
 
         KotlinPanacheRepositoryEnhancer daoEnhancer = new KotlinPanacheRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
-        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
 
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
@@ -203,23 +203,41 @@ public final class KotlinPanacheResourceProcessor {
             }
         }
 
-        Map<String, Set<String>> collectedEntityToPersistenceUnits = new HashMap<>();
-        if (jpaModelPersistenceUnitMapping.isPresent()) {
-            collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get().getEntityToPersistenceUnits();
-        }
+        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
 
-        for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
-            String entityName = entry.getKey();
-            List<String> selectedPersistenceUnits = new ArrayList<>(entry.getValue());
-            boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
-            if (selectedPersistenceUnits.size() > 1 && isPanacheEntity) {
-                throw new IllegalStateException(String.format(
-                        "PanacheEntity '%s' cannot be defined for usage in several persistence units which is not supported. The following persistence units were found: %s.",
-                        entityName, String.join(",", selectedPersistenceUnits)));
+        if (jpaModelPersistenceUnitMapping.isPresent()) {
+            Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
+                    .getEntityToPersistenceUnits();
+            Map<String, Set<String>> violatingPanacheEntities = new TreeMap<>();
+
+            for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
+                String entityName = entry.getKey();
+                Set<String> selectedPersistenceUnits = entry.getValue();
+                boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
+
+                if (!isPanacheEntity) {
+                    continue;
+                }
+
+                if (selectedPersistenceUnits.size() == 1) {
+                    panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.iterator().next());
+                } else {
+                    violatingPanacheEntities.put(entityName, selectedPersistenceUnits);
+                }
             }
 
-            panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
+            if (violatingPanacheEntities.size() > 0) {
+                StringBuilder message = new StringBuilder(
+                        "Panache entities do not support being attached to several persistence units:\n");
+                for (Entry<String, Set<String>> violatingEntityEntry : violatingPanacheEntities
+                        .entrySet()) {
+                    message.append("\t- ").append(violatingEntityEntry.getKey()).append(" is attached to: ")
+                            .append(String.join(",", violatingEntityEntry.getValue()));
+                    throw new IllegalStateException(message.toString());
+                }
+            }
         }
+
         recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
     }
 }

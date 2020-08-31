@@ -30,6 +30,8 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A collection of ASM and Jandex utilities.
+ * NOTE: this has a copy in AsmUtilCopy in arc-processor with some extra methods for knowing if we need a
+ * signature and getting the signature of a class.
  */
 public class AsmUtil {
 

@@ -1,7 +1,7 @@
----
 name: config-yaml-example
 ref: config-yaml
-type: example
+type: code
+tags: example
 language:
   base:
     dependencies:

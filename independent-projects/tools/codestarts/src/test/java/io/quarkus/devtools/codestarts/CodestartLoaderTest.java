@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartSpec.Type.EXAMPLE;
+import static io.quarkus.devtools.codestarts.CodestartSpec.Type.CODE;
 import static io.quarkus.devtools.codestarts.CodestartSpec.Type.PROJECT;
 import static org.apache.commons.io.IOUtils.resourceToString;
 import static org.assertj.core.api.Assertions.as;
@@ -28,7 +28,7 @@ class CodestartLoaderTest {
         assertThat(codestartSpec.getOutputStrategy()).containsEntry("foo/bar", "strategy").hasSize(1);
         assertThat(codestartSpec.isPreselected()).isTrue();
         assertThat(codestartSpec.isFallback()).isTrue();
-        assertThat(codestartSpec.isExample()).isFalse();
+        assertThat(codestartSpec.getTags()).isEmpty();
         assertThat(codestartSpec.getLanguagesSpec()).containsOnlyKeys("base", "java");
 
         final CodestartSpec.LanguageSpec baseLanguageSpec = codestartSpec.getLanguagesSpec().get("base");
@@ -54,8 +54,8 @@ class CodestartLoaderTest {
                 StandardCharsets.UTF_8, Thread.currentThread().getContextClassLoader()));
 
         assertThat(codestartSpec.getName()).isEqualTo("specdefault");
-        assertThat(codestartSpec.getType()).isEqualTo(EXAMPLE);
-        assertThat(codestartSpec.isExample()).isTrue();
+        assertThat(codestartSpec.getType()).isEqualTo(CODE);
+        assertThat(codestartSpec.getTags()).isEmpty();
         assertThat(codestartSpec.isPreselected()).isFalse();
         assertThat(codestartSpec.isFallback()).isFalse();
         assertThat(codestartSpec.getLanguagesSpec()).isEmpty();

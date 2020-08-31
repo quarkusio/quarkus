@@ -50,7 +50,7 @@ public final class CodestartProject {
     }
 
     public Map<String, Object> getDepsData() {
-        return buildDependenciesData(getCodestarts().stream(), getLanguageName(), getCodestartInput().getExtensions());
+        return buildDependenciesData(getCodestarts().stream(), getLanguageName(), getCodestartInput().getDependencies());
     }
 
     public Map<String, Object> getCodestartProjectData() {

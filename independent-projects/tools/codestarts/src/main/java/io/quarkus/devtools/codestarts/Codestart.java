@@ -48,6 +48,10 @@ public final class Codestart {
         return implementedLanguages.isEmpty() || implementedLanguages.contains(languageName);
     }
 
+    public boolean containsTag(String tag) {
+        return getSpec().getTags().contains(tag);
+    }
+
     public Map<String, Object> getLocalData(String languageName) {
         return NestedMaps.deepMerge(Stream.of(getBaseLanguageSpec().getData(), getLanguageSpec(languageName).getData()));
     }

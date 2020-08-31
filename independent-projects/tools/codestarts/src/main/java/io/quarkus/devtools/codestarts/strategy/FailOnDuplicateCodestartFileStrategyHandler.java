@@ -34,7 +34,7 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
     public void copyStaticFile(Path sourcePath, Path targetPath) throws IOException {
         if (Files.exists(targetPath)) {
             throw new CodestartDefinitionException(
-                    "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + targetPath);
+                    "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + sourcePath + ":" + targetPath);
         }
         Files.createDirectories(targetPath.getParent());
         Files.copy(sourcePath, targetPath);

@@ -34,14 +34,6 @@ public class Codestarts {
         selectedCodestarts.addAll(baseCodestarts);
         selectedCodestarts.addAll(extraCodestarts);
 
-        // include fallback example codestarts if none selected
-        if (input.includeExamples()
-                && extraCodestarts.stream().noneMatch(c -> c.getSpec().isExample() && !c.getSpec().isPreselected())) {
-            final List<Codestart> fallbackExampleCodestarts = resolveFallbackExampleCodestarts(allCodestarts,
-                    languageName);
-            selectedCodestarts.addAll(fallbackExampleCodestarts);
-        }
-
         return new CodestartProject(input, selectedCodestarts);
     }
 
@@ -79,7 +71,6 @@ public class Codestarts {
         return allCodestarts.stream()
                 .filter(c -> !c.getSpec().getType().isBase())
                 .filter(c -> c.getSpec().isPreselected() || c.isSelected(selectedCodestartNames))
-                .filter(c -> !c.getSpec().isExample() || input.includeExamples())
                 .filter(c -> c.implementsLanguage(languageName))
                 .collect(Collectors.toList());
     }
@@ -106,15 +97,6 @@ public class Codestarts {
                     // The selected is picked.
                     return !a.getSpec().isFallback() ? a : b;
                 })).values();
-    }
-
-    private static List<Codestart> resolveFallbackExampleCodestarts(List<Codestart> allCodestarts,
-            String languageName) {
-        return allCodestarts.stream()
-                .filter(c -> !c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isExample() && c.getSpec().isFallback())
-                .filter(c -> c.implementsLanguage(languageName))
-                .collect(Collectors.toList());
     }
 
 }

@@ -92,12 +92,14 @@ class CodestartsTest {
     void checkSpecificProject() throws IOException {
         final TestCodestartResourceLoader resourceLoader = new TestCodestartResourceLoader();
         final CodestartInput input = CodestartInput.builder(resourceLoader)
-                .includeExamples()
                 .addCodestart("b")
                 .addCodestart("example-with-b")
                 .addCodestart("maven")
                 .addCodestart("config-yaml")
                 .putData("project.version", "1.2.3")
+                .putData("prop1", "prop-1-nonamespace")
+                .putData("maven.prop2", "prop-2-namespaced")
+                .putData("example-with-b.my-file-name", "my-dynamic-file-from-input")
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
 
@@ -111,11 +113,13 @@ class CodestartsTest {
 
         final Path targetDirectory = projectPath.resolve("specific-project");
         Codestarts.generateProject(codestartProject, targetDirectory);
-
+        System.out.println(targetDirectory.toAbsolutePath().toString());
         assertThat(targetDirectory.resolve("README.md")).hasContent("Base readme world maven");
         assertThat(targetDirectory.resolve("config.yml")).hasContent("example: \"code\"");
         assertThat(targetDirectory.resolve(".gitignore")).hasContent("base-ignore1\nbase-ignore2\n");
         assertThat(targetDirectory.resolve("b/example-code")).hasContent("example-code");
+        assertThat(targetDirectory.resolve("my-dynamic-dir/so-cool/my-dynamic-file-from-input.test"))
+                .hasContent("hello my-dynamic-file-from-input");
         assertThat(targetDirectory.resolve("pom.xml"))
                 .hasSameTextualContentAs(getResource("expected-pom-maven-merge.xml"));
     }

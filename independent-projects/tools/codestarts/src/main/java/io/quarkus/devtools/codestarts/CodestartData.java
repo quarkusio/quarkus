@@ -23,7 +23,12 @@ public final class CodestartData {
 
     static Map<String, Object> buildCodestartData(final Codestart codestart, final String languageName,
             final Map<String, Object> data) {
-        return NestedMaps.deepMerge(Stream.of(codestart.getLocalData(languageName), data));
+        final Optional<Map<String, Object>> value = NestedMaps.getValue(data, codestart.getName());
+        Map<String, Object> codestartData = new HashMap<>();
+        codestartData.putAll(data);
+        NestedMaps.deepMerge(codestartData, codestart.getLocalData(languageName));
+        value.ifPresent(map -> NestedMaps.deepMerge(codestartData, map));
+        return codestartData;
     }
 
     public static Map<String, Object> buildCodestartProjectData(Collection<Codestart> baseCodestarts,

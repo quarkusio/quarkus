@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class CodestartSpec {
 
@@ -18,7 +19,7 @@ public final class CodestartSpec {
         LANGUAGE(true),
         BUILDTOOL(true),
         CONFIG(true),
-        EXAMPLE(false),
+        CODE(false),
         TOOLING(false);
 
         private final boolean base;
@@ -37,6 +38,7 @@ public final class CodestartSpec {
     private final String ref;
     private final Type type;
     private final boolean isFallback;
+    private final Set<String> tags;
     private final Map<String, String> outputStrategy;
     private final Map<String, LanguageSpec> languagesSpec;
 
@@ -46,11 +48,13 @@ public final class CodestartSpec {
             @JsonProperty(value = "type") Type type,
             @JsonProperty("fallback") boolean isFallback,
             @JsonProperty("preselected") boolean isPreselected,
+            @JsonProperty("tags") Set<String> tags,
             @JsonProperty("output-strategy") Map<String, String> outputStrategy,
             @JsonProperty("language") Map<String, LanguageSpec> languagesSpec) {
         this.name = requireNonNull(name, "name is required");
+        this.tags = tags != null ? tags : Collections.emptySet();
         this.ref = ref != null ? ref : name;
-        this.type = type != null ? type : Type.EXAMPLE;
+        this.type = type != null ? type : Type.CODE;
         this.isFallback = isFallback;
         this.isPreselected = isPreselected;
         this.outputStrategy = outputStrategy != null ? outputStrategy : Collections.emptyMap();
@@ -65,6 +69,10 @@ public final class CodestartSpec {
         return ref;
     }
 
+    public Set<String> getTags() {
+        return tags;
+    }
+
     public Type getType() {
         return type;
     }
@@ -75,10 +83,6 @@ public final class CodestartSpec {
 
     public boolean isPreselected() {
         return isPreselected;
-    }
-
-    public boolean isExample() {
-        return getType() == Type.EXAMPLE;
     }
 
     public Map<String, String> getOutputStrategy() {

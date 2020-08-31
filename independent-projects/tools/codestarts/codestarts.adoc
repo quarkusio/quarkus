@@ -22,7 +22,7 @@ Base:
 Extra:
 
 * tooling: Anything that can be added to improve the project (e.g. dockerfiles)
-* example: Any Quarkus extension can provide example code. The user can decide to activate it or not.
+* code: Any Quarkus extension can provide example code. The user can decide to activate it or not.
 
 Each codestart consists of:
 
@@ -50,7 +50,7 @@ When generating a Quarkus project:
 . buildtool
 . config
 . tooling
-. example
+. code
 
 
 The data used to generate a specific codestart is a merge of:
@@ -77,7 +77,8 @@ codestart.yml:
 ----
 name: the unique name - REQUIRED
 ref: the reference name (not unique) to use for extension matching (else the name is used)
-type: the type [example (default), project, buildtool, language, config] or any custom type
+type: the type [code (default), project, buildtool, language, config] or any custom type
+tags: an array of tags (add `example` for example codestarts)
 fallback: flag to indicate that it should be selected as fallback when no codestart has been selected with type - Only for base types
 preselected: flag to indicate that it should be pre-selected - Only for extra types.
 spec:
@@ -137,7 +138,8 @@ codestart.yml:
 ---
 name: foo-example
 ref: foo
-type: example
+type: code
+tags: example
 spec:
   base:
     data:

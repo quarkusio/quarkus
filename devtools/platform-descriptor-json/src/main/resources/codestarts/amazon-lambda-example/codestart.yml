@@ -1,7 +1,9 @@
----
 name: amazon-lambda-example
 ref: amazon-lambda
-type: example
+type: code
+tags:
+  - example
+  - compatibility-issues
 language:
   base:
     shared-data:

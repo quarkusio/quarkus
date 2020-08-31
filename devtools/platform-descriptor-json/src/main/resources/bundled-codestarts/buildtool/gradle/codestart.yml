@@ -6,12 +6,12 @@ output-strategy:
 language:
   base:
     data:
-      quarkus:
-        gradle-plugin:
-          id: io.quarkus
       kotlin:
         version: 1.3.72
     shared-data:
+      quarkus:
+        gradle-plugin:
+          id: io.quarkus
       buildtool:
         build-dir: build
         guide: https://quarkus.io/guides/gradle-tooling

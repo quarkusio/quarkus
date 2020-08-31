@@ -752,7 +752,8 @@ You should decide and keep one configuration type to avoid errors.
 quarkus:
   datasource:
     db-kind: postgresql
-    jdbc.url: jdbc:postgresql://localhost:5432/some-database
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/some-database
     username: quarkus
     password: quarkus
 
@@ -786,7 +787,8 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
   quarkus:
     datasource:
       db-kind: postgresql
-      jdbc.url: jdbc:postgresql://localhost:5432/some-database
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/some-database
       username: quarkus
       password: quarkus
 ----

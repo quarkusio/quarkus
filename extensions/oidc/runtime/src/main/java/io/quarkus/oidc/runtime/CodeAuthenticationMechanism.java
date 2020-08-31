@@ -360,6 +360,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
             maxAge += configContext.oidcConfig.token.lifespanGrace.getAsInt();
         }
+        if (configContext.oidcConfig.token.refreshExpired) {
+            maxAge += configContext.oidcConfig.authentication.sessionAgeExtension.getSeconds();
+        }
         createCookie(context, configContext, getSessionCookieName(configContext), cookieValue, maxAge);
     }
 

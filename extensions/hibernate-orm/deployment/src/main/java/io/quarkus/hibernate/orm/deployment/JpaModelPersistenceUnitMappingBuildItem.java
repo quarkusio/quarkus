@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,7 +14,7 @@ public final class JpaModelPersistenceUnitMappingBuildItem extends SimpleBuildIt
     private final Map<String, Set<String>> entityToPersistenceUnits;
 
     public JpaModelPersistenceUnitMappingBuildItem(Map<String, Set<String>> entityToPersistenceUnits) {
-        this.entityToPersistenceUnits = entityToPersistenceUnits;
+        this.entityToPersistenceUnits = Collections.unmodifiableMap(entityToPersistenceUnits);
     }
 
     public Map<String, Set<String>> getEntityToPersistenceUnits() {

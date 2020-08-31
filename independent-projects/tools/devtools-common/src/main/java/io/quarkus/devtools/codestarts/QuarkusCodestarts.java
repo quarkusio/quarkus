@@ -56,7 +56,7 @@ public final class QuarkusCodestarts {
             codestarts.add(commandModeCodestart);
         }
 
-        return new CodestartProject(input.getCodestartInput(), codestarts);
+        return CodestartProject.of(input.getCodestartInput(), codestarts);
     }
 
     public static CodestartResourceLoader resourceLoader(QuarkusPlatformDescriptor platformDescr) {

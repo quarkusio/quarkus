@@ -115,7 +115,6 @@ class CodestartsTest {
 
         final Path targetDirectory = projectPath.resolve("specific-project");
         Codestarts.generateProject(codestartProject, targetDirectory);
-        System.out.println(targetDirectory.toAbsolutePath().toString());
         assertThat(targetDirectory.resolve("README.md")).hasContent("Base readme world maven");
         assertThat(targetDirectory.resolve("config.yml")).hasContent("example: \"code\"");
         assertThat(targetDirectory.resolve(".gitignore")).hasContent("base-ignore1\nbase-ignore2\n");

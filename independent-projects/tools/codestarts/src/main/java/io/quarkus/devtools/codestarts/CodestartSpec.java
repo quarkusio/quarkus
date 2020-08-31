@@ -15,21 +15,28 @@ import java.util.Set;
 public final class CodestartSpec {
 
     enum Type {
-        PROJECT(true),
-        LANGUAGE(true),
-        BUILDTOOL(true),
-        CONFIG(true),
-        CODE(false),
-        TOOLING(false);
+        LANGUAGE(true, 1),
+        BUILDTOOL(true, 2),
+        PROJECT(true, 3),
+        CONFIG(true, 4),
+        TOOLING(false, 5),
+        CODE(false, 6),
+        ;
 
         private final boolean base;
+        private final int order;
 
-        Type(boolean base) {
+        Type(boolean base, int order) {
             this.base = base;
+            this.order = order;
         }
 
         public boolean isBase() {
             return base;
+        }
+
+        public int getOrder() {
+            return order;
         }
     }
 

@@ -70,7 +70,7 @@ public class SyntheticBeansProcessor {
         }
         beanRegistration.getContext().configure(implClazz)
                 .read(bean.configurator())
-                .creator(creator(name))
+                .creator(creator(name, bean))
                 .done();
     }
 
@@ -79,7 +79,7 @@ public class SyntheticBeansProcessor {
                 + HashUtil.sha1(qualifiers);
     }
 
-    private Consumer<MethodCreator> creator(String name) {
+    private Consumer<MethodCreator> creator(String name, SyntheticBeanBuildItem bean) {
         return new Consumer<MethodCreator>() {
             @Override
             public void accept(MethodCreator m) {
@@ -90,13 +90,27 @@ public class SyntheticBeansProcessor {
                         m.load(name));
                 // Throw an exception if no supplier is found
                 m.ifNull(supplier).trueBranch().throwException(CreationException.class,
-                        "Synthetic bean instance not initialized yet: " + name);
+                        createMessage(name, bean));
                 ResultHandle result = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                         supplier);
                 m.returnValue(result);
             }
         };
+    }
+
+    private String createMessage(String name, SyntheticBeanBuildItem bean) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Synthetic bean instance for ");
+        builder.append(bean.configurator().getImplClazz());
+        builder.append(" not initialized yet: ");
+        builder.append(name);
+        if (!bean.isStaticInit()) {
+            builder.append("\n\t- a synthetic bean initialized during RUNTIME_INIT must not be accessed during STATIC_INIT");
+            builder.append(
+                    "\n\t- RUNTIME_INIT build steps that require access to synthetic beans initialized during RUNTIME_INIT should consume the SyntheticBeansRuntimeInitBuildItem");
+        }
+        return builder.toString();
     }
 
 }

@@ -61,9 +61,10 @@ class Neo4jDriverProcessor {
             Neo4jDriverRecorder recorder,
             BuildProducer<MetricsFactoryConsumerBuildItem> metrics) {
         Consumer<MetricsFactory> metricsFactoryConsumer = recorder.registerMetrics(configuration);
-        if (metricsFactoryConsumer != null) {
-            metrics.produce(new MetricsFactoryConsumerBuildItem(metricsFactoryConsumer));
-        }
+        // If metrics for neo4j are disabled, the returned consumer will be null,
+        // but in a processor we can't know that (it's controlled by a runtime config property)
+        // so the BuildItem might contain null and in that case will be ignored by the metrics recorder
+        metrics.produce(new MetricsFactoryConsumerBuildItem(metricsFactoryConsumer));
     }
 
 }

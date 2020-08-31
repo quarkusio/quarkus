@@ -112,22 +112,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 throw AuthenticationRedirectException.class.cast(throwable);
                             }
 
-                            Throwable cause = throwable.getCause();
+                            SecurityIdentity identity = null;
 
-                            if (cause != null && !"expired token".equalsIgnoreCase(cause.getMessage())) {
-                                LOG.debugf("Authentication failure: %s", cause);
-                                throw new AuthenticationCompletionException(cause);
-                            }
-                            if (!configContext.oidcConfig.token.refreshExpired) {
-                                LOG.debug("Token has expired, token refresh is not allowed");
-                                throw new AuthenticationCompletionException(cause);
-                            }
-                            LOG.debug("Token has expired, trying to refresh it");
-                            SecurityIdentity identity = trySilentRefresh(configContext,
-                                    refreshToken, context, identityProviderManager);
-                            if (identity == null) {
-                                LOG.debug("SecurityIdentity is null after a token refresh");
-                                throw new AuthenticationCompletionException();
+                            if (!(throwable instanceof TokenAutoRefreshException)) {
+                                Throwable cause = throwable.getCause();
+
+                                if (cause != null && !"expired token".equalsIgnoreCase(cause.getMessage())) {
+                                    LOG.debugf("Authentication failure: %s", cause);
+                                    throw new AuthenticationCompletionException(cause);
+                                }
+                                if (!configContext.oidcConfig.token.refreshExpired) {
+                                    LOG.debug("Token has expired, token refresh is not allowed");
+                                    throw new AuthenticationCompletionException(cause);
+                                }
+                                LOG.debug("Token has expired, trying to refresh it");
+                                identity = trySilentRefresh(configContext, refreshToken, context, identityProviderManager);
+                                if (identity == null) {
+                                    LOG.debug("SecurityIdentity is null after a token refresh");
+                                    throw new AuthenticationCompletionException();
+                                }
+                            } else {
+                                identity = trySilentRefresh(configContext, refreshToken, context, identityProviderManager);
+                                if (identity == null) {
+                                    LOG.debug("ID token can no longer be refreshed, using the current SecurityIdentity");
+                                    identity = ((TokenAutoRefreshException) throwable).getSecurityIdentity();
+                                }
                             }
                             return identity;
                         }
@@ -135,6 +144,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         // start a new session by starting the code flow dance
+        context.put("new_authentication", Boolean.TRUE);
         return performCodeFlow(identityProviderManager, context, resolver);
     }
 

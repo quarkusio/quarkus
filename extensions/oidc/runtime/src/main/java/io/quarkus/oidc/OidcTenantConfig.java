@@ -854,6 +854,16 @@ public class OidcTenantConfig {
         public boolean refreshExpired;
 
         /**
+         * Token auto-refresh interval in seconds during the user re-authentication.
+         * If this option is set then the valid ID token will be refreshed if it will expire in less than a number of minutes
+         * set by this option. The user will still be authenticated if the ID token can no longer be refreshed but is still
+         * valid.
+         * This option will be ignored if the 'refresh-expired' property is not enabled.
+         */
+        @ConfigItem
+        public Optional<Duration> autoRefreshInterval = Optional.empty();
+
+        /**
          * Forced JWK set refresh interval in minutes.
          */
         @ConfigItem(defaultValue = "10M")

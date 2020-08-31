@@ -32,6 +32,10 @@ public final class Codestart {
         return spec.getRef();
     }
 
+    public int getTypeOrder() {
+        return spec.getType().getOrder();
+    }
+
     public boolean isSelected(Set<String> selection) {
         return selection.contains(getName()) || selection.contains(spec.getRef());
     }

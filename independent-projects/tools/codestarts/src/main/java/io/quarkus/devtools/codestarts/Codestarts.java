@@ -34,7 +34,7 @@ public class Codestarts {
         selectedCodestarts.addAll(baseCodestarts);
         selectedCodestarts.addAll(extraCodestarts);
 
-        return new CodestartProject(input, selectedCodestarts);
+        return CodestartProject.of(input, selectedCodestarts);
     }
 
     public static void generateProject(final CodestartProject codestartProject, final Path targetDirectory) throws IOException {

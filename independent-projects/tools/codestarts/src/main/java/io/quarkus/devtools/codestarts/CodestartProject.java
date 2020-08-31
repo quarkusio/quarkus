@@ -4,6 +4,7 @@ import static io.quarkus.devtools.codestarts.CodestartData.buildCodestartProject
 import static io.quarkus.devtools.codestarts.CodestartData.buildDependenciesData;
 
 import io.quarkus.devtools.codestarts.CodestartSpec.Type;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,11 +17,19 @@ public final class CodestartProject {
     private final List<Codestart> codestarts;
     private final CodestartInput codestartInput;
 
-    CodestartProject(CodestartInput codestartInput, List<Codestart> codestarts) {
+    private CodestartProject(CodestartInput codestartInput, List<Codestart> codestarts) {
         this.codestartInput = Objects.requireNonNull(codestartInput, "codestartInput is required");
         this.codestarts = Objects.requireNonNull(codestarts, "codestarts is required");
+
         checkContainsType(Type.PROJECT);
         checkContainsType(Type.LANGUAGE);
+    }
+
+    static CodestartProject of(CodestartInput codestartInput, List<Codestart> codestarts) {
+        final List<Codestart> codestartsInOrder = codestarts.stream()
+                .sorted(Comparator.comparingInt(Codestart::getTypeOrder).thenComparing(Codestart::getName))
+                .collect(Collectors.toList());
+        return new CodestartProject(codestartInput, codestartsInOrder);
     }
 
     public List<Codestart> getCodestarts() {

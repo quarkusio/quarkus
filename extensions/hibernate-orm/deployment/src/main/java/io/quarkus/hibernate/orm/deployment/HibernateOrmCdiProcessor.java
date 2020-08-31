@@ -3,8 +3,8 @@ package io.quarkus.hibernate.orm.deployment;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
@@ -155,7 +155,9 @@ public class HibernateOrmCdiProcessor {
             Class<T> type, Supplier<T> supplier, boolean defaultBean) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(type)
-                .scope(Singleton.class)
+                // We need to use @ApplicationScoped to workaround a problem with debezium extension 
+                // There is a RUNTIME_INIT build step that results in EntityManager injection but it does not consume the SyntheticBeansRuntimeInitBuildItem, i.e. the synthetic bean is not initialized yet
+                .scope(ApplicationScoped.class)
                 .setRuntimeInit()
                 .unremovable()
                 .supplier(supplier);

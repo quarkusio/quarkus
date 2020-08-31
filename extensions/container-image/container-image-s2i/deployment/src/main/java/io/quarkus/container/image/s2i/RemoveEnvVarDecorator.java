@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.deployment;
+package io.quarkus.container.image.s2i;
 
 import io.dekorate.deps.kubernetes.api.model.ContainerFluent;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;

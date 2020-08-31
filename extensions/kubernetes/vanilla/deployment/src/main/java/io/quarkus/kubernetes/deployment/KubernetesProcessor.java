@@ -461,8 +461,6 @@ class KubernetesProcessor {
             }
         });
 
-        //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
-        session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
         session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
             @Override
             public void visit(S2iBuildConfigFluent<?> s2i) {

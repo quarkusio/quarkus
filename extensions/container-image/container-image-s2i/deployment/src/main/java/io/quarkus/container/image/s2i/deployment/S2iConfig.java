@@ -15,6 +15,15 @@ public class S2iConfig {
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
+    public static final String DEFAULT_JVM_DOCKERFILE = "src/main/docker/Dockerfile.jvm";
+    public static final String DEFAULT_NATIVE_DOCKERFILE = "src/main/docker/Dockerfile.native";
+
+    /**
+     * The build config strategy to use.
+     */
+    @ConfigItem(defaultValue = "binary")
+    public BuildStrategy buildStrategy;
+
     /**
      * The base image to be used when a container image is being produced for the jar build
      */
@@ -26,6 +35,18 @@ public class S2iConfig {
      */
     @ConfigItem(defaultValue = DEFAULT_BASE_NATIVE_IMAGE)
     public String baseNativeImage;
+
+    /**
+     * The default Dockerfile to use for jvm builds
+     */
+    @ConfigItem(defaultValue = DEFAULT_JVM_DOCKERFILE)
+    public String jvmDockerfile;
+
+    /**
+     * The default Dockerfile to use for native builds
+     */
+    @ConfigItem(defaultValue = DEFAULT_NATIVE_DOCKERFILE)
+    public String nativeDockerfile;
 
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
@@ -43,7 +64,7 @@ public class S2iConfig {
      * The directory where the jar is added during the assemble phase.
      * This is dependent on the S2I image and should be supplied if a non default image is used.
      */
-    @ConfigItem(defaultValue = "/deployments/")
+    @ConfigItem(defaultValue = "/deployments/target/")
     public String jarDirectory;
 
     /**
@@ -80,6 +101,33 @@ public class S2iConfig {
      */
     public boolean hasDefaultBaseJvmImage() {
         return baseJvmImage.equals(DEFAULT_BASE_JVM_IMAGE);
+    }
+
+    /**
+     * Check if baseNativeImage is the default
+     *
+     * @returns true if baseNativeImage is the default
+     */
+    public boolean hasDefaultBaseNativeImage() {
+        return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
+    }
+
+    /**
+     * Check if jvmDockerfile is the default
+     *
+     * @returns true if jvmDockerfile is the default
+     */
+    public boolean hasDefaultJvmDockerfile() {
+        return jvmDockerfile.equals(DEFAULT_JVM_DOCKERFILE);
+    }
+
+    /**
+     * Check if nativeDockerfile is the default
+     *
+     * @returns true if nativeDockerfile is the default
+     */
+    public boolean hasDefaultativeDockerfile() {
+        return nativeDockerfile.equals(DEFAULT_NATIVE_DOCKERFILE);
     }
 
 }

@@ -526,8 +526,8 @@ Another example would be defining different database servers depending on the pr
 
 [source,properties]
 ----
-%dev.quarkus.datasource.url=jdbc:mysql://localhost:3306/mydatabase?useSSL=false
-quarkus.datasource.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
+%dev.quarkus.datasource.jdbc.url=jdbc:mysql://localhost:3306/mydatabase?useSSL=false
+quarkus.datasource.jdbc.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
 ----
 
 can be simplified by having:
@@ -537,7 +537,7 @@ can be simplified by having:
 %dev.application.server=localhost
 application.server=remotehost
 
-quarkus.datasource.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
+quarkus.datasource.jdbc.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
 ----
 
 It does result in one more line in this example but the value of `application.server` can be reused in other properties,
@@ -751,8 +751,8 @@ You should decide and keep one configuration type to avoid errors.
 # YAML supports comments
 quarkus:
   datasource:
-    url: jdbc:postgresql://localhost:5432/some-database
-    driver: org.postgresql.Driver
+    jdbc.url: jdbc:postgresql://localhost:5432/some-database
+    jdbc.driver: org.postgresql.Driver
     username: quarkus
     password: quarkus
 
@@ -785,8 +785,8 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 "%dev":
   quarkus:
     datasource:
-      url: jdbc:postgresql://localhost:5432/some-database
-      driver: org.postgresql.Driver
+      jdbc.url: jdbc:postgresql://localhost:5432/some-database
+      jdbc.driver: org.postgresql.Driver
       username: quarkus
       password: quarkus
 ----

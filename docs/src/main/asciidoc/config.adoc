@@ -751,8 +751,8 @@ You should decide and keep one configuration type to avoid errors.
 # YAML supports comments
 quarkus:
   datasource:
+    db-kind: postgresql
     jdbc.url: jdbc:postgresql://localhost:5432/some-database
-    jdbc.driver: org.postgresql.Driver
     username: quarkus
     password: quarkus
 
@@ -785,8 +785,8 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 "%dev":
   quarkus:
     datasource:
+      db-kind: postgresql
       jdbc.url: jdbc:postgresql://localhost:5432/some-database
-      jdbc.driver: org.postgresql.Driver
       username: quarkus
       password: quarkus
 ----

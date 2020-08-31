@@ -50,7 +50,7 @@ abstract class AbstractKubernetesConfigSourceUtil {
                 log.debug(
                         "Adding a ConfigSource for the literal data of " + getType() + " '" + kubernetesConfigSourceName + "'");
             }
-            result.add(createLiteralDataConfigSource(kubernetesConfigSourceName + "-literalData",
+            result.add(createLiteralDataConfigSource(kubernetesConfigSourceName,
                     categorizedConfigSourceData.literalData,
                     ORDINAL));
         }
@@ -69,9 +69,6 @@ abstract class AbstractKubernetesConfigSourceUtil {
                             + " '" + kubernetesConfigSourceName + "'");
                 }
                 result.add(createYamlConfigSource(kubernetesConfigSourceName, fileName, rawFileData, ORDINAL));
-            } else {
-                // TODO all keys named `*.{properties,yml,yaml}` are categorized as file sources,
-                //  but here, we only look for `application.{properties,yml,yaml}`
             }
         }
 
@@ -91,7 +88,8 @@ abstract class AbstractKubernetesConfigSourceUtil {
         List<Map.Entry<String, String>> fileData = new ArrayList<>();
         for (Map.Entry<String, String> entry : data.entrySet()) {
             String key = entry.getKey();
-            if (key.endsWith(".yml") || key.endsWith(".yaml") || key.endsWith(".properties")) {
+            if ((key.startsWith("application")) &&
+                    ((key.endsWith(".yml") || key.endsWith(".yaml") || key.endsWith(".properties")))) {
                 fileData.add(entry);
             } else {
                 literalData.put(key, entry.getValue());

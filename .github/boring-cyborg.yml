@@ -77,6 +77,8 @@ labelPRBasedOnFilePath:
     area/cache:
         - extensions/cache/**/*
         - integration-tests/cache/**/*
+    area/cli:
+        - devtools/cli/**/*
     area/config:
         - extensions/config-yaml/**/*
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/**/*

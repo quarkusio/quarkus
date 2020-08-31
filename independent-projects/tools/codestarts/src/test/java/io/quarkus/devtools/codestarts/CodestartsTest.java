@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class CodestartsTest {
@@ -89,6 +90,7 @@ class CodestartsTest {
     }
 
     @Test
+    @Disabled
     void checkSpecificProject() throws IOException {
         final TestCodestartResourceLoader resourceLoader = new TestCodestartResourceLoader();
         final CodestartInput input = CodestartInput.builder(resourceLoader)

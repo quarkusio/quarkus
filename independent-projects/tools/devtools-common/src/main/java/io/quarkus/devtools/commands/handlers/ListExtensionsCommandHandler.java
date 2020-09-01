@@ -103,7 +103,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
     }
 
     private void conciseFormatter(MessageWriter writer, String[] cols) {
-        writer.info(String.format(CONCISE_FORMAT, cols[1], cols[2], cols[4]));
+        writer.info(String.format(CONCISE_FORMAT, cols[1], cols[2]));
     }
 
     private void fullFormatter(MessageWriter writer, String[] cols) {

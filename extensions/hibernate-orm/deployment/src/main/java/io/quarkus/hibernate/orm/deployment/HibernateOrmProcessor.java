@@ -27,6 +27,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
+import javax.persistence.Entity;
+import javax.persistence.MappedSuperclass;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
 import javax.persistence.metamodel.StaticMetamodel;
@@ -66,6 +68,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
@@ -133,6 +136,8 @@ public final class HibernateOrmProcessor {
 
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
+    private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
+    private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
 
     private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
 
@@ -450,6 +455,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             BuildProducer<BeanContainerListenerBuildItem> buildProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
@@ -472,6 +478,8 @@ public final class HibernateOrmProcessor {
                 entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
             }
         }
+
+        jpaModelPersistenceUnitMapping.produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(JPAConfigSupport.class)
                 .scope(Singleton.class)
@@ -866,7 +874,6 @@ public final class HibernateOrmProcessor {
         }
 
         Map<String, Set<String>> modelClassesPerPersistenceUnits = new HashMap<>();
-        Set<String> unaffectedModelClasses = new TreeSet<>();
 
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
@@ -928,29 +935,61 @@ public final class HibernateOrmProcessor {
         }
 
         for (String modelClassName : jpaEntities.getAllModelClassNames()) {
-            boolean affected = false;
+            Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaEntities.getAllModelClassNames(),
+                    modelClassName);
 
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
                 if (modelClassName.startsWith(packageRuleEntry.getKey())) {
                     for (String persistenceUnitName : packageRuleEntry.getValue()) {
                         modelClassesPerPersistenceUnits.putIfAbsent(persistenceUnitName, new HashSet<>());
                         modelClassesPerPersistenceUnits.get(persistenceUnitName).add(modelClassName);
-                    }
-                    affected = true;
-                }
-            }
 
-            if (!affected) {
-                unaffectedModelClasses.add(modelClassName);
+                        // also add the hierarchy to the persistence unit
+                        // we would need to add all the underlying model to it but adding the hierarchy
+                        // is necessary for Panache as we need to add PanacheEntity to the PU
+                        for (String relatedModelClassName : relatedModelClassNames) {
+                            modelClassesPerPersistenceUnits.get(persistenceUnitName).add(relatedModelClassName);
+                        }
+                    }
+                }
             }
         }
 
+        Set<String> affectedModelClasses = modelClassesPerPersistenceUnits.values().stream().flatMap(Set::stream)
+                .collect(Collectors.toSet());
+        Set<String> unaffectedModelClasses = jpaEntities.getAllModelClassNames().stream()
+                .filter(c -> !affectedModelClasses.contains(c))
+                .collect(Collectors.toCollection(TreeSet::new));
         if (!unaffectedModelClasses.isEmpty()) {
             LOG.warnf("Could not find a suitable persistence unit for model classes: %s.",
                     String.join(", ", unaffectedModelClasses));
         }
 
         return modelClassesPerPersistenceUnits;
+    }
+
+    private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,
+            String modelClassName) {
+        Set<String> relatedModelClassNames = new HashSet<>();
+        ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
+
+        // for now we only deal with entities and mapped super classes
+        if (modelClassInfo.classAnnotation(JPA_ENTITY) == null &&
+                modelClassInfo.classAnnotation(MAPPED_SUPERCLASS) == null) {
+            return Collections.emptySet();
+        }
+
+        modelClassInfo = index.getClassByName(modelClassInfo.superName());
+
+        while (modelClassInfo != null && !modelClassInfo.name().equals(DotNames.OBJECT)) {
+            String modelSuperClassName = modelClassInfo.name().toString();
+            if (knownModelClassNames.contains(modelSuperClassName)) {
+                relatedModelClassNames.add(modelSuperClassName);
+            }
+            modelClassInfo = index.getClassByName(modelClassInfo.superName());
+        }
+
+        return relatedModelClassNames;
     }
 
     private static String normalizePackage(String pakkage) {

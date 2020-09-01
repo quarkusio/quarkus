@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.test;
+package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

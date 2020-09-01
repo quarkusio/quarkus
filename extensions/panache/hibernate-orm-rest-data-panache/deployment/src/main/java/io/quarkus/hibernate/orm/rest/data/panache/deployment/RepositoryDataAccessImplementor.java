@@ -58,7 +58,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
         ResultHandle entityManager = creator.invokeStaticMethod(
-                ofMethod(JpaOperations.class, "getEntityManager", EntityManager.class));
+                ofMethod(JpaOperations.class, "getEntityManager", EntityManager.class, Class.class),
+                creator.invokeVirtualMethod(ofMethod(Object.class, "getClass", Class.class), entity));
         return creator.invokeInterfaceMethod(
                 ofMethod(EntityManager.class, "merge", Object.class, Object.class), entityManager, entity);
     }

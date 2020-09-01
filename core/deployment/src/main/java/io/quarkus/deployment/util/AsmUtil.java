@@ -637,4 +637,22 @@ public class AsmUtil {
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
                 "(Ljava/lang/Object;)V", false);
     }
+
+    /**
+     * Copy the parameter names to the given MethodVisitor, unless we don't have parameter name info
+     * 
+     * @param mv the visitor to copy to
+     * @param method the method to copy from
+     */
+    public static void copyParameterNames(MethodVisitor mv, MethodInfo method) {
+        int parameterSize = method.parameters().size();
+        if (parameterSize > 0) {
+            // perhaps we don't have parameter names
+            if (method.parameterName(0) == null)
+                return;
+            for (int i = 0; i < parameterSize; i++) {
+                mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
+            }
+        }
+    }
 }

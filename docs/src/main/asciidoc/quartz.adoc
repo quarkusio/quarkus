@@ -421,14 +421,14 @@ quarkus.quartz.plugin.jobHistory.jobSuccessMessage=Job [{1}.{0}] execution compl
 You can also register a listener programmatically with an injected `org.quartz.Scheduler`
 
 [source,java]
----
+----
 public class MyListenerManager {
     void onStart(@Observes StartupEvent event, org.quartz.Scheduler scheduler) throws SchedulerException {
         scheduler.getListenerManager().addJobListener(new MyJogListener());
         scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
     }
 }
----
+----
 
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference

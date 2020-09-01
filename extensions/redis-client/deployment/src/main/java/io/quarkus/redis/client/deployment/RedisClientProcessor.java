@@ -1,6 +1,7 @@
 package io.quarkus.redis.client.deployment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -23,7 +24,10 @@ public class RedisClientProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem registerAPIsProducer() {
-        return AdditionalBeanBuildItem.unremovableOf("io.quarkus.redis.client.runtime.RedisAPIProducer");
+        return new AdditionalBeanBuildItem.Builder().addBeanClass("io.quarkus.redis.client.runtime.RedisAPIProducer")
+                .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                .setUnremovable()
+                .build();
     }
 
     @BuildStep

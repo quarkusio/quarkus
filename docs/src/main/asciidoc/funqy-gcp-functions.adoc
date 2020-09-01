@@ -241,6 +241,8 @@ mvn dependency:copy \
   -DoutputDirectory=.
 ----
 
+Before using the invoker, you first need to build your function via `mvn package`.
+
 Then you can use it to launch your function locally, again, the command depends on the type of function and the type of events.
 
 === Background Functions - PubSub
@@ -250,9 +252,11 @@ For background functions, you launch the invoker with a target class of `io.quar
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/funqy-google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 
@@ -270,9 +274,11 @@ For background functions, you launch the invoker with a target class of `io.quar
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/funqy-google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/funqy-google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.funqy.gcp.functions.FunqyBackgroundFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 

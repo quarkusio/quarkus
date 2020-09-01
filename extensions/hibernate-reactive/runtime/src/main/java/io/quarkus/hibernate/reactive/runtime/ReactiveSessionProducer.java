@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import java.util.concurrent.CompletionStage;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Disposes;
@@ -12,7 +10,6 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.stage.Stage;
 
 import io.quarkus.arc.DefaultBean;
-import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class ReactiveSessionProducer {
@@ -26,40 +23,15 @@ public class ReactiveSessionProducer {
     @Produces
     @RequestScoped
     @DefaultBean
-    public CompletionStage<Stage.Session> stageSession() {
+    public Stage.Session createStageSession() {
         return reactiveSessionFactory.openSession();
     }
 
     @Produces
     @RequestScoped
     @DefaultBean
-    public Uni<Mutiny.Session> mutinySession() {
-        return mutinySessionFactory.openSession().cache();
-    }
-
-    public void disposeStageSession(@Disposes CompletionStage<Stage.Session> reactiveSession) {
-        reactiveSession.whenComplete((s, t) -> {
-            if (s != null)
-                s.close();
-        });
-    }
-
-    public void disposeMutinySession(@Disposes Uni<Mutiny.Session> reactiveSession) {
-        reactiveSession.subscribe().with(Mutiny.Session::close);
-    }
-
-    @Produces
-    @RequestScoped
-    @DefaultBean
-    public Stage.Session createStageSession() {
-        return reactiveSessionFactory.createSession();
-    }
-
-    @Produces
-    @RequestScoped
-    @DefaultBean
     public Mutiny.Session createMutinySession() {
-        return mutinySessionFactory.createSession();
+        return mutinySessionFactory.openSession();
     }
 
     public void disposeStageSession(@Disposes Stage.Session reactiveSession) {

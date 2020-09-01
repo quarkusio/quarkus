@@ -76,6 +76,9 @@ class SpringCloudConfigClientGatewayTest {
         springCloudConfigClientConfig.readTimeout = Duration.ZERO;
         springCloudConfigClientConfig.username = Optional.empty();
         springCloudConfigClientConfig.password = Optional.empty();
+        springCloudConfigClientConfig.trustStore = Optional.empty();
+        springCloudConfigClientConfig.keyStore = Optional.empty();
+        springCloudConfigClientConfig.trustCerts = false;
         return springCloudConfigClientConfig;
     }
 }

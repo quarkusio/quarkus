@@ -324,6 +324,8 @@ mvn dependency:copy \
   -DoutputDirectory=.
 ----
 
+Before using the invoker, you first need to build your function via `mvn package`.
+
 === The HttpFunction
 
 To test an `HttpFunction`, you can use this command to launch your function locally.
@@ -331,9 +333,11 @@ To test an `HttpFunction`, you can use this command to launch your function loca
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusHttpFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Your endpoints will be available on http://localhost:8080.
 
@@ -344,9 +348,11 @@ For background functions, you launch the invoker with a target class of `io.quar
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 
@@ -364,9 +370,11 @@ For background functions, you launch the invoker with a target class of `io.quar
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/google-cloud-functions-1.0-SNAPSHOT-runner.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Then you can call your background function via an HTTP call with a payload containing the event:
 

@@ -5,10 +5,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
-@Recorder
 public class MeasureThis {
     static LongAdder counter = new LongAdder();
     static LongAdder gauge = new LongAdder();

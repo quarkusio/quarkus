@@ -726,9 +726,14 @@ public class JarResultBuildStep {
                     "maximum command length (see https://github.com/oracle/graal/issues/2387).");
             // Native image source jar generation with the uber jar strategy is provided as a workaround for Windows and
             // will be removed once https://github.com/oracle/graal/issues/2387 is fixed.
-            return buildNativeImageUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+            final NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem = buildNativeImageUberJar(curateOutcomeBuildItem,
+                    outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
+            // additionally copy any json config files to a location accessible by native-image tool during
+            // native-image generation
+            copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
+            return nativeImageSourceJarBuildItem;
         } else {
             return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,

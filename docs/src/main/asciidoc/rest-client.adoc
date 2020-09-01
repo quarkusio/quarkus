@@ -261,7 +261,7 @@ The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://gi
 
 == Async Support
 The rest client supports asynchronous rest calls.
-Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-resteasy-mutiny` extension).
+Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-rest-client-mutiny` extension).
 Let's see it in action by adding a `getByNameAsync` method in our `CountriesService` REST interface. The code should look like:
 
 [source, java]

@@ -3,7 +3,7 @@ package io.quarkus.it.kubernetes.client;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.Pod;
@@ -26,7 +26,7 @@ public class KubernetesClientTest {
     @MockServer
     private KubernetesMockServer mockServer;
 
-    @Test
+    @BeforeEach
     public void before() {
         Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
         Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
@@ -56,7 +56,6 @@ public class KubernetesClientTest {
     }
 
     @Test
-    @Disabled("https://github.com/quarkusio/quarkus/issues/11783")
     public void testInteractionWithAPIServer() {
         RestAssured.when().get("/pod/test").then()
                 .body("size()", is(2)).body(containsString("pod1"), containsString("pod2"));

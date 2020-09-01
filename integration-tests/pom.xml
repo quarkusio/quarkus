@@ -132,7 +132,10 @@
         <module>ide-launcher</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-rest-high-level-client</module>
-        
+        <module>micrometer-jmx</module>
+        <module>micrometer-mp-metrics</module>
+        <module>micrometer-prometheus</module>
+
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>
         <module>grpc-tls</module>

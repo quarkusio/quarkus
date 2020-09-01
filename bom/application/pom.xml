@@ -26,6 +26,8 @@
         <jaeger.version>0.34.3</jaeger.version>
         <quarkus-http.version>3.0.14.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
+        <threetenbp.version>1.4.3</threetenbp.version>
+        <micrometer.version>1.5.3</micrometer.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
@@ -1865,6 +1867,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-google-cloud-functions-http-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-micrometer-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-micrometer</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -4395,6 +4407,56 @@
                 <type>exe</type>
                 <classifier>windows-x86_64</classifier>
                 <version>${grpc.version}</version>
+            </dependency>
+
+            <!-- Micrometer -->
+            <dependency>
+              <groupId>org.threeten</groupId>
+              <artifactId>threetenbp</artifactId>
+              <version>${threetenbp.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-core</artifactId>
+              <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-registry-datadog</artifactId>
+              <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-registry-jmx</artifactId>
+              <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-registry-prometheus</artifactId>
+              <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.micrometer</groupId>
+              <artifactId>micrometer-registry-stackdriver</artifactId>
+              <version>${micrometer.version}</version>
+              <exclusions>
+                  <exclusion>
+                      <groupId>commons-logging</groupId>
+                      <artifactId>commons-logging</artifactId>
+                  </exclusion>
+                  <exclusion>
+                      <groupId>javax.annotation</groupId>
+                      <artifactId>javax.annotation-api</artifactId>
+                  </exclusion>
+                  <exclusion>
+                      <groupId>org.checkerframework</groupId>
+                      <artifactId>checker-qual</artifactId>
+                  </exclusion>
+                  <exclusion>
+                      <groupId>com.google.j2objc</groupId>
+                      <artifactId>j2objc-annotations</artifactId>
+                  </exclusion>
+              </exclusions>
             </dependency>
 
             <!-- Picocli -->

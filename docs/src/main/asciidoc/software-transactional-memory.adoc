@@ -102,7 +102,7 @@ To use the extension include it as a dependency in your application pom:
 
 == Defining STM-aware classes
 
-In order for the STM subsytem to have knowledge about which classes are to be managed within the context
+In order for the STM subsystem to have knowledge about which classes are to be managed within the context
 of transactional memory it is necessary to provide a minimal level of instrumentation. This occurs by
 categorising STM-aware and STM-unaware classes through an interface boundary; specifically all STM-aware objects
 must be instances of classes which inherit from interfaces that themselves have been annotated to identify them

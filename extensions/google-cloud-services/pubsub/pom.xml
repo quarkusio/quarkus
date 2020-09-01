@@ -6,18 +6,18 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-google-cloud-services-parent</artifactId>
-    <name>Quarkus - Google Cloud Services - Parent pom</name>
+    <artifactId>quarkus-google-cloud-pubsub-parent</artifactId>
+    <name>Quarkus - Google Cloud Services - PubSub</name>
     <packaging>pom</packaging>
 
     <modules>
-        <module>pubsub</module>
-        <module>storage</module>
-        <module>common</module>
+        <module>runtime</module>
+        <module>deployment</module>
     </modules>
+
 
 </project>

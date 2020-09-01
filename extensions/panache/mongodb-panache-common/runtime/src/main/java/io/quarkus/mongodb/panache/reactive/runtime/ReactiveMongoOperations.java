@@ -302,7 +302,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     private ReactiveMongoDatabase mongoDatabase(MongoEntity entity) {
-        ReactiveMongoClient mongoClient = clientFromArc(entity, ReactiveMongoClient.class);
+        ReactiveMongoClient mongoClient = clientFromArc(entity, ReactiveMongoClient.class, true);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }

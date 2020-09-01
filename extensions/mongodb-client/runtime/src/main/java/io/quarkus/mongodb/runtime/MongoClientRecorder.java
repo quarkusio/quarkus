@@ -29,7 +29,7 @@ public class MongoClientRecorder {
     }
 
     public Supplier<MongoClient> mongoClientSupplier(String clientName,
-            @SuppressWarnings("usused") MongodbConfig mongodbConfig) {
+            @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
         MongoClient mongoClient = Arc.container().instance(MongoClients.class).get().createMongoClient(clientName);
         return new Supplier<MongoClient>() {
             @Override
@@ -40,7 +40,7 @@ public class MongoClientRecorder {
     }
 
     public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName,
-            @SuppressWarnings("usused") MongodbConfig mongodbConfig) {
+            @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
         ReactiveMongoClient reactiveMongoClient = Arc.container().instance(MongoClients.class).get()
                 .createReactiveMongoClient(clientName);
         return new Supplier<ReactiveMongoClient>() {

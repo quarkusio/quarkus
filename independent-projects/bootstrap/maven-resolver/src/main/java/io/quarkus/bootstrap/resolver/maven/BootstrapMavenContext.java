@@ -114,6 +114,7 @@ public class BootstrapMavenContext {
     private Boolean currentProjectExists;
     private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
+    private Path rootProjectDir;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -139,6 +140,7 @@ public class BootstrapMavenContext {
         this.remoteRepos = config.remoteRepos;
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
+        this.rootProjectDir = config.rootProjectDir;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
@@ -771,6 +773,10 @@ public class BootstrapMavenContext {
     }
 
     public Path getRootProjectBaseDir() {
+        return rootProjectDir == null ? rootProjectDir = resolveRootProjectDir() : rootProjectDir;
+    }
+
+    private Path resolveRootProjectDir() {
         final String rootBaseDir = System.getenv(MAVEN_PROJECTBASEDIR);
         if (rootBaseDir == null) {
             return null;

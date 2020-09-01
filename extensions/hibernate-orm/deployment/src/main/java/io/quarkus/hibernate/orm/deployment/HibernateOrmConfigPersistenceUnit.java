@@ -150,15 +150,20 @@ public class HibernateOrmConfigPersistenceUnit {
     public boolean secondLevelCachingEnabled;
 
     public boolean isAnyPropertySet() {
-        return dialect.isAnyPropertySet() ||
+        return datasource.isPresent() ||
+                packages.isPresent() ||
+                dialect.isAnyPropertySet() ||
                 sqlLoadScript.isPresent() ||
                 batchFetchSize > 0 ||
                 maxFetchDepth.isPresent() ||
+                physicalNamingStrategy.isPresent() ||
+                implicitNamingStrategy.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
-                !cache.isEmpty();
+                !cache.isEmpty() ||
+                !secondLevelCachingEnabled;
     }
 
     @ConfigGroup
@@ -260,7 +265,7 @@ public class HibernateOrmConfigPersistenceUnit {
          * <p>
          * Used for DDL generation and also for the SQL import scripts.
          */
-        @ConfigItem(defaultValue = "UTF-8")
+        @ConfigItem(defaultValue = DEFAULT_CHARSET)
         public Charset charset;
 
         /**

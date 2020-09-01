@@ -252,7 +252,7 @@ class FlywayProcessor {
 
         try (final Stream<Path> pathStream = Files.walk(rootPath)) {
             return pathStream.filter(Files::isRegularFile)
-                    .map(it -> Paths.get(location, rootPath.relativize(it).toString()).toString())
+                    .map(it -> Paths.get(location, rootPath.relativize(it).toString()).normalize().toString())
                     // we don't want windows paths here since the paths are going to be used as classpath paths anyway
                     .map(it -> it.replace('\\', '/'))
                     .peek(it -> LOGGER.debugf("Discovered path: %s", it))

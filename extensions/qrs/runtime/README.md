@@ -1,11 +1,11 @@
 ** NOT IMPLEMENTED
 
 - Lots of methods in the JAX-RS types
-    - HttpHeaders
-    - RuntimeDelegate
-    - Response
-    - ContainerRequestContext
-    - ContainerResponseContext
+    - ~~HttpHeaders~~
+    - ~~RuntimeDelegate~~
+    - ~~Response~~
+    - ~~ContainerRequestContext~~
+    - ~~ContainerResponseContext~~
 - Proper handling of generics
     - In entity return type
     - For reader/writer selection

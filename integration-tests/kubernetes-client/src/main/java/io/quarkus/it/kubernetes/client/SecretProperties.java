@@ -11,6 +11,9 @@ public class SecretProperties {
     @ConfigProperty(name = "dummysecret")
     String dummysecret;
 
+    @ConfigProperty(name = "overridden.secret")
+    String overriddenSecret;
+
     @ConfigProperty(name = "secret.prop1")
     String secretProp1;
 
@@ -27,6 +30,12 @@ public class SecretProperties {
     @Path("/dummysecret")
     public String dummysecret() {
         return dummysecret;
+    }
+
+    @GET
+    @Path("/overriddensecret")
+    public String overriddensecret() {
+        return overriddenSecret;
     }
 
     @GET

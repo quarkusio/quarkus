@@ -200,7 +200,7 @@ public class MongoClientProcessor {
                 .supplier(recorder.mongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 
-        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator);
+        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, false);
     }
 
     private SyntheticBeanBuildItem createReactiveSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
@@ -214,11 +214,11 @@ public class MongoClientProcessor {
                 .supplier(recorder.reactiveMongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 
-        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator);
+        return applyCommonBeanConfig(makeUnremovable, clientName, addMongoClientQualifier, configurator, true);
     }
 
     private SyntheticBeanBuildItem applyCommonBeanConfig(boolean makeUnremovable, String clientName,
-            boolean addMongoClientQualifier, SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator) {
+            boolean addMongoClientQualifier, SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator, boolean isReactive) {
         if (makeUnremovable) {
             configurator.unremovable();
         }
@@ -226,7 +226,7 @@ public class MongoClientProcessor {
         if (MongoClientBeanUtil.isDefault(clientName)) {
             configurator.addQualifier(Default.class);
         } else {
-            String namedQualifier = MongoClientBeanUtil.namedQualifier(clientName, false);
+            String namedQualifier = MongoClientBeanUtil.namedQualifier(clientName, isReactive);
             configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", namedQualifier).done();
             if (addMongoClientQualifier) {
                 configurator.addQualifier().annotation(MONGOCLIENT_ANNOTATION).addValue("value", clientName).done();

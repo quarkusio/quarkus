@@ -64,7 +64,7 @@ public final class QuarkusCodestarts {
     }
 
     public static boolean isExample(Codestart codestart) {
-        return codestart.getType() == CodestartSpec.Type.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
+        return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
     }
 
     private static class QuarkusPlatformCodestartResourceLoader implements CodestartResourceLoader {

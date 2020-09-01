@@ -6,11 +6,13 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.ListExtensionsCommandHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionRegistry;
+import java.util.HashMap;
 
 /**
  * Instances of this class are not thread-safe. They are created per single invocation.
@@ -29,6 +31,10 @@ public class ListExtensions {
 
     public ListExtensions(final QuarkusProject quarkusProject) {
         this.invocation = new QuarkusCommandInvocation(quarkusProject);
+    }
+
+    public ListExtensions(final QuarkusProject quarkusProject, final MessageWriter messageWriter) {
+        this.invocation = new QuarkusCommandInvocation(quarkusProject, new HashMap<>(), messageWriter);
     }
 
     public ListExtensions all(boolean all) {

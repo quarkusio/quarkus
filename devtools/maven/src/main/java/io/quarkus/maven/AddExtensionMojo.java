@@ -15,8 +15,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**

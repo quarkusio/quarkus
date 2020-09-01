@@ -1,10 +1,9 @@
 package io.quarkus.platform.tools.config;
 
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +31,7 @@ public class QuarkusPlatformConfig {
         }
 
         private MessageWriter getMessageWriter() {
-            return log == null ? log = new DefaultMessageWriter() : log;
+            return log == null ? log = MessageWriter.DEFAULT : log;
         }
 
         public Builder setPlatformDescriptor(QuarkusPlatformDescriptor platformDescr) {

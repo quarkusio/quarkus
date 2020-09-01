@@ -39,4 +39,9 @@ public class CodestartFileStrategy implements Predicate<String> {
     public CodestartFileStrategyHandler getHandler() {
         return handler;
     }
+
+    @Override
+    public String toString() {
+        return new StringBuilder(filter).append("->").append(handler.name()).toString();
+    }
 }

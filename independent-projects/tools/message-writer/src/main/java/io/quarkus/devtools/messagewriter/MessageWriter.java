@@ -1,6 +1,26 @@
-package io.quarkus.platform.tools;
+package io.quarkus.devtools.messagewriter;
+
+import java.io.PrintStream;
 
 public interface MessageWriter {
+
+    MessageWriter DEFAULT = info();
+
+    static MessageWriter info() {
+        return new DefaultMessageWriter();
+    }
+
+    static MessageWriter info(PrintStream out) {
+        return new DefaultMessageWriter(out);
+    }
+
+    static MessageWriter debug() {
+        return new DefaultMessageWriter(true);
+    }
+
+    static MessageWriter debug(PrintStream out) {
+        return new DefaultMessageWriter(out, true);
+    }
 
     default void info(String format, Object... args) {
         info(String.format(format, args));

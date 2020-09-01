@@ -2,9 +2,10 @@ package io.quarkus.devtools.codestarts;
 
 import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
 import static io.quarkus.devtools.codestarts.CodestartProcessor.buildStrategies;
-import static io.quarkus.devtools.codestarts.CodestartSpec.Type.LANGUAGE;
+import static io.quarkus.devtools.codestarts.CodestartType.LANGUAGE;
 
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategy;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class Codestarts {
     }
 
     public static void generateProject(final CodestartProject codestartProject, final Path targetDirectory) throws IOException {
+        final MessageWriter log = codestartProject.getCodestartInput().log();
 
         final String languageName = codestartProject.getLanguageName();
 
@@ -47,16 +49,26 @@ public class Codestarts {
                 codestartProject.getDepsData(),
                 codestartProject.getCodestartProjectData()));
 
-        final Codestart projectCodestart = codestartProject.getRequiredCodestart(CodestartSpec.Type.PROJECT);
+        log.debug("processed shared-data: %s" + data);
+
+        final Codestart projectCodestart = codestartProject.getRequiredCodestart(CodestartType.PROJECT);
+
         final List<CodestartFileStrategy> strategies = buildStrategies(mergeStrategies(codestartProject));
 
-        CodestartProcessor processor = new CodestartProcessor(codestartProject.getCodestartInput().getResourceLoader(),
+        log.debug("file strategies: %s", strategies);
+
+        CodestartProcessor processor = new CodestartProcessor(log, codestartProject.getCodestartInput().getResourceLoader(),
                 languageName, targetDirectory, strategies, data);
         processor.checkTargetDir();
         for (Codestart codestart : codestartProject.getCodestarts()) {
             processor.process(codestart);
         }
         processor.writeFiles();
+        log.info("\napplying codestarts...");
+        log.info(codestartProject.getCodestarts().stream()
+                .map(c -> c.getType().getIcon() + " "
+                        + c.getName())
+                .collect(Collectors.joining("\n")));
     }
 
     private static Map<String, String> mergeStrategies(CodestartProject codestartProject) {
@@ -71,7 +83,15 @@ public class Codestarts {
         return allCodestarts.stream()
                 .filter(c -> !c.getSpec().getType().isBase())
                 .filter(c -> c.getSpec().isPreselected() || c.isSelected(selectedCodestartNames))
-                .filter(c -> c.implementsLanguage(languageName))
+                .filter(c -> {
+                    final boolean implementsLanguage = c.implementsLanguage(languageName);
+                    if (!implementsLanguage) {
+                        input.log().warn(
+                                c.getName() + " codestart will not be applied (doesn't implement language '" + languageName
+                                        + "' yet)");
+                    }
+                    return implementsLanguage;
+                })
                 .collect(Collectors.toList());
     }
 

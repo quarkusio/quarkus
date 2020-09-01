@@ -14,36 +14,10 @@ import java.util.Set;
 
 public final class CodestartSpec {
 
-    enum Type {
-        LANGUAGE(true, 1),
-        BUILDTOOL(true, 2),
-        PROJECT(true, 3),
-        CONFIG(true, 4),
-        TOOLING(false, 5),
-        CODE(false, 6),
-        ;
-
-        private final boolean base;
-        private final int order;
-
-        Type(boolean base, int order) {
-            this.base = base;
-            this.order = order;
-        }
-
-        public boolean isBase() {
-            return base;
-        }
-
-        public int getOrder() {
-            return order;
-        }
-    }
-
     private final String name;
     private final boolean isPreselected;
     private final String ref;
-    private final Type type;
+    private final CodestartType type;
     private final boolean isFallback;
     private final Set<String> tags;
     private final Map<String, String> outputStrategy;
@@ -52,7 +26,7 @@ public final class CodestartSpec {
     @JsonCreator
     public CodestartSpec(@JsonProperty(value = "name", required = true) String name,
             @JsonProperty(value = "ref") String ref,
-            @JsonProperty(value = "type") Type type,
+            @JsonProperty(value = "type") CodestartType type,
             @JsonProperty("fallback") boolean isFallback,
             @JsonProperty("preselected") boolean isPreselected,
             @JsonProperty("tags") Set<String> tags,
@@ -61,7 +35,7 @@ public final class CodestartSpec {
         this.name = requireNonNull(name, "name is required");
         this.tags = tags != null ? tags : Collections.emptySet();
         this.ref = ref != null ? ref : name;
-        this.type = type != null ? type : Type.CODE;
+        this.type = type != null ? type : CodestartType.CODE;
         this.isFallback = isFallback;
         this.isPreselected = isPreselected;
         this.outputStrategy = outputStrategy != null ? outputStrategy : Collections.emptyMap();
@@ -80,7 +54,7 @@ public final class CodestartSpec {
         return tags;
     }
 
-    public Type getType() {
+    public CodestartType getType() {
         return type;
     }
 

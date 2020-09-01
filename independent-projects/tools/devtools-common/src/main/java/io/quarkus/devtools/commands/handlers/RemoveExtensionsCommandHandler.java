@@ -9,9 +9,9 @@ import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.ExtensionManager.UninstallResult;
-import io.quarkus.platform.tools.ConsoleMessageFormats;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +41,7 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
                 final UninstallResult result = extensionManager.uninstall(keys);
                 result.getUninstalled()
                         .forEach(a -> invocation.log()
-                                .info(ConsoleMessageFormats.ok("Extension " + a.getGroupId() + ":" + a.getArtifactId())
+                                .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " has been uninstalled"));
                 return new QuarkusCommandOutcome(true).setValue(RemoveExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
             }

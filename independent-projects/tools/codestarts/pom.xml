@@ -23,6 +23,10 @@
             <artifactId>quarkus-bootstrap-app-model</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-message-writer</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>maven-model-helper</artifactId>
         </dependency>

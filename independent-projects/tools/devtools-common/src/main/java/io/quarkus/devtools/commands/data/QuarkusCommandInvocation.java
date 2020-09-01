@@ -2,10 +2,9 @@ package io.quarkus.devtools.commands.data;
 
 import static java.util.Objects.requireNonNull;
 
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +18,7 @@ public final class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvoc
     }
 
     public QuarkusCommandInvocation(final QuarkusProject quarkusProject, final Map<String, Object> values) {
-        this(quarkusProject, values, new DefaultMessageWriter());
+        this(quarkusProject, values, MessageWriter.DEFAULT);
     }
 
     public QuarkusCommandInvocation(final QuarkusProject quarkusProject, final Map<String, Object> values,

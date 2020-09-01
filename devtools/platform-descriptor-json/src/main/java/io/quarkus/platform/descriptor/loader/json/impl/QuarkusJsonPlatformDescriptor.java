@@ -15,12 +15,11 @@ import org.apache.maven.model.Dependency;
 
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
 import io.quarkus.platform.descriptor.ResourcePathConsumer;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 
 public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor, Serializable {
 
@@ -74,7 +73,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
     }
 
     private MessageWriter getLog() {
-        return log == null ? log = new DefaultMessageWriter() : log;
+        return log == null ? log = MessageWriter.DEFAULT : log;
     }
 
     @Override

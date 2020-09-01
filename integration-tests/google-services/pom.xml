@@ -47,6 +47,11 @@
       <artifactId>quarkus-google-cloud-pubsub</artifactId>
       <version>999-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-google-cloud-bigquery</artifactId>
+      <version>999-SNAPSHOT</version>
+    </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>

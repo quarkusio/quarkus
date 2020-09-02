@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.recording;
 
 import java.util.Collection;
-import java.util.Optional;
 
 import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.dialect.Dialect;
@@ -15,7 +14,7 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 public final class RecordedState {
 
     private final Dialect dialect;
-    private final Optional<String> dataSource;
+    private final String dataSource;
     private final PrevalidatedQuarkusMetadata metadata;
     private final BuildTimeSettings settings;
     private final Collection<Integrator> integrators;
@@ -28,7 +27,7 @@ public final class RecordedState {
     public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
             Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
-            ProxyDefinitions classDefinitions, Optional<String> dataSource, MultiTenancyStrategy strategy, boolean isReactive) {
+            ProxyDefinitions classDefinitions, String dataSource, MultiTenancyStrategy strategy, boolean isReactive) {
         this.dialect = dialect;
         this.metadata = metadata;
         this.settings = settings;
@@ -69,7 +68,7 @@ public final class RecordedState {
         return proxyClassDefinitions;
     }
 
-    public Optional<String> getDataSource() {
+    public String getDataSource() {
         return dataSource;
     }
 

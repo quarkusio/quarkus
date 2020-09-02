@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
@@ -19,6 +20,7 @@ import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.entitymanager.ForwardingEntityManager;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -60,6 +62,18 @@ public class HibernateOrmRecorder {
             @Override
             public JPAConfigSupport get() {
                 return jpaConfigSupport;
+            }
+        };
+    }
+
+    public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
+            String dataSourceName,
+            MultiTenancyStrategy multiTenancyStrategy, String multiTenancySchemaDataSourceName) {
+        return new Supplier<DataSourceTenantConnectionResolver>() {
+            @Override
+            public DataSourceTenantConnectionResolver get() {
+                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy,
+                        multiTenancySchemaDataSourceName);
             }
         };
     }

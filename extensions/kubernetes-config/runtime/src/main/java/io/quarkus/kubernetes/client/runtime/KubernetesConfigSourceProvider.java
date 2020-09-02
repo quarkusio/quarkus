@@ -17,13 +17,16 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
     private static final Logger log = Logger.getLogger(KubernetesConfigSourceProvider.class);
 
     private final KubernetesConfigSourceConfig config;
+    private final KubernetesConfigBuildTimeConfig buildTimeConfig;
     private final KubernetesClient client;
 
     private final ConfigMapConfigSourceUtil configMapConfigSourceUtil;
     private final SecretConfigSourceUtil secretConfigSourceUtil;
 
-    public KubernetesConfigSourceProvider(KubernetesConfigSourceConfig config, KubernetesClient client) {
+    public KubernetesConfigSourceProvider(KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
+            KubernetesClient client) {
         this.config = config;
+        this.buildTimeConfig = buildTimeConfig;
         this.client = client;
 
         this.configMapConfigSourceUtil = new ConfigMapConfigSourceUtil();
@@ -38,10 +41,10 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         }
 
         List<ConfigSource> result = new ArrayList<>();
-        if (config.configMaps.isPresent()) {
+        if (config.enabled && config.configMaps.isPresent()) {
             result.addAll(getConfigMapConfigSources(config.configMaps.get()));
         }
-        if (config.secrets.isPresent()) {
+        if (buildTimeConfig.secretsEnabled && config.secrets.isPresent()) {
             result.addAll(getSecretConfigSources(config.secrets.get()));
         }
         return result;

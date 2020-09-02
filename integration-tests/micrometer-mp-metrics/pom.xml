@@ -119,7 +119,6 @@
                 <configuration>
                     <systemProperties>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <quarkus.log.level>DEBUG</quarkus.log.level>
                     </systemProperties>
                 </configuration>
             </plugin>

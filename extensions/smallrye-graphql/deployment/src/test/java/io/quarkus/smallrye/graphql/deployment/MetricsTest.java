@@ -10,6 +10,7 @@ import javax.json.JsonObject;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.SimpleTimer;
+import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
 import org.hamcrest.CoreMatchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -38,7 +39,8 @@ public class MetricsTest {
     // Run a Query and check that its corresponding metric is updated
     @Test
     public void testQuery() {
-        SimpleTimer metric = metricRegistry.getSimpleTimers().get(new MetricID("mp_graphql_Query_ping"));
+        SimpleTimer metric = metricRegistry.getSimpleTimers()
+                .get(new MetricID("mp_graphql", new Tag("type", "Query"), new Tag("name", "ping")));
         assertNotNull(metric, "Metrics should be registered eagerly");
 
         String pingRequest = getPayload("{\n" +

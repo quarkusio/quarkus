@@ -122,6 +122,12 @@ application this will fail (as you cannot do blocking operations on the IO threa
 `Uni<SecurityIdentity> getDeferredIdentity();` method. You can then subscribe to the resulting `Uni` and will be notified
 when authentication is complete and the identity is available.
 
+[NOTE]
+====
+By default the authentication security constraints are enforced before the JAX-RS chain starts.
+Disabling the proactive authentication effectively shifts this process to the moment when the JAX-RS chain starts running thus making it possible to use JAX-RS `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException` if required.
+====
+
 == References
 
 * link:security[Quarkus Security]

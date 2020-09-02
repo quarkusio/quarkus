@@ -75,6 +75,16 @@ If you use Keycloak and Bearer tokens then also see the link:security-keycloak-a
 If you need to configure Keycloak programmatically then consider using https://www.keycloak.org/docs/latest/server_development/#admin-rest-api[Keycloak Admin REST API] with the help of the `quarkus-keycloak-admin-client` extension.
 ====
 
+=== OpenId Connect Client and Filters
+
+`quarkus-oidc-client` extension provides `OidcClient` for acquiring and refreshing access tokens from OpenId Connect and OAuth2 providers which support `client-credentials`, `password` and `refresh_token` token grants.
+
+`quarkus-oidc-client-filter` extension depends on the `quarkus-oidc-client` extension and provides JAX-RS `OidcClientRequestFilter` which sets the access token acquired by `OidcClient` as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint but it is not related to the authentication requirements of this service endpoint. For example, it can be a public endpoint or it can be protected with MTLS - the important point is that this Quarkus endpoint does not have to be protected itself with the Quarkus OpenId Connect adapter.
+
+`quarkus-oidc-token-propagation` extension depends on the `quarkus-oidc` extension and provides JAX-RS `TokenCredentialRequestFilter` which sets the OpenId Connect Bearer or Authorization Code Flow access token as an HTTP `Authorization` header's  `Bearer` scheme value. This filter can be registered with MP RestClient implementations injected into the current Quarkus endpoint and the Quarkus endpoint must be protected itself with the Quarkus OpenId Connect adapter. This filter can be used to propagate the access token to the downstream services.
+
+See the link:security-openid-connect-client[Using OpenID Connect and OAuth2 Client] guide for more information.
+
 [[smallrye-jwt]]
 === SmallRye JWT
 

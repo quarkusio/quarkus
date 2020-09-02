@@ -29,7 +29,6 @@ import io.quarkus.runtime.graal.DisabledSSLContext;
 import io.quarkus.runtime.ssl.SslContextConfiguration;
 
 public class RestClientBase {
-
     public static final String MP_REST = "mp-rest";
     public static final String REST_URL_FORMAT = "%s/" + MP_REST + "/url";
     public static final String REST_URI_FORMAT = "%s/" + MP_REST + "/uri";
@@ -50,11 +49,14 @@ public class RestClientBase {
     private final Class<?> proxyType;
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
+    private final Class<?> annotationProvider;
 
-    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix) {
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix,
+            Class<?> annotationProvider) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.propertyPrefix = propertyPrefix;
+        this.annotationProvider = annotationProvider;
     }
 
     public Object create() {
@@ -199,6 +201,9 @@ public class RestClientBase {
         Optional<String> maybeProviders = getOptionalDynamicProperty(REST_PROVIDERS, String.class);
         if (maybeProviders.isPresent()) {
             registerProviders(builder, maybeProviders.get());
+        }
+        if (annotationProvider != null) {
+            builder.register(annotationProvider);
         }
     }
 

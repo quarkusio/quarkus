@@ -618,6 +618,15 @@ so the compiler must be configured to store parameter names inside the compiled 
 This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
 ====
 
+== Multiple Persistence Units
+
+The support for multiple persistence units is described in detail in link:hibernate-orm#multiple-persistence-units[the Hibernate ORM guide].
+
+When using Panache, things are simple:
+
+* A given Panache entity can be attached to only a single persistence unit.
+* Given that, Panache already provides the necessary plumbing to transparently find the appropriate `EntityManager` associated to a Panache entity.
+
 == Transactions
 
 Make sure to wrap methods modifying your database (e.g. `entity.persist()`) within a transaction. Marking a

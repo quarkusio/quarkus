@@ -21,8 +21,7 @@ public class SmallRyeGraphQLRecorder {
 
     public void createExecutionService(BeanContainer beanContainer, Schema schema) {
         GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
-        graphQLProducer.setSchema(schema);
-        graphQLProducer.initialize();
+        graphQLProducer.initialize(schema);
     }
 
     public Handler<RoutingContext> executionHandler(boolean allowGet) {

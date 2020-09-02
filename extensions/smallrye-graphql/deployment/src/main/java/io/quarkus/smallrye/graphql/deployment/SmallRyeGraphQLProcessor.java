@@ -71,8 +71,8 @@ import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
+import io.smallrye.graphql.spi.EventingService;
 import io.smallrye.graphql.spi.LookupService;
-import io.smallrye.graphql.spi.SchemaBuildingExtensionService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -130,14 +130,15 @@ public class SmallRyeGraphQLProcessor {
         serviceProvider.produce(
                 new ServiceProviderBuildItem(LookupService.class.getName(), lookupImplementations.toArray(new String[0])));
 
-        // Schema Extension Service (We use the one from the CDI Module)
-        String schemaExtensionService = SPI_PATH + SchemaBuildingExtensionService.class.getName();
-        Set<String> schemaExtensionImplementations = ServiceUtil.classNamesNamedIn(
+        // Eventing Service (We use the one from the CDI Module)
+        String eventingService = SPI_PATH + EventingService.class.getName();
+        Set<String> eventingServiceImplementations = ServiceUtil.classNamesNamedIn(
                 Thread.currentThread().getContextClassLoader(),
-                schemaExtensionService);
-        serviceProvider.produce(
-                new ServiceProviderBuildItem(SchemaBuildingExtensionService.class.getName(),
-                        schemaExtensionImplementations.toArray(new String[0])));
+                eventingService);
+        for (String eventingServiceImplementation : eventingServiceImplementations) {
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem(EventingService.class.getName(), eventingServiceImplementation));
+        }
     }
 
     @Record(ExecutionTime.STATIC_INIT)

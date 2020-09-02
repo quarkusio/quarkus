@@ -13,6 +13,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 /**
  * Provides CDI producers for objects that can be injected via @Context
@@ -49,13 +50,19 @@ public class ContextProducers {
         return getContext().getRequest();
     }
 
-    // HttpServerRequest is a Vert.x type so it's not necessary to have it injectable via @Context,
+    // HttpServerRequest, HttpServerRequest are Vert.x types so it's not necessary to have it injectable via @Context,
     // however we do use it in the Quickstarts so let's make it work
 
     @RequestScoped
     @Produces
     HttpServerRequest httpServerRequest() {
         return currentVertxRequest.getCurrent().request();
+    }
+
+    @RequestScoped
+    @Produces
+    HttpServerResponse httpServerResponse() {
+        return currentVertxRequest.getCurrent().response();
     }
 
     private QuarkusRestRequestContext getContext() {

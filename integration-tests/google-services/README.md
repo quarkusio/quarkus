@@ -1,5 +1,5 @@
 ## Spanner
-To test spanner you first need to have a running Spanner cluster named `test-instance`.
+To test Spanner you first need to have a running Spanner cluster named `test-instance`.
 
 You can create one with `gcloud`:
 ```
@@ -12,6 +12,14 @@ Then you need a database named `test-database`.
 You can create one with `gcloud`:
 ```
 gcloud spanner databases create test-database --instance test-instance
+```
+
+And finally you need to create a table named .
+
+You can do it with `gcloud`:
+```
+gcloud spanner databases ddl update test-database --instance test-instance \
+  --ddl='CREATE TABLE Singers ( SingerId INT64 NOT NULL, FirstName STRING(1024), LastName STRING(1024), SingerInfo BYTES(MAX) ) PRIMARY KEY (SingerId)'
 ```
 
 ## PubSub

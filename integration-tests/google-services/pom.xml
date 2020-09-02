@@ -61,6 +61,11 @@
       <artifactId>quarkus-google-cloud-firestore</artifactId>
       <version>999-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-google-cloud-spanner</artifactId>
+      <version>999-SNAPSHOT</version>
+    </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -87,6 +92,9 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <graalvmHome>/data/dev/graalvm-ce-java11-20.0.0</graalvmHome>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

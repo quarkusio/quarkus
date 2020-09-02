@@ -6,21 +6,18 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-google-cloud-services-parent</artifactId>
-    <name>Quarkus - Google Cloud Services - Parent</name>
+    <artifactId>quarkus-google-cloud-spanner-parent</artifactId>
+    <name>Quarkus - Google Cloud Services - Spanner</name>
     <packaging>pom</packaging>
 
     <modules>
-        <module>common</module>
-        <module>bigquery</module>
-        <module>pubsub</module>
-        <module>spanner</module>
-        <module>storage</module>
-        <module>firestore</module>
+        <module>runtime</module>
+        <module>deployment</module>
     </modules>
+
 
 </project>

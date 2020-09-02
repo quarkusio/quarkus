@@ -1,7 +1,5 @@
 package io.quarkus.it.kubernetes.client;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 
 import org.assertj.core.api.Assertions;
@@ -14,7 +12,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
-public class AbsentConfigMapPropertiesTest {
+public class AbsentConfigMapPropertiesPMT {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()

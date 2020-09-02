@@ -74,7 +74,6 @@
         <maven-core.version>3.6.3</maven-core.version>
         <maven-resolver.version>1.4.1</maven-resolver.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
-        <guava.version>27.0.1-jre</guava.version>
         <plexus-utils.version>3.2.1</plexus-utils.version>
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
@@ -207,6 +206,12 @@
         <log4j2-jboss-logmanager.version>1.0.0.Beta1</log4j2-jboss-logmanager.version>
         <log4j-jboss-logmanager.version>1.2.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.10.0</avro.version>
+        <!-- Version 10.0.0 exists but it causes a library dependency issue with micrometer,
+        see https://github.com/micrometer-metrics/micrometer/issues/2249 -->
+        <google-cloud-sdk.version>8.1.0</google-cloud-sdk.version>
+        <!-- The Google Cloud BOM includes the 'android' version of Guava so we need to fix the 'jre' version.
+        Make sure to keep these two libraries compatible. -->
+        <guava.version>29.0-jre</guava.version>
     </properties>
 
     <dependencyManagement>
@@ -282,6 +287,16 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>${awssdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Google Cloud dependencies, imported as a BOM -->
+            <!-- Warning : it will also manage the version of Guava -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>libraries-bom</artifactId>
+                <version>${google-cloud-sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -1867,6 +1882,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-google-cloud-functions-http-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-storage</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-google-cloud-storage-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

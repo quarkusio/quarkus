@@ -1,0 +1,11 @@
+---
+name: "Google Cloud Common"
+metadata:
+  keywords:
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  categories:
+  - "cloud"
+  status: "experimental"
+  unlisted: "true"

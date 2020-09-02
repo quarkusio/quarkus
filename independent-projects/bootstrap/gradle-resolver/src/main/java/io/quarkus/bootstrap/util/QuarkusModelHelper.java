@@ -135,8 +135,9 @@ public class QuarkusModelHelper {
             WorkspaceModule module = model.getWorkspace().getMainModule();
             module.getSourceSet().getSourceDirectories().stream().filter(File::exists).map(File::toPath)
                     .forEach(paths::add);
-            if (module.getSourceSet().getResourceDirectory().exists()) {
-                paths.add(module.getSourceSet().getResourceDirectory().toPath());
+            File resourceDirectory = module.getSourceSet().getResourceDirectory();
+            if (resourceDirectory != null && resourceDirectory.exists()) {
+                paths.add(resourceDirectory.toPath());
             }
             appArtifact.setPaths(paths.build());
         }

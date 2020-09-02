@@ -79,6 +79,6 @@ public abstract class AbstractGraphQLTest {
     static {
         PROPERTIES.put("smallrye.graphql.allowGet", "true");
         PROPERTIES.put("smallrye.graphql.printDataFetcherException", "true");
-        //        PROPERTIES.put("quarkus.log.category.\"io.quarkus.arc.processor\".level", "DEBUG");
+        PROPERTIES.put("smallrye.graphql.events.enabled", "true");
     }
 }

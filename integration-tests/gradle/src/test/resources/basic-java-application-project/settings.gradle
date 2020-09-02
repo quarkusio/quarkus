@@ -9,6 +9,3 @@ pluginManagement {
     }
 }
 rootProject.name='code-with-quarkus'
-include 'library'
-include 'application'
-

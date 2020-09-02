@@ -74,17 +74,22 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
-                                            loginManager.save(identity, exchange, null);
-                                            if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
-                                                handleRedirectBack(exchange);
-                                                //we  have authenticated, but we want to just redirect back to the original page
-                                                //so we don't actually authenticate the current request
-                                                //instead we have just set a cookie so the redirected request will be authenticated
-                                            } else {
-                                                exchange.response().setStatusCode(200);
-                                                exchange.response().end();
+                                            try {
+                                                loginManager.save(identity, exchange, null);
+                                                if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
+                                                    handleRedirectBack(exchange);
+                                                    //we  have authenticated, but we want to just redirect back to the original page
+                                                    //so we don't actually authenticate the current request
+                                                    //instead we have just set a cookie so the redirected request will be authenticated
+                                                } else {
+                                                    exchange.response().setStatusCode(200);
+                                                    exchange.response().end();
+                                                }
+                                                uniEmitter.complete(null);
+                                            } catch (Throwable t) {
+                                                log.error("Unable to complete post authentication", t);
+                                                uniEmitter.fail(t);
                                             }
-                                            uniEmitter.complete(null);
                                         }
                                     }, new Consumer<Throwable>() {
                                         @Override

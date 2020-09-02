@@ -36,6 +36,10 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-jsonb</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jackson</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -52,11 +56,12 @@
       <artifactId>quarkus-google-cloud-bigquery</artifactId>
       <version>999-SNAPSHOT</version>
     </dependency>
-
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jackson</artifactId>
+      <artifactId>quarkus-google-cloud-firestore</artifactId>
+      <version>999-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>

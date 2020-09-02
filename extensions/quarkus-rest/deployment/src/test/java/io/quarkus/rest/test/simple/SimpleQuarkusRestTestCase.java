@@ -196,4 +196,13 @@ public class SimpleQuarkusRestTestCase {
                 .statusCode(200)
                 .body(Matchers.equalTo("b"));
     }
+
+    @Test
+    public void testRequestAndResponseParams() {
+        RestAssured.get("/simple/request-response-params")
+                .then()
+                .body(Matchers.equalTo("127.0.0.1"))
+                .header("dummy", "value");
+
+    }
 }

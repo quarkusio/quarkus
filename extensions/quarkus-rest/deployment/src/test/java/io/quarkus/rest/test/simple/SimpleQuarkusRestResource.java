@@ -31,6 +31,8 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 @Path("/simple")
 public class SimpleQuarkusRestResource {
@@ -240,4 +242,12 @@ public class SimpleQuarkusRestResource {
     public String preMatchPost() {
         return "pre-match-post";
     }
+
+    @GET
+    @Path("request-response-params")
+    public String requestAndResponseParams(@Context HttpServerRequest request, @Context HttpServerResponse response) {
+        response.headers().add("dummy", "value");
+        return request.remoteAddress().host();
+    }
+
 }

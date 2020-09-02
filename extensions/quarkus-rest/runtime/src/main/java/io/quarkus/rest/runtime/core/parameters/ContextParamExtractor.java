@@ -8,6 +8,8 @@ import javax.ws.rs.sse.SseEventSink;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
@@ -37,6 +39,12 @@ public class ContextParamExtractor implements ParameterExtractor {
             QuarkusRestSseEventSink sink = new QuarkusRestSseEventSink(context);
             context.setSseEventSink(sink);
             return sink;
+        }
+        if (type.equals(HttpServerResponse.class.getName())) {
+            return context.getContext().response();
+        }
+        if (type.equals(HttpServerRequest.class.getName())) {
+            return context.getContext().request();
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

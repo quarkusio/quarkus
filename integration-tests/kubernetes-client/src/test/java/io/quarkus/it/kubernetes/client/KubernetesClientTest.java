@@ -53,6 +53,9 @@ public class KubernetesClientTest {
         // same here, the content itself doesn't really matter
         mockServer.expect().post().withPath("/api/v1/namespaces/test/pods").andReturn(201, new PodBuilder()
                 .withNewMetadata().withResourceVersion("54321").and().build()).once();
+
+        System.out.println(mockServer.getHostName() + ":" + mockServer.getPort()
+                + " Mock server has been setup with necessary expected endpoints");
     }
 
     @Test

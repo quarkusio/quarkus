@@ -100,6 +100,7 @@ public class QuarkusProdModeTest
     // by default, we use these lower heap settings
     private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
     private Map<String, String> testResourceProperties = new HashMap<>();
+    private TestResourceManager testResourceManager;
 
     private Process process;
 
@@ -321,19 +322,9 @@ public class QuarkusProdModeTest
         };
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
 
-        ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
-        if (store.get(TestResourceManager.class.getName()) == null) {
-            TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
-            testResourceProperties = manager.start();
-            store.put(TestResourceManager.class.getName(), new ExtensionContext.Store.CloseableResource() {
-
-                @Override
-                public void close() throws Throwable {
-                    manager.close();
-                }
-            });
-        }
+        testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
+        testResourceManager.init();
+        testResourceProperties = testResourceManager.start();
 
         Class<?> testClass = extensionContext.getRequiredTestClass();
 
@@ -577,6 +568,13 @@ public class QuarkusProdModeTest
                 curatedApplication.close();
             }
         } finally {
+            if (this.testResourceManager != null) {
+                try {
+                    this.testResourceManager.close();
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
             timeoutTask.cancel();
             timeoutTask = null;
 

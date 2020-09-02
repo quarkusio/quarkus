@@ -19,6 +19,11 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
     }
 
     @Override
+    OrdinalData ordinalData() {
+        return OrdinalData.CONFIG_MAP;
+    }
+
+    @Override
     ConfigSource createLiteralDataConfigSource(String kubernetesConfigSourceName, Map<String, String> propertyMap,
             int ordinal) {
         return new ConfigMapLiteralDataPropertiesConfigSource(kubernetesConfigSourceName, propertyMap, ordinal);

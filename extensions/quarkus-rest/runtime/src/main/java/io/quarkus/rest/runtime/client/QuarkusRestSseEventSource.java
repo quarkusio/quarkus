@@ -127,7 +127,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
             });
             connection = event.request().connection();
             connection.closeHandler(v -> {
-                System.err.println("Client was closed by server");
+                close(true);
             });
             event.handler(this);
         }).handle((response, throwable) -> {
@@ -164,10 +164,20 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
 
     @Override
     public boolean close(long timeout, TimeUnit unit) {
-        // FIXME: should wait for stuff?
-        isOpen = false;
-        connection.close();
+        close(false);
         return true;
+    }
+
+    private void close(boolean clientClosed) {
+        isOpen = false;
+        if (clientClosed) {
+            // FIXME: should wait for stuff?
+            connection.close();
+        }
+        // notify completion
+        for (Runnable runnable : completionListeners) {
+            runnable.run();
+        }
     }
 
     @Override

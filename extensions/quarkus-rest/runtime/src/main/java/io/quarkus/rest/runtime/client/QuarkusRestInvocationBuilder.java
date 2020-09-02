@@ -139,6 +139,9 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public <T extends RxInvoker> T rx(Class<T> clazz) {
+        if (clazz == QuarkusRestMultiInvoker.class) {
+            return (T) new QuarkusRestMultiInvoker(target);
+        }
         return null;
     }
 

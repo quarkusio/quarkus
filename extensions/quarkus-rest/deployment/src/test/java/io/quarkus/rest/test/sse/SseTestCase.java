@@ -1,6 +1,8 @@
 package io.quarkus.rest.test.sse;
 
 import java.net.URI;
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -17,10 +19,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.runtime.client.QuarkusRestMultiInvoker;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.smallrye.mutiny.Multi;
 
-//@Disabled("SSE not implemented yet")
 public class SseTestCase {
 
     @TestHTTPResource
@@ -52,5 +55,15 @@ public class SseTestCase {
             eventSource.open();
             Assertions.assertEquals("hello", res.get(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testSseMulti() throws Exception {
+        Client client = ClientBuilder.newBuilder().build();
+        WebTarget target = client.target(uri.toString() + "sse/multi");
+        Multi<String> multi = target.request().rx(QuarkusRestMultiInvoker.class).get(String.class);
+        List<String> list = multi.collectItems().asList().await().atMost(Duration.ofSeconds(5));
+        Assertions.assertEquals(1, list.size());
+        Assertions.assertEquals("hello", list.get(0));
     }
 }

@@ -11,6 +11,8 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
+import io.smallrye.mutiny.Multi;
+
 @Path("sse")
 public class SseResource {
 
@@ -27,5 +29,12 @@ public class SseResource {
 
         sseBroadcaster.register(sink);
         sseBroadcaster.broadcast(sse.newEventBuilder().data("hello").build());
+    }
+
+    @Path("multi")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<String> multiText() {
+        return Multi.createFrom().items("hello");
     }
 }

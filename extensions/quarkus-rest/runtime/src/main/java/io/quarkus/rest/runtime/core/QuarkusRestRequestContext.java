@@ -431,6 +431,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
     @Override
     public void close() {
         //TODO: do we even have any resources to close?
+        // FIXME: probably move request context termination here, otherwise we can only terminate it from run()
     }
 
     public Response getResponse() {

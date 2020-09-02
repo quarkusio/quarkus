@@ -45,6 +45,7 @@ import io.quarkus.rest.runtime.handlers.InputHandler;
 import io.quarkus.rest.runtime.handlers.InstanceHandler;
 import io.quarkus.rest.runtime.handlers.InvocationHandler;
 import io.quarkus.rest.runtime.handlers.MediaTypeMapper;
+import io.quarkus.rest.runtime.handlers.MultiResponseHandler;
 import io.quarkus.rest.runtime.handlers.ParameterHandler;
 import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
 import io.quarkus.rest.runtime.handlers.ReadBodyHandler;
@@ -367,6 +368,7 @@ public class QuarkusRestRecorder {
         // FIXME: those two should not be in sequence unless we intend to support CompletionStage<Uni<String>>
         handlers.add(new CompletionStageResponseHandler());
         handlers.add(new UniResponseHandler());
+        handlers.add(new MultiResponseHandler());
         ServerMediaType serverMediaType = null;
         if (method.getHttpMethod() == null) {
             //this is a resource locator method

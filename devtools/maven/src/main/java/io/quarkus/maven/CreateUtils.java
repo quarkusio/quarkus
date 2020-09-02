@@ -9,7 +9,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -77,17 +76,9 @@ public final class CreateUtils {
         String artifactId = StringUtils.defaultIfBlank(bomArtifactId, null);
         String version = StringUtils.defaultIfBlank(bomVersion, null);
 
-        if (version == null) {
-            if (CreateUtils.QUARKUS_CORE_BOM_ARTIFACT_ID.equals(artifactId)) {
-                version = resolvePluginInfo(CreateUtils.class).getVersion();
-            } else if ((groupId == null && artifactId == null) || ("quarkus-universe-bom".equals(artifactId))) {
-                String baseVersion = resolvePluginInfo(CreateUtils.class).getVersion();
-                DefaultArtifactVersion pluginVersion = new DefaultArtifactVersion(baseVersion);
-                int majorVer = pluginVersion.getMajorVersion();
-                int minorVer = pluginVersion.getMinorVersion();
-                version = "[" + majorVer + "." + minorVer + "-snapshot, " + majorVer + "." + (minorVer + 1) + ")";
-            }
-
+        if (CreateUtils.QUARKUS_CORE_BOM_ARTIFACT_ID.equals(artifactId)
+                && version == null) {
+            version = resolvePluginInfo(CreateUtils.class).getVersion();
         }
 
         final QuarkusPlatformDescriptor platform;

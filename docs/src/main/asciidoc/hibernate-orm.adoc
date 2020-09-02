@@ -40,7 +40,7 @@ Add the following dependencies to your project:
 
 [source,xml]
 .Example dependencies using Maven
---
+----
 <dependencies>
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
@@ -54,14 +54,14 @@ Add the following dependencies to your project:
         <artifactId>quarkus-jdbc-postgresql</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 Annotate your persistent objects with `@Entity`,
 then add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
 .Example `{config-file}`
---
+----
 # datasource configuration
 quarkus.datasource.db-kind = postgresql
 quarkus.datasource.username = hibernate
@@ -70,7 +70,7 @@ quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 
 # drop and create the database at startup (use `update` to only update the schema)
 quarkus.hibernate-orm.database.generation=drop-and-create
---
+----
 
 Note that these configuration properties are not the same ones as in your typical Hibernate ORM configuration file: these drive Quarkus configuration properties,
 which often will map to Hibernate configuration properties but could have different names and don't necessarily map 1:1 to each other.
@@ -87,7 +87,7 @@ You can then happily inject your `EntityManager`:
 
 [source,java]
 .Example application bean using Hibernate
---
+----
 @ApplicationScoped
 public class SantaClausService {
     @Inject
@@ -100,14 +100,14 @@ public class SantaClausService {
         em.persist(gift);
     }
 }
---
+----
 
 <1> Inject your entity manager and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
 [source,java]
 .Example Entity
---
+----
 @Entity
 public class Gift {
     private Long id;
@@ -132,7 +132,7 @@ public class Gift {
         this.name = name;
     }
 }
---
+----
 
 To load some SQL statements when Hibernate ORM starts, add an `import.sql` in the root of your resources directory.
 Such a script can contain any SQL DML statements; make sure to terminate each statement with a semicolon.
@@ -168,19 +168,19 @@ Make up your mind on which approach you want to use.
 Want to start a PostgreSQL server on the side with Docker?
 
 [source,shell]
---
+----
 docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
            --name postgres-quarkus-hibernate -e POSTGRES_USER=hibernate \
            -e POSTGRES_PASSWORD=hibernate -e POSTGRES_DB=hibernate_db \
            -p 5432:5432 postgres:10.5
---
+----
 
 This will start a non-durable empty database: ideal for a quick experiment!
 ====
 
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
-Alternatively, you can use a `META-INF/persistence.xml` to setup Hibernate ORM.
+Alternatively, you can use a `META-INF/persistence.xml` to set up Hibernate ORM.
 This is useful for:
 
 * migrating existing code
@@ -188,17 +188,17 @@ This is useful for:
 * or if you like it the good old way
 
 [NOTE]
---
+====
 If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
 and only persistence units defined in `persistence.xml` will be taken into account.
---
+====
 
 Your `pom.xml` dependencies as well as your Java code would be identical to the precedent example. The only
 difference is that you would specify your Hibernate ORM configuration in `META-INF/persistence.xml`:
 
 [source,xml]
 .Example persistence.xml resource
---
+----
 <persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
@@ -227,7 +227,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 
     </persistence-unit>
 </persistence>
---
+----
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
 so in this case the appropriate reference is the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#configurations[documentation on hibernate.org].
@@ -259,10 +259,10 @@ This is best to perfectly control your environment and works magic with Quarkus 
 your entity changes or any change to your `import.sql` is immediately picked up and the schema updated without restarting the application!
 
 [TIP]
---
+====
 By default in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
---
+====
 
 The second approach is to use `quarkus.hibernate-orm.database.generation=update`.
 This approach is best when you do many entity changes but
@@ -290,7 +290,7 @@ This is great because you can define different combinations of Hibernate ORM pro
 
 [source]
 .application.properties
---
+----
 %dev.quarkus.hibernate-orm.database.generation = drop-and-create
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 
@@ -299,13 +299,13 @@ This is great because you can define different combinations of Hibernate ORM pro
 
 %prod.quarkus.hibernate-orm.database.generation = none
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
---
+----
 
 [source,bash]
 .Start "dev mode" using a custom profile via Maven
---
+----
 ./mvnw compile quarkus:dev -Dquarkus.profile=dev-with-data
---
+----
 
 == Hibernate ORM in production mode
 
@@ -325,10 +325,10 @@ Add the following in your properties file.
 
 [source]
 .application.properties
---
+----
 %prod.quarkus.hibernate-orm.database.generation = none
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
---
+----
 
 [[caching]]
 == Caching
@@ -340,14 +340,14 @@ Applications that frequently read the same entities can see their performance im
 To enable second-level cache, mark the entities that you want cached with `@javax.persistence.Cacheable`:
 
 [source,java]
---
+----
 @Entity
 @Cacheable
 public class Country {
     int dialInCode;
     // ...
 }
---
+----
 
 When an entity is annotated with `@Cacheable`, all its field values are cached except for collections and relations to other entities.
 
@@ -358,7 +358,7 @@ This means the entity can be loaded without querying the database, but be carefu
 Collections and relations need to be individually annotated to be cached; in this case the Hibernate specific `@org.hibernate.annotations.Cache` should be used, which requires also to specify the `CacheConcurrencyStrategy`:
 
 [source,java]
---
+----
 package org.acme;
 
 @Entity
@@ -372,7 +372,7 @@ public class Country {
 
     // ...
 }
---
+----
 
 === Caching of queries
 
@@ -383,22 +383,22 @@ Be careful as this implies the results might not reflect recent changes.
 To cache a query, mark it as cacheable on the `Query` instance:
 
 [source,java]
---
+----
 Query query = ...
 query.setHint("org.hibernate.cacheable", Boolean.TRUE);
---
+----
 
 If you have a `NamedQuery` then you can enable caching directly on its definition, which will usually be on an entity:
 
 [source,java]
---
+----
 @Entity
 @NamedQuery(name = "Fruits.findAll",
       query = "SELECT f FROM Fruit f ORDER BY f.name",
       hints = @QueryHint(name = "org.hibernate.cacheable", value = "true") )
 public class Fruit {
    ...
---
+----
 
 That's all! Caching technology is already integrated and enabled by default in Quarkus, so it's enough to set which ones are safe to be cached.
 
@@ -421,9 +421,11 @@ To set the maximum idle time, provide the duration (see note on duration's forma
 [NOTE]
 ====
 The double quotes are mandatory if your region name contains a dot. For instance:
-```
+
+[source,properties]
+----
 quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
-```
+----
 ====
 
 
@@ -436,7 +438,7 @@ The caching technology provided within Quarkus is currently quite rudimentary an
 The team thought it was better to have _some_ caching capability to start with, than having nothing; you can expect better caching solution to be integrated in future releases, and any help and feedback in this area is very welcome.
 
 [NOTE]
---
+====
 These caches are kept locally, so they are not invalidated or updated when changes are made to the persistent store by other applications.
 
 Also, when running multiple copies of the same application (in a cluster, for example on Kubernetes/OpenShift), caches in separate copies of the application aren't synchronized.
@@ -451,7 +453,7 @@ On top of immutable data, in certain contexts it might be acceptable to enable c
  produce unexpected and unforeseen effects on the data.
 
 Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time Quarkus doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
---
+====
 
 Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`; this is a setting that needs to be specified in the `persistence.xml` configuration file.
 
@@ -465,13 +467,13 @@ In Quarkus, Envers has a dedicated Quarkus Extension `io.quarkus:quarkus-hiberna
 
 [source,xml]
 .Additional dependency to enable Hibernate Envers
---
+----
     <!-- Add the Hibernate Envers extension -->
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-envers</artifactId>
     </dependency>
---
+----
 
 At this point the extension does not expose additional configuration properties.
 

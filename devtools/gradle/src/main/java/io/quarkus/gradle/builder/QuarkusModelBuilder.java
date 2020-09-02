@@ -316,9 +316,13 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
     }
 
     private SourceSetImpl convert(SourceSet sourceSet) {
+        if (sourceSet.getOutput().getResourcesDir().exists()) {
+            return new SourceSetImpl(
+                    sourceSet.getOutput().getClassesDirs().getFiles(),
+                    sourceSet.getOutput().getResourcesDir());
+        }
         return new SourceSetImpl(
-                sourceSet.getOutput().getClassesDirs().getFiles(),
-                sourceSet.getOutput().getResourcesDir());
+                sourceSet.getOutput().getClassesDirs().getFiles());
     }
 
     private io.quarkus.bootstrap.resolver.model.SourceSet getSourceSourceSet(SourceSet sourceSet) {

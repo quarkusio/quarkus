@@ -10,11 +10,15 @@ import java.util.stream.Collectors;
 public class SourceSetImpl implements SourceSet, Serializable {
 
     private Set<File> sourceDirectories = new HashSet<>();
-    private final File resourceDirectory;
+    private File resourceDirectory;
 
     public SourceSetImpl(Set<File> sourceDirectories, File resourceDirectory) {
         this.sourceDirectories.addAll(sourceDirectories);
         this.resourceDirectory = resourceDirectory;
+    }
+
+    public SourceSetImpl(Set<File> sourceDirectories) {
+        this.sourceDirectories.addAll(sourceDirectories);
     }
 
     public void addSourceDirectories(Set<File> files) {

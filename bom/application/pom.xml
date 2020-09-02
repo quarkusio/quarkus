@@ -212,6 +212,9 @@
         <!-- The Google Cloud BOM includes the 'android' version of Guava so we need to fix the 'jre' version.
         Make sure to keep these two libraries compatible. -->
         <guava.version>29.0-jre</guava.version>
+        <!-- Google Cloud library BOM has a dependency issue for google-api-client,
+        we fix it's version until we can update the BOM.-->
+        <google-api-client.version>1.30.10</google-api-client.version>
     </properties>
 
     <dependencyManagement>
@@ -292,7 +295,6 @@
             </dependency>
 
             <!-- Google Cloud dependencies, imported as a BOM -->
-            <!-- Warning : it will also manage the version of Guava -->
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
@@ -2151,6 +2153,11 @@
                         <artifactId>checker-qual</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.google.api-client</groupId>
+                <artifactId>google-api-client</artifactId>
+                <version>${google-api-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.cloud.functions</groupId>

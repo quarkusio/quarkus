@@ -1,3 +1,6 @@
+**WARNING:** all tests are disabled by default. 
+If you want to run them, you need to configure a valid GCP project inside the `application.properties`.
+
 ## Spanner
 To test Spanner you first need to have a running Spanner cluster named `test-instance`.
 
@@ -14,7 +17,7 @@ You can create one with `gcloud`:
 gcloud spanner databases create test-database --instance test-instance
 ```
 
-And finally you need to create a table named .
+And finally you need to create a table named `Singers`.
 
 You can do it with `gcloud`:
 ```
@@ -32,7 +35,7 @@ gcloud pubsub topics create test-topic
 ```
 
 As PubSub mandates the usage of the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to define it's credential, 
-you need to set this one instead of relying on of the `quarkus.google.cloud.service-account-location` property. 
+you need to set this one instead of relying on the `quarkus.google.cloud.service-account-location` property. 
 
 ```
 export GOOGLE_APPLICATION_CREDENTIALS=<your-service-account-file>

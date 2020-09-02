@@ -1,0 +1,12 @@
+---
+name: "Google Cloud Spanner"
+metadata:
+  keywords:
+  - "spanner"
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  categories:
+  - "cloud"
+  - "data"
+  status: "experimental"

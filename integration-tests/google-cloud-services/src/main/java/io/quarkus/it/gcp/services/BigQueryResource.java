@@ -19,18 +19,19 @@ import com.google.cloud.bigquery.TableResult;
 
 @Path("/bigquery")
 public class BigQueryResource {
-    @Inject BigQuery bigquery;
+    @Inject
+    BigQuery bigquery;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String bigquery() throws InterruptedException {
         QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
-            "SELECT "
-                    + "CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING)) as url, view_count "
-                    + "FROM `bigquery-public-data.stackoverflow.posts_questions` "
-                    + "WHERE tags like '%google-bigquery%' ORDER BY favorite_count DESC LIMIT 10")
-            .setUseLegacySql(false)
-            .build();
+                "SELECT "
+                        + "CONCAT('https://stackoverflow.com/questions/', CAST(id as STRING)) as url, view_count "
+                        + "FROM `bigquery-public-data.stackoverflow.posts_questions` "
+                        + "WHERE tags like '%google-bigquery%' ORDER BY favorite_count DESC LIMIT 10")
+                .setUseLegacySql(false)
+                .build();
 
         // Create a job ID so that we can safely retry.
         JobId jobId = JobId.of(UUID.randomUUID().toString());

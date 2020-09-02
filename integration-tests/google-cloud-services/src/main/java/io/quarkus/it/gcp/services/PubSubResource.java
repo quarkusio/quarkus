@@ -13,6 +13,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
 
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
@@ -31,13 +32,13 @@ import com.google.pubsub.v1.PushConfig;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.Topic;
 import com.google.pubsub.v1.TopicName;
-import org.jboss.logging.Logger;
 
 @Path("/pubsub")
 public class PubSubResource {
     private static final Logger LOG = Logger.getLogger(PubSubResource.class);
 
-    @ConfigProperty(name="quarkus.google.cloud.project-id") String projectId;
+    @ConfigProperty(name = "quarkus.google.cloud.project-id")
+    String projectId;
 
     private TopicName topicName;
     private Subscriber subscriber;
@@ -48,17 +49,18 @@ public class PubSubResource {
         ProjectSubscriptionName subscriptionName = initTopicAndSubscription();
 
         // subscribe to PubSub
-        MessageReceiver receiver =  (message, consumer) -> {
+        MessageReceiver receiver = (message, consumer) -> {
             LOG.infov("Got message {0}", message.getData().toStringUtf8());
             consumer.ack();
         };
-        subscriber = Subscriber.newBuilder(subscriptionName, receiver).build();;
+        subscriber = Subscriber.newBuilder(subscriptionName, receiver).build();
+        ;
         subscriber.startAsync().awaitRunning();
     }
 
     @PreDestroy
     void destroy() {
-        if(subscriber != null){
+        if (subscriber != null) {
             subscriber.stopAsync();
         }
     }
@@ -92,17 +94,18 @@ public class PubSubResource {
             Optional<Topic> existing = StreamSupport.stream(topics.spliterator(), false)
                     .filter(topic -> topic.getName().equals(topicName.toString()))
                     .findFirst();
-            if(!existing.isPresent()){
+            if (!existing.isPresent()) {
                 topicAdminClient.createTopic(topicName.toString());
             }
         }
         ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, "test-subscription");
         try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create()) {
-            Iterable<Subscription> subscriptions = subscriptionAdminClient.listSubscriptions(ProjectName.of(projectId)).iterateAll();
+            Iterable<Subscription> subscriptions = subscriptionAdminClient.listSubscriptions(ProjectName.of(projectId))
+                    .iterateAll();
             Optional<Subscription> existing = StreamSupport.stream(subscriptions.spliterator(), false)
                     .filter(sub -> sub.getName().equals(subscriptionName.toString()))
                     .findFirst();
-            if(!existing.isPresent()){
+            if (!existing.isPresent()) {
                 subscriptionAdminClient.createSubscription(subscriptionName, topicName, PushConfig.getDefaultInstance(), 0);
             }
         }

@@ -9,12 +9,12 @@ import javax.ws.rs.core.MediaType;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Storage;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @Path("/storage")
 public class StorageResource {
 
-    @Inject Storage storage;
+    @Inject
+    Storage storage;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

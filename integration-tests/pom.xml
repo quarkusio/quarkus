@@ -147,7 +147,7 @@
         
         <module>google-cloud-functions-http</module>
         <module>google-cloud-functions</module>
-        <module>google-services</module>
+        <module>google-cloud-services</module>
     </modules>
 
     <build>

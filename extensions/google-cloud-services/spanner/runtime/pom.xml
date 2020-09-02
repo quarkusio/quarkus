@@ -30,7 +30,7 @@
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
                 </exclusion>
-                <!-- We exclude the grpc-netty-shaded< library and include only the grpc-netty
+                <!-- We exclude the grpc-netty-shaded library and include only the grpc-netty
                 one as netty is already included with Quarkus -->
                 <exclusion>
                     <groupId>io.grpc</groupId>

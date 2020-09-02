@@ -1,0 +1,11 @@
+---
+name: "Google Cloud Storage"
+metadata:
+  keywords:
+  - "storage"
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  categories:
+  - "cloud"
+  status: "experimental"

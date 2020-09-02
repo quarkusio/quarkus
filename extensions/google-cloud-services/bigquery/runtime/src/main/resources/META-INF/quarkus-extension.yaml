@@ -1,0 +1,12 @@
+---
+name: "Google Cloud Bigquery"
+metadata:
+  keywords:
+  - "bigquery"
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  categories:
+  - "cloud"
+  - "data"
+  status: "experimental"

@@ -1,0 +1,12 @@
+---
+name: "Google Cloud Pubsub"
+metadata:
+  keywords:
+  - "pubsub"
+  - "google cloud"
+  - "gcloud"
+  - "gcp"
+  categories:
+    - "cloud"
+    - "messaging"
+  status: "experimental"

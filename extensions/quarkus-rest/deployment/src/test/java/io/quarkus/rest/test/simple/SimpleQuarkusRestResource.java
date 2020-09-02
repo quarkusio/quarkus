@@ -24,6 +24,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.Blocking;
@@ -248,6 +249,12 @@ public class SimpleQuarkusRestResource {
     public String requestAndResponseParams(@Context HttpServerRequest request, @Context HttpServerResponse response) {
         response.headers().add("dummy", "value");
         return request.remoteAddress().host();
+    }
+
+    @GET
+    @Path("jax-rs-request")
+    public String jaxRsRequest(@Context Request request) {
+        return request.getMethod();
     }
 
 }

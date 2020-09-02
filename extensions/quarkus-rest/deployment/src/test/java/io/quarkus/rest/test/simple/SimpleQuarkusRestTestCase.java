@@ -205,4 +205,11 @@ public class SimpleQuarkusRestTestCase {
                 .header("dummy", "value");
 
     }
+
+    @Test
+    public void testJaxRsRequest() {
+        RestAssured.get("/simple/jax-rs-request")
+                .then()
+                .body(Matchers.equalTo("GET"));
+    }
 }

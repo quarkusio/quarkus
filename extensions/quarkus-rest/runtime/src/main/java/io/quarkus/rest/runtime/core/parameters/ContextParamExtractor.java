@@ -2,6 +2,7 @@ package io.quarkus.rest.runtime.core.parameters;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.sse.SseEventSink;
 
@@ -39,6 +40,9 @@ public class ContextParamExtractor implements ParameterExtractor {
             QuarkusRestSseEventSink sink = new QuarkusRestSseEventSink(context);
             context.setSseEventSink(sink);
             return sink;
+        }
+        if (type.equals(Request.class.getName())) {
+            return context.getRequest();
         }
         if (type.equals(HttpServerResponse.class.getName())) {
             return context.getContext().response();

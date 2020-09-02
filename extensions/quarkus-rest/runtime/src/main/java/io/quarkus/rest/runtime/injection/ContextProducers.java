@@ -5,6 +5,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.sse.Sse;
 
@@ -40,6 +41,12 @@ public class ContextProducers {
     @Produces
     Sse sse() {
         return QuarkusRestSse.INSTANCE;
+    }
+
+    @RequestScoped
+    @Produces
+    Request request() {
+        return getContext().getRequest();
     }
 
     // HttpServerRequest is a Vert.x type so it's not necessary to have it injectable via @Context,

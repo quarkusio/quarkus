@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartSpec.Type.CODE;
-import static io.quarkus.devtools.codestarts.CodestartSpec.Type.PROJECT;
+import static io.quarkus.devtools.codestarts.CodestartType.CODE;
+import static io.quarkus.devtools.codestarts.CodestartType.PROJECT;
 import static org.apache.commons.io.IOUtils.resourceToString;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;

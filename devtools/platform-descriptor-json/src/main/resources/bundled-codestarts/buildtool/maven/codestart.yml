@@ -18,9 +18,6 @@ language:
       maven-surefire-plugin:
         version: 2.22.1
     shared-data:
-      uberjar: false
-      supports:
-        native: true
       buildtool:
         build-dir: target
         guide: https://quarkus.io/guides/maven-tooling.html

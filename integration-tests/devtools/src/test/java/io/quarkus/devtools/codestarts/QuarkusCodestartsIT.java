@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
-import io.quarkus.devtools.codestarts.CodestartSpec.Type;
 import io.quarkus.devtools.project.BuildTool;
 
 class QuarkusCodestartsIT extends PlatformAwareTestBase {
@@ -64,13 +63,13 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .noExamples()
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        assertThat(codestartProject.getRequiredCodestart(Type.PROJECT)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/project/quarkus");
-        assertThat(codestartProject.getRequiredCodestart(Type.BUILDTOOL)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/buildtool/maven");
-        assertThat(codestartProject.getRequiredCodestart(Type.CONFIG)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/config/properties");
-        assertThat(codestartProject.getRequiredCodestart(Type.LANGUAGE)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/language/java");
         assertThat(codestartProject.getBaseCodestarts()).hasSize(4);
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
@@ -83,7 +82,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE)
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        assertThat(codestartProject.getRequiredCodestart(Type.BUILDTOOL)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/buildtool/gradle");
     }
 
@@ -93,7 +92,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        assertThat(codestartProject.getRequiredCodestart(Type.LANGUAGE)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/language/kotlin");
     }
 
@@ -103,7 +102,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        assertThat(codestartProject.getRequiredCodestart(Type.LANGUAGE)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/language/scala");
     }
 
@@ -113,7 +112,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        assertThat(codestartProject.getRequiredCodestart(Type.CONFIG)).extracting(Codestart::getResourceDir)
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
                 .isEqualTo("bundled-codestarts/config/yaml");
     }
 

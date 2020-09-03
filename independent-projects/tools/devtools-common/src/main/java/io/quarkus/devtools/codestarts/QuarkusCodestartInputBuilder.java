@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.util.ArrayList;
@@ -62,6 +63,11 @@ public class QuarkusCodestartInputBuilder {
         return this;
     }
 
+    public QuarkusCodestartInputBuilder messageWriter(MessageWriter messageWriter) {
+        this.inputBuilder.messageWriter(messageWriter);
+        return this;
+    }
+
     public QuarkusCodestartInputBuilder noExamples() {
         return this.noExamples(true);
     }
@@ -91,7 +97,6 @@ public class QuarkusCodestartInputBuilder {
 
     public QuarkusCodestartInputBuilder buildTool(BuildTool buildTool) {
         this.buildTool = requireNonNull(buildTool, "buildTool is required");
-        ;
         return this;
     }
 

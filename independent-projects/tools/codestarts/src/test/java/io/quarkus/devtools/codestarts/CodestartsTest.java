@@ -69,10 +69,10 @@ class CodestartsTest {
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
 
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.PROJECT).getName()).isEqualTo("foo");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.LANGUAGE).getName()).isEqualTo("a");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.BUILDTOOL).getName()).isEqualTo("y");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.CONFIG).getName()).isEqualTo("config-properties");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.PROJECT).getName()).isEqualTo("foo");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE).getName()).isEqualTo("a");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL).getName()).isEqualTo("y");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-properties");
 
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
                 .containsExactlyInAnyOrder("bundled-codestarts/tooling-t");
@@ -103,10 +103,10 @@ class CodestartsTest {
                 .build();
         final CodestartProject codestartProject = Codestarts.prepareProject(input);
 
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.PROJECT).getName()).isEqualTo("foo");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.LANGUAGE).getName()).isEqualTo("b");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.BUILDTOOL).getName()).isEqualTo("maven");
-        assertThat(codestartProject.getRequiredCodestart(CodestartSpec.Type.CONFIG).getName()).isEqualTo("config-yaml");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.PROJECT).getName()).isEqualTo("foo");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE).getName()).isEqualTo("b");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL).getName()).isEqualTo("maven");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-yaml");
 
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
                 .containsExactlyInAnyOrder("bundled-codestarts/example-with-b");

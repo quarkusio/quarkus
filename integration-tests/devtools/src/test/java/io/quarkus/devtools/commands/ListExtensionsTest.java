@@ -28,6 +28,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
@@ -83,57 +84,54 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         model = readPom(pom);
 
-        final PrintStream out = System.out;
-        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
-            System.setOut(printStream);
-            new ListExtensions(quarkusProject)
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                final PrintStream printStream = new PrintStream(baos, true, "UTF-8")) {
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
                     .all(true)
                     .format("full")
                     .execute();
-        } finally {
-            System.setOut(out);
-        }
-        boolean agroal = false;
-        boolean resteasy = false;
-        boolean panache = false;
-        boolean hibernateValidator = false;
-        final String output = baos.toString("UTF-8");
-        boolean checkGuideInLineAfter = false;
-        for (String line : output.split("\r?\n")) {
-            if (line.contains("agroal")) {
-                assertTrue(line.startsWith("default"), "Agroal should list as being default: " + line);
-                agroal = true;
-            } else if (line.contains("quarkus-resteasy ")) {
-                assertTrue(line.startsWith("custom*"), "RESTEasy should list as being custom*: " + line);
-                assertTrue(
-                        line.endsWith(
-                                String.format("%-15s", getMavenPluginVersion())),
-                        "RESTEasy should list as being custom*: " + line);
-                resteasy = true;
-                checkGuideInLineAfter = true;
-            } else if (line.contains("quarkus-hibernate-orm-panache ")) {
-                assertTrue(line.startsWith("custom"), "Panache should list as being custom: " + line);
-                assertTrue(
-                        line.endsWith(String.format("%-25s", getMavenPluginVersion())),
-                        "Panache should list as being custom*: " + line);
-                panache = true;
-            } else if (line.contains("hibernate-validator")) {
-                assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
-                hibernateValidator = true;
-            } else if (checkGuideInLineAfter) {
-                checkGuideInLineAfter = false;
-                assertTrue(
-                        line.endsWith(
-                                String.format("%s", "https://quarkus.io/guides/rest-json")),
-                        "RESTEasy should list as having an guide: " + line);
-            }
-        }
+            final String output = baos.toString("UTF-8");
 
-        assertTrue(agroal);
-        assertTrue(resteasy);
-        assertTrue(hibernateValidator);
-        assertTrue(panache);
+            boolean agroal = false;
+            boolean resteasy = false;
+            boolean panache = false;
+            boolean hibernateValidator = false;
+            boolean checkGuideInLineAfter = false;
+            for (String line : output.split("\r?\n")) {
+                if (line.contains("agroal")) {
+                    assertTrue(line.startsWith("default"), "Agroal should list as being default: " + line);
+                    agroal = true;
+                } else if (line.contains("quarkus-resteasy ")) {
+                    assertTrue(line.startsWith("custom*"), "RESTEasy should list as being custom*: " + line);
+                    assertTrue(
+                            line.endsWith(
+                                    String.format("%-15s", getMavenPluginVersion())),
+                            "RESTEasy should list as being custom*: " + line);
+                    resteasy = true;
+                    checkGuideInLineAfter = true;
+                } else if (line.contains("quarkus-hibernate-orm-panache ")) {
+                    assertTrue(line.startsWith("custom"), "Panache should list as being custom: " + line);
+                    assertTrue(
+                            line.endsWith(String.format("%-25s", getMavenPluginVersion())),
+                            "Panache should list as being custom*: " + line);
+                    panache = true;
+                } else if (line.contains("hibernate-validator")) {
+                    assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
+                    hibernateValidator = true;
+                } else if (checkGuideInLineAfter) {
+                    checkGuideInLineAfter = false;
+                    assertTrue(
+                            line.endsWith(
+                                    String.format("%s", "https://quarkus.io/guides/rest-json")),
+                            "RESTEasy should list as having an guide: " + line);
+                }
+            }
+
+            assertTrue(agroal);
+            assertTrue(resteasy);
+            assertTrue(hibernateValidator);
+            assertTrue(panache);
+        }
     }
 
     @Test
@@ -144,14 +142,11 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final PrintStream out = System.out;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
-            System.setOut(printStream);
-            new ListExtensions(quarkusProject)
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
                     .all(true)
                     .format("full")
                     .search("unexpectedSearch")
                     .execute();
-        } finally {
-            System.setOut(out);
         }
         final String output = baos.toString("UTF-8");
         Assertions.assertEquals(String.format("No extension found with pattern 'unexpectedSearch'%n"), output,
@@ -166,14 +161,11 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final PrintStream out = System.out;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
-            System.setOut(printStream);
-            new ListExtensions(quarkusProject)
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
                     .all(true)
                     .format("full")
                     .search("Rest")
                     .execute();
-        } finally {
-            System.setOut(out);
         }
         final String output = baos.toString("UTF-8");
         Assertions.assertTrue(output.split("\r?\n").length > 7, "search to unexpected extension must return a message");

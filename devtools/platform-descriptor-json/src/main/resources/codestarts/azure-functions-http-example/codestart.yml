@@ -7,13 +7,9 @@ tags:
   - maven-only
 language:
   base:
-    shared-data:
-      uberjar: true
-      supports:
-        native: false
+    data:
       # /api is the default root context azure functions will prepend
       root-context-path: "/api"
-    data:
       app-region:
         westus
       resource-group:

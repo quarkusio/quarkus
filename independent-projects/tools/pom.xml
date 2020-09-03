@@ -57,6 +57,7 @@
     </properties>
     <modules>
         <module>platform-descriptor-api</module>
+        <module>message-writer</module>
         <module>codestarts</module>
         <module>devtools-common</module>
         <module>utilities</module>
@@ -88,6 +89,11 @@
                 <groupId>io.quarkus.qute</groupId>
                 <artifactId>qute-generator</artifactId>
                 <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-message-writer</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

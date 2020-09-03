@@ -3,6 +3,7 @@ package io.quarkus.devtools.codestarts;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategyHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ class CodestartProcessorTest {
         spec.put("*", "replace");
 
         final CodestartProcessor processor = new CodestartProcessor(
+                MessageWriter.DEFAULT,
                 Mockito.mock(CodestartResourceLoader.class),
                 "a",
                 Paths.get("test"),
@@ -35,6 +37,7 @@ class CodestartProcessorTest {
         spec.put("test/foo.tt", "forbidden");
 
         final CodestartProcessor processor = new CodestartProcessor(
+                MessageWriter.DEFAULT,
                 Mockito.mock(CodestartResourceLoader.class),
                 "a",
                 Paths.get("test"),

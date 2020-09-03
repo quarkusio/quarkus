@@ -8,8 +8,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.devtools.commands.ListExtensions;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**

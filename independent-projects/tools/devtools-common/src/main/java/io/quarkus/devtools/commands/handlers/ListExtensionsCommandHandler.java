@@ -37,6 +37,8 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
 
         final MessageWriter log = invocation.log();
         final boolean all = invocation.getValue(ListExtensions.ALL, true);
+        final boolean installedOnly = invocation.getValue(ListExtensions.INSTALLED, false);
+        final boolean cli = invocation.getValue(ListExtensions.FROM_CLI, false);
         final String format = invocation.getValue(ListExtensions.FORMAT, "concise");
         final String search = invocation.getValue(ListExtensions.SEARCH, "*");
         final ExtensionManager extensionManager = invocation.getValue(ListExtensions.EXTENSION_MANAGER,
@@ -57,8 +59,12 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
         if (platformExtensions.isEmpty()) {
             log.info("No extension found with pattern '%s'", search);
         } else {
-            String extensionStatus = all ? "available" : "installable";
-            log.info("%nCurrent Quarkus extensions %s: ", extensionStatus);
+            if (!cli) {
+                String extensionStatus = all ? "available" : "installable";
+                if (installedOnly)
+                    extensionStatus = "installed";
+                log.info("%nCurrent Quarkus extensions %s: ", extensionStatus);
+            }
 
             BiConsumer<MessageWriter, String[]> currentFormatter;
             switch (format.toLowerCase()) {
@@ -76,25 +82,27 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
             }
 
             platformExtensions.forEach(platformExtension -> display(log, platformExtension,
-                    installedByKey.get(toKey(platformExtension)), all, currentFormatter));
+                    installedByKey.get(toKey(platformExtension)), all, installedOnly, currentFormatter));
             final BuildTool buildTool = invocation.getQuarkusProject().getBuildTool();
             boolean isGradle = BuildTool.GRADLE.equals(buildTool) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildTool);
 
-            if ("concise".equalsIgnoreCase(format)) {
-                if (isGradle) {
-                    log.info("\nTo get more information, append --format=full to your command line.");
-                } else {
-                    log.info(
-                            "\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+            if (!cli) {
+                if ("concise".equalsIgnoreCase(format)) {
+                    if (isGradle) {
+                        log.info("\nTo get more information, append --format=full to your command line.");
+                    } else {
+                        log.info(
+                                "\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+                    }
                 }
-            }
 
-            if (isGradle) {
-                log.info("\nAdd an extension to your project by adding the dependency to your " +
-                        "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
-            } else {
-                log.info("\nAdd an extension to your project by adding the dependency to your " +
-                        "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
+                if (isGradle) {
+                    log.info("\nAdd an extension to your project by adding the dependency to your " +
+                            "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
+                } else {
+                    log.info("\nAdd an extension to your project by adding the dependency to your " +
+                            "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
+                }
             }
 
         }
@@ -116,8 +124,12 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
 
     private void display(MessageWriter messageWriter, final Extension platformExtension, final AppArtifactCoords installed,
             boolean all,
+            boolean installedOnly,
             BiConsumer<MessageWriter, String[]> formatter) {
-        if (!all && installed != null) {
+        if (installedOnly && installed == null) {
+            return;
+        }
+        if (!installedOnly && !all && installed != null) {
             return;
         }
 

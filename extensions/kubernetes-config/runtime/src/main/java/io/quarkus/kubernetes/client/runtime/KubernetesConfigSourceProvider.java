@@ -51,7 +51,8 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         List<ConfigSource> result = new ArrayList<>(configMapNames.size());
 
         try {
-            for (String configMapName : configMapNames) {
+            for (int i = 0; i < configMapNames.size(); i++) {
+                String configMapName = configMapNames.get(i);
                 if (log.isDebugEnabled()) {
                     log.debug("Attempting to read ConfigMap " + configMapName);
                 }
@@ -68,7 +69,8 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                     logMissingOrFail(configMapName, namespace, "ConfigMap", config.failOnMissingConfig);
                 } else {
                     result.addAll(
-                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata().getName(), configMap.getData()));
+                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata().getName(), configMap.getData(),
+                                    i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading ConfigMap " + configMap.getMetadata().getName());
                     }
@@ -85,7 +87,8 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         List<ConfigSource> result = new ArrayList<>(secretNames.size());
 
         try {
-            for (String secretName : secretNames) {
+            for (int i = 0; i < secretNames.size(); i++) {
+                String secretName = secretNames.get(i);
                 if (log.isDebugEnabled()) {
                     log.debug("Attempting to read Secret " + secretName);
                 }
@@ -101,7 +104,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 if (secret == null) {
                     logMissingOrFail(secretName, namespace, "Secret", config.failOnMissingConfig);
                 } else {
-                    result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData()));
+                    result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData(), i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading Secret " + secret.getMetadata().getName());
                     }

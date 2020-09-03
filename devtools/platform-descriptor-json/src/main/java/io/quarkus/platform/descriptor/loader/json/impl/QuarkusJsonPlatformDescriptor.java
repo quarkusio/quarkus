@@ -73,7 +73,7 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor,
     }
 
     private MessageWriter getLog() {
-        return log == null ? log = MessageWriter.DEFAULT : log;
+        return log == null ? log = MessageWriter.info() : log;
     }
 
     @Override

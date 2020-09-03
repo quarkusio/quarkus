@@ -12,7 +12,7 @@ public abstract class QuarkusJsonPlatformDescriptorLoaderContext implements Quar
     protected final ResourceLoader resourceLoader;
 
     public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver) {
-        this(artifactResolver, MessageWriter.DEFAULT);
+        this(artifactResolver, MessageWriter.info());
     }
 
     public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver, MessageWriter log) {

@@ -14,7 +14,7 @@ public class CodestartInputBuilder {
     Collection<AppArtifactKey> dependencies = new ArrayList<>();
     Collection<String> codestarts = new ArrayList<>();
     Map<String, Object> data = new HashMap<>();
-    MessageWriter messageWriter = MessageWriter.DEFAULT;
+    MessageWriter messageWriter = MessageWriter.info();
 
     CodestartInputBuilder(CodestartResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;

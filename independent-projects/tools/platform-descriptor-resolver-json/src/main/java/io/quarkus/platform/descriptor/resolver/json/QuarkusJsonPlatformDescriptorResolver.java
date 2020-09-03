@@ -176,7 +176,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
     private void ensureLoggerInitialized() {
         if (log == null) {
-            log = MessageWriter.DEFAULT;
+            log = MessageWriter.info();
         }
     }
 

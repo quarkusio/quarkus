@@ -20,7 +20,7 @@ class CodestartProcessorTest {
         spec.put("*", "replace");
 
         final CodestartProcessor processor = new CodestartProcessor(
-                MessageWriter.DEFAULT,
+                MessageWriter.info(),
                 Mockito.mock(CodestartResourceLoader.class),
                 "a",
                 Paths.get("test"),
@@ -37,7 +37,7 @@ class CodestartProcessorTest {
         spec.put("test/foo.tt", "forbidden");
 
         final CodestartProcessor processor = new CodestartProcessor(
-                MessageWriter.DEFAULT,
+                MessageWriter.info(),
                 Mockito.mock(CodestartResourceLoader.class),
                 "a",
                 Paths.get("test"),

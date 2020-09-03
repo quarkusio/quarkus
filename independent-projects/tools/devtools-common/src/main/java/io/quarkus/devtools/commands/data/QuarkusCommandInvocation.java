@@ -18,7 +18,7 @@ public final class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvoc
     }
 
     public QuarkusCommandInvocation(final QuarkusProject quarkusProject, final Map<String, Object> values) {
-        this(quarkusProject, values, MessageWriter.DEFAULT);
+        this(quarkusProject, values, MessageWriter.info());
     }
 
     public QuarkusCommandInvocation(final QuarkusProject quarkusProject, final Map<String, Object> values,

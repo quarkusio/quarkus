@@ -31,7 +31,7 @@ public class QuarkusPlatformConfig {
         }
 
         private MessageWriter getMessageWriter() {
-            return log == null ? log = MessageWriter.DEFAULT : log;
+            return log == null ? log = MessageWriter.info() : log;
         }
 
         public Builder setPlatformDescriptor(QuarkusPlatformDescriptor platformDescr) {

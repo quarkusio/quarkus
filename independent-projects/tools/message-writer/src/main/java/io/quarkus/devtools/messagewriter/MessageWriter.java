@@ -4,8 +4,6 @@ import java.io.PrintStream;
 
 public interface MessageWriter {
 
-    MessageWriter DEFAULT = info();
-
     static MessageWriter info() {
         return new DefaultMessageWriter();
     }

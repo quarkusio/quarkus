@@ -125,15 +125,15 @@ public class MongoWithReplicasTestBase {
             final MongoDatabase mongoAdminDB = mongo.getDatabase("admin");
 
             Document cr = mongoAdminDB.runCommand(new Document("isMaster", 1));
-            LOGGER.infof("isMaster: %s", cr);
+            LOGGER.debugf("isMaster: %s", cr);
 
             // Build replica set configuration settings
             final Document rsConfiguration = buildReplicaSetConfiguration(mongodConfigList);
-            LOGGER.infof("replSetSettings: %s", rsConfiguration);
+            LOGGER.debugf("replSetSettings: %s", rsConfiguration);
 
             // Initialize replica set
             cr = mongoAdminDB.runCommand(new Document("replSetInitiate", rsConfiguration));
-            LOGGER.infof("replSetInitiate: %s", cr);
+            LOGGER.debugf("replSetInitiate: %s", cr);
 
             // Check replica set status before to proceed
             await()

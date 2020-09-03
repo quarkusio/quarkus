@@ -69,7 +69,7 @@ class QuarkusModelBuilderTest {
         assertEquals(new File(projectDir, "build"), workspaceModule.getBuildDir());
         final SourceSet sourceSet = workspaceModule.getSourceSet();
         assertNotNull(sourceSet);
-        assertEquals(new File(projectDir, "build/resources/main"), sourceSet.getResourceDirectory());
+        assertNull(sourceSet.getResourceDirectory());
         assertEquals(1, sourceSet.getSourceDirectories().size());
         assertEquals(new File(projectDir, "build/classes/java/main"), sourceSet.getSourceDirectories().iterator().next());
         final SourceSet sourceSourceSet = workspaceModule.getSourceSourceSet();

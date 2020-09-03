@@ -334,6 +334,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             for (ClassPathElement i : elements) {
                 ClassPathResource res = i.getResource(name);
                 if (res != null) {
+                    if (res.isDirectory()) {
+                        try {
+                            return res.getUrl().openStream();
+                        } catch (IOException e) {
+                            log.debug("Ignoring exception that occurred while opening a stream for resource " + unsanitisedName,
+                                    e);
+                            // behave like how java.lang.ClassLoader#getResourceAsStream() behaves
+                            // and don't propagate the exception
+                            continue;
+                        }
+                    }
                     return new ByteArrayInputStream(res.getData());
                 }
             }

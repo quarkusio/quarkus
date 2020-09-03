@@ -21,7 +21,12 @@ public class MultiplePersistenceUnitConfigForRepositoryTest {
 
     @Test
     public void panacheOperations() {
-        RestAssured.when().get("/repository/name-1").then().body(Matchers.is("name-1"));
-        RestAssured.when().get("/repository/name-2").then().body(Matchers.is("name-2"));
+        // Using PanacheRepository
+        RestAssured.when().get("/persistence-unit/repository/name-1").then().body(Matchers.is("1"));
+        RestAssured.when().get("/persistence-unit/repository/name-2").then().body(Matchers.is("2"));
+
+        // Using PanacheEntity
+        RestAssured.when().get("/persistence-unit/panache-entity/name-1").then().body(Matchers.is("1"));
+        RestAssured.when().get("/persistence-unit/panache-entity/name-2").then().body(Matchers.is("2"));
     }
 }

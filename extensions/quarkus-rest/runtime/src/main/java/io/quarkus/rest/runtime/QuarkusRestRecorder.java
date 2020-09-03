@@ -79,6 +79,7 @@ import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
@@ -275,7 +276,7 @@ public class QuarkusRestRecorder {
                     //we could add another layer of indirection, however this is not a common case
                     //so we don't want to add any extra latency into the common case
                     RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, null, null, null,
-                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null);
+                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null, false);
                     result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
                 }
             }
@@ -439,7 +440,8 @@ public class QuarkusRestRecorder {
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
-                new LazyMethod(method.getName(), resourceClass, parameterTypes));
+                new LazyMethod(method.getName(), resourceClass, parameterTypes),
+                method.isStreaming());
     }
 
     public Map<String, Integer> buildParamIndexMap(URITemplate classPathTemplate, URITemplate methodPathTemplate) {
@@ -487,6 +489,9 @@ public class QuarkusRestRecorder {
                 return type.getActualTypeArguments()[0];
             }
             if (type.getRawType() == Uni.class) {
+                return type.getActualTypeArguments()[0];
+            }
+            if (type.getRawType() == Multi.class) {
                 return type.getActualTypeArguments()[0];
             }
             return returnType;

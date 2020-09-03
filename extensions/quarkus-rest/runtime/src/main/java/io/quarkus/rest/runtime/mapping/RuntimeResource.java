@@ -26,12 +26,14 @@ public class RuntimeResource {
     private final boolean blocking;
     private final Class<?> resourceClass;
     private final LazyMethod lazyMethod;
+    private final boolean streaming;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             MediaType consumes,
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod) {
+            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
+            boolean streaming) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -46,6 +48,7 @@ public class RuntimeResource {
         this.blocking = blocking;
         this.resourceClass = resourceClass;
         this.lazyMethod = lazyMethod;
+        this.streaming = streaming;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -112,5 +115,9 @@ public class RuntimeResource {
     @Override
     public String toString() {
         return "RuntimeResource{ method: " + javaMethodName + ", path: " + path + "}";
+    }
+
+    public boolean isStreaming() {
+        return streaming;
     }
 }

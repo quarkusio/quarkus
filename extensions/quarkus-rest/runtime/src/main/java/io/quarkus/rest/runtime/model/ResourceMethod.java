@@ -46,6 +46,8 @@ public class ResourceMethod {
 
     private boolean isSse;
 
+    private boolean streaming;
+
     public boolean isResourceLocator() {
         return httpMethod == null;
     }
@@ -146,6 +148,15 @@ public class ResourceMethod {
 
     public ResourceMethod setSse(boolean isSse) {
         this.isSse = isSse;
+        return this;
+    }
+
+    public boolean isStreaming() {
+        return streaming;
+    }
+
+    public ResourceMethod setStreaming(boolean streaming) {
+        this.streaming = streaming;
         return this;
     }
 }

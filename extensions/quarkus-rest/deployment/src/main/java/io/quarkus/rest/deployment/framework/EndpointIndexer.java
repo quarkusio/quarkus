@@ -8,6 +8,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STREAMING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 
@@ -309,10 +310,7 @@ public class EndpointIndexer {
             String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
             String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
             boolean blocking = config.blocking;
-            AnnotationInstance blockingAnnotation = info.annotation(BLOCKING);
-            if (blockingAnnotation == null) {
-                blockingAnnotation = info.declaringClass().classAnnotation(BLOCKING);
-            }
+            AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
             if (blockingAnnotation != null) {
                 AnnotationValue value = blockingAnnotation.value();
                 if (value != null) {
@@ -321,6 +319,8 @@ public class EndpointIndexer {
                     blocking = true;
                 }
             }
+            AnnotationInstance streamingAnnotation = getInheritableAnnotation(info, STREAMING);
+            boolean streaming = streamingAnnotation != null;
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(annotationToMethod(httpMethod))
                     .setPath(methodPath)
@@ -328,6 +328,7 @@ public class EndpointIndexer {
                     .setName(info.name())
                     .setBlocking(blocking)
                     .setSuspended(suspended)
+                    .setStreaming(streaming)
                     .setSse(sse)
                     .setParameters(methodParameters)
                     // FIXME: resolved arguments ?
@@ -403,6 +404,15 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private static AnnotationInstance getInheritableAnnotation(MethodInfo info, DotName name) {
+        // try method first, class second
+        AnnotationInstance annotation = info.annotation(name);
+        if (annotation == null) {
+            annotation = info.declaringClass().classAnnotation(name);
+        }
+        return annotation;
     }
 
     private static Supplier<ParameterConverter> extractConverter(String elementType, IndexView indexView,

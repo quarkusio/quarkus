@@ -1,8 +1,11 @@
 package io.quarkus.vertx.web.deployment;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+
+import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 
 /**
  * Describe a request handler.
@@ -10,9 +13,11 @@ import org.jboss.jandex.Type;
 class HandlerDescriptor {
 
     private final MethodInfo method;
+    private final BeanValidationAnnotationsBuildItem validationAnnotations;
 
-    HandlerDescriptor(MethodInfo method) {
+    HandlerDescriptor(MethodInfo method, BeanValidationAnnotationsBuildItem bvAnnotations) {
         this.method = method;
+        this.validationAnnotations = bvAnnotations;
     }
 
     Type getReturnType() {
@@ -29,6 +34,39 @@ class HandlerDescriptor {
 
     boolean isReturningMulti() {
         return method.returnType().name().equals(DotNames.MULTI);
+    }
+
+    /**
+     * @return {@code true} if the method is annotated with a constraint or {@code @Valid} or any parameter has such kind of
+     *         annotation.
+     */
+    boolean requireValidation() {
+        if (validationAnnotations == null) {
+            return false;
+        }
+        for (AnnotationInstance annotation : method.annotations()) {
+            String name = annotation.name().toString();
+            if (validationAnnotations.getAllAnnotations().contains(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return {@code true} if the method is annotated with {@code @Valid}.
+     */
+    boolean isProducedResponseValidated() {
+        if (validationAnnotations == null) {
+            return false;
+        }
+        for (AnnotationInstance annotation : method.annotations()) {
+            String name = annotation.name().toString();
+            if (validationAnnotations.getValidAnnotation().equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     Type getContentType() {

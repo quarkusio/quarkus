@@ -2,6 +2,7 @@ package io.quarkus.vertx.web.deployment;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.spi.Context;
@@ -15,13 +16,17 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.vertx.web.runtime.MultiJsonArraySupport;
 import io.quarkus.vertx.web.runtime.MultiSseSupport;
 import io.quarkus.vertx.web.runtime.MultiSupport;
 import io.quarkus.vertx.web.runtime.RouteHandlers;
+import io.quarkus.vertx.web.runtime.ValidationSupport;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniSubscribe;
@@ -168,6 +173,24 @@ class Methods {
     static final MethodDescriptor OPTIONAL_OF_NULLABLE = MethodDescriptor
             .ofMethod(Optional.class, "ofNullable", Optional.class, Object.class);
 
+    static final String VALIDATION_VALIDATOR = "javax.validation.Validator";
+    static final String VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION = "javax.validation.ConstraintViolationException";
+
+    static final MethodDescriptor VALIDATION_GET_VALIDATOR = MethodDescriptor.ofMethod(ValidationSupport.class, "getValidator",
+            "javax.validation.Validator", ArcContainer.class);
+    static final MethodDescriptor VALIDATION_MAP_VIOLATIONS_TO_JSON = MethodDescriptor
+            .ofMethod(ValidationSupport.class, "mapViolationsToJson", String.class, Set.class,
+                    HttpServerResponse.class);
+    static final MethodDescriptor VALIDATION_HANDLE_VIOLATION_EXCEPTION = MethodDescriptor
+            .ofMethod(ValidationSupport.class.getName(), "handleViolationException",
+                    Void.TYPE.getName(), Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION,
+                    RoutingContext.class.getName());
+
+    static final MethodDescriptor VALIDATOR_VALIDATE = MethodDescriptor
+            .ofMethod("javax.validation.Validator", "validate", "java.util.Set",
+                    Object.class, Class[].class);
+    static final MethodDescriptor SET_IS_EMPTY = MethodDescriptor.ofMethod(Set.class, "isEmpty", Boolean.TYPE);
+
     private Methods() {
         // Avoid direct instantiation
     }
@@ -203,5 +226,44 @@ class Methods {
         BytecodeCreator branch = invoke.ifNull(current).trueBranch();
         branch.invokeInterfaceMethod(MULTIMAP_SET, headers, ct, branch.load("application/json"));
         branch.close();
+    }
+
+    /**
+     * Generate the following code:
+     *
+     * <pre>
+     * String s = null;
+     * Set<ConstraintViolation<Object>> violations = validator.validate(res);
+     * if (!violations.isEmpty()) {
+     *    s = ValidationSupport.mapViolationsToJson(violations, response);
+     * } else {
+     *    s = res.encode()
+     * }
+     * </pre>
+     */
+    public static ResultHandle validateProducedItem(ResultHandle response, BytecodeCreator writer, ResultHandle res,
+            FieldCreator validatorField, ResultHandle owner) {
+
+        AssignableResultHandle result = writer.createVariable(String.class);
+        writer.assign(result, writer.loadNull());
+
+        ResultHandle validator = writer.readInstanceField(validatorField.getFieldDescriptor(), owner);
+        ResultHandle violations = writer.invokeInterfaceMethod(
+                VALIDATOR_VALIDATE, validator, res, writer.newArray(Class.class, 0));
+
+        ResultHandle isEmpty = writer.invokeInterfaceMethod(SET_IS_EMPTY, violations);
+        BranchResult ifNoViolations = writer.ifTrue(isEmpty);
+
+        ResultHandle encoded = ifNoViolations.trueBranch().invokeStaticMethod(JSON_ENCODE, res);
+        ifNoViolations.trueBranch().assign(result, encoded);
+        ifNoViolations.trueBranch().close();
+
+        ResultHandle json = ifNoViolations.falseBranch().invokeStaticMethod(VALIDATION_MAP_VIOLATIONS_TO_JSON, violations,
+                response);
+        ifNoViolations.falseBranch().assign(result, json);
+        ifNoViolations.falseBranch().close();
+
+        return result;
+
     }
 }

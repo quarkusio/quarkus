@@ -360,7 +360,8 @@ class KubernetesProcessor {
             applyOpenshiftSpecificConfig(session, openshiftConfig);
             applyKnativeSpecificConfig(session, getResourceName(knativeConfig, applicationInfo), knativeConfig);
 
-            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
+            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)
+                    && !capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_OPENSHIFT)) {
                 handleNonS2IOpenshift(containerImage, session);
             }
 
@@ -383,6 +384,8 @@ class KubernetesProcessor {
                     kubernetesHealthLivenessPath,
                     kubernetesHealthReadinessPath);
 
+            //We need to verify to filter out anything that doesn't extend the Decorator class.
+            //The DecoratorBuildItem is a wrapper to Object.
             decorators.stream().filter(d -> d.matches(Decorator.class)).forEach(i -> {
                 String group = i.getGroup();
                 Decorator decorator = (Decorator) i.getDecorator();

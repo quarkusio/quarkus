@@ -1,5 +1,5 @@
 
-package io.quarkus.container.image.s2i.deployment;
+package io.quarkus.container.image.openshift.deployment;
 
 public enum BuildStrategy {
 

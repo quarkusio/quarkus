@@ -3,7 +3,7 @@
 #
 # Before building the container image run:
 #
-# mvn package
+# mvn package -Dquarkus.package.type=fast-jar 
 #
 # Then, build the image with:
 #

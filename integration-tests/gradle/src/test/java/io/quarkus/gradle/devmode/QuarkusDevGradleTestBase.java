@@ -49,7 +49,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
                 }
             });
             testDevMode();
-        } catch (Exception e) {
+        } catch (Exception | AssertionError e) {
             if (buildResult[0] != null) {
                 System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
                 System.err.println(buildResult[0].getOutput());

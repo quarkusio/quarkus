@@ -110,17 +110,22 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    void build(CombinedIndexBuildItem index,
+    @Record(ExecutionTime.STATIC_INIT)
+    void build(
+            PanacheHibernateOrmRecorder recorder,
+            CombinedIndexBuildItem index,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             List<PanacheEntityClassBuildItem> entityClasses,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
+        Set<String> panacheEntities = new HashSet<>();
         Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
@@ -128,11 +133,17 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
@@ -186,6 +197,10 @@ public final class PanacheHibernateResourceProcessor {
                 }
             }
         }
+
+        panacheEntities.addAll(modelClasses);
+
+        recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
     }
 
     @BuildStep
@@ -205,11 +220,9 @@ public final class PanacheHibernateResourceProcessor {
         return null;
     }
 
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void persistenceUnits(PanacheHibernateOrmRecorder recorder,
+    void recordPanacheEntityPersistenceUnits(PanacheHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            List<PanacheEntityClassBuildItem> panacheEntityClasses) {
+            Set<String> panacheEntityClasses) {
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
@@ -221,7 +234,7 @@ public final class PanacheHibernateResourceProcessor {
                 String entityName = entry.getKey();
                 Set<String> selectedPersistenceUnits = entry.getValue();
                 boolean isPanacheEntity = panacheEntityClasses.stream()
-                        .anyMatch(entity -> entity.get().name().toString().equals(entityName));
+                        .anyMatch(entity -> entity.equals(entityName));
 
                 if (!isPanacheEntity) {
                     continue;

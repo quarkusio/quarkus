@@ -34,6 +34,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
@@ -147,18 +148,28 @@ public final class KotlinPanacheResourceProcessor {
 
         KotlinPanacheRepositoryEnhancer daoEnhancer = new KotlinPanacheRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Set<String> panacheEntities = new HashSet<>();
 
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
-            if (classInfo.name().equals(PANACHE_REPOSITORY))
+            if (classInfo.name().equals(PANACHE_REPOSITORY)) {
                 continue;
-            if (daoEnhancer.skipRepository(classInfo))
+            }
+            if (daoEnhancer.skipRepository(classInfo)) {
                 continue;
+            }
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), PANACHE_REPOSITORY_BASE, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(PANACHE_REPOSITORY)) {
-            if (daoEnhancer.skipRepository(classInfo))
+            if (daoEnhancer.skipRepository(classInfo)) {
                 continue;
+            }
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), PANACHE_REPOSITORY, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
@@ -204,6 +215,7 @@ public final class KotlinPanacheResourceProcessor {
         }
 
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
+        panacheEntities.addAll(modelClasses);
 
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
@@ -213,7 +225,7 @@ public final class KotlinPanacheResourceProcessor {
             for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
                 String entityName = entry.getKey();
                 Set<String> selectedPersistenceUnits = entry.getValue();
-                boolean isPanacheEntity = modelClasses.stream().anyMatch(name -> name.equals(entityName));
+                boolean isPanacheEntity = panacheEntities.stream().anyMatch(name -> name.equals(entityName));
 
                 if (!isPanacheEntity) {
                     continue;

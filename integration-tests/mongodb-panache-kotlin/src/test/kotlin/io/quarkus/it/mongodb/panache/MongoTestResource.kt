@@ -1,11 +1,15 @@
 package io.quarkus.it.mongodb.panache
 
+import de.flapdoodle.embed.mongo.Command
 import de.flapdoodle.embed.mongo.MongodExecutable
 import de.flapdoodle.embed.mongo.MongodStarter
 import de.flapdoodle.embed.mongo.config.IMongodConfig
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder
 import de.flapdoodle.embed.mongo.config.Net
+import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder
 import de.flapdoodle.embed.mongo.distribution.Version
+import de.flapdoodle.embed.process.config.io.ProcessOutput
+import de.flapdoodle.embed.process.io.Processors
 import de.flapdoodle.embed.process.runtime.Network
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager
 import org.jboss.logging.Logger
@@ -57,7 +61,12 @@ class MongoTestResource : QuarkusTestResourceLifecycleManager {
     }
 
     private fun doGetExecutable(config: IMongodConfig): MongodExecutable {
-        return MongodStarter.getDefaultInstance().prepare(config)
+        val runtimeConfig = RuntimeConfigBuilder()
+                .defaults(Command.MongoD)
+                .processOutput(ProcessOutput(Processors.silent(),
+                        Processors.silent(), Processors.silent()))
+                .build()
+        return MongodStarter.getInstance(runtimeConfig).prepare(config)
     }
 
     override fun stop() {

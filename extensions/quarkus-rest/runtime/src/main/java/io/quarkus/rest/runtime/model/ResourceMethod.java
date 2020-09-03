@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.model;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
@@ -31,6 +33,12 @@ public class ResourceMethod {
      * then this represents the value inherited from the class level, or null if not specified.
      */
     private String[] consumes;
+
+    /**
+     * The class names of the {@code @NameBinding} annotations that the method is annotated with.
+     * If none is specified on the method then this represents the value inherited from the class level.
+     */
+    private Set<String> nameBindingNames = Collections.emptySet();
 
     private Supplier<EndpointInvoker> invoker;
 
@@ -85,6 +93,15 @@ public class ResourceMethod {
 
     public ResourceMethod setConsumes(String[] consumes) {
         this.consumes = consumes;
+        return this;
+    }
+
+    public Set<String> getNameBindingNames() {
+        return nameBindingNames;
+    }
+
+    public ResourceMethod setNameBindingNames(Set<String> nameBindingNames) {
+        this.nameBindingNames = nameBindingNames;
         return this;
     }
 

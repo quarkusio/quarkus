@@ -1,12 +1,12 @@
 package io.quarkus.rest.test.simple;
 
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +22,12 @@ public class SimpleQuarkusRestTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SimpleQuarkusRestResource.class, Person.class, TestRequestFilter.class,
+                            .addClasses(SimpleQuarkusRestResource.class, Person.class,
+                                    TestRequestFilter.class, TestRequestFilterWithHighPriority.class,
+                                    TestRequestFilterWithHighestPriority.class,
+                                    Foo.class, Bar.class,
+                                    TestFooRequestFilter.class, TestBarRequestFilter.class, TestFooBarRequestFilter.class,
+                                    TestFooResponseFilter.class, TestBarResponseFilter.class, TestFooBarResponseFilter.class,
                                     TestResponseFilter.class, HelloService.class, TestException.class,
                                     TestExceptionMapper.class, TestPreMatchRequestFilter.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
@@ -139,10 +144,23 @@ public class SimpleQuarkusRestTestCase {
     public void testFilters() {
         Headers headers = RestAssured.get("/simple/filters")
                 .then().extract().headers();
-        List<String> filters = headers.getValues("filter");
-        Assertions.assertEquals(2, filters.size());
-        Assertions.assertTrue(filters.contains("request"));
-        Assertions.assertTrue(filters.contains("response"));
+        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-default");
+        assertThat(headers.getValues("filter-response")).containsOnly("default");
+
+        headers = RestAssured.get("/simple/fooFilters")
+                .then().extract().headers();
+        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-foo-default");
+        assertThat(headers.getValues("filter-response")).containsOnly("default-foo");
+
+        headers = RestAssured.get("/simple/barFilters")
+                .then().extract().headers();
+        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-default-bar");
+        assertThat(headers.getValues("filter-response")).containsOnly("default-bar");
+
+        headers = RestAssured.get("/simple/fooBarFilters")
+                .then().extract().headers();
+        assertThat(headers.getValues("filter-request")).containsOnly("authentication-authorization-foo-default-bar-foobar");
+        assertThat(headers.getValues("filter-response")).containsOnly("default-foo-bar-foobar");
     }
 
     @Test

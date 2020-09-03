@@ -3,6 +3,7 @@ package io.quarkus.rest.deployment.framework;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LIST;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
@@ -14,6 +15,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -131,6 +133,7 @@ public class EndpointIndexer {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = readStringArrayValue(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
         String[] classConsumes = readStringArrayValue(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
+        Set<String> classNameBindings = nameBindingNames(currentClassInfo, index);
 
         for (DotName httpMethod : QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS) {
             List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
@@ -152,7 +155,8 @@ public class EndpointIndexer {
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, httpMethod, info, methodPath, index, existingConverters,
+                            recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
+                            existingConverters,
                             config);
 
                     ret.add(method);
@@ -178,7 +182,8 @@ public class EndpointIndexer {
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
-                            recorder, classProduces, classConsumes, null, info, methodPath, index, existingConverters, config);
+                            recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
+                            existingConverters, config);
                     ret.add(method);
                 }
             }
@@ -205,7 +210,8 @@ public class EndpointIndexer {
 
     private static ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
-            String[] classProduces, String[] classConsumes, DotName httpMethod, MethodInfo info, String methodPath,
+            String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
+            String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
@@ -309,6 +315,7 @@ public class EndpointIndexer {
 
             String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
             String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
+            Set<String> nameBindingNames = nameBindingNames(info, indexView, classNameBindings);
             boolean blocking = config.blocking;
             AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
             if (blockingAnnotation != null) {
@@ -325,6 +332,8 @@ public class EndpointIndexer {
                     .setHttpMethod(annotationToMethod(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
+                    .setProduces(produces)
+                    .setNameBindingNames(nameBindingNames)
                     .setName(info.name())
                     .setBlocking(blocking)
                     .setSuspended(suspended)
@@ -367,8 +376,7 @@ public class EndpointIndexer {
                                 return AsmUtil.getSignature(type, this);
                             }
                         }
-                    }))
-                    .setProduces(produces);
+                    }));
 
             StringBuilder sigBuilder = new StringBuilder();
             sigBuilder.append(method.getName())
@@ -480,6 +488,47 @@ public class EndpointIndexer {
         }
         existingConverters.put(elementType, baseName);
         return new GeneratedParameterConverter().setClassName(baseName);
+    }
+
+    /**
+     * Returns the class names of the {@code @NameBinding} annotations or null if non are present
+     */
+    public static Set<String> nameBindingNames(ClassInfo classInfo, IndexView indexView) {
+        return nameBindingNames(instanceDotNames(classInfo.classAnnotations()), indexView);
+    }
+
+    private static Set<String> nameBindingNames(MethodInfo methodInfo, IndexView indexView, Set<String> defaultValue) {
+        Set<String> fromMethod = nameBindingNames(instanceDotNames(methodInfo.annotations()), indexView);
+        if (fromMethod.isEmpty()) {
+            return defaultValue;
+        }
+        return fromMethod;
+    }
+
+    private static List<DotName> instanceDotNames(Collection<AnnotationInstance> instances) {
+        List<DotName> result = new ArrayList<>(instances.size());
+        for (AnnotationInstance instance : instances) {
+            result.add(instance.name());
+        }
+        return result;
+    }
+
+    private static Set<String> nameBindingNames(Collection<DotName> annotations, IndexView indexView) {
+        Set<String> result = new HashSet<>();
+        for (DotName classAnnotationDotName : annotations) {
+            if (classAnnotationDotName.equals(PATH) || classAnnotationDotName.equals(CONSUMES)
+                    || classAnnotationDotName.equals(PRODUCES)) {
+                continue;
+            }
+            ClassInfo classAnnotation = indexView.getClassByName(classAnnotationDotName);
+            if (classAnnotation == null) {
+                return result;
+            }
+            if (classAnnotation.classAnnotation(NAME_BINDING) != null) {
+                result.add(classAnnotation.name().toString());
+            }
+        }
+        return result;
     }
 
     private static String methodDescriptor(MethodInfo info) {

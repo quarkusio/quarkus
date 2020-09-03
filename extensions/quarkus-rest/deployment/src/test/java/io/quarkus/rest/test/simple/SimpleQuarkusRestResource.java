@@ -160,7 +160,29 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("filters")
     public Response filters(@Context HttpHeaders headers) {
-        return Response.ok().header("filter", headers.getHeaderString("filter")).build();
+        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
+    }
+
+    @GET
+    @Path("fooFilters")
+    @Foo
+    public Response fooFilters(@Context HttpHeaders headers) {
+        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
+    }
+
+    @GET
+    @Path("barFilters")
+    @Bar
+    public Response barFilters(@Context HttpHeaders headers) {
+        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
+    }
+
+    @GET
+    @Path("fooBarFilters")
+    @Foo
+    @Bar
+    public Response fooBarFilters(@Context HttpHeaders headers) {
+        return Response.ok().header("filter-request", headers.getHeaderString("filter-request")).build();
     }
 
     @GET

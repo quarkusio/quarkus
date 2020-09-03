@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -21,6 +22,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -86,16 +88,17 @@ public class QuarkusRestProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             QuarkusRestRecorder recorder,
             ShutdownContextBuildItem shutdownContext) {
-        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(QuarkusRestDotNames.PATH);
-        Collection<ClassInfo> containerRequestFilters = beanArchiveIndexBuildItem.getIndex()
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> paths = index.getAnnotations(QuarkusRestDotNames.PATH);
+        Collection<ClassInfo> containerRequestFilters = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER);
-        Collection<ClassInfo> containerResponseFilters = beanArchiveIndexBuildItem.getIndex()
+        Collection<ClassInfo> containerResponseFilters = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER);
-        Collection<ClassInfo> exceptionMappers = beanArchiveIndexBuildItem.getIndex()
+        Collection<ClassInfo> exceptionMappers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.EXCEPTION_MAPPER);
-        Collection<ClassInfo> writers = beanArchiveIndexBuildItem.getIndex()
+        Collection<ClassInfo> writers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.MESSAGE_BODY_WRITER);
-        Collection<ClassInfo> readers = beanArchiveIndexBuildItem.getIndex()
+        Collection<ClassInfo> readers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.MESSAGE_BODY_READER);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
@@ -121,7 +124,7 @@ public class QuarkusRestProcessor {
             }
         }
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
-            for (ClassInfo clazz : beanArchiveIndexBuildItem.getIndex().getAllKnownImplementors(i.getKey())) {
+            for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
                     if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
                             clazz.enclosingMethod() == null) {
@@ -135,7 +138,7 @@ public class QuarkusRestProcessor {
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
         for (ClassInfo i : scannedResources.values()) {
-            ResourceClass endpoints = EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), i,
+            ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
                     scannedResourcePaths, config);
             if (endpoints != null) {
@@ -148,7 +151,7 @@ public class QuarkusRestProcessor {
         //TODO custom method annotations
         Deque<ClassInfo> toScan = new ArrayDeque<>();
         for (DotName methodAnnotation : QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS) {
-            for (AnnotationInstance instance : beanArchiveIndexBuildItem.getIndex().getAnnotations(methodAnnotation)) {
+            for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                 MethodInfo method = instance.target().asMethod();
                 ClassInfo classInfo = method.declaringClass();
                 toScan.add(classInfo);
@@ -162,7 +165,7 @@ public class QuarkusRestProcessor {
                 continue;
             }
             possibleSubResources.put(classInfo.name(), classInfo);
-            ResourceClass endpoints = EndpointIndexer.createEndpoints(beanArchiveIndexBuildItem.getIndex(), classInfo,
+            ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
                     scannedResourcePaths, config);
             if (endpoints != null) {
@@ -170,8 +173,8 @@ public class QuarkusRestProcessor {
             }
             //we need to also look for all sub classes and interfaces
             //they may have type variables that need to be handled
-            toScan.addAll(beanArchiveIndexBuildItem.getIndex().getKnownDirectImplementors(classInfo.name()));
-            toScan.addAll(beanArchiveIndexBuildItem.getIndex().getKnownDirectSubclasses(classInfo.name()));
+            toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
+            toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
         }
 
         ResourceInterceptors interceptors = new ResourceInterceptors();
@@ -184,7 +187,13 @@ public class QuarkusRestProcessor {
                 if (interceptor.isPreMatching()) {
                     interceptors.addResourcePreMatchInterceptor(interceptor);
                 } else {
-                    interceptors.addRequestInterceptor(interceptor);
+                    Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                    if (nameBindingNames.isEmpty()) {
+                        interceptors.addGlobalRequestInterceptor(interceptor);
+                    } else {
+                        interceptor.setNameBindingNames(nameBindingNames);
+                        interceptors.addNameRequestInterceptor(interceptor);
+                    }
                 }
                 AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
                 if (priorityInstance != null) {
@@ -197,7 +206,13 @@ public class QuarkusRestProcessor {
                 ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                interceptors.addResponseInterceptor(interceptor);
+                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                if (nameBindingNames.isEmpty()) {
+                    interceptors.addGlobalResponseInterceptor(interceptor);
+                } else {
+                    interceptor.setNameBindingNames(nameBindingNames);
+                    interceptors.addNameResponseInterceptor(interceptor);
+                }
                 AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
                 if (priorityInstance != null) {
                     interceptor.setPriority(priorityInstance.value().asInt());
@@ -210,7 +225,7 @@ public class QuarkusRestProcessor {
             if (mapperClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
                         QuarkusRestDotNames.EXCEPTION_MAPPER,
-                        beanArchiveIndexBuildItem.getIndex());
+                        index);
                 ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
                 mapper.setFactory(recorder.factory(mapperClass.name().toString(),
                         beanContainerBuildItem.getValue()));
@@ -228,7 +243,7 @@ public class QuarkusRestProcessor {
                 }
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
                         QuarkusRestDotNames.MESSAGE_BODY_WRITER,
-                        beanArchiveIndexBuildItem.getIndex());
+                        index);
                 writer.setFactory(recorder.factory(writerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
                 recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
@@ -238,7 +253,7 @@ public class QuarkusRestProcessor {
             if (readerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
                         QuarkusRestDotNames.MESSAGE_BODY_READER,
-                        beanArchiveIndexBuildItem.getIndex());
+                        index);
                 ResourceReader reader = new ResourceReader();
                 reader.setFactory(recorder.factory(readerClass.name().toString(),
                         beanContainerBuildItem.getValue()));

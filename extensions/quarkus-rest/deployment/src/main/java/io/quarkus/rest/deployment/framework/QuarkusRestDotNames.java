@@ -14,6 +14,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.NameBinding;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -67,6 +68,7 @@ public final class QuarkusRestDotNames {
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
+    public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName STREAMING = DotName.createSimple(Stream.class.getName());

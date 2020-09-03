@@ -7,27 +7,45 @@ import java.util.List;
 public class ResourceInterceptors {
 
     private final List<ResourceRequestInterceptor> resourcePreMatchRequestInterceptors = new ArrayList<>();
-    private final List<ResourceRequestInterceptor> resourceRequestInterceptors = new ArrayList<>();
-    private final List<ResourceResponseInterceptor> resourceResponseInterceptors = new ArrayList<>();
+    private final List<ResourceRequestInterceptor> globalResourceRequestInterceptors = new ArrayList<>();
+    private final List<ResourceResponseInterceptor> globalResourceResponseInterceptors = new ArrayList<>();
+    private final List<ResourceRequestInterceptor> nameResourceRequestInterceptors = new ArrayList<>();
+    private final List<ResourceResponseInterceptor> nameResourceResponseInterceptors = new ArrayList<>();
 
-    public List<ResourceRequestInterceptor> getRequestInterceptors() {
-        return resourceRequestInterceptors;
+    public List<ResourceRequestInterceptor> getGlobalRequestInterceptors() {
+        return globalResourceRequestInterceptors;
     }
 
-    public List<ResourceResponseInterceptor> getResponseInterceptors() {
-        return resourceResponseInterceptors;
+    public List<ResourceResponseInterceptor> getGlobalResponseInterceptors() {
+        return globalResourceResponseInterceptors;
+    }
+
+    public List<ResourceRequestInterceptor> getNameRequestInterceptors() {
+        return nameResourceRequestInterceptors;
+    }
+
+    public List<ResourceResponseInterceptor> getNameResponseInterceptors() {
+        return nameResourceResponseInterceptors;
     }
 
     public List<ResourceRequestInterceptor> getResourcePreMatchRequestInterceptors() {
         return resourcePreMatchRequestInterceptors;
     }
 
-    public void addRequestInterceptor(ResourceRequestInterceptor interceptor) {
-        this.resourceRequestInterceptors.add(interceptor);
+    public void addGlobalRequestInterceptor(ResourceRequestInterceptor interceptor) {
+        this.globalResourceRequestInterceptors.add(interceptor);
     }
 
-    public void addResponseInterceptor(ResourceResponseInterceptor interceptor) {
-        this.resourceResponseInterceptors.add(interceptor);
+    public void addGlobalResponseInterceptor(ResourceResponseInterceptor interceptor) {
+        this.globalResourceResponseInterceptors.add(interceptor);
+    }
+
+    public void addNameRequestInterceptor(ResourceRequestInterceptor interceptor) {
+        this.nameResourceRequestInterceptors.add(interceptor);
+    }
+
+    public void addNameResponseInterceptor(ResourceResponseInterceptor interceptor) {
+        this.nameResourceResponseInterceptors.add(interceptor);
     }
 
     public void addResourcePreMatchInterceptor(ResourceRequestInterceptor interceptor) {
@@ -38,8 +56,10 @@ public class ResourceInterceptors {
     // therefore at runtime the elements are already properly sorted
     public ResourceInterceptors sort() {
         Collections.sort(resourcePreMatchRequestInterceptors);
-        Collections.sort(resourceRequestInterceptors);
-        Collections.sort(resourceResponseInterceptors);
+        Collections.sort(globalResourceRequestInterceptors);
+        Collections.sort(globalResourceResponseInterceptors);
+        Collections.sort(nameResourceRequestInterceptors);
+        Collections.sort(nameResourceResponseInterceptors);
         return this;
     }
 

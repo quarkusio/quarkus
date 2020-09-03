@@ -275,7 +275,7 @@ public class MongoOperations {
     }
 
     private static MongoDatabase mongoDatabase(MongoEntity entity) {
-        MongoClient mongoClient = clientFromArc(entity, MongoClient.class);
+        MongoClient mongoClient = clientFromArc(entity, MongoClient.class, false);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }

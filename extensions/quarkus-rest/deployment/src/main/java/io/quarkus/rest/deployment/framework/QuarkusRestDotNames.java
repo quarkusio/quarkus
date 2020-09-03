@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
+import javax.annotation.Priority;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -58,6 +59,7 @@ public final class QuarkusRestDotNames {
             .createSimple(ConfigProperty.class.getName());
     public static final DotName CDI_INSTANCE = DotName
             .createSimple(javax.enterprise.inject.Instance.class.getName());
+    public static final DotName PRIORITY = DotName.createSimple(Priority.class.getName());
     public static final DotName CONTAINER_REQUEST_FILTER = DotName.createSimple(ContainerRequestFilter.class.getName());
     public static final DotName CONTAINER_RESPONSE_FILTER = DotName.createSimple(ContainerResponseFilter.class.getName());
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());

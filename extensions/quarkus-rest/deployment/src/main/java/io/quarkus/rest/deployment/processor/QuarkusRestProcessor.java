@@ -186,6 +186,10 @@ public class QuarkusRestProcessor {
                 } else {
                     interceptors.addRequestInterceptor(interceptor);
                 }
+                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    interceptor.setPriority(priorityInstance.value().asInt());
+                }
             }
         }
         for (ClassInfo filterClass : containerResponseFilters) {
@@ -194,6 +198,10 @@ public class QuarkusRestProcessor {
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
                 interceptors.addResponseInterceptor(interceptor);
+                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    interceptor.setPriority(priorityInstance.value().asInt());
+                }
             }
         }
 
@@ -270,7 +278,7 @@ public class QuarkusRestProcessor {
                 MediaType.WILDCARD);
 
         return new FilterBuildItem(
-                recorder.handler(interceptors, exceptionMapping, serialisers, resourceClasses, subResourceClasses,
+                recorder.handler(interceptors.sort(), exceptionMapping, serialisers, resourceClasses, subResourceClasses,
                         shutdownContext, config),
                 10);
     }

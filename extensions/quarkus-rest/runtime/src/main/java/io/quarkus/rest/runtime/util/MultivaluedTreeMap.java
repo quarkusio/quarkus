@@ -83,8 +83,7 @@ public class MultivaluedTreeMap<K, V> implements MultivaluedMap<K, V>, Serializa
     public static <K, V> void copy(MultivaluedMap<K, V> src, MultivaluedMap<K, V> dest) {
         for (K key : src.keySet()) {
             List<V> value = src.get(key);
-            List<V> newValue = new ArrayList<V>();
-            newValue.addAll(value);
+            List<V> newValue = new ArrayList<V>(value);
             dest.put(key, newValue);
         }
     }

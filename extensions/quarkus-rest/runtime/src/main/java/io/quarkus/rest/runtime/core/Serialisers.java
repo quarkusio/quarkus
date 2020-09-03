@@ -49,7 +49,7 @@ public class Serialisers {
     public static final MultivaluedMap<String, Object> EMPTY_MULTI_MAP = new MultivaluedHashMap<>();
 
     private final ConcurrentMap<Class<?>, List<ResourceWriter>> noMediaTypeClassCache = new ConcurrentHashMap<>();
-    private Function<Class<?>, List<ResourceWriter>> mappingFunction = new Function<Class<?>, List<ResourceWriter>>() {
+    private final Function<Class<?>, List<ResourceWriter>> mappingFunction = new Function<Class<?>, List<ResourceWriter>>() {
         @Override
         public List<ResourceWriter> apply(Class<?> aClass) {
             Class<?> c = aClass;
@@ -58,9 +58,7 @@ public class Serialisers {
             while (c != null) {
                 List<ResourceWriter> forClass = getWriters().get(c);
                 if (forClass != null) {
-                    for (ResourceWriter writer : forClass) {
-                        writers.add(writer);
-                    }
+                    writers.addAll(forClass);
                 }
                 Deque<Class<?>> interfaces = new ArrayDeque<>(Arrays.asList(c.getInterfaces()));
                 while (!interfaces.isEmpty()) {
@@ -71,9 +69,7 @@ public class Serialisers {
                     seenInterfaces.add(iface);
                     forClass = getWriters().get(iface);
                     if (forClass != null) {
-                        for (ResourceWriter writer : forClass) {
-                            writers.add(writer);
-                        }
+                        writers.addAll(forClass);
                     }
                     interfaces.addAll(Arrays.asList(iface.getInterfaces()));
                 }

@@ -291,9 +291,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         if (methods == null) {
             return allow((Set<String>) null);
         }
-        HashSet<String> set = new HashSet<String>();
-        for (String m : methods)
-            set.add(m);
+        HashSet<String> set = new HashSet<>(Arrays.asList(methods));
         return allow(set);
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.jaxrs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -11,15 +12,14 @@ import javax.ws.rs.core.Variant;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
 public class QuarkusRestVariantListBuilder extends Variant.VariantListBuilder {
-    private ArrayList<Variant> variants = new ArrayList<Variant>();
-    private ArrayList<Locale> currentLanguages = new ArrayList<Locale>();
-    private ArrayList<String> currentEncodings = new ArrayList<String>();
-    private ArrayList<MediaType> currentTypes = new ArrayList<MediaType>();
+    private final ArrayList<Variant> variants = new ArrayList<Variant>();
+    private final ArrayList<Locale> currentLanguages = new ArrayList<Locale>();
+    private final ArrayList<String> currentEncodings = new ArrayList<String>();
+    private final ArrayList<MediaType> currentTypes = new ArrayList<MediaType>();
 
     public List<Variant> build() {
         add();
-        ArrayList<Variant> copy = new ArrayList<Variant>();
-        copy.addAll(variants);
+        ArrayList<Variant> copy = new ArrayList<Variant>(variants);
         variants.clear();
         currentLanguages.clear();
         currentEncodings.clear();
@@ -67,22 +67,19 @@ public class QuarkusRestVariantListBuilder extends Variant.VariantListBuilder {
     }
 
     public Variant.VariantListBuilder languages(Locale... languages) {
-        for (Locale language : languages)
-            currentLanguages.add(language);
+        currentLanguages.addAll(Arrays.asList(languages));
         return this;
     }
 
     @Override
     public Variant.VariantListBuilder encodings(String... encodings) {
-        for (String encoding : encodings)
-            currentEncodings.add(encoding);
+        currentEncodings.addAll(Arrays.asList(encodings));
         return this;
     }
 
     @Override
     public Variant.VariantListBuilder mediaTypes(MediaType... mediaTypes) {
-        for (MediaType type : mediaTypes)
-            currentTypes.add(type);
+        currentTypes.addAll(Arrays.asList(mediaTypes));
         return this;
     }
 }

@@ -131,17 +131,17 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                 if (component.type == Type.LITERAL) {
                     regexAggregator.append(Pattern.quote(component.literalText));
                 } else if (component.type == Type.DEFAULT_REGEX) {
-                    regexAggregator.append("(?<" + component.name + ">[^/]+?)");
+                    regexAggregator.append("(?<").append(component.name).append(">[^/]+?)");
                     nameAggregator.add(component.name);
                 } else if (component.type == Type.CUSTOM_REGEX) {
-                    regexAggregator.append("(?<" + component.name + ">" + component.literalText + ")");
+                    regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText).append(")");
                     nameAggregator.add(component.name);
                 }
             } else if (component.type == Type.CUSTOM_REGEX) {
                 it.remove();
                 regexAggregator = new StringBuilder();
                 nameAggregator = new ArrayList<>();
-                regexAggregator.append("(?<" + component.name + ">" + component.literalText + ")");
+                regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText).append(")");
                 nameAggregator.add(component.name);
             }
         }
@@ -219,7 +219,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         CUSTOM_REGEX
     }
 
-    public class TemplateComponent implements Dumpable {
+    public static class TemplateComponent implements Dumpable {
 
         /**
          * The type of component.

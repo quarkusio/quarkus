@@ -146,6 +146,15 @@ public class ArcConfig {
     @ConfigItem
     Map<String, IndexDependencyConfig> excludeDependency;
 
+    /**
+     * If set to true then the container attempts to detect "unused removed beans" false positives during programmatic lookup at
+     * runtime. You can disable this feature to conserve some memory when running your application in production.
+     * 
+     * @see ArcConfig#removeUnusedBeans
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean detectUnusedFalsePositives;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

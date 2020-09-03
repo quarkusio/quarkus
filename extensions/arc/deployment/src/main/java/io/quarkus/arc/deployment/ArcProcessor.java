@@ -396,7 +396,7 @@ public class ArcProcessor {
     // PHASE 5 - generate resources and initialize the container
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem generateResources(ArcRecorder recorder, ShutdownContextBuildItem shutdown,
+    public BeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder, ShutdownContextBuildItem shutdown,
             ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
@@ -435,7 +435,8 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
-        }, existingClasses.existingClasses, bytecodeTransformerConsumer);
+        }, existingClasses.existingClasses, bytecodeTransformerConsumer,
+                config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives);
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
                 case JAVA_CLASS:
@@ -465,10 +466,7 @@ public class ArcProcessor {
         ArcContainer container = recorder.getContainer(shutdown);
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
-                        .collect(Collectors.toList()),
-                beanProcessor.getBeanDeployment().getRemovedBeans().stream().flatMap(b -> b.getTypes().stream())
-                        .map(t -> t.name().toString())
-                        .collect(Collectors.toSet()));
+                        .collect(Collectors.toList()));
 
         return new BeanContainerBuildItem(beanContainer);
 

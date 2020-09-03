@@ -136,7 +136,7 @@ public class BeanProcessor {
     }
 
     public List<Resource> generateResources(ReflectionRegistration reflectionRegistration, Set<String> existingClasses,
-            Consumer<BytecodeTransformer> bytecodeTransformerConsumer)
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean detectUnusedFalsePositives)
             throws IOException {
         if (reflectionRegistration == null) {
             reflectionRegistration = this.reflectionRegistration;
@@ -199,7 +199,8 @@ public class BeanProcessor {
 
         // Generate _ComponentsProvider
         resources.addAll(
-                new ComponentsProviderGenerator(annotationLiterals, generateSources).generate(name, beanDeployment,
+                new ComponentsProviderGenerator(annotationLiterals, generateSources, detectUnusedFalsePositives).generate(name,
+                        beanDeployment,
                         beanToGeneratedName,
                         observerToGeneratedName));
 
@@ -238,7 +239,7 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer);
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer);
+        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true);
         return beanDeployment;
     }
 

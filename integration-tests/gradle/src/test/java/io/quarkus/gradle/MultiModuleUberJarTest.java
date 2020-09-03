@@ -43,7 +43,6 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
             }, output, ConditionTimeoutException.class);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
-
             assertThatOutputWorksCorrectly(logs);
 
             // test that the http response is correct

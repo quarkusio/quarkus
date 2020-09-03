@@ -111,6 +111,40 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testCustomHeader() {
+        RestAssured.given().header("X-Forwarded-Authorization", getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-customheader/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-customheader:alice"));
+    }
+
+    @Test
+    public void testCustomHeaderBearerScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", "Bearer " + getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-customheader/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-customheader:alice"));
+    }
+
+    @Test
+    public void testWrongCustomHeader() {
+        RestAssured.given().header("X-Authorization", getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-customheader/api/user")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testCustomHeaderCustomScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", "DPoP " + getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-customheader/api/user")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testResolveTenantConfig() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", "d"))
                 .when().get("/tenant/tenant-d/api/user")

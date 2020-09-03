@@ -7,6 +7,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -15,12 +16,12 @@ import org.eclipse.microprofile.jwt.Claim;
 public class AdminResource {
 
     @Claim("preferred_username")
-    String claim;
+    ClaimValue<String> claim;
 
     @GET
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String admin() {
-        return "granted:" + claim;
+        return "granted:" + claim.getValue();
     }
 }

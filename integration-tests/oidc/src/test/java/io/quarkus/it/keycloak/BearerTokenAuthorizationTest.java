@@ -79,6 +79,22 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessAdminResourceCustomHeaderNoBearerScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", getAccessToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAccessAdminResourceCustomHeaderBearerScheme() {
+        RestAssured.given().header("X-Forwarded-Authorization", getAccessToken("admin"))
+                .when().get("/api/admin")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     public void testAccessAdminResourceWithRefreshToken() {
         RestAssured.given().auth().oauth2(getRefreshToken("admin"))
                 .when().get("/api/admin")

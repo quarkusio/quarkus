@@ -252,20 +252,10 @@ public class HibernateOrmConfigPersistenceUnit {
         private static final String DEFAULT_CHARSET = "UTF-8";
 
         /**
-         * Select whether the database schema is generated or not.
-         *
-         * `drop-and-create` is awesome in development mode.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         * Schema generation configuration.
          */
-        @ConfigItem(defaultValue = "none")
-        public String generation;
-
-        /**
-         * Whether we should stop on the first error when applying the schema.
-         */
-        @ConfigItem(name = "generation.halt-on-error")
-        public boolean generationHaltOnError;
+        @ConfigItem
+        public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation;
 
         /**
          * The default catalog to use for the database objects.
@@ -294,10 +284,43 @@ public class HibernateOrmConfigPersistenceUnit {
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
-            return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
-                    || generationHaltOnError
+            return generation.isAnyPropertySet()
+                    || defaultCatalog.isPresent()
+                    || defaultSchema.isPresent()
                     || !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
+        }
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitDatabaseGeneration {
+
+        /**
+         * Select whether the database schema is generated or not.
+         *
+         * `drop-and-create` is awesome in development mode.
+         *
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         */
+        @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
+        public String generation;
+
+        /**
+         * If Hibernate ORM should create the schemas automatically (for databases supporting them).
+         */
+        @ConfigItem
+        public boolean createSchemas;
+
+        /**
+         * Whether we should stop on the first error when applying the schema.
+         */
+        @ConfigItem
+        public boolean haltOnError;
+
+        public boolean isAnyPropertySet() {
+            return !"none".equals(generation)
+                    || createSchemas
+                    || haltOnError;
         }
     }
 

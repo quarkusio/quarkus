@@ -90,6 +90,7 @@ import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
@@ -723,13 +724,13 @@ class KubernetesProcessor {
         });
 
         kubernetesEnvs.forEach(e -> {
-            session.resources().decorate(e.getTarget(), new AddEnvVarDecorator(new EnvBuilder()
-                    .withName(EnvConverter.convertName(e.getName()))
-                    .withValue(e.getValue())
-                    .withSecret(e.getSecret())
-                    .withConfigmap(e.getConfigMap())
-                    .withField(e.getField())
-                    .build()));
+            String containerName = kubernetesName;
+            if (e.getTarget().equals(OPENSHIFT)) {
+                containerName = openshiftName;
+            } else if (e.getTarget().equals(KNATIVE)) {
+                containerName = knativeName;
+            }
+            session.resources().decorate(e.getTarget(), createAddEnvDecorator(e, containerName));
         });
 
         //Handle Command and arguments
@@ -783,6 +784,16 @@ class KubernetesProcessor {
         handleProbes(applicationInfo, kubernetesConfig, openshiftConfig, knativeConfig, deploymentTargets, ports,
                 kubernetesHealthLivenessPath,
                 kubernetesHealthReadinessPath, session);
+    }
+
+    private AddEnvVarDecorator createAddEnvDecorator(KubernetesEnvBuildItem e, String containerName) {
+        return new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, containerName, new EnvBuilder()
+                .withName(EnvConverter.convertName(e.getName()))
+                .withValue(e.getValue())
+                .withSecret(e.getSecret())
+                .withConfigmap(e.getConfigMap())
+                .withField(e.getField())
+                .build());
     }
 
     private void handleServices(Session session, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,

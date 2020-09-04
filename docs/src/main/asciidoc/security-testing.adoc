@@ -9,6 +9,7 @@ include::./attributes.adoc[]
 
 This document describes how to test Quarkus Security.
 
+[[configuring-user-information]]
 == Configuring User Information
 
 You can use link:security-properties[quarkus-elytron-security-properties-file] for testing security. This supports both embedding user info in `application.properties` and standalone properties files.

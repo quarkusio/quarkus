@@ -5,7 +5,9 @@ import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getRefreshToke
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
@@ -56,6 +58,17 @@ public class BearerTokenAuthorizationTest {
                     .statusCode(200)
                     .body("userName", equalTo(username + "@gmail.com"));
         }
+    }
+
+    @Test
+    public void testBasicAuth() {
+        byte[] basicAuthBytes = "alice:password".getBytes(StandardCharsets.UTF_8);
+        RestAssured.given()
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(basicAuthBytes))
+                .when().get("/api/users/me")
+                .then()
+                .statusCode(200)
+                .body("userName", equalTo("alice"));
     }
 
     @Test

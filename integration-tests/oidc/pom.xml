@@ -53,8 +53,11 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
-
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-deployment</artifactId>

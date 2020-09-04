@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.validation.ClockProvider;
 import javax.validation.Constraint;
@@ -67,6 +68,7 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -160,6 +162,7 @@ class HibernateValidatorProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            BuildProducer<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
             ShutdownContextBuildItem shutdownContext,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             Capabilities capabilities,
@@ -171,36 +174,44 @@ class HibernateValidatorProcessor {
         // we use both indexes to support both generated beans and jars that contain no CDI beans but only Validation annotations
         IndexView indexView = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
 
-        Set<DotName> consideredAnnotations = new HashSet<>();
+        Set<DotName> constraints = new HashSet<>();
 
         Set<String> builtinConstraints = ConstraintHelper.getBuiltinConstraints();
 
         // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        contributeBuiltinConstraints(builtinConstraints, consideredAnnotations);
+        contributeBuiltinConstraints(builtinConstraints, constraints);
 
         // Add the constraint annotations present in the application itself
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            consideredAnnotations.add(constraint.target().asClass().name());
+            constraints.add(constraint.target().asClass().name());
 
             if (constraint.target().asClass().annotations().containsKey(REPEATABLE)) {
                 for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotations()
                         .get(REPEATABLE)) {
-                    consideredAnnotations.add(repeatableConstraint.value().asClass().name());
+                    constraints.add(repeatableConstraint.value().asClass().name());
                 }
             }
         }
 
+        Set<DotName> allConsideredAnnotations = new HashSet<>();
+        allConsideredAnnotations.addAll(constraints);
+
         // Also consider elements that are marked with @Valid
-        consideredAnnotations.add(VALID);
+        allConsideredAnnotations.add(VALID);
 
         // Also consider elements that are marked with @ValidateOnExecution
-        consideredAnnotations.add(VALIDATE_ON_EXECUTION);
+        allConsideredAnnotations.add(VALIDATE_ON_EXECUTION);
+
+        beanValidationAnnotations.produce(new BeanValidationAnnotationsBuildItem(
+                VALID.toString(),
+                constraints.stream().map(a -> a.toString()).collect(Collectors.toSet()),
+                allConsideredAnnotations.stream().map(a -> a.toString()).collect(Collectors.toSet())));
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated = new HashMap<>();
         Set<String> detectedBuiltinConstraints = new HashSet<>();
 
-        for (DotName consideredAnnotation : consideredAnnotations) {
+        for (DotName consideredAnnotation : allConsideredAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             if (annotationInstances.isEmpty()) {
@@ -255,7 +266,7 @@ class HibernateValidatorProcessor {
 
         annotationsTransformers
                 .produce(new AnnotationsTransformerBuildItem(
-                        new MethodValidatedAnnotationsTransformer(consideredAnnotations,
+                        new MethodValidatedAnnotationsTransformer(allConsideredAnnotations,
                                 jaxRsMethods,
                                 inheritedAnnotationsToBeValidated)));
 

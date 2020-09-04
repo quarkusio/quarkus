@@ -20,6 +20,9 @@
 - labels: [area/maven]
   title: "(?i).*maven.*"
   notify: [quarkusio/devtools]
+- labels: [area/jbang]
+  title: "(?i).*jbang.*"
+  notify: [quarkusio/devtools,maxandersen]
 - labels: [area/codestarts]
   title: "(?i).*codestart.*"
   description: "(?i).*codestart.*"

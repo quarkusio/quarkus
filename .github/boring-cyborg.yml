@@ -144,6 +144,9 @@ labelPRBasedOnFilePath:
         - extensions/jaeger/**/*
     area/jaxb:
         - extensions/jaxb/**/*
+    area/jbang:
+        - **/*JBang*
+        - **/*jbang*
     area/kafka:
         - extensions/kafka-client/**/*
         - integration-tests/kafka/**/*
@@ -246,7 +249,6 @@ labelPRBasedOnFilePath:
         - integration-tests/elytron-security/**/*
         - integration-tests/elytron-security-jdbc/**/*
         - integration-tests/elytron-security-oauth2/**/*
-        
     area/smallrye:
         - extensions/smallrye-context-propagation/**/*
         - extensions/smallrye-fault-tolerance/**/*

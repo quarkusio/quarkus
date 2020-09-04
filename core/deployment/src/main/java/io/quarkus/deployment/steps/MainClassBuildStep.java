@@ -94,7 +94,6 @@ public class MainClassBuildStep {
             JAVAX_NET_SSL_TRUST_STORE_PASSWORD));
 
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
-    public static final String PRINT_STARTUP_TIMES_PROPERTY = "quarkus.debug.print-startup-times";
 
     private static final FieldDescriptor STARTUP_CONTEXT_FIELD = FieldDescriptor.of(Application.APP_CLASS_NAME, STARTUP_CONTEXT,
             StartupContext.class);

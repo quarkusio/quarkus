@@ -564,9 +564,10 @@ public class ResteasyServerCommonProcessor {
             deployment.setRegisterBuiltin(true);
 
             if (!jaxrsProvidersToRegisterBuildItem.getContributedProviders().isEmpty()) {
-                deployment.getProviderClasses().addAll(jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+                deployment.getProviderClasses()
+                        .addAll(jaxrsProvidersToRegisterBuildItem.getContributedProvidersWithoutResteasy());
                 resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PROVIDERS,
-                        String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProviders()));
+                        String.join(",", jaxrsProvidersToRegisterBuildItem.getContributedProvidersWithoutResteasy()));
             }
         } else {
             deployment.setRegisterBuiltin(false);

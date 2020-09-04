@@ -77,6 +77,8 @@ public class ResteasyCommonProcessor {
             new ProviderDiscoverer(ResteasyDotNames.PUT, true, false)
     };
 
+    static final String RESTEASY_PROVIDERS_BASE_PACKAGE = "org.jboss.resteasy.plugins.providers";
+
     private static final DotName QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
     private static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");

@@ -83,6 +83,7 @@ public class OpenshiftWithLegacySidecarAndS2iTest {
                     assertThat(c.getPorts()).singleElement().satisfies(p -> {
                         assertThat(p.getContainerPort()).isEqualTo(3000);
                     });
+                    assertThat(c.getEnv()).extracting("name").doesNotContain("JAVA_APP_JAR", "JAVA_LIB_DIR");
                 });
     }
 }

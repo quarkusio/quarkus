@@ -4,31 +4,24 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>quarkus-resteasy-mutiny-parent</artifactId>
+        <artifactId>quarkus-resteasy-mutiny-common-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-resteasy-mutiny</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Runtime</name>
-    <description>Mutiny support for RESTEasy server</description>
+    <artifactId>quarkus-resteasy-mutiny-common</artifactId>
+    <name>Quarkus - RESTEasy - Mutiny - Common - Runtime</name>
+    <description>Mutiny components common to the RESTEasy server and the REST Client</description>
+    
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-mutiny-common</artifactId>
+            <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>

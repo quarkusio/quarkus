@@ -16,11 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-mutiny-common-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mutiny-deployment</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

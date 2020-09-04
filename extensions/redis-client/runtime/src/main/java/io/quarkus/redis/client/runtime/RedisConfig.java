@@ -74,4 +74,19 @@ public class RedisConfig {
      */
     @ConfigItem(defaultValue = "15")
     public Duration poolRecycleTimeout;
+
+    /**
+     * Sets how much handlers is the client willing to queue.
+     * <p>
+     * The client will always work on pipeline mode, this means that messages can start queueing.
+     * Using this configuration option, you can control how much backlog you're willing to accept.
+     */
+    @ConfigItem(defaultValue = "2048")
+    public int maxWaitingHandlers;
+
+    /**
+     * Tune how much nested arrays are allowed on a redis response. This affects the parser performance.
+     */
+    @ConfigItem(defaultValue = "32")
+    public int maxNestedArrays;
 }

@@ -78,6 +78,8 @@ class RedisAPIProducer {
             timeout = config.timeout.get().getSeconds();
         }
 
+        options.setMaxNestedArrays(config.maxNestedArrays);
+        options.setMaxWaitingHandlers(config.maxWaitingHandlers);
         options.setMaxPoolSize(config.maxPoolSize);
         options.setMaxPoolWaiting(config.maxPoolWaiting);
         options.setPoolRecycleTimeout(Math.toIntExact(config.poolRecycleTimeout.toMillis()));

@@ -28,13 +28,15 @@ public class SseResource {
         SseBroadcaster sseBroadcaster = sse.newBroadcaster();
 
         sseBroadcaster.register(sink);
-        sseBroadcaster.broadcast(sse.newEventBuilder().data("hello").build());
+        sseBroadcaster.broadcast(sse.newEventBuilder().data("hello").build())
+                .thenCompose(v -> sseBroadcaster.broadcast(sse.newEventBuilder().data("stef").build()))
+                .thenAccept(v -> sseBroadcaster.close());
     }
 
     @Path("multi")
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<String> multiText() {
-        return Multi.createFrom().items("hello");
+        return Multi.createFrom().items("hello", "stef");
     }
 }

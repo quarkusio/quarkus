@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.ws.rs.client.AsyncInvoker;
@@ -24,6 +23,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.vertx.core.Handler;
@@ -228,15 +228,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         throw new RuntimeException("NYI");
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<T> rt) {
-        return performRequestInternal(httpMethodName, entity, rt, null);
+        return (CompletableFuture<Response>) (CompletableFuture) performRequestInternal(httpMethodName, entity, rt, true);
     }
 
     @SuppressWarnings("deprecation")
-    <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<T> rt,
-            Consumer<HttpClientResponse> clientConsumer) {
+    <T> CompletableFuture<QuarkusRestResponse> performRequestInternal(String httpMethodName, Entity<?> entity,
+            GenericType<T> rt,
+            boolean registerBodyHandler) {
 
-        CompletableFuture<Response> result = new CompletableFuture<>();
+        CompletableFuture<QuarkusRestResponse> result = new CompletableFuture<>();
         try {
             GenericType<T> responseType = getResponseType(rt);
             HttpClientRequest httpClientRequest = createRequest(httpMethodName);
@@ -244,25 +246,25 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
             httpClientRequest
                     .handler(new Handler<HttpClientResponse>() {
                         @Override
-                        public void handle(HttpClientResponse event) {
+                        public void handle(HttpClientResponse clientResponse) {
                             QuarkusRestResponseBuilder response;
                             MediaType mediaType;
                             try {
                                 response = new QuarkusRestResponseBuilder();
-                                mediaType = initialiseResponse(event, response);
+                                mediaType = initialiseResponse(clientResponse, response);
                             } catch (Throwable t) {
                                 result.completeExceptionally(t);
                                 return;
                             }
-                            if (clientConsumer != null) {
-                                clientConsumer.accept(event);
+                            if (!registerBodyHandler) {
                                 result.complete(response.build());
                             } else {
-                                event.bodyHandler(new Handler<Buffer>() {
+                                clientResponse.bodyHandler(new Handler<Buffer>() {
                                     @Override
                                     public void handle(Buffer buffer) {
                                         try {
-                                            readEntity(event, response, buffer, responseType, mediaType);
+                                            T entity = readEntity(buffer, responseType, mediaType, response.getMetadata());
+                                            response.entity(entity);
                                             result.complete(response.build());
                                         } catch (Throwable t) {
                                             result.completeExceptionally(t);
@@ -284,36 +286,35 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         return result;
     }
 
-    private <T> void readEntity(HttpClientResponse event, QuarkusRestResponseBuilder response, Buffer buffer,
-            GenericType<T> responseType, MediaType mediaType)
+    public <T> T readEntity(Buffer buffer,
+            GenericType<T> responseType, MediaType mediaType, MultivaluedMap<String, Object> metadata)
             throws IOException {
         List<MessageBodyReader<?>> readers = builder.serialisers.findReaders(responseType.getRawType(),
                 mediaType);
-        for (MessageBodyReader reader : readers) {
+        for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
                     mediaType)) {
                 ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
-                response.entity(
-                        reader.readFrom(responseType.getRawType(), responseType.getType(),
-                                null, mediaType, response.getMetadata(), in));
-                return;
+                return (T) ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
+                        null, mediaType, metadata, in);
             }
         }
 
-        response.entity(buffer.toString(StandardCharsets.UTF_8));
+        return (T) buffer.toString(StandardCharsets.UTF_8);
     }
 
-    private MediaType initialiseResponse(HttpClientResponse event, QuarkusRestResponseBuilder response) {
+    private MediaType initialiseResponse(HttpClientResponse vertxResponse, QuarkusRestResponseBuilder response) {
         MediaType mediaType = MediaType.WILDCARD_TYPE;
-        for (String i : event.headers().names()) {
-            response.header(i, event.getHeader(i));
+        for (String i : vertxResponse.headers().names()) {
+            response.header(i, vertxResponse.getHeader(i));
 
         }
-        String mediaTypeHeader = event.getHeader(HttpHeaderNames.CONTENT_TYPE);
+        String mediaTypeHeader = vertxResponse.getHeader(HttpHeaderNames.CONTENT_TYPE);
         if (mediaTypeHeader != null) {
             mediaType = MediaType.valueOf(mediaTypeHeader);
         }
-        response.status(event.statusCode());
+        response.status(vertxResponse.statusCode());
+        response.vertxClientResponse(vertxResponse);
         return mediaType;
     }
 

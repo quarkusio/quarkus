@@ -38,8 +38,9 @@ public class QuarkusRestSseEventSink implements SseEventSink {
             return;
         // FIXME: close
         // FIXME: should we close too?
-        //        context.getContext().response().close();
         context.getContext().response().end();
+        context.getContext().response().close();
+        context.close();
     }
 
     public void sendInitialResponse(HttpServerResponse response) {

@@ -7,14 +7,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.net.impl.ConnectionBase;
 
@@ -113,48 +112,50 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
             return;
         isOpen = true;
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) endpoint.request().rx();
-        // FIXME: this dual invocation target is shitty
-        invoker.performRequestInternal("GET", null, null, event -> {
-            // make sure we get exceptions on the response, like close events, otherwise they
-            // will be logged as errors by vertx
-            event.exceptionHandler(t -> {
-                if (t == ConnectionBase.CLOSED_EXCEPTION) {
-                    // we can ignore this one since we registered a closeHandler
-                } else {
-                    // FIXME: handle real exceptions
-                    t.printStackTrace();
-                }
-            });
-            connection = event.request().connection();
-            connection.closeHandler(v -> {
-                close(true);
-            });
-            event.handler(this);
-        }).handle((response, throwable) -> {
-            if (throwable != null)
-                receiveThrowable(throwable);
-            else
-                handleInitialResponse(response);
-            return null;
+        invoker.performRequestInternal("GET", null, null, false)
+                .handle((response, throwable) -> {
+                    if (throwable != null)
+                        receiveThrowable(throwable);
+                    else {
+                        // FIXME: check response
+                        registerOnClient(response.getVertxClientResponse());
+                    }
+                    return null;
+                });
+    }
+
+    /**
+     * Allows the HTTP client to register for SSE after it has made the request
+     */
+    public void registerAfterRequest(HttpClientResponse vertxClientResponse) {
+        if (isOpen)
+            throw new IllegalStateException("Was already open");
+        isOpen = true;
+        registerOnClient(vertxClientResponse);
+    }
+
+    private void registerOnClient(HttpClientResponse vertxClientResponse) {
+        // make sure we get exceptions on the response, like close events, otherwise they
+        // will be logged as errors by vertx
+        vertxClientResponse.exceptionHandler(t -> {
+            if (t == ConnectionBase.CLOSED_EXCEPTION) {
+                // we can ignore this one since we registered a closeHandler
+            } else {
+                // FIXME: handle real exceptions
+                t.printStackTrace();
+            }
         });
+        connection = vertxClientResponse.request().connection();
+        connection.closeHandler(v -> {
+            close(true);
+        });
+        vertxClientResponse.handler(this);
+        // FIXME: handle end of response rather than wait for end of connection
     }
 
     private void receiveThrowable(Throwable throwable) {
         // TODO Auto-generated method stub
 
-    }
-
-    private void handleInitialResponse(Response response) {
-        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-            // FIXME: error
-            return;
-        }
-        if (response.getMediaType() == null
-                || !MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-            // FIXME: error
-            return;
-        }
-        // all checks done, let's wait for body parts
     }
 
     @Override

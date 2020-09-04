@@ -28,6 +28,7 @@ import javax.ws.rs.core.Variant;
 import io.quarkus.rest.runtime.util.HeaderHelper;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServerRequest;
 
 public class QuarkusRestResponseBuilder extends ResponseBuilder {
@@ -37,26 +38,29 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     Object entity;
     MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
     Annotation[] entityAnnotations;
+    HttpClientResponse vertxClientResponse;
 
     @Override
-    public Response build() {
+    public QuarkusRestResponse build() {
         QuarkusRestResponse response = new QuarkusRestResponse();
         response.status = status;
         response.reasonPhrase = reasonPhrase;
         response.entity = entity;
         response.headers = new MultivaluedHashMap<>();
         response.headers.putAll(metadata);
+        response.vertxClientResponse = vertxClientResponse;
         return response;
     }
 
     @Override
-    public ResponseBuilder clone() {
+    public QuarkusRestResponseBuilder clone() {
         QuarkusRestResponseBuilder responseBuilder = new QuarkusRestResponseBuilder();
         responseBuilder.status = status;
         responseBuilder.reasonPhrase = reasonPhrase;
         responseBuilder.entity = entity;
         responseBuilder.metadata = new MultivaluedHashMap<>();
         responseBuilder.metadata.putAll(metadata);
+        responseBuilder.vertxClientResponse = vertxClientResponse;
         return responseBuilder;
     }
 
@@ -384,5 +388,9 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
                 vary += ", " + HttpHeaderNames.ACCEPT_ENCODING;
         }
         return vary;
+    }
+
+    public void vertxClientResponse(HttpClientResponse vertxResponse) {
+        this.vertxClientResponse = vertxResponse;
     }
 }

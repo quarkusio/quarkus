@@ -22,6 +22,7 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
+import io.vertx.core.http.HttpClientResponse;
 
 public class QuarkusRestResponse extends Response {
 
@@ -31,6 +32,7 @@ public class QuarkusRestResponse extends Response {
     MultivaluedHashMap<String, Object> headers;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
+    HttpClientResponse vertxClientResponse;
 
     @Override
     public int getStatus() {
@@ -204,4 +206,7 @@ public class QuarkusRestResponse extends Response {
         return getStringHeaders().getFirst(name);
     }
 
+    public HttpClientResponse getVertxClientResponse() {
+        return vertxClientResponse;
+    }
 }

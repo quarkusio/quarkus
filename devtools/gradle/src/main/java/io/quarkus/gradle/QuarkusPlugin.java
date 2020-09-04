@@ -139,13 +139,9 @@ public class QuarkusPlugin implements Plugin<Project> {
                     compileJavaTask.dependsOn(quarkusGenerateCode);
                     quarkusGenerateCode.setSourceRegistrar(compileJavaTask::source);
 
-                    Task compileKotlinTask = tasks.findByName("compileKotlin");
-                    // TODO: proper support of kotlin
-                    if (compileKotlinTask == null) {
-                        JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
-                        compileTestJavaTask.dependsOn(quarkusGenerateCodeTests);
-                        quarkusGenerateCodeTests.setSourceRegistrar(compileTestJavaTask::source);
-                    }
+                    JavaCompile compileTestJavaTask = (JavaCompile) tasks.getByName(JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME);
+                    compileTestJavaTask.dependsOn(quarkusGenerateCodeTests);
+                    quarkusGenerateCodeTests.setSourceRegistrar(compileTestJavaTask::source);
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     Task resourcesTask = tasks.getByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
@@ -187,7 +183,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
                 });
         project.getPlugins().withId("org.jetbrains.kotlin.jvm", plugin -> {
-            Task compileKotlinTask = tasks.findByName("compileKotlin");
+            Task compileKotlinTask = tasks.getByName("compileKotlin");
             compileKotlinTask.dependsOn(quarkusGenerateCode, quarkusGenerateCodeTests);
         });
     }

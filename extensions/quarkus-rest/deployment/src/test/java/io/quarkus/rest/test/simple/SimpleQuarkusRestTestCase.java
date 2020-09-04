@@ -127,6 +127,26 @@ public class SimpleQuarkusRestTestCase {
     }
 
     @Test
+    public void testValidatedJson() {
+        Person person = new Person();
+        person.setFirst("Bob");
+        person.setLast("Builder");
+        RestAssured.with().body(person).post("/simple/person-validated")
+                .then().statusCode(200).body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
+
+        RestAssured.with().body(person).post("/simple/person-invalid-result")
+                .then()
+                .statusCode(500)
+                .contentType("application/json");
+
+        person.setLast(null);
+        RestAssured.with().body(person).post("/simple/person-validated")
+                .then()
+                .statusCode(400)
+                .contentType("application/json");
+    }
+
+    @Test
     public void testBlocking() {
         RestAssured.get("/simple/blocking")
                 .then().body(Matchers.equalTo("true"));

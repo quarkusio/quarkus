@@ -142,13 +142,18 @@ class HibernateValidatorProcessor {
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
-
             syntheticBeanBuildItems.produce(SyntheticBeanBuildItem.configure(ResteasyConfigSupport.class)
                     .scope(Singleton.class)
                     .unremovable()
                     .supplier(hibernateValidatorRecorder.resteasyConfigSupportSupplier(
                             resteasyConfigBuildItem.isPresent() ? resteasyConfigBuildItem.get().isJsonDefault() : false))
                     .done());
+        } else if (capabilities.isPresent(Capability.QUARKUS_REST)) {
+            // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.QuarkusRestViolationExceptionMapper"));
         }
 
         // A constraint validator with an injection point but no scope is added as @Singleton

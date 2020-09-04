@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
@@ -147,6 +148,24 @@ public class SimpleQuarkusRestResource {
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should have dispatched");
         }
+        return person;
+    }
+
+    @POST
+    @Path("/person-validated")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Person getValidatedPerson(@Valid Person person) {
+        return person;
+    }
+
+    @POST
+    @Path("/person-invalid-result")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Valid
+    public Person getInvalidPersonResult(@Valid Person person) {
+        person.setLast(null);
         return person;
     }
 

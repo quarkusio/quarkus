@@ -33,10 +33,13 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -68,7 +71,12 @@ public class QuarkusRestProcessor {
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
-        return new FeatureBuildItem("quarkus-rest");
+        return new FeatureBuildItem(Feature.QUARKUS_REST);
+    }
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.QUARKUS_REST);
     }
 
     @BuildStep

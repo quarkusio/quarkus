@@ -1,8 +1,12 @@
 package io.quarkus.rest.test.simple;
 
+import javax.validation.constraints.NotBlank;
+
 public class Person {
 
     private String first;
+
+    @NotBlank(message = "Title cannot be blank")
     private String last;
 
     public String getFirst() {

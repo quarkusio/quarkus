@@ -1,0 +1,12 @@
+---
+name: "RESTEasy Multipart"
+metadata:
+  keywords:
+  - "resteasy-multipart"
+  - "multipart"
+  - "upload"
+  - "resteasy"
+  - "jaxrs"
+  categories:
+  - "web"
+  status: "stable"

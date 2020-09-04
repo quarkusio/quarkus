@@ -1,9 +1,5 @@
 package io.quarkus.rest.runtime.handlers;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.sse.OutboundSseEvent;
 
@@ -20,35 +16,7 @@ import io.vertx.core.http.HttpServerResponse;
 
 public class MultiResponseHandler implements RestHandler {
 
-    abstract class AbstractRequestHandlingMultiSubscriber extends AbstractMultiSubscriber {
-
-        AbstractRequestHandlingMultiSubscriber(QuarkusRestRequestContext requestContext) {
-            super(requestContext);
-            // let's make sure we never restart by accident, also make sure we're not marked as completed
-            requestContext.restart(AWOL);
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            super.onSubscribe(s);
-            // initially ask for one item
-            s.request(1);
-        }
-
-        @Override
-        public void onComplete() {
-            // no need to cancel on complete
-            // FIXME: are we interested in async completion?
-            requestContext.getContext().response().end();
-            // so, if I don't also close the connection, the client isn't notified that the request is over
-            // I guess that's true of chunked responses, but not clear why I need to close the connection
-            // because it means it can't get reused, right?
-            requestContext.getContext().response().close();
-            requestContext.close();
-        }
-    }
-
-    class SseMultiSubscriber extends AbstractRequestHandlingMultiSubscriber {
+    class SseMultiSubscriber extends AbstractMultiSubscriber {
 
         SseMultiSubscriber(QuarkusRestRequestContext requestContext) {
             super(requestContext);
@@ -71,7 +39,7 @@ public class MultiResponseHandler implements RestHandler {
         }
     }
 
-    class StreamingMultiSubscriber extends AbstractRequestHandlingMultiSubscriber {
+    class StreamingMultiSubscriber extends AbstractMultiSubscriber {
 
         StreamingMultiSubscriber(QuarkusRestRequestContext requestContext) {
             super(requestContext);
@@ -97,56 +65,33 @@ public class MultiResponseHandler implements RestHandler {
         }
     }
 
-    class CollectingMultiSubscriber extends AbstractMultiSubscriber {
-
-        List<Object> entities = new ArrayList<>();
-
-        CollectingMultiSubscriber(QuarkusRestRequestContext requestContext) {
-            super(requestContext);
-        }
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            super.onSubscribe(s);
-            // ask for every item
-            s.request(Long.MAX_VALUE);
-        }
-
-        @Override
-        public void onNext(Object item) {
-            entities.add(item);
-        }
-
-        @Override
-        public void onComplete() {
-            Object totalEntity = null;
-            if (!entities.isEmpty()) {
-                Type entityType = requestContext.getGenericReturnType();
-                if (entityType == String.class) {
-                    StringBuilder sb = new StringBuilder();
-                    for (Object entity : entities) {
-                        sb.append((String) entity);
-                    }
-                    totalEntity = sb.toString();
-                }
-                // no need to throw, we've checked this in advance
-            }
-            requestContext.setResult(totalEntity);
-            requestContext.resume();
-        }
-    }
-
     abstract class AbstractMultiSubscriber implements Subscriber<Object> {
         protected Subscription subscription;
         protected QuarkusRestRequestContext requestContext;
 
         AbstractMultiSubscriber(QuarkusRestRequestContext requestContext) {
             this.requestContext = requestContext;
+            // let's make sure we never restart by accident, also make sure we're not marked as completed
+            requestContext.restart(AWOL);
         }
 
         @Override
         public void onSubscribe(Subscription s) {
             this.subscription = s;
+            // initially ask for one item
+            s.request(1);
+        }
+
+        @Override
+        public void onComplete() {
+            // no need to cancel on complete
+            // FIXME: are we interested in async completion?
+            requestContext.getContext().response().end();
+            // so, if I don't also close the connection, the client isn't notified that the request is over
+            // I guess that's true of chunked responses, but not clear why I need to close the connection
+            // because it means it can't get reused, right?
+            requestContext.getContext().response().close();
+            requestContext.close();
         }
 
         @Override
@@ -189,20 +134,10 @@ public class MultiResponseHandler implements RestHandler {
             requestContext.suspend();
             if (requestContext.getProducesMediaType().isCompatible(MediaType.SERVER_SENT_EVENTS_TYPE)) {
                 handleSse(requestContext, result);
-            } else if (requestContext.getTarget().isStreaming()) {
-                handleStreaming(requestContext, result);
             } else {
-                handleCollecting(requestContext, result);
+                handleStreaming(requestContext, result);
             }
         }
-    }
-
-    private void handleCollecting(QuarkusRestRequestContext requestContext, Multi<?> result) {
-        // FIXME: move to build time
-        Type type = requestContext.getGenericReturnType();
-        if (type != String.class)
-            throw new IllegalStateException("Streaming type " + type + " not supported yet: must be String");
-        result.subscribe().withSubscriber(new CollectingMultiSubscriber(requestContext));
     }
 
     private void handleStreaming(QuarkusRestRequestContext requestContext, Multi<?> result) {

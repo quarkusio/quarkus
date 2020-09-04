@@ -9,7 +9,6 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STREAMING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 
@@ -326,8 +325,6 @@ public class EndpointIndexer {
                     blocking = true;
                 }
             }
-            AnnotationInstance streamingAnnotation = getInheritableAnnotation(info, STREAMING);
-            boolean streaming = streamingAnnotation != null;
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(annotationToMethod(httpMethod))
                     .setPath(methodPath)
@@ -337,7 +334,6 @@ public class EndpointIndexer {
                     .setName(info.name())
                     .setBlocking(blocking)
                     .setSuspended(suspended)
-                    .setStreaming(streaming)
                     .setSse(sse)
                     .setParameters(methodParameters)
                     // FIXME: resolved arguments ?

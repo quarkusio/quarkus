@@ -35,7 +35,6 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.rest.Blocking;
-import io.quarkus.rest.api.Stream;
 
 public final class QuarkusRestDotNames {
 
@@ -71,7 +70,6 @@ public final class QuarkusRestDotNames {
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
-    public static final DotName STREAMING = DotName.createSimple(Stream.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
     public static final DotName PRE_MATCHING = DotName.createSimple(PreMatching.class.getName());
 

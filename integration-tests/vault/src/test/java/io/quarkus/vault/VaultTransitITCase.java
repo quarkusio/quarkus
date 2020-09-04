@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -39,6 +40,7 @@ import io.quarkus.vault.transit.TransitContext;
 import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
 
+@Disabled("https://github.com/quarkusio/quarkus/issues/11879")
 public class VaultTransitITCase {
 
     private static final Logger log = Logger.getLogger(VaultTransitITCase.class);

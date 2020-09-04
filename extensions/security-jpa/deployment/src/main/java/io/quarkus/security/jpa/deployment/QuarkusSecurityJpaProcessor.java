@@ -41,6 +41,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -168,9 +169,11 @@ class QuarkusSecurityJpaProcessor {
                 AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
                 methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
 
-                // if(user == null) return null;
+                // if(user == null) throw new AuthenticationFailedException();
                 try (BytecodeCreator trueBranch = methodCreator.ifNull(userVar).trueBranch()) {
-                    trueBranch.returnValue(trueBranch.loadNull());
+                    ResultHandle exceptionInstance = trueBranch
+                            .newInstance(MethodDescriptor.ofConstructor(AuthenticationFailedException.class));
+                    trueBranch.throwException(exceptionInstance);
                 }
 
                 // :pass = user.pass | user.getPass()

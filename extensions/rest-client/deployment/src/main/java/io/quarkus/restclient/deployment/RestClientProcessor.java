@@ -104,6 +104,11 @@ class RestClientProcessor {
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
+    @BuildStep
+    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {

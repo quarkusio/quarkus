@@ -3,7 +3,6 @@ package io.quarkus.it.kubernetes.client;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.Pod;
@@ -27,19 +26,47 @@ public class KubernetesClientTest {
     private KubernetesMockServer mockServer;
 
     @Test
-    public void before() {
+    public void testInteractionWithAPIServer() {
+        setupMockServerForTest();
+
+        RestAssured.when().get("/pod/test").then()
+                .body("size()", is(2)).body(containsString("pod1"), containsString("pod2"));
+
+        RestAssured.when().delete("/pod/test").then()
+                .statusCode(204);
+
+        RestAssured.when().put("/pod/test").then()
+                .body(containsString("value1"));
+
+        RestAssured.when().post("/pod/test").then()
+                .body(containsString("54321"));
+    }
+
+    private void setupMockServerForTest() {
         Pod pod1 = new PodBuilder().withNewMetadata().withName("pod1").withNamespace("test").and().build();
         Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
+
+        /*
+         * We take special care here to only create as many mock responses as this specific test class needs
+         * This is done in order to avoid leaking mock responses into other tests
+         */
 
         mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
                 .andReturn(200,
                         new PodListBuilder().withNewMetadata().withResourceVersion("1").endMetadata().withItems(pod1, pod2)
                                 .build())
-                .always();
+                // GET /pod/test,
+                // DELETE /pod/test,
+                // PUT /pod/test
+                // all list the pods
+                .times(3);
 
         mockServer.expect().get().withPath("/api/v1/namespaces/test/pods/pod1")
                 .andReturn(200, pod1)
-                .always();
+                // DELETE /pod/test,
+                // PUT /pod/test
+                // both look at this endpoint to see if the pod exists
+                .times(2);
 
         mockServer.expect().delete().withPath("/api/v1/namespaces/test/pods/pod1")
                 .andReturn(200, "{}")
@@ -53,22 +80,6 @@ public class KubernetesClientTest {
         // same here, the content itself doesn't really matter
         mockServer.expect().post().withPath("/api/v1/namespaces/test/pods").andReturn(201, new PodBuilder()
                 .withNewMetadata().withResourceVersion("54321").and().build()).once();
-    }
-
-    @Test
-    @Disabled("https://github.com/quarkusio/quarkus/issues/11783")
-    public void testInteractionWithAPIServer() {
-        RestAssured.when().get("/pod/test").then()
-                .body("size()", is(2)).body(containsString("pod1"), containsString("pod2"));
-
-        RestAssured.when().delete("/pod/test").then()
-                .statusCode(204);
-
-        RestAssured.when().put("/pod/test").then()
-                .body(containsString("value1"));
-
-        RestAssured.when().post("/pod/test").then()
-                .body(containsString("54321"));
     }
 
 }

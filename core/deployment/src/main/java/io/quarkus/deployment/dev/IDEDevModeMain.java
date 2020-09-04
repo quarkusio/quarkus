@@ -73,14 +73,17 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             sourceDirectories.add(srcDir.getPath());
             sourceParents.add(srcDir.getParent());
         }
-
+        String resourceDirectory = null;
+        if (module.getSourceSet().getResourceDirectory() != null) {
+            resourceDirectory = module.getSourceSet().getResourceDirectory().getPath();
+        }
         return new DevModeContext.ModuleInfo(key,
                 module.getArtifactCoords().getArtifactId(),
                 module.getProjectRoot().getPath(),
                 sourceDirectories,
                 QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString(),
                 module.getSourceSourceSet().getResourceDirectory().toString(),
-                module.getSourceSet().getResourceDirectory().getPath(),
+                resourceDirectory,
                 sourceParents,
                 module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
                 module.getBuildDir().toString());

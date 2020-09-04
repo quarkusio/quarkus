@@ -59,6 +59,7 @@ import io.quarkus.rest.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
@@ -285,6 +286,9 @@ public class QuarkusRestProcessor {
                 MediaType.TEXT_PLAIN);
         registerWriter(recorder, serialisers, Object.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
+        registerWriter(recorder, serialisers, char[].class, CharArrayMessageBodyHandler.class,
+                beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN);
         registerWriter(recorder, serialisers, byte[].class, ByteArrayMessageBodyHandler.class,
                 beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);

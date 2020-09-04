@@ -18,11 +18,38 @@ public class StreamTestCase {
 
     @Test
     public void testStreaming() throws Exception {
-        RestAssured.get("/stream/stream")
+        RestAssured.get("/stream/text/stream")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/collect")
+        RestAssured.get("/stream/text/collect")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+
+        RestAssured.get("/stream/byte-arrays/stream")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/byte-arrays/collect")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+
+        RestAssured.get("/stream/char-arrays/stream")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/char-arrays/collect")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+
+        RestAssured.get("/stream/buffer/stream")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/buffer/collect")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("foobar"));

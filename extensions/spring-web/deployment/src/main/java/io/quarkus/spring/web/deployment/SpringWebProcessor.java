@@ -37,6 +37,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsDevelopment;
@@ -304,56 +305,60 @@ public class SpringWebProcessor {
 
     @BuildStep
     public void registerProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) throws IOException {
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            Capabilities capabilities) throws IOException {
 
-        //TODO only read this information once since it is exactly the same in ResteasyCommonProcessor#setupProviders
-        final Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/" + Providers.class.getName());
+        if (!capabilities.isPresent(Capability.RESTEASY)) {
 
-        final MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
-        final MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
-        final MediaTypeMap<String> categorizedContextResolvers = new MediaTypeMap<>();
-        final Set<String> otherProviders = new HashSet<>();
+            final Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                    "META-INF/services/" + Providers.class.getName());
 
-        ResteasyCommonProcessor.categorizeProviders(availableProviders, categorizedReaders, categorizedWriters,
-                categorizedContextResolvers,
-                otherProviders);
+            final MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
+            final MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
+            final MediaTypeMap<String> categorizedContextResolvers = new MediaTypeMap<>();
+            final Set<String> otherProviders = new HashSet<>();
 
-        boolean useAllAvailable = false;
-        Set<String> providersToRegister = new HashSet<>();
+            ResteasyCommonProcessor.categorizeProviders(availableProviders, categorizedReaders, categorizedWriters,
+                    categorizedContextResolvers,
+                    otherProviders);
 
-        OUTER: for (DotName mappingClass : MAPPING_ANNOTATIONS) {
-            final Collection<AnnotationInstance> instances = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingClass);
-            for (AnnotationInstance instance : instances) {
-                if (collectProviders(providersToRegister, categorizedWriters, instance, "produces")) {
-                    useAllAvailable = true;
-                    break OUTER;
-                }
-                if (collectProviders(providersToRegister, categorizedContextResolvers, instance, "produces")) {
-                    useAllAvailable = true;
-                    break OUTER;
-                }
+            boolean useAllAvailable = false;
+            Set<String> providersToRegister = new HashSet<>();
 
-                if (collectProviders(providersToRegister, categorizedReaders, instance, "consumes")) {
-                    useAllAvailable = true;
-                    break OUTER;
+            OUTER: for (DotName mappingClass : MAPPING_ANNOTATIONS) {
+                final Collection<AnnotationInstance> instances = beanArchiveIndexBuildItem.getIndex()
+                        .getAnnotations(mappingClass);
+                for (AnnotationInstance instance : instances) {
+                    if (collectProviders(providersToRegister, categorizedWriters, instance, "produces")) {
+                        useAllAvailable = true;
+                        break OUTER;
+                    }
+                    if (collectProviders(providersToRegister, categorizedContextResolvers, instance, "produces")) {
+                        useAllAvailable = true;
+                        break OUTER;
+                    }
+
+                    if (collectProviders(providersToRegister, categorizedReaders, instance, "consumes")) {
+                        useAllAvailable = true;
+                        break OUTER;
+                    }
                 }
             }
-        }
 
-        if (useAllAvailable) {
-            providersToRegister = availableProviders;
-        } else {
-            // for Spring Web we register all the json providers by default because using "produces" in @RequestMapping
-            // and friends is optional
-            providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
-            // we also need to register the custom Spring related providers
-            providersToRegister.add(ResponseEntityFeature.class.getName());
-            providersToRegister.add(ResponseStatusFeature.class.getName());
-        }
+            if (useAllAvailable) {
+                providersToRegister = availableProviders;
+            } else {
+                // for Spring Web we register all the json providers by default because using "produces" in @RequestMapping
+                // and friends is optional
+                providersToRegister.addAll(categorizedWriters.getPossible(MediaType.APPLICATION_JSON_TYPE));
+                // we also need to register the custom Spring related providers
+                providersToRegister.add(ResponseEntityFeature.class.getName());
+                providersToRegister.add(ResponseStatusFeature.class.getName());
+            }
 
-        for (String provider : providersToRegister) {
-            providersProducer.produce(new ResteasyJaxrsProviderBuildItem(provider));
+            for (String provider : providersToRegister) {
+                providersProducer.produce(new ResteasyJaxrsProviderBuildItem(provider));
+            }
         }
     }
 

@@ -21,7 +21,7 @@ public class PropertyUtils {
     }
 
     public static boolean isWindows() {
-        return getProperty(OS_NAME).toLowerCase(Locale.ENGLISH).indexOf(WINDOWS) >= 0;
+        return getProperty(OS_NAME).toLowerCase(Locale.ENGLISH).contains(WINDOWS);
     }
 
     public static String getUserHome() {

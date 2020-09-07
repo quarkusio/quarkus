@@ -93,22 +93,21 @@ In a terminal, run:
 $ mvn compile
 ----
 
-Once generated, you can look at the `target/generated-sources/protobuf` directory:
+Once generated, you can look at the `target/generated-sources/grpc` directory:
 
 [source, txt]
 ----
-target/generated-sources/protobuf
-└── java
-    └── io
-        └── quarkus
-            └── example
-                ├── GreeterGrpc.java
-                ├── HelloReply.java
-                ├── HelloReplyOrBuilder.java
-                ├── HelloRequest.java
-                ├── HelloRequestOrBuilder.java
-                ├── HelloWorldProto.java
-                └── MutinyGreeterGrpc.java
+target/generated-sources/grpc
+└── io
+    └── quarkus
+        └── example
+            ├── GreeterGrpc.java
+            ├── HelloReply.java
+            ├── HelloReplyOrBuilder.java
+            ├── HelloRequest.java
+            ├── HelloRequestOrBuilder.java
+            ├── HelloWorldProto.java
+            └── MutinyGreeterGrpc.java
 ----
 
 These are the classes we are going to use.

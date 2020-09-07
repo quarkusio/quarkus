@@ -318,8 +318,8 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 
 [CAUTION]
 ====
-We only support setting `@PersistenceUnit` at the package level,
-using the `@PersistenceUnit` annotation at the class level is not supported.
+We only support defining the `@PersistenceUnit` for model classes at the package level,
+using the `@PersistenceUnit` annotation at the class level is not supported in this case.
 ====
 
 Note that, similarly to what we do with the configuration property, we take into account the annotated package but also all its subpackages.

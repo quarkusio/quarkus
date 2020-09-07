@@ -27,6 +27,7 @@ import io.quarkus.rest.runtime.handlers.RestHandler;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestHttpHeaders;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestProviders;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestRequest;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriInfo;
@@ -41,6 +42,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
     private static final Logger log = Logger.getLogger(QuarkusRestRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QuarkusRestDeployment deployment;
+    private final QuarkusRestProviders providers;
     private final RoutingContext context;
     private final ManagedContext requestContext;
     private final CurrentVertxRequest currentVertxRequest;
@@ -109,20 +111,11 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
     private QuarkusRestAsyncResponse asyncResponse;
     private QuarkusRestSseEventSink sseEventSink;
 
-    public QuarkusRestRequestContext(QuarkusRestDeployment deployment, RoutingContext context, ManagedContext requestContext,
-            CurrentVertxRequest currentVertxRequest, RuntimeResource target) {
-        this.deployment = deployment;
-        this.context = context;
-        this.requestContext = requestContext;
-        this.currentVertxRequest = currentVertxRequest;
-        this.target = target;
-        this.handlers = target.getHandlerChain();
-        this.parameters = new Object[target.getParameterTypes().length];
-    }
-
-    public QuarkusRestRequestContext(QuarkusRestDeployment deployment, RoutingContext context, ManagedContext requestContext,
+    public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
+            ManagedContext requestContext,
             CurrentVertxRequest currentVertxRequest, RestHandler... handlerChain) {
         this.deployment = deployment;
+        this.providers = providers;
         this.context = context;
         this.requestContext = requestContext;
         this.currentVertxRequest = currentVertxRequest;
@@ -132,6 +125,10 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
 
     public QuarkusRestDeployment getDeployment() {
         return deployment;
+    }
+
+    public QuarkusRestProviders getProviders() {
+        return providers;
     }
 
     public void suspend() {

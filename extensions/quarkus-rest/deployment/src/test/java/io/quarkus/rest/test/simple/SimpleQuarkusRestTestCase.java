@@ -184,6 +184,13 @@ public class SimpleQuarkusRestTestCase {
     }
 
     @Test
+    public void testProviders() {
+        RestAssured.get("/simple/providers")
+                .then().body(Matchers.containsString("TestException"))
+                .statusCode(200);
+    }
+
+    @Test
     public void testException() {
         RestAssured.get("/simple/mapped-exception")
                 .then().body(Matchers.equalTo("OK"))

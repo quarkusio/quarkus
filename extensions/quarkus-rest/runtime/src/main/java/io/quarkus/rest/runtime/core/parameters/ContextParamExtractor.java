@@ -4,6 +4,7 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.SseEventSink;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
@@ -49,6 +50,9 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(HttpServerRequest.class.getName())) {
             return context.getContext().request();
+        }
+        if (type.equals(Providers.class.getName())) {
+            return context.getProviders();
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

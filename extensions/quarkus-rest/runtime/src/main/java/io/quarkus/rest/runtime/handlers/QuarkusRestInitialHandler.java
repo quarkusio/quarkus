@@ -2,8 +2,10 @@ package io.quarkus.rest.runtime.handlers;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestProviders;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.Handler;
@@ -13,6 +15,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
 
     final RequestMapper<InitialMatch> mappers;
     final QuarkusRestDeployment deployment;
+    final QuarkusRestProviders providers;
     final ResourceRequestInterceptorHandler preMappingHandler;
     final RestHandler[] initialChain;
 
@@ -23,6 +26,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
             ResourceRequestInterceptorHandler preMappingHandler) {
         this.mappers = mappers;
         this.deployment = deployment;
+        this.providers = new QuarkusRestProviders(QuarkusRestRecorder.getCurrentDeployment());
         this.preMappingHandler = preMappingHandler;
         if (preMappingHandler == null) {
             initialChain = new RestHandler[] { this };
@@ -35,7 +39,8 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
 
     @Override
     public void handle(RoutingContext event) {
-        QuarkusRestRequestContext rq = new QuarkusRestRequestContext(deployment, event, requestContext, currentVertxRequest,
+        QuarkusRestRequestContext rq = new QuarkusRestRequestContext(deployment, providers, event, requestContext,
+                currentVertxRequest,
                 initialChain);
         rq.run();
     }

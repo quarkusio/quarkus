@@ -7,6 +7,7 @@ import javax.inject.Singleton;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
@@ -63,6 +64,12 @@ public class ContextProducers {
     @Produces
     HttpServerResponse httpServerResponse() {
         return currentVertxRequest.getCurrent().response();
+    }
+
+    @Singleton
+    @Produces
+    Providers providers() {
+        return getContext().getProviders();
     }
 
     private QuarkusRestRequestContext getContext() {

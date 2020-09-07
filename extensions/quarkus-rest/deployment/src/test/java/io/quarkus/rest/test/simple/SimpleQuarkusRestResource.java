@@ -27,6 +27,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Providers;
 
 import io.quarkus.rest.Blocking;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
@@ -174,6 +175,13 @@ public class SimpleQuarkusRestResource {
     @Blocking
     public String blocking() {
         return String.valueOf(BlockingOperationControl.isBlockingAllowed());
+    }
+
+    @GET
+    @Path("providers")
+    public Response filters(@Context Providers providers) {
+        // TODO: enhance this test
+        return Response.ok().entity(providers.getExceptionMapper(TestException.class).getClass().getName()).build();
     }
 
     @GET

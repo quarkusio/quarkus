@@ -26,6 +26,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.runtime.core.ArcBeanFactory;
+import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
@@ -69,6 +70,7 @@ import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
+import io.quarkus.rest.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.runtime.model.ResourceMethod;
@@ -143,7 +145,7 @@ public class QuarkusRestRecorder {
 
     public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping,
-            Serialisers serialisers,
+            ContextResolvers ctxResolvers, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
@@ -237,7 +239,7 @@ public class QuarkusRestRecorder {
         }
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
-        QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, serialisers,
+        QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
 
         currentDeployment = deployment;
@@ -636,6 +638,11 @@ public class QuarkusRestRecorder {
     public void registerExceptionMapper(ExceptionMapping exceptionMapping, String string,
             ResourceExceptionMapper<Throwable> mapper) {
         exceptionMapping.addExceptionMapper(loadClass(string), mapper);
+    }
+
+    public void registerContextResolver(ContextResolvers contextResolvers, String string,
+            ResourceContextResolver resolver) {
+        contextResolvers.addContextResolver(loadClass(string), resolver);
     }
 
     public void registerWriter(Serialisers serialisers, String entityClassName,

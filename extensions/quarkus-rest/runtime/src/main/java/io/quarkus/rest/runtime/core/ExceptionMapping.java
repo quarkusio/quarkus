@@ -17,23 +17,38 @@ public class ExceptionMapping {
 
     private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
+    @SuppressWarnings("unchecked")
     public Response mapException(Throwable throwable) {
         Class<?> klass = throwable.getClass();
-        do {
-            ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
-            if (mapper != null) {
-                ExceptionMapper<Throwable> instance = (ExceptionMapper<Throwable>) mapper.getFactory()
-                        .createInstance().getInstance();
-                return instance.toResponse(throwable);
-            }
-            klass = klass.getSuperclass();
-        } while (klass != null);
+        ExceptionMapper<Throwable> exceptionMapper = getExceptionMapper((Class<Throwable>) klass);
+        if (exceptionMapper != null) {
+            return exceptionMapper.toResponse(throwable);
+        }
         if (throwable instanceof WebApplicationException) {
             return ((WebApplicationException) throwable).getResponse();
         }
         log.error("Request failed ", throwable);
         // FIXME: configurable? stack trace?
         return Response.serverError().build();
+    }
+
+    /**
+     * Return the proper Exception that handles {@param throwable} or {@code null}
+     * if none is found
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> clazz) {
+        Class<?> klass = clazz;
+        do {
+            ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
+            if (mapper != null) {
+                return (ExceptionMapper<T>) mapper.getFactory()
+                        .createInstance().getInstance();
+            }
+            klass = klass.getSuperclass();
+        } while (klass != null);
+
+        return null;
     }
 
     public <T extends Throwable> void addExceptionMapper(Class<T> exceptionClass, ResourceExceptionMapper<T> mapper) {

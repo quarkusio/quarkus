@@ -25,6 +25,7 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -64,6 +65,7 @@ public final class QuarkusRestDotNames {
     public static final DotName CONTAINER_REQUEST_FILTER = DotName.createSimple(ContainerRequestFilter.class.getName());
     public static final DotName CONTAINER_RESPONSE_FILTER = DotName.createSimple(ContainerResponseFilter.class.getName());
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());
+    public static final DotName CONTEXT_RESOLVER = DotName.createSimple(ContextResolver.class.getName());
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());

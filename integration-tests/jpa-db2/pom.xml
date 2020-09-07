@@ -249,6 +249,9 @@
                                             <log>.*Setup has completed\..*</log>
                                             <!-- Unfortunately booting DB2 is slow, needs to set a generous (10m) timeout: -->
                                             <time>600000</time>
+                                            <!-- Kill the container, if it doesn't stop before this given time
+                                             duration since a graceful stop was issued -->
+                                            <kill>300000</kill>
                                         </wait>
                                     </run>
                                 </image>

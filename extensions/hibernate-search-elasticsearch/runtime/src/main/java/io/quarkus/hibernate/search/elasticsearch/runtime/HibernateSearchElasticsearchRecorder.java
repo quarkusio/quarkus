@@ -22,8 +22,9 @@ import org.hibernate.search.mapper.orm.cfg.spi.HibernateOrmReflectionStrategyNam
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchBackendBuildTimeConfig;
+import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchBackendRuntimeConfig;
-import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexConfig;
+import io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -104,13 +105,21 @@ public class HibernateSearchElasticsearchRecorder {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version);
             addBackendConfig(propertyCollector, backendName,
-                    ElasticsearchBackendSettings.ANALYSIS_CONFIGURER,
-                    elasticsearchBackendConfig.analysis.configurer,
-                    Optional::isPresent, c -> c.get().getName());
-            addBackendConfig(propertyCollector, backendName,
                     ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                     elasticsearchBackendConfig.layout.strategy,
                     Optional::isPresent, c -> c.get().getName());
+
+            // Index defaults at the backend level
+            contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, null,
+                    elasticsearchBackendConfig.indexDefaults);
+
+            // Per-index properties
+            for (Entry<String, ElasticsearchIndexBuildTimeConfig> indexConfigEntry : elasticsearchBackendConfig.indexes
+                    .entrySet()) {
+                String indexName = indexConfigEntry.getKey();
+                ElasticsearchIndexBuildTimeConfig indexConfig = indexConfigEntry.getValue();
+                contributeBackendIndexBuildTimeProperties(propertyCollector, backendName, indexName, indexConfig);
+            }
         }
 
         private void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector, String backendName,
@@ -125,6 +134,10 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.password);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
                     elasticsearchBackendConfig.connectionTimeout.toMillis());
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,
+                    elasticsearchBackendConfig.readTimeout.toMillis());
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.REQUEST_TIMEOUT,
+                    elasticsearchBackendConfig.requestTimeout, Optional::isPresent, d -> d.get().toMillis());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
                     elasticsearchBackendConfig.maxConnections);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
@@ -143,15 +156,25 @@ public class HibernateSearchElasticsearchRecorder {
             contributeBackendIndexRuntimeProperties(propertyCollector, backendName, null,
                     elasticsearchBackendConfig.indexDefaults);
 
-            for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
+            // Per-index properties
+            for (Entry<String, ElasticsearchIndexRuntimeConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes
+                    .entrySet()) {
                 String indexName = indexConfigEntry.getKey();
-                ElasticsearchIndexConfig indexConfig = indexConfigEntry.getValue();
+                ElasticsearchIndexRuntimeConfig indexConfig = indexConfigEntry.getValue();
                 contributeBackendIndexRuntimeProperties(propertyCollector, backendName, indexName, indexConfig);
             }
         }
 
+        private void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
+                String backendName, String indexName, ElasticsearchIndexBuildTimeConfig indexConfig) {
+            addBackendIndexConfig(propertyCollector, backendName, indexName,
+                    ElasticsearchBackendSettings.ANALYSIS_CONFIGURER,
+                    indexConfig.analysis.configurer,
+                    Optional::isPresent, c -> c.get().getName());
+        }
+
         private void contributeBackendIndexRuntimeProperties(BiConsumer<String, Object> propertyCollector,
-                String backendName, String indexName, ElasticsearchIndexConfig indexConfig) {
+                String backendName, String indexName, ElasticsearchIndexRuntimeConfig indexConfig) {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
                     indexConfig.schemaManagement.requiredStatus);

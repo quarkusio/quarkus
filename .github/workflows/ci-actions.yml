@@ -632,7 +632,7 @@ jobs:
         run: |
           docker run --rm --publish 9200:9200 --name build-elasticsearch \
           -e discovery.type=single-node \
-          -d docker.elastic.co/elasticsearch/elasticsearch-oss:7.8.0
+          -d docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.0
         if: matrix.elasticsearch
       - uses: actions/checkout@v2
       - name: Set up JDK 11

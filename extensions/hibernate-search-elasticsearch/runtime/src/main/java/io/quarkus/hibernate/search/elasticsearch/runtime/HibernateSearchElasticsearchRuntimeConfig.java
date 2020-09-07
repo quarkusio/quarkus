@@ -98,7 +98,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The connection timeout.
          */
-        @ConfigItem(defaultValue = "3S")
+        @ConfigItem(defaultValue = "1S")
         Duration connectionTimeout;
 
         /**

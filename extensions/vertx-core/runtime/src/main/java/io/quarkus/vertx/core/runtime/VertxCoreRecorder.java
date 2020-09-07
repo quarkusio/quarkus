@@ -195,6 +195,12 @@ public class VertxCoreRecorder {
         } else {
             vertx = Vertx.vertx(options);
         }
+        vertx.exceptionHandler(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable error) {
+                LOGGER.error("Uncaught exception received by Vert.x", error);
+            }
+        });
         return logVertxInitialization(vertx);
     }
 

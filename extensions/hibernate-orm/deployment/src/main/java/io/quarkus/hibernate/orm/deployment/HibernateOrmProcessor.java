@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -776,14 +777,17 @@ public final class HibernateOrmProcessor {
         }
 
         // Query
-        if (persistenceUnitConfig.batchFetchSize > 0) {
-            descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
-                    Integer.toString(persistenceUnitConfig.batchFetchSize));
-            descriptor.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+        if (persistenceUnitConfig.fetch.batchSize > 0) {
+            setBatchFetchSize(descriptor, persistenceUnitConfig.fetch.batchSize);
+        } else if (persistenceUnitConfig.batchFetchSize > 0) {
+            setBatchFetchSize(descriptor, persistenceUnitConfig.batchFetchSize);
         }
 
-        persistenceUnitConfig.maxFetchDepth.ifPresent(
-                depth -> descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(depth)));
+        if (persistenceUnitConfig.fetch.maxDepth.isPresent()) {
+            setMaxFetchDepth(descriptor, persistenceUnitConfig.fetch.maxDepth);
+        } else if (persistenceUnitConfig.maxFetchDepth.isPresent()) {
+            setMaxFetchDepth(descriptor, persistenceUnitConfig.maxFetchDepth);
+        }
 
         persistenceUnitConfig.query.queryPlanCacheMaxSize.ifPresent(
                 maxSize -> descriptor.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
@@ -911,6 +915,16 @@ public final class HibernateOrmProcessor {
         String error = "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
                 + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property.";
         throw new ConfigurationError(error);
+    }
+
+    private static void setMaxFetchDepth(ParsedPersistenceXmlDescriptor descriptor, OptionalInt maxFetchDepth) {
+        descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
+    }
+
+    private static void setBatchFetchSize(ParsedPersistenceXmlDescriptor descriptor, int batchFetchSize) {
+        descriptor.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
+                Integer.toString(batchFetchSize));
+        descriptor.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
     }
 
     private void enhanceEntities(final JpaEntitiesBuildItem domainObjects,

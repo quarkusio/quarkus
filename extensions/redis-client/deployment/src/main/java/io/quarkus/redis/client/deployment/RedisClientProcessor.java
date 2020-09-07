@@ -25,7 +25,7 @@ public class RedisClientProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerAPIsProducer() {
         return new AdditionalBeanBuildItem.Builder().addBeanClass("io.quarkus.redis.client.runtime.RedisAPIProducer")
-                .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                .setDefaultScope(BuiltinScope.SINGLETON.getName())
                 .setUnremovable()
                 .build();
     }

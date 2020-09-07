@@ -129,14 +129,14 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * The default configuration for the Elasticsearch indexes.
          */
         @ConfigItem(name = ConfigItem.PARENT)
-        ElasticsearchIndexConfig indexDefaults;
+        ElasticsearchIndexRuntimeConfig indexDefaults;
 
         /**
          * Per-index specific configuration.
          */
         @ConfigItem
         @ConfigDocMapKey("index-name")
-        Map<String, ElasticsearchIndexConfig> indexes;
+        Map<String, ElasticsearchIndexRuntimeConfig> indexes;
     }
 
     public enum ElasticsearchClientProtocol {
@@ -174,7 +174,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     }
 
     @ConfigGroup
-    public static class ElasticsearchIndexConfig {
+    public static class ElasticsearchIndexRuntimeConfig {
         /**
          * Configuration for the schema management of the indexes.
          */

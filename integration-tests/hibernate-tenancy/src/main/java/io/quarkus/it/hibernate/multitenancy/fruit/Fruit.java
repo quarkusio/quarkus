@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.multitenancy;
+package io.quarkus.it.hibernate.multitenancy.fruit;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -32,7 +32,7 @@ public class Fruit {
         this.name = name;
     }
 
-    Fruit(Integer id, String name) {
+    public Fruit(Integer id, String name) {
         this.id = id;
         this.name = name;
     }

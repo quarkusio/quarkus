@@ -62,8 +62,7 @@ updates:
       - dependency-name: io.smallrye:smallrye-opentracing
       - dependency-name: io.smallrye:smallrye-fault-tolerance
       - dependency-name: io.smallrye:smallrye-context-propagation
-      - dependency-name: io.smallrye.common:smallrye-common-annotation
-      - dependency-name: io.smallrye.common:smallrye-common-io
+      - dependency-name: io.smallrye.common:smallrye-common-bom
       - dependency-name: io.smallrye.config:smallrye-config
       - dependency-name: io.smallrye.reactive:mutiny
       - dependency-name: io.smallrye.reactive:smallrye-reactive-messaging

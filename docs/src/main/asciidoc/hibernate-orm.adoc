@@ -795,7 +795,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
-@RequestScoped
+@RequestScoped <1>
 @Unremovable
 public class CustomTenantResolver implements TenantResolver {
 
@@ -822,8 +822,35 @@ public class CustomTenantResolver implements TenantResolver {
     
 }
 ----
+<1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
+
+[NOTE]
+====
+If <<multiple-persistence-units,named persistence units>> are used, you need to qualify the `TenantResolver` with the persistence unit name:
+
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@PersistenceUnit("name-of-persistence-unit") <1>
+@RequestScoped
+@Unremovable
+public class CustomTenantResolver implements TenantResolver {
+
+   // ...
+
+}
+----
+<1> Be careful to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
+====
 
 === Configuring the application
 

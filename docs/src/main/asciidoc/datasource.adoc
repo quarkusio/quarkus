@@ -347,10 +347,8 @@ So it is not currently possible to create multiple reactive datasources.
 
 [NOTE]
 ====
-Currently, Hibernate ORM supports only one persistence unit which uses the default datasource.
-If you want to use multiple datasources, you will need to manipulate them directly.
-
-Multiple persistence units support is planned for a future version of Quarkus.
+The Hibernate ORM extension link:hibernate-orm#multiple-persistence-units[supports defining several persistence units using configuration properties].
+For each persistence unit, you can point to the datasource of your choice.
 ====
 
 Defining multiple datasources works exactly the same way as defining a single datasource, with one important change:

@@ -201,9 +201,18 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * Sidecar containers
+     * 
+     * @deprecated Use the {@code sidecars} property instead
      */
     @ConfigItem
+    @Deprecated
     Map<String, ContainerConfig> containers;
+
+    /**
+     * Sidecar containers
+     */
+    @ConfigItem
+    Map<String, ContainerConfig> sidecars;
 
     /**
      * If true, an Openshift Route will be created
@@ -325,7 +334,16 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     public Map<String, ContainerConfig> getSidecars() {
-        return containers;
+        if (!containers.isEmpty() && !sidecars.isEmpty()) {
+            // done in order to make migration to the new property straight-forward
+            throw new IllegalStateException(
+                    "'quarkus.openshift.sidecars' and 'quarkus.openshift.containers' cannot be used together. Please use the former as the latter has been deprecated");
+        }
+        if (!containers.isEmpty()) {
+            return containers;
+        }
+
+        return sidecars;
     }
 
     @Override

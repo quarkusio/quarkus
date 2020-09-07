@@ -117,6 +117,7 @@ updates:
       - dependency-name: com.amazonaws:aws-lambda-java-events
       # Apache Commons
       - dependency-name: commons-io:commons-io
+      - dependency-name: com.thoughtworks.xstream:xstream
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/integration-tests/gradle"

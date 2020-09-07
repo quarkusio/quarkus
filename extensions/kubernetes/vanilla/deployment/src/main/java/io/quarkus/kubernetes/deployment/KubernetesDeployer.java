@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
@@ -150,7 +149,7 @@ public class KubernetesDeployer {
             checkForMissingRegistry = false;
         }
 
-        if (checkForMissingRegistry && !hasRegistry(containerImageInfo.getImage())) {
+        if (checkForMissingRegistry && !containerImageInfo.getRegistry().isPresent()) {
             log.warn(
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"

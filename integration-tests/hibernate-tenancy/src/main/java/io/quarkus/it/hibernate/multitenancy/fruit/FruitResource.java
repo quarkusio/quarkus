@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.multitenancy;
+package io.quarkus.it.hibernate.multitenancy.fruit;
 
 import java.util.List;
 

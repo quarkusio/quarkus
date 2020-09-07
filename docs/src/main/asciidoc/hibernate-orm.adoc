@@ -849,7 +849,7 @@ public class CustomTenantResolver implements TenantResolver {
 
 }
 ----
-<1> Be careful to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
+<1> Make sure to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
 ====
 
 === Configuring the application

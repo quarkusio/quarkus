@@ -96,10 +96,25 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         Optional<String> password;
 
         /**
-         * The connection timeout.
+         * The timeout when establishing a connection to an Elasticsearch server.
          */
         @ConfigItem(defaultValue = "1S")
         Duration connectionTimeout;
+
+        /**
+         * The timeout when reading responses from an Elasticsearch server.
+         */
+        @ConfigItem(defaultValue = "30S")
+        Duration readTimeout;
+
+        /**
+         * The timeout when executing a request to an Elasticsearch server.
+         * <p>
+         * This includes the time needed to wait for a connection to be available,
+         * send the request and read the response.
+         */
+        @ConfigItem
+        Optional<Duration> requestTimeout;
 
         /**
          * The maximum number of connections to all the Elasticsearch servers.

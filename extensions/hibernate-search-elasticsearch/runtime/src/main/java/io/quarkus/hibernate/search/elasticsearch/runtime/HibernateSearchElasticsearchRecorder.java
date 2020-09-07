@@ -134,6 +134,10 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.password);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
                     elasticsearchBackendConfig.connectionTimeout.toMillis());
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.READ_TIMEOUT,
+                    elasticsearchBackendConfig.readTimeout.toMillis());
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.REQUEST_TIMEOUT,
+                    elasticsearchBackendConfig.requestTimeout, Optional::isPresent, d -> d.get().toMillis());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
                     elasticsearchBackendConfig.maxConnections);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,

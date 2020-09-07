@@ -89,6 +89,12 @@ public class KubernetesClientBuildConfig {
     public Optional<String> password;
 
     /**
+     * Kubernetes oauth token
+     */
+    @ConfigItem
+    public Optional<String> token;
+
+    /**
      * Watch reconnect interval
      */
     @ConfigItem(defaultValue = "PT1S") // default lifted from Kubernetes Client

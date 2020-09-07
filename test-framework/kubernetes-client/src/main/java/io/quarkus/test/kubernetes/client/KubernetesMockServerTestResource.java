@@ -21,7 +21,7 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         systemProps.put(Config.KUBERNETES_AUTH_TRYSERVICEACCOUNT_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, "test");
 
-        mockServer = new KubernetesMockServer(useHttps());
+        mockServer = createMockServer();
         mockServer.init();
         try (NamespacedKubernetesClient client = mockServer.createClient()) {
             systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
@@ -30,6 +30,10 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         configureMockServer(mockServer);
 
         return systemProps;
+    }
+
+    protected KubernetesMockServer createMockServer() {
+        return new KubernetesMockServer(useHttps());
     }
 
     /**
@@ -70,7 +74,7 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         }
     }
 
-    private boolean useHttps() {
+    protected boolean useHttps() {
         return Boolean.getBoolean("quarkus.kubernetes-client.test.https");
     }
 }

@@ -134,6 +134,21 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
+    public void canDetectSystemPropertyChangeWhenBuilding() throws Exception {
+        createProject(SourceType.JAVA);
+
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild", "--stacktrace");
+
+        assertThat(firstBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(projectRoot.toPath().resolve("build").resolve("foo-1.0.0-SNAPSHOT-runner.jar")).exists();
+
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild", "-Dquarkus.package.type=fast-jar");
+
+        assertThat(secondBuild.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(projectRoot.toPath().resolve("build").resolve("quarkus-app")).exists();
+    }
+
+    @Test
     public void canRunTest() throws Exception {
         createProject(SourceType.JAVA);
 

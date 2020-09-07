@@ -2,16 +2,11 @@ package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.lang.reflect.Modifier;
 import java.util.Properties;
 
 import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
 import javax.transaction.TransactionScoped;
-import javax.transaction.UserTransaction;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
@@ -24,30 +19,22 @@ import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
-<<<<<<< HEAD
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-=======
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
->>>>>>> Add the @TestTransaction annotation
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
@@ -61,9 +48,10 @@ import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequi
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequiresNew;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorSupports;
 import io.smallrye.context.jta.context.propagation.JtaContextProvider;
-import io.quarkus.runtime.LaunchMode;
 
 class NarayanaJtaProcessor {
+
+    private static final String TEST_TRANSACTION = "io.quarkus.test.TestTransaction";
 
     @BuildStep
     public NativeImageSystemPropertyBuildItem nativeImageSystemPropertyBuildItem() {
@@ -119,38 +107,22 @@ class NarayanaJtaProcessor {
         recorder.setDefaultTimeout(transactions);
     }
 
-    @BuildStep
-    void testTx(LaunchModeBuildItem lm, BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer) {
-        if (lm.getLaunchMode() != LaunchMode.TEST) {
-            return;
-        }
+    @BuildStep(onlyIf = IsTest.class)
+    void testTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
-        try (ClassCreator c = new ClassCreator(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer),
-                TestTransactionInterceptor.class.getName() + "Generated", null, TestTransactionInterceptor.class.getName())) {
-            c.addAnnotation("io.quarkus.test.TestTransaction");
+        try (ClassCreator c = ClassCreator.builder()
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
+                        TestTransactionInterceptor.class.getName() + "Generated")
+                .superClass(TestTransactionInterceptor.class).build()) {
+            c.addAnnotation(TEST_TRANSACTION);
             c.addAnnotation(Interceptor.class.getName());
             c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 200);
-
-            FieldCreator field = c.getFieldCreator("ut", UserTransaction.class);
-            field.setModifiers(Modifier.PUBLIC);
-            field
-                    .addAnnotation(Inject.class);
-
-            MethodCreator m = c.getMethodCreator("work", Object.class, InvocationContext.class);
-            m.addAnnotation(AroundInvoke.class);
-            m.addException(Exception.class);
-
-            ResultHandle ut = m.readInstanceField(FieldDescriptor.of(c.getClassName(), "ut", UserTransaction.class),
-                    m.getThis());
-            ResultHandle result = m
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(TestTransactionInterceptor.class, "intercept", Object.class,
-                            UserTransaction.class, InvocationContext.class), ut, m.getMethodParam(0));
-
-            m.returnValue(result);
         }
-
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestTransactionInterceptor.class)
+                .addBeanClass(TEST_TRANSACTION).build());
     }
 
     @BuildStep

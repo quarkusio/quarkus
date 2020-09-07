@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
+import javax.inject.Inject;
+import javax.interceptor.AroundInvoke;
 import javax.interceptor.InvocationContext;
 import javax.transaction.UserTransaction;
 
@@ -21,7 +23,11 @@ public class TestTransactionInterceptor {
         CALLBACKS = callbacks;
     }
 
-    public static Object intercept(UserTransaction userTransaction, InvocationContext context) throws Exception {
+    @Inject
+    UserTransaction userTransaction;
+
+    @AroundInvoke
+    public Object intercept(InvocationContext context) throws Exception {
         try {
             userTransaction.begin();
             for (TestTransactionCallback i : CALLBACKS) {
@@ -35,7 +41,6 @@ public class TestTransactionInterceptor {
         } finally {
             userTransaction.rollback();
         }
-
     }
 
 }

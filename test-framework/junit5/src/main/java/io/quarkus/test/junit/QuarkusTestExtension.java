@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -364,8 +366,14 @@ public class QuarkusTestExtension
                 }
                 String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
                 if (runningQuarkusApplication != null) {
+                    boolean secure = false;
+                    Optional<String> insecureAllowed = runningQuarkusApplication
+                            .getConfigValue("quarkus.http.insecure-requests", String.class);
+                    if (insecureAllowed.isPresent()) {
+                        secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
+                    }
                     runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                            .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, false, endpointPath);
+                            .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
                     runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                             .getDeclaredMethod("setup", boolean.class).invoke(null, false);
                 }

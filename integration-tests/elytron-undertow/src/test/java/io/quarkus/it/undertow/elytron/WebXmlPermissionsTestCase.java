@@ -9,7 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
-class WebXmlPermissionsTestCase {
+class WebXmlPermissionsTestCase extends HttpsSetup {
 
     @Test
     void testPost() {

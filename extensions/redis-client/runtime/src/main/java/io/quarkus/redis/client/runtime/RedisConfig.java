@@ -1,6 +1,6 @@
 package io.quarkus.redis.client.runtime;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +13,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.vertx.redis.client.RedisClientType;
+import io.vertx.redis.client.RedisRole;
+import io.vertx.redis.client.RedisSlaves;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class RedisConfig {
@@ -31,8 +33,8 @@ public class RedisConfig {
      * <p>
      *
      * <pre>
-     * quarkus.redis.client1.hosts = localhost:6379
-     * quarkus.redis.client2.hosts = localhost:6380
+     * quarkus.redis.client1.hosts = redis://localhost:6379
+     * quarkus.redis.client2.hosts = redis://localhost:6380
      * </pre>
      * <p>
      * And then use the {@link RedisClientName} to select the {@link RedisClient} or
@@ -54,22 +56,15 @@ public class RedisConfig {
     @ConfigGroup
     public static class RedisConfiguration {
         /**
-         * The redis password
+         * The redis hosts to use while connecting to the redis server. Only the cluster mode will consider more than
+         * 1 element.
+         * <p>
+         * The URI provided uses the following schema `redis://[username:password@][host][:port][/database]`
+         * 
+         * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
          */
-        @ConfigItem
-        public Optional<String> password;
-
-        /**
-         * The redis hosts
-         */
-        @ConfigItem(defaultValue = "localhost:6379")
-        public Optional<Set<InetSocketAddress>> hosts;
-
-        /**
-         * The redis database
-         */
-        @ConfigItem
-        public int database;
+        @ConfigItem(defaultValueDocumentation = "redis://localhost:6379")
+        public Optional<Set<URI>> hosts;
 
         /**
          * The maximum delay to wait before a blocking command to redis server times out
@@ -78,16 +73,28 @@ public class RedisConfig {
         public Optional<Duration> timeout;
 
         /**
-         * Enables or disables the SSL on connect.
-         */
-        @ConfigItem
-        public boolean ssl;
-
-        /**
          * The redis client type
          */
         @ConfigItem(defaultValue = "standalone")
         public RedisClientType clientType;
+
+        /**
+         * The master name (only considered in HA mode).
+         */
+        @ConfigItem(defaultValueDocumentation = "mymaster")
+        public Optional<String> masterName;
+
+        /**
+         * The role name (only considered in HA mode).
+         */
+        @ConfigItem(defaultValueDocumentation = "master")
+        public Optional<RedisRole> role;
+
+        /**
+         * Whether or not to use slave nodes (only considered in Cluster mode).
+         */
+        @ConfigItem(defaultValueDocumentation = "never")
+        public Optional<RedisSlaves> slaves;
 
         /**
          * The maximum size of the connection pool. When working with cluster or sentinel.

@@ -19,7 +19,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
@@ -72,8 +71,8 @@ import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
+import io.smallrye.graphql.spi.EventingService;
 import io.smallrye.graphql.spi.LookupService;
-import io.smallrye.graphql.spi.SchemaBuildingExtensionService;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -131,14 +130,15 @@ public class SmallRyeGraphQLProcessor {
         serviceProvider.produce(
                 new ServiceProviderBuildItem(LookupService.class.getName(), lookupImplementations.toArray(new String[0])));
 
-        // Schema Extension Service (We use the one from the CDI Module)
-        String schemaExtensionService = SPI_PATH + SchemaBuildingExtensionService.class.getName();
-        Set<String> schemaExtensionImplementations = ServiceUtil.classNamesNamedIn(
+        // Eventing Service (We use the one from the CDI Module)
+        String eventingService = SPI_PATH + EventingService.class.getName();
+        Set<String> eventingServiceImplementations = ServiceUtil.classNamesNamedIn(
                 Thread.currentThread().getContextClassLoader(),
-                schemaExtensionService);
-        serviceProvider.produce(
-                new ServiceProviderBuildItem(SchemaBuildingExtensionService.class.getName(),
-                        schemaExtensionImplementations.toArray(new String[0])));
+                eventingService);
+        for (String eventingServiceImplementation : eventingServiceImplementations) {
+            serviceProvider.produce(
+                    new ServiceProviderBuildItem(EventingService.class.getName(), eventingServiceImplementation));
+        }
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -156,11 +156,7 @@ public class SmallRyeGraphQLProcessor {
         recorder.createExecutionService(beanContainer.getValue(), schema);
 
         // Make sure the complex object from the application can work in native mode
-        for (String c : getClassesToRegisterForReflection(schema)) {
-            DotName name = DotName.createSimple(c);
-            org.jboss.jandex.Type type = org.jboss.jandex.Type.create(name, org.jboss.jandex.Type.Kind.CLASS);
-            reflectiveHierarchyProducer.produce(new ReflectiveHierarchyBuildItem(type, index));
-        }
+        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getSchemaJavaClasses(schema)));
 
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
         reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getGraphQLJavaClasses()));
@@ -246,7 +242,7 @@ public class SmallRyeGraphQLProcessor {
         }
     }
 
-    private Set<String> getClassesToRegisterForReflection(Schema schema) {
+    private String[] getSchemaJavaClasses(Schema schema) {
         // Unique list of classes we need to do reflection on
         Set<String> classes = new HashSet<>();
 
@@ -256,7 +252,7 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
 
-        return classes;
+        return classes.toArray(new String[] {});
     }
 
     private Class[] getGraphQLJavaClasses() {

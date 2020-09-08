@@ -1,9 +1,7 @@
----
 name: qute-example
 ref: qute
-type: example
-missing-languages:
-  - scala
+type: code
+tags: example
 language:
   base:
     dependencies:

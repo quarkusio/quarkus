@@ -239,7 +239,7 @@ class JaxbProcessor {
                 line = line.trim();
                 if (!line.isEmpty() && !line.startsWith("#")) {
                     String clazz = pkg + line;
-                    Class<?> cl = Class.forName(clazz);
+                    Class<?> cl = Class.forName(clazz, false, Thread.currentThread().getContextClassLoader());
 
                     while (cl != Object.class) {
                         addReflectiveClass(true, true, cl.getName());

@@ -8,11 +8,9 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -197,6 +195,12 @@ public class VertxCoreRecorder {
         } else {
             vertx = Vertx.vertx(options);
         }
+        vertx.exceptionHandler(new Handler<Throwable>() {
+            @Override
+            public void handle(Throwable error) {
+                LOGGER.error("Uncaught exception received by Vert.x", error);
+            }
+        });
         return logVertxInitialization(vertx);
     }
 
@@ -235,17 +239,11 @@ public class VertxCoreRecorder {
             options.setEventLoopPoolSize(calculateDefaultIOThreads());
         }
 
-        Optional<Duration> maxEventLoopExecuteTime = conf.maxEventLoopExecuteTime;
-        if (maxEventLoopExecuteTime.isPresent()) {
-            options.setMaxEventLoopExecuteTime(maxEventLoopExecuteTime.get().toMillis());
-            options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
-        }
+        options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime.toMillis());
+        options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
-        Optional<Duration> maxWorkerExecuteTime = conf.maxWorkerExecuteTime;
-        if (maxWorkerExecuteTime.isPresent()) {
-            options.setMaxWorkerExecuteTime(maxWorkerExecuteTime.get().toMillis());
-            options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
-        }
+        options.setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime.toMillis());
+        options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
         options.setWarningExceptionTime(conf.warningExceptionTime.toNanos());
 

@@ -388,8 +388,8 @@ Log4j:
 [source, xml]
 ----
 <dependency>
-    <groupId>org.jboss.logging</groupId>
-    <artifactId>jboss-logging-log4j</artifactId>
+    <groupId>org.jboss.logmanager</groupId>
+    <artifactId>log4j-jboss-logmanager</artifactId>
 </dependency>
 ----
 
@@ -398,7 +398,7 @@ Log4j2:
 [source, xml]
 ----
 <dependency>
-    <groupId>org.jboss.logging</groupId>
+    <groupId>org.jboss.logmanager</groupId>
     <artifactId>log4j2-jboss-logmanager</artifactId>
 </dependency>
 ----

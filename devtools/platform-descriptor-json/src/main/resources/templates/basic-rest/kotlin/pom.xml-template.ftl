@@ -15,7 +15,7 @@
         <quarkus.platform.artifact-id>${bom_artifactId}</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>${bom_groupId}</quarkus.platform.group-id>
         <quarkus.platform.version>${bom_version}</quarkus.platform.version>
-        <quarkus-plugin.version>${plugin_version}</quarkus-plugin.version>
+        <quarkus-plugin.version>${maven_plugin_version}</quarkus-plugin.version>
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
         <kotlin.version>${kotlin_version}</kotlin.version>
@@ -62,14 +62,14 @@
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
-                <groupId>${plugin_groupId}</groupId>
-                <artifactId>${plugin_artifactId}</artifactId>
+                <groupId>${maven_plugin_groupId}</groupId>
+                <artifactId>${maven_plugin_artifactId}</artifactId>
                 <version>${quarkus-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
-                            <goal>prepare</goal>
-                            <goal>prepare-tests</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>

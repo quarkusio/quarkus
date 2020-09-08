@@ -209,6 +209,7 @@ public class QuarkusDevModeTest
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         rootLogger.setHandlers(originalRootLoggerHandlers);
+        inMemoryLogHandler.clearRecords();
     }
 
     @Override

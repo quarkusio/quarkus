@@ -64,9 +64,10 @@ public final class QuarkusProject {
     public static BuildTool resolveExistingProjectBuildTool(Path projectDirPath) {
         if (projectDirPath.resolve("pom.xml").toFile().exists()) {
             return BuildTool.MAVEN;
-        } else if (projectDirPath.resolve("build.gradle").toFile().exists()
-                || projectDirPath.resolve("build.gradle.kts").toFile().exists()) {
+        } else if (projectDirPath.resolve("build.gradle").toFile().exists()) {
             return BuildTool.GRADLE;
+        } else if (projectDirPath.resolve("build.gradle.kts").toFile().exists()) {
+            return BuildTool.GRADLE_KOTLIN_DSL;
         }
         return null;
     }

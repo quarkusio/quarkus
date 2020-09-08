@@ -55,7 +55,8 @@ public abstract class AbstractGetMethodTest {
         given().accept("application/json")
                 .when().get("/collections/full")
                 .then().statusCode(200)
-                .and().body("name", is(equalTo("full")))
+                .and().body("id", is(equalTo("full")))
+                .and().body("name", is(equalTo("full collection")))
                 .and().body("items.id", contains(1, 2))
                 .and().body("items.name", contains("first", "second"));
     }
@@ -65,7 +66,8 @@ public abstract class AbstractGetMethodTest {
         given().accept("application/hal+json")
                 .when().get("/collections/full")
                 .then().statusCode(200)
-                .and().body("name", is(equalTo("full")))
+                .and().body("id", is(equalTo("full")))
+                .and().body("name", is(equalTo("full collection")))
                 .and().body("items.id", contains(1, 2))
                 .and().body("items.name", contains("first", "second"))
                 .and().body("_links.add.href", endsWith("/collections"))
@@ -101,11 +103,30 @@ public abstract class AbstractGetMethodTest {
     }
 
     @Test
+    void shouldListSimpleAscendingObjects() {
+        given().accept("application/json")
+                .when().get("/items?sort=name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(1, 2))
+                .and().body("name", contains("first", "second"));
+    }
+
+    @Test
+    void shouldListSimpleDescendingObjects() {
+        given().accept("application/json")
+                .when().get("/items?sort=-name,id")
+                .then().statusCode(200)
+                .and().body("id", contains(2, 1))
+                .and().body("name", contains("second", "first"));
+    }
+
+    @Test
     void shouldListComplexObjects() {
         given().accept("application/json")
                 .when().get("/collections")
                 .then().statusCode(200)
-                .and().body("name", contains("empty", "full"))
+                .and().body("id", contains("empty", "full"))
+                .and().body("name", contains("empty collection", "full collection"))
                 .and().body("items.id[0]", is(empty()))
                 .and().body("items.id[1]", contains(1, 2))
                 .and().body("items.name[1]", contains("first", "second"));
@@ -116,7 +137,8 @@ public abstract class AbstractGetMethodTest {
         given().accept("application/hal+json")
                 .when().get("/collections")
                 .then().statusCode(200)
-                .and().body("_embedded.collections.name", contains("empty", "full"))
+                .and().body("_embedded.collections.id", contains("empty", "full"))
+                .and().body("_embedded.collections.name", contains("empty collection", "full collection"))
                 .and().body("_embedded.collections.items.id[0]", is(empty()))
                 .and().body("_embedded.collections.items.id[1]", contains(1, 2))
                 .and().body("_embedded.collections.items.name[1]", contains("first", "second"))

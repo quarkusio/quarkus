@@ -78,11 +78,11 @@ class ConsulConfigSourceProviderTest {
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("some.first", "whatever"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("third")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("third")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("some.third", "other"));
         });
@@ -108,11 +108,11 @@ class ConsulConfigSourceProviderTest {
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
         });
@@ -137,11 +137,11 @@ class ConsulConfigSourceProviderTest {
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("message")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hello"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("name")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.name", "quarkus"));
         });
@@ -165,12 +165,12 @@ class ConsulConfigSourceProviderTest {
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hi"),
                     entry("greeting.name", "quarkus"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("other.key", "value"));
         });
@@ -195,12 +195,12 @@ class ConsulConfigSourceProviderTest {
 
         Iterable<ConfigSource> configSources = sut.getConfigSources(null);
         assertThat(configSources).hasSize(2);
-        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("first")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("greeting.message", "hi"),
                     entry("greeting.name", "quarkus"));
         });
-        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).hasOnlyOneElementSatisfying(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().contains("second")).singleElement().satisfies(c -> {
             assertThat(c.getOrdinal()).isEqualTo(EXPECTED_ORDINAL);
             assertThat(c.getProperties()).containsOnly(entry("other.key", "value"));
         });

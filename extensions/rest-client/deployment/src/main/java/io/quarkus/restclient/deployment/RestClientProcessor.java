@@ -74,8 +74,8 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 
 class RestClientProcessor {
     private static final Logger log = Logger.getLogger(RestClientProcessor.class);
@@ -104,6 +104,11 @@ class RestClientProcessor {
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
+    @BuildStep
+    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {
@@ -113,6 +118,19 @@ class RestClientProcessor {
     @BuildStep
     NativeImageProxyDefinitionBuildItem addProxy() {
         return new NativeImageProxyDefinitionBuildItem(ResteasyConfiguration.class.getName());
+    }
+
+    @BuildStep
+    void registerRestClientListenerForTracing(
+            Capabilities capabilities,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
+            resource.produce(new NativeImageResourceBuildItem(
+                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+        }
     }
 
     @BuildStep
@@ -189,7 +207,13 @@ class RestClientProcessor {
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
             reflectiveHierarchy
-                    .produce(new ReflectiveHierarchyBuildItem(returnType, ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+                    .produce(new ReflectiveHierarchyBuildItem.Builder()
+                            .type(returnType)
+                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                            .source(getClass().getSimpleName() + " > " + returnType.toString())
+                            .build());
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {

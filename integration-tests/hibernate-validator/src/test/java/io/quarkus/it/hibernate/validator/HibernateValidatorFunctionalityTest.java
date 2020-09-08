@@ -5,14 +5,16 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 /**
  * Test various Bean Validation operations running in Quarkus
  */
-
 @QuarkusTest
+@QuarkusTestResource(H2DatabaseTestResource.class)
 public class HibernateValidatorFunctionalityTest {
 
     @Test
@@ -65,6 +67,34 @@ public class HibernateValidatorFunctionalityTest {
 
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-validation/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidation() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/plop/")
+                .then()
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation/42/")
+                .then()
+                .body(is("42"));
+    }
+
+    @Test
+    public void testRestEndPointInterfaceValidationWithAnnotationOnImplMethod() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
+                .then()
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/42/")
                 .then()
                 .body(is("42"));
     }
@@ -159,4 +189,11 @@ public class HibernateValidatorFunctionalityTest {
                 .body(containsString("Vrijednost ne zadovoljava uzorak"));
     }
 
+    @Test
+    public void testHibernateOrmIntegration() {
+        RestAssured.when()
+                .get("/hibernate-validator/test/test-hibernate-orm-integration")
+                .then()
+                .statusCode(500);
+    }
 }

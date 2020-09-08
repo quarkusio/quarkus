@@ -1,9 +1,9 @@
 {#include build-layout}
 {#plugins}
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version "{version.kotlin}"
-    id "org.jetbrains.kotlin.plugin.allopen" version "{version.kotlin}"
-    id '{quarkus.plugin.id}'
+    id 'org.jetbrains.kotlin.jvm' version "{kotlin.version}"
+    id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin.version}"
+    id '{quarkus.gradle-plugin.id}'
 }
 {/plugins}
 {/include}

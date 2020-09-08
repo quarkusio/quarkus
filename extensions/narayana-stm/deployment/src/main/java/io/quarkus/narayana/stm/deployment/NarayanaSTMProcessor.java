@@ -87,7 +87,10 @@ class NarayanaSTMProcessor {
 
                 for (ClassInfo ci : index.getAllKnownImplementors(name)) {
                     reflectiveHierarchyClass.produce(
-                            new ReflectiveHierarchyBuildItem(Type.create(ci.name(), Type.Kind.CLASS)));
+                            new ReflectiveHierarchyBuildItem.Builder()
+                                    .type(Type.create(ci.name(), Type.Kind.CLASS))
+                                    .source(getClass().getSimpleName() + " > " + ci.name())
+                                    .build());
                 }
             }
         }

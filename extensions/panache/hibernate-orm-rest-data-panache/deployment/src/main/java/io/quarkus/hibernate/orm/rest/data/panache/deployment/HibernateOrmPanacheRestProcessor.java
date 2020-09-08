@@ -17,6 +17,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheEntityResource;
 import io.quarkus.hibernate.orm.rest.data.panache.PanacheRepositoryResource;
+import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
+import io.quarkus.rest.data.panache.deployment.RestDataEntityInfo;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
 
@@ -35,29 +37,33 @@ class HibernateOrmPanacheRestProcessor {
 
     @BuildStep
     void findEntityResources(CombinedIndexBuildItem index, BuildProducer<RestDataResourceBuildItem> resourcesProducer) {
+        RestDataEntityInfoProvider entityInfoProvider = new RestDataEntityInfoProvider(index.getIndex());
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_ENTITY_RESOURCE_INTERFACE)) {
             validateResource(index.getIndex(), classInfo);
-            List<Type> generics = getGenericTypes(classInfo);
-            String entityClassName = generics.get(0).toString();
-            String idClassName = generics.get(1).toString();
-            RestDataResourceInfo resourceInfo = HibernateOrmRestDataResourceInfo
-                    .withEntityAccess(classInfo, idClassName, entityClassName);
+            String entityClassName = getGenericTypes(classInfo).get(0).toString();
+            String idClassName = getGenericTypes(classInfo).get(1).toString();
+            RestDataEntityInfo entityInfo = entityInfoProvider.get(entityClassName, idClassName);
+            DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityClassName);
+            RestDataResourceInfo resourceInfo = new RestDataResourceInfo(classInfo.toString(), entityInfo,
+                    dataAccessImplementor);
             resourcesProducer.produce(new RestDataResourceBuildItem(resourceInfo));
         }
     }
 
     @BuildStep
-    void findRepositoryResources(CombinedIndexBuildItem index,
-            BuildProducer<RestDataResourceBuildItem> resourcesProducer,
+    void findRepositoryResources(CombinedIndexBuildItem index, BuildProducer<RestDataResourceBuildItem> resourcesProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
+        RestDataEntityInfoProvider entityInfoProvider = new RestDataEntityInfoProvider(index.getIndex());
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(PANACHE_REPOSITORY_RESOURCE_INTERFACE)) {
             validateResource(index.getIndex(), classInfo);
             List<Type> generics = getGenericTypes(classInfo);
             String repositoryClassName = generics.get(0).toString();
             String entityClassName = generics.get(1).toString();
             String idClassName = generics.get(2).toString();
-            RestDataResourceInfo resourceInfo = HibernateOrmRestDataResourceInfo
-                    .withRepositoryAccess(classInfo, idClassName, entityClassName, repositoryClassName);
+            RestDataEntityInfo entityInfo = entityInfoProvider.get(entityClassName, idClassName);
+            DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
+            RestDataResourceInfo resourceInfo = new RestDataResourceInfo(classInfo.toString(), entityInfo,
+                    dataAccessImplementor);
             resourcesProducer.produce(new RestDataResourceBuildItem(resourceInfo));
             unremovableBeansProducer.produce(
                     new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));

@@ -32,11 +32,11 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**
-     * Additional backends
+     * Named backends
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchAdditionalBackendsRuntimeConfig additionalBackends;
+    public ElasticsearchNamedBackendsRuntimeConfig namedBackends;
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -58,10 +58,10 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     AutomaticIndexingConfig automaticIndexing;
 
     @ConfigGroup
-    public static class ElasticsearchAdditionalBackendsRuntimeConfig {
+    public static class ElasticsearchNamedBackendsRuntimeConfig {
 
         /**
-         * Additional backends
+         * Named backends
          */
         @ConfigDocMapKey("backend-name")
         public Map<String, ElasticsearchBackendRuntimeConfig> backends;
@@ -96,10 +96,25 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         Optional<String> password;
 
         /**
-         * The connection timeout.
+         * The timeout when establishing a connection to an Elasticsearch server.
          */
-        @ConfigItem(defaultValue = "3S")
+        @ConfigItem(defaultValue = "1S")
         Duration connectionTimeout;
+
+        /**
+         * The timeout when reading responses from an Elasticsearch server.
+         */
+        @ConfigItem(defaultValue = "30S")
+        Duration readTimeout;
+
+        /**
+         * The timeout when executing a request to an Elasticsearch server.
+         * <p>
+         * This includes the time needed to wait for a connection to be available,
+         * send the request and read the response.
+         */
+        @ConfigItem
+        Optional<Duration> requestTimeout;
 
         /**
          * The maximum number of connections to all the Elasticsearch servers.
@@ -128,15 +143,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The default configuration for the Elasticsearch indexes.
          */
-        @ConfigItem
-        ElasticsearchIndexConfig indexDefaults;
+        @ConfigItem(name = ConfigItem.PARENT)
+        ElasticsearchIndexRuntimeConfig indexDefaults;
 
         /**
          * Per-index specific configuration.
          */
         @ConfigItem
         @ConfigDocMapKey("index-name")
-        Map<String, ElasticsearchIndexConfig> indexes;
+        Map<String, ElasticsearchIndexRuntimeConfig> indexes;
     }
 
     public enum ElasticsearchClientProtocol {
@@ -174,7 +189,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     }
 
     @ConfigGroup
-    public static class ElasticsearchIndexConfig {
+    public static class ElasticsearchIndexRuntimeConfig {
         /**
          * Configuration for the schema management of the indexes.
          */
@@ -374,7 +389,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          */
         // We can't set an actual default value here: see comment on this class.
@@ -400,7 +415,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * which may lead to higher indexing throughput,
          * but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.7/circuit-breaker.html">circuit breakers</a>,
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html">circuit breakers</a>,
          * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          * <p>
          * Note that raising this number above the queue size has no effect,

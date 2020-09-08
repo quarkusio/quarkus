@@ -415,6 +415,13 @@ public class TestStereotypeTestCase {
 }
 ----
 
+== Tests and Transactions
+
+You can use the standard Quarkus `@Transactional` annotation on tests, but this means that the changes your
+test makes to the database will be persistent. If you want any changes made to be rolled back at the end of
+the test you can use the `io.quarkus.test.TestTransaction` annotation. This will run the test method in a
+transaction, but roll it back once the test method is complete to revert any database changes.
+
 == Enrichment via QuarkusTest*Callback
 
 Alternatively or additionally to an interceptor, you can enrich *all* your `@QuarkusTest` classes by implementing the following callback interfaces:
@@ -592,7 +599,7 @@ public class MockTestCase {
 
     @Test
     public void testPerTestMock() {
-        QuarkusMock.installMockForInstance(new BonourGreeter(), mockableBean2); // <2>
+        QuarkusMock.installMockForInstance(new BonjourGreeter(), mockableBean2); // <2>
         Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
         Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
     }
@@ -613,7 +620,7 @@ public class MockTestCase {
         }
     }
 
-    public static class BonourGreeter extends MockableBean2 {
+    public static class BonjourGreeter extends MockableBean2 {
         @Override
         public String greet(String name) {
             return "Bonjour " + name;

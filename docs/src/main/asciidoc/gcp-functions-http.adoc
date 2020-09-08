@@ -199,14 +199,18 @@ mvn dependency:copy \
   -DoutputDirectory=.
 ----
 
+Before using the invoker, you first need to build your function via `mvn package`.
+
 Then you can use it to launch your function locally.
 
 [source]
 ----
 java -jar java-function-invoker-1.0.0-beta1.jar \
-  --classpath target/deployment/google-cloud-functions-http-1.0-SNAPSHOT-runner.jar \
+  --classpath target/deployment/google-cloud-functions-http-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.http.QuarkusHttpFunction
 ----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
 
 Your endpoints will be available on http://localhost:8080.
 

@@ -1,19 +1,18 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartData.DataKey.BUILDTOOL;
 import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
 import static io.quarkus.devtools.codestarts.CodestartProcessor.buildStrategies;
-import static io.quarkus.devtools.codestarts.CodestartSpec.Type.LANGUAGE;
+import static io.quarkus.devtools.codestarts.CodestartType.LANGUAGE;
 
 import io.quarkus.devtools.codestarts.strategy.CodestartFileStrategy;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,14 +20,11 @@ import java.util.stream.Stream;
 public class Codestarts {
 
     public static CodestartProject prepareProject(final CodestartInput input) throws IOException {
-        final Optional<String> buildtool = NestedMaps.getValue(input.getData(), BUILDTOOL.getKey());
-        final Set<String> selectedCodestartNames = Stream.concat(
-                input.getCodestarts().stream(),
-                Stream.of(buildtool.orElse(null)).filter(Objects::nonNull))
-                .collect(Collectors.toSet());
+        return prepareProject(input, loadAllCodestarts(input));
+    }
 
-        final List<Codestart> allCodestarts = loadAllCodestarts(input);
-
+    public static CodestartProject prepareProject(final CodestartInput input, final List<Codestart> allCodestarts) {
+        final Set<String> selectedCodestartNames = new HashSet<>(input.getCodestarts());
         final Collection<Codestart> baseCodestarts = resolveSelectedBaseCodestarts(allCodestarts, selectedCodestartNames);
         final String languageName = baseCodestarts.stream().filter(c -> c.getType() == LANGUAGE).findFirst()
                 .orElseThrow(() -> new CodestartDefinitionException("Language codestart is required")).getName();
@@ -39,18 +35,11 @@ public class Codestarts {
         selectedCodestarts.addAll(baseCodestarts);
         selectedCodestarts.addAll(extraCodestarts);
 
-        // include fallback example codestarts if none selected
-        if (input.includeExamples()
-                && selectedCodestarts.stream().noneMatch(c -> c.getSpec().isExample() && !c.getSpec().isPreselected())) {
-            final List<Codestart> fallbackExampleCodestarts = resolveFallbackExampleCodestarts(allCodestarts,
-                    languageName);
-            selectedCodestarts.addAll(fallbackExampleCodestarts);
-        }
-
-        return new CodestartProject(input, selectedCodestarts);
+        return CodestartProject.of(input, selectedCodestarts);
     }
 
     public static void generateProject(final CodestartProject codestartProject, final Path targetDirectory) throws IOException {
+        final MessageWriter log = codestartProject.getCodestartInput().log();
 
         final String languageName = codestartProject.getLanguageName();
 
@@ -60,17 +49,31 @@ public class Codestarts {
                 codestartProject.getDepsData(),
                 codestartProject.getCodestartProjectData()));
 
-        final Codestart projectCodestart = codestartProject.getRequiredCodestart(CodestartSpec.Type.PROJECT);
-        final List<CodestartFileStrategy> strategies = buildStrategies(
-                projectCodestart.getSpec().getOutputStrategy());
+        log.debug("processed shared-data: %s" + data);
 
-        CodestartProcessor processor = new CodestartProcessor(codestartProject.getCodestartInput().getResourceLoader(),
+        final Codestart projectCodestart = codestartProject.getRequiredCodestart(CodestartType.PROJECT);
+
+        final List<CodestartFileStrategy> strategies = buildStrategies(mergeStrategies(codestartProject));
+
+        log.debug("file strategies: %s", strategies);
+
+        CodestartProcessor processor = new CodestartProcessor(log, codestartProject.getCodestartInput().getResourceLoader(),
                 languageName, targetDirectory, strategies, data);
         processor.checkTargetDir();
         for (Codestart codestart : codestartProject.getCodestarts()) {
             processor.process(codestart);
         }
         processor.writeFiles();
+        log.info("\napplying codestarts...");
+        log.info(codestartProject.getCodestarts().stream()
+                .map(c -> c.getType().getIcon() + " "
+                        + c.getName())
+                .collect(Collectors.joining("\n")));
+    }
+
+    private static Map<String, String> mergeStrategies(CodestartProject codestartProject) {
+        return NestedMaps.deepMerge(
+                codestartProject.getCodestarts().stream().map(Codestart::getSpec).map(CodestartSpec::getOutputStrategy));
     }
 
     private static Collection<Codestart> resolveSelectedExtraCodestarts(CodestartInput input,
@@ -79,9 +82,16 @@ public class Codestarts {
             String languageName) {
         return allCodestarts.stream()
                 .filter(c -> !c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isPreselected() || selectedCodestartNames.contains(c.getSpec().getRef()))
-                .filter(c -> !c.getSpec().isExample() || input.includeExamples())
-                .filter(c -> c.implementsLanguage(languageName))
+                .filter(c -> c.getSpec().isPreselected() || c.isSelected(selectedCodestartNames))
+                .filter(c -> {
+                    final boolean implementsLanguage = c.implementsLanguage(languageName);
+                    if (!implementsLanguage) {
+                        input.log().warn(
+                                c.getName() + " codestart will not be applied (doesn't implement language '" + languageName
+                                        + "' yet)");
+                    }
+                    return implementsLanguage;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -89,7 +99,7 @@ public class Codestarts {
             Set<String> selectedCodestartNames) {
         return allCodestarts.stream()
                 .filter(c -> c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isFallback() || selectedCodestartNames.contains(c.getSpec().getRef()))
+                .filter(c -> c.getSpec().isFallback() || c.isSelected(selectedCodestartNames))
                 .collect(Collectors.toMap(c -> c.getSpec().getType(), c -> c, (a, b) -> {
                     // When there is multiple matches for one key, one should be selected and the other a fallback.
                     if (a.getSpec().isFallback() && b.getSpec().isFallback()) {
@@ -107,15 +117,6 @@ public class Codestarts {
                     // The selected is picked.
                     return !a.getSpec().isFallback() ? a : b;
                 })).values();
-    }
-
-    private static List<Codestart> resolveFallbackExampleCodestarts(List<Codestart> allCodestarts,
-            String languageName) {
-        return allCodestarts.stream()
-                .filter(c -> !c.getSpec().getType().isBase())
-                .filter(c -> c.getSpec().isExample() && c.getSpec().isFallback())
-                .filter(c -> c.implementsLanguage(languageName))
-                .collect(Collectors.toList());
     }
 
 }

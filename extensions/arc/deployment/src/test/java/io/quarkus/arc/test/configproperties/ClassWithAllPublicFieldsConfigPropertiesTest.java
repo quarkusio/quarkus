@@ -11,6 +11,7 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -27,7 +28,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.optional-int-list=1,2"),
+                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.opt-int-lst=1,2"),
                             "application.properties"));
 
     @Inject
@@ -94,7 +95,9 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         public List<Integer> numbers;
         public Optional<Integer> optionalInt;
         public Optional<String> optionalString;
+        @ConfigProperty(name = "opt-str-lst")
         public Optional<List<String>> optionalStringList;
+        @ConfigProperty(name = "opt-int-lst")
         public Optional<List<Integer>> optionalIntList;
     }
 }

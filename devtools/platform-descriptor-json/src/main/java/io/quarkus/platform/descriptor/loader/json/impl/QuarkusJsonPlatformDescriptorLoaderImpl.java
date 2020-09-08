@@ -3,6 +3,7 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
@@ -21,6 +22,7 @@ public class QuarkusJsonPlatformDescriptorLoaderImpl
                         ObjectMapper mapper = new ObjectMapper()
                                 .enable(JsonParser.Feature.ALLOW_COMMENTS)
                                 .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                                 .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
                         return mapper.readValue(is, QuarkusJsonPlatformDescriptor.class);
                     } catch (IOException e) {

@@ -1,7 +1,7 @@
 ####
 # This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
 #
-# Before building the docker image run:
+# Before building the container image run:
 #
 # mvn package
 #
@@ -21,10 +21,10 @@
 # docker run -i --rm -p 8080:8080 -p 5005:5005 -e JAVA_ENABLE_DEBUG="true" quarkus/{project.artifact-id}-jvm
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
+FROM {dockerfile.jvm.from}
 
-ARG JAVA_PACKAGE=java-11-openjdk-headless
-ARG RUN_JAVA_VERSION=1.3.8
+ARG JAVA_PACKAGE={dockerfile.jvm.java-package}
+ARG RUN_JAVA_VERSION={dockerfile.jvm.run-java-version}
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 

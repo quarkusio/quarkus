@@ -483,7 +483,7 @@ Quarkus adds a capability that CDI currently does not support which is to condit
 via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
 When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
 
-Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but work in its normal capacity for the production artifact.
+Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but works in its normal capacity for the production artifact.
 An elegant way to create such beans is the following:
 
 [source,java]
@@ -505,7 +505,7 @@ public class TracerConfiguration {
 }
 ----
 
-If instead, it is required that the `Tracer` bean also work in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
+If instead, it is required that the `Tracer` bean also works in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
 
 [source,java]
 ----
@@ -513,13 +513,13 @@ If instead, it is required that the `Tracer` bean also work in dev-mode and only
 public class TracerConfiguration {
 
     @Produces
-    @DefaultBean
+    @UnlessBuildProfile("test") // this will be enabled for both prod and dev build time profiles
     public Tracer realTracer(Reporter reporter, Configuration configuration) {
         return new RealTracer(reporter, configuration);
     }
 
     @Produces
-    @UnlessBuildProfile("prod") // this will be enabled for both test and dev build time profiles
+    @DefaultBean
     public Tracer noopTracer() {
         return new NoopTracer();
     }
@@ -814,14 +814,49 @@ The extended `BeanConfigurator` accepts either a `io.quarkus.runtime.RuntimeValu
 [source,java]
 ----
 @BuildStep
-@Record(STATIC_INIT)
+@Record(STATIC_INIT) <1>
 SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
    return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .runtimeValue(recorder.createFoo()) <2>
+                .done();
+}
+----
+<1> By default, a synthetic bean is initialized during `STATIC_INIT`.
+<2> The bean instance is supplied by a value returned from a recorder method.
+
+It is possible to mark a synthetic bean to be initialized during `RUNTIME_INIT`:
+
+.`RUNTIME_INIT` `SyntheticBeanBuildItem` Example
+[source,java]
+----
+@BuildStep
+@Record(RUNTIME_INIT) <1>
+SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .setRuntimeInit() <2>
                 .runtimeValue(recorder.createFoo())
                 .done();
 }
 ----
+<1> The recorder must be executed in the `ExecutionTime.RUNTIME_INIT` phase.
+<2> The bean instance is initialized during `RUNTIME_INIT`.
 
+[IMPORTANT]
+====
+Synthetic bean initialized during `RUNTIME_INIT` must not be accessed during `STATIC_INIT`. `RUNTIME_INIT` build steps that access a runtime-init synthetic bean should consume the `SyntheticBeansRuntimeInitBuildItem`:
+
+[source,java]
+----
+@BuildStep
+@Record(RUNTIME_INIT) 
+@Consume(SyntheticBeansRuntimeInitBuildItem.class) <1>
+void accessFoo(TestRecorder recorder) {
+   recorder.foo(); <2>
+}
+----
+<1> This build step must be executed after `syntheticBean()` completes.
+<2> This recorder method results in an invocation of the `Foo` bean instance.
+====
 
 === Annotation Transformations
 
@@ -1051,11 +1086,13 @@ Here is a summary of which extensions can access which metadata:
 
 In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
 
+* HTTP GET `/quarkus/arc` - returns the summary; number of beans, config properties, etc.
 * HTTP GET `/quarkus/arc/beans` - returns the list of all beans
 ** You can use query params to filter the output:
 *** `scope` - include beans with scope that ends with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?scope=ApplicationScoped`
 *** `beanClass` - include beans with bean class that starts with the given value, i.e. `http://localhost:8080/quarkus/arc/beans?beanClass=org.acme.Foo`
 *** `kind` - include beans of the specified kind (`CLASS`, `PRODUCER_FIELD`, `PRODUCER_METHOD`, `INTERCEPTOR` or `SYNTHETIC`), i.e. `http://localhost:8080/quarkus/arc/beans?kind=PRODUCER_METHOD`
+* HTTP GET `/quarkus/arc/removed-beans` - returns the list of unused beans removed during build
 * HTTP GET `/quarkus/arc/observers` - returns the list of all observer methods
 
 NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).

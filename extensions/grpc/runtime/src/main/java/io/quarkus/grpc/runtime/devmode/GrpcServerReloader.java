@@ -87,7 +87,9 @@ public class GrpcServerReloader {
     }
 
     public static void shutdown() {
-        server.shutdown();
-        server = null;
+        if (server != null) {
+            server.shutdown();
+            server = null;
+        }
     }
 }

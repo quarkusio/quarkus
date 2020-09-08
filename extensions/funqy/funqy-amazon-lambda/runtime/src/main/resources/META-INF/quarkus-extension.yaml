@@ -11,3 +11,4 @@ metadata:
   categories:
   - "cloud"
   status: "experimental"
+  codestart: "funqy-amazon-lambda"

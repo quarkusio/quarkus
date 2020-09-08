@@ -12,10 +12,9 @@ import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.platform.tools.ToolsConstants;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterAll;
@@ -26,7 +25,7 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     private static Path testDir;
 
-    private MessageWriter log = new DefaultMessageWriter();
+    private MessageWriter log = MessageWriter.info();
 
     @BeforeEach
     @Override

@@ -1,14 +1,13 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
+import io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassVisitor;
 
 public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
@@ -22,15 +21,14 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheJpaRepositoryClassVisitor(className, outputClassVisitor, panacheRepositoryBaseClassInfo,
+        return new PanacheJpaRepositoryClassVisitor(className, outputClassVisitor,
                 this.indexView);
     }
 
     static class PanacheJpaRepositoryClassVisitor extends PanacheRepositoryClassVisitor {
 
-        public PanacheJpaRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor,
-                ClassInfo panacheRepositoryBaseClassInfo, IndexView indexView) {
-            super(className, outputClassVisitor, panacheRepositoryBaseClassInfo, indexView);
+        public PanacheJpaRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor, IndexView indexView) {
+            super(className, outputClassVisitor, indexView);
         }
 
         @Override
@@ -44,19 +42,8 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
         }
 
         @Override
-        protected String getPanacheOperationsBinaryName() {
+        protected String getPanacheOperationsInternalName() {
             return PanacheJpaEntityEnhancer.JPA_OPERATIONS_BINARY_NAME;
-        }
-
-        @Override
-        protected void injectModel(MethodVisitor mv) {
-            // inject Class
-            mv.visitLdcInsn(entityType);
-        }
-
-        @Override
-        protected String getModelDescriptor() {
-            return "Ljava/lang/Class;";
         }
     }
 }

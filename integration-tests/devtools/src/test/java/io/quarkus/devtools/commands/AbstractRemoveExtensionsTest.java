@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands;
 
+import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
 import static java.util.Arrays.asList;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
     @Test
     void testPartialMatches() throws Exception {
         createProject();
-        List<String> extensions = asList("mongodb-pana", "hibernate-val", "agro");
+        List<String> extensions = asList("mongodb-panache", "hibernate-val", "agro");
 
         addExtensions(extensions);
         final T project = readProject();
@@ -90,7 +91,7 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     private void hasDependency(T project, String artifactId) {
-        hasDependency(project, getPluginGroupId(), artifactId, null);
+        hasDependency(project, IO_QUARKUS, artifactId, null);
     }
 
     private void hasDependency(T project, String groupId, String artifactId, String version) {
@@ -98,7 +99,7 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
     }
 
     private void hasNoDependency(T project, String artifactId) {
-        hasNoDependency(project, getPluginGroupId(), artifactId, null);
+        hasNoDependency(project, IO_QUARKUS, artifactId, null);
     }
 
     private void hasNoDependency(T project, String groupId, String artifactId, String version) {

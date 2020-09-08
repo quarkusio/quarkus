@@ -626,13 +626,20 @@ public class OidcTenantConfig {
         public boolean removeRedirectParameters = true;
 
         /**
-         * Both ID and access tokens are verified as part of the authorization code flow and every time
-         * these tokens are retrieved from the user session. One should disable the access token verification if
-         * it is only meant to be propagated to the downstream services.
-         * Note the ID token will always be verified.
+         * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
+         * ID token is always verified on every user request as the primary token which is used
+         * to represent the principal and extract the roles.
+         * Access token is not verified by default since it is meant to be propagated to the downstream services.
+         * The verification of the access token should be enabled if it is injected as a JWT token.
+         *
+         * Access tokens obtained as part of the code flow will always be verified if `quarkus.oidc.roles.source`
+         * property is set to `accesstoken` which means the authorization decision will be based on the roles extracted from the
+         * access token.
+         * 
+         * Bearer access tokens are always verified.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean verifyAccessToken = true;
+        @ConfigItem(defaultValue = "false")
+        public boolean verifyAccessToken;
 
         /**
          * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.
@@ -665,6 +672,17 @@ public class OidcTenantConfig {
          */
         @ConfigItem(defaultValue = "false")
         public boolean userInfoRequired;
+
+        /**
+         * Session age extension in minutes.
+         * The user session age property is set to the value of the ID token life-span by default and
+         * the user will be redirected to the OIDC provider to re-authenticate once the session has expired.
+         * If this property is set to a non-zero value then the expired ID token can be refreshed before
+         * the session has expired.
+         * This property will be ignored if the `token.refresh-expired` property has not been enabled.
+         */
+        @ConfigItem(defaultValue = "5M")
+        public Duration sessionAgeExtension = Duration.ofMinutes(5);
 
         /**
          * If this property is set to 'true' then a normal 302 redirect response will be returned
@@ -757,6 +775,15 @@ public class OidcTenantConfig {
         public void setVerifyAccessToken(boolean verifyAccessToken) {
             this.verifyAccessToken = verifyAccessToken;
         }
+
+        public Duration getSessionAgeExtension() {
+            return sessionAgeExtension;
+        }
+
+        public void setSessionAgeExtension(Duration sessionAgeExtension) {
+            this.sessionAgeExtension = sessionAgeExtension;
+        }
+
     }
 
     @ConfigGroup
@@ -813,14 +840,28 @@ public class OidcTenantConfig {
 
         /**
          * Refresh expired ID tokens.
-         * If this property is enabled then a refresh token request is performed and, if successful, the local session is
-         * updated with the new set of tokens.
-         * Otherwise, the local session is invalidated as an indication that the session at the OpenID Provider no longer
-         * exists.
-         * This option is only valid when the application is of type {@link ApplicationType#WEB_APP}}.
+         * If this property is enabled then a refresh token request will be performed if the ID token has expired
+         * and, if successful, the local session will be updated with the new set of tokens.
+         * Otherwise, the local session will be invalidated and the user redirected to the OpenID Provider to re-authenticate.
+         * In this case the user may not be challenged again if the OIDC provider session is still active.
+         *
+         * For this option be effective the `authentication.session-age-extension` property should also be set to a non-zero
+         * value since the refresh token is currently kept in the user session.
+         *
+         * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}}.
          */
         @ConfigItem
         public boolean refreshExpired;
+
+        /**
+         * Token auto-refresh interval in seconds during the user re-authentication.
+         * If this option is set then the valid ID token will be refreshed if it will expire in less than a number of minutes
+         * set by this option. The user will still be authenticated if the ID token can no longer be refreshed but is still
+         * valid.
+         * This option will be ignored if the 'refresh-expired' property is not enabled.
+         */
+        @ConfigItem
+        public Optional<Duration> autoRefreshInterval = Optional.empty();
 
         /**
          * Forced JWK set refresh interval in minutes.
@@ -828,12 +869,27 @@ public class OidcTenantConfig {
         @ConfigItem(defaultValue = "10M")
         public Duration forcedJwkRefreshInterval = Duration.ofMinutes(10);
 
+        /**
+         * Custom HTTP header that contains a bearer token.
+         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}}.
+         */
+        @ConfigItem
+        public Optional<String> header = Optional.empty();
+
         public Optional<String> getIssuer() {
             return issuer;
         }
 
         public void setIssuer(String issuer) {
             this.issuer = Optional.of(issuer);
+        }
+
+        public Optional<String> getHeader() {
+            return header;
+        }
+
+        public void setHeader(String header) {
+            this.header = Optional.of(header);
         }
 
         public Optional<List<String>> getAudience() {

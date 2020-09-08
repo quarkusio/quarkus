@@ -257,6 +257,17 @@ public class DocGeneratorUtil {
         return target.toString();
     }
 
+    static String normalizeDurationValue(String value) {
+        if (!value.isEmpty() && Character.isDigit(value.charAt(value.length() - 1))) {
+            try {
+                value = Integer.parseInt(value) + "S";
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        value = value.toUpperCase(Locale.ROOT);
+        return value;
+    }
+
     static String joinAcceptedValues(List<String> acceptedValues) {
         if (acceptedValues == null || acceptedValues.isEmpty()) {
             return "";
@@ -441,7 +452,7 @@ public class DocGeneratorUtil {
 
             ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
             if (configDocSection.equals(section)) {
-                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                appendConfigItemsIntoExistingOnes(configDocSection.getConfigDocItems(), section.getConfigDocItems());
                 return true;
             } else {
                 boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,

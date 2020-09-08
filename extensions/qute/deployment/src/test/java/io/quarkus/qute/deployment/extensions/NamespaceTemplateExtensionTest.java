@@ -30,6 +30,8 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{str:format('%s:%s','hello', 1)}").render());
         assertEquals("olleh",
                 engine.parse("{str:reverse('hello')}").render());
+        assertEquals("foolish:olleh",
+                engine.parse("{str:foolish('hello')}").render());
         assertEquals("ONE=ONE",
                 engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
     }
@@ -43,6 +45,11 @@ public class NamespaceTemplateExtensionTest {
 
         static String reverse(String val) {
             return new StringBuilder(val).reverse().toString();
+        }
+
+        @TemplateExtension(namespace = "str", matchRegex = "foo.*")
+        static String foo(String name, String val) {
+            return name + ":" + new StringBuilder(val).reverse().toString();
         }
 
     }

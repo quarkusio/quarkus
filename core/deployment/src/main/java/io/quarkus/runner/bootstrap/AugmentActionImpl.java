@@ -32,7 +32,6 @@ import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.ExtensionLoader;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
@@ -42,6 +41,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -56,8 +56,9 @@ public class AugmentActionImpl implements AugmentAction {
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
 
     private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
-            GeneratedResourceBuildItem.class, BytecodeTransformerBuildItem.class, ApplicationClassNameBuildItem.class,
-            MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class };
+            GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
+            MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
+            TransformedClassesBuildItem.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
@@ -129,11 +130,9 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Cannot launch a runtime application with NORMAL launch mode");
         }
         ClassLoader classLoader = curatedApplication.createDeploymentClassLoader();
-
         @SuppressWarnings("unchecked")
         BuildResult result = runAugment(true, Collections.emptySet(), classLoader, NON_NORMAL_MODE_OUTPUTS);
-
-        return new StartupActionImpl(curatedApplication, result, classLoader);
+        return new StartupActionImpl(curatedApplication, result);
     }
 
     @Override
@@ -146,7 +145,7 @@ public class AugmentActionImpl implements AugmentAction {
         @SuppressWarnings("unchecked")
         BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classLoader, NON_NORMAL_MODE_OUTPUTS);
 
-        return new StartupActionImpl(curatedApplication, result, classLoader);
+        return new StartupActionImpl(curatedApplication, result);
     }
 
     /**

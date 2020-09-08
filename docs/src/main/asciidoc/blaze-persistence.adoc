@@ -92,7 +92,7 @@ public class SantaClausService {
     @Transactional <4>
     public List<GiftView> findAllGifts() {
         CriteriaBuilder<Gift> cb = cbf.create(em, Gift.class);
-        return emv.applySetting(EntityViewSetting.create(GiftView.class), cb).getResultList();
+        return evm.applySetting(EntityViewSetting.create(GiftView.class), cb).getResultList();
     }
 }
 ----

@@ -61,20 +61,19 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
-import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.runtime.QuarkusInjectorFactory;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.server.common.runtime.QuarkusResteasyDeployment;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceDefiningAnnotationBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
+import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.undertow.deployment.FilterBuildItem;
@@ -163,8 +162,6 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
-            BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
@@ -174,6 +171,7 @@ public class ResteasyServerCommonProcessor {
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
             List<AdditionalJaxRsResourceMethodParamAnnotations> additionalJaxRsResourceMethodParamAnnotations,
+            List<AllowedJaxRsAnnotationPrefixBuildItem> friendlyJaxRsAnnotationPrefixes,
             List<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizers,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -181,8 +179,6 @@ public class ResteasyServerCommonProcessor {
             Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
             CustomScopeAnnotationsBuildItem scopes) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
-
-        resource.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
 
@@ -283,7 +279,8 @@ public class ResteasyServerCommonProcessor {
 
         // generate default constructors for suitable concrete @Path classes that don't have them
         // see https://issues.jboss.org/browse/RESTEASY-2183
-        generateDefaultConstructors(transformers, withoutDefaultCtor, additionalJaxRsResourceDefiningAnnotations);
+        generateDefaultConstructors(transformers, withoutDefaultCtor, additionalJaxRsResourceDefiningAnnotations,
+                friendlyJaxRsAnnotationPrefixes);
 
         checkParameterNames(beanArchiveIndexBuildItem.getIndex(), additionalJaxRsResourceMethodParamAnnotations);
 
@@ -385,6 +382,18 @@ public class ResteasyServerCommonProcessor {
             }
         }));
         resteasyDeployment.produce(new ResteasyDeploymentBuildItem(path, deployment));
+    }
+
+    @BuildStep
+    List<AllowedJaxRsAnnotationPrefixBuildItem> registerCompatibleAnnotationPrefixes() {
+        List<AllowedJaxRsAnnotationPrefixBuildItem> prefixes = new ArrayList<>();
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem(packageName(ResteasyDotNames.PATH)));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("kotlin")); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("lombok")); // same for lombok
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("io.quarkus.security")); // same for the security annotations
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("javax.annotation.security"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
+        return prefixes;
     }
 
     @BuildStep
@@ -579,15 +588,14 @@ public class ResteasyServerCommonProcessor {
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,
             Map<DotName, ClassInfo> withoutDefaultCtor,
-            List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations) {
+            List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
+            List<AllowedJaxRsAnnotationPrefixBuildItem> friendlyJaxRsAnnotationPrefixes) {
 
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
-        allowedAnnotationPrefixes.add(packageName(ResteasyDotNames.PATH));
-        allowedAnnotationPrefixes.add("kotlin"); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
-        allowedAnnotationPrefixes.add("lombok"); // same for lombok
-        allowedAnnotationPrefixes.add("io.quarkus.security"); // same for the security annotations
-        allowedAnnotationPrefixes.add("javax.annotation.security");
-        allowedAnnotationPrefixes.add("jakarta.annotation.security");
+        friendlyJaxRsAnnotationPrefixes.stream()
+                .map(prefix -> prefix.getAnnotationPrefix())
+                .forEachOrdered(allowedAnnotationPrefixes::add);
+
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem additionalJaxRsResourceDefiningAnnotation : additionalJaxRsResourceDefiningAnnotations) {
             final String packageName = packageName(additionalJaxRsResourceDefiningAnnotation.getAnnotationClass());
             if (packageName != null) {
@@ -605,7 +613,7 @@ public class ResteasyServerCommonProcessor {
             boolean hasNonJaxRSAnnotations = false;
             for (AnnotationInstance instance : classInfo.classAnnotations()) {
                 final String packageName = packageName(instance.name());
-                if (packageName == null || !allowedAnnotationPrefixes.contains(packageName)) {
+                if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
                     hasNonJaxRSAnnotations = true;
                     break;
                 }
@@ -641,6 +649,10 @@ public class ResteasyServerCommonProcessor {
                         }
                     }));
         }
+    }
+
+    private static boolean isPackageAllowed(Set<String> allowedAnnotationPrefixes, String packageName) {
+        return allowedAnnotationPrefixes.stream().anyMatch(prefix -> packageName.startsWith(prefix));
     }
 
     private static String packageName(DotName dotName) {
@@ -707,7 +719,8 @@ public class ResteasyServerCommonProcessor {
                 } else {
                     //might be a framework class, which should be loadable
                     try {
-                        Class<?> typeClass = Class.forName(annotatedType.name().toString());
+                        Class<?> typeClass = Class.forName(annotatedType.name().toString(), false,
+                                Thread.currentThread().getContextClassLoader());
                         if (typeClass.isInterface()) {
                             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
                         }
@@ -767,16 +780,29 @@ public class ResteasyServerCommonProcessor {
             }
             processedAnnotations.add(instance);
             MethodInfo method = instance.target().asMethod();
-            String source = method.declaringClass() + "[" + method + "]";
+            String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
+                    + "]";
 
-            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index,
-                    ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE, source));
+            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                    .type(method.returnType())
+                    .index(index)
+                    .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                    .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                    .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                    .source(source)
+                    .build());
 
             for (short i = 0; i < method.parameters().size(); i++) {
                 Type parameterType = method.parameters().get(i);
                 if (!hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index,
-                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE, source));
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                            .type(parameterType)
+                            .index(index)
+                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                            .source(source)
+                            .build());
                 }
             }
         }

@@ -88,8 +88,11 @@ abstract public class AbstractAmazonServiceProcessor {
             RuntimeValue<SdkAsyncHttpClient.Builder> asyncTransport = null;
 
             if (client.getSyncClassName().isPresent()) {
-                syncTransport = recorder.configureSync(configName(), buildSyncConfig,
-                        syncConfig);
+                if (buildSyncConfig.type == SyncHttpClientBuildTimeConfig.SyncClientType.APACHE) {
+                    syncTransport = recorder.configureSyncApacheHttpClient(configName(), syncConfig);
+                } else {
+                    syncTransport = recorder.configureSyncUrlConnectionHttpClient(configName(), syncConfig);
+                }
             }
 
             if (client.getAsyncClassName().isPresent()) {

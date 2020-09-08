@@ -7,6 +7,7 @@ import io.quarkus.panache.common.impl.GenerateBridge
 import java.util.stream.Stream
 import javax.persistence.EntityManager
 import javax.persistence.LockModeType
+import kotlin.reflect.KClass
 
 /**
  * Represents a Repository for a specific type of entity `Entity`, with an ID type of `Id`. Implementing this interface
@@ -23,6 +24,13 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
      * @return the default [EntityManager]
      */
     fun getEntityManager(): EntityManager = JpaOperations.getEntityManager()
+
+    /**
+     * Returns the [EntityManager] tied to the given class for extra operations (eg. CriteriaQueries)
+     *
+     * @return the default [EntityManager]
+     */
+    fun getEntityManager(clazz: KClass<Any>): EntityManager = JpaOperations.getEntityManager(clazz.java);
 
     /**
      * Persist the given entity in the database, if not already persisted.
@@ -45,7 +53,7 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
      */
     fun persistAndFlush(entity: Entity) {
         JpaOperations.persist(entity)
-        JpaOperations.flush()
+        JpaOperations.flush(entity)
     }
 
     /**
@@ -71,7 +79,7 @@ interface PanacheRepositoryBase<Entity : Any, Id: Any> {
     fun isPersistent(entity: Entity): Boolean = JpaOperations.isPersistent(entity)
 
     /**
-     * Flushes all pending changes to the database.
+     * Flushes all pending changes to the database using the default EntityManager.
      */
     fun flush() {
         JpaOperations.flush()

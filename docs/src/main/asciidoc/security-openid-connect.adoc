@@ -343,7 +343,7 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 
-[[oidc-single-page-applications]]
+[[single-page-applications]]
 == Single Page Applications
 
 Single Page Application (SPA) typically uses `XMLHttpRequest`(XHR) and the Java Script utility code provided by the OpenId Connect provider to acquire a bearer token and use it
@@ -397,3 +397,4 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* link:security[Quarkus Security]

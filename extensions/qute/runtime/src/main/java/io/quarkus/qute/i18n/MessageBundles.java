@@ -44,7 +44,8 @@ public final class MessageBundles {
         if (!bundleInterface.isAnnotationPresent(MessageBundle.class)
                 && !bundleInterface.isAnnotationPresent(Localized.class)) {
             throw new IllegalArgumentException(
-                    "Message bundle interface must be annotated either with @Bundle or with @Localized: " + bundleInterface);
+                    "Message bundle interface must be annotated either with @MessageBundle or with @Localized: "
+                            + bundleInterface);
         }
         InstanceHandle<T> handle = localized != null ? Arc.container().instance(bundleInterface, localized)
                 : Arc.container().instance(bundleInterface);

@@ -15,9 +15,9 @@
         <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
         <quarkus.platform.version>{quarkus.platform.version}</quarkus.platform.version>
-        <quarkus-plugin.version>{quarkus.plugin.version}</quarkus-plugin.version>
-        <compiler-plugin.version>{maven.version.maven-compiler-plugin}</compiler-plugin.version>
-        <surefire-plugin.version>{maven.version.maven-surefire-plugin}</surefire-plugin.version>
+        <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
+        <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
+        <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -31,6 +31,39 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    {#if maven.repositories}
+
+    <repositories>
+        {#for rep in maven.repositories}
+        <repository>
+            <id>{rep.id}</id>
+            <url>{rep.url}</url>
+            <releases>
+                <enabled>{rep.releases-enabled ?: true}</enabled>
+            </releases>
+            <snapshots>
+                <enabled>{rep.snapshots-enabled ?: true}</enabled>
+            </snapshots>
+        </repository>
+        {/for}
+    </repositories>
+    {/if}
+    {#if maven.plugin-repositories}
+    <pluginRepositories>
+        {#for rep in maven.plugin-repositories}
+        <pluginRepository>
+            <id>{rep.id}</id>
+            <url>{rep.url}</url>
+            <releases>
+                <enabled>{rep.releases-enabled ?: true}</enabled>
+            </releases>
+            <snapshots>
+                <enabled>{rep.snapshots-enabled ?: true}</enabled>
+            </snapshots>
+        </pluginRepository>
+        {/for}
+    </pluginRepositories>
+    {/if}
 
     <dependencies>
         {#each dependencies}
@@ -65,15 +98,20 @@
         <plugins>
             <!-- Quarkus build plugin - also provides the quarkus:dev live-reload feature -->
             <plugin>
-                <groupId>{quarkus.plugin.group-id}</groupId>
-                <artifactId>{quarkus.plugin.artifact-id}</artifactId>
+                <groupId>{quarkus.maven-plugin.group-id}</groupId>
+                <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
                 <version>$\{quarkus-plugin.version}</version>
+                {#if uberjar}
+                <configuration>
+                    <uberJar>true</uberJar>
+                </configuration>
+                {/if}
                 <executions>
                     <execution>
                         <goals>
                             <goal>build</goal>
-                            <goal>prepare</goal>
-                            <goal>prepare-tests</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -96,7 +134,7 @@
             </plugin>
         </plugins>
     </build>
-
+{#if supports.native}
     <profiles>
         <!-- Use this profile to build a native executable using GraalVM -->
         <profile>
@@ -136,5 +174,5 @@
             </build>
         </profile>
     </profiles>
-
+{/if}
 </project>

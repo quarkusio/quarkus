@@ -51,6 +51,10 @@ To access ConfigMaps and Secrets from a specific namespace, you can set the `qua
 
 The properties obtained from the ConfigMaps and Secrets have a higher priority than (i.e. they override) any properties of the same name that are found in `application.properties` (or the YAML equivalents), but they have lower priority than properties set via Environment Variables or Java System Properties.
 
+Furthermore, when multiple ConfigMaps (or Secrets) are used, ConfigMaps (or Secrets) defined later in the list have a higher priority that ConfigMaps defined earlier in the list.
+
+Finally, when both ConfigMaps and Secrets are used, the latter always a higher priority than the former.
+
 === Kubernetes Permissions
 
 Since reading ConfigMaps involves interacting with the Kubernetes API Server, when https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC] is enabled on the cluster, the https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[ServiceAccount]

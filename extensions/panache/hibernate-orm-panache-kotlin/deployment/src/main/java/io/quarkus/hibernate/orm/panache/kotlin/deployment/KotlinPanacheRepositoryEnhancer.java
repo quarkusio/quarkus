@@ -8,7 +8,7 @@ import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 public class KotlinPanacheRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     public KotlinPanacheRepositoryEnhancer(IndexView index) {
-        super(index, KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE_DOTNAME);
+        super(index, KotlinPanacheResourceProcessor.PANACHE_REPOSITORY_BASE);
     }
 
     @Override

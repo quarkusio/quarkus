@@ -8,3 +8,4 @@ metadata:
   - "cloud"
   guide: "https://quarkus.io/guides/azure-functions-http"
   status: "preview"
+  codestart: "azure-functions-http"

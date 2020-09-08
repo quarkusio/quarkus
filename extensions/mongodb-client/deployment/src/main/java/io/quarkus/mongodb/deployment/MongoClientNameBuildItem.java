@@ -1,7 +1,7 @@
 package io.quarkus.mongodb.deployment;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.mongodb.runtime.MongoClientName;
+import io.quarkus.mongodb.MongoClientName;
 
 /**
  * Represents the values of the {@link MongoClientName}

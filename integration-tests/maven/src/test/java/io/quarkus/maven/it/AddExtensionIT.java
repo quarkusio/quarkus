@@ -110,11 +110,11 @@ class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":add-extension"));
+                getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
         properties.setProperty("platformGroupId", "io.quarkus");
         properties.setProperty("platformArtifactId", "quarkus-bom");
-        properties.setProperty("platformVersion", getPluginVersion());
+        properties.setProperty("platformVersion", getQuarkusCoreVersion());
         if (plural) {
             properties.setProperty("extensions", ext);
         } else {

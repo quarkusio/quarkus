@@ -52,6 +52,9 @@ If you think some information is outdated, either provide a pull request or send
 |Caffeine
 |https://github.com/galderz[Galder Zamarreño], https://github.com/wburns[William Burns]
 
+|https://github.com/apache/camel-quarkus[Camel]
+|https://github.com/jamesnetherton[James Netherton], https://github.com/ppalaga[Peter Palaga]
+
 |Cassandra-Quarkus
 |https://github.com/adutra[Alexandre Dutra], https://github.com/tomekl007[Tomasz Lelek], https://github.com/absurdfarce[Bret McGuire], https://github.com/emerkle826[Erik Merkle], https://github.com/olim7t[Olivier Michallat]
 

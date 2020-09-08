@@ -16,12 +16,21 @@ import io.quarkus.panache.common.Parameters;
 public class Panache {
 
     /**
-     * Returns the current {@link EntityManager}
+     * Returns the default {@link EntityManager}
      * 
-     * @return the current {@link EntityManager}
+     * @return {@link EntityManager}
      */
     public static EntityManager getEntityManager() {
         return JpaOperations.getEntityManager();
+    }
+
+    /**
+     * Returns the {@link EntityManager} for the given {@link Class<?> entity}
+     *
+     * @return {@link EntityManager}
+     */
+    public static EntityManager getEntityManager(Class<?> clazz) {
+        return JpaOperations.getEntityManager(clazz);
     }
 
     /**

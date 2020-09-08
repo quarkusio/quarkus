@@ -46,6 +46,43 @@ import io.quarkus.utilities.JavaBinFinder;
 @DisableForNative
 public class JarRunnerIT extends MojoTestBase {
 
+    /**
+     * Tests that a Quarkus project builds fine if the project is hosted in a directory
+     * path that contains non-ASCII characters
+     *
+     * @throws MavenInvocationException
+     * @throws IOException
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/11511"/>
+     */
+    @Test
+    public void testNonAsciiDir() throws Exception {
+        final File testDir = initProject("projects/classic", "projects/ěščřžýáíéůú");
+        final RunningInvoker running = new RunningInvoker(testDir, false);
+
+        final MavenProcessInvocationResult result = running.execute(Arrays.asList("install", "-DskipTests"),
+                Collections.emptyMap());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(new File(testDir, "target"), Paths.get("acme-1.0-SNAPSHOT-runner.jar"), output,
+                Collections.emptyList()).start();
+        try {
+            // Wait until server up
+            dumpFileContentOnFailure(() -> {
+                await().pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+        } finally {
+            process.destroy();
+        }
+
+    }
+
     @Test
     public void testThatJarRunnerConsoleOutputWorksCorrectly() throws MavenInvocationException, IOException {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output");
@@ -268,10 +305,15 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private ProcessBuilder doLaunch(Path jar, File output) throws IOException {
-        return doLaunch(jar, output, Collections.emptyList());
+        return doLaunch(null, jar, output, Collections.emptyList());
     }
 
     private ProcessBuilder doLaunch(Path jar, File output, Collection<String> vmArgs) throws IOException {
+        return doLaunch(null, jar, output, vmArgs);
+    }
+
+    private ProcessBuilder doLaunch(final File workingDir, final Path jar, File output, Collection<String> vmArgs)
+            throws IOException {
         List<String> commands = new ArrayList<>();
         commands.add(JavaBinFinder.findBin());
         commands.addAll(vmArgs);
@@ -280,6 +322,9 @@ public class JarRunnerIT extends MojoTestBase {
         // write out the command used to launch the process, into the log file
         Files.write(output.toPath(), commands);
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
+        if (workingDir != null) {
+            processBuilder.directory(workingDir);
+        }
         processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(output));
         processBuilder.redirectError(ProcessBuilder.Redirect.appendTo(output));
         return processBuilder;

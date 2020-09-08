@@ -1,7 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
-import static io.quarkus.platform.tools.ConsoleMessageFormats.nok;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -49,10 +49,10 @@ final class QuarkusCommandHandlers {
                     Set<Extension> candidates = result.getExtensions();
                     if (candidates.isEmpty()) {
                         // No matches at all.
-                        invocation.log().info(nok("Cannot find a dependency matching '" + query + "', maybe a typo?"));
+                        invocation.log().error("Cannot find a dependency matching '" + query + "', maybe a typo?");
                         return null;
                     } else {
-                        sb.append(nok("Multiple extensions matching '")).append(query).append("'");
+                        sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
                         result.getExtensions()
                                 .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
                                         .append(extension.managementKey()));

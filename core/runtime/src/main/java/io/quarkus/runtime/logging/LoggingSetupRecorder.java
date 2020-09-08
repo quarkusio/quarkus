@@ -46,7 +46,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 @Recorder
 public class LoggingSetupRecorder {
 
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("win");
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,

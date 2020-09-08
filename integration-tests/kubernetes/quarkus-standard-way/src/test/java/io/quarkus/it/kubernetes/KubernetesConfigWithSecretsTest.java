@@ -52,7 +52,7 @@ public class KubernetesConfigWithSecretsTest {
                     assertThat(m.getName()).isEqualTo("view-secrets");
                 });
 
-                assertThat(role.getRules()).hasOnlyOneElementSatisfying(r -> {
+                assertThat(role.getRules()).singleElement().satisfies(r -> {
                     assertThat(r).isInstanceOfSatisfying(PolicyRule.class, rule -> {
                         assertThat(rule.getApiGroups()).containsExactly("");
                         assertThat(rule.getResources()).containsExactly("secrets");
@@ -73,7 +73,7 @@ public class KubernetesConfigWithSecretsTest {
                 assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("Role");
                 assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view-secrets");
 
-                assertThat(roleBinding.getSubjects()).hasOnlyOneElementSatisfying(subject -> {
+                assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
                     assertThat(subject.getKind()).isEqualTo("ServiceAccount");
                     assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
                 });
@@ -89,7 +89,7 @@ public class KubernetesConfigWithSecretsTest {
                 assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
                 assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
 
-                assertThat(roleBinding.getSubjects()).hasOnlyOneElementSatisfying(subject -> {
+                assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
                     assertThat(subject.getKind()).isEqualTo("ServiceAccount");
                     assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
                 });

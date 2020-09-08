@@ -10,52 +10,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class CodestartSpec {
-
-    enum Type {
-        PROJECT(true),
-        LANGUAGE(true),
-        BUILDTOOL(true),
-        CONFIG(true),
-        EXAMPLE(false),
-        TOOLING(false);
-
-        private final boolean base;
-
-        Type(boolean base) {
-            this.base = base;
-        }
-
-        public boolean isBase() {
-            return base;
-        }
-    }
 
     private final String name;
     private final boolean isPreselected;
     private final String ref;
-    private final Type type;
+    private final CodestartType type;
     private final boolean isFallback;
-    private final List<String> missingLanguages;
+    private final Set<String> tags;
     private final Map<String, String> outputStrategy;
     private final Map<String, LanguageSpec> languagesSpec;
 
     @JsonCreator
     public CodestartSpec(@JsonProperty(value = "name", required = true) String name,
             @JsonProperty(value = "ref") String ref,
-            @JsonProperty(value = "type") Type type,
+            @JsonProperty(value = "type") CodestartType type,
             @JsonProperty("fallback") boolean isFallback,
             @JsonProperty("preselected") boolean isPreselected,
-            @JsonProperty(value = "missing-languages") List<String> missingLanguages,
+            @JsonProperty("tags") Set<String> tags,
             @JsonProperty("output-strategy") Map<String, String> outputStrategy,
             @JsonProperty("language") Map<String, LanguageSpec> languagesSpec) {
         this.name = requireNonNull(name, "name is required");
+        this.tags = tags != null ? tags : Collections.emptySet();
         this.ref = ref != null ? ref : name;
-        this.type = type != null ? type : Type.EXAMPLE;
+        this.type = type != null ? type : CodestartType.CODE;
         this.isFallback = isFallback;
         this.isPreselected = isPreselected;
-        this.missingLanguages = missingLanguages != null ? missingLanguages : Collections.emptyList();
         this.outputStrategy = outputStrategy != null ? outputStrategy : Collections.emptyMap();
         this.languagesSpec = languagesSpec != null ? languagesSpec : Collections.emptyMap();
     }
@@ -68,7 +50,11 @@ public final class CodestartSpec {
         return ref;
     }
 
-    public Type getType() {
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public CodestartType getType() {
         return type;
     }
 
@@ -78,14 +64,6 @@ public final class CodestartSpec {
 
     public boolean isPreselected() {
         return isPreselected;
-    }
-
-    public List<String> getMissingLanguages() {
-        return missingLanguages;
-    }
-
-    public boolean isExample() {
-        return getType() == Type.EXAMPLE;
     }
 
     public Map<String, String> getOutputStrategy() {

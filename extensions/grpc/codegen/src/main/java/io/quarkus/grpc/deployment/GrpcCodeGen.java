@@ -204,7 +204,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
-        writer.write(JavaBinFinder.findBin() + " -cp \"" +
+        writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
                 pluginPath.toAbsolutePath().toString() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
     }

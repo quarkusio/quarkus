@@ -435,6 +435,8 @@ _will also_ be taken into account.
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 
+NOTE: Environment variables without a configuration profile defined in `.env` file will overwrite all its related profiles in `application.properties`, e.g. `%test.application.value` is overwritten by `APPLICATION_VALUE` in `.env` file.
+
 NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build/classes/java/main` for Gradle).
 Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
 
@@ -452,6 +454,14 @@ quarkus.http.port=9090
 ----
 
 The Quarkus HTTP port will be 9090, unless the `dev` profile is active, in which case it will be 8181.
+
+To use profiles in the `.env` file, you can follow a `_{PROFILE}_CONFIG_KEY=value` pattern. An equivalent of the above example in an `.env` file would be:
+
+[source,.env]
+----
+QUARKUS_HTTP_PORT=9090
+_DEV_QUARKUS_HTTP_PORT=8181
+----
 
 By default Quarkus has three profiles, although it is possible to use as many as you like. The default profiles are:
 
@@ -516,8 +526,8 @@ Another example would be defining different database servers depending on the pr
 
 [source,properties]
 ----
-%dev.quarkus.datasource.url=jdbc:mysql://localhost:3306/mydatabase?useSSL=false
-quarkus.datasource.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
+%dev.quarkus.datasource.jdbc.url=jdbc:mysql://localhost:3306/mydatabase?useSSL=false
+quarkus.datasource.jdbc.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
 ----
 
 can be simplified by having:
@@ -527,7 +537,7 @@ can be simplified by having:
 %dev.application.server=localhost
 application.server=remotehost
 
-quarkus.datasource.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
+quarkus.datasource.jdbc.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
 ----
 
 It does result in one more line in this example but the value of `application.server` can be reused in other properties,
@@ -741,8 +751,9 @@ You should decide and keep one configuration type to avoid errors.
 # YAML supports comments
 quarkus:
   datasource:
-    url: jdbc:postgresql://localhost:5432/some-database
-    driver: org.postgresql.Driver
+    db-kind: postgresql
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/some-database
     username: quarkus
     password: quarkus
 
@@ -775,8 +786,9 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 "%dev":
   quarkus:
     datasource:
-      url: jdbc:postgresql://localhost:5432/some-database
-      driver: org.postgresql.Driver
+      db-kind: postgresql
+      jdbc:
+        url: jdbc:postgresql://localhost:5432/some-database
       username: quarkus
       password: quarkus
 ----

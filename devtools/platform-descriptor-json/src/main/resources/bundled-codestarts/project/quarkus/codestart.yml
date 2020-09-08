@@ -1,4 +1,3 @@
----
 name: quarkus
 type: project
 fallback: true
@@ -9,12 +8,18 @@ output-strategy:
   "README.adoc": forbidden
   "readme.adoc": forbidden
   ".gitignore": append
+  "src/native-test/*": native-test-dir-resolve
   "src/main/resources/application.yml": smart-config-merge
   "src/main/resources/application.properties": forbidden
+  "src/test/resources/application.yml": smart-config-merge
+  "src/test/resources/application.properties": forbidden
   "*": fail-on-duplicate
 language:
   base:
     shared-data:
+      supports:
+        dev-mode: true
+        native: true
       project:
         group-id: org.acme
         artifact-id: quarkus-project

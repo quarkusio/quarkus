@@ -14,7 +14,6 @@ import io.quarkus.bootstrap.BootstrapGradleException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.model.QuarkusModel;
 import io.quarkus.bootstrap.resolver.model.WorkspaceModule;
@@ -43,18 +42,17 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
                     devModeContext.getAdditionalModules().add(toModule(module.getValue()));
                 }
             } else {
-                // TODO find a way to reuse the previously model instead of building a new one.
-                QuarkusModel quarkusModel = QuarkusGradleModelFactory.createForTasks(
-                        BuildToolHelper.getBuildFile(appClasses, BuildToolHelper.BuildTool.GRADLE).toFile(),
-                        QuarkusModelHelper.DEVMODE_REQUIRED_TASKS);
-                final WorkspaceModule launchingModule = quarkusModel.getWorkspace().getMainModule();
-                DevModeContext.ModuleInfo root = toModule(quarkusModel.getWorkspace().getMainModule());
+                final QuarkusModel model = QuarkusModelHelper
+                        .deserializeQuarkusModel((Path) stringObjectMap.get(QuarkusModelHelper.SERIALIZED_QUARKUS_MODEL));
+                final WorkspaceModule launchingModule = model.getWorkspace().getMainModule();
+                DevModeContext.ModuleInfo root = toModule(launchingModule);
                 devModeContext.setApplicationRoot(root);
-                for (WorkspaceModule additionalModule : quarkusModel.getWorkspace().getAllModules()) {
+                for (WorkspaceModule additionalModule : model.getWorkspace().getAllModules()) {
                     if (!additionalModule.getArtifactCoords().equals(launchingModule.getArtifactCoords())) {
                         devModeContext.getAdditionalModules().add(toModule(additionalModule));
                     }
                 }
+
             }
 
         } catch (AppModelResolverException e) {
@@ -75,14 +73,17 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             sourceDirectories.add(srcDir.getPath());
             sourceParents.add(srcDir.getParent());
         }
-
+        String resourceDirectory = null;
+        if (module.getSourceSet().getResourceDirectory() != null) {
+            resourceDirectory = module.getSourceSet().getResourceDirectory().getPath();
+        }
         return new DevModeContext.ModuleInfo(key,
                 module.getArtifactCoords().getArtifactId(),
                 module.getProjectRoot().getPath(),
                 sourceDirectories,
                 QuarkusModelHelper.getClassPath(module).toAbsolutePath().toString(),
                 module.getSourceSourceSet().getResourceDirectory().toString(),
-                module.getSourceSet().getResourceDirectory().getPath(),
+                resourceDirectory,
                 sourceParents,
                 module.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
                 module.getBuildDir().toString());

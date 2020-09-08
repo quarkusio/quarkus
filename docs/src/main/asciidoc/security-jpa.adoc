@@ -229,7 +229,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
 In our context, we are using PostgreSQL as identity store. The database schema is created by Hibernate ORM automatically
-on startup (change this in production) and we initialise the database with users and roles in the `Startup` class:
+on startup (change this in production) and we initialize the database with users and roles in the `Startup` class:
 
 [source,java]
 ----
@@ -371,8 +371,12 @@ When you need to create such a hashed password we provide the convenient `String
 function, which defaults to creating a random salt and hashing in 10 iterations (though you can specify the iterations and salt
 too).
 
-NOTE: with MCF you don't need dedicated columns to store the hashing algo, the iterations count or the salt because
+NOTE: with MCF you don't need dedicated columns to store the hashing algorithm, the iterations count or the salt because
 they're all stored in the hashed value.
 
 WARN: you can also store passwords in clear text with `@Password(PasswordType.CLEAR)` but we strongly recommend against
 it in production.
+
+== References
+
+* link:security[Quarkus Security]

@@ -80,7 +80,8 @@ public class AmazonClientRecorder {
 
     private ExecutionInterceptor createInterceptor(Class<?> interceptorClass) {
         try {
-            return (ExecutionInterceptor) Class.forName(interceptorClass.getName()).newInstance();
+            return (ExecutionInterceptor) Class
+                    .forName(interceptorClass.getName(), false, Thread.currentThread().getContextClassLoader()).newInstance();
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             LOG.error("Unable to create interceptor", e);
             return null;

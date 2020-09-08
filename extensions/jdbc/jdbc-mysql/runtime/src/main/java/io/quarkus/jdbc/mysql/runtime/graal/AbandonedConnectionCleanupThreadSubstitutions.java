@@ -73,6 +73,11 @@ final public class AbandonedConnectionCleanupThreadSubstitutions implements Runn
         }
     }
 
+    @Substitute
+    public static void uncheckedShutdown() {
+        executorService.shutdownNow();
+    }
+
     private static void finalizeResourceAndRemoveReference(ConnectionFinalizerPhantomReference reference) {
         try {
             reference.finalizeResources();

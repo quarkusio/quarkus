@@ -24,8 +24,8 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
-import io.quarkus.deployment.util.JavaVersionUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class AppCDSBuildStep {
@@ -38,8 +38,7 @@ public class AppCDSBuildStep {
     public void requested(OutputTargetBuildItem outputTarget, BuildProducer<AppCDSRequestedBuildItem> producer)
             throws IOException {
         Path appCDSDir = outputTarget.getOutputDirectory().resolve("appcds");
-        IoUtils.recursiveDelete(appCDSDir);
-        Files.createDirectories(appCDSDir);
+        IoUtils.recursiveDeleteAndThenCreate(appCDSDir);
 
         producer.produce(new AppCDSRequestedBuildItem(outputTarget.getOutputDirectory().resolve("appcds")));
     }

@@ -20,6 +20,9 @@
 - labels: [area/maven]
   title: "(?i).*maven.*"
   notify: [quarkusio/devtools]
+- labels: [area/jbang]
+  title: "(?i).*jbang.*"
+  notify: [quarkusio/devtools,maxandersen]
 - labels: [area/codestarts]
   title: "(?i).*codestart.*"
   description: "(?i).*codestart.*"
@@ -51,10 +54,11 @@
 - labels: [area/kotlin]
   title: "(?i).*kotlin.*"
   description: "(?i).*kotlin.*"
+  notify: [evanchooly]
 - labels: [area/mongodb]
   title: "(?i).*mongo.*"
   description: "(?i).*mongo.*"
-  notify: [loicmathieu]
+  notify: [loicmathieu,evanchooly]
 - labels: [area/openapi, area/smallrye]
   title: "(?i).*openapi.*"
   description: "(?i).*openapi.*"
@@ -133,7 +137,7 @@
 - labels: [area/kafka-streams]
   title: "(?i).*k(afka)?(\\s|-)?stream.*"
   description: "(?i).*k(afka)?(\\s|-)?stream.*"
-  notify: [gunnarmorling]
+  notify: [gunnarmorling,rquinio]
 - labels: [area/infinispan]
   title: "(?i).*infinispan.*"
   description: "(?i).*infinispan.*"
@@ -162,3 +166,7 @@
   title: "(?i).*google.cloud.*"
   description: "(?i).*google.cloud.*"
   notify: [loicmathieu]
+- labels: [area/mandrel]
+  title: "(?i).*mandrel.*"
+  description: "(?i).*mandrel.*"
+  notify: [galderz,zakkak]

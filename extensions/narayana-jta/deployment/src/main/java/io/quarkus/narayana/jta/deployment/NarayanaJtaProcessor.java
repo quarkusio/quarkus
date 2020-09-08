@@ -4,6 +4,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.Properties;
 
+import javax.annotation.Priority;
+import javax.interceptor.Interceptor;
 import javax.transaction.TransactionScoped;
 
 import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
@@ -17,9 +19,13 @@ import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -28,19 +34,24 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
+import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNotSupported;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequired;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequiresNew;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorSupports;
+import io.smallrye.context.jta.context.propagation.JtaContextProvider;
 
 class NarayanaJtaProcessor {
+
+    private static final String TEST_TRANSACTION = "io.quarkus.test.TestTransaction";
 
     @BuildStep
     public NativeImageSystemPropertyBuildItem nativeImageSystemPropertyBuildItem() {
@@ -96,6 +107,24 @@ class NarayanaJtaProcessor {
         recorder.setDefaultTimeout(transactions);
     }
 
+    @BuildStep(onlyIf = IsTest.class)
+    void testTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        //generate the annotated interceptor with gizmo
+        //all the logic is in the parent, but we don't have access to the
+        //binding annotation here
+        try (ClassCreator c = ClassCreator.builder()
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
+                        TestTransactionInterceptor.class.getName() + "Generated")
+                .superClass(TestTransactionInterceptor.class).build()) {
+            c.addAnnotation(TEST_TRANSACTION);
+            c.addAnnotation(Interceptor.class.getName());
+            c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 200);
+        }
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestTransactionInterceptor.class)
+                .addBeanClass(TEST_TRANSACTION).build());
+    }
+
     @BuildStep
     public void transactionContext(
             BuildProducer<ContextRegistrarBuildItem> contextRegistry) {
@@ -106,6 +135,12 @@ class NarayanaJtaProcessor {
                 registrationContext.configure(TransactionScoped.class).normal().contextClass(TransactionContext.class).done();
             }
         }, TransactionScoped.class));
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremovableBean() {
+        // LifecycleManager comes from smallrye-context-propagation-jta and is only used via programmatic lookup in JtaContextProvider
+        return UnremovableBeanBuildItem.beanClassNames(JtaContextProvider.LifecycleManager.class.getName());
     }
 
 }

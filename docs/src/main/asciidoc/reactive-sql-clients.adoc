@@ -88,8 +88,16 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
+=== Mutiny
+
+Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
+----
+
 [TIP]
-.Mutiny
 ====
 In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
 If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
@@ -521,6 +529,46 @@ return SqlClientHelper.inTransactionUni(client, tx -> tx
                 .execute(Tuple.of(id.iterator().next().getLong("id"), person.getLastName())))
 
         .onItem().ignore().andContinueWithNull());
+----
+
+== UNIX Domain Socket connections
+
+The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
+
+First make sure that https://quarkus.io/guides/vertx#native-transport[native transport support] is enabled.
+
+Then configure the database connection url.
+This step depends on the database type.
+
+=== PostgreSQL
+
+PostgresSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
+
+The database connection url must be configured so that:
+
+* the `host` is the `directory` in the socket path
+* the `port` is the `port` in the socket path
+
+Consider the following socket path: `/var/run/postgresql/.s.PGSQL.5432`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=postgresql://:5432/quarkus_test?host=/var/run/postgresql
+----
+
+=== MariaDB/MySQL
+
+The database connection url must be configured so that the `host` is the socket path.
+
+Consider the following socket path: `/var/run/mysqld/mysqld.sock`.
+
+In `application.properties` add:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
 ----
 
 == Configuration Reference

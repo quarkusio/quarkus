@@ -18,8 +18,24 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 public class HibernateMetricsRecorder {
     private static final String SESSION_FACTORY_TAG_NAME = "entityManagerFactory";
 
+    /* RUNTIME_INIT if Micrometer Metrics is present */
+    public Consumer<MetricsFactory> registerMicrometerMetrics() {
+        return new Consumer<MetricsFactory>() {
+            @Override
+            public void accept(MetricsFactory metricsFactory) {
+                JPAConfig jpaConfig = Arc.container().instance(JPAConfig.class).get();
+                for (String puName : jpaConfig.getPersistenceUnits()) {
+                    SessionFactory sessionFactory = jpaConfig.getEntityManagerFactory(puName).unwrap(SessionFactory.class);
+                    if (sessionFactory != null) {
+                        HibernateMicrometerMetrics.registerMeterBinders(puName, sessionFactory);
+                    }
+                }
+            }
+        };
+    }
+
     /* RUNTIME_INIT if MP Metrics is present */
-    public Consumer<MetricsFactory> registerMetrics() {
+    public Consumer<MetricsFactory> registerMPMetrics() {
         return new Consumer<MetricsFactory>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {
@@ -35,11 +51,11 @@ public class HibernateMetricsRecorder {
     }
 
     /**
-     * Register
+     * Register MP Metrics
      * 
-     * @param metricsFactory
-     * @param puName
-     * @param statistics
+     * @param metricsFactory Quarkus MetricsFactory for generic metrics registration
+     * @param puName Name of persistence unit
+     * @param statistics Statistics MXBean for persistence unit
      */
     void registerMetrics(MetricsFactory metricsFactory, String puName, Statistics statistics) {
         createStatisticsCounter(metricsFactory, "hibernate-orm.sessions.open",

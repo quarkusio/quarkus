@@ -2,9 +2,9 @@
 {#plugins}
 plugins {
     id 'scala'
-    id '{quarkus.plugin.id}'
+    id '{quarkus.gradle-plugin.id}'
 }
-        {/plugins}
+{/plugins}
 {/include}
 
 compileScala {

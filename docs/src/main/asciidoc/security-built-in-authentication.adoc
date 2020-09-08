@@ -28,7 +28,7 @@ be read by all members of the cluster (provided they all share the same encrypti
 The encryption key can be set using the `quarkus.http.auth.session.encryption-key` property, and it must be at least 16 characters
 long. This key is hashed using SHA-256 and the resulting digest is used as a key for AES-256 encryption of the cookie
 value. This cookie contains an expiry time as part of the encrypted value, so all nodes in the cluster must have their
-clocks synchronised. At one minute intervals a new cookie will be generated with an updated expiry time if the session
+clocks synchronized. At one minute intervals a new cookie will be generated with an updated expiry time if the session
 is in use.
 
 The following properties can be used to configure form based auth:
@@ -87,9 +87,17 @@ You should also be able to get the certificate as follows:
 .Obtaining the certificate
 [source,java]
 ----
+import java.security.cert.X509Certificate;
+import io.quarkus.security.credential.CertificateCredential;
+
 CertificateCredential credential = identity.getCredential(CertificateCredential.class);
 X509Certificate certificate = credential.getCertificate();
 ----
+
+=== Authorization
+
+The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`. For example, one can add new roles after checking a client certificate subject name, etc.
+Please see the link:security-customization#security-identity-customization[SecurityIdentity Customization] section for more information about customizing Quarkus `SecurityIdentity`.
 
 [[proactive-authentication]]
 == Proactive Authentication
@@ -98,5 +106,8 @@ By default Quarkus does what we call proactive authentication. This means that i
 credential then that request will always be authenticated (even if the target page does not require authentication).
 
 This means that requests with an invalid credential will always be rejected, even for public pages. You can change
-this behaviour and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
+this behavior and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
 
+== References
+
+* link:security[Quarkus Security]

@@ -1,4 +1,4 @@
-package codestarts.qute - example.kotlin.src.native - test.kotlin.org.acme.qute
+package org.acme.qute
 
 import io.quarkus.test.junit.NativeImageTest
 

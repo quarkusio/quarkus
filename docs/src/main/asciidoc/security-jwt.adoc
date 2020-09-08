@@ -641,6 +641,7 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
 |smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
+|smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
 |smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
 |smallrye.jwt.always-check-authorization|false|Set this property to true for Authorization header be checked even if the smallrye.jwt.token.header is set to Cookie but no cookie with a smallrye.jwt.token.cookie name exists.
@@ -692,20 +693,22 @@ import io.smallrye.jwt.build.Jwt;
 @Path("/secured")
 public class SecuredResource {
  @Inject JWTParser parser;
- private SecretKey key = createSecretKey();
+ private String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
  @GET
  @Produces("text/plain")
  public Response getUserName(@CookieParam("jwt") String jwtCookie) {
     Response response = null;
     if (jwtCookie == null) {
-        String newJwtCookie = Jwt.upn("Alice").sign(key);
-        // or newJwtCookie = Jwt.upn("alice").encrypt(key);
+        // Create a JWT token signed using the 'HS256' algorithm
+        String newJwtCookie = Jwt.upn("Alice").signWithSecret(secret);
+        // or create a JWT token encrypted using the 'A256KW' algorithm
+        // Jwt.upn("alice").encryptWithSecret(secret);
         return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
     else {
         // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
-        JsonWebToken jwt = parser.verify(jwtCookie, key);
-        // or jwt = parser.decrypt(jwtCookie, key);
+        JsonWebToken jwt = parser.verify(jwtCookie, secret);
+        // or jwt = parser.decrypt(jwtCookie, secret);
         return Response.ok(jwt.getName()).build();
     }
 }
@@ -725,6 +728,46 @@ See <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>> and learn how
 == How to check the errors in the logs ==
 
 Set `quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".level=TRACE` to see more details about the token verification or decryption errors.
+
+== Custom Factories
+
+`io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipalFactory` is used by default to parse and verify JWT tokens and convert them to `JsonWebToken` principals.
+It uses `MP JWT` and `smallrye-jwt` properties listed in the `Configuration` section to verify and customize JWT tokens.
+
+If you need to provide your own factory, for example, to avoid verifying the tokens again which have already been verified by the firewall, then you can either use a `ServiceLoader` mechanism by providing a `META-INF/services/io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory` resource or simply have an `Alternative` CDI bean implementation like this one:
+
+[source,java]
+----
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import javax.annotation.Priority;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Alternative;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
+import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
+import io.smallrye.jwt.auth.principal.ParseException;
+
+@ApplicationScoped
+@Alternative
+@Priority(1)
+public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
+
+    @Override
+    public JWTCallerPrincipal parse(String token, JWTAuthContextInfo authContextInfo) throws ParseException {
+        try {
+            // Token has already been verified, parse the token claims only
+            String json = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
+            return new DefaultJWTCallerPrincipal(JwtClaims.parse(json));
+        } catch (InvalidJwtException ex) {
+            throw new ParseException(ex.getMessage());
+        }
+    }
+}
+----
 
 [[generate-jwt-tokens]]
 == Generate JWT tokens with SmallRye JWT
@@ -866,3 +909,4 @@ Smallrye JWT supports the following properties which can be used to customize th
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
+* link:security[Quarkus Security]

@@ -77,8 +77,8 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "codestartsEnabled", defaultValue = "false")
     private boolean codestartsEnabled;
 
-    @Parameter(property = "skipExample", defaultValue = "false")
-    private boolean skipExample;
+    @Parameter(property = "noExamples", defaultValue = "false")
+    private boolean noExamples;
 
     /**
      * Group ID of the target platform BOM
@@ -181,10 +181,8 @@ public class CreateProjectMojo extends AbstractMojo {
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
-            BuildTool buildToolEnum;
-            try {
-                buildToolEnum = BuildTool.valueOf(buildTool.toUpperCase());
-            } catch (IllegalArgumentException e) {
+            BuildTool buildToolEnum = BuildTool.findTool(buildTool);
+            if (buildToolEnum == null) {
                 String validBuildTools = String.join(",",
                         Arrays.asList(BuildTool.values()).stream().map(BuildTool::toString).collect(Collectors.toList()));
                 throw new IllegalArgumentException("Choose a valid build tool. Accepted values are: " + validBuildTools);
@@ -198,18 +196,20 @@ public class CreateProjectMojo extends AbstractMojo {
                     .className(className)
                     .extensions(extensions)
                     .codestartsEnabled(codestartsEnabled)
-                    .withExampleCode(!skipExample);
+                    .noExamples(noExamples);
             if (path != null) {
                 createProject.setValue("path", path);
             }
 
             success = createProject.execute().isSuccess();
 
-            File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            if (BuildTool.MAVEN.equals(buildToolEnum)) {
-                createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
-            } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(platform, projectDirPath);
+            if (!codestartsEnabled) {
+                File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
+                if (BuildTool.MAVEN.equals(buildToolEnum)) {
+                    createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
+                } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
+                    createGradleWrapper(platform, projectDirPath);
+                }
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);

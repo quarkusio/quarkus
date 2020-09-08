@@ -1,16 +1,25 @@
 package io.quarkus.devtools.codestarts;
 
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public final class Codestart {
     public static final String BASE_LANGUAGE = "base";
     private final String resourceDir;
     private final CodestartSpec spec;
+    private final Set<String> implementedLanguages;
 
-    public Codestart(final String resourceName, final CodestartSpec spec) {
+    static final Comparator<Codestart> PROCESSING_ORDER = Comparator.comparingInt(Codestart::getTypeOrder)
+            .thenComparing(Codestart::getName);
+
+    static final Comparator<Codestart> SHARED_DATA_MERGE_ORDER = PROCESSING_ORDER;
+
+    public Codestart(final String resourceName, final CodestartSpec spec, Set<String> implementedLanguages) {
         this.resourceDir = resourceName;
         this.spec = spec;
+        this.implementedLanguages = implementedLanguages;
     }
 
     public String getResourceDir() {
@@ -25,12 +34,32 @@ public final class Codestart {
         return spec.getName();
     }
 
-    public CodestartSpec.Type getType() {
+    public String getRef() {
+        return spec.getRef();
+    }
+
+    public int getTypeOrder() {
+        return spec.getType().getProcessingOrder();
+    }
+
+    public boolean isSelected(Set<String> selection) {
+        return selection.contains(getName()) || selection.contains(spec.getRef());
+    }
+
+    public CodestartType getType() {
         return spec.getType();
     }
 
+    public Set<String> getImplementedLanguages() {
+        return implementedLanguages;
+    }
+
     public boolean implementsLanguage(String languageName) {
-        return spec.getMissingLanguages().isEmpty() || !spec.getMissingLanguages().contains(languageName);
+        return implementedLanguages.isEmpty() || implementedLanguages.contains(languageName);
+    }
+
+    public boolean containsTag(String tag) {
+        return getSpec().getTags().contains(tag);
     }
 
     public Map<String, Object> getLocalData(String languageName) {

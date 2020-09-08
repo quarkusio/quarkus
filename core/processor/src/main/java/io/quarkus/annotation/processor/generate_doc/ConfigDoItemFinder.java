@@ -20,6 +20,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stri
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -77,7 +78,6 @@ class ConfigDoItemFinder {
      * Scan configuration group first and record them in a properties file as they can be shared across
      * different modules.
      *
-     * @param allConfigurationGroups
      */
     ScannedConfigDocsItemHolder findInMemoryConfigurationItems() throws IOException {
 
@@ -207,7 +207,7 @@ class ConfigDoItemFinder {
             if (isConfigGroup(type)) {
                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
                         configSection, withinAMap, generateSeparateConfigGroupDocsFiles);
-                configDocItems.addAll(groupConfigItems);
+                DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
             } else {
                 final ConfigDocKey configDocKey = new ConfigDocKey();
                 configDocKey.setWithinAMap(withinAMap);
@@ -217,7 +217,8 @@ class ConfigDoItemFinder {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
-                    optional = qualifiedName.toString().startsWith(Optional.class.getName());
+                    optional = qualifiedName.toString().startsWith(Optional.class.getName())
+                            || qualifiedName.contentEquals(Map.class.getName());
                     list = qualifiedName.contentEquals(List.class.getName())
                             || qualifiedName.contentEquals(Set.class.getName());
 
@@ -230,7 +231,7 @@ class ConfigDoItemFinder {
                                 name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
                                         configSection, true, generateSeparateConfigGroupDocsFiles);
-                                configDocItems.addAll(groupConfigItems);
+                                DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
                                 continue;
                             } else {
                                 type = BACK_TICK + stringifyType(declaredType) + BACK_TICK;
@@ -256,7 +257,7 @@ class ConfigDoItemFinder {
                                     configSection.setOptional(true);
                                     List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name,
                                             typeInString, configSection, withinAMap, generateSeparateConfigGroupDocsFiles);
-                                    configDocItems.addAll(groupConfigItems);
+                                    DocGeneratorUtil.appendConfigItemsIntoExistingOnes(configDocItems, groupConfigItems);
                                     continue;
                                 } else if ((typeInString.startsWith(List.class.getName())
                                         || typeInString.startsWith(Set.class.getName())
@@ -287,6 +288,8 @@ class ConfigDoItemFinder {
                                 defaultValue = hyphenateEnumValue(defaultValue);
                             }
                             acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue);
+                        } else if (isDurationType(declaredType) && !defaultValue.isEmpty()) {
+                            defaultValue = DocGeneratorUtil.normalizeDurationValue(defaultValue);
                         }
                     }
                 }
@@ -359,6 +362,10 @@ class ConfigDoItemFinder {
     private boolean isEnumType(TypeMirror realTypeMirror) {
         return realTypeMirror instanceof DeclaredType
                 && ((DeclaredType) realTypeMirror).asElement().getKind() == ElementKind.ENUM;
+    }
+
+    private boolean isDurationType(TypeMirror realTypeMirror) {
+        return realTypeMirror.toString().equals(Duration.class.getName());
     }
 
     /**

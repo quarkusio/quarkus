@@ -109,6 +109,14 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean outOfOrder;
 
     /**
+     * Ignore missing migrations when reading the history table. When set to true any migration present in the history table but
+     * absent in the configured locations will be ignored (and logged as a warning), when false (the default) the validation
+     * step will fail.
+     */
+    @ConfigItem
+    public boolean ignoreMissingMigrations;
+
+    /**
      * Sets the placeholders to replace in SQL migration scripts.
      */
     @ConfigItem

@@ -16,6 +16,7 @@ import io.quarkus.runtime.RuntimeValue;
  * Makes it possible to register a synthetic bean whose instance can be easily produced through a recorder.
  * 
  * @see BeanConfigurator
+ * @see ExtendedBeanConfigurator#setRuntimeInit()
  */
 public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
@@ -83,9 +84,14 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         /**
          * By default, synthetic beans are initialized during {@link ExecutionTime#STATIC_INIT}. It is possible to mark a
          * synthetic bean to be initialized during {@link ExecutionTime#RUNTIME_INIT}. However, in such case a client that
-         * attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} will receive an exception.
+         * attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} or before runtime-init synthetic beans are
+         * initialized will receive an exception.
+         * <p>
+         * {@link ExecutionTime#RUNTIME_INIT} build steps that access a runtime-init synthetic bean should consume the
+         * {@link SyntheticBeansRuntimeInitBuildItem}.
          * 
          * @return self
+         * @see SyntheticBeansRuntimeInitBuildItem
          */
         public ExtendedBeanConfigurator setRuntimeInit() {
             this.staticInit = false;

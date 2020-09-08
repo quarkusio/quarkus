@@ -7,8 +7,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,9 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaTestFixturesPlugin;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.internal.component.external.model.TestFixturesSupport;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -47,10 +49,21 @@ import io.quarkus.bootstrap.resolver.model.impl.WorkspaceModuleImpl;
 import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.HashUtil;
 
-public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
+public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<ModelParameter> {
 
-    private static final List<String> scannedConfigurations = new LinkedList();
+    private static Configuration classpathConfig(Project project, LaunchMode mode) {
+        if (LaunchMode.TEST.equals(mode)) {
+            return project.getConfigurations().getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+        }
+        if (LaunchMode.DEVELOPMENT.equals(mode)) {
+            return project.getConfigurations().create("quarkusDevMode").extendsFrom(
+                    project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME),
+                    project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
+        }
+        return project.getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+    }
 
     @Override
     public boolean canBuild(String modelName) {
@@ -58,7 +71,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
     }
 
     @Override
-    public Class getParameterType() {
+    public Class<ModelParameter> getParameterType() {
         return ModelParameter.class;
     }
 
@@ -70,61 +83,56 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
     }
 
     @Override
-    public Object buildAll(String modelName, Object parameter, Project project) {
-        LaunchMode mode = LaunchMode.valueOf(((ModelParameter) parameter).getMode());
+    public Object buildAll(String modelName, ModelParameter parameter, Project project) {
+        LaunchMode mode = LaunchMode.valueOf(parameter.getMode());
 
-        if (LaunchMode.TEST.equals(mode)) {
-            scannedConfigurations.add(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-        } else {
-            scannedConfigurations.add(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-        }
+        final Set<org.gradle.api.artifacts.Dependency> deploymentDeps = getEnforcedPlatforms(project);
+        final Map<ArtifactCoords, Dependency> appDependencies = new LinkedHashMap<>();
+        final Set<ArtifactCoords> visitedDeps = new HashSet<>();
 
-        if (LaunchMode.DEVELOPMENT.equals(mode)) {
-            scannedConfigurations.add(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME);
-        }
+        final ResolvedConfiguration configuration = classpathConfig(project, mode).getResolvedConfiguration();
+        collectDependencies(configuration, mode, project, appDependencies);
+        collectFirstMetDeploymentDeps(configuration.getFirstLevelModuleDependencies(), appDependencies,
+                deploymentDeps, visitedDeps);
 
-        final Collection<org.gradle.api.artifacts.Dependency> directExtensionDependencies = getEnforcedPlatforms(project);
-
-        final Map<ArtifactCoords, Dependency> appDependencies = new HashMap<>();
-        for (String configurationName : scannedConfigurations) {
-            final ResolvedConfiguration configuration = project.getConfigurations().getByName(configurationName)
-                    .getResolvedConfiguration();
-            appDependencies.putAll(collectDependencies(configuration, configurationName, mode, project));
-            directExtensionDependencies
-                    .addAll(getDirectExtensionDependencies(configuration.getFirstLevelModuleDependencies(), appDependencies,
-                            new HashSet<>()));
-        }
-
-        final Set<Dependency> extensionDependencies = collectExtensionDependencies(project, directExtensionDependencies);
+        final List<Dependency> extensionDependencies = collectExtensionDependencies(project, deploymentDeps);
 
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
 
-        return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject())),
-                new HashSet<>(appDependencies.values()),
+        return new QuarkusModelImpl(new WorkspaceImpl(appArtifactCoords, getWorkspace(project.getRootProject(), mode)),
+                new LinkedList<>(appDependencies.values()),
                 extensionDependencies);
     }
 
-    public Set<WorkspaceModule> getWorkspace(Project project) {
+    public Set<WorkspaceModule> getWorkspace(Project project, LaunchMode mode) {
         Set<WorkspaceModule> modules = new HashSet<>();
         for (Project subproject : project.getAllprojects()) {
             final Convention convention = subproject.getConvention();
             JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
-            if (javaConvention == null) {
+            if (javaConvention == null || !javaConvention.getSourceSets().getNames().contains(SourceSet.MAIN_SOURCE_SET_NAME)) {
                 continue;
             }
-            modules.add(getWorkspaceModule(subproject));
+            modules.add(getWorkspaceModule(subproject, mode));
         }
         return modules;
     }
 
-    private WorkspaceModule getWorkspaceModule(Project project) {
+    private WorkspaceModule getWorkspaceModule(Project project, LaunchMode mode) {
         ArtifactCoords appArtifactCoords = new ArtifactCoordsImpl(project.getGroup().toString(), project.getName(),
                 project.getVersion().toString());
         final SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
+        final SourceSetImpl modelSourceSet = convert(mainSourceSet);
+
+        // If the project exposes test fixtures, we must add them as source directory
+        if (mode.equals(LaunchMode.TEST) && project.getPlugins().hasPlugin(JavaTestFixturesPlugin.class)) {
+            final SourceSet fixtureSourceSet = QuarkusGradleUtils.getSourceSet(project,
+                    TestFixturesSupport.TEST_FIXTURE_SOURCESET_NAME);
+            modelSourceSet.addSourceDirectories(fixtureSourceSet.getOutput().getClassesDirs().getFiles());
+        }
 
         return new WorkspaceModuleImpl(appArtifactCoords, project.getProjectDir().getAbsoluteFile(),
-                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), convert(mainSourceSet));
+                project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
     }
 
     private Set<org.gradle.api.artifacts.Dependency> getEnforcedPlatforms(Project project) {
@@ -145,9 +153,9 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
         return directExtension;
     }
 
-    private Set<org.gradle.api.artifacts.Dependency> getDirectExtensionDependencies(Set<ResolvedDependency> dependencies,
-            Map<ArtifactCoords, Dependency> appDependencies, Set<ArtifactCoords> visited) {
-        Set<org.gradle.api.artifacts.Dependency> extensions = new HashSet<>();
+    private void collectFirstMetDeploymentDeps(Set<ResolvedDependency> dependencies,
+            Map<ArtifactCoords, Dependency> appDependencies, Set<org.gradle.api.artifacts.Dependency> extensionDeps,
+            Set<ArtifactCoords> visited) {
         for (ResolvedDependency d : dependencies) {
             ArtifactCoords key = new ArtifactCoordsImpl(d.getModuleGroup(), d.getModuleName(), "");
             if (!visited.add(key)) {
@@ -162,17 +170,15 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
 
             boolean addChildExtension = true;
             if (deploymentArtifact != null && addChildExtension) {
-                extensions.add(deploymentArtifact);
+                extensionDeps.add(deploymentArtifact);
                 addChildExtension = false;
             }
 
             final Set<ResolvedDependency> resolvedChildren = d.getChildren();
             if (addChildExtension && !resolvedChildren.isEmpty()) {
-                extensions
-                        .addAll(getDirectExtensionDependencies(resolvedChildren, appDependencies, visited));
+                collectFirstMetDeploymentDeps(resolvedChildren, appDependencies, extensionDeps, visited);
             }
         }
-        return extensions;
     }
 
     private org.gradle.api.artifacts.Dependency getDeploymentArtifact(Dependency dependency) {
@@ -208,9 +214,9 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
         return null;
     }
 
-    private Set<Dependency> collectExtensionDependencies(Project project,
+    private List<Dependency> collectExtensionDependencies(Project project,
             Collection<org.gradle.api.artifacts.Dependency> extensions) {
-        final Set<Dependency> platformDependencies = new HashSet<>();
+        final List<Dependency> platformDependencies = new LinkedList<>();
 
         final Configuration deploymentConfig = project.getConfigurations()
                 .detachedConfiguration(extensions.toArray(new org.gradle.api.artifacts.Dependency[0]));
@@ -220,41 +226,103 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
                 continue;
             }
 
-            final Dependency dependency = toDependency(a, deploymentConfig.getName());
+            final Dependency dependency = toDependency(a);
             platformDependencies.add(dependency);
         }
 
         return platformDependencies;
     }
 
-    private Map<ArtifactCoords, Dependency> collectDependencies(ResolvedConfiguration configuration, String configurationName,
-            LaunchMode mode, Project project) {
-        Map<ArtifactCoords, Dependency> modelDependencies = new HashMap<>();
-        for (ResolvedArtifact a : configuration.getResolvedArtifacts()) {
+    private void collectDependencies(ResolvedConfiguration configuration,
+            LaunchMode mode, Project project, Map<ArtifactCoords, Dependency> appDependencies) {
+        final Set<ResolvedArtifact> artifacts = configuration.getResolvedArtifacts();
+        Set<File> artifactFiles = null;
+        // if the number of artifacts is less than the number of files then probably
+        // the project includes direct file dependencies
+        if (artifacts.size() < configuration.getFiles().size()) {
+            artifactFiles = new HashSet<>(artifacts.size());
+        }
+        for (ResolvedArtifact a : artifacts) {
             if (!isDependency(a)) {
                 continue;
             }
-            Dependency dep;
+            final DependencyImpl dep = initDependency(a);
             if (LaunchMode.DEVELOPMENT.equals(mode) &&
                     a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
                 Project projectDep = project.getRootProject()
                         .findProject(((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
-
-                dep = toDependency(a, configurationName, projectDep);
+                addDevModePaths(dep, a, projectDep);
             } else {
-                dep = toDependency(a, configurationName);
+                dep.addPath(a.getFile());
             }
-            ArtifactCoords gaKey = new ArtifactCoordsImpl(dep.getGroupId(), dep.getName(), "");
-            modelDependencies.put(gaKey, dep);
+            appDependencies.put((ArtifactCoords) new ArtifactCoordsImpl(dep.getGroupId(), dep.getName(), ""), dep);
+            if (artifactFiles != null) {
+                artifactFiles.add(a.getFile());
+            }
         }
 
-        return modelDependencies;
+        if (artifactFiles != null) {
+            // detect FS paths that aren't provided by the resolved artifacts
+            for (File f : configuration.getFiles()) {
+                if (artifactFiles.contains(f)) {
+                    continue;
+                }
+                // here we are trying to represent a direct FS path dependency
+                // as an artifact dependency
+                // SHA1 hash is used to avoid long file names in the lib dir
+                final String parentPath = f.getParent();
+                final String group = HashUtil.sha1(parentPath == null ? f.getName() : parentPath);
+                String name = f.getName();
+                String type = "jar";
+                if (!f.isDirectory()) {
+                    final int dot = f.getName().lastIndexOf('.');
+                    if (dot > 0) {
+                        name = f.getName().substring(0, dot);
+                        type = f.getName().substring(dot + 1);
+                    }
+                }
+                // hash could be a better way to represent the version
+                final String version = String.valueOf(f.lastModified());
+                final ArtifactCoords key = new ArtifactCoordsImpl(group, name, "");
+                final DependencyImpl dep = new DependencyImpl(name, group, version, "copmile", type, null);
+                dep.addPath(f);
+                appDependencies.put(key, dep);
+            }
+        }
+    }
+
+    private void addDevModePaths(final DependencyImpl dep, ResolvedArtifact a, Project project) {
+        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
+        if (javaConvention != null) {
+            SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
+            if (classesDir.exists()) {
+                dep.addPath(classesDir);
+            }
+            for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
+                if (resourcesDir.exists()) {
+                    dep.addPath(resourcesDir);
+                }
+            }
+            for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
+                    .getOutputs().getFiles()) {
+                if (outputDir.exists()) {
+                    dep.addPath(outputDir);
+                }
+            }
+        } else {
+            dep.addPath(a.getFile());
+        }
     }
 
     private SourceSetImpl convert(SourceSet sourceSet) {
+        if (sourceSet.getOutput().getResourcesDir().exists()) {
+            return new SourceSetImpl(
+                    sourceSet.getOutput().getClassesDirs().getFiles(),
+                    sourceSet.getOutput().getResourcesDir());
+        }
         return new SourceSetImpl(
-                sourceSet.getOutput().getClassesDirs().getFiles(),
-                sourceSet.getOutput().getResourcesDir());
+                sourceSet.getOutput().getClassesDirs().getFiles());
     }
 
     private io.quarkus.bootstrap.resolver.model.SourceSet getSourceSourceSet(SourceSet sourceSet) {
@@ -267,39 +335,21 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder {
                 a.getFile().isDirectory();
     }
 
-    private DependencyImpl toDependency(ResolvedArtifact a, String configuration, Project project) {
-        final String[] split = a.getModuleVersion().toString().split(":");
-        final DependencyImpl dependency = new DependencyImpl(split[1], split[0], split.length > 2 ? split[2] : null,
-                configuration, a.getType(), a.getClassifier());
-        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
-        if (javaConvention != null) {
-            SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            final File classesDir = new File(QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir(), false));
-            if (classesDir.exists()) {
-                dependency.addPath(classesDir);
-            }
-            for (File resourcesDir : mainSourceSet.getResources().getSourceDirectories()) {
-                if (resourcesDir.exists()) {
-                    dependency.addPath(resourcesDir);
-                }
-            }
-            for (File outputDir : project.getTasks().findByName(JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
-                    .getOutputs().getFiles()) {
-                if (outputDir.exists()) {
-                    dependency.addPath(outputDir);
-                }
-            }
-        }
-        return dependency;
-    }
-
-    static DependencyImpl toDependency(ResolvedArtifact a, String configuration) {
-        final String[] split = a.getModuleVersion().toString().split(":");
-
-        final DependencyImpl dependency = new DependencyImpl(split[1], split[0], split.length > 2 ? split[2] : null,
-                configuration, a.getType(), a.getClassifier());
+    /**
+     * Creates an instance of Dependency and associates it with the ResolvedArtifact's path
+     */
+    static Dependency toDependency(ResolvedArtifact a) {
+        final DependencyImpl dependency = initDependency(a);
         dependency.addPath(a.getFile());
         return dependency;
     }
 
+    /**
+     * Creates an instance of DependencyImpl but does not associates it with a path
+     */
+    private static DependencyImpl initDependency(ResolvedArtifact a) {
+        final String[] split = a.getModuleVersion().toString().split(":");
+        return new DependencyImpl(split[1], split[0], split.length > 2 ? split[2] : null,
+                "compile", a.getType(), a.getClassifier());
+    }
 }

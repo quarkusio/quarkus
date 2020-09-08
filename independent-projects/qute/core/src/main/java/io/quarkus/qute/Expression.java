@@ -72,7 +72,7 @@ public interface Expression {
 
         /**
          * 
-         * @return the name of the property or virtual method
+         * @return the name of a property or virtual method
          */
         String getName();
 

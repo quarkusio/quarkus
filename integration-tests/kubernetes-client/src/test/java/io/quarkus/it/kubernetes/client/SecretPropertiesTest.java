@@ -15,6 +15,7 @@ public class SecretPropertiesTest {
     @Test
     public void testPropertiesReadFromConfigMap() {
         assertProperty("dummysecret", "dummysecret");
+        assertProperty("overriddensecret", "secret");
         assertProperty("secretProp1", "val1");
         assertProperty("secretProp2", "val2");
         assertProperty("secretProp3", "val3");

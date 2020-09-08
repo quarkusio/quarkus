@@ -41,14 +41,13 @@
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <commons-lang.version>3.9</commons-lang.version>
         <guava.version>27.0.1-jre</guava.version>
-        <asm.version>8.0.1</asm.version>
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
         <jboss-logmanager-embedded.version>1.0.4</jboss-logmanager-embedded.version>
         <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
-        <graal-sdk.version>20.1.0</graal-sdk.version>
+        <graal-sdk.version>20.2.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
-        <smallrye-common.version>1.2.0</smallrye-common.version>
+        <smallrye-common.version>1.4.0</smallrye-common.version>
         <gradle-tooling.version>6.5</gradle-tooling.version>
     </properties>
     <modules>
@@ -61,11 +60,6 @@
     </modules>
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm</artifactId>
-                <version>${asm.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -366,10 +360,13 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-io</artifactId>
+                <artifactId>smallrye-common-bom</artifactId>
                 <version>${smallrye-common.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -479,7 +476,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.12.1</version>
+                    <version>2.12.2</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>

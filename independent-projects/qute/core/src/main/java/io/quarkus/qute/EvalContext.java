@@ -6,7 +6,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Evaluation context of a specific part of an expression.
  * 
- * @see Expression
+ * @see Expression.Part
  */
 public interface EvalContext {
 

@@ -1,6 +1,6 @@
 package io.quarkus.undertow.test;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 
 import javax.servlet.ServletContainerInitializer;
 
@@ -18,13 +18,15 @@ public class ServletContainerInitializerTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsServiceProvider(ServletContainerInitializer.class, TestSCI.class)
-                    .addClasses(SCIInterface.class, SCIImplementation.class, TestSCI.class));
+                    .addClasses(SCIInterface.class, SCIImplementation.class, TestSCI.class, SCIAnnotation.class,
+                            AnnotatedSCIClass.class));
 
     @Test
     public void testSci() {
         RestAssured.when().get("/sci").then()
                 .statusCode(200)
-                .body(is("io.quarkus.undertow.test.SCIImplementation"));
+                .body(containsString("io.quarkus.undertow.test.SCIImplementation"),
+                        containsString("io.quarkus.undertow.test.AnnotatedSCIClass"));
     }
 
 }

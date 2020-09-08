@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.hibernate.search.engine.cfg.BackendSettings;
-import org.hibernate.search.engine.cfg.EngineSettings;
+import org.hibernate.search.engine.cfg.IndexSettings;
 
 public class HibernateSearchConfigUtil {
 
@@ -22,7 +22,7 @@ public class HibernateSearchConfigUtil {
 
     public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
             T value) {
-        propertyCollector.accept(backendConfigKey(backendName, configPath), value);
+        propertyCollector.accept(BackendSettings.backendKey(backendName, configPath), value);
     }
 
     public static void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
@@ -39,26 +39,8 @@ public class HibernateSearchConfigUtil {
             T value,
             Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
         if (shouldBeAdded.apply(value)) {
-            propertyCollector.accept(backendConfigKey(backendName, configPath), getValue.apply(value));
+            propertyCollector.accept(BackendSettings.backendKey(backendName, configPath), getValue.apply(value));
         }
-    }
-
-    public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, Optional<?> value) {
-        addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, Optional::isPresent, Optional::get);
-    }
-
-    public static void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, OptionalInt value) {
-        addBackendDefaultIndexConfig(propertyCollector, backendName, configPath, value, OptionalInt::isPresent,
-                OptionalInt::getAsInt);
-    }
-
-    public static <T> void addBackendDefaultIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String configPath, T value,
-            Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
-        addBackendConfig(propertyCollector, backendName, BackendSettings.INDEX_DEFAULTS + "." + configPath, value,
-                shouldBeAdded, getValue);
     }
 
     public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
@@ -75,11 +57,14 @@ public class HibernateSearchConfigUtil {
     public static <T> void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String indexName, String configPath, T value,
             Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
-        addBackendConfig(propertyCollector, backendName, BackendSettings.INDEXES + "." + indexName + "." + configPath, value,
-                shouldBeAdded, getValue);
-    }
-
-    private static String backendConfigKey(String backendName, String configPath) {
-        return EngineSettings.BACKENDS + "." + backendName + "." + configPath;
+        if (shouldBeAdded.apply(value)) {
+            if (indexName != null) {
+                propertyCollector.accept(
+                        IndexSettings.indexKey(backendName, indexName, configPath), getValue.apply(value));
+            } else {
+                propertyCollector.accept(
+                        BackendSettings.backendKey(backendName, configPath), getValue.apply(value));
+            }
+        }
     }
 }

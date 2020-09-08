@@ -12,6 +12,8 @@ import java.util.Set;
 
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.deployment.index.IndexDependencyConfig;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -42,7 +44,7 @@ public class ArcConfig {
      * <li>does not declare any producer which is eligible for injection to any injection point,</li>
      * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
      * </ul>
-     * 
+     *
      * @see UnremovableBeanBuildItem
      */
     @ConfigItem(defaultValue = "all")
@@ -140,10 +142,14 @@ public class ArcConfig {
     public Optional<List<String>> unremovableTypes;
 
     /**
-     * The artifacts that should be excluded from discovery. These artifacts would be otherwise scanned for beans, i.e. they
+     * Artifacts that should be excluded from discovery.
+     * <p>
+     * These artifacts would be otherwise scanned for beans, i.e. they
      * contain a Jandex index or a beans.xml descriptor.
      */
     @ConfigItem
+    @ConfigDocSection
+    @ConfigDocMapKey("dependency-name")
     Map<String, IndexDependencyConfig> excludeDependency;
 
     public final boolean isRemoveUnusedBeansFieldValid() {

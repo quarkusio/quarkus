@@ -869,12 +869,27 @@ public class OidcTenantConfig {
         @ConfigItem(defaultValue = "10M")
         public Duration forcedJwkRefreshInterval = Duration.ofMinutes(10);
 
+        /**
+         * Custom HTTP header that contains a bearer token.
+         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}}.
+         */
+        @ConfigItem
+        public Optional<String> header = Optional.empty();
+
         public Optional<String> getIssuer() {
             return issuer;
         }
 
         public void setIssuer(String issuer) {
             this.issuer = Optional.of(issuer);
+        }
+
+        public Optional<String> getHeader() {
+            return header;
+        }
+
+        public void setHeader(String header) {
+            this.header = Optional.of(header);
         }
 
         public Optional<List<String>> getAudience() {

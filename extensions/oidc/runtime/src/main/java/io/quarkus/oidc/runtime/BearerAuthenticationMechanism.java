@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -19,7 +20,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager,
             DefaultTenantConfigResolver resolver) {
-        String token = extractBearerToken(context);
+        String token = extractBearerToken(context, resolver.resolve(context, false).oidcConfig);
 
         // if a bearer token is provided try to authenticate
         if (token != null) {
@@ -32,20 +33,27 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
     }
 
-    private String extractBearerToken(RoutingContext context) {
+    private String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
         final HttpServerRequest request = context.request();
-        final String authorization = request.headers().get(HttpHeaders.AUTHORIZATION);
+        String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
+                : HttpHeaders.AUTHORIZATION.toString();
+        final String headerValue = request.headers().get(header);
 
-        if (authorization == null) {
+        if (headerValue == null) {
             return null;
         }
 
-        int idx = authorization.indexOf(' ');
+        int idx = headerValue.indexOf(' ');
+        final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
 
-        if (idx <= 0 || !BEARER.equalsIgnoreCase(authorization.substring(0, idx))) {
+        if (scheme == null && !header.equalsIgnoreCase(HttpHeaders.AUTHORIZATION.toString())) {
+            return headerValue;
+        }
+
+        if (!BEARER.equalsIgnoreCase(scheme)) {
             return null;
         }
 
-        return authorization.substring(idx + 1);
+        return headerValue.substring(idx + 1);
     }
 }

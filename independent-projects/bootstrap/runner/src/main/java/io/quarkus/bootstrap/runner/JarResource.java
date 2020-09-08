@@ -80,14 +80,13 @@ public class JarResource implements ClassLoadingResource {
             if (!path.startsWith("/")) {
                 path = "/" + path;
             }
-            URI uri = new URI("jar:file", null, path + "!/", null);
+            URI uri = new URI("file", null, path, null);
             url = uri.toURL();
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
-        return protectionDomain;
+        return new ProtectionDomain(codesource, null, classLoader, null);
     }
 
     private ZipFile file() {

@@ -26,7 +26,7 @@ public class RegisterJobListenerTest {
                     .addClasses(Jobs.class)
                     .addClass(HelloJobListener.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.quartz.jobListener.testJobListener.class=io.quarkus.quartz.test.listeners.HelloJobListener"),
+                            "quarkus.quartz.job-listeners.testJobListener.class=io.quarkus.quartz.test.listeners.HelloJobListener"),
                             "application.properties"));
 
     @Test

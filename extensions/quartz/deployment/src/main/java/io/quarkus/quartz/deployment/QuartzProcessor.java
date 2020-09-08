@@ -50,8 +50,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
-import io.quarkus.quartz.runtime.QuartzAdditionalPropsConfig;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
+import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzScheduler;
@@ -176,9 +176,9 @@ public class QuartzProcessor {
     }
 
     private List<ReflectiveClassBuildItem> getAdditionalConfigurationReflectiveClasses(
-            Map<String, QuartzAdditionalPropsConfig> config, Class<?> clazz) {
+            Map<String, QuartzExtensionPointConfig> config, Class<?> clazz) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
-        for (QuartzAdditionalPropsConfig props : config.values()) {
+        for (QuartzExtensionPointConfig props : config.values()) {
             try {
                 if (!clazz
                         .isAssignableFrom(Class.forName(props.clazz, false, Thread.currentThread().getContextClassLoader()))) {

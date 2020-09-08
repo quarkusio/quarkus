@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 
 import javax.inject.Singleton;
 
@@ -196,15 +197,17 @@ public class QuartzProcessor {
     public List<LogCleanupFilterBuildItem> logCleanup(QuartzBuildTimeConfig config) {
         List<LogCleanupFilterBuildItem> logCleanUps = new ArrayList<>();
         logCleanUps.add(new LogCleanupFilterBuildItem(StdSchedulerFactory.class.getName(),
+                Level.INFO,
                 "Quartz scheduler version:",
                 "Using default implementation for",
-                "Quartz scheduler 'QuarkusQuartzScheduler'"));
+                "Quartz scheduler '"));
 
         logCleanUps.add(new LogCleanupFilterBuildItem(org.quartz.core.QuartzScheduler.class.getName(),
+                Level.INFO,
                 "Quartz Scheduler v",
                 "JobFactory set to:",
                 "Scheduler meta-data:",
-                "Scheduler QuarkusQuartzScheduler"));
+                "Scheduler "));
 
         logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType.clazz, config.storeType.simpleName
                 + " initialized.", "Handling", "Using db table-based data access locking",

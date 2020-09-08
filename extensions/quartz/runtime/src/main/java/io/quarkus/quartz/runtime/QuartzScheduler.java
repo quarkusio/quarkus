@@ -292,7 +292,7 @@ public class QuartzScheduler implements Scheduler {
         QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");

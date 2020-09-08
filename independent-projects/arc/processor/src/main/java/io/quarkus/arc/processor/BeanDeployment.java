@@ -716,24 +716,22 @@ public class BeanDeployment {
 
             // inherited stuff
             ClassInfo aClass = beanClass;
-            Set<ClassInfo> scannedClasses = new HashSet<>();
-            Set<MethodInfo> methods = new HashSet<>();
+            Set<Methods.MethodKey> methods = new HashSet<>();
             while (aClass != null) {
-                if (!scannedClasses.add(aClass)) {
-                    continue;
-                }
                 for (MethodInfo method : aClass.methods()) {
-                    if (Methods.isSynthetic(method) || Methods.isOverriden(method, methods)) {
+                    Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
+                    if (Methods.isSynthetic(method) || Methods.isOverriden(methodDescriptor, methods)) {
                         continue;
                     }
-                    methods.add(method);
-                    if (annotationStore.getAnnotations(method).isEmpty()) {
+                    methods.add(methodDescriptor);
+                    Collection<AnnotationInstance> methodAnnotations = annotationStore.getAnnotations(method);
+                    if (methodAnnotations.isEmpty()) {
                         continue;
                     }
                     // Verify that non-producer methods are not annotated with stereotypes
                     // only account for 'real' stereotypes that are not additional BeanDefiningAnnotations
                     if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                        for (AnnotationInstance i : annotationStore.getAnnotations(method)) {
+                        for (AnnotationInstance i : methodAnnotations) {
                             if (realStereotypes.contains(i.name())) {
                                 throw new DefinitionException(
                                         "Method " + method + " of class " + beanClass
@@ -766,11 +764,10 @@ public class BeanDeployment {
                         }
                     }
                 }
-                Type superType = aClass.superClassType();
-                aClass = superType != null && !superType.name().equals(DotNames.OBJECT)
-                        && CLASS_TYPES.contains(superType.kind())
-                                ? getClassByName(index, superType.name())
-                                : null;
+                DotName superType = aClass.superName();
+                aClass = superType != null && !superType.equals(DotNames.OBJECT)
+                        ? getClassByName(index, superType)
+                        : null;
             }
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {

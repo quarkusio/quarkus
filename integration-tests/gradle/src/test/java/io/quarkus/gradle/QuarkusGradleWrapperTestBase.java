@@ -33,6 +33,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .directory(projectDir)
                 .command(command)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                .redirectError(logOutput)
                 .redirectOutput(logOutput)
                 .redirectError(logOutput)
                 .start();

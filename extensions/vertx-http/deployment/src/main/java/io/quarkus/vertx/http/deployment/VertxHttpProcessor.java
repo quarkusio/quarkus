@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -217,7 +218,8 @@ class VertxHttpProcessor {
             logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class);
             return;
         }
-        try (final FileSystem jarFileSystem = ZipUtils.newFileSystem(codeSource.getLocation().toURI(),
+        try (final FileSystem jarFileSystem = ZipUtils.newFileSystem(
+                new URI("jar", codeSource.getLocation().toURI().toString(), null),
                 Collections.emptyMap())) {
             final Path serviceDescriptorFilePath = jarFileSystem.getPath("META-INF", "services",
                     "io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder");

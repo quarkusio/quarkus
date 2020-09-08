@@ -112,6 +112,7 @@ public class JarRunnerIT extends MojoTestBase {
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
             assertResourceReadingFromClassPathWorksCorrectly("");
+            assertUsingProtectionDomainWorksCorrectly("");
         } finally {
             process.destroy();
         }
@@ -218,6 +219,7 @@ public class JarRunnerIT extends MojoTestBase {
             assertApplicationPropertiesSetCorrectly("/moved");
 
             assertResourceReadingFromClassPathWorksCorrectly("/moved");
+            assertUsingProtectionDomainWorksCorrectly("/moved");
             Assertions.assertEquals("added endpoint", performRequest("/moved/app/added", 200));
         } finally {
             process.destroy();
@@ -349,6 +351,25 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
+    static void assertUsingProtectionDomainWorksCorrectly(String path) {
+        try {
+            URL url = new URL("http://localhost:8080" + path + "/app/protectionDomain");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                failResourcesFromTheClasspath();
+            }
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String output = br.readLine();
+                assertThat(output).isEqualTo("success");
+            }
+        } catch (IOException e) {
+            failProtectionDomain();
+        }
+    }
+
     static String performRequest(String path, int expectedCode) {
         try {
             URL url = new URL("http://localhost:8080" + path);
@@ -371,6 +392,10 @@ public class JarRunnerIT extends MojoTestBase {
 
     private static void failResourcesFromTheClasspath() {
         fail("Failed to assert that the application properly reads resources from the classpath");
+    }
+
+    private static void failProtectionDomain() {
+        fail("Failed to assert that the use of ProtectionDomain works correctly");
     }
 
     /**
@@ -443,6 +468,7 @@ public class JarRunnerIT extends MojoTestBase {
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
             assertResourceReadingFromClassPathWorksCorrectly("");
+            assertUsingProtectionDomainWorksCorrectly("");
         } finally {
             process.destroy();
         }

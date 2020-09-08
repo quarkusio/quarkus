@@ -217,7 +217,8 @@ class ConfigDoItemFinder {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
-                    optional = qualifiedName.toString().startsWith(Optional.class.getName());
+                    optional = qualifiedName.toString().startsWith(Optional.class.getName())
+                            || qualifiedName.contentEquals(Map.class.getName());
                     list = qualifiedName.contentEquals(List.class.getName())
                             || qualifiedName.contentEquals(Set.class.getName());
 

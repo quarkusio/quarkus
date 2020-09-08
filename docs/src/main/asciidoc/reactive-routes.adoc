@@ -475,6 +475,40 @@ id: 3
 
 ----
 
+=== Using Bean Validation
+
+You can combine reactive routes and Bean Validation.
+First, don't forget to add the `quarkus-hibernate-validator` extension to your project.
+Then, you can add constraints to your route parameter (annotated with `@Param` or `@Body`):
+
+[source,java]
+----
+@Route(produces = "application/json")
+Person createPerson(@Body @Valid Person person, @NonNull @Param("id") String primaryKey) {
+  // ...
+}
+----
+
+If the parameters do not pass the tests, it returns an HTTP 400 response.
+If the request accepts JSON payload, the response follows the https://opensource.zalando.com/problem/constraint-violation/[Problem] format.
+
+When returning an object or a `Uni`, you can also use the `@Valid` annotation:
+
+[source,java]
+----
+@Route(...)
+@Valid Uni<Person> createPerson(@Body @Valid Person person, @NonNull @Param("id") String primaryKey) {
+  // ...
+}
+----
+
+If the item produced by the route does not pass the validation, it returns a HTTP 500 response.
+If the request accepts JSON payload, the response follows the https://opensource.zalando.com/problem/constraint-violation/[Problem] format.
+
+Note that only `@Valid` is supported on the return type.
+The returned class can use any constraint.
+In the case of `Uni`, it checks the item produced asynchronously.
+
 == Using the Vert.x Web Router
 
 You can also register your route directly on the _HTTP routing layer_ by registering routes directly on the `Router` object.

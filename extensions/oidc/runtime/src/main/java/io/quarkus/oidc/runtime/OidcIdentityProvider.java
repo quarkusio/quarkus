@@ -13,6 +13,7 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
+import io.quarkus.oidc.OidcTokenCredential;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -43,8 +44,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
-        RoutingContext vertxContext = credential.getContext();
+        OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
+        RoutingContext vertxContext = credential.getRoutingContext();
         return Uni.createFrom().deferred(new Supplier<Uni<SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {

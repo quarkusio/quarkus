@@ -292,7 +292,7 @@ public class QuartzScheduler implements Scheduler {
         QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
@@ -334,11 +334,11 @@ public class QuartzScheduler implements Scheduler {
         return props;
     }
 
-    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzAdditionalPropsConfig> config) {
+    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzExtensionPointConfig> config) {
         Properties props = new Properties();
-        for (Map.Entry<String, QuartzAdditionalPropsConfig> configEntry : config.entrySet()) {
+        for (Map.Entry<String, QuartzExtensionPointConfig> configEntry : config.entrySet()) {
             props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
-            for (Map.Entry<String, String> propsEntry : configEntry.getValue().propsValue.entrySet()) {
+            for (Map.Entry<String, String> propsEntry : configEntry.getValue().properties.entrySet()) {
                 props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
             }
         }

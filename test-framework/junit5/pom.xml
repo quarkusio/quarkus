@@ -49,7 +49,7 @@
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <!-- Avoid adding this to the BOM -->
-            <version>1.4.13</version>
+            <version>1.4.13-java7</version>
         </dependency>
     </dependencies>
 

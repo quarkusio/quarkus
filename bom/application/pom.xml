@@ -4434,52 +4434,52 @@
 
             <!-- Micrometer -->
             <dependency>
-              <groupId>org.threeten</groupId>
-              <artifactId>threetenbp</artifactId>
-              <version>${threetenbp.version}</version>
+                <groupId>org.threeten</groupId>
+                <artifactId>threetenbp</artifactId>
+                <version>${threetenbp.version}</version>
             </dependency>
             <dependency>
-              <groupId>io.micrometer</groupId>
-              <artifactId>micrometer-core</artifactId>
-              <version>${micrometer.version}</version>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
-              <groupId>io.micrometer</groupId>
-              <artifactId>micrometer-registry-datadog</artifactId>
-              <version>${micrometer.version}</version>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-datadog</artifactId>
+                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
-              <groupId>io.micrometer</groupId>
-              <artifactId>micrometer-registry-jmx</artifactId>
-              <version>${micrometer.version}</version>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-jmx</artifactId>
+                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
-              <groupId>io.micrometer</groupId>
-              <artifactId>micrometer-registry-prometheus</artifactId>
-              <version>${micrometer.version}</version>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${micrometer.version}</version>
             </dependency>
             <dependency>
-              <groupId>io.micrometer</groupId>
-              <artifactId>micrometer-registry-stackdriver</artifactId>
-              <version>${micrometer.version}</version>
-              <exclusions>
-                  <exclusion>
-                      <groupId>commons-logging</groupId>
-                      <artifactId>commons-logging</artifactId>
-                  </exclusion>
-                  <exclusion>
-                      <groupId>javax.annotation</groupId>
-                      <artifactId>javax.annotation-api</artifactId>
-                  </exclusion>
-                  <exclusion>
-                      <groupId>org.checkerframework</groupId>
-                      <artifactId>checker-qual</artifactId>
-                  </exclusion>
-                  <exclusion>
-                      <groupId>com.google.j2objc</groupId>
-                      <artifactId>j2objc-annotations</artifactId>
-                  </exclusion>
-              </exclusions>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-stackdriver</artifactId>
+                <version>${micrometer.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.j2objc</groupId>
+                        <artifactId>j2objc-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Picocli -->

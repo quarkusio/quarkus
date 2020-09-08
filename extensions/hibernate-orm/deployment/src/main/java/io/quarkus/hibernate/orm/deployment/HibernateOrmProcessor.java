@@ -70,6 +70,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -117,6 +119,7 @@ import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
+import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
@@ -137,6 +140,9 @@ public final class HibernateOrmProcessor {
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
+
+    private static final DotName TENANT_CONNECTION_RESOLVER = DotName.createSimple(TenantConnectionResolver.class.getName());
+    private static final DotName TENANT_RESOLVER = DotName.createSimple(TenantResolver.class.getName());
 
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
@@ -510,11 +516,16 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public void multitenancy(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        boolean multitenancyEnabled = false;
+
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             if (persistenceUnitDescriptor.getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
                 continue;
             }
+
+            multitenancyEnabled = true;
 
             ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(DataSourceTenantConnectionResolver.class)
                     .scope(ApplicationScoped.class)
@@ -536,6 +547,11 @@ public final class HibernateOrmProcessor {
             }
 
             syntheticBeans.produce(configurator.done());
+        }
+
+        if (multitenancyEnabled) {
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_CONNECTION_RESOLVER)));
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_RESOLVER)));
         }
     }
 

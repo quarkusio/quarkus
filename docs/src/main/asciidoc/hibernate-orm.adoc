@@ -790,13 +790,10 @@ In order to resolve the tenant from incoming requests and map it to a specific t
 ----
 import javax.enterprise.context.ApplicationScoped;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped <1>
-@Unremovable
 public class CustomTenantResolver implements TenantResolver {
 
     @Inject
@@ -834,15 +831,12 @@ If <<multiple-persistence-units,named persistence units>> are used, you need to 
 ----
 import javax.enterprise.context.ApplicationScoped;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnit("name-of-persistence-unit") <1>
 @RequestScoped
-@Unremovable
 public class CustomTenantResolver implements TenantResolver {
 
    // ...

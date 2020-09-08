@@ -5,12 +5,10 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
 @RequestScoped
-@Unremovable
 public class CustomTenantResolver implements TenantResolver {
 
     private static final Logger LOG = Logger.getLogger(CustomTenantResolver.class);

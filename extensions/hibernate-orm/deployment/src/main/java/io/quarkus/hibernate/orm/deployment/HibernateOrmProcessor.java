@@ -70,6 +70,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -117,6 +119,7 @@ import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
+import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import net.bytebuddy.description.type.TypeDescription;
@@ -138,8 +141,13 @@ public final class HibernateOrmProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
 
+    private static final DotName TENANT_CONNECTION_RESOLVER = DotName.createSimple(TenantConnectionResolver.class.getName());
+    private static final DotName TENANT_RESOLVER = DotName.createSimple(TenantResolver.class.getName());
+
     private static final DotName STATIC_METAMODEL = DotName.createSimple(StaticMetamodel.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
+    private static final DotName PERSISTENCE_UNIT_REPEATABLE_CONTAINER = DotName
+            .createSimple(PersistenceUnit.List.class.getName());
     private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
 
@@ -508,11 +516,16 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     public void multitenancy(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+        boolean multitenancyEnabled = false;
+
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             if (persistenceUnitDescriptor.getMultiTenancyStrategy() == MultiTenancyStrategy.NONE) {
                 continue;
             }
+
+            multitenancyEnabled = true;
 
             ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(DataSourceTenantConnectionResolver.class)
                     .scope(ApplicationScoped.class)
@@ -534,6 +547,11 @@ public final class HibernateOrmProcessor {
             }
 
             syntheticBeans.produce(configurator.done());
+        }
+
+        if (multitenancyEnabled) {
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_CONNECTION_RESOLVER)));
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanTypeExclusion(TENANT_RESOLVER)));
         }
     }
 
@@ -602,17 +620,19 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
-                jpaEntities, index.getIndex());
-
         Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
                 .filter(i -> i.isDefault())
                 .findFirst();
+        boolean enableDefaultPersistenceUnit = ((defaultJdbcDataSource.isPresent()
+                && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
+                hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet());
+
+        Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
+                jpaEntities, index.getIndex(), enableDefaultPersistenceUnit);
 
         Set<String> storageEngineCollector = new HashSet<>();
 
-        if ((defaultJdbcDataSource.isPresent() && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
-                hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet()) {
+        if (enableDefaultPersistenceUnit) {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit,
@@ -720,9 +740,12 @@ public final class HibernateOrmProcessor {
 
         // Database
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
-                persistenceUnitConfig.database.generation);
+                persistenceUnitConfig.database.generation.generation);
 
-        if (persistenceUnitConfig.database.generationHaltOnError) {
+        descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_CREATE_SCHEMAS,
+                String.valueOf(persistenceUnitConfig.database.generation.createSchemas));
+
+        if (persistenceUnitConfig.database.generation.haltOnError) {
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
@@ -899,7 +922,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static Map<String, Set<String>> getModelClassesPerPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
-            JpaEntitiesBuildItem jpaEntities, IndexView index) {
+            JpaEntitiesBuildItem jpaEntities, IndexView index, boolean enableDefaultPersistenceUnit) {
         if (hibernateOrmConfig.persistenceUnits.isEmpty()) {
             // no named persistence units, all the entities will be associated with the default one
             // so we don't need to split them
@@ -924,13 +947,15 @@ public final class HibernateOrmProcessor {
             }
 
             // handle the default persistence unit
-            if (!hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
-                throw new ConfigurationException("Packages must be configured for the default persistence unit.");
-            }
+            if (enableDefaultPersistenceUnit) {
+                if (!hibernateOrmConfig.defaultPersistenceUnit.packages.isPresent()) {
+                    throw new ConfigurationException("Packages must be configured for the default persistence unit.");
+                }
 
-            for (String packageName : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
-                packageRules.computeIfAbsent(normalizePackage(packageName), p -> new HashSet<>())
-                        .add(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+                for (String packageName : hibernateOrmConfig.defaultPersistenceUnit.packages.get()) {
+                    packageRules.computeIfAbsent(normalizePackage(packageName), p -> new HashSet<>())
+                            .add(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+                }
             }
 
             // handle the named persistence units
@@ -968,9 +993,17 @@ public final class HibernateOrmProcessor {
                     "Multiple persistence units are defined but the entities are not mapped to them. You should either use the .packages Quarkus configuration property or package-level @PersistenceUnit annotations.");
         }
 
+        Set<String> modelClassesWithPersistenceUnitAnnotations = new TreeSet<>();
+
         for (String modelClassName : jpaEntities.getAllModelClassNames()) {
+            ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaEntities.getAllModelClassNames(),
-                    modelClassName);
+                    modelClassInfo);
+
+            if (modelClassInfo != null && (modelClassInfo.classAnnotation(PERSISTENCE_UNIT) != null
+                    || modelClassInfo.classAnnotation(PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
+                modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+            }
 
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
                 if (modelClassName.startsWith(packageRuleEntry.getKey())) {
@@ -989,23 +1022,32 @@ public final class HibernateOrmProcessor {
             }
         }
 
+        if (!modelClassesWithPersistenceUnitAnnotations.isEmpty()) {
+            throw new IllegalStateException(String.format(
+                    "@PersistenceUnit annotations are not supported at the class level on model classes:\n\t- %s\nUse the `.packages` configuration property or package-level annotations instead.",
+                    String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
+        }
+
         Set<String> affectedModelClasses = modelClassesPerPersistenceUnits.values().stream().flatMap(Set::stream)
                 .collect(Collectors.toSet());
         Set<String> unaffectedModelClasses = jpaEntities.getAllModelClassNames().stream()
                 .filter(c -> !affectedModelClasses.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!unaffectedModelClasses.isEmpty()) {
-            LOG.warnf("Could not find a suitable persistence unit for model classes: %s.",
-                    String.join(", ", unaffectedModelClasses));
+            LOG.warnf("Could not find a suitable persistence unit for model classes:\n\t- %s",
+                    String.join("\n\t- ", unaffectedModelClasses));
         }
 
         return modelClassesPerPersistenceUnits;
     }
 
     private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,
-            String modelClassName) {
+            ClassInfo modelClassInfo) {
+        if (modelClassInfo == null) {
+            return Collections.emptySet();
+        }
+
         Set<String> relatedModelClassNames = new HashSet<>();
-        ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
 
         // for now we only deal with entities and mapped super classes
         if (modelClassInfo.classAnnotation(JPA_ENTITY) == null &&

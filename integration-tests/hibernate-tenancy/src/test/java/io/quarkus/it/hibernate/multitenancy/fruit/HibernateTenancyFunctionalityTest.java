@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.multitenancy;
+package io.quarkus.it.hibernate.multitenancy.fruit;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;

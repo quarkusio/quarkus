@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -50,21 +51,24 @@ public class QuartzBuildTimeConfig {
     public String tablePrefix;
 
     /**
-     * The named trigged listeners list
+     * Trigger listeners.
      */
-    @ConfigItem(name = "triggerListener")
-    @ConfigDocMapKey("namedTriggerListener")
-    public Map<String, QuartzAdditionalPropsConfig> triggerListeners;
+    @ConfigItem
+    @ConfigDocMapKey("listener-name")
+    @ConfigDocSection
+    public Map<String, QuartzExtensionPointConfig> triggerListeners;
     /**
-     * The named job listeners list
+     * Job listeners.
      */
-    @ConfigItem(name = "jobListener")
-    @ConfigDocMapKey("namedJobListener")
-    public Map<String, QuartzAdditionalPropsConfig> jobListeners;
+    @ConfigItem
+    @ConfigDocMapKey("listener-name")
+    @ConfigDocSection
+    public Map<String, QuartzExtensionPointConfig> jobListeners;
     /**
-     * The named plugins list
+     * Plugins.
      */
-    @ConfigItem(name = "plugin")
-    @ConfigDocMapKey("namedPlugin")
-    public Map<String, QuartzAdditionalPropsConfig> plugins;
+    @ConfigItem
+    @ConfigDocMapKey("plugin-name")
+    @ConfigDocSection
+    public Map<String, QuartzExtensionPointConfig> plugins;
 }

@@ -628,12 +628,14 @@ public final class HibernateOrmProcessor {
         Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
                 .filter(i -> i.isDefault())
                 .findFirst();
-        boolean enableDefaultPersistenceUnit = ((defaultJdbcDataSource.isPresent()
-                && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
-                hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet());
+        boolean enableDefaultPersistenceUnit = (defaultJdbcDataSource.isPresent()
+                && hibernateOrmConfig.persistenceUnits.isEmpty())
+                || hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet();
 
         Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
                 jpaEntities, index.getIndex(), enableDefaultPersistenceUnit);
+        Set<String> modelClassesForDefaultPersistenceUnit = modelClassesPerPersistencesUnits
+                .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
 
         Set<String> storageEngineCollector = new HashSet<>();
 
@@ -641,11 +643,16 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit,
-                    modelClassesPerPersistencesUnits.getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                            Collections.emptySet()),
+                    modelClassesForDefaultPersistenceUnit,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
+        } else if (!modelClassesForDefaultPersistenceUnit.isEmpty()
+                && (!hibernateOrmConfig.defaultPersistenceUnit.datasource.isPresent()
+                        || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit.datasource.get()))
+                && !defaultJdbcDataSource.isPresent()) {
+            LOG.warn(
+                    "Model classes are defined for the default persistence unit but no default datasource found: the default EntityManagerFactory will not be created.");
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits

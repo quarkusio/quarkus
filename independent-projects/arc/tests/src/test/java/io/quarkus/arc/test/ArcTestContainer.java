@@ -65,6 +65,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         private final List<Class<?>> resourceReferenceProviders;
         private final List<Class<?>> beanClasses;
+        private final List<Class<?>> additionalClasses;
         private final List<Class<? extends Annotation>> resourceAnnotations;
         private final List<BeanRegistrar> beanRegistrars;
         private final List<ObserverRegistrar> observerRegistrars;
@@ -82,6 +83,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
             beanClasses = new ArrayList<>();
+            additionalClasses = new ArrayList<>();
             resourceAnnotations = new ArrayList<>();
             beanRegistrars = new ArrayList<>();
             observerRegistrars = new ArrayList<>();
@@ -101,6 +103,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
         public Builder beanClasses(Class<?>... beanClasses) {
             Collections.addAll(this.beanClasses, beanClasses);
+            return this;
+        }
+
+        public Builder additionalClasses(Class<?>... additionalClasses) {
+            Collections.addAll(this.additionalClasses, additionalClasses);
             return this;
         }
 
@@ -179,6 +186,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final List<Class<?>> resourceReferenceProviders;
 
     private final List<Class<?>> beanClasses;
+    private final List<Class<?>> additionalClasses;
 
     private final List<Class<? extends Annotation>> resourceAnnotations;
 
@@ -209,6 +217,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
         this.beanClasses = Arrays.asList(beanClasses);
+        this.additionalClasses = Collections.emptyList();
         this.resourceAnnotations = Collections.emptyList();
         this.beanRegistrars = Collections.emptyList();
         this.observerRegistrars = Collections.emptyList();
@@ -228,6 +237,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     public ArcTestContainer(Builder builder) {
         this.resourceReferenceProviders = builder.resourceReferenceProviders;
         this.beanClasses = builder.beanClasses;
+        this.additionalClasses = builder.additionalClasses;
         this.resourceAnnotations = builder.resourceAnnotations;
         this.beanRegistrars = builder.beanRegistrars;
         this.observerRegistrars = builder.observerRegistrars;
@@ -294,11 +304,22 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         Arc.shutdown();
 
         // Build index
-        Index index;
+        Index beanArchiveIndex;
         try {
-            index = index(beanClasses);
+            beanArchiveIndex = index(beanClasses);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create index", e);
+        }
+
+        Index applicationIndex;
+        if (additionalClasses.isEmpty()) {
+            applicationIndex = null;
+        } else {
+            try {
+                applicationIndex = index(additionalClasses);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to create index", e);
+            }
         }
 
         ClassLoader old = Thread.currentThread()
@@ -331,8 +352,9 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(),
-                            new BeanArchives.PersistentClassIndex(), index));
+                    .setBeanArchiveIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(),
+                            new BeanArchives.PersistentClassIndex(), beanArchiveIndex))
+                    .setApplicationIndex(applicationIndex);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))

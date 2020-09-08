@@ -127,6 +127,7 @@ public class ArcProcessor {
     public ContextRegistrationPhaseBuildItem initialize(
             ArcConfig arcConfig,
             BeanArchiveIndexBuildItem beanArchiveIndex,
+            CombinedIndexBuildItem combinedIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
@@ -193,7 +194,8 @@ public class ArcProcessor {
                 }
             }
         });
-        builder.setIndex(index);
+        builder.setBeanArchiveIndex(index);
+        builder.setApplicationIndex(combinedIndex.getIndex());
         List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());
         beanDefiningAnnotations.add(new BeanDefiningAnnotation(ADDITIONAL_BEAN, null));

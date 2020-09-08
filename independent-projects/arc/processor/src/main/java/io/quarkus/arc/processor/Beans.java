@@ -151,7 +151,7 @@ final class Beans {
     private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
         DotName superClassName = beanClass.superName();
         while (!superClassName.equals(DotNames.OBJECT)) {
-            ClassInfo classFromIndex = getClassByName(beanDeployment.getIndex(), superClassName);
+            ClassInfo classFromIndex = getClassByName(beanDeployment.getBeanArchiveIndex(), superClassName);
             if (classFromIndex == null) {
                 // class not in index
                 LOGGER.warnf("Unable to determine scope for bean %s using inheritance because its super class " +
@@ -680,7 +680,7 @@ final class Beans {
                 if (bean.getDeployment().transformUnproxyableClasses) {
                     DotName superName = beanClass.superName();
                     if (!DotNames.OBJECT.equals(superName)) {
-                        ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(beanClass.superName());
+                        ClassInfo superClass = bean.getDeployment().getBeanArchiveIndex().getClassByName(beanClass.superName());
                         if (superClass == null || !superClass.hasNoArgsConstructor()) {
                             // Bean class extends a class without no-args constructor
                             // It is not possible to generate a no-args constructor reliably
@@ -720,7 +720,7 @@ final class Beans {
             }
 
         } else if (bean.isProducerField() || bean.isProducerMethod()) {
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(),
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(),
                     bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
                             : bean.getTarget().get().asField().type());
             // can be null for primitive types
@@ -743,7 +743,8 @@ final class Beans {
                     if (bean.getDeployment().transformUnproxyableClasses) {
                         DotName superName = returnTypeClass.superName();
                         if (!DotNames.OBJECT.equals(superName)) {
-                            ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(returnTypeClass.superName());
+                            ClassInfo superClass = bean.getDeployment().getBeanArchiveIndex()
+                                    .getClassByName(returnTypeClass.superName());
                             if (superClass == null || !superClass.hasNoArgsConstructor()) {
                                 // Bean class extends a class without no-args constructor
                                 // It is not possible to generate a no-args constructor reliably
@@ -787,7 +788,7 @@ final class Beans {
         }
         if (type.kind() == Type.Kind.CLASS) {
             // Index the class additionally if needed
-            getClassByName(beanDeployment.getIndex(), type.name());
+            getClassByName(beanDeployment.getBeanArchiveIndex(), type.name());
         } else {
             analyzeType(type, beanDeployment);
         }

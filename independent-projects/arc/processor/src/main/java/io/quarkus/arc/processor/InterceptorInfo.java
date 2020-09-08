@@ -58,11 +58,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         List<MethodInfo> preDestroys = new ArrayList<>();
 
         ClassInfo aClass = target.asClass();
-        Set<DotName> scanned = new HashSet<>();
         while (aClass != null) {
-            if (!scanned.add(aClass.name())) {
-                continue;
-            }
             for (MethodInfo method : aClass.methods()) {
                 if (Modifier.isStatic(method.flags())) {
                     continue;
@@ -95,7 +91,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
             DotName superTypeName = aClass.superName();
             aClass = superTypeName == null || DotNames.OBJECT.equals(superTypeName) ? null
-                    : getClassByName(beanDeployment.getIndex(), superTypeName);
+                    : getClassByName(beanDeployment.getBeanArchiveIndex(), superTypeName);
         }
 
         this.aroundInvoke = aroundInvokes.isEmpty() ? null : aroundInvokes.get(0);

@@ -169,7 +169,6 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          * 
          * @param interfaceName
-         * @param index
          * @return self
          */
         public Builder implementsInterface(DotName interfaceName) {

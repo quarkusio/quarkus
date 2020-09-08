@@ -188,7 +188,7 @@ final class Methods {
         }
 
         if (classInfo.superClassType() != null) {
-            ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+            ClassInfo superClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClassInfo != null) {
                 finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
                         classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
@@ -197,7 +197,7 @@ final class Methods {
 
         // Interface default methods can be intercepted too
         for (DotName i : classInfo.interfaceNames()) {
-            ClassInfo interfaceInfo = getClassByName(beanDeployment.getIndex(), i);
+            ClassInfo interfaceInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), i);
             if (interfaceInfo != null) {
                 //interfaces can't have final methods
                 addInterceptedMethodCandidates(beanDeployment, interfaceInfo, candidates,

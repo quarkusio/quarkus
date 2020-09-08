@@ -14,7 +14,7 @@ public class KubernetesClientUtils {
     private static final String PREFIX = "quarkus.kubernetes-client.";
 
     public static Config createConfig(KubernetesClientBuildConfig buildConfig) {
-        Config base = new Config();
+        Config base = Config.autoConfigure(null);
         return new ConfigBuilder()
                 .withTrustCerts(buildConfig.trustCerts)
                 .withWatchReconnectInterval((int) buildConfig.watchReconnectInterval.toMillis())
@@ -38,7 +38,7 @@ public class KubernetesClientUtils {
                 .withHttpsProxy(buildConfig.httpsProxy.orElse(base.getHttpsProxy()))
                 .withProxyUsername(buildConfig.proxyUsername.orElse(base.getProxyUsername()))
                 .withProxyPassword(buildConfig.proxyPassword.orElse(base.getProxyPassword()))
-                .withNoProxy(buildConfig.noProxy.isPresent() ? buildConfig.noProxy.get() : base.getNoProxy())
+                .withNoProxy(buildConfig.noProxy.orElse(base.getNoProxy()))
                 .build();
     }
 
@@ -48,7 +48,7 @@ public class KubernetesClientUtils {
 
     public static KubernetesClient createClient() {
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
-        Config base = new Config();
+        Config base = Config.autoConfigure(null);
         return new DefaultKubernetesClient(new ConfigBuilder()
                 .withTrustCerts(config.getOptionalValue(PREFIX + "trust-certs", Boolean.class).orElse(base.isTrustCerts()))
                 .withWatchReconnectLimit(config.getOptionalValue(PREFIX + "watch-reconnect-limit", Integer.class)

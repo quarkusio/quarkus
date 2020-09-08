@@ -334,11 +334,11 @@ public class QuartzScheduler implements Scheduler {
         return props;
     }
 
-    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzAdditionalPropsConfig> config) {
+    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzExtensionPointConfig> config) {
         Properties props = new Properties();
-        for (Map.Entry<String, QuartzAdditionalPropsConfig> configEntry : config.entrySet()) {
+        for (Map.Entry<String, QuartzExtensionPointConfig> configEntry : config.entrySet()) {
             props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
-            for (Map.Entry<String, String> propsEntry : configEntry.getValue().propsValue.entrySet()) {
+            for (Map.Entry<String, String> propsEntry : configEntry.getValue().properties.entrySet()) {
                 props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
             }
         }

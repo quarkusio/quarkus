@@ -17,7 +17,7 @@ public class InMemoryLogHandler extends Handler {
         this.predicate = Assert.checkNotNullParam("predicate", predicate);
     }
 
-    public final List<LogRecord> records = new ArrayList<>();
+    final List<LogRecord> records = new ArrayList<>();
 
     @Override
     public void publish(LogRecord record) {
@@ -37,6 +37,10 @@ public class InMemoryLogHandler extends Handler {
 
     @Override
     public void close() throws SecurityException {
+        this.records.clear();
+    }
 
+    void clearRecords() {
+        this.records.clear();
     }
 }

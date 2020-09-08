@@ -80,7 +80,7 @@ public class ClassTransformingBuildStep {
                     ClassPathElement classPathElement = archives.get(0);
                     Path jar = classPathElement.getRoot();
                     if (jar == null) {
-                        log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                        log.warnf("Cannot transform %s as its containing application archive could not be found.",
                                 entry.getKey());
                         continue;
                     }
@@ -130,7 +130,7 @@ public class ClassTransformingBuildStep {
                         }
                     }));
                 } else {
-                    log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                    log.warnf("Cannot transform %s as its containing application archive could not be found.",
                             entry.getKey());
                 }
             }

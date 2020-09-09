@@ -8,7 +8,8 @@ import javax.ws.rs.container.ContainerResponseFilter;
 
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
-public class ResourceResponseInterceptor implements Comparable<ResourceResponseInterceptor>, ResourceInterceptor {
+public class ResourceResponseInterceptor
+        implements Comparable<ResourceResponseInterceptor>, SettableResourceInterceptor<ContainerResponseFilter> {
 
     private BeanFactory<ContainerResponseFilter> factory;
     private Integer priority = Priorities.USER; // default priority as defined by spec

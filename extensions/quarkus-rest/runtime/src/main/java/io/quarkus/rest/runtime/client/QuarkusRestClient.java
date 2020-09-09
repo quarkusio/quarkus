@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -22,7 +23,7 @@ public class QuarkusRestClient implements Client {
 
     final Vertx vertx = VertxCoreRecorder.getVertx().get();
     final HttpClient httpClient;
-    final QuarkusRestConfiguration configuration = new QuarkusRestConfiguration();
+    final QuarkusRestConfiguration configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
     final Serialisers serialisers;
     final ClientProxies clientProxies;
     final HostnameVerifier hostnameVerifier;

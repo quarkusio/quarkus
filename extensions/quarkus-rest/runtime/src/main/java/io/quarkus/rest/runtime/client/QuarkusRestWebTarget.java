@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Configuration;
@@ -32,7 +33,7 @@ public class QuarkusRestWebTarget implements WebTarget {
         this.client = client;
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
-        configuration = new QuarkusRestConfiguration();
+        configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
     }
 
     public QuarkusRestWebTarget(HttpClient client, UriBuilder uriBuilder, QuarkusRestConfiguration configuration,

@@ -2,6 +2,7 @@ package io.quarkus.rest.runtime.jaxrs;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,11 +12,17 @@ import javax.ws.rs.core.Feature;
 
 public class QuarkusRestConfiguration implements Configuration {
 
+    private final RuntimeType runtimeType;
     private final Map<String, Object> properties = new HashMap<>();
+    private final Set<Feature> enabledFeatures = new HashSet<>();
+
+    public QuarkusRestConfiguration(RuntimeType runtimeType) {
+        this.runtimeType = runtimeType;
+    }
 
     @Override
     public RuntimeType getRuntimeType() {
-        return null;
+        return runtimeType;
     }
 
     @Override
@@ -35,11 +42,16 @@ public class QuarkusRestConfiguration implements Configuration {
 
     @Override
     public boolean isEnabled(Feature feature) {
-        return false;
+        return enabledFeatures.contains(feature);
     }
 
     @Override
     public boolean isEnabled(Class<? extends Feature> featureClass) {
+        for (Feature enabledFeature : enabledFeatures) {
+            if (enabledFeature.getClass().equals(featureClass)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -66,6 +78,10 @@ public class QuarkusRestConfiguration implements Configuration {
     @Override
     public Set<Object> getInstances() {
         return null;
+    }
+
+    public void addEnabledFeature(Feature feature) {
+        enabledFeatures.add(feature);
     }
 
     public String toString(Object value) {

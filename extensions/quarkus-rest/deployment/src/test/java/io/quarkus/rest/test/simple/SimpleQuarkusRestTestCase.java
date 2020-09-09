@@ -30,6 +30,10 @@ public class SimpleQuarkusRestTestCase {
                                     TestFooResponseFilter.class, TestBarResponseFilter.class, TestFooBarResponseFilter.class,
                                     TestResponseFilter.class, HelloService.class, TestException.class,
                                     TestExceptionMapper.class, TestPreMatchRequestFilter.class,
+                                    FeatureMappedException.class, FeatureMappedExceptionMapper.class,
+                                    FeatureRequestFilterWithNormalPriority.class, FeatureRequestFilterWithHighestPriority.class,
+                                    FeatureResponseFilter.class,
+                                    TestFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
                                     TestWriter.class, TestClass.class);
                 }
@@ -256,5 +260,17 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/jax-rs-request")
                 .then()
                 .body(Matchers.equalTo("GET"));
+    }
+
+    @Test
+    public void testFeature() {
+        RestAssured.get("/simple/feature-mapped-exception")
+                .then()
+                .statusCode(667);
+
+        Headers headers = RestAssured.get("/simple/feature-filters")
+                .then().extract().headers();
+        assertThat(headers.getValues("feature-filter-request")).containsOnly("authentication-default");
+        assertThat(headers.getValues("feature-filter-response")).containsExactly("high-priority", "normal-priority");
     }
 }

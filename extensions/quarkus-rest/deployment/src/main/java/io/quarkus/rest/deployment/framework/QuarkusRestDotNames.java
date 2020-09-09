@@ -25,6 +25,7 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Feature;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -55,6 +56,7 @@ public final class QuarkusRestDotNames {
     public static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
     public static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
     public static final DotName PATH = DotName.createSimple(Path.class.getName());
+    public static final DotName FEATURE = DotName.createSimple(Feature.class.getName());
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
     public static final DotName CONFIG_PROPERTY = DotName

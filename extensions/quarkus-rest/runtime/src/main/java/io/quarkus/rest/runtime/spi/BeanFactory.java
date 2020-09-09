@@ -16,7 +16,7 @@ public interface BeanFactory<T> {
         T getInstance();
 
         void close();
-        
+
         class ClosingTask<T> implements Closeable {
             private final Collection<BeanInstance<T>> instances;
 

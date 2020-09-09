@@ -17,9 +17,11 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -31,6 +33,7 @@ import io.quarkus.rest.runtime.client.ClientProxies;
 import io.quarkus.rest.runtime.core.ArcBeanFactory;
 import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
+import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
@@ -67,6 +70,8 @@ import io.quarkus.rest.runtime.handlers.SseResponseWriterHandler;
 import io.quarkus.rest.runtime.handlers.UniResponseHandler;
 import io.quarkus.rest.runtime.headers.FixedProducesHandler;
 import io.quarkus.rest.runtime.headers.VariableProducesHandler;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestFeatureContext;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
@@ -75,6 +80,7 @@ import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
+import io.quarkus.rest.runtime.model.ResourceFeature;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.ResourceReader;
@@ -149,11 +155,13 @@ public class QuarkusRestRecorder {
 
     public Handler<RoutingContext> handler(ResourceInterceptors interceptors,
             ExceptionMapping exceptionMapping,
-            ContextResolvers ctxResolvers, Serialisers serialisers,
-            List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
+            ContextResolvers ctxResolvers, Features features, Serialisers serialisers,
+            List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig,
             Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
+
+        configureFeatures(features, interceptors, exceptionMapping, beanContainer);
 
         Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap = createContainerRequestFilterInstances(
                 interceptors.getGlobalRequestInterceptors(), shutdownContext);
@@ -266,6 +274,28 @@ public class QuarkusRestRecorder {
             map.put(loadClass(entry.getKey()), entry.getValue().getValue());
         }
         return new ClientProxies(map);
+    }
+
+    //TODO: this needs plenty more work to support all possible types and provide all information the FeatureContext allows
+    private void configureFeatures(Features features, ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
+            BeanContainer beanContainer) {
+        if (features.getResourceFeatures().isEmpty()) {
+            return;
+        }
+        QuarkusRestConfiguration configuration = new QuarkusRestConfiguration(RuntimeType.SERVER);
+        QuarkusRestFeatureContext featureContext = new QuarkusRestFeatureContext(interceptors, exceptionMapping,
+                configuration, beanContainer);
+        List<ResourceFeature> resourceFeatures = features.getResourceFeatures();
+        for (ResourceFeature resourceFeature : resourceFeatures) {
+            Feature feature = resourceFeature.getFactory().createInstance().getInstance();
+            boolean enabled = feature.configure(featureContext);
+            if (enabled) {
+                configuration.addEnabledFeature(feature);
+            }
+        }
+        if (featureContext.isFiltersNeedSorting()) {
+            interceptors.sort();
+        }
     }
 
     // we need to preserve the order of ResourceRequestInterceptor because they have been sorted according to priorities
@@ -656,6 +686,10 @@ public class QuarkusRestRecorder {
     public void registerContextResolver(ContextResolvers contextResolvers, String string,
             ResourceContextResolver resolver) {
         contextResolvers.addContextResolver(loadClass(string), resolver);
+    }
+
+    public void registerFeature(Features features, ResourceFeature feature) {
+        features.addFeature(feature);
     }
 
     public void registerWriter(Serialisers serialisers, String entityClassName,

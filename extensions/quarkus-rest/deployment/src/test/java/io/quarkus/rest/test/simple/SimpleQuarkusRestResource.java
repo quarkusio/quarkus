@@ -191,6 +191,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("feature-filters")
+    public Response featureFilters(@Context HttpHeaders headers) {
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+    }
+
+    @GET
     @Path("fooFilters")
     @Foo
     public Response fooFilters(@Context HttpHeaders headers) {
@@ -216,6 +222,12 @@ public class SimpleQuarkusRestResource {
     @Path("mapped-exception")
     public String mappedException() {
         throw new TestException();
+    }
+
+    @GET
+    @Path("feature-mapped-exception")
+    public String featureMappedException() {
+        throw new FeatureMappedException();
     }
 
     @GET

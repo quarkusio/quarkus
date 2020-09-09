@@ -60,6 +60,7 @@ import io.quarkus.rest.runtime.QuarkusRestConfig;
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
+import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.injection.ContextProducers;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -67,6 +68,7 @@ import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceContextResolver;
 import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
+import io.quarkus.rest.runtime.model.ResourceFeature;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.ResourceReader;
@@ -129,6 +131,8 @@ public class QuarkusRestProcessor {
                 .getAllKnownImplementors(QuarkusRestDotNames.MESSAGE_BODY_READER);
         Collection<ClassInfo> contextResolvers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
+        Collection<ClassInfo> features = index
+                .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
@@ -287,6 +291,16 @@ public class QuarkusRestProcessor {
             }
         }
 
+        Features feats = new Features();
+        for (ClassInfo featureClass : features) {
+            if (featureClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                ResourceFeature resourceFeature = new ResourceFeature();
+                resourceFeature.setFactory(recorder.factory(featureClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                recorder.registerFeature(feats, resourceFeature);
+            }
+        }
+
         Serialisers serialisers = new Serialisers();
         for (ClassInfo writerClass : writers) {
             if (writerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
@@ -350,9 +364,9 @@ public class QuarkusRestProcessor {
                 MediaType.WILDCARD);
 
         return new FilterBuildItem(
-                recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, serialisers, resourceClasses,
+                recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, serialisers, resourceClasses,
                         subResourceClasses,
-                        shutdownContext, config, clientImplementations),
+                        beanContainerBuildItem.getValue(), shutdownContext, config, clientImplementations),
                 10);
     }
 

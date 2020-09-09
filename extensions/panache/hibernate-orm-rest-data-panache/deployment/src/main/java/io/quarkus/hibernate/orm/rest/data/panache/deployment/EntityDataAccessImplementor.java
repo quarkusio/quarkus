@@ -12,6 +12,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
 import io.quarkus.rest.data.panache.deployment.DataAccessImplementor;
 
 final class EntityDataAccessImplementor implements DataAccessImplementor {
@@ -28,13 +29,14 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle listAll(BytecodeCreator creator) {
-        return creator.invokeStaticMethod(ofMethod(entityClassName, "listAll", List.class));
+    public ResultHandle listAll(BytecodeCreator creator, ResultHandle sort) {
+        return creator.invokeStaticMethod(ofMethod(entityClassName, "listAll", List.class, Sort.class), sort);
     }
 
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
+        ResultHandle query = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
         creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
     }

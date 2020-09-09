@@ -16,8 +16,6 @@
 
     <properties>
         <!-- Maven plugin versions -->
-        <elasticsearch-maven-plugin.version>6.15</elasticsearch-maven-plugin.version>
-        <elasticsearch-server.version>7.8.0</elasticsearch-server.version>
         <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
@@ -27,14 +25,15 @@
         <scala.version>2.12.8</scala.version>
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
+        <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>20.1.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>20.1.0.1.Final</mandrel.version-for-documentation>
+        <graal-sdk.version-for-documentation>20.2.0</graal-sdk.version-for-documentation>
+        <mandrel.version-for-documentation>20.1</mandrel.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>1.1.0</axle-client.version>
         <mutiny-client.version>1.1.0</mutiny-client.version>
@@ -57,7 +56,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.6.3</proposed-maven-version>
         <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.5.1</gradle-wrapper.version>
+        <gradle-wrapper.version>6.6.1</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.2</microprofile-health-api.version>
@@ -75,6 +74,11 @@
         <!-- Antlr is used by the PanacheQL parser-->
         <antlr.version>4.7.2</antlr.version>
 
+        <!-- Defaults for integration tests -->
+        <elasticsearch-server.version>7.9.0</elasticsearch-server.version>
+        <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
+        <elasticsearch.protocol>http</elasticsearch.protocol>
+
         <!-- Align various dependencies that are not really part of the bom-->
         <findbugs.version>3.0.2</findbugs.version>
         <jsoup.version>1.11.3</jsoup.version>
@@ -82,7 +86,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update .github/workflows/ci-actions.yml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:11.0.0</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:11.0.1</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 
@@ -444,7 +448,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.12.1</version>
+                    <version>2.12.2</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -482,14 +486,6 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
                         <parameters>true</parameters>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>com.github.alexcojocaru</groupId>
-                    <artifactId>elasticsearch-maven-plugin</artifactId>
-                    <version>${elasticsearch-maven-plugin.version}</version>
-                    <configuration>
-                        <version>${elasticsearch-server.version}</version>
                     </configuration>
                 </plugin>
                 <plugin>

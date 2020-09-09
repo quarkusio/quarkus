@@ -20,6 +20,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stri
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -216,7 +217,8 @@ class ConfigDoItemFinder {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
-                    optional = qualifiedName.toString().startsWith(Optional.class.getName());
+                    optional = qualifiedName.toString().startsWith(Optional.class.getName())
+                            || qualifiedName.contentEquals(Map.class.getName());
                     list = qualifiedName.contentEquals(List.class.getName())
                             || qualifiedName.contentEquals(Set.class.getName());
 
@@ -286,6 +288,8 @@ class ConfigDoItemFinder {
                                 defaultValue = hyphenateEnumValue(defaultValue);
                             }
                             acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue);
+                        } else if (isDurationType(declaredType) && !defaultValue.isEmpty()) {
+                            defaultValue = DocGeneratorUtil.normalizeDurationValue(defaultValue);
                         }
                     }
                 }
@@ -358,6 +362,10 @@ class ConfigDoItemFinder {
     private boolean isEnumType(TypeMirror realTypeMirror) {
         return realTypeMirror instanceof DeclaredType
                 && ((DeclaredType) realTypeMirror).asElement().getKind() == ElementKind.ENUM;
+    }
+
+    private boolean isDurationType(TypeMirror realTypeMirror) {
+        return realTypeMirror.toString().equals(Duration.class.getName());
     }
 
     /**

@@ -359,7 +359,8 @@ public class ResteasyCommonProcessor {
             Set<String> otherProviders) {
         for (String availableProvider : availableProviders) {
             try {
-                Class<?> providerClass = Class.forName(availableProvider);
+                Class<?> providerClass = Class.forName(availableProvider, false,
+                        Thread.currentThread().getContextClassLoader());
                 if (MessageBodyReader.class.isAssignableFrom(providerClass)
                         || MessageBodyWriter.class.isAssignableFrom(providerClass)) {
                     if (MessageBodyReader.class.isAssignableFrom(providerClass)) {

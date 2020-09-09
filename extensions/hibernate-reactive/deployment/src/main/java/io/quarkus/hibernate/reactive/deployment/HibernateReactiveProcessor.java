@@ -192,9 +192,12 @@ public final class HibernateReactiveProcessor {
 
         // Database
         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
-                persistenceUnitConfig.database.generation);
+                persistenceUnitConfig.database.generation.generation);
 
-        if (persistenceUnitConfig.database.generationHaltOnError) {
+        desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CREATE_SCHEMAS,
+                String.valueOf(persistenceUnitConfig.database.generation.createSchemas));
+
+        if (persistenceUnitConfig.database.generation.haltOnError) {
             desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 

@@ -1,7 +1,7 @@
 ####
 # This Dockerfile is used in order to build a container that runs the Quarkus application in native (no JVM) mode
 #
-# Before building the docker image run:
+# Before building the container image run:
 #
 # mvn package -Pnative -Dquarkus.native.container-build=true
 #

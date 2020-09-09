@@ -1,14 +1,15 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import org.hibernate.dialect.H2Dialect;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.DefaultEntity;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.inventory.Plane;
-import io.quarkus.hibernate.orm.multiplepersistenceunits.model.user.User;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.DefaultEntity;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory.Plane;
+import io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -29,5 +30,11 @@ public class MultiplePersistenceUnitsInconsistentStorageEnginesTest {
     public void testInvalidConfiguration() {
         // deployment exception should happen first
         Assertions.fail();
+    }
+
+    /**
+     * This is just to have the dialect matching MySQL and trigger the MySQL + storage engines check.
+     */
+    public static class H2DialectWithMySQLInTheName extends H2Dialect {
     }
 }

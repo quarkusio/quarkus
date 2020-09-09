@@ -67,16 +67,32 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
         public Optional<ElasticsearchVersion> version;
 
         /**
-         * Configuration for full-text analysis.
-         */
-        @ConfigItem
-        public AnalysisConfig analysis;
-
-        /**
          * Configuration for the index layout.
          */
         @ConfigItem
         public LayoutConfig layout;
+
+        /**
+         * The default configuration for the Elasticsearch indexes.
+         */
+        @ConfigItem(name = ConfigItem.PARENT)
+        public ElasticsearchIndexBuildTimeConfig indexDefaults;
+
+        /**
+         * Per-index specific configuration.
+         */
+        @ConfigItem
+        @ConfigDocMapKey("index-name")
+        public Map<String, ElasticsearchIndexBuildTimeConfig> indexes;
+    }
+
+    @ConfigGroup
+    public static class ElasticsearchIndexBuildTimeConfig {
+        /**
+         * Configuration for full-text analysis.
+         */
+        @ConfigItem
+        public AnalysisConfig analysis;
     }
 
     @ConfigGroup

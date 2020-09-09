@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,6 +47,7 @@ import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
@@ -96,7 +96,7 @@ public class FastBootMetadataBuilder {
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
-    private final Optional<String> dataSource;
+    private final String dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
 
@@ -175,7 +175,8 @@ public class FastBootMetadataBuilder {
 
         final MultiTenancyStrategy strategy = puDefinition.getMultitenancyStrategy();
         if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class, new HibernateMultiTenantConnectionProvider());
+            ssrBuilder.addService(MultiTenantConnectionProvider.class,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
         }
         this.multiTenancyStrategy = strategy;
 
@@ -359,6 +360,7 @@ public class FastBootMetadataBuilder {
 
     private Collection<Integrator> getIntegrators() {
         LinkedHashSet<Integrator> integrators = new LinkedHashSet<>();
+        integrators.add(new BeanValidationIntegrator());
         integrators.add(new CollectionCacheInvalidator());
 
         for (Class<? extends Integrator> integratorClass : additionalIntegrators) {

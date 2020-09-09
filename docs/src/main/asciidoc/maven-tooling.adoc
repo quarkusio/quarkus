@@ -335,7 +335,7 @@ Now you should be able to execute `./mvnw quarkus-bootstrap:build-tree` on your 
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version} (Make sure to use a Java 11 version of GraalVM).
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
 Create a native executable using: `./mvnw package -Pnative`.

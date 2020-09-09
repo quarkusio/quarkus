@@ -90,6 +90,7 @@ import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
 import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
@@ -347,32 +348,11 @@ class KubernetesProcessor {
                     determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
 
             applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
-            //When S2i is disabled we need to pass that information to dekorate.
-            //Also we need to make sure that the alternatives (instances of ImageConfiguration)
-            //are properly configured.
-            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
-                session.configurators().add(new Configurator<ImageConfigurationFluent<?>>() {
-                    @Override
-                    public void visit(ImageConfigurationFluent<?> image) {
-                        containerImage.ifPresent(i -> {
-                            String group = ImageUtil.getRepository(i.getImage()).split("/")[0];
-                            image.withGroup(group);
-                            i.getRegistry().ifPresent(r -> {
-                                image.withRegistry(r);
-                            });
-                        });
-                    }
-                });
 
-                //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
-                session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
-                session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
-                    @Override
-                    public void visit(S2iBuildConfigFluent<?> s2i) {
-                        s2i.withEnabled(false);
-                    }
-                });
+            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
+                handleNonS2IOpenshift(containerImage, session);
             }
+
             //apply build item configurations to the dekorate session.
             applyBuildItems(session,
                     applicationInfo,
@@ -441,6 +421,36 @@ class KubernetesProcessor {
 
             log.warn("Failed to generate Kubernetes resources", e);
         }
+    }
+
+    private void handleNonS2IOpenshift(Optional<ContainerImageInfoBuildItem> containerImage, Session session) {
+        //When S2i is disabled we need to pass that information to dekorate.
+        //Also we need to make sure that the alternatives (instances of ImageConfiguration)
+        //are properly configured.
+        session.configurators().add(new Configurator<ImageConfigurationFluent<?>>() {
+            @Override
+            public void visit(ImageConfigurationFluent<?> image) {
+                containerImage.ifPresent(i -> {
+                    String group = ImageUtil.getRepository(i.getImage()).split("/")[0];
+                    image.withGroup(group);
+                    i.getRegistry().ifPresent(r -> {
+                        image.withRegistry(r);
+                    });
+                });
+            }
+        });
+
+        //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
+        session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
+        session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
+            @Override
+            public void visit(S2iBuildConfigFluent<?> s2i) {
+                s2i.withEnabled(false);
+            }
+        });
+
+        // remove the ImageChange trigger of the DeploymentConfig
+        session.resources().decorate(OPENSHIFT, new RemoveDeploymentTriggerDecorator());
     }
 
     /**
@@ -714,13 +724,13 @@ class KubernetesProcessor {
         });
 
         kubernetesEnvs.forEach(e -> {
-            session.resources().decorate(e.getTarget(), new AddEnvVarDecorator(new EnvBuilder()
-                    .withName(EnvConverter.convertName(e.getName()))
-                    .withValue(e.getValue())
-                    .withSecret(e.getSecret())
-                    .withConfigmap(e.getConfigMap())
-                    .withField(e.getField())
-                    .build()));
+            String containerName = kubernetesName;
+            if (e.getTarget().equals(OPENSHIFT)) {
+                containerName = openshiftName;
+            } else if (e.getTarget().equals(KNATIVE)) {
+                containerName = knativeName;
+            }
+            session.resources().decorate(e.getTarget(), createAddEnvDecorator(e, containerName));
         });
 
         //Handle Command and arguments
@@ -774,6 +784,16 @@ class KubernetesProcessor {
         handleProbes(applicationInfo, kubernetesConfig, openshiftConfig, knativeConfig, deploymentTargets, ports,
                 kubernetesHealthLivenessPath,
                 kubernetesHealthReadinessPath, session);
+    }
+
+    private AddEnvVarDecorator createAddEnvDecorator(KubernetesEnvBuildItem e, String containerName) {
+        return new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, containerName, new EnvBuilder()
+                .withName(EnvConverter.convertName(e.getName()))
+                .withValue(e.getValue())
+                .withSecret(e.getSecret())
+                .withConfigmap(e.getConfigMap())
+                .withField(e.getField())
+                .build());
     }
 
     private void handleServices(Session session, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
@@ -857,7 +877,7 @@ class KubernetesProcessor {
                 session);
 
         //For knative we want the port to be null
-        String port = KNATIVE.equals(target) ? null : String.valueOf(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT));
+        Integer port = KNATIVE.equals(target) ? null : ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT);
         session.resources().decorate(target, new ApplyHttpGetActionPortDecorator(port));
     }
 

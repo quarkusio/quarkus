@@ -76,8 +76,7 @@ public class HibernateValidatorFunctionalityTest {
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-interface-validation/plop/")
                 .then()
-                // 500 until this is fixed: https://github.com/quarkusio/quarkus/issues/11341#issuecomment-673146350
-                .statusCode(500)
+                .statusCode(400)
                 .body(containsString("numeric value out of bounds"));
 
         RestAssured.when()
@@ -91,8 +90,7 @@ public class HibernateValidatorFunctionalityTest {
         RestAssured.when()
                 .get("/hibernate-validator/test/rest-end-point-interface-validation-annotation-on-impl-method/plop/")
                 .then()
-                // 500 until this is fixed: https://github.com/quarkusio/quarkus/issues/11341#issuecomment-673146350
-                .statusCode(500)
+                .statusCode(400)
                 .body(containsString("numeric value out of bounds"));
 
         RestAssured.when()

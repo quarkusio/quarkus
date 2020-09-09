@@ -1,9 +1,14 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -21,6 +26,8 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -29,10 +36,12 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.hibernate.orm.panache.runtime.PanacheHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -45,6 +54,7 @@ public final class PanacheHibernateResourceProcessor {
 
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheRepository.class.getName());
+
     static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
 
@@ -100,17 +110,22 @@ public final class PanacheHibernateResourceProcessor {
     }
 
     @BuildStep
-    void build(CombinedIndexBuildItem index,
+    @Record(ExecutionTime.STATIC_INIT)
+    void build(
+            PanacheHibernateOrmRecorder recorder,
+            CombinedIndexBuildItem index,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             List<PanacheEntityClassBuildItem> entityClasses,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(PanacheMethodCustomizerBuildItem::getMethodCustomizer).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
+        Set<String> panacheEntities = new HashSet<>();
         Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
@@ -118,11 +133,17 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil
+                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY, index.getIndex());
+            panacheEntities.add(typeParameters.get(0).name().toString());
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
@@ -176,6 +197,10 @@ public final class PanacheHibernateResourceProcessor {
                 }
             }
         }
+
+        panacheEntities.addAll(modelClasses);
+
+        recordPanacheEntityPersistenceUnits(recorder, jpaModelPersistenceUnitMapping, panacheEntities);
     }
 
     @BuildStep
@@ -193,5 +218,47 @@ public final class PanacheHibernateResourceProcessor {
             }
         }
         return null;
+    }
+
+    void recordPanacheEntityPersistenceUnits(PanacheHibernateOrmRecorder recorder,
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            Set<String> panacheEntityClasses) {
+        Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
+        if (jpaModelPersistenceUnitMapping.isPresent()) {
+            Map<String, Set<String>> collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get()
+                    .getEntityToPersistenceUnits();
+
+            Map<String, Set<String>> violatingPanacheEntities = new TreeMap<>();
+
+            for (Map.Entry<String, Set<String>> entry : collectedEntityToPersistenceUnits.entrySet()) {
+                String entityName = entry.getKey();
+                Set<String> selectedPersistenceUnits = entry.getValue();
+                boolean isPanacheEntity = panacheEntityClasses.stream()
+                        .anyMatch(entity -> entity.equals(entityName));
+
+                if (!isPanacheEntity) {
+                    continue;
+                }
+
+                if (selectedPersistenceUnits.size() == 1) {
+                    panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.iterator().next());
+                } else {
+                    violatingPanacheEntities.put(entityName, selectedPersistenceUnits);
+                }
+            }
+
+            if (violatingPanacheEntities.size() > 0) {
+                StringBuilder message = new StringBuilder(
+                        "Panache entities do not support being attached to several persistence units:\n");
+                for (Entry<String, Set<String>> violatingEntityEntry : violatingPanacheEntities
+                        .entrySet()) {
+                    message.append("\t- ").append(violatingEntityEntry.getKey()).append(" is attached to: ")
+                            .append(String.join(",", violatingEntityEntry.getValue()));
+                    throw new IllegalStateException(message.toString());
+                }
+            }
+        }
+
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
     }
 }

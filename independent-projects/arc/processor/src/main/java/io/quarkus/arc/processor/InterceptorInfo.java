@@ -1,5 +1,9 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -7,6 +11,7 @@ import java.util.Set;
 import javax.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -47,39 +52,56 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 null, null, null, Collections.emptyList(), null, false);
         this.bindings = bindings;
         this.priority = priority;
-        MethodInfo aroundInvoke = null;
-        MethodInfo aroundConstruct = null;
-        MethodInfo postConstruct = null;
-        MethodInfo preDestroy = null;
-        for (MethodInfo method : target.asClass().methods()) {
-            if (aroundInvoke == null && method.hasAnnotation(DotNames.AROUND_INVOKE)) {
-                aroundInvoke = method;
-            } else if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
-                // validate compliance with rules for AroundConstruct methods
-                if (!method.parameters().equals(Collections.singletonList(
-                        Type.create(DotName.createSimple("javax.interceptor.InvocationContext"), Type.Kind.CLASS)))) {
-                    throw new IllegalStateException(
-                            "@AroundConstruct must have exactly one argument of type javax.interceptor.InvocationContext, but method "
-                                    + method.asMethod() + " declared by " + method.declaringClass()
-                                    + " violates this.");
-                }
-                if (!method.returnType().kind().equals(Type.Kind.VOID) &&
-                        !method.returnType().name().equals(DotNames.OBJECT)) {
-                    throw new IllegalStateException("Return type of @AroundConstruct method must be Object or void, but method "
-                            + method.asMethod() + " declared by " + method.declaringClass()
-                            + " violates this.");
-                }
-                aroundConstruct = method;
-            } else if (postConstruct == null && method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
-                postConstruct = method;
-            } else if (preDestroy == null && method.hasAnnotation(DotNames.PRE_DESTROY)) {
-                preDestroy = method;
+        List<MethodInfo> aroundInvokes = new ArrayList<>();
+        List<MethodInfo> aroundConstructs = new ArrayList<>();
+        List<MethodInfo> postConstructs = new ArrayList<>();
+        List<MethodInfo> preDestroys = new ArrayList<>();
+
+        ClassInfo aClass = target.asClass();
+        Set<DotName> scanned = new HashSet<>();
+        while (aClass != null) {
+            if (!scanned.add(aClass.name())) {
+                continue;
             }
+            for (MethodInfo method : aClass.methods()) {
+                if (Modifier.isStatic(method.flags())) {
+                    continue;
+                }
+                if (method.hasAnnotation(DotNames.AROUND_INVOKE)) {
+                    aroundInvokes.add(method);
+                } else if (method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                    // validate compliance with rules for AroundConstruct methods
+                    if (!method.parameters().equals(Collections.singletonList(
+                            Type.create(DotName.createSimple("javax.interceptor.InvocationContext"), Type.Kind.CLASS)))) {
+                        throw new IllegalStateException(
+                                "@AroundConstruct must have exactly one argument of type javax.interceptor.InvocationContext, but method "
+                                        + method.asMethod() + " declared by " + method.declaringClass()
+                                        + " violates this.");
+                    }
+                    if (!method.returnType().kind().equals(Type.Kind.VOID) &&
+                            !method.returnType().name().equals(DotNames.OBJECT)) {
+                        throw new IllegalStateException(
+                                "Return type of @AroundConstruct method must be Object or void, but method "
+                                        + method.asMethod() + " declared by " + method.declaringClass()
+                                        + " violates this.");
+                    }
+                    aroundConstructs.add(method);
+                } else if (method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
+                    postConstructs.add(method);
+                } else if (method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                    preDestroys.add(method);
+                }
+            }
+
+            DotName superTypeName = aClass.superName();
+            aClass = superTypeName == null || DotNames.OBJECT.equals(superTypeName) ? null
+                    : getClassByName(beanDeployment.getIndex(), superTypeName);
         }
-        this.aroundInvoke = aroundInvoke;
-        this.aroundConstruct = aroundConstruct;
-        this.postConstruct = postConstruct;
-        this.preDestroy = preDestroy;
+
+        this.aroundInvoke = aroundInvokes.isEmpty() ? null : aroundInvokes.get(0);
+        this.aroundConstruct = aroundConstructs.isEmpty() ? null : aroundConstructs.get(0);
+        this.postConstruct = postConstructs.isEmpty() ? null : postConstructs.get(0);
+        this.preDestroy = preDestroys.isEmpty() ? null : preDestroys.get(0);
         if (aroundConstruct == null && aroundInvoke == null && preDestroy == null && postConstruct == null) {
             LOGGER.warnf("%s declares no around-invoke method nor a lifecycle callback!", this);
         }

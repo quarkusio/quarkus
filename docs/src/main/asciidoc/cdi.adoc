@@ -195,6 +195,8 @@ Indeed, the https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#client_proxies[cli
 A client proxy is basically an object that delegates all method invocations to a target bean instance.
 It's a container construct that implements `io.quarkus.arc.ClientProxy` and extends the bean class.
 
+IMPORTANT: Client proxies only delegate method invocations. So never read or write a field of a normal scoped bean, otherwise you will work with non-contextual or stale data. 
+
 .Generated Client Proxy Example
 [source,java]
 ----

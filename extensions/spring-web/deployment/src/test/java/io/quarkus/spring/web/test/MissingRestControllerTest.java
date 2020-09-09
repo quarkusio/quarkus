@@ -34,7 +34,7 @@ public class MissingRestControllerTest {
     public void testBuildLogs() {
         List<LogRecord> buildLogRecords = prodModeTestResults.getRetainedBuildLogRecords();
         assertThat(buildLogRecords).isNotEmpty();
-        assertThat(buildLogRecords).hasOnlyOneElementSatisfying(r -> {
+        assertThat(buildLogRecords).singleElement().satisfies(r -> {
             assertThat(r.getMessage())
                     .contains("a mapping annotation but the class itself")
                     .contains(NonAnnotatedController.class.getName())

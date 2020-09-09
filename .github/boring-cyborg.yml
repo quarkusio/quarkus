@@ -77,12 +77,19 @@ labelPRBasedOnFilePath:
     area/cache:
         - extensions/cache/**/*
         - integration-tests/cache/**/*
+    area/cli:
+        - devtools/cli/**/*
     area/config:
         - extensions/config-yaml/**/*
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/**/*
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/**/*
     area/core:
         - core/**/*
+    area/codestarts:
+        - independent-projects/tools/codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/bundled-codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/codestarts/**/*
+        - devtools/platform-descriptor-json/src/main/resources/templates/**/*
     area/dependencies:
         - .github/dependabot.yml
         - bom/**/*
@@ -137,6 +144,9 @@ labelPRBasedOnFilePath:
         - extensions/jaeger/**/*
     area/jaxb:
         - extensions/jaxb/**/*
+    area/jbang:
+        - **/*JBang*
+        - **/*jbang*
     area/kafka:
         - extensions/kafka-client/**/*
         - integration-tests/kafka/**/*
@@ -239,7 +249,6 @@ labelPRBasedOnFilePath:
         - integration-tests/elytron-security/**/*
         - integration-tests/elytron-security-jdbc/**/*
         - integration-tests/elytron-security-oauth2/**/*
-        
     area/smallrye:
         - extensions/smallrye-context-propagation/**/*
         - extensions/smallrye-fault-tolerance/**/*

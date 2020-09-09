@@ -674,6 +674,17 @@ public class OidcTenantConfig {
         public boolean userInfoRequired;
 
         /**
+         * Session age extension in minutes.
+         * The user session age property is set to the value of the ID token life-span by default and
+         * the user will be redirected to the OIDC provider to re-authenticate once the session has expired.
+         * If this property is set to a non-zero value then the expired ID token can be refreshed before
+         * the session has expired.
+         * This property will be ignored if the `token.refresh-expired` property has not been enabled.
+         */
+        @ConfigItem(defaultValue = "5M")
+        public Duration sessionAgeExtension = Duration.ofMinutes(5);
+
+        /**
          * If this property is set to 'true' then a normal 302 redirect response will be returned
          * if the request was initiated via XMLHttpRequest and the current user needs to be
          * (re)authenticated which may not be desirable for Single Page Applications since
@@ -764,6 +775,15 @@ public class OidcTenantConfig {
         public void setVerifyAccessToken(boolean verifyAccessToken) {
             this.verifyAccessToken = verifyAccessToken;
         }
+
+        public Duration getSessionAgeExtension() {
+            return sessionAgeExtension;
+        }
+
+        public void setSessionAgeExtension(Duration sessionAgeExtension) {
+            this.sessionAgeExtension = sessionAgeExtension;
+        }
+
     }
 
     @ConfigGroup
@@ -820,14 +840,28 @@ public class OidcTenantConfig {
 
         /**
          * Refresh expired ID tokens.
-         * If this property is enabled then a refresh token request is performed and, if successful, the local session is
-         * updated with the new set of tokens.
-         * Otherwise, the local session is invalidated as an indication that the session at the OpenID Provider no longer
-         * exists.
-         * This option is only valid when the application is of type {@link ApplicationType#WEB_APP}}.
+         * If this property is enabled then a refresh token request will be performed if the ID token has expired
+         * and, if successful, the local session will be updated with the new set of tokens.
+         * Otherwise, the local session will be invalidated and the user redirected to the OpenID Provider to re-authenticate.
+         * In this case the user may not be challenged again if the OIDC provider session is still active.
+         *
+         * For this option be effective the `authentication.session-age-extension` property should also be set to a non-zero
+         * value since the refresh token is currently kept in the user session.
+         *
+         * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}}.
          */
         @ConfigItem
         public boolean refreshExpired;
+
+        /**
+         * Token auto-refresh interval in seconds during the user re-authentication.
+         * If this option is set then the valid ID token will be refreshed if it will expire in less than a number of minutes
+         * set by this option. The user will still be authenticated if the ID token can no longer be refreshed but is still
+         * valid.
+         * This option will be ignored if the 'refresh-expired' property is not enabled.
+         */
+        @ConfigItem
+        public Optional<Duration> autoRefreshInterval = Optional.empty();
 
         /**
          * Forced JWK set refresh interval in minutes.
@@ -835,12 +869,27 @@ public class OidcTenantConfig {
         @ConfigItem(defaultValue = "10M")
         public Duration forcedJwkRefreshInterval = Duration.ofMinutes(10);
 
+        /**
+         * Custom HTTP header that contains a bearer token.
+         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}}.
+         */
+        @ConfigItem
+        public Optional<String> header = Optional.empty();
+
         public Optional<String> getIssuer() {
             return issuer;
         }
 
         public void setIssuer(String issuer) {
             this.issuer = Optional.of(issuer);
+        }
+
+        public Optional<String> getHeader() {
+            return header;
+        }
+
+        public void setHeader(String header) {
+            this.header = Optional.of(header);
         }
 
         public Optional<List<String>> getAudience() {

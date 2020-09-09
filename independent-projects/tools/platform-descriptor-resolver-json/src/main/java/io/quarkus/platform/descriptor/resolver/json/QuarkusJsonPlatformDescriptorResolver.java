@@ -10,6 +10,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.json.ArtifactResolver;
@@ -19,8 +20,6 @@ import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorL
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.descriptor.loader.json.ZipResourceLoader;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.BufferedReader;
@@ -177,7 +176,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
     private void ensureLoggerInitialized() {
         if (log == null) {
-            log = new DefaultMessageWriter();
+            log = MessageWriter.info();
         }
     }
 

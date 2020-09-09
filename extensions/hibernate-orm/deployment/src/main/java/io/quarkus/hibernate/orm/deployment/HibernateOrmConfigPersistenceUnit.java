@@ -149,16 +149,40 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem(defaultValue = "true")
     public boolean secondLevelCachingEnabled;
 
+    /**
+     * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM JavaDoc].
+     * The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> multitenant;
+
+    /**
+     * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
+     * if not set.
+     */
+    @ConfigItem
+    public Optional<String> multitenantSchemaDatasource;
+
     public boolean isAnyPropertySet() {
-        return dialect.isAnyPropertySet() ||
+        return datasource.isPresent() ||
+                packages.isPresent() ||
+                dialect.isAnyPropertySet() ||
                 sqlLoadScript.isPresent() ||
                 batchFetchSize > 0 ||
                 maxFetchDepth.isPresent() ||
+                physicalNamingStrategy.isPresent() ||
+                implicitNamingStrategy.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
-                !cache.isEmpty();
+                !cache.isEmpty() ||
+                !secondLevelCachingEnabled ||
+                multitenant.isPresent() ||
+                multitenantSchemaDatasource.isPresent();
     }
 
     @ConfigGroup
@@ -228,20 +252,10 @@ public class HibernateOrmConfigPersistenceUnit {
         private static final String DEFAULT_CHARSET = "UTF-8";
 
         /**
-         * Select whether the database schema is generated or not.
-         *
-         * `drop-and-create` is awesome in development mode.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         * Schema generation configuration.
          */
-        @ConfigItem(defaultValue = "none")
-        public String generation;
-
-        /**
-         * Whether we should stop on the first error when applying the schema.
-         */
-        @ConfigItem(name = "generation.halt-on-error")
-        public boolean generationHaltOnError;
+        @ConfigItem
+        public HibernateOrmConfigPersistenceUnitDatabaseGeneration generation;
 
         /**
          * The default catalog to use for the database objects.
@@ -260,7 +274,7 @@ public class HibernateOrmConfigPersistenceUnit {
          * <p>
          * Used for DDL generation and also for the SQL import scripts.
          */
-        @ConfigItem(defaultValue = "UTF-8")
+        @ConfigItem(defaultValue = DEFAULT_CHARSET)
         public Charset charset;
 
         /**
@@ -270,10 +284,43 @@ public class HibernateOrmConfigPersistenceUnit {
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
-            return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
-                    || generationHaltOnError
+            return generation.isAnyPropertySet()
+                    || defaultCatalog.isPresent()
+                    || defaultSchema.isPresent()
                     || !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
+        }
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitDatabaseGeneration {
+
+        /**
+         * Select whether the database schema is generated or not.
+         *
+         * `drop-and-create` is awesome in development mode.
+         *
+         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`.
+         */
+        @ConfigItem(name = ConfigItem.PARENT, defaultValue = "none")
+        public String generation;
+
+        /**
+         * If Hibernate ORM should create the schemas automatically (for databases supporting them).
+         */
+        @ConfigItem
+        public boolean createSchemas;
+
+        /**
+         * Whether we should stop on the first error when applying the schema.
+         */
+        @ConfigItem
+        public boolean haltOnError;
+
+        public boolean isAnyPropertySet() {
+            return !"none".equals(generation)
+                    || createSchemas
+                    || haltOnError;
         }
     }
 

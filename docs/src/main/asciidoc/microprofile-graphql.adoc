@@ -529,6 +529,20 @@ query getFilmHeroes {
 
 The response now includes the heroes of the film.
 
+=== Batching
+
+When you are exposing a `Collection` return like our `getAllFilms`, you might want to use the batch form of the above, to more efficiently fetch
+the heroes:
+
+[source,java]
+----
+    public List<List<Hero>> heroes(@Source List<Film> films) { // <1>
+        // Here fetch all hero lists
+    }
+----
+
+<1> Here receive the films as a batch, allowing you to fetch the corresponding heroes.
+
 == Mutations
 
 Mutations are used when data is created, updated or deleted.

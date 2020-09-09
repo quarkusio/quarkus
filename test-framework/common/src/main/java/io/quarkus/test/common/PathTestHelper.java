@@ -17,16 +17,22 @@ import io.quarkus.runtime.util.ClassPathUtils;
  */
 public final class PathTestHelper {
     private static final Map<String, String> TEST_TO_MAIN_DIR_FRAGMENTS = new HashMap<>();
+
     static {
-        // eclipse
+        //region Eclipse
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "bin" + File.separator + "test",
                 "bin" + File.separator + "main");
-        // idea
+        //endregion
+
+        //region Idea
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "out" + File.separator + "test",
                 "out" + File.separator + "production");
-        // gradle
+        //endregion
+
+        // region Gradle
+        // region Java
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "java" + File.separator + "native-test",
                 "classes" + File.separator + "java" + File.separator + "main");
@@ -34,22 +40,65 @@ public final class PathTestHelper {
                 "classes" + File.separator + "java" + File.separator + "test",
                 "classes" + File.separator + "java" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "java" + File.separator + "integration-test",
+                "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "java" + File.separator + "integrationTest",
+                "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "java" + File.separator + "native-integrationTest",
+                "classes" + File.separator + "java" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "java" + File.separator + "native-integration-test",
+                "classes" + File.separator + "java" + File.separator + "main");
+        //endregion
+        //region Kotlin
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "native-test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "integration-test",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "integrationTest",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "native-integrationTest",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "kotlin" + File.separator + "native-integration-test",
+                "classes" + File.separator + "kotlin" + File.separator + "main");
+        //endregion
+        //region Scala
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "scala" + File.separator + "native-test",
                 "classes" + File.separator + "scala" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "scala" + File.separator + "test",
                 "classes" + File.separator + "scala" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "scala" + File.separator + "integration-test",
+                "classes" + File.separator + "scala" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "scala" + File.separator + "integrationTest",
+                "classes" + File.separator + "scala" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "scala" + File.separator + "native-integrationTest",
+                "classes" + File.separator + "scala" + File.separator + "main");
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(
+                "classes" + File.separator + "scala" + File.separator + "native-integration-test",
+                "classes" + File.separator + "scala" + File.separator + "main");
+        //endregion
+        //endregion
 
-        // maven
+        //region Maven
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 File.separator + "test-classes",
                 File.separator + "classes");
+        //endregion
     }
 
     private PathTestHelper() {
@@ -115,7 +164,16 @@ public final class PathTestHelper {
         }
         return TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
                 .filter(e -> testClassLocation.contains(e.getKey()))
-                .map(e -> Paths.get(testClassLocation.replace(e.getKey(), e.getValue())))
+                .map(e -> {
+                    // we should replace only the last occurrence of the fragment
+                    final int i = testClassLocation.lastIndexOf(e.getKey());
+                    final StringBuilder buf = new StringBuilder(testClassLocation.length());
+                    buf.append(testClassLocation.substring(0, i)).append(e.getValue());
+                    if (i + e.getKey().length() + 1 < testClassLocation.length()) {
+                        buf.append(testClassLocation.substring(i + e.getKey().length()));
+                    }
+                    return Paths.get(buf.toString());
+                })
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Unable to translate path for " + testClassLocation));
     }

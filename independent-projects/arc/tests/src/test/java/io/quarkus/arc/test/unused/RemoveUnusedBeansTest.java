@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -61,6 +62,7 @@ public class RemoveUnusedBeansTest {
         // Producer is unused, declaring bean is only used via Instance
         assertTrue(container.instance(UsedViaInstanceWithUnusedProducer.class).isAvailable());
         assertFalse(container.instance(Long.class).isAvailable());
+        assertFalse(ArcContainerImpl.instance().getRemovedBeans().isEmpty());
     }
 
     @Dependent
@@ -190,7 +192,7 @@ public class RemoveUnusedBeansTest {
     static class UsedViaInstanceWithUnusedProducer {
 
         @Produces
-        Long unusedLong = new Long(0);
+        Long unusedLong = Long.valueOf(0);
     }
 
     @Singleton

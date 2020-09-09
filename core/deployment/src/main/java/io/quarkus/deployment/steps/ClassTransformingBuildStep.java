@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +24,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import io.quarkus.bootstrap.BootstrapDebug;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
@@ -45,6 +48,7 @@ public class ClassTransformingBuildStep {
                 bytecodeTransformerBuildItems.size());
         Set<String> noConstScanning = new HashSet<>();
         Map<String, Set<String>> constScanning = new HashMap<>();
+        Set<String> eager = new HashSet<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i.getVisitorFunction());
@@ -53,6 +57,9 @@ public class ClassTransformingBuildStep {
             } else {
                 constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
                         .addAll(i.getRequireConstPoolEntry());
+            }
+            if (i.isEager()) {
+                eager.add(i.getClassToTransform());
             }
         }
         QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
@@ -73,7 +80,7 @@ public class ClassTransformingBuildStep {
                     ClassPathElement classPathElement = archives.get(0);
                     Path jar = classPathElement.getRoot();
                     if (jar == null) {
-                        log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                        log.warnf("Cannot transform %s as its containing application archive could not be found.",
                                 entry.getKey());
                         continue;
                     }
@@ -100,15 +107,30 @@ public class ClassTransformingBuildStep {
                                     visitor = i.apply(className, visitor);
                                 }
                                 cr.accept(visitor, 0);
-                                return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
-                                        classFileName);
+                                byte[] data = writer.toByteArray();
+                                if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
+                                    File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
+                                    if (!debugPath.exists()) {
+                                        debugPath.mkdir();
+                                    }
+                                    File classFile = new File(debugPath, className.replace(".", "/") + ".class");
+                                    classFile.getParentFile().mkdirs();
+                                    try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
+                                        classWriter.write(data);
+                                    } catch (Exception e) {
+                                        log.errorf(e, "Failed to write transformed class %s", className);
+                                    }
+                                    log.infof("Wrote transformed class to %s", classFile.getAbsolutePath());
+                                }
+                                return new TransformedClassesBuildItem.TransformedClass(className, data,
+                                        classFileName, eager.contains(className));
                             } finally {
                                 Thread.currentThread().setContextClassLoader(old);
                             }
                         }
                     }));
                 } else {
-                    log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                    log.warnf("Cannot transform %s as its containing application archive could not be found.",
                             entry.getKey());
                 }
             }

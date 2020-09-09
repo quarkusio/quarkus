@@ -1,10 +1,9 @@
 package io.quarkus.oidc;
 
-import io.quarkus.oidc.runtime.ContextAwareTokenCredential;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
-public class AccessTokenCredential extends ContextAwareTokenCredential {
+public class AccessTokenCredential extends OidcTokenCredential {
 
     private RefreshToken refreshToken;
     private boolean opaque;

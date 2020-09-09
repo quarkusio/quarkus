@@ -20,13 +20,17 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
+import de.flapdoodle.embed.mongo.Command;
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.IMongodConfig;
 import de.flapdoodle.embed.mongo.config.MongoCmdOptionsBuilder;
 import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
+import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder;
 import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.process.config.IRuntimeConfig;
+import de.flapdoodle.embed.process.config.io.ProcessOutput;
 import de.flapdoodle.embed.process.runtime.Network;
 
 public class MongoWithReplicasTestBase {
@@ -85,7 +89,11 @@ public class MongoWithReplicasTestBase {
     }
 
     private static MongodExecutable doGetExecutable(IMongodConfig config) {
-        return MongodStarter.getDefaultInstance().prepare(config);
+        IRuntimeConfig runtimeConfig = new RuntimeConfigBuilder()
+                .defaults(Command.MongoD)
+                .processOutput(ProcessOutput.getDefaultInstanceSilent())
+                .build();
+        return MongodStarter.getInstance(runtimeConfig).prepare(config);
     }
 
     @AfterAll
@@ -109,15 +117,15 @@ public class MongoWithReplicasTestBase {
             final MongoDatabase mongoAdminDB = mongo.getDatabase("admin");
 
             Document cr = mongoAdminDB.runCommand(new Document("isMaster", 1));
-            LOGGER.infof("isMaster: %s", cr);
+            LOGGER.debugf("isMaster: %s", cr);
 
             // Build replica set configuration settings
             final Document rsConfiguration = buildReplicaSetConfiguration(mongodConfigList);
-            LOGGER.infof("replSetSettings: %s", rsConfiguration);
+            LOGGER.debugf("replSetSettings: %s", rsConfiguration);
 
             // Initialize replica set
             cr = mongoAdminDB.runCommand(new Document("replSetInitiate", rsConfiguration));
-            LOGGER.infof("replSetInitiate: %s", cr);
+            LOGGER.debugf("replSetInitiate: %s", cr);
 
             // Check replica set status before to proceed
             await()

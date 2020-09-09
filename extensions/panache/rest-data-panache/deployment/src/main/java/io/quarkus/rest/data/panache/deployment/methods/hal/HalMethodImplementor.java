@@ -9,27 +9,21 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceInfo;
-import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
-import io.quarkus.rest.data.panache.deployment.methods.MethodMetadata;
+import io.quarkus.rest.data.panache.deployment.methods.StandardMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.utils.ResourceName;
 import io.quarkus.rest.data.panache.runtime.hal.HalCollectionWrapper;
 import io.quarkus.rest.data.panache.runtime.hal.HalEntityWrapper;
 
-abstract class HalMethodImplementor implements MethodImplementor {
+abstract class HalMethodImplementor extends StandardMethodImplementor {
 
     @Override
     public void implement(ClassCreator classCreator, IndexView index, MethodPropertiesAccessor propertiesAccessor,
             RestDataResourceInfo resourceInfo) {
-        if (propertiesAccessor.isExposed(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo))) {
+        if (propertiesAccessor.isExposed(resourceInfo.getType(), getMethodMetadata(resourceInfo))) {
             implementInternal(classCreator, index, propertiesAccessor, resourceInfo);
         }
     }
-
-    protected abstract void implementInternal(ClassCreator classCreator, IndexView index,
-            MethodPropertiesAccessor propertiesAccessor, RestDataResourceInfo resourceInfo);
-
-    protected abstract MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo);
 
     protected ResultHandle wrapHalEntity(BytecodeCreator creator, ResultHandle entity) {
         return creator.newInstance(MethodDescriptor.ofConstructor(HalEntityWrapper.class, Object.class), entity);

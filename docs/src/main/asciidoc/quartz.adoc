@@ -411,27 +411,27 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 [[quartz-register-plugin-listeners]]
 == Registering Plugin and Listeners
 
-You can register a plugin, jobListener or triggerListener through Quarkus configuration.
+You can register `plugins`, `job-listeners` and `trigger-listeners` through Quarkus configuration.
 
-The example bellow registers the plugin `org.quartz.plugins.history.LoggingJobHistoryPlugin` named as `jobHistory` with the property `jobSuccessMessage` defined as `Job [{1}.{0}] execution complete and reports: {8}`
+The example below registers the plugin `org.quartz.plugins.history.LoggingJobHistoryPlugin` named as `jobHistory` with the property `jobSuccessMessage` defined as `Job [{1}.{0}] execution complete and reports: {8}`
 
 [source,conf]
 ----
-quarkus.quartz.plugin.jobHistory.class=org.quartz.plugins.history.LoggingJobHistoryPlugin
-quarkus.quartz.plugin.jobHistory.jobSuccessMessage=Job [{1}.{0}] execution complete and reports: {8}
+quarkus.quartz.plugins.jobHistory.class=org.quartz.plugins.history.LoggingJobHistoryPlugin
+quarkus.quartz.plugins.jobHistory.properties.jobSuccessMessage=Job [{1}.{0}] execution complete and reports: {8}
 ----
 
-You can also register a listener programmatically with an injected `org.quartz.Scheduler`
+You can also register a listener programmatically with an injected `org.quartz.Scheduler`:
 
 [source,java]
----
+----
 public class MyListenerManager {
     void onStart(@Observes StartupEvent event, org.quartz.Scheduler scheduler) throws SchedulerException {
         scheduler.getListenerManager().addJobListener(new MyJogListener());
         scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
     }
 }
----
+----
 
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference

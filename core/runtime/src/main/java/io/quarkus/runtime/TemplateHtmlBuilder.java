@@ -67,6 +67,8 @@ public class TemplateHtmlBuilder {
 
     private static final String METHOD_IO = "<li>%1$s: %2$s</li>\n";
 
+    private static final String LIST_ITEM = "<li>%s</li>\n";
+
     private static final String METHOD_END = "    </ul>\n"
             + "</li>";
 
@@ -227,6 +229,9 @@ public class TemplateHtmlBuilder {
     private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor) {
         String content;
         if (withAnchor) {
+            if (title.startsWith("/")) {
+                title = title.substring(1);
+            }
             content = String.format(ANCHOR_TEMPLATE, title, escapeHtml(title));
         } else {
             content = escapeHtml(title);
@@ -250,6 +255,11 @@ public class TemplateHtmlBuilder {
 
     public TemplateHtmlBuilder produces(String produces) {
         result.append(String.format(METHOD_IO, "Produces", escapeHtml(produces)));
+        return this;
+    }
+
+    public TemplateHtmlBuilder listItem(String content) {
+        result.append(String.format(LIST_ITEM, escapeHtml(content)));
         return this;
     }
 
@@ -284,12 +294,25 @@ public class TemplateHtmlBuilder {
                 .replace(">", "&gt;");
     }
 
-    private static String extractFirstLine(final String message) {
-        if (null == message) {
-            return "";
-        }
+    public static String adjustRoot(String httpRoot, String basePath) {
+        //httpRoot can optionally end with a slash
+        //also some templates want the returned path to start with a / and some don't
+        //to make this work we check if the basePath starts with a / or not, and make sure we
+        //the return value follows the same pattern
 
-        String[] lines = message.split("\\r?\\n");
-        return lines[0].trim();
+        if (httpRoot.equals("/")) {
+            //leave it alone
+            return basePath;
+        }
+        if (basePath.startsWith("/")) {
+            if (!httpRoot.endsWith("/")) {
+                return httpRoot + basePath;
+            }
+            return httpRoot.substring(0, httpRoot.length() - 1) + basePath;
+        }
+        if (httpRoot.endsWith("/")) {
+            return httpRoot.substring(1) + basePath;
+        }
+        return httpRoot.substring(1) + "/" + basePath;
     }
 }

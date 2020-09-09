@@ -38,6 +38,7 @@ import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
+import io.smallrye.jwt.auth.cdi.JWTCallerPrincipalFactoryProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
@@ -83,6 +84,7 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(RawClaimTypeProducer.class);
         removable.addBeanClass(JsonValueProducer.class);
         removable.addBeanClass(JwtPrincipalProducer.class);
+        removable.addBeanClass(JWTCallerPrincipalFactoryProducer.class);
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 

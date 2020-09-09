@@ -43,6 +43,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -144,7 +145,8 @@ public class KafkaProcessor {
 
         // Avro - for both Confluent and Apicurio
         try {
-            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer");
+            Class.forName("io.confluent.kafka.serializers.KafkaAvroDeserializer", false,
+                    Thread.currentThread().getContextClassLoader());
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
                             "io.confluent.kafka.serializers.KafkaAvroDeserializer",
@@ -180,7 +182,8 @@ public class KafkaProcessor {
         }
 
         try {
-            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer");
+            Class.forName("io.apicurio.registry.utils.serde.AvroKafkaDeserializer", false,
+                    Thread.currentThread().getContextClassLoader());
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, true, false,
                             "io.apicurio.registry.utils.serde.AvroKafkaDeserializer",
@@ -254,5 +257,14 @@ public class KafkaProcessor {
     HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
                 buildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem ensureJsonParserAvailable() {
+        return UnremovableBeanBuildItem.beanClassNames(
+                "io.quarkus.jackson.ObjectMapperProducer",
+                "com.fasterxml.jackson.databind.ObjectMapper",
+                "io.quarkus.jsonb.JsonbProducer",
+                "javax.json.bind.Jsonb");
     }
 }

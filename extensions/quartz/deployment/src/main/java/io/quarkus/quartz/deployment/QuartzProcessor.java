@@ -2,16 +2,15 @@ package io.quarkus.quartz.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 
 import javax.inject.Singleton;
 
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.quartz.Job;
 import org.quartz.JobListener;
@@ -20,6 +19,7 @@ import org.quartz.core.QuartzSchedulerThread;
 import org.quartz.core.SchedulerSignalerImpl;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.jdbcjobstore.AttributeRestoringConnectionInvocationHandler;
+import org.quartz.impl.jdbcjobstore.DB2v8Delegate;
 import org.quartz.impl.jdbcjobstore.HSQLDBDelegate;
 import org.quartz.impl.jdbcjobstore.JobStoreSupport;
 import org.quartz.impl.jdbcjobstore.MSSQLDelegate;
@@ -35,7 +35,9 @@ import org.quartz.spi.SchedulerPlugin;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -43,22 +45,21 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
-import io.quarkus.quartz.runtime.QuartzAdditionalPropsConfig;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
+import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzScheduler;
 import io.quarkus.quartz.runtime.QuartzSupport;
 
 /**
- * @author Martin Kouba
+ *
  */
 public class QuartzProcessor {
 
@@ -75,17 +76,10 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem jobs(CombinedIndexBuildItem combinedIndexBuildItem) {
-        // Jobs need to be marked as unremovable otherwise ArC will automatically remove them because they are not @Injected anywhere
-        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
-        // Register Jobs
-        for (ClassInfo info : combinedIndexBuildItem.getIndex().getAllKnownImplementors(JOB)) {
-            if (Modifier.isAbstract(info.flags())) {
-                continue;
-            }
-            builder.addBeanClass(info.name().toString());
-        }
-        return builder.build();
+    AutoAddScopeBuildItem addScope() {
+        // Add @Dependent to a Job implementation that has no scope defined but requires CDI services
+        return AutoAddScopeBuildItem.builder().implementsInterface(JOB).requiresContainerServices()
+                .defaultScope(BuiltinScope.DEPENDENT).build();
     }
 
     @BuildStep
@@ -143,6 +137,9 @@ public class QuartzProcessor {
         if (DatabaseKind.isMsSQL(dataSourceKind)) {
             return MSSQLDelegate.class.getName();
         }
+        if (DatabaseKind.isDB2(dataSourceKind)) {
+            return DB2v8Delegate.class.getName();
+        }
 
         return StdJDBCDelegate.class.getName();
 
@@ -180,11 +177,12 @@ public class QuartzProcessor {
     }
 
     private List<ReflectiveClassBuildItem> getAdditionalConfigurationReflectiveClasses(
-            Map<String, QuartzAdditionalPropsConfig> config, Class<?> clazz) {
+            Map<String, QuartzExtensionPointConfig> config, Class<?> clazz) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
-        for (QuartzAdditionalPropsConfig props : config.values()) {
+        for (QuartzExtensionPointConfig props : config.values()) {
             try {
-                if (!clazz.isAssignableFrom(Class.forName(props.clazz))) {
+                if (!clazz
+                        .isAssignableFrom(Class.forName(props.clazz, false, Thread.currentThread().getContextClassLoader()))) {
                     throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz, clazz));
                 }
             } catch (ClassNotFoundException e) {
@@ -199,15 +197,17 @@ public class QuartzProcessor {
     public List<LogCleanupFilterBuildItem> logCleanup(QuartzBuildTimeConfig config) {
         List<LogCleanupFilterBuildItem> logCleanUps = new ArrayList<>();
         logCleanUps.add(new LogCleanupFilterBuildItem(StdSchedulerFactory.class.getName(),
+                Level.INFO,
                 "Quartz scheduler version:",
                 "Using default implementation for",
-                "Quartz scheduler 'QuarkusQuartzScheduler'"));
+                "Quartz scheduler '"));
 
         logCleanUps.add(new LogCleanupFilterBuildItem(org.quartz.core.QuartzScheduler.class.getName(),
+                Level.INFO,
                 "Quartz Scheduler v",
                 "JobFactory set to:",
                 "Scheduler meta-data:",
-                "Scheduler QuarkusQuartzScheduler"));
+                "Scheduler "));
 
         logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType.clazz, config.storeType.simpleName
                 + " initialized.", "Handling", "Using db table-based data access locking",

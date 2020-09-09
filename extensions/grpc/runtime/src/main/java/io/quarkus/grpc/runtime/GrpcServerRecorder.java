@@ -95,24 +95,7 @@ public class GrpcServerRecorder {
                     if (result.failed()) {
                         startResult.completeExceptionally(result.cause());
                     } else {
-                        grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
-                            @Override
-                            public void accept(GrpcHealthStorage storage) {
-                                storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
-                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                                grpcContainer.getServices().forEach(
-                                        new Consumer<BindableService>() { // NOSONAR
-                                            @Override
-                                            public void accept(BindableService service) {
-                                                ServerServiceDefinition definition = service.bindService();
-                                                storage.setStatus(definition.getServiceDescriptor().getName(),
-                                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                                            }
-                                        });
-                            }
-                        });
-                        LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
-                                configuration.host, configuration.port, !configuration.plainText);
+                        postStartup(grpcContainer, configuration);
 
                         startResult.complete(null);
                     }
@@ -130,6 +113,27 @@ public class GrpcServerRecorder {
         }
     }
 
+    private void postStartup(GrpcContainer grpcContainer, GrpcServerConfiguration configuration) {
+        grpcContainer.getHealthStorage().stream().forEach(new Consumer<GrpcHealthStorage>() { //NOSONAR
+            @Override
+            public void accept(GrpcHealthStorage storage) {
+                storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
+                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+                grpcContainer.getServices().forEach(
+                        new Consumer<BindableService>() { // NOSONAR
+                            @Override
+                            public void accept(BindableService service) {
+                                ServerServiceDefinition definition = service.bindService();
+                                storage.setStatus(definition.getServiceDescriptor().getName(),
+                                        HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
+                            }
+                        });
+            }
+        });
+        LOGGER.infof("gRPC Server started on %s:%d [SSL enabled: %s]",
+                configuration.host, configuration.port, !configuration.plainText);
+    }
+
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
             ShutdownContext shutdown) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
@@ -142,6 +146,7 @@ public class GrpcServerRecorder {
                             LOGGER.error("Unable to start the gRPC server", ar.cause());
                             future.completeExceptionally(ar.cause());
                         } else {
+                            postStartup(grpcContainer, configuration);
                             future.complete(true);
                             grpcVerticleCount.incrementAndGet();
                         }

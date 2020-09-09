@@ -17,16 +17,25 @@ public class BuildToolHelper {
 
     public enum BuildTool {
         MAVEN("pom.xml"),
-        GRADLE("build.gradle");
+        GRADLE("build.gradle", "build.gradle.kts");
 
-        private final String buildFile;
+        private final String[] buildFiles;
 
-        BuildTool(String buildFile) {
-            this.buildFile = buildFile;
+        BuildTool(String... buildFile) {
+            this.buildFiles = buildFile;
         }
 
-        public String getBuildFile() {
-            return buildFile;
+        public String[] getBuildFiles() {
+            return buildFiles;
+        }
+
+        public boolean exists(Path root) {
+            for (String buildFile : buildFiles) {
+                if (Files.exists(root.resolve(buildFile))) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -37,11 +46,25 @@ public class BuildToolHelper {
     public static boolean isMavenProject(Path project) {
         Path currentPath = project;
         while (currentPath != null) {
-            if (Files.exists(currentPath.resolve(BuildTool.MAVEN.getBuildFile()))) {
+            if (BuildTool.MAVEN.exists(currentPath)) {
                 return true;
             }
-            if (Files.exists(currentPath.resolve(BuildTool.GRADLE.getBuildFile()))) {
+            if (BuildTool.GRADLE.exists(currentPath)) {
                 return false;
+            }
+            currentPath = currentPath.getParent();
+        }
+        return false;
+    }
+
+    public static boolean isGradleProject(Path project) {
+        Path currentPath = project;
+        while (currentPath != null) {
+            if (BuildTool.MAVEN.exists(currentPath)) {
+                return false;
+            }
+            if (BuildTool.GRADLE.exists(currentPath)) {
+                return true;
             }
             currentPath = currentPath.getParent();
         }
@@ -51,7 +74,7 @@ public class BuildToolHelper {
     public static Path getBuildFile(Path project, BuildTool tool) {
         Path currentPath = project;
         while (currentPath != null) {
-            if (Files.exists(currentPath.resolve(tool.getBuildFile()))) {
+            if (tool.exists(currentPath)) {
                 return currentPath;
             }
             currentPath = currentPath.getParent();

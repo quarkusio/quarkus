@@ -1,21 +1,25 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.codestarts.QuarkusCodestarts.prepareProject;
+import static io.quarkus.devtools.commands.CreateProject.CODESTARTS_ENABLED;
+import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
+import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
+import static io.quarkus.devtools.commands.CreateProject.NO_EXAMPLES;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartInput;
 import io.quarkus.devtools.codestarts.CodestartProject;
-import io.quarkus.devtools.codestarts.CodestartSpec;
+import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.Codestarts;
 import io.quarkus.devtools.codestarts.NestedMaps;
 import io.quarkus.devtools.codestarts.QuarkusCodestartData.LegacySupport;
-import io.quarkus.devtools.codestarts.QuarkusCodestarts;
+import io.quarkus.devtools.codestarts.QuarkusCodestartInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.buildfile.GroovyGradleBuildFilesCreator;
 import io.quarkus.devtools.project.buildfile.KotlinGradleBuildFilesCreator;
@@ -25,7 +29,6 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.devtools.project.codegen.rest.BasicRestProjectGenerator;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ConsoleMessageFormats;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
 import java.util.Collections;
@@ -60,7 +63,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
         });
 
-        if (invocation.getValue("codestarts.enabled", false)) {
+        if (invocation.getValue(CODESTARTS_ENABLED, false)) {
             final List<AppArtifactKey> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery).stream()
                     .map(AppArtifactCoords::getKey)
                     .collect(Collectors.toList());
@@ -73,19 +76,28 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 if (platformDescr.getMetadata().get("gradle") != null) {
                     platformData.put("gradle", platformDescr.getMetadata().get("gradle"));
                 }
-                final CodestartInput input = QuarkusCodestarts.inputBuilder(platformDescr)
+                final QuarkusCodestartInput input = QuarkusCodestartInput.builder(platformDescr)
                         .addExtensions(extensionsToAdd)
-                        .addCodestart(invocation.getQuarkusProject().getBuildTool().getKey())
+                        .buildTool(invocation.getQuarkusProject().getBuildTool())
+                        .noExamples(invocation.getValue(NO_EXAMPLES, false))
+                        .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
+                        .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
                         .addData(platformData)
                         .addData(LegacySupport.convertFromLegacy(invocation.getValues()))
-                        .includeExamples(invocation.getValue("codestarts.with-example-code", true))
+                        .messageWriter(invocation.log())
                         .build();
-                invocation.log().info("Generating Quarkus Codestart Project with data: " + input.getData().toString());
-                final CodestartProject codestartProject = Codestarts
-                        .prepareProject(input);
-                invocation.log().info("Codestarts: " + codestartProject.getCodestarts().stream().map(Codestart::getSpec)
-                        .map(CodestartSpec::getName).collect(Collectors.joining(", ")));
+                invocation.log().info("-----------");
+                invocation.log().info("selected extensions: \n"
+                        + extensionsToAdd.stream().map(e -> "- " + e.getGroupId() + ":" + e.getArtifactId() + "\n")
+                                .collect(Collectors.joining()));
+                final CodestartProject codestartProject = prepareProject(input);
                 Codestarts.generateProject(codestartProject, invocation.getQuarkusProject().getProjectDirPath());
+                invocation.log()
+                        .info("\n-----------\n" + MessageIcons.NOOP_ICON + " "
+                                + codestartProject.getRequiredCodestart(CodestartType.PROJECT).getName()
+                                + " project has been successfully generated in:\n--> "
+                                + invocation.getQuarkusProject().getProjectDirPath().toString() + "\n-----------");
+
             } catch (IOException e) {
                 throw new QuarkusCommandException("Failed to create project", e);
             }
@@ -139,7 +151,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                             .install(extensionsToAdd);
                     result.getInstalled()
                             .forEach(a -> invocation.log()
-                                    .info(ConsoleMessageFormats.ok("Extension " + a.getGroupId() + ":" + a.getArtifactId())
+                                    .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                             + " has been installed"));
                 }
             }

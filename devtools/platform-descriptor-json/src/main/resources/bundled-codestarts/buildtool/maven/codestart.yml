@@ -7,8 +7,6 @@ output-strategy:
 language:
   base:
     data:
-      maven:
-        version: 0.5.6
       kotlin:
         version: 1.3.72
       scala:
@@ -20,16 +18,13 @@ language:
       maven-surefire-plugin:
         version: 2.22.1
     shared-data:
-      uberjar: false
-      supports:
-        native: true
       buildtool:
         build-dir: target
         guide: https://quarkus.io/guides/maven-tooling.html
         guide-native: https://quarkus.io/guides/building-native-image
         cmd:
-          dev: ./mvnw compile quarkus:dev
-          package: ./mvnw package
-          package-uberjar:  ./mvnw package -PuberJar
-          package-native: ./mvnw package -Pnative
-          package-native-container: ./mvnw package -Pnative -Dquarkus.native.container-build=true
+          dev: mvn compile quarkus:dev
+          package: mvn package
+          package-uberjar:  mvn package -PuberJar
+          package-native: mvn package -Pnative
+          package-native-container: mvn package -Pnative -Dquarkus.native.container-build=true

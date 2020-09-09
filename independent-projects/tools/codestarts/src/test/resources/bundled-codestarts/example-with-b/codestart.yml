@@ -1,2 +1,8 @@
 name: example-with-b
-type: example
+type: code
+tags: example
+language:
+  base:
+    data:
+      my-dir-name: my-dynamic-dir/so-cool
+      my-file-name: my-dynamic-file

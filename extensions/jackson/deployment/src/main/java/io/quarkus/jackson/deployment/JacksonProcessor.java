@@ -53,6 +53,7 @@ public class JacksonProcessor {
     private static final DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
     private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
     private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
+    private static final DotName JSON_NAMING = DotName.createSimple("com.fasterxml.jackson.databind.annotation.JsonNaming");
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
 
     private static final String TIME_MODULE = "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
@@ -117,7 +118,7 @@ public class JacksonProcessor {
             AnnotationValue usingValue = deserializeInstance.value("using");
             if (usingValue != null) {
                 // the Deserializers are constructed internally by Jackson using a no-args constructor
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
             }
         }
 
@@ -128,7 +129,7 @@ public class JacksonProcessor {
                 AnnotationValue usingValue = serializeInstance.value("using");
                 if (usingValue != null) {
                     // the Deserializers are constructed internally by Jackson using a no-args constructor
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
                 }
             }
         }
@@ -137,6 +138,14 @@ public class JacksonProcessor {
         for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_CREATOR)) {
             if (METHOD == creatorInstance.target().kind()) {
                 reflectiveMethod.produce(new ReflectiveMethodBuildItem(creatorInstance.target().asMethod()));
+            }
+        }
+
+        // register @JsonNaming strategy implementations for reflection
+        for (AnnotationInstance jsonNamingInstance : index.getAnnotations(JSON_NAMING)) {
+            AnnotationValue strategyValue = jsonNamingInstance.value("value");
+            if (strategyValue != null) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, strategyValue.asClass().name().toString()));
             }
         }
 

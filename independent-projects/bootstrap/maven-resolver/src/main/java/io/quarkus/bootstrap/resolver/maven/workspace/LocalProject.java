@@ -36,6 +36,8 @@ public class LocalProject {
         private final Map<Path, Model> cachedModels = new HashMap<>();
         private final Path currentProjectPom;
         private Path workspaceRootPom;
+        // indicates whetehr the workspace root pom has been resolved or provided by the caller
+        private boolean workspaceRootResolved;
 
         private WorkspaceLoader(Path currentProjectPom) throws BootstrapMavenException {
             this.currentProjectPom = isPom(currentProjectPom) ? currentProjectPom
@@ -73,10 +75,10 @@ public class LocalProject {
         }
 
         private Path getWorkspaceRootPom() throws BootstrapMavenException {
-            return workspaceRootPom == null ? workspaceRootPom = resolveWorkspaceRootPom() : workspaceRootPom;
+            return workspaceRootPom == null ? workspaceRootPom = resolveWorkspaceRootPom(false) : workspaceRootPom;
         }
 
-        private Path resolveWorkspaceRootPom() throws BootstrapMavenException {
+        private Path resolveWorkspaceRootPom(boolean stopAtCached) throws BootstrapMavenException {
             Path rootPom = null;
             Path projectPom = currentProjectPom;
             Model model = model(projectPom);
@@ -105,11 +107,15 @@ public class LocalProject {
                     } else {
                         // if the parent is not at the top of the FS tree, it might have already been parsed
                         model = null;
-                        for (Map.Entry<Path, Model> entry : cachedModels.entrySet()) {
-                            // we are looking for the root dir of the workspace
-                            if (rootPom.getNameCount() > entry.getKey().getNameCount()) {
-                                rootPom = entry.getValue().getPomFile().toPath();
+                        if (!stopAtCached) {
+                            for (Map.Entry<Path, Model> entry : cachedModels.entrySet()) {
+                                // we are looking for the root dir of the workspace
+                                if (rootPom.getNameCount() > entry.getKey().getNameCount()) {
+                                    rootPom = entry.getValue().getPomFile().toPath();
+                                }
                             }
+                            // it is supposed to be the root pom
+                            workspaceRootResolved = true;
                         }
                     }
                 }
@@ -118,10 +124,22 @@ public class LocalProject {
         }
 
         LocalProject load() throws BootstrapMavenException {
-            load(null, getWorkspaceRootPom());
+            final Path rootPom = getWorkspaceRootPom();
+            load(null, rootPom);
             if (workspace.getCurrentProject() == null) {
-                if (!currentProjectPom.equals(getWorkspaceRootPom())) {
-                    load(null, currentProjectPom);
+                if (!currentProjectPom.equals(rootPom)) {
+                    // if the root pom wasn't resolved but provided we are going to try to navigate
+                    // to the very top pom that hasn't already been loaded
+                    if (!workspaceRootResolved) {
+                        final Path resolvedRootPom = resolveWorkspaceRootPom(true);
+                        if (!rootPom.equals(resolvedRootPom)) {
+                            load(null, resolvedRootPom);
+                        }
+                    }
+                    // if the project still wasn't found, we load it directly
+                    if (workspace.getCurrentProject() == null) {
+                        load(null, currentProjectPom);
+                    }
                 }
                 if (workspace.getCurrentProject() == null) {
                     throw new BootstrapMavenException(
@@ -137,8 +155,13 @@ public class LocalProject {
             if (parent != null) {
                 parent.modules.add(project);
             }
-            if (workspace.getCurrentProject() == null && currentProjectPom.getParent().equals(project.getDir())) {
-                workspace.setCurrentProject(project);
+            try {
+                if (workspace.getCurrentProject() == null
+                        && Files.isSameFile(currentProjectPom.getParent(), project.getDir())) {
+                    workspace.setCurrentProject(project);
+                }
+            } catch (IOException e) {
+                throw new BootstrapMavenException("Failed to load current project", e);
             }
             final List<String> modules = project.getRawModel().getModules();
             if (!modules.isEmpty()) {

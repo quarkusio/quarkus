@@ -1,6 +1,5 @@
 name: dockerfiles
 type: tooling
-preselected: true
 language:
   base:
     data:

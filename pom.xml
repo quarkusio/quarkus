@@ -49,6 +49,7 @@
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/qute</module>
         <module>independent-projects/tools</module>
+        <module>independent-projects/enforcer-rules</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
@@ -113,6 +114,7 @@
                 <format.skip>true</format.skip>
                 <skipExtensionValidation>true</skipExtensionValidation>
                 <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>

@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -51,6 +54,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildItem;
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
@@ -81,6 +85,8 @@ import io.smallrye.openapi.vertx.VertxConstants;
  */
 public class SmallRyeOpenApiProcessor {
 
+    private static final Logger log = Logger.getLogger("io.quarkus.smallrye.openapi");
+
     private static final String META_INF_OPENAPI_YAML = "META-INF/openapi.yaml";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YAML = "WEB-INF/classes/META-INF/openapi.yaml";
     private static final String META_INF_OPENAPI_YML = "META-INF/openapi.yml";
@@ -103,7 +109,7 @@ public class SmallRyeOpenApiProcessor {
     private static final String SPRING = "Spring";
     private static final String VERT_X = "Vert.x";
 
-    SmallRyeOpenApiConfig openapi;
+    SmallRyeOpenApiConfig openApiConfig;
 
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
@@ -143,9 +149,9 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             recorder.setupClDevMode(shutdownContext);
-            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openapi.path));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openApiConfig.path));
         }
-        return new RouteBuildItem(openapi.path, new OpenApiHandler(), HandlerType.BLOCKING);
+        return new RouteBuildItem(openApiConfig.path, new OpenApiHandler(), HandlerType.BLOCKING);
     }
 
     @BuildStep
@@ -188,14 +194,8 @@ public class SmallRyeOpenApiProcessor {
                 if (typeTarget.kind() != AnnotationTarget.Kind.CLASS) {
                     continue;
                 }
-                reflectiveHierarchy
-                        .produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(Type.create(typeTarget.asClass().name(), Type.Kind.CLASS))
-                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                .source(getClass().getSimpleName() + " > " + typeTarget.asClass().name())
-                                .build());
+                produceReflectiveHierarchy(reflectiveHierarchy, Type.create(typeTarget.asClass().name(), Type.Kind.CLASS),
+                        getClass().getSimpleName() + " > " + typeTarget.asClass().name());
             }
 
             // Generate reflection declaration from MP OpenAPI APIResponse schema definition
@@ -239,13 +239,7 @@ public class SmallRyeOpenApiProcessor {
 
                 AnnotationValue schemaImplementationClass = schema.value(OPENAPI_SCHEMA_IMPLEMENTATION);
                 if (schemaImplementationClass != null) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(schemaImplementationClass.asClass())
-                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(source)
-                            .build());
+                    produceReflectiveHierarchy(reflectiveHierarchy, schemaImplementationClass.asClass(), source);
                 }
 
                 AnnotationValue schemaNotClass = schema.value(OPENAPI_SCHEMA_NOT);
@@ -253,44 +247,9 @@ public class SmallRyeOpenApiProcessor {
                     reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaNotClass.asString()));
                 }
 
-                AnnotationValue schemaOneOfClasses = schema.value(OPENAPI_SCHEMA_ONE_OF);
-                if (schemaOneOfClasses != null) {
-                    for (Type schemaOneOfClass : schemaOneOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(schemaOneOfClass)
-                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                .source(source)
-                                .build());
-                    }
-                }
-
-                AnnotationValue schemaAnyOfClasses = schema.value(OPENAPI_SCHEMA_ANY_OF);
-                if (schemaAnyOfClasses != null) {
-                    for (Type schemaAnyOfClass : schemaAnyOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(schemaAnyOfClass)
-                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                .source(source)
-                                .build());
-                    }
-                }
-
-                AnnotationValue schemaAllOfClasses = schema.value(OPENAPI_SCHEMA_ALL_OF);
-                if (schemaAllOfClasses != null) {
-                    for (Type schemaAllOfClass : schemaAllOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                .type(schemaAllOfClass)
-                                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                .source(source)
-                                .build());
-                    }
-                }
+                produceReflectiveHierarchy(reflectiveHierarchy, schema.value(OPENAPI_SCHEMA_ONE_OF), source);
+                produceReflectiveHierarchy(reflectiveHierarchy, schema.value(OPENAPI_SCHEMA_ANY_OF), source);
+                produceReflectiveHierarchy(reflectiveHierarchy, schema.value(OPENAPI_SCHEMA_ALL_OF), source);
             }
         }
     }
@@ -303,6 +262,7 @@ public class SmallRyeOpenApiProcessor {
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities,
             HttpRootPathBuildItem httpRootPathBuildItem,
+            OutputTargetBuildItem out,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
@@ -317,11 +277,16 @@ public class SmallRyeOpenApiProcessor {
             annotationModel = null;
         }
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+        boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
         for (Format format : Format.values()) {
             String name = OpenApiHandler.BASE_NAME + format;
-            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
-                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            byte[] schemaDocument = OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8);
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name, schemaDocument));
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
+
+            if (shouldStore) {
+                storeGeneratedSchema(out, schemaDocument, format);
+            }
         }
     }
 
@@ -329,6 +294,48 @@ public class SmallRyeOpenApiProcessor {
     LogCleanupFilterBuildItem logCleanup() {
         return new LogCleanupFilterBuildItem("io.smallrye.openapi.api.OpenApiDocument",
                 "OpenAPI document initialized:");
+    }
+
+    private void produceReflectiveHierarchy(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            AnnotationValue annotationValue, String source) {
+        if (annotationValue != null) {
+            for (Type type : annotationValue.asClassArray()) {
+                produceReflectiveHierarchy(reflectiveHierarchy, type, source);
+            }
+        }
+    }
+
+    private void produceReflectiveHierarchy(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, Type type,
+            String source) {
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                .type(type)
+                .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                .source(source)
+                .build());
+    }
+
+    private void storeGeneratedSchema(OutputTargetBuildItem out, byte[] schemaDocument, Format format) throws IOException {
+        Path directory = openApiConfig.storeSchemaDirectory.get();
+
+        Path outputDirectory = out.getOutputDirectory();
+
+        if (!directory.isAbsolute() && outputDirectory != null) {
+            directory = Paths.get(outputDirectory.getParent().toString(), directory.toString());
+        }
+
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+        }
+
+        Path file = Paths.get(directory.toString(), "openapi." + format.toString().toLowerCase());
+        if (!Files.exists(file)) {
+            Files.createFile(file);
+        }
+        Files.write(file, schemaDocument, StandardOpenOption.WRITE);
+
+        log.info("OpenAPI " + format.toString() + " saved: " + file.toString());
     }
 
     private boolean shouldScanAnnotations(Capabilities capabilities, IndexView index) {

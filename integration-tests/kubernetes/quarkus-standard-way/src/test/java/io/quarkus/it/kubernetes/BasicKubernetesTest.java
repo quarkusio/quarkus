@@ -71,9 +71,9 @@ public class BasicKubernetesTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
-                            assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
+                            assertThat(container.getPorts()).singleElement().satisfies(p -> {
                                 assertThat(p.getContainerPort()).isEqualTo(8080);
                             });
                         });
@@ -87,7 +87,7 @@ public class BasicKubernetesTest {
                 assertThat(m.getNamespace()).isNull();
             });
             assertThat(s.getSpec()).satisfies(spec -> {
-                assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                     assertThat(p.getPort()).isEqualTo(8080);
                 });
             });

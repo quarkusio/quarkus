@@ -22,7 +22,8 @@ public interface CodestartFileStrategyHandler {
                     new ReplaceCodestartFileStrategyHandler(),
                     new ForbiddenCodestartFileStrategyHandler(),
                     new SmartConfigMergeCodestartFileStrategyHandler(),
-                    new SmartPomMergeCodestartFileStrategyHandler())
+                    new SmartPomMergeCodestartFileStrategyHandler(),
+                    new NativeTestDirResolveCodestartFileStrategyHandler())
             .collect(Collectors.toMap(CodestartFileStrategyHandler::name, Function.identity()));
 
     String name();
@@ -41,6 +42,10 @@ public interface CodestartFileStrategyHandler {
             throw new CodestartDefinitionException(
                     "Target file already exists: " + targetPath.toString());
         }
+    }
+
+    default void createDirectories(Path targetPath) throws IOException {
+        Files.createDirectories(targetPath.getParent());
     }
 
 }

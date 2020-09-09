@@ -22,7 +22,7 @@ Base:
 Extra:
 
 * tooling: Anything that can be added to improve the project (e.g. dockerfiles)
-* example: Any Quarkus extension can provide example code. The user can decide to activate it or not.
+* code: Any Quarkus extension can provide example code. The user can decide to activate it or not.
 
 Each codestart consists of:
 
@@ -38,19 +38,19 @@ Each codestart consists of:
 When generating a Quarkus project:
 
 . Codestarts to use are resolved depending on the input
-. The Codestarts' `shared-data` (defined in the different codestart.yml) is merge together and made available to all codestarts
+. The Codestarts' `shared-data` (defined in the different codestart.yml) is merged together and made available to all codestarts (conflicts are forbidden)
 . The relevant files are processed:
 ** Only the files that are related to the selected language are processed
 ** The files are processed differently based on a naming convention.
 ** The data is used to render Qute templates
 ** We always process in this order: 
 
-. language
-. project
-. buildtool
-. config
-. tooling
-. example
+... language
+... project
+... buildtool
+... config
+... tooling
+... code
 
 
 The data used to generate a specific codestart is a merge of:
@@ -77,7 +77,8 @@ codestart.yml:
 ----
 name: the unique name - REQUIRED
 ref: the reference name (not unique) to use for extension matching (else the name is used)
-type: the type [example (default), project, buildtool, language, config] or any custom type
+type: the type [code (default), project, buildtool, language, config] or any custom type
+tags: an array of tags (add `example` for example codestarts)
 fallback: flag to indicate that it should be selected as fallback when no codestart has been selected with type - Only for base types
 preselected: flag to indicate that it should be pre-selected - Only for extra types.
 spec:
@@ -91,9 +92,6 @@ spec:
 === Common Shared and Built In Data
 
 There's a few built `shared-data` variables that you should know about
-* `supports.native` can be toggled if your example does not support native.  This will omit README and relevant build scripts
-* `supports.dev-mode` can be toggled if your example does not support Quarkus devmode.  This will omit README information
-* `uberjar` can be toggled to switch on the uberjar flag in the pom.xml
 * `gen-info.time` is hardcoded to current time milliseconds of when the codestart was generated.  Useful if you need a random value in your codestart.
 
 
@@ -137,7 +135,8 @@ codestart.yml:
 ---
 name: foo-example
 ref: foo
-type: example
+type: code
+tags: example
 spec:
   base:
     data:

@@ -24,7 +24,7 @@ interface PanacheEntityBase {
      */
     @JsonbTransient
     @JsonIgnore
-    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager()
+    fun getEntityManager(): EntityManager = JpaOperations.getEntityManager(this.javaClass)
 
     /**
      * Returns true if this entity is persistent in the database. If yes, all modifications to
@@ -58,7 +58,7 @@ interface PanacheEntityBase {
      */
     fun persistAndFlush() {
         JpaOperations.persist(this)
-        JpaOperations.flush()
+        JpaOperations.flush(this)
     }
 
     /**

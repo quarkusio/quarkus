@@ -61,10 +61,8 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyCommonProcessor.ResteasyCommonConfig;
@@ -164,8 +162,6 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
-            BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
@@ -183,8 +179,6 @@ public class ResteasyServerCommonProcessor {
             Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
             CustomScopeAnnotationsBuildItem scopes) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
-
-        resource.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
         Collection<AnnotationInstance> applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
 
@@ -725,7 +719,8 @@ public class ResteasyServerCommonProcessor {
                 } else {
                     //might be a framework class, which should be loadable
                     try {
-                        Class<?> typeClass = Class.forName(annotatedType.name().toString());
+                        Class<?> typeClass = Class.forName(annotatedType.name().toString(), false,
+                                Thread.currentThread().getContextClassLoader());
                         if (typeClass.isInterface()) {
                             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
                         }

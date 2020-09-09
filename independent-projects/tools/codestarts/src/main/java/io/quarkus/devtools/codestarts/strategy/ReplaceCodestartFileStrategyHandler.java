@@ -25,8 +25,10 @@ final class ReplaceCodestartFileStrategyHandler implements DefaultCodestartFileS
     public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
-        checkTargetDoesNotExist(targetDirectory.resolve(relativePath));
-        Files.write(targetDirectory.resolve(relativePath),
+        final Path targetPath = targetDirectory.resolve(relativePath);
+        checkTargetDoesNotExist(targetPath);
+        createDirectories(targetPath);
+        Files.write(targetPath,
                 codestartFiles.get(codestartFiles.size() - 1).getContent().getBytes());
     }
 }

@@ -5,10 +5,10 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.UUID;
 
+import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
-import javax.persistence.PersistenceUnit;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
-    @PersistenceUnit(unitName = "templatePU")
+    @Inject
     EntityManagerFactory entityManagerFactory;
 
     @Override
@@ -99,7 +99,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
-        em.createNativeQuery("Delete from Person").executeUpdate();
+        em.createNativeQuery("Delete from myschema.Person").executeUpdate();
         transaction.commit();
         em.close();
     }

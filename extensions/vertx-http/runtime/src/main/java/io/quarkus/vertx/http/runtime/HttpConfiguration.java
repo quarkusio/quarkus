@@ -203,6 +203,19 @@ public class HttpConfiguration {
     @ConfigItem
     public Map<String, SameSiteCookieConfig> sameSiteCookie;
 
+    /**
+     * If responses should be compressed.
+     *
+     * Note that this will attempt to compress all responses, to avoid compressing
+     * already compressed content (such as images) you need to set the following header:
+     * 
+     * Content-Encoding: identity
+     * 
+     * Which will tell vert.x not to compress the response.
+     */
+    @ConfigItem
+    public boolean enableCompression;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

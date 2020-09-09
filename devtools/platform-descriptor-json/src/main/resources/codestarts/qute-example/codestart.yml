@@ -1,6 +1,7 @@
 name: qute-example
 ref: qute
-type: example
+type: code
+tags: example
 language:
   base:
     dependencies:

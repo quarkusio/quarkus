@@ -3,7 +3,6 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
@@ -261,7 +260,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
     }
 
-    private void injectDataSource(String persistenceUnitName, Optional<String> dataSource,
+    private void injectDataSource(String persistenceUnitName, String dataSource,
             RuntimeSettings.Builder runtimeSettingsBuilder) {
         // first convert
 
@@ -274,18 +273,15 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         InstanceHandle<DataSource> dataSourceHandle;
-        if (!dataSource.isPresent()) {
-            // we are in the case of a XML-defined PU with no datasource defined, we use the default datasource
-            dataSourceHandle = Arc.container().instance(DataSource.class);
-        } else if (DataSourceUtil.isDefault(dataSource.get())) {
+        if (DataSourceUtil.isDefault(dataSource)) {
             dataSourceHandle = Arc.container().instance(DataSource.class);
         } else {
-            dataSourceHandle = Arc.container().instance(DataSource.class, new DataSourceLiteral(dataSource.get()));
+            dataSourceHandle = Arc.container().instance(DataSource.class, new DataSourceLiteral(dataSource));
         }
 
         if (!dataSourceHandle.isAvailable()) {
             throw new IllegalStateException(
-                    "No datasource " + dataSource.get() + " has been defined for persistence unit " + persistenceUnitName);
+                    "No datasource " + dataSource + " has been defined for persistence unit " + persistenceUnitName);
         }
 
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSourceHandle.get());

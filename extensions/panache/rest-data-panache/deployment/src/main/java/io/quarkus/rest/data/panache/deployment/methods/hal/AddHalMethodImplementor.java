@@ -53,7 +53,7 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
         addTransactionalAnnotation(methodCreator);
         addPostAnnotation(methodCreator);
         addPathAnnotation(methodCreator,
-                propertiesAccessor.getPath(resourceInfo.getType(), getStandardMethodMetadata(resourceInfo)));
+                propertiesAccessor.getPath(resourceInfo.getType(), getMethodMetadata(resourceInfo)));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesAnnotation(methodCreator, APPLICATION_HAL_JSON);
 
@@ -66,7 +66,7 @@ public final class AddHalMethodImplementor extends HalMethodImplementor {
     }
 
     @Override
-    protected MethodMetadata getStandardMethodMetadata(RestDataResourceInfo resourceInfo) {
+    protected MethodMetadata getMethodMetadata(RestDataResourceInfo resourceInfo) {
         return new MethodMetadata(AddMethodImplementor.NAME, resourceInfo.getEntityInfo().getType());
     }
 }

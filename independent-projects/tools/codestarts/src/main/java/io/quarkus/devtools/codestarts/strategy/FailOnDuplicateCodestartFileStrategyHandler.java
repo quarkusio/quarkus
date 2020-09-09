@@ -9,9 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodestartFileStrategyHandler {
+
+    static final String NAME = "fail-on-duplicate";
+
     @Override
     public String name() {
-        return "fail-on-duplicate";
+        return NAME;
     }
 
     @Override
@@ -23,6 +26,7 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
             throw new CodestartDefinitionException(
                     "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + relativePath);
         }
+        createDirectories(targetPath);
         Files.write(targetPath, codestartFiles.get(0).getContent().getBytes());
     }
 
@@ -30,7 +34,7 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
     public void copyStaticFile(Path sourcePath, Path targetPath) throws IOException {
         if (Files.exists(targetPath)) {
             throw new CodestartDefinitionException(
-                    "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + targetPath);
+                    "Multiple files found for path with 'fail-on-duplicate' FileStrategy: " + sourcePath + ":" + targetPath);
         }
         Files.createDirectories(targetPath.getParent());
         Files.copy(sourcePath, targetPath);

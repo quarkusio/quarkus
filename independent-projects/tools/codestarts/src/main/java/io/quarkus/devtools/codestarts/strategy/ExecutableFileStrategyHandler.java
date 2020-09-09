@@ -26,6 +26,7 @@ final class ExecutableFileStrategyHandler implements CodestartFileStrategyHandle
             throw new CodestartDefinitionException(
                     "Multiple files found for path with executable FileStrategy: " + relativePath);
         }
+        createDirectories(targetPath);
         Files.write(targetPath, codestartFiles.get(0).getContent().getBytes());
         final File file = targetPath.toFile();
         file.setExecutable(true, false);

@@ -2,9 +2,6 @@ package io.quarkus.mongodb.panache.runtime;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Named;
 
 import io.quarkus.arc.Arc;
@@ -28,8 +25,9 @@ public final class BeanUtils {
         return MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
     }
 
-    public static <T> T clientFromArc(MongoEntity entity, Class<T> clientClass) {
-        T mongoClient = Arc.container().instance(clientClass, clientLiteral(beanName(entity))).get();
+    public static <T> T clientFromArc(MongoEntity entity, Class<T> clientClass, boolean isReactive) {
+        T mongoClient = Arc.container().instance(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive))
+                .get();
         if (mongoClient != null) {
             return mongoClient;
         }
@@ -53,14 +51,6 @@ public final class BeanUtils {
             throw new IllegalStateException(
                     String.format("Unable to find %s bean for entity %s", clientClass.getSimpleName(), entity.toString()));
         }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static AnnotationLiteral clientLiteral(String name) {
-        if (name.startsWith(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME)) {
-            return Default.Literal.INSTANCE;
-        }
-        return NamedLiteral.of(name);
     }
 
     public static String getDatabaseName(MongoEntity entity, String clientBeanName) {

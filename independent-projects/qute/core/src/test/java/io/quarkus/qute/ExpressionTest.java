@@ -18,6 +18,7 @@ public class ExpressionTest {
     @Test
     public void testExpressions() throws InterruptedException, ExecutionException {
         verify("data:name.value", "data", null, name("name", "name"), name("value", "value"));
+        verify("data:getName('value')", "data", null, virtualMethod("getName", ExpressionImpl.from("'value'")));
         // ignore adjacent separators
         verify("name..value", null, null, name("name"), name("value"));
         verify("0", null, CompletableFuture.completedFuture(Integer.valueOf(0)), name("0", "|java.lang.Integer|"));

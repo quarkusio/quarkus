@@ -131,9 +131,17 @@ class HibernateSearchElasticsearchProcessor {
     private void registerReflection(IndexView index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
 
-        if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
+        if (buildTimeConfig.defaultBackend.indexDefaults.analysis.configurer.isPresent()) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.analysis.configurer.get()));
+                    new ReflectiveClassBuildItem(true, false,
+                            buildTimeConfig.defaultBackend.indexDefaults.analysis.configurer.get()));
+        }
+        for (HibernateSearchElasticsearchBuildTimeConfig.ElasticsearchIndexBuildTimeConfig indexConfig : buildTimeConfig.defaultBackend.indexes
+                .values()) {
+            if (indexConfig.analysis.configurer.isPresent()) {
+                reflectiveClass.produce(
+                        new ReflectiveClassBuildItem(true, false, indexConfig.analysis.configurer.get()));
+            }
         }
 
         if (buildTimeConfig.defaultBackend.layout.strategy.isPresent()) {

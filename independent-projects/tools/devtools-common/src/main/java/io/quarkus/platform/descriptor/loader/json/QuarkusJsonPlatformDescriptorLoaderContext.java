@@ -1,8 +1,7 @@
 package io.quarkus.platform.descriptor.loader.json;
 
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
-import io.quarkus.platform.tools.DefaultMessageWriter;
-import io.quarkus.platform.tools.MessageWriter;
 import java.io.InputStream;
 import java.util.function.Function;
 
@@ -13,7 +12,7 @@ public abstract class QuarkusJsonPlatformDescriptorLoaderContext implements Quar
     protected final ResourceLoader resourceLoader;
 
     public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver) {
-        this(artifactResolver, new DefaultMessageWriter());
+        this(artifactResolver, MessageWriter.info());
     }
 
     public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver, MessageWriter log) {

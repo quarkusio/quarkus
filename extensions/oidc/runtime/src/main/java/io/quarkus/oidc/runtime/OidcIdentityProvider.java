@@ -11,7 +11,9 @@ import javax.inject.Inject;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
+import io.quarkus.oidc.OidcTokenCredential;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -42,8 +44,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
-        RoutingContext vertxContext = credential.getContext();
+        OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
+        RoutingContext vertxContext = credential.getRoutingContext();
         return Uni.createFrom().deferred(new Supplier<Uni<SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {
@@ -108,7 +110,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
                                     tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
                                 }
-
                                 JsonObject userInfo = null;
                                 if (resolvedContext.oidcConfig.authentication.isUserInfoRequired()) {
                                     userInfo = getUserInfo(event.result(), (String) vertxContext.get("access_token"));
@@ -118,9 +119,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
                                             userInfo);
                                     try {
-                                        uniEmitter.complete(
-                                                validateAndCreateIdentity(vertxContext, tokenCred, resolvedContext.oidcConfig,
-                                                        tokenJson, rolesJson, userInfo));
+                                        SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
+                                                resolvedContext.oidcConfig,
+                                                tokenJson, rolesJson, userInfo);
+                                        if (tokenAutoRefreshPrepared(tokenJson, vertxContext, resolvedContext.oidcConfig)) {
+                                            throw new TokenAutoRefreshException(securityIdentity);
+                                        } else {
+                                            uniEmitter.complete(securityIdentity);
+                                        }
                                     } catch (Throwable ex) {
                                         uniEmitter.fail(ex);
                                     }
@@ -154,6 +160,24 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         });
             }
         });
+    }
+
+    private static boolean tokenAutoRefreshPrepared(JsonObject tokenJson, RoutingContext vertxContext,
+            OidcTenantConfig oidcConfig) {
+        if (tokenJson != null
+                && oidcConfig.token.refreshExpired
+                && oidcConfig.token.autoRefreshInterval.isPresent()
+                && vertxContext.get("tokenAutoRefreshInProgress") != Boolean.TRUE
+                && vertxContext.get("new_authentication") != Boolean.TRUE) {
+            final long autoRefreshInterval = oidcConfig.token.autoRefreshInterval.get().getSeconds();
+            final long expiry = tokenJson.getLong("exp");
+            final long now = System.currentTimeMillis() / 1000;
+            if (now + autoRefreshInterval > expiry) {
+                vertxContext.put("tokenAutoRefreshInProgress", Boolean.TRUE);
+                return true;
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings("deprecation")

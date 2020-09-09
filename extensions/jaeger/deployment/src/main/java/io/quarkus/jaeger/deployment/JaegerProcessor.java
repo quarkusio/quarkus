@@ -21,6 +21,7 @@ import io.quarkus.jaeger.runtime.JaegerBuildTimeConfig;
 import io.quarkus.jaeger.runtime.JaegerConfig;
 import io.quarkus.jaeger.runtime.JaegerDeploymentRecorder;
 import io.quarkus.runtime.ApplicationConfig;
+import io.quarkus.runtime.metrics.MetricsFactory;
 
 public class JaegerProcessor {
 
@@ -43,7 +44,11 @@ public class JaegerProcessor {
 
         if (buildTimeConfig.enabled) {
             if (buildTimeConfig.metricsEnabled && metricsCapability.isPresent()) {
-                jdr.registerTracerWithMpMetrics(jaeger, appConfig);
+                if (metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+                    jdr.registerTracerWithMicrometerMetrics(jaeger, appConfig);
+                } else {
+                    jdr.registerTracerWithMpMetrics(jaeger, appConfig);
+                }
             } else {
                 jdr.registerTracerWithoutMetrics(jaeger, appConfig);
             }

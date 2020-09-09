@@ -23,9 +23,10 @@ public class KubernetesConfigProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
-            KubernetesConfigSourceConfig config, KubernetesClientBuildConfig clientConfig) {
+            KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
+            KubernetesClientBuildConfig clientConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configSources(config, clientConfig));
+                recorder.configSources(config, buildTimeConfig, clientConfig));
     }
 
     @BuildStep

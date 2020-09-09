@@ -40,6 +40,7 @@ public class NamespacedConfigMapPropertiesTest {
             conf.put("quarkus.kubernetes-config.config-maps", "cmap3");
             conf.put("quarkus.kubernetes-config.namespace", "demo");
             conf.put("quarkus.kubernetes-config.secrets", "s1");
+            conf.put("quarkus.kubernetes-config.secrets.enabled", "true");
             return conf;
         }
 

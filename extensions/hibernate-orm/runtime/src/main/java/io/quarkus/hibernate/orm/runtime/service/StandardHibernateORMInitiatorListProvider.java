@@ -38,6 +38,11 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
     @Override
     public List<StandardServiceInitiator> initialInitiatorList() {
+
+        // Note to maintainers: always remember to check for consistency needs with both:
+        // io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder#buildQuarkusServiceInitiatorList(RecordedState)
+        // and ReactiveHibernateInitiatorListProvider
+
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
         //This one needs to be replaced after Metadata has been recorded:
@@ -47,7 +52,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
+        // Custom one!
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
+
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         serviceInitiators.add(JdbcEnvironmentInitiator.INSTANCE);

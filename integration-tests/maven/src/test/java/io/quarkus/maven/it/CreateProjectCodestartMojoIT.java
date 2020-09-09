@@ -11,6 +11,8 @@ import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -25,6 +27,7 @@ import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.InvokerLogger;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamLogger;
+import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,32 +49,68 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     @ParameterizedTest
     @MethodSource("provideLanguages")
     public void generateMavenProject(String language, String extensions) throws Exception {
-        final Path generatedProjectPath = generateProject("maven", language, extensions);
+        final Path generatedProjectPath = generateProject("maven", language, extensions, Collections.emptyMap());
         checkDir(generatedProjectPath.resolve("src/main/" + language));
         Stream.of(extensions.split(","))
                 .filter(s -> !s.isEmpty())
-                .forEach(e -> check(generatedProjectPath.resolve("pom.xml"), e));
+                .forEach(e -> checkContent(generatedProjectPath.resolve("pom.xml"), e));
     }
 
     @ParameterizedTest
     @MethodSource("provideLanguages")
     public void generateGradleProject(String language, String extensions) throws Exception {
-        final Path generatedProjectPath = generateProject("gradle", language, extensions);
+        final Path generatedProjectPath = generateProject("gradle", language, extensions, Collections.emptyMap());
         checkDir(generatedProjectPath.resolve("src/main/" + language));
         Stream.of(extensions.split(","))
-                .forEach(e -> check(generatedProjectPath.resolve("build.gradle"), e));
+                .forEach(e -> checkContent(generatedProjectPath.resolve("build.gradle"), e));
     }
 
-    private Path generateProject(String buildtool, String language, String extensions) throws Exception {
+    @ParameterizedTest
+    @MethodSource("provideLanguages")
+    public void generateGradleKotlinProject(String language, String extensions) throws Exception {
+        final Path generatedProjectPath = generateProject("gradle-kotlin-dsl", language, extensions, Collections.emptyMap());
+        checkDir(generatedProjectPath.resolve("src/main/" + language));
+        Stream.of(extensions.split(","))
+                .forEach(e -> checkContent(generatedProjectPath.resolve("build.gradle.kts"), e));
+    }
+
+    @Test
+    public void generateCustomRESTEasyJavaProject() throws Exception {
+        final HashMap<String, String> options = new HashMap<>();
+        options.put("path", "/bonjour");
+        options.put("className", "com.andy.BonjourResource");
+        final Path generatedProjectPath = generateProject("maven", "java",
+                "resteasy", options);
+        checkDir(generatedProjectPath.resolve("src/main/java/com/andy"));
+        checkContent(generatedProjectPath.resolve("src/main/java/com/andy/BonjourResource.java"),
+                "package com.andy;",
+                "class BonjourResource",
+                "@Path(\"/bonjour\")");
+
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/BonjourResourceTest.java"),
+                "package com.andy;",
+                "class BonjourResourceTest",
+                "\"/bonjour\"");
+
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java"),
+                "package comandy;",
+                "class NativeBonjourResourceIT extends BonjourResourceTest");
+    }
+
+    private Path generateProject(String buildtool, String language, String extensions, Map<String, String> options)
+            throws Exception {
         String name = "project-" + buildtool + "-" + language;
         if (extensions.isEmpty()) {
             name += "-commandmode";
         } else {
             name += "-" + extensions.replace(",", "-");
         }
+        if (!options.isEmpty()) {
+            name += "-custom";
+        }
         testDir = prepareTestDir(name);
         LOG.info("creating project in " + testDir.toPath().toString());
-        return runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""));
+        return runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""), options);
     }
 
     private static File prepareTestDir(String name) {
@@ -88,7 +127,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         return tc;
     }
 
-    private Path runCreateCommand(String buildTool, String extensions)
+    private Path runCreateCommand(String buildTool, String extensions, Map<String, String> options)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         // Scaffold the new project
         assertThat(testDir).isDirectory();
@@ -99,6 +138,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         properties.put("codestartsEnabled", "true");
         properties.put("buildTool", buildTool);
         properties.put("extensions", extensions);
+        properties.putAll(options);
 
         InvocationResult result = executeCreate(properties);
 
@@ -119,7 +159,7 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
-        request.setShowErrors(false);
+        request.setShowErrors(true);
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         PrintStreamLogger logger = getPrintStreamLogger("create-codestart.log");
@@ -133,13 +173,16 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
                 InvokerLogger.DEBUG);
     }
 
-    private void check(final Path resource, final String contentsToFind) {
+    private void checkContent(final Path resource, final String... contentsToFind) {
         assertThat(resource).isRegularFile();
-        try {
-            assertThat(FileUtils.readFileToString(resource.toFile(), "UTF-8")).contains(contentsToFind);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        Stream.of(contentsToFind)
+                .forEach(c -> {
+                    try {
+                        assertThat(FileUtils.readFileToString(resource.toFile(), "UTF-8")).contains(c);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
     }
 
     private void checkDir(final Path dir) throws IOException {

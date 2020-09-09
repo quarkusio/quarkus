@@ -31,7 +31,7 @@ public final class PaginationImplementor {
      * @param uriInfo a {@link UriInfo} instance to extract the query parameters form
      * @return a {@link Page} instance
      */
-    public static ResultHandle getRequestPage(BytecodeCreator creator, ResultHandle uriInfo) {
+    public ResultHandle getRequestPage(BytecodeCreator creator, ResultHandle uriInfo) {
         ResultHandle queryParams = creator.invokeInterfaceMethod(
                 ofMethod(UriInfo.class, "getQueryParameters", MultivaluedMap.class), uriInfo);
         AssignableResultHandle page = creator.createVariable(Integer.class);
@@ -41,7 +41,7 @@ public final class PaginationImplementor {
         return creator.invokeStaticMethod(ofMethod(Page.class, "of", Page.class, int.class, int.class), page, size);
     }
 
-    private static void assignIntQueryParam(BytecodeCreator creator, ResultHandle queryParams, String key, int minValue,
+    private void assignIntQueryParam(BytecodeCreator creator, ResultHandle queryParams, String key, int minValue,
             int defaultValue, AssignableResultHandle variable) {
         ResultHandle stringValue = creator.invokeInterfaceMethod(
                 ofMethod(MultivaluedMap.class, "getFirst", Object.class, Object.class), queryParams, creator.load(key));
@@ -62,7 +62,7 @@ public final class PaginationImplementor {
     /**
      * Return an array with the links applicable for the provided page and page count.
      */
-    public static ResultHandle getLinks(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
+    public ResultHandle getLinks(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page,
             ResultHandle pageCount) {
         ResultHandle links = creator.newInstance(ofConstructor(ArrayList.class, int.class), creator.load(4));
 
@@ -91,7 +91,7 @@ public final class PaginationImplementor {
                 ofMethod(List.class, "toArray", Object[].class, Object[].class), links, linksArray);
     }
 
-    private static ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel) {
+    private ResultHandle getLink(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page, String rel) {
         ResultHandle builder = creator.invokeStaticMethod(
                 ofMethod(Link.class, "fromUri", Link.Builder.class, URI.class), getPageUri(creator, uriInfo, page));
         creator.invokeInterfaceMethod(ofMethod(Link.Builder.class, "rel", Link.Builder.class, String.class),
@@ -109,7 +109,7 @@ public final class PaginationImplementor {
      * @param page a {@link Page} to be used for getting page number and size
      * @return a page {@link URI}
      */
-    private static ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page) {
+    private ResultHandle getPageUri(BytecodeCreator creator, ResultHandle uriInfo, ResultHandle page) {
         ResultHandle uriBuilder = creator.invokeInterfaceMethod(
                 ofMethod(UriInfo.class, "getAbsolutePathBuilder", UriBuilder.class), uriInfo);
 
@@ -132,7 +132,7 @@ public final class PaginationImplementor {
     /**
      * Returns the last page with the same size as the provided page.
      */
-    private static ResultHandle getLastPage(BytecodeCreator creator, ResultHandle page, ResultHandle pageCount) {
+    private ResultHandle getLastPage(BytecodeCreator creator, ResultHandle page, ResultHandle pageCount) {
         ResultHandle pageNumber = creator.invokeStaticMethod(
                 ofMethod(Integer.class, "sum", int.class, int.class, int.class), pageCount, creator.load(-1));
         return creator.invokeVirtualMethod(
@@ -142,7 +142,7 @@ public final class PaginationImplementor {
     /**
      * Compares indexes of two pages.
      */
-    private static BranchResult isTheSamePage(BytecodeCreator creator, ResultHandle page, ResultHandle anotherPage) {
+    private BranchResult isTheSamePage(BytecodeCreator creator, ResultHandle page, ResultHandle anotherPage) {
         ResultHandle index = creator.readInstanceField(FieldDescriptor.of(Page.class, "index", int.class), page);
         ResultHandle anotherIndex = creator.readInstanceField(FieldDescriptor.of(Page.class, "index", int.class), anotherPage);
         return creator.ifIntegerEqual(index, anotherIndex);

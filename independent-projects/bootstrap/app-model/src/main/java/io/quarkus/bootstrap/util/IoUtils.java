@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -86,6 +87,36 @@ public class IoUtils {
                 }
             });
         } catch (IOException e) {
+        }
+    }
+
+    public static void recursiveDeleteAndThenCreate(Path root) throws IOException {
+        recursiveDelete(root);
+        if (!PropertyUtils.isWindows()) {
+            Files.createDirectories(root);
+            return;
+        }
+
+        // in Windows, recreating a directory right after deleting it can be problematic, see https://bugs.openjdk.java.net/browse/JDK-8029608
+        // so we just try the create a operation a few times and hope it works
+
+        final int maxTries = 3;
+        int i = 0;
+        while (true) {
+            try {
+                Files.createDirectories(root);
+                return;
+            } catch (AccessDeniedException e) {
+                if (++i == maxTries) {
+                    throw e;
+                }
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+
+                }
+            }
         }
     }
 

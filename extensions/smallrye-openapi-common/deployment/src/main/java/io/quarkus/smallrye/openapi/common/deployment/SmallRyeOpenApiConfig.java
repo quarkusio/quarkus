@@ -20,4 +20,11 @@ public final class SmallRyeOpenApiConfig {
      */
     @ConfigItem
     public Optional<Path> storeSchemaDirectory;
+
+    /**
+     * This allows you to add the /heath endpoints (from MicroProfile Health) to the
+     * Schema document. You need to add the health extension and set this to true.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean addHealth;
 }

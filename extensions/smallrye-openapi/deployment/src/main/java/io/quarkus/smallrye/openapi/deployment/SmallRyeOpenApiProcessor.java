@@ -376,7 +376,7 @@ public class SmallRyeOpenApiProcessor {
             HttpRootPathBuildItem httpRootPathBuildItem,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) {
         Config config = ConfigProvider.getConfig();
-        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+        OpenApiConfig oaiConfig = new OpenApiConfigImpl(config);
 
         List<AnnotationScannerExtension> extensions = new ArrayList<>();
         // Add the RESTEasy extension if the capability is present
@@ -394,7 +394,7 @@ public class SmallRyeOpenApiProcessor {
             extensions.add(new CustomPathExtension(defaultPath));
         }
 
-        OpenApiAnnotationScanner openApiAnnotationScanner = new OpenApiAnnotationScanner(openApiConfig, indexView, extensions);
+        OpenApiAnnotationScanner openApiAnnotationScanner = new OpenApiAnnotationScanner(oaiConfig, indexView, extensions);
         return openApiAnnotationScanner.scan(getScanners(capabilities, indexView));
     }
 
@@ -453,18 +453,21 @@ public class SmallRyeOpenApiProcessor {
 
     public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel) {
         Config config = ConfigProvider.getConfig();
-        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+        OpenApiConfig oaiConfig = new OpenApiConfigImpl(config);
 
-        OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig,
+        OpenAPI readerModel = OpenApiProcessor.modelFromReader(oaiConfig,
                 Thread.currentThread().getContextClassLoader());
 
-        OpenApiDocument document = createDocument(openApiConfig);
+        OpenApiDocument document = createDocument(oaiConfig);
         if (annotationModel != null) {
             document.modelFromAnnotations(annotationModel);
         }
         document.modelFromReader(readerModel);
         document.modelFromStaticFile(staticModel);
-        document.filter(filter(openApiConfig));
+        document.filter(filter(oaiConfig));
+        if (openApiConfig.addHealth) {
+            document.filter(new HealthOASFilter(config));
+        }
         document.initialize();
         return document;
     }

@@ -96,6 +96,7 @@ For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token t
 If you use `Basic` or `Form` HTTP-based authentication then you have to add an `IdentityProvider` which can convert a user name and password to `SecurityIdentity`.
 
 See link:security-jpa[JPA IdentityProvider] and link:security-jdbc[JDBC IdentityProvider] for more information.
+You can also use link:security-testing#configuring-user-information[User Properties IdentityProvider] for testing.
 
 == Combining Authentication Mechanisms
 

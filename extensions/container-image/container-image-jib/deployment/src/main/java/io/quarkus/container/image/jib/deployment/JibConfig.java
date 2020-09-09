@@ -26,14 +26,14 @@ public class JibConfig {
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
+    @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0")
-    public List<String> nativeArguments;
+    @ConfigItem
+    public Optional<List<String>> nativeArguments;
 
     /**
      * If this is set, then it will be used as the entry point of the container image.

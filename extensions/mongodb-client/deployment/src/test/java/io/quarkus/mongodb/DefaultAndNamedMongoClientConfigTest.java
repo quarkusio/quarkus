@@ -55,6 +55,10 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
         assertThat(Arc.container().instance(MongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster2")).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("cluster3")).get()).isNull();
+
+        // assert using a CDI name results in the retrieving the client
+        assertThat(Arc.container().instance("cluster2").get()).isNotNull();
+        assertThat(Arc.container().instance("cluster3").get()).isNull();
     }
 
     private void assertProperConnection(MongoClient client, int expectedPort) {

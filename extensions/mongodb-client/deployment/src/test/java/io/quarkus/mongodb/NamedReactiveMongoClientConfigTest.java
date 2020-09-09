@@ -59,6 +59,10 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
         assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
 
         assertNoDefaultClient();
+
+        assertThat(Arc.container().instance("cluster1reactive").get()).isNotNull();
+        assertThat(Arc.container().instance("cluster2reactive").get()).isNotNull();
+        assertThat(Arc.container().instance("cluster3reactive").get()).isNull();
     }
 
     private void assertProperConnection(ReactiveMongoClient client, int expectedPort) {

@@ -276,7 +276,8 @@ public class MongoClientProcessor {
             configurator.addQualifier(Default.class);
         } else {
             String namedQualifier = MongoClientBeanUtil.namedQualifier(clientName, isReactive);
-            configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", namedQualifier).done();
+            configurator.name(namedQualifier).addQualifier().annotation(DotNames.NAMED).addValue("value", namedQualifier)
+                    .done();
             if (addMongoClientQualifier) {
                 configurator.addQualifier().annotation(MONGO_CLIENT_ANNOTATION).addValue("value", clientName).done();
                 configurator.addQualifier().annotation(LEGACY_MONGO_CLIENT_ANNOTATION).addValue("value", clientName).done();

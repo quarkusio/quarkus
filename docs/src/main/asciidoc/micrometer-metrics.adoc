@@ -67,7 +67,7 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-You should also add a micrometer dependency for the registry of your choosing, e.g.
+You should also add a dependency for the registry of your choosing, e.g.
 
 [source,xml]
 ----
@@ -80,7 +80,7 @@ You should also add a micrometer dependency for the registry of your choosing, e
 == Writing the application
 
 The application consists of a single class that implements an algorithm for checking whether a number is prime.
-This algorithm is exposed over a REST interface. With the micrometer extension enabled, metrics for all http
+This algorithm is exposed over a REST interface. With the Micrometer extension enabled, metrics for all http
 server requests are collected automatically.
 
 We do want to add a few other metrics to demonstrate how those types work:
@@ -189,7 +189,7 @@ To view the metrics, execute `curl localhost:8080/metrics/`
 Prometheus-formatted metrics will be returned in plain text in no particular order.
 
 The application above has only one custom gauge that measures the time
-spent determining whether or not a number is prime. The micrometer extension
+spent determining whether or not a number is prime. The Micrometer extension
 enables additional system, jvm, and http metrics. A subset of the collected metrics
 are shown below.
 
@@ -275,7 +275,34 @@ jvm_memory_committed_bytes{area="nonheap",id="CodeHeap 'non-profiled nmethods'",
 Note that metrics appear lazily, you often won't see any data for your endpoint until
 something tries to access it, etc.
 
+== Support for the MicroProfile Metrics API
 
+If you use the MicroProfile Metrics API in your application, the Micrometer extension will create an adaptive
+layer to map those metrics into the Micrometer registry. Note that naming conventions between the two
+systems will change, but you can use MeterFilters to remap names or tags to what your dashboards require.
+
+[source,java]
+----
+@Produces
+@Singleton
+public MeterFilter renameApplicationMeters() {
+    final String targetMetric = PrimeResource.class.getName() + ".highestPrimeNumberSoFar";
+
+    return MeterFilter() {
+        @Override
+        public Meter.Id map(Meter.Id id) {
+            // rename the specified metric (remove package), and drop the scope tag
+            // you could also use this to prepend a scope tag (application, base, vendor, if present) to the metric name
+            if (id.getName().equals(targetMetric)) {
+                List<Tag> tags = id.getTags().stream().filter(x -> !"scope".equals(x.getKey()))
+                        .collect(Collectors.toList());
+                return id.withName("highestPrimeNumberSoFar").replaceTags(tags);
+            }
+            return id;
+        }
+    };
+}
+----
 
 == Configuration Reference
 

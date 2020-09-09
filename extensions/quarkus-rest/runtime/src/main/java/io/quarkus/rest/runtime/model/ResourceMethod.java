@@ -45,6 +45,7 @@ public class ResourceMethod {
     private String name;
 
     private String returnType;
+    private String simpleReturnType;
 
     private MethodParameter[] parameters;
 
@@ -118,6 +119,15 @@ public class ResourceMethod {
 
     public ResourceMethod setReturnType(String returnType) {
         this.returnType = returnType;
+        return this;
+    }
+
+    public String getSimpleReturnType() {
+        return simpleReturnType;
+    }
+
+    public ResourceMethod setSimpleReturnType(String simpleReturnType) {
+        this.simpleReturnType = simpleReturnType;
         return this;
     }
 

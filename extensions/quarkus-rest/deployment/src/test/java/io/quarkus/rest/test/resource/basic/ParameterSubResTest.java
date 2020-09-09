@@ -87,16 +87,6 @@ public class ParameterSubResTest {
     }
 
     /**
-     * @tpTestDetails Check types of parameter.
-     * @tpSince RESTEasy 3.0.16
-     */
-    //    @Test
-    //    @DisplayName("Test Parametized")
-    //    public void testParametized() throws Exception {
-    //        Types.findParameterizedTypes(ParameterSubResConcreteSubImpl.class, ParameterSubResInternalInterface.class);
-    //    }
-
-    /**
      * @tpTestDetails Check sub resources.
      * @tpSince RESTEasy 3.0.16
      */

@@ -14,8 +14,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MediaType;
@@ -25,6 +27,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.rest.runtime.client.ClientProxies;
 import io.quarkus.rest.runtime.core.ArcBeanFactory;
 import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
@@ -82,6 +85,7 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.mutiny.Multi;
@@ -147,7 +151,8 @@ public class QuarkusRestRecorder {
             ExceptionMapping exceptionMapping,
             ContextResolvers ctxResolvers, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses,
-            ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig) {
+            ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig,
+            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap = createContainerRequestFilterInstances(
@@ -240,7 +245,7 @@ public class QuarkusRestRecorder {
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
-                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter);
+                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter, createClientImpls(clientImplementations));
 
         currentDeployment = deployment;
 
@@ -253,6 +258,14 @@ public class QuarkusRestRecorder {
         }
 
         return new QuarkusRestInitialHandler(new RequestMapper<>(classMappers), deployment, preMatchHandler);
+    }
+
+    private ClientProxies createClientImpls(Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
+        Map<Class<?>, Function<WebTarget, ?>> map = new HashMap<>();
+        for (Map.Entry<String, RuntimeValue<Function<WebTarget, ?>>> entry : clientImplementations.entrySet()) {
+            map.put(loadClass(entry.getKey()), entry.getValue().getValue());
+        }
+        return new ClientProxies(map);
     }
 
     // we need to preserve the order of ResourceRequestInterceptor because they have been sorted according to priorities

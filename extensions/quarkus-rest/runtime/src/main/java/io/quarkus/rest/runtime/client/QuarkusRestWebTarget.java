@@ -23,21 +23,25 @@ public class QuarkusRestWebTarget implements WebTarget {
     private final HttpClient client;
     private final QuarkusRestConfiguration configuration;
     private final Serialisers serialisers;
+    private final ClientProxies clientProxies;
     private boolean chunked = false;
 
-    public QuarkusRestWebTarget(UriBuilder uriBuilder, HttpClient client, Serialisers serialisers) {
+    public QuarkusRestWebTarget(UriBuilder uriBuilder, HttpClient client, Serialisers serialisers,
+            ClientProxies clientProxies) {
         this.uriBuilder = uriBuilder;
         this.client = client;
         this.serialisers = serialisers;
+        this.clientProxies = clientProxies;
         configuration = new QuarkusRestConfiguration();
     }
 
     public QuarkusRestWebTarget(HttpClient client, UriBuilder uriBuilder, QuarkusRestConfiguration configuration,
-            Serialisers serialisers) {
+            Serialisers serialisers, ClientProxies clientProxies) {
         this.client = client;
         this.uriBuilder = uriBuilder;
         this.configuration = configuration;
         this.serialisers = serialisers;
+        this.clientProxies = clientProxies;
     }
 
     /**
@@ -263,7 +267,7 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestWebTarget newInstance(HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestWebTarget(client, uriBuilder, configuration, serialisers);
+        return new QuarkusRestWebTarget(client, uriBuilder, configuration, serialisers, clientProxies);
     }
 
     @Override
@@ -271,7 +275,6 @@ public class QuarkusRestWebTarget implements WebTarget {
         abortIfClosed();
         QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.setChunked(chunked);
-        builder.setTarget(this);
         return builder;
     }
 
@@ -281,7 +284,6 @@ public class QuarkusRestWebTarget implements WebTarget {
         QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.getHeaders().accept(acceptedResponseTypes);
         builder.setChunked(chunked);
-        builder.setTarget(this);
         return builder;
     }
 
@@ -291,7 +293,6 @@ public class QuarkusRestWebTarget implements WebTarget {
         QuarkusRestInvocationBuilder builder = createQuarkusRestInvocationBuilder(client, uriBuilder, configuration);
         builder.getHeaders().accept(acceptedResponseTypes);
         builder.setChunked(chunked);
-        builder.setTarget(this);
         return builder;
     }
 
@@ -301,7 +302,7 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestInvocationBuilder(uri.build(), client, configuration, serialisers);
+        return new QuarkusRestInvocationBuilder(uri.build(), client, this, configuration, serialisers);
     }
 
     @Override
@@ -372,5 +373,9 @@ public class QuarkusRestWebTarget implements WebTarget {
     public QuarkusRestWebTarget setChunked(boolean chunked) {
         this.chunked = chunked;
         return this;
+    }
+
+    public <T> T proxy(Class<?> clazz) {
+        return clientProxies.get(clazz, this);
     }
 }

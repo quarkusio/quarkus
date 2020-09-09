@@ -1,11 +1,12 @@
 package io.quarkus.rest.runtime.client;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import javax.ws.rs.client.AsyncInvoker;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -23,118 +24,127 @@ import io.vertx.core.http.HttpClient;
 
 public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
-    String method = "GET";
     final URI uri;
     final HttpClient httpClient;
-    QuarkusRestWebTarget target;
-    boolean chunked;
-    final ClientRequestHeaders headers;
+    final QuarkusRestWebTarget target;
     final Serialisers serialisers;
-    final QuarkusRestAsyncInvoker invoker;
+    final RequestSpec requestSpec;
+    final Map<String, Object> properties = new HashMap<>();
 
-    public QuarkusRestInvocationBuilder(URI uri, HttpClient httpClient, QuarkusRestConfiguration configuration,
+    public QuarkusRestInvocationBuilder(URI uri, HttpClient httpClient, QuarkusRestWebTarget target,
+            QuarkusRestConfiguration configuration,
             Serialisers serialisers) {
         this.uri = uri;
         this.httpClient = httpClient;
-        this.headers = new ClientRequestHeaders(configuration);
+        this.target = target;
+        this.requestSpec = new RequestSpec(configuration);
         this.serialisers = serialisers;
-        this.invoker = new QuarkusRestAsyncInvoker(this);
     }
 
     @Override
     public Invocation build(String method) {
-        return null;
+        return new QuarkusRestInvocation(method, async(), null);
     }
 
     @Override
     public Invocation build(String method, Entity<?> entity) {
-        return null;
+        return new QuarkusRestInvocation(method, async(), entity);
     }
 
     @Override
     public Invocation buildGet() {
-        return null;
+        return build("GET");
     }
 
     @Override
     public Invocation buildDelete() {
-        return null;
+        return build("DELETE");
     }
 
     @Override
     public Invocation buildPost(Entity<?> entity) {
-        return null;
+        return build("POST", entity);
     }
 
     @Override
     public Invocation buildPut(Entity<?> entity) {
-        return null;
+        return build("PUT", entity);
     }
 
     @Override
-    public AsyncInvoker async() {
-        return invoker;
+    public QuarkusRestAsyncInvoker async() {
+        return new QuarkusRestAsyncInvoker(httpClient, uri, serialisers, requestSpec, properties);
     }
 
     @Override
     public Invocation.Builder accept(String... mediaTypes) {
-        return null;
+        requestSpec.headers.accept(mediaTypes);
+        return this;
     }
 
     @Override
     public Invocation.Builder accept(MediaType... mediaTypes) {
-        return null;
+        requestSpec.headers.accept(mediaTypes);
+        return this;
     }
 
     @Override
     public Invocation.Builder acceptLanguage(Locale... locales) {
-        return null;
+        requestSpec.headers.acceptLanguage(locales);
+        return this;
     }
 
     @Override
     public Invocation.Builder acceptLanguage(String... locales) {
-        return null;
+        requestSpec.headers.acceptLanguage(locales);
+        return this;
     }
 
     @Override
     public Invocation.Builder acceptEncoding(String... encodings) {
-        return null;
+        requestSpec.headers.acceptEncoding(encodings);
+        return this;
     }
 
     @Override
     public Invocation.Builder cookie(Cookie cookie) {
-        return null;
+        requestSpec.headers.cookie(cookie);
+        return this;
     }
 
     @Override
     public Invocation.Builder cookie(String name, String value) {
-        return null;
+        requestSpec.headers.cookie(new Cookie(name, value));
+        return this;
     }
 
     @Override
     public Invocation.Builder cacheControl(CacheControl cacheControl) {
-        return null;
+        requestSpec.headers.cacheControl(cacheControl);
+        return this;
     }
 
     @Override
     public Invocation.Builder header(String name, Object value) {
-        headers.header(name, value);
+        requestSpec.headers.header(name, value);
         return this;
     }
 
     @Override
     public Invocation.Builder headers(MultivaluedMap<String, Object> headers) {
-        return null;
+        requestSpec.headers.setHeaders(headers);
+        return this;
     }
 
     @Override
     public Invocation.Builder property(String name, Object value) {
-        return null;
+        properties.put(name, value);
+        return this;
     }
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return invoker;
+        return new QuarkusRestAsyncInvoker(httpClient, uri, serialisers, requestSpec, properties);
     }
 
     @Override
@@ -147,7 +157,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public Response get() {
-        return unwrap(invoker.get());
+        return unwrap(async().get());
     }
 
     private <T> T unwrap(CompletableFuture<T> c) {
@@ -160,126 +170,122 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public <T> T get(Class<T> responseType) {
-        return unwrap(invoker.get(responseType));
+        return unwrap(async().get(responseType));
     }
 
     @Override
     public <T> T get(GenericType<T> responseType) {
-        return unwrap(invoker.get(responseType));
+        return unwrap(async().get(responseType));
     }
 
     @Override
     public Response put(Entity<?> entity) {
-        return unwrap(invoker.put(entity));
+        return unwrap(async().put(entity));
     }
 
     @Override
     public <T> T put(Entity<?> entity, Class<T> responseType) {
-        return unwrap(invoker.put(entity, responseType));
+        return unwrap(async().put(entity, responseType));
     }
 
     @Override
     public <T> T put(Entity<?> entity, GenericType<T> responseType) {
-        return unwrap(invoker.put(entity, responseType));
+        return unwrap(async().put(entity, responseType));
     }
 
     @Override
     public Response post(Entity<?> entity) {
-        return unwrap(invoker.post(entity));
+        return unwrap(async().post(entity));
     }
 
     @Override
     public <T> T post(Entity<?> entity, Class<T> responseType) {
-        return unwrap(invoker.post(entity, responseType));
+        return unwrap(async().post(entity, responseType));
     }
 
     @Override
     public <T> T post(Entity<?> entity, GenericType<T> responseType) {
-        return unwrap(invoker.post(entity, responseType));
+        return unwrap(async().post(entity, responseType));
     }
 
     @Override
     public Response delete() {
-        return unwrap(invoker.delete());
+        return unwrap(async().delete());
     }
 
     @Override
     public <T> T delete(Class<T> responseType) {
-        return unwrap(invoker.delete(responseType));
+        return unwrap(async().delete(responseType));
     }
 
     @Override
     public <T> T delete(GenericType<T> responseType) {
-        return unwrap(invoker.delete(responseType));
+        return unwrap(async().delete(responseType));
     }
 
     @Override
     public Response head() {
-        return unwrap(invoker.head());
+        return unwrap(async().head());
     }
 
     @Override
     public Response options() {
-        return unwrap(invoker.options());
+        return unwrap(async().options());
     }
 
     @Override
     public <T> T options(Class<T> responseType) {
-        return unwrap(invoker.options(responseType));
+        return unwrap(async().options(responseType));
     }
 
     @Override
     public <T> T options(GenericType<T> responseType) {
-        return unwrap(invoker.options(responseType));
+        return unwrap(async().options(responseType));
     }
 
     @Override
     public Response trace() {
-        return unwrap(invoker.trace());
+        return unwrap(async().trace());
     }
 
     @Override
     public <T> T trace(Class<T> responseType) {
-        return unwrap(invoker.trace(responseType));
+        return unwrap(async().trace(responseType));
     }
 
     @Override
     public <T> T trace(GenericType<T> responseType) {
-        return unwrap(invoker.trace(responseType));
+        return unwrap(async().trace(responseType));
     }
 
     @Override
     public Response method(String name) {
-        return unwrap(invoker.method(name));
+        return unwrap(async().method(name));
     }
 
     @Override
     public <T> T method(String name, Class<T> responseType) {
-        return unwrap(invoker.method(name, responseType));
+        return unwrap(async().method(name, responseType));
     }
 
     @Override
     public <T> T method(String name, GenericType<T> responseType) {
-        return unwrap(invoker.method(name, responseType));
+        return unwrap(async().method(name, responseType));
     }
 
     @Override
     public Response method(String name, Entity<?> entity) {
-        return unwrap(invoker.method(name, entity));
+        return unwrap(async().method(name, entity));
     }
 
     @Override
     public <T> T method(String name, Entity<?> entity, Class<T> responseType) {
-        return unwrap(invoker.method(name, entity, responseType));
+        return unwrap(async().method(name, entity, responseType));
     }
 
     @Override
     public <T> T method(String name, Entity<?> entity, GenericType<T> responseType) {
-        return unwrap(invoker.method(name, entity, responseType));
-    }
-
-    public void setTarget(QuarkusRestWebTarget target) {
-        this.target = target;
+        return unwrap(async().method(name, entity, responseType));
     }
 
     public QuarkusRestWebTarget getTarget() {
@@ -287,15 +293,15 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     }
 
     public void setChunked(boolean chunked) {
-        this.chunked = chunked;
+        this.requestSpec.chunked = chunked;
     }
 
     public boolean getChunked() {
-        return chunked;
+        return requestSpec.chunked;
     }
 
     public ClientRequestHeaders getHeaders() {
-        return headers;
+        return requestSpec.headers;
     }
 
 }

@@ -63,6 +63,7 @@ import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceMethod;
+import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -122,6 +123,33 @@ public class EndpointIndexer {
                 return null;
             }
             throw new RuntimeException(e);
+        }
+    }
+
+    public static RestClientInterface createClientProxy(IndexView index, ClassInfo classInfo,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
+            Map<String, String> existingConverters, String path, QuarkusRestConfig config) {
+        try {
+            List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config);
+            RestClientInterface clazz = new RestClientInterface();
+            clazz.getMethods().addAll(methods);
+            clazz.setClassName(classInfo.name().toString());
+            if (path != null) {
+                if (path.endsWith("/")) {
+                    path = path.substring(0, path.length() - 1);
+                }
+                if (!path.startsWith("/")) {
+                    path = "/" + path;
+                }
+                clazz.setPath(path);
+            }
+            return clazz;
+        } catch (Exception e) {
+            //kinda bogus, but we just ignore failed interfaces for now
+            //they can have methods that are not valid until they are actually extended by a concrete type
+            log.debug("Ignoring interface for creating client proxy" + classInfo.name(), e);
+            return null;
         }
     }
 
@@ -336,6 +364,7 @@ public class EndpointIndexer {
                     .setSuspended(suspended)
                     .setSse(sse)
                     .setParameters(methodParameters)
+                    .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, indexView))
                     // FIXME: resolved arguments ?
                     .setReturnType(AsmUtil.getSignature(info.returnType(), new Function<String, String>() {
                         @Override
@@ -596,6 +625,8 @@ public class EndpointIndexer {
     private static String toClassName(Type indexType, ClassInfo currentClass, ClassInfo actualEndpointClass,
             IndexView indexView) {
         switch (indexType.kind()) {
+            case VOID:
+                return "void";
             case CLASS:
                 return indexType.asClassType().name().toString();
             case PRIMITIVE:

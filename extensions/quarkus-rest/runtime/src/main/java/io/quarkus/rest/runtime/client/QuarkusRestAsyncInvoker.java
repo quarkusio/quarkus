@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
@@ -35,10 +37,24 @@ import io.vertx.core.http.HttpMethod;
 
 public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
     public static final Buffer EMPTY_BUFFER = Buffer.buffer(new byte[0]);
-    final QuarkusRestInvocationBuilder builder;
 
-    public QuarkusRestAsyncInvoker(QuarkusRestInvocationBuilder builder) {
-        this.builder = builder;
+    final HttpClient httpClient;
+    final URI uri;
+    final Serialisers serialisers;
+    final RequestSpec requestSpec;
+    final Map<String, Object> properties;
+
+    public QuarkusRestAsyncInvoker(HttpClient httpClient, URI uri, Serialisers serialisers, RequestSpec requestSpec,
+            Map<String, Object> properties) {
+        this.httpClient = httpClient;
+        this.uri = uri;
+        this.serialisers = serialisers;
+        this.requestSpec = new RequestSpec(requestSpec);
+        this.properties = new HashMap<>(properties);
+    }
+
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override
@@ -289,7 +305,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     public <T> T readEntity(Buffer buffer,
             GenericType<T> responseType, MediaType mediaType, MultivaluedMap<String, Object> metadata)
             throws IOException {
-        List<MessageBodyReader<?>> readers = builder.serialisers.findReaders(responseType.getRawType(),
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
                 mediaType);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
@@ -327,7 +343,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, Entity<?> entity, GenericType<T> rt)
             throws IOException {
-        ClientRequestHeaders headers = builder.headers;
+        ClientRequestHeaders headers = requestSpec.headers;
         MultivaluedMap<String, String> headerMap = headers.asMap();
         for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
             httpClientRequest.headers().add(entry.getKey(), entry.getValue());
@@ -339,7 +355,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         if (entity != null) {
 
             Class<?> entityType = entity.getEntity().getClass();
-            List<MessageBodyWriter<?>> writers = builder.serialisers.findWriters(entityType, entity.getMediaType());
+            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityType, entity.getMediaType());
             for (MessageBodyWriter writer : writers) {
                 if (writer.isWriteable(entityType, entityType, entity.getAnnotations(), entity.getMediaType())) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -354,8 +370,8 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     }
 
     private <T> HttpClientRequest createRequest(String httpMethodName) {
-        HttpClient httpClient = builder.httpClient;
-        URI uri = builder.uri;
+        HttpClient httpClient = this.httpClient;
+        URI uri = this.uri;
         HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(httpMethodName), uri.getPort(),
                 uri.getHost(),
                 uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));

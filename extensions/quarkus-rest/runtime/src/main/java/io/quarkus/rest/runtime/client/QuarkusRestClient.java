@@ -24,99 +24,115 @@ public class QuarkusRestClient implements Client {
     final HttpClient httpClient;
     final QuarkusRestConfiguration configuration = new QuarkusRestConfiguration();
     final Serialisers serialisers;
+    final ClientProxies clientProxies;
+    final HostnameVerifier hostnameVerifier;
+    final SSLContext sslContext;
 
-    public QuarkusRestClient(Serialisers serialisers) {
+    public QuarkusRestClient(Serialisers serialisers, ClientProxies clientProxies, HostnameVerifier hostnameVerifier,
+            SSLContext sslContext) {
         this.serialisers = serialisers;
+        this.clientProxies = clientProxies;
+        this.hostnameVerifier = hostnameVerifier;
+        this.sslContext = sslContext;
         this.httpClient = vertx.createHttpClient();
     }
 
     @Override
     public void close() {
-
+        httpClient.close();
     }
 
     @Override
     public WebTarget target(String uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(URI uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(UriBuilder uriBuilder) {
-        return new QuarkusRestWebTarget(httpClient, uriBuilder, configuration, serialisers);
+        return new QuarkusRestWebTarget(httpClient, uriBuilder, configuration, serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(Link link) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromLink(link), configuration, serialisers);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromLink(link), configuration, serialisers, clientProxies);
     }
 
     @Override
     public Invocation.Builder invocation(Link link) {
-        return null;
+        return target(link).request();
     }
 
     @Override
     public SSLContext getSslContext() {
-        return null;
+        return sslContext;
     }
 
     @Override
     public HostnameVerifier getHostnameVerifier() {
-        return null;
+        return hostnameVerifier;
     }
 
     @Override
     public Configuration getConfiguration() {
-        return null;
+        return configuration;
     }
 
     @Override
     public Client property(String name, Object value) {
-        return null;
+        configuration.property(name, value);
+        return this;
     }
 
     @Override
     public Client register(Class<?> componentClass) {
-        return null;
+        configuration.register(componentClass);
+        return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, int priority) {
-        return null;
+        configuration.register(componentClass, priority);
+        return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, Class<?>... contracts) {
-        return null;
+        configuration.register(componentClass, contracts);
+        return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
-        return null;
+        configuration.register(componentClass, contracts);
+        return this;
     }
 
     @Override
     public Client register(Object component) {
-        return null;
+        configuration.register(component);
+        return this;
     }
 
     @Override
     public Client register(Object component, int priority) {
-        return null;
+        configuration.register(component, priority);
+        return this;
     }
 
     @Override
     public Client register(Object component, Class<?>... contracts) {
-        return null;
+        configuration.register(component, contracts);
+        return this;
     }
 
     @Override
     public Client register(Object component, Map<Class<?>, Integer> contracts) {
-        return null;
+        configuration.register(component, contracts);
+        return this;
     }
 }

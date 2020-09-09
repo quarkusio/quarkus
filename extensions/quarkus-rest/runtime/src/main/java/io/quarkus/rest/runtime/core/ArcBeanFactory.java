@@ -26,8 +26,4 @@ public class ArcBeanFactory<T> implements BeanFactory<T> {
             }
         };
     }
-
-    public static class Supplier {
-
-    }
 }

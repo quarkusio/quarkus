@@ -46,8 +46,6 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
@@ -59,7 +57,6 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)})
  * in order to produce the actual {@code AgroalDataSource} objects.
  */
-@SuppressWarnings("deprecation")
 @Singleton
 public class DataSources {
 
@@ -69,9 +66,6 @@ public class DataSources {
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
     private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
-    private final LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig;
-    private final LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig;
-    private final LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig;
     private final TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
@@ -82,18 +76,13 @@ public class DataSources {
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
-            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
-            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig, TransactionManager transactionManager,
+            TransactionManager transactionManager,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
             @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
-        this.legacyDataSourcesJdbcBuildTimeConfig = legacyDataSourcesJdbcBuildTimeConfig;
-        this.legacyDataSourcesRuntimeConfig = legacyDataSourcesRuntimeConfig;
-        this.legacyDataSourcesJdbcRuntimeConfig = legacyDataSourcesJdbcRuntimeConfig;
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
@@ -133,48 +122,17 @@ public class DataSources {
         DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = getDataSourceJdbcBuildTimeConfig(dataSourceName);
         DataSourceRuntimeConfig dataSourceRuntimeConfig = getDataSourceRuntimeConfig(dataSourceName);
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = getDataSourceJdbcRuntimeConfig(dataSourceName);
-        LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig = getLegacyDataSourceJdbcBuildTimeConfig(
-                dataSourceName);
-        LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig = getLegacyDataSourceRuntimeConfig(dataSourceName);
-        LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig = getLegacyDataSourceJdbcRuntimeConfig(
-                dataSourceName);
 
         DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
-        boolean isLegacy = matchingSupportEntry.isLegacy;
-        if (!isLegacy) {
-            if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
-                String errorMessage;
-                if (!legacyDataSourceRuntimeConfig.url.isPresent()) {
-                    // we don't have any URL configuration so using a standard message
-                    if (DataSourceUtil.isDefault(dataSourceName)) {
-                        errorMessage = "quarkus.datasource.jdbc.url has not been defined";
-                    } else {
-                        errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
-                    }
-                } else {
-                    // the user mixed legacy configuration and the new style, let's use an appropriate message
-                    if (DataSourceUtil.isDefault(dataSourceName)) {
-                        errorMessage = "Using legacy quarkus.datasource.url with a db-kind is not supported, please use "
-                                + " quarkus.datasource.jdbc.url instead. See https://quarkus.io/guides/datasource for more information.";
-                    } else {
-                        errorMessage = "Using legacy quarkus.datasource." + dataSourceName
-                                + ".url with a db-kind is not supported, please use "
-                                + "quarkus.datasource." + dataSourceName + ".jdbc.url "
-                                + "instead. See https://quarkus.io/guides/datasource for more information.";
-                    }
-                }
-                throw new ConfigurationException(errorMessage);
+        if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
+            String errorMessage;
+            // we don't have any URL configuration so using a standard message
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                errorMessage = "quarkus.datasource.jdbc.url has not been defined";
+            } else {
+                errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
             }
-        } else {
-            if (!legacyDataSourceRuntimeConfig.url.isPresent()) {
-                String errorMessage;
-                if (DataSourceUtil.isDefault(dataSourceName)) {
-                    errorMessage = "quarkus.datasource.url has not been defined";
-                } else {
-                    errorMessage = "quarkus.datasource." + dataSourceName + ".url has not been defined";
-                }
-                throw new ConfigurationException(errorMessage);
-            }
+            throw new ConfigurationException(errorMessage);
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
@@ -206,14 +164,8 @@ public class DataSources {
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
-        if (!isLegacy) {
-            applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
-                    dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
-        } else {
-            applyLegacyConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
-                    dataSourceRuntimeConfig, legacyDataSourceJdbcBuildTimeConfig, legacyDataSourceRuntimeConfig,
-                    legacyDataSourceJdbcRuntimeConfig, mpMetricsPresent);
-        }
+        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
+                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
             if (agroalConnectionConfigurerHandle.isAvailable()) {
@@ -340,105 +292,6 @@ public class DataSources {
         }
     }
 
-    private void applyLegacyConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
-            AgroalConnectionPoolConfigurationSupplier poolConfiguration,
-            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
-        connectionFactoryConfiguration.jdbcUrl(legacyDataSourceRuntimeConfig.url.get());
-        connectionFactoryConfiguration.connectionProviderClass(driver);
-        connectionFactoryConfiguration.trackJdbcResources(legacyDataSourceJdbcRuntimeConfig.detectStatementLeaks);
-
-        if (legacyDataSourceJdbcRuntimeConfig.transactionIsolationLevel.isPresent()) {
-            connectionFactoryConfiguration
-                    .jdbcTransactionIsolation(
-                            legacyDataSourceJdbcRuntimeConfig.transactionIsolationLevel.get());
-        }
-
-        if (legacyDataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
-            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                    transactionSynchronizationRegistry);
-            poolConfiguration.transactionIntegration(txIntegration);
-        }
-
-        // New connection SQL
-        if (legacyDataSourceJdbcRuntimeConfig.newConnectionSql.isPresent()) {
-            connectionFactoryConfiguration.initialSql(legacyDataSourceJdbcRuntimeConfig.newConnectionSql.get());
-        }
-
-        // metrics
-        if (legacyDataSourceJdbcBuildTimeConfig.enableMetrics.isPresent()) {
-            dataSourceConfiguration.metricsEnabled(legacyDataSourceJdbcBuildTimeConfig.enableMetrics.get());
-        } else {
-            // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
-            dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled && mpMetricsPresent);
-        }
-
-        // Authentication
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            connectionFactoryConfiguration
-                    .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
-        }
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            connectionFactoryConfiguration
-                    .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
-        }
-
-        // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
-            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
-            connectionFactoryConfiguration
-                    .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
-        }
-
-        // Pool size configuration:
-        poolConfiguration.minSize(legacyDataSourceJdbcRuntimeConfig.minSize);
-        poolConfiguration.maxSize(legacyDataSourceRuntimeConfig.maxSize);
-        if (legacyDataSourceJdbcRuntimeConfig.initialSize.isPresent()
-                && legacyDataSourceJdbcRuntimeConfig.initialSize.get() > 0) {
-            poolConfiguration.initialSize(legacyDataSourceJdbcRuntimeConfig.initialSize.get());
-        }
-
-        // Connection management
-        poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
-        if (legacyDataSourceJdbcRuntimeConfig.acquisitionTimeout.isPresent()) {
-            poolConfiguration.acquisitionTimeout(legacyDataSourceJdbcRuntimeConfig.acquisitionTimeout.get());
-        }
-        if (legacyDataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
-            poolConfiguration.validationTimeout(legacyDataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
-        }
-        if (legacyDataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
-            String validationQuery = legacyDataSourceJdbcRuntimeConfig.validationQuerySql.get();
-            poolConfiguration.connectionValidator(new ConnectionValidator() {
-
-                @Override
-                public boolean isValid(Connection connection) {
-                    try (Statement stmt = connection.createStatement()) {
-                        stmt.execute(validationQuery);
-                        return true;
-                    } catch (Exception e) {
-                        log.warn("Connection validation failed", e);
-                    }
-                    return false;
-                }
-            });
-        }
-        if (legacyDataSourceJdbcRuntimeConfig.idleRemovalInterval.isPresent()) {
-            poolConfiguration.reapTimeout(legacyDataSourceJdbcRuntimeConfig.idleRemovalInterval.get());
-        }
-        if (legacyDataSourceJdbcRuntimeConfig.leakDetectionInterval.isPresent()) {
-            poolConfiguration.leakTimeout(legacyDataSourceJdbcRuntimeConfig.leakDetectionInterval.get());
-        }
-        if (legacyDataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
-            poolConfiguration.maxLifetime(legacyDataSourceJdbcRuntimeConfig.maxLifetime.get());
-        }
-    }
-
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
             return dataSourcesBuildTimeConfig.defaultDataSource;
@@ -479,38 +332,6 @@ public class DataSources {
                 .get(dataSourceName);
 
         return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcRuntimeConfig();
-    }
-
-    public LegacyDataSourceJdbcBuildTimeConfig getLegacyDataSourceJdbcBuildTimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource;
-        }
-
-        LegacyDataSourceJdbcBuildTimeConfig namedConfig = legacyDataSourcesJdbcBuildTimeConfig.namedDataSources
-                .get(dataSourceName);
-
-        return namedConfig != null ? namedConfig : new LegacyDataSourceJdbcBuildTimeConfig();
-    }
-
-    public LegacyDataSourceRuntimeConfig getLegacyDataSourceRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return legacyDataSourcesRuntimeConfig.defaultDataSource;
-        }
-
-        LegacyDataSourceRuntimeConfig namedConfig = legacyDataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
-
-        return namedConfig != null ? namedConfig : new LegacyDataSourceRuntimeConfig();
-    }
-
-    public LegacyDataSourceJdbcRuntimeConfig getLegacyDataSourceJdbcRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return legacyDataSourcesJdbcRuntimeConfig.defaultDataSource;
-        }
-
-        LegacyDataSourceJdbcRuntimeConfig namedConfig = legacyDataSourcesJdbcRuntimeConfig.namedDataSources
-                .get(dataSourceName);
-
-        return namedConfig != null ? namedConfig : new LegacyDataSourceJdbcRuntimeConfig();
     }
 
     /**

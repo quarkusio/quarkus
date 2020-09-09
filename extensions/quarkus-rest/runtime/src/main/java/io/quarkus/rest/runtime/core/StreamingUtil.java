@@ -35,7 +35,6 @@ public class StreamingUtil {
             return ret;
         }
         setHeaders(context, response);
-        System.err.println("Writing chunk " + data);
         response.write(data, new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {

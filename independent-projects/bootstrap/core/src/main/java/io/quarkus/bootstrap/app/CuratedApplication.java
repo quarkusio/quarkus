@@ -52,13 +52,16 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CurationResult curationResult;
+    private final ConfiguredClassLoading configuredClassLoading;
 
     final AppModel appModel;
 
-    CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult) {
+    CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
+            ConfiguredClassLoading configuredClassLoading) {
         this.quarkusBootstrap = quarkusBootstrap;
         this.curationResult = curationResult;
         this.appModel = curationResult.getAppModel();
+        this.configuredClassLoading = configuredClassLoading;
     }
 
     public AppModel getAppModel() {
@@ -79,10 +82,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     public Object runInAugmentClassLoader(String consumerName, Map<String, Object> params) {
         return runInCl(consumerName, params, getAugmentClassLoader());
-    }
-
-    public Object runInBaseRuntimeClassLoader(String consumerName, Map<String, Object> params) {
-        return runInCl(consumerName, params, getBaseRuntimeClassLoader());
     }
 
     public CurationResult getCurationResult() {
@@ -158,7 +157,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
 
     private void addCpElement(QuarkusClassLoader.Builder builder, AppArtifact dep, ClassPathElement element) {
         final AppArtifactKey key = dep.getKey();
-        if (appModel.getParentFirstArtifacts().contains(key)) {
+        if (appModel.getParentFirstArtifacts().contains(key)
+                || configuredClassLoading.parentFirstArtifacts.contains(dep.getKey())) {
             //we always load this from the parent if it is available, as this acts as a bridge between the running
             //app and the dev mode code
             builder.addParentFirstElement(element);
@@ -230,6 +230,9 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 if (isHotReloadable(dependency.getArtifact(), hotReloadPaths)) {
                     continue;
                 }
+                if (configuredClassLoading.reloadableArtifacts.contains(dependency.getArtifact().getKey())) {
+                    continue;
+                }
                 processCpElement(dependency.getArtifact(), element -> addCpElement(builder, dependency.getArtifact(), element));
             }
 
@@ -286,6 +289,11 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 for (Path root : i.getArchivePath()) {
                     builder.addElement(ClassPathElement.fromPath(root));
                 }
+            }
+        }
+        for (AppDependency dependency : appModel.getUserDependencies()) {
+            if (configuredClassLoading.reloadableArtifacts.contains(dependency.getArtifact().getKey())) {
+                processCpElement(dependency.getArtifact(), element -> addCpElement(builder, dependency.getArtifact(), element));
             }
         }
         return builder.build();

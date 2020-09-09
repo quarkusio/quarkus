@@ -12,6 +12,7 @@ import javax.inject.Inject;
 
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
+import io.quarkus.grpc.runtime.annotations.Blocking;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 
 @ApplicationScoped
@@ -19,6 +20,11 @@ public class GrpcContainer {
 
     @Inject
     Instance<BindableService> services;
+
+    @Inject
+    @Blocking
+    Instance<BindableService> blockingServices;
+
     @Inject
     Instance<ServerInterceptor> interceptors;
     @Inject
@@ -52,7 +58,11 @@ public class GrpcContainer {
         return healthStorage;
     }
 
-    public Instance<BindableService> getServices() {
+    public Instance<BindableService> getNonBlockingServices() {
         return services;
+    }
+
+    public Instance<BindableService> getBlockingServices() {
+        return blockingServices;
     }
 }

@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 import grpc.health.v1.HealthOuterClass;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
@@ -36,17 +37,13 @@ import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
 import io.quarkus.grpc.runtime.reflection.ReflectionService;
+import io.quarkus.grpc.runtime.supports.BlockingServerInterceptor;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
@@ -65,7 +62,7 @@ public class GrpcServerRecorder {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
         }
         Vertx vertx = vertxSupplier.getValue();
-        if (hasNoServices(grpcContainer.getServices())) {
+        if (hasNoServices(grpcContainer.getNonBlockingServices(), grpcContainer.getBlockingServices())) {
             throw new IllegalStateException(
                     "Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
         }
@@ -119,7 +116,7 @@ public class GrpcServerRecorder {
             public void accept(GrpcHealthStorage storage) {
                 storage.setStatus(GrpcHealthStorage.DEFAULT_SERVICE_NAME,
                         HealthOuterClass.HealthCheckResponse.ServingStatus.SERVING);
-                grpcContainer.getServices().forEach(
+                grpcContainer.getNonBlockingServices().forEach(
                         new Consumer<BindableService>() { // NOSONAR
                             @Override
                             public void accept(BindableService service) {
@@ -197,10 +194,10 @@ public class GrpcServerRecorder {
         }
     }
 
-    private static boolean hasNoServices(Instance<BindableService> services) {
-        return services.isUnsatisfied()
-                || services.stream().count() == 1
-                        && services.get().bindService().getServiceDescriptor().getName().equals("grpc.health.v1.Health");
+    private static boolean hasNoServices(Instance<BindableService> services, Instance<BindableService> blocking) {
+        boolean none = services.isUnsatisfied() && blocking.isUnsatisfied();
+        return none || (!services.isUnsatisfied() && blocking.isUnsatisfied() && services.stream().count() == 1
+                && services.get().bindService().getServiceDescriptor().getName().equals("grpc.health.v1.Health"));
     }
 
     private static List<ServerServiceDefinition> gatherServices(Instance<BindableService> services) {
@@ -218,7 +215,7 @@ public class GrpcServerRecorder {
     }
 
     private static void devModeReload(GrpcContainer grpcContainer) {
-        List<ServerServiceDefinition> serviceDefinitions = gatherServices(grpcContainer.getServices());
+        List<ServerServiceDefinition> serviceDefinitions = gatherServices(grpcContainer.getNonBlockingServices());
 
         Map<String, ServerMethodDefinition<?, ?>> methods = new HashMap<>();
         for (ServerServiceDefinition service : serviceDefinitions) {
@@ -269,9 +266,15 @@ public class GrpcServerRecorder {
 
         boolean reflectionServiceEnabled = configuration.enableReflectionService
                 || ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
-        List<ServerServiceDefinition> definitions = gatherServices(grpcContainer.getServices());
+        List<ServerServiceDefinition> definitions = gatherServices(grpcContainer.getNonBlockingServices());
         for (ServerServiceDefinition definition : definitions) {
             builder.addService(definition);
+        }
+
+        List<ServerServiceDefinition> blocking = gatherServices(grpcContainer.getBlockingServices());
+        definitions.addAll(blocking);
+        for (ServerServiceDefinition bl : blocking) {
+            builder.addService(ServerInterceptors.intercept(bl, new BlockingServerInterceptor(vertx)));
         }
 
         if (reflectionServiceEnabled) {
@@ -313,7 +316,7 @@ public class GrpcServerRecorder {
 
         @Override
         public void start(Promise<Void> startPromise) {
-            if (grpcContainer.getServices().isUnsatisfied()) {
+            if (grpcContainer.getNonBlockingServices().isUnsatisfied()) {
                 LOGGER.warn(
                         "Unable to find bean exposing the `BindableService` interface - not starting the gRPC server");
                 return;

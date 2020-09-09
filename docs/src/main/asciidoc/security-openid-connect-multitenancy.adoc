@@ -151,6 +151,24 @@ public class CustomTenantResolver implements TenantResolver {
 
 From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default tenant configuration should be used.
 
+[NOTE]
+===
+If you also use link:hibernate-orm#multitenancy[Hibernate ORM multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+
+[source,java]
+----
+public class CustomTenantResolver implements TenantResolver {
+
+    @Override
+    public String resolve(RoutingContext context) {
+        String tenantId = extractTenantId(context);
+        context.put("tenantId", tenantId);
+        return tenantId;
+    }
+}
+----
+===
+
 == Configuring the application
 
 [source,properties]

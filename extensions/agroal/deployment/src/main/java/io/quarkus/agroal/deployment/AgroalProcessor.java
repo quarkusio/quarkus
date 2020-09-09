@@ -259,7 +259,7 @@ class AgroalProcessor {
                         dataSourcesBuildTimeConfig.defaultDataSource,
                         dataSourcesJdbcBuildTimeConfig.jdbc,
                         dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get(),
-                        resolveDriver(null, dataSourcesBuildTimeConfig.defaultDataSource,
+                        resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig.defaultDataSource,
                                 dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems)));
             }
         }
@@ -300,8 +300,14 @@ class AgroalProcessor {
             }
         }
 
-        throw new ConfigurationException("Unable to determine the driver for " + (dataSourceName == null ? "default datasource"
-                : "datasource named " + dataSourceName));
+        throw new ConfigurationException("Unable to find a JDBC driver corresponding to the database kind '"
+                + dataSourceBuildTimeConfig.dbKind.get() + "' for the "
+                + (DataSourceUtil.isDefault(dataSourceName) ? "default datasource"
+                        : "datasource '" + dataSourceName + "'")
+                + ". Either provide a suitable JDBC driver extension, define the driver manually, or disable the JDBC datasource by adding "
+                + (DataSourceUtil.isDefault(dataSourceName) ? "'quarkus.datasource.jdbc=false'"
+                        : "'quarkus.datasource." + dataSourceName + ".jdbc=false'")
+                + " to your configuration if you don't need it.");
     }
 
     @BuildStep

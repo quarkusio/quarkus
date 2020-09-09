@@ -168,7 +168,7 @@ enum BuiltinBean {
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
             for (AnnotationInstance annotation : ctx.injectionPoint.getRequiredQualifiers()) {
                 // Create annotation literal first
-                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getIndex(), annotation.name());
+                ClassInfo annotationClass = getClassByName(ctx.beanDeployment.getBeanArchiveIndex(), annotation.name());
                 ctx.constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
                         ctx.annotationLiterals.process(ctx.constructor, ctx.classOutput,
                                 annotationClass, annotation,

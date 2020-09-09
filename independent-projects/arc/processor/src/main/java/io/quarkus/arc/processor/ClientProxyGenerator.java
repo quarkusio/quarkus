@@ -85,7 +85,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 generateSources);
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String targetPackage = getPackageName(bean);
@@ -316,7 +316,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (bean.isClassBean()) {
             Set<Methods.NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), classInfo,
+            Methods.addDelegatingMethods(bean.getDeployment().getBeanArchiveIndex(), classInfo,
                     methods, methodsFromWhichToRemoveFinal, transformUnproxyableClasses);
             if (!methodsFromWhichToRemoveFinal.isEmpty()) {
                 String className = classInfo.name().toString();
@@ -325,16 +325,16 @@ public class ClientProxyGenerator extends AbstractGenerator {
             }
         } else if (bean.isProducerMethod()) {
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(), producerMethod.returnType());
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, methods, null,
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), producerMethod.returnType());
+            Methods.addDelegatingMethods(bean.getDeployment().getBeanArchiveIndex(), returnTypeClass, methods, null,
                     transformUnproxyableClasses);
         } else if (bean.isProducerField()) {
             FieldInfo producerField = bean.getTarget().get().asField();
-            ClassInfo fieldClass = getClassByName(bean.getDeployment().getIndex(), producerField.type());
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, methods, null,
+            ClassInfo fieldClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), producerField.type());
+            Methods.addDelegatingMethods(bean.getDeployment().getBeanArchiveIndex(), fieldClass, methods, null,
                     transformUnproxyableClasses);
         } else if (bean.isSynthetic()) {
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getImplClazz(), methods, null,
+            Methods.addDelegatingMethods(bean.getDeployment().getBeanArchiveIndex(), bean.getImplClazz(), methods, null,
                     transformUnproxyableClasses);
         }
 

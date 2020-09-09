@@ -84,13 +84,13 @@ public class BeanProcessor {
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
-        buildContext.putInternal(Key.INDEX.asString(), builder.index);
+        buildContext.putInternal(Key.INDEX.asString(), builder.beanArchiveIndex);
 
         this.beanRegistrars = initAndSort(builder.beanRegistrars, buildContext);
         this.observerRegistrars = initAndSort(builder.observerRegistrars, buildContext);
         this.contextRegistrars = initAndSort(builder.contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(builder.beanDeploymentValidators, buildContext);
-        this.beanDeployment = new BeanDeployment(builder.index, buildContext, builder);
+        this.beanDeployment = new BeanDeployment(buildContext, builder);
 
         // Make it configurable if we find that the set of annotations needs to grow
         this.injectionPointAnnotationsPredicate = annotationName -> !annotationName.equals(DotNames.DEPRECATED);
@@ -247,7 +247,8 @@ public class BeanProcessor {
 
         String name = DEFAULT_NAME;
 
-        IndexView index;
+        IndexView beanArchiveIndex;
+        IndexView applicationIndex;
 
         Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations = Collections.emptySet();
         Map<DotName, Collection<AnnotationInstance>> additionalStereotypes = Collections.emptyMap();
@@ -290,8 +291,28 @@ public class BeanProcessor {
             return this;
         }
 
-        public Builder setIndex(IndexView index) {
-            this.index = index;
+        /**
+         * Set the bean archive index. This index is mandatory and is used to discover components (beans, interceptors,
+         * qualifiers, etc.) and during type-safe resolution.
+         * 
+         * @param beanArchiveIndex
+         * @return self
+         */
+        public Builder setBeanArchiveIndex(IndexView beanArchiveIndex) {
+            this.beanArchiveIndex = beanArchiveIndex;
+            return this;
+        }
+
+        /**
+         * Set the application index. This index is optional and is also used to discover types during type-safe resolution.
+         * <p>
+         * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
+         * 
+         * @param applicationIndex
+         * @return self
+         */
+        public Builder setApplicationIndex(IndexView applicationIndex) {
+            this.applicationIndex = applicationIndex;
             return this;
         }
 

@@ -108,7 +108,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 generateSources);
 
         Type providerType = bean.getProviderType();
-        ClassInfo providerClass = getClassByName(bean.getDeployment().getIndex(), providerType.name());
+        ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String generatedName = generatedName(providerType.name(), baseName);

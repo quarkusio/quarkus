@@ -40,7 +40,7 @@ public class BeanInfoInjectionsTest {
         Type listStringType = ParameterizedType.create(name(List.class),
                 new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);
 
-        BeanDeployment deployment = BeanProcessor.builder().setIndex(index).build().getBeanDeployment();
+        BeanDeployment deployment = BeanProcessor.builder().setBeanArchiveIndex(index).build().getBeanDeployment();
         deployment.registerCustomContexts(Collections.emptyList());
         deployment.registerBeans(Collections.emptyList());
         BeanInfo barBean = deployment.getBeans().stream().filter(b -> b.getTarget().get().equals(barClass)).findFirst().get();

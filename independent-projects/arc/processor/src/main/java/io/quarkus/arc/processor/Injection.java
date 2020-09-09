@@ -130,7 +130,7 @@ public class Injection {
         }
 
         if (!classInfo.superName().equals(DotNames.OBJECT)) {
-            ClassInfo info = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+            ClassInfo info = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (info != null) {
                 forClassBean(beanClass, info, beanDeployment, injections, transformer, true);
             }

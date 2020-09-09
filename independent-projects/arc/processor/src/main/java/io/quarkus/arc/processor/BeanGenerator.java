@@ -742,7 +742,7 @@ public class BeanGenerator extends AbstractGenerator {
                 // PreDestroy callbacks
                 List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
                         DotNames.PRE_DESTROY,
-                        bean.getDeployment().getIndex());
+                        bean.getDeployment().getBeanArchiveIndex());
                 for (MethodInfo callback : preDestroyCallbacks) {
                     if (Modifier.isPrivate(callback.flags())) {
                         privateMembers.add(isApplicationClass, String.format("@PreDestroy callback %s#%s()",
@@ -1483,7 +1483,7 @@ public class BeanGenerator extends AbstractGenerator {
         if (!bean.isInterceptor()) {
             List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
                     DotNames.POST_CONSTRUCT,
-                    bean.getDeployment().getIndex());
+                    bean.getDeployment().getBeanArchiveIndex());
             for (MethodInfo callback : postConstructCallbacks) {
                 if (isReflectionFallbackNeeded(callback, targetPackage)) {
                     if (Modifier.isPrivate(callback.flags())) {
@@ -1531,7 +1531,7 @@ public class BeanGenerator extends AbstractGenerator {
                 canBeOptimized = bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
                         && Beans.getCallbacks(bean.getTarget().get().asClass(),
                                 DotNames.PRE_DESTROY,
-                                bean.getDeployment().getIndex()).isEmpty();
+                                bean.getDeployment().getBeanArchiveIndex()).isEmpty();
             } else if (bean.isProducerMethod() || bean.isProducerField()) {
                 canBeOptimized = bean.getDisposer() == null;
             }
@@ -1817,7 +1817,7 @@ public class BeanGenerator extends AbstractGenerator {
                         .readStaticField(FieldDescriptor.of(InjectLiteral.class, "INSTANCE", InjectLiteral.class));
             } else {
                 // Create annotation literal if needed
-                ClassInfo literalClass = getClassByName(beanDeployment.getIndex(), annotation.name());
+                ClassInfo literalClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
                 annotationHandle = annotationLiterals.process(constructor,
                         classOutput, literalClass, annotation,
                         Types.getPackageName(beanCreator.getClassName()));

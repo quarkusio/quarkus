@@ -38,8 +38,8 @@ import io.vertx.core.http.HttpServerResponse;
 public class Serialisers {
 
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection 
-    private MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
-    private MultivaluedMap<Class<?>, ResourceReader> readers = new MultivaluedHashMap<>();
+    private final MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
+    private final MultivaluedMap<Class<?>, ResourceReader> readers = new MultivaluedHashMap<>();
 
     public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
 

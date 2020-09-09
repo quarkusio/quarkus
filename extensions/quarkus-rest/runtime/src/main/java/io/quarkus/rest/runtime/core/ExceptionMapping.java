@@ -15,7 +15,7 @@ public class ExceptionMapping {
 
     private static final Logger log = Logger.getLogger(ExceptionMapping.class);
 
-    private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+    private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public Response mapException(Throwable throwable) {

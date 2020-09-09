@@ -15,7 +15,7 @@ import io.quarkus.rest.runtime.util.MediaTypeHelper;
 
 public class ContextResolvers {
 
-    private Map<Class<?>, List<ResourceContextResolver>> resolvers = new HashMap<>();
+    private final Map<Class<?>, List<ResourceContextResolver>> resolvers = new HashMap<>();
 
     public <T> void addContextResolver(Class<T> contextType, ResourceContextResolver contextResolver) {
         List<ResourceContextResolver> list = resolvers.get(contextType);

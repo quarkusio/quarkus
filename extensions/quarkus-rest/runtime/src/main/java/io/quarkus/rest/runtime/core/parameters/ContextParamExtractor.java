@@ -15,7 +15,7 @@ import io.vertx.core.http.HttpServerResponse;
 
 public class ContextParamExtractor implements ParameterExtractor {
 
-    private String type;
+    private final String type;
 
     public ContextParamExtractor(String type) {
         this.type = type;

@@ -772,32 +772,21 @@ public class DevMojo extends AbstractMojo {
         }
 
         private void propagateUserProperties() {
-            final String mavenCmdLine = BootstrapMavenOptions.getMavenCmdLine();
-            if (mavenCmdLine == null || mavenCmdLine.isEmpty()) {
-                return;
-            }
-            int i = mavenCmdLine.indexOf("-D");
-            if (i < 0) {
+            Properties userProps = BootstrapMavenOptions.newInstance().getSystemProperties();
+            if (userProps == null) {
                 return;
             }
             final StringBuilder buf = new StringBuilder();
             buf.append("-D");
-            i += 2;
-            while (i < mavenCmdLine.length()) {
-                final char ch = mavenCmdLine.charAt(i++);
-                if (!Character.isWhitespace(ch)) {
-                    buf.append(ch);
-                } else if (buf.length() > 2) {
-                    args.add(buf.toString());
-                    buf.setLength(2);
-                    i = mavenCmdLine.indexOf("-D", i);
-                    if (i < 0) {
-                        break;
-                    }
-                    i += 2;
+            for (Object o : userProps.keySet()) {
+                String name = o.toString();
+                final String value = userProps.getProperty(name);
+                buf.setLength(2);
+                buf.append(name);
+                if (value != null && !value.isEmpty()) {
+                    buf.append('=');
+                    buf.append(value);
                 }
-            }
-            if (buf.length() > 2) {
                 args.add(buf.toString());
             }
         }

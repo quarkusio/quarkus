@@ -21,6 +21,7 @@ import javax.ws.rs.ext.Providers;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
@@ -89,6 +90,7 @@ class RestClientProcessor {
 
     private static final DotName REGISTER_PROVIDER = DotName.createSimple(RegisterProvider.class.getName());
     private static final DotName REGISTER_PROVIDERS = DotName.createSimple(RegisterProviders.class.getName());
+    private static final DotName REGISTER_CLIENT_HEADERS = DotName.createSimple(RegisterClientHeaders.class.getName());
 
     private static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
     private static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
@@ -421,6 +423,15 @@ class RestClientProcessor {
                     .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
         }
 
+        // Register @RegisterClientHeaders for reflection
+        for (AnnotationInstance annotationInstance : index.getAnnotations(REGISTER_CLIENT_HEADERS)) {
+            AnnotationValue value = annotationInstance.value();
+            if (value != null) {
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+            }
+        }
+
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
@@ -438,10 +449,14 @@ class RestClientProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
             allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
         }
+        allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         for (AnnotationInstance annotationInstance : allInstances) {
             // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
-            builder.addBeanClass(annotationInstance.value().asClass().toString());
+            AnnotationValue value = annotationInstance.value();
+            if (value != null) {
+                builder.addBeanClass(value.asClass().toString());
+            }
         }
         return builder.build();
     }

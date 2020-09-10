@@ -1,8 +1,5 @@
 package io.quarkus.rest.runtime.model;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
@@ -58,21 +55,5 @@ public class ResourceRequestInterceptor implements Comparable<ResourceRequestInt
     @Override
     public int compareTo(ResourceRequestInterceptor o) {
         return this.priority.compareTo(o.priority);
-    }
-
-    //TODO: move somewhere else?
-    public static class ClosingTask implements Closeable {
-        private final Collection<BeanFactory.BeanInstance<ContainerRequestFilter>> instances;
-
-        public ClosingTask(Collection<BeanFactory.BeanInstance<ContainerRequestFilter>> instances) {
-            this.instances = instances;
-        }
-
-        @Override
-        public void close() throws IOException {
-            for (BeanFactory.BeanInstance<ContainerRequestFilter> i : instances) {
-                i.close();
-            }
-        }
     }
 }

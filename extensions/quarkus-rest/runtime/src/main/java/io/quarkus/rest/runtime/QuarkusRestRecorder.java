@@ -286,7 +286,7 @@ public class QuarkusRestRecorder {
 
         }
         shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new ResourceRequestInterceptor.ClosingTask(responseBeanInstances)));
+                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
         return result;
     }
 
@@ -308,7 +308,7 @@ public class QuarkusRestRecorder {
 
         }
         shutdownContext.addShutdownTask(
-                new ShutdownContext.CloseRunnable(new ResourceResponseInterceptor.ClosingTask(responseBeanInstances)));
+                new ShutdownContext.CloseRunnable(new BeanFactory.BeanInstance.ClosingTask<>(responseBeanInstances)));
         return result;
     }
 

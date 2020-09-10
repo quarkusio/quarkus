@@ -1,5 +1,9 @@
 package io.quarkus.rest.runtime.spi;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collection;
+
 public interface BeanFactory<T> {
 
     /**
@@ -12,6 +16,21 @@ public interface BeanFactory<T> {
         T getInstance();
 
         void close();
+        
+        class ClosingTask<T> implements Closeable {
+            private final Collection<BeanInstance<T>> instances;
+
+            public ClosingTask(Collection<BeanInstance<T>> instances) {
+                this.instances = instances;
+            }
+
+            @Override
+            public void close() throws IOException {
+                for (BeanFactory.BeanInstance<T> i : instances) {
+                    i.close();
+                }
+            }
+        }
     }
 
 }

@@ -262,6 +262,11 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 
 == Testing the Application
 
+[NOTE]
+====
+In the following tests we use the basic authentication mechanism, you can enable it by setting `quarkus.http.auth.basic=true` in the `application.properties` file.
+====
+
 The application is now protected and the identities are provided by our database.
 The very first thing to check is to ensure the anonymous access works.
 

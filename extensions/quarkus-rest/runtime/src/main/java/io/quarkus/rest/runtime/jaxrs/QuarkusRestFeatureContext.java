@@ -104,6 +104,7 @@ public class QuarkusRestFeatureContext implements FeatureContext {
         if (ExceptionMapper.class.isAssignableFrom(componentClass)) {
             Type[] genericInterfaces = componentClass.getGenericInterfaces();
             for (Type type : genericInterfaces) {
+                // TODO: use proper generic handling
                 if (type instanceof ParameterizedType) {
                     ParameterizedType parameterizedType = (ParameterizedType) type;
                     if (parameterizedType.getRawType().equals(ExceptionMapper.class)) {

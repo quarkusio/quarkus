@@ -416,7 +416,7 @@ will be used. You can also define the version in SmallRye using the following co
 mp.openapi.extensions.smallrye.openapi=3.0.2
 ----
 
-This might be useful if your API go through a Gateway that needs a certain version.
+This might be useful if your API goes through a Gateway that needs a certain version.
 
 == Auto-generation of Operation Id
 

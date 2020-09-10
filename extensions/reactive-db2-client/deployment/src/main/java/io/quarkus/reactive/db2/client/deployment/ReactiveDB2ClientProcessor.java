@@ -53,10 +53,12 @@ class ReactiveDB2ClientProcessor {
         // Make sure the DB2PoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-db2-client");
 
-        // Note: we had to tweak that logic to support the legacy configuration
-        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
-                && (!DatabaseKind.isDB2(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
-                        || !dataSourceReactiveBuildTimeConfig.enabled)) {
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+            return serviceStart;
+        }
+
+        if (!DatabaseKind.isDB2(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+                || !dataSourceReactiveBuildTimeConfig.enabled) {
             return serviceStart;
         }
 

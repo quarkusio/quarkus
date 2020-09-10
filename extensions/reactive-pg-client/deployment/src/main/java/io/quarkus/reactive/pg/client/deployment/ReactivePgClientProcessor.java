@@ -7,7 +7,6 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
-import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -22,7 +21,6 @@ import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.pg.client.runtime.DataSourceReactivePostgreSQLConfig;
-import io.quarkus.reactive.pg.client.runtime.LegacyDataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.runtime.RuntimeValue;
@@ -58,26 +56,23 @@ class ReactivePgClientProcessor {
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
-            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig) {
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_PG_CLIENT));
         // Make sure the PgPoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-pg-client");
 
-        // Note: we had to tweak that logic to support the legacy configuration
-        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
-                && (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
-                        || !dataSourceReactiveBuildTimeConfig.enabled)) {
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
             return serviceStart;
         }
 
-        boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
+        if (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+                || !dataSourceReactiveBuildTimeConfig.enabled) {
+            return serviceStart;
+        }
 
         RuntimeValue<PgPool> pool = recorder.configurePgPool(vertx.getVertx(),
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
-                legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
                 shutdown);
         pgPool.produce(new PgPoolBuildItem(pool));
 

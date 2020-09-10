@@ -17,10 +17,10 @@ import io.quarkus.agroal.DataSource;
 public class DevModeTestEndpoint {
 
     @GET
-    @Path("/{dataSourceName}/{jdbcUrl}/{username}/{minSize}/{maxSize}")
+    @Path("/{dataSourceName}/{jdbcUrl}/{username}/{maxSize}")
     public String test(@PathParam("dataSourceName") String dataSourceName, @PathParam("jdbcUrl") String jdbcUrl,
             @PathParam("username") String username,
-            @PathParam("minSize") int minSize, @PathParam("maxSize") int maxSize) throws Exception {
+            @PathParam("maxSize") int maxSize) throws Exception {
         AgroalDataSource ds;
         if (dataSourceName.equals("default")) {
             ds = CDI.current().select(AgroalDataSource.class)
@@ -29,7 +29,7 @@ public class DevModeTestEndpoint {
             ds = CDI.current().select(AgroalDataSource.class, new DataSource.DataSourceLiteral(dataSourceName))
                     .get();
         }
-        testDataSource(dataSourceName, ds, URLDecoder.decode(jdbcUrl, StandardCharsets.UTF_8.name()), username, minSize,
+        testDataSource(dataSourceName, ds, URLDecoder.decode(jdbcUrl, StandardCharsets.UTF_8.name()), username,
                 maxSize);
         return "ok";
     }

@@ -16,7 +16,7 @@ import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.project.BuildTool;
 
-class QuarkusCodestartsIT extends PlatformAwareTestBase {
+class QuarkusCodestartsPrepareTest extends PlatformAwareTestBase {
 
     private final Path projectPath = Paths.get("target/codestarts-test");
 
@@ -155,9 +155,8 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .contains("codestarts/quarkus/core/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
                 .containsExactlyInAnyOrder(
-                    "codestarts/quarkus/core/tooling/dockerfiles",
-                    "codestarts/quarkus/core/tooling/maven-wrapper",
-                    "codestarts/quarkus/core/examples/commandmode-example"
-                );
+                        "codestarts/quarkus/core/tooling/dockerfiles",
+                        "codestarts/quarkus/core/tooling/maven-wrapper",
+                        "codestarts/quarkus/core/examples/commandmode-example");
     }
 }

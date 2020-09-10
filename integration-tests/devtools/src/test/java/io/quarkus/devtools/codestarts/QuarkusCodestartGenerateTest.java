@@ -22,7 +22,7 @@ import io.quarkus.devtools.ProjectTestUtil;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
-class QuarkusCodestartGenerationIT extends PlatformAwareTestBase {
+class QuarkusCodestartGenerateTest extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/codestarts-test");
 
@@ -36,7 +36,7 @@ class QuarkusCodestartGenerationIT extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return QuarkusCodestartGenerationIT.getTestInputData(getPlatformDescriptor(), override);
+        return QuarkusCodestartGenerateTest.getTestInputData(getPlatformDescriptor(), override);
     }
 
     static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,

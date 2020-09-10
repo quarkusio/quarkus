@@ -48,7 +48,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return QuarkusCodestartGenerationIT.getTestInputData(getPlatformDescriptor(), override);
+        return QuarkusCodestartGenerateTest.getTestInputData(getPlatformDescriptor(), override);
     }
 
     private Stream<Arguments> provideGenerateCombinations() throws IOException {

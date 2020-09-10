@@ -9,12 +9,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.io.FilenameUtils;
 
 final class CodestartLoader {
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory())
@@ -30,12 +30,12 @@ final class CodestartLoader {
 
     public static Collection<Codestart> loadCodestartsFromDefaultDir(CodestartResourceLoader resourceLoader)
             throws IOException {
-        return loadCodestarts(resourceLoader, FilenameUtils.concat(CODESTARTS_DIR, ""));
+        return loadCodestarts(resourceLoader, getResourcePath(CODESTARTS_DIR));
     }
 
     public static Collection<Codestart> loadCodestartsFromDefaultDir(CodestartResourceLoader resourceLoader, String subDir)
             throws IOException {
-        return loadCodestarts(resourceLoader, FilenameUtils.concat(CODESTARTS_DIR, subDir));
+        return loadCodestarts(resourceLoader, getResourcePath(CODESTARTS_DIR, subDir));
     }
 
     // Visible for testing
@@ -68,7 +68,7 @@ final class CodestartLoader {
         try (final Stream<Path> files = Files.list(p)) {
             return files
                     .filter(Files::isDirectory)
-                    .map(d -> d.getFileName().toString().replaceAll("([/\\\\])$", ""))
+                    .map(CodestartLoader::getDirName)
                     .filter(l -> !Objects.equals(l, BASE_LANGUAGE))
                     .collect(Collectors.toSet());
         }
@@ -80,7 +80,18 @@ final class CodestartLoader {
                 .readValue(content);
     }
 
-    private static String resolveResourceName(final String dirName, final Path dirPath, final Path resourcePath) {
-        return FilenameUtils.concat(dirName, dirPath.relativize(resourcePath).toString()).replace('\\', '/');
+    // Visible for testing
+    static String getDirName(Path d) {
+        return d.getFileName().toString().replaceAll("([/\\\\])$", "");
+    }
+
+    // Visible for testing
+    static String resolveResourceName(final String dirName, final Path dirPath, final Path resourcePath) {
+        return getResourcePath(dirName, dirPath.relativize(resourcePath).toString());
+    }
+
+    // Visible for testing
+    static String getResourcePath(String first, String... more) {
+        return Paths.get(first, more).toString().replace('\\', '/');
     }
 }

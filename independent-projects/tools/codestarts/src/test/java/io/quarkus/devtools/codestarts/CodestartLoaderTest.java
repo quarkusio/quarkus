@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Set;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -109,4 +110,17 @@ class CodestartLoaderTest {
                 .withMessageContaining("codestart-3");
     }
 
+    @Test
+    void testGetDirName() {
+        assertThat(CodestartLoader.getDirName(Paths.get("test-codestart/my-codestart/java/"))).isEqualTo("java");
+        assertThat(CodestartLoader.getDirName(Paths.get("test-codestart/my-codestart/java"))).isEqualTo("java");
+    }
+
+    @Test
+    void testGetResourcePath() {
+        assertThat(CodestartLoader.getResourcePath("codestart")).isEqualTo("codestart");
+        assertThat(CodestartLoader.getResourcePath("codestart/")).isEqualTo("codestart");
+        assertThat(CodestartLoader.getResourcePath("codestart", "/my-codestart/")).isEqualTo("codestart/my-codestart");
+        assertThat(CodestartLoader.getResourcePath("codestart/", "/my-codestart")).isEqualTo("codestart/my-codestart");
+    }
 }

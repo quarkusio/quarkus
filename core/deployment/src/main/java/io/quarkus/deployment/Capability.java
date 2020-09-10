@@ -40,6 +40,10 @@ public enum Capability {
     SECURITY_ELYTRON_LDAP,
     SECURITY_JPA,
     QUARTZ,
+    /**
+     * @deprecated
+     * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem
+     */
     METRICS,
     CONTAINER_IMAGE_JIB,
     CONTAINER_IMAGE_DOCKER,

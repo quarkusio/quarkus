@@ -22,6 +22,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -44,8 +45,6 @@ public class MicrometerProcessor {
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
     private static final DotName NAMING_CONVENTION = DotName.createSimple(NamingConvention.class.getName());
 
-    private static final String FEATURE = "micrometer";
-
     static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
@@ -58,7 +57,7 @@ public class MicrometerProcessor {
 
     @BuildStep(onlyIf = MicrometerEnabled.class)
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FEATURE);
+        return new FeatureBuildItem(Feature.MICROMETER);
     }
 
     @BuildStep(onlyIf = MicrometerEnabled.class, onlyIfNot = PrometheusRegistryProcessor.PrometheusEnabled.class)

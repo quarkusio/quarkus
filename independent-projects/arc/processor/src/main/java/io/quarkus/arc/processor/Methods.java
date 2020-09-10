@@ -327,6 +327,10 @@ final class Methods {
         return false;
     }
 
+    static boolean isOverriden(Methods.MethodKey method, Collection<Methods.MethodKey> previousMethods) {
+        return previousMethods.contains(method);
+    }
+
     static boolean matchesSignature(MethodInfo method, MethodInfo subclassMethod) {
         if (!method.name().equals(subclassMethod.name())) {
             return false;

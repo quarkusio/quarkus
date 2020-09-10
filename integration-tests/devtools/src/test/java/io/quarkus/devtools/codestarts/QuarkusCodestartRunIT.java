@@ -52,8 +52,8 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     private Stream<Arguments> provideGenerateCombinations() throws IOException {
-        final List<Codestart> examples = CodestartLoader
-                .loadAllCodestarts(QuarkusCodestarts.resourceLoader(getPlatformDescriptor())).stream()
+        final List<Codestart> examples = QuarkusCodestarts
+                .loadQuarkusCodestarts(QuarkusCodestarts.resourceLoader(getPlatformDescriptor())).stream()
                 .filter(QuarkusCodestarts::isExample)
                 .filter(c -> !EXCLUDED.contains(c.getName()))
                 .collect(Collectors.toList());

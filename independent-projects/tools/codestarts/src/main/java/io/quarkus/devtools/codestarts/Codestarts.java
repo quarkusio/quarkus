@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
+import static io.quarkus.devtools.codestarts.CodestartLoader.loadCodestartsFromDefaultDir;
 import static io.quarkus.devtools.codestarts.CodestartProcessor.buildStrategies;
 import static io.quarkus.devtools.codestarts.CodestartType.LANGUAGE;
 
@@ -20,16 +20,16 @@ import java.util.stream.Stream;
 public class Codestarts {
 
     public static CodestartProject prepareProject(final CodestartInput input) throws IOException {
-        return prepareProject(input, loadAllCodestarts(input));
+        return prepareProject(input, loadCodestartsFromDefaultDir(input.getResourceLoader()));
     }
 
-    public static CodestartProject prepareProject(final CodestartInput input, final List<Codestart> allCodestarts) {
+    public static CodestartProject prepareProject(final CodestartInput input, final Collection<Codestart> codestarts) {
         final Set<String> selectedCodestartNames = new HashSet<>(input.getCodestarts());
-        final Collection<Codestart> baseCodestarts = resolveSelectedBaseCodestarts(allCodestarts, selectedCodestartNames);
+        final Collection<Codestart> baseCodestarts = resolveSelectedBaseCodestarts(codestarts, selectedCodestartNames);
         final String languageName = baseCodestarts.stream().filter(c -> c.getType() == LANGUAGE).findFirst()
                 .orElseThrow(() -> new CodestartDefinitionException("Language codestart is required")).getName();
         final Collection<Codestart> extraCodestarts = resolveSelectedExtraCodestarts(input, selectedCodestartNames,
-                allCodestarts, languageName);
+                codestarts, languageName);
 
         final List<Codestart> selectedCodestarts = new ArrayList<>();
         selectedCodestarts.addAll(baseCodestarts);

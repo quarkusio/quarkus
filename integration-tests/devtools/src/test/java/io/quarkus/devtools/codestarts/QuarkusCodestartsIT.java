@@ -26,10 +26,9 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
     }
 
     @Test
-    void loadBundledCodestartsTest() throws IOException {
-        final Collection<Codestart> codestarts = CodestartLoader
-                .loadBundledCodestarts(QuarkusCodestarts.resourceLoader(getPlatformDescriptor()));
-        assertThat(codestarts).hasSize(13);
+    void loadQuarkusCodestartsTest() throws IOException {
+        final Collection<Codestart> codestarts = QuarkusCodestarts
+                .loadQuarkusCodestarts(QuarkusCodestarts.resourceLoader(getPlatformDescriptor()));
         assertThat(codestarts)
                 .filteredOn(c -> c.getType().isBase())
                 .extracting(Codestart::getImplementedLanguages)
@@ -39,12 +38,6 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
                 .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin"));
-    }
-
-    @Test
-    void loadExtensionCodestartsTest() throws IOException {
-        final Collection<Codestart> codestarts = CodestartLoader
-                .loadCodestartsFromExtensions(QuarkusCodestarts.resourceLoader(getPlatformDescriptor()));
 
         assertThat(codestarts).filteredOn("ref", "qute")
                 .extracting(Codestart::getImplementedLanguages)
@@ -61,19 +54,41 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
     void prepareProjectTestEmpty() throws IOException {
         final QuarkusCodestartInput input = QuarkusCodestartInput.builder(getPlatformDescriptor())
                 .noExamples()
+                .noBuildToolWrapper()
+                .noDockerfiles()
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/project/quarkus");
+                .isEqualTo("codestarts/quarkus/core/project/quarkus");
         assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/buildtool/maven");
+                .isEqualTo("codestarts/quarkus/core/buildtool/maven");
         assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/config/properties");
+                .isEqualTo("codestarts/quarkus/core/config/properties");
         assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/language/java");
+                .isEqualTo("codestarts/quarkus/core/language/java");
         assertThat(codestartProject.getBaseCodestarts()).hasSize(4);
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
                 .isEmpty();
+    }
+
+    @Test
+    void prepareProjectTestNoExample() throws IOException {
+        final QuarkusCodestartInput input = QuarkusCodestartInput.builder(getPlatformDescriptor())
+                .noExamples()
+                .build();
+        final CodestartProject codestartProject = prepareProject(input);
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getResourceDir)
+                .isEqualTo("codestarts/quarkus/core/project/quarkus");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
+                .isEqualTo("codestarts/quarkus/core/buildtool/maven");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
+                .isEqualTo("codestarts/quarkus/core/config/properties");
+        assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
+                .isEqualTo("codestarts/quarkus/core/language/java");
+        assertThat(codestartProject.getBaseCodestarts()).hasSize(4);
+        assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
+                .containsExactlyInAnyOrder("codestarts/quarkus/core/tooling/dockerfiles",
+                        "codestarts/quarkus/core/tooling/maven-wrapper");
     }
 
     @Test
@@ -83,7 +98,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/buildtool/gradle");
+                .isEqualTo("codestarts/quarkus/core/buildtool/gradle");
     }
 
     @Test
@@ -93,7 +108,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/language/kotlin");
+                .isEqualTo("codestarts/quarkus/core/language/kotlin");
     }
 
     @Test
@@ -103,7 +118,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/language/scala");
+                .isEqualTo("codestarts/quarkus/core/language/scala");
     }
 
     @Test
@@ -113,7 +128,7 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
-                .isEqualTo("bundled-codestarts/config/yaml");
+                .isEqualTo("codestarts/quarkus/core/config/yaml");
     }
 
     @Test
@@ -123,10 +138,12 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)
-                .contains("bundled-codestarts/config/properties");
+                .contains("codestarts/quarkus/core/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/tooling/maven-wrapper",
-                        "codestarts/resteasy-example");
+                .containsExactlyInAnyOrder(
+                        "codestarts/quarkus/core/tooling/dockerfiles",
+                        "codestarts/quarkus/core/tooling/maven-wrapper",
+                        "codestarts/quarkus/core/examples/resteasy-example");
     }
 
     @Test
@@ -135,9 +152,12 @@ class QuarkusCodestartsIT extends PlatformAwareTestBase {
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
         assertThat(codestartProject.getBaseCodestarts()).extracting(Codestart::getResourceDir)
-                .contains("bundled-codestarts/config/properties");
+                .contains("codestarts/quarkus/core/config/properties");
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/tooling/dockerfiles",
-                        "bundled-codestarts/example/commandmode-example");
+                .containsExactlyInAnyOrder(
+                    "codestarts/quarkus/core/tooling/dockerfiles",
+                    "codestarts/quarkus/core/tooling/maven-wrapper",
+                    "codestarts/quarkus/core/examples/commandmode-example"
+                );
     }
 }

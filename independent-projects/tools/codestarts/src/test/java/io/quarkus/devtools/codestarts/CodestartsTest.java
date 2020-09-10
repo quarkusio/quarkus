@@ -75,7 +75,7 @@ class CodestartsTest {
         assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-properties");
 
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/tooling-t");
+                .containsExactlyInAnyOrder("codestarts/core/tooling-t");
 
         final Path targetDirectory = projectPath.resolve("default-project");
         Codestarts.generateProject(codestartProject, targetDirectory);
@@ -109,7 +109,7 @@ class CodestartsTest {
         assertThat(codestartProject.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-yaml");
 
         assertThat(codestartProject.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("bundled-codestarts/example-with-b");
+                .containsExactlyInAnyOrder("codestarts/core/example-with-b");
 
         final Path targetDirectory = projectPath.resolve("specific-project");
         Codestarts.generateProject(codestartProject, targetDirectory);
@@ -125,7 +125,7 @@ class CodestartsTest {
 
     private List<Codestart> loadSpecific(CodestartInput input, String s) throws IOException {
         return Stream.concat(
-                CodestartLoader.loadBundledCodestarts(input).stream(),
+                CodestartLoader.loadCodestartsFromDefaultDir(input.getResourceLoader()).stream(),
                 CodestartLoader.loadCodestarts(input.getResourceLoader(), s).stream())
                 .collect(Collectors.toList());
     }

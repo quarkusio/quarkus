@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,39 +23,19 @@ final class CodestartLoader {
             .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
             .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
 
-    private static final String CODESTARTS_DIR_BUNDLED = "bundled-codestarts";
-    private static final String CODESTARTS_DIR_FROM_EXTENSIONS = "codestarts";
+    private static final String CODESTARTS_DIR = "codestarts";
 
     private CodestartLoader() {
     }
 
-    public static List<Codestart> loadAllCodestarts(CodestartInput input) throws IOException {
-        return loadAllCodestarts(input.getResourceLoader());
-    }
-
-    public static List<Codestart> loadAllCodestarts(CodestartResourceLoader resourceLoader) throws IOException {
-        return Stream.concat(loadBundledCodestarts(resourceLoader).stream(),
-                loadCodestartsFromExtensions(resourceLoader).stream()).collect(Collectors.toList());
-    }
-
-    public static Collection<Codestart> loadBundledCodestarts(CodestartInput input) throws IOException {
-        return loadBundledCodestarts(input.getResourceLoader());
-    }
-
-    public static Collection<Codestart> loadBundledCodestarts(CodestartResourceLoader resourceLoader) throws IOException {
-        return loadCodestarts(resourceLoader, CODESTARTS_DIR_BUNDLED);
-    }
-
-    public static Collection<Codestart> loadCodestartsFromExtensions(CodestartInput input)
+    public static Collection<Codestart> loadCodestartsFromDefaultDir(CodestartResourceLoader resourceLoader)
             throws IOException {
-
-        return loadCodestartsFromExtensions(input.getResourceLoader());
+        return loadCodestarts(resourceLoader, FilenameUtils.concat(CODESTARTS_DIR, ""));
     }
 
-    public static Collection<Codestart> loadCodestartsFromExtensions(CodestartResourceLoader resourceLoader)
+    public static Collection<Codestart> loadCodestartsFromDefaultDir(CodestartResourceLoader resourceLoader, String subDir)
             throws IOException {
-        // TODO resolve codestarts which live inside extensions. Using a directory is just a temporary workaround.
-        return loadCodestarts(resourceLoader, CODESTARTS_DIR_FROM_EXTENSIONS);
+        return loadCodestarts(resourceLoader, FilenameUtils.concat(CODESTARTS_DIR, subDir));
     }
 
     // Visible for testing

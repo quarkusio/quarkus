@@ -10,7 +10,6 @@ import java.util.Map;
 
 public class CodestartInputBuilder {
     CodestartResourceLoader resourceLoader;
-    Map<AppArtifactKey, String> extensionCodestartMapping;
     Collection<AppArtifactKey> dependencies = new ArrayList<>();
     Collection<String> codestarts = new ArrayList<>();
     Map<String, Object> data = new HashMap<>();

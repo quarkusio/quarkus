@@ -63,16 +63,19 @@ class CodestartLoaderTest {
     }
 
     @Test
-    void testLoadBundledCodestarts() throws IOException {
-        final CodestartInput input = CodestartInput.builder(new TestCodestartResourceLoader()).build();
-        final Collection<Codestart> codestarts = CodestartLoader.loadBundledCodestarts(input);
+    void testLoadCodestartsFromDefaultDir() throws IOException {
+        final Collection<Codestart> codestarts = CodestartLoader
+                .loadCodestartsFromDefaultDir(new TestCodestartResourceLoader());
         assertThat(codestarts).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("y", "maven", "config-properties", "config-yaml", "foo", "a", "b", "replace", "t",
-                        "example-with-b");
+                        "example-with-b", "example1", "example2", "example-forbidden");
 
         checkLanguages(codestarts, Sets.newSet("y", "z"), "a", "b");
         checkLanguages(codestarts, Sets.newSet("config-properties", "config-yaml", "foo", "a", "b", "replace"));
         checkLanguages(codestarts, Sets.newSet("t"), "a");
+        checkLanguages(codestarts, Sets.newSet("example1"), "a");
+        checkLanguages(codestarts, Sets.newSet("example2"), "b");
+        checkLanguages(codestarts, Sets.newSet("example-forbidden"));
     }
 
     private void checkLanguages(Collection<Codestart> codestarts, Set<String> names, String... languages) {
@@ -84,14 +87,12 @@ class CodestartLoaderTest {
     }
 
     @Test
-    void testLoadCodestartsFromExtensions() throws IOException {
-        final CodestartInput input = CodestartInput.builder(new TestCodestartResourceLoader()).build();
-        final Collection<Codestart> codestarts = CodestartLoader.loadCodestartsFromExtensions(input);
+    void testLoadCodestartsFromSubDir() throws IOException {
+        final Collection<Codestart> codestarts = CodestartLoader.loadCodestartsFromDefaultDir(new TestCodestartResourceLoader(),
+                "examples");
         assertThat(codestarts).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("example1", "example2", "example-forbidden");
-        checkLanguages(codestarts, Sets.newSet("example1"), "a");
-        checkLanguages(codestarts, Sets.newSet("example2"), "b");
-        checkLanguages(codestarts, Sets.newSet("example-forbidden"));
+
     }
 
     @Test

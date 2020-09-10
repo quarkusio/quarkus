@@ -197,7 +197,7 @@ class QuarkusCodestartGenerationIT extends PlatformAwareTestBase {
                 .putData(RESTEASY_EXAMPLE_RESOURCE_PATH.getKey(), "/bonjour")
                 .build();
         final CodestartProject codestartProject = prepareProject(input);
-        final Path projectDir = testDirPath.resolve("resteasy-kotlin-custom");
+        final Path projectDir = testDirPath.resolve("resteasy-scala-custom");
         Codestarts.generateProject(codestartProject, projectDir);
 
         checkMaven(projectDir);

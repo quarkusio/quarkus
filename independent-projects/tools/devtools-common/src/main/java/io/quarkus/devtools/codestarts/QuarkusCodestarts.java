@@ -1,17 +1,21 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.CodestartLoader.loadAllCodestarts;
+import static io.quarkus.devtools.codestarts.CodestartLoader.loadCodestartsFromDefaultDir;
 
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class QuarkusCodestarts {
+
     private QuarkusCodestarts() {
     }
+
+    public static final String QUARKUS_PROJECT_TYPE = "quarkus";
 
     public enum Tag implements KeySupplier {
         EXAMPLE,
@@ -37,26 +41,30 @@ public final class QuarkusCodestarts {
     }
 
     public static CodestartProject prepareProject(QuarkusCodestartInput input) throws IOException {
-        final List<Codestart> allCodestarts = loadAllCodestarts(input.getCodestartInput());
-        final CodestartProject codestartProject = Codestarts.prepareProject(input.getCodestartInput(), allCodestarts);
+        final Collection<Codestart> codestarts = loadQuarkusCodestarts(input.getCodestartInput().getResourceLoader());
+        final CodestartProject codestartProject = Codestarts.prepareProject(input.getCodestartInput(), codestarts);
 
         // Filter out examples if noExamples
-        final List<Codestart> codestarts = codestartProject.getCodestarts().stream()
+        final List<Codestart> projectCodestarts = codestartProject.getCodestarts().stream()
                 .filter(c -> !isExample(c) || !input.noExamples())
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // include commandmode example codestarts if none selected
         if (!input.noExamples()
-                && codestartProject.getExtraCodestarts().stream()
+                && projectCodestarts.stream()
                         .noneMatch(c -> isExample(c) && !c.getSpec().isPreselected())) {
-            final Codestart commandModeCodestart = allCodestarts.stream()
+            final Codestart commandModeCodestart = codestarts.stream()
                     .filter(c -> c.isSelected(Collections.singleton(Example.COMMANDMODE_EXAMPLE.getKey())))
                     .findFirst().orElseThrow(() -> new CodestartDefinitionException(
                             Example.COMMANDMODE_EXAMPLE.getKey() + " codestart not found"));
-            codestarts.add(commandModeCodestart);
+            projectCodestarts.add(commandModeCodestart);
         }
 
-        return CodestartProject.of(input.getCodestartInput(), codestarts);
+        return CodestartProject.of(input.getCodestartInput(), projectCodestarts);
+    }
+
+    public static Collection<Codestart> loadQuarkusCodestarts(CodestartResourceLoader loader) throws IOException {
+        return loadCodestartsFromDefaultDir(loader, QUARKUS_PROJECT_TYPE);
     }
 
     public static CodestartResourceLoader resourceLoader(QuarkusPlatformDescriptor platformDescr) {

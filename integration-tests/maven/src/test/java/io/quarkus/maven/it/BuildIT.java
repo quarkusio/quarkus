@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,28 @@ class BuildIT extends MojoTestBase {
 
     private RunningInvoker running;
     private File testDir;
+
+    @Test
+    void testConditionalDependencies()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/conditional-dependencies", "projects/conditional-dependencies-build");
+
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+        assertThat(result.getProcess().waitFor()).isZero();
+
+        final File targetDir = new File(testDir, "runner" + File.separator + "target");
+        final File runnerJar = targetDir.toPath().resolve("quarkus-app").resolve("quarkus-run.jar").toFile();
+        // make sure the jar can be read by JarInputStream
+        ensureManifestOfJarIsReadableByJarInputStream(runnerJar);
+
+        final Path mainLib = targetDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-a-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-b-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-c-1.0-SNAPSHOT.jar")).exists();
+        assertThat(mainLib.resolve("org.acme.acme-quarkus-ext-d-1.0-SNAPSHOT.jar")).doesNotExist();
+    }
 
     @Test
     void testMultiModuleAppRootWithNoSources()

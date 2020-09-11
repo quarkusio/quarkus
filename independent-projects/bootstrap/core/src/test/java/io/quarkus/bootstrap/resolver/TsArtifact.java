@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -64,6 +65,8 @@ public class TsArtifact {
     protected Properties pomProps;
     protected List<Profile> pomProfiles = Collections.emptyList();
 
+    private boolean installed;
+
     public TsArtifact(String artifactId) {
         this(artifactId, DEFAULT_VERSION);
     }
@@ -82,6 +85,10 @@ public class TsArtifact {
         this.classifier = classifier;
         this.type = type;
         this.version = version;
+    }
+
+    public AppArtifactKey getKey() {
+        return new AppArtifactKey(groupId, artifactId);
     }
 
     public String getGroupId() {
@@ -226,16 +233,20 @@ public class TsArtifact {
      * @param repoBuilder
      */
     public void install(TsRepoBuilder repoBuilder) {
+        if (installed) {
+            return;
+        }
+        installed = true;
+        if (!extDeps.isEmpty()) {
+            for (TsQuarkusExt ext : extDeps) {
+                ext.install(repoBuilder);
+            }
+        }
         if (!deps.isEmpty()) {
             for (TsDependency dep : deps) {
                 if (dep.artifact.getVersion() != null) {
                     dep.artifact.install(repoBuilder);
                 }
-            }
-        }
-        if (!extDeps.isEmpty()) {
-            for (TsQuarkusExt ext : extDeps) {
-                ext.deployment.install(repoBuilder);
             }
         }
         try {

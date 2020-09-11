@@ -10,6 +10,8 @@ public interface BootstrapConstants {
 
     String SERIALIZED_APP_MODEL = "quarkus-internal.serialized-app-model.path";
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
+    String CONDITIONAL_DEPENDENCIES = "conditional-dependencies";
+    String DEPENDENCY_CONDITION = "dependency-condition";
 
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.

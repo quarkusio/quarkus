@@ -3,11 +3,11 @@ package io.quarkus.deployment.runnerjar;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
@@ -66,7 +66,7 @@ public class OptionalDepsTest extends ExecutableOutputOutcomeTestBase {
     }
 
     @Override
-    protected void assertAppModel(AppModel appModel) throws Exception {
+    protected void assertDeploymentDeps(List<AppDependency> deploymentDeps) throws Exception {
         final Set<AppDependency> expected = new HashSet<>();
         expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile", true));
         expected.add(
@@ -74,6 +74,6 @@ public class OptionalDepsTest extends ExecutableOutputOutcomeTestBase {
         expected.add(new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "compile", true));
         expected.add(
                 new AppDependency(new AppArtifact("io.quarkus.bootstrap.test", "ext-d-deployment", "1"), "compile", false));
-        assertEquals(expected, new HashSet<>(appModel.getDeploymentDependencies()));
+        assertEquals(expected, new HashSet<>(deploymentDeps));
     }
 }

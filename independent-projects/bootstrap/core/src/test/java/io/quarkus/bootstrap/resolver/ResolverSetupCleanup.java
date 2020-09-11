@@ -69,8 +69,9 @@ public class ResolverSetupCleanup {
         return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
     }
 
-    protected void install(TsQuarkusExt extension) {
+    protected TsQuarkusExt install(TsQuarkusExt extension) {
         extension.install(repo);
+        return extension;
     }
 
     protected TsArtifact install(TsArtifact artifact) {

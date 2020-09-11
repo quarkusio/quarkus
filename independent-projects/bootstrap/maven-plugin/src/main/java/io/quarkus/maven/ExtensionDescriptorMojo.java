@@ -17,6 +17,7 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.DependencyNodeUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -45,6 +46,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -60,6 +62,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -90,7 +93,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     RemoteRepositoryManager remoteRepoManager;
 
     @Component
-    BootstrapWorkspaceProvider workpaceProvider;
+    BootstrapWorkspaceProvider workspaceProvider;
 
     /**
      * The current repository/network configuration of Maven.
@@ -167,6 +170,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "${ignoreNotDetectedQuarkusCoreVersion")
     boolean ignoreNotDetectedQuarkusCoreVersion;
 
+    @Parameter
+    private List<String> conditionalDependencies = new ArrayList<>(0);
+
+    @Parameter
+    private List<String> dependencyCondition = new ArrayList<>(0);
+
     AppArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
 
@@ -179,8 +188,61 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             validateExtensionDeps();
         }
 
+        if (conditionalDependencies.isEmpty()) {
+            // if conditional dependencies haven't been configured
+            // we check whether there are direct optional dependencies on extensions
+            // that are configured with a dependency condition
+            // such dependencies will be registered as conditional
+            StringBuilder buf = null;
+            for (org.apache.maven.model.Dependency d : project.getDependencies()) {
+                if (!d.isOptional()) {
+                    continue;
+                }
+                if (!d.getScope().isEmpty()
+                        && !(d.getScope().equals(JavaScopes.COMPILE) || d.getScope().equals(JavaScopes.RUNTIME))) {
+                    continue;
+                }
+                final Properties props = getExtensionDescriptor(
+                        new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()),
+                        false);
+                if (props == null || !props.containsKey(BootstrapConstants.DEPENDENCY_CONDITION)) {
+                    continue;
+                }
+                if (buf == null) {
+                    buf = new StringBuilder();
+                } else {
+                    buf.setLength(0);
+                }
+                buf.append(d.getGroupId()).append(':').append(d.getArtifactId()).append(':');
+                if (d.getClassifier() != null) {
+                    buf.append(d.getClassifier());
+                }
+                buf.append(':').append(d.getType()).append(':').append(d.getVersion());
+                conditionalDependencies.add(buf.toString());
+            }
+        }
+
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
+        if (!conditionalDependencies.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            int i = 0;
+            buf.append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+            while (i < conditionalDependencies.size()) {
+                buf.append(' ').append(AppArtifactCoords.fromString(conditionalDependencies.get(i++)).toString());
+            }
+            props.setProperty(BootstrapConstants.CONDITIONAL_DEPENDENCIES, buf.toString());
+        }
+        if (!dependencyCondition.isEmpty()) {
+            final StringBuilder buf = new StringBuilder();
+            int i = 0;
+            buf.append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            while (i < dependencyCondition.size()) {
+                buf.append(' ').append(AppArtifactKey.fromString(dependencyCondition.get(i++)).toString());
+            }
+            props.setProperty(BootstrapConstants.DEPENDENCY_CONDITION, buf.toString());
+
+        }
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
 
         if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
@@ -539,6 +601,26 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     }
 
     private AppArtifactKey getDeploymentKey(org.eclipse.aether.artifact.Artifact a) throws MojoExecutionException {
+        final org.eclipse.aether.artifact.Artifact deployment = getDeploymentArtifact(a);
+        return deployment == null ? null : toKey(deployment);
+    }
+
+    private org.eclipse.aether.artifact.Artifact getDeploymentArtifact(org.eclipse.aether.artifact.Artifact a)
+            throws MojoExecutionException {
+        final Properties props = getExtensionDescriptor(a, true);
+        if (props == null) {
+            return null;
+        }
+        final String deploymentStr = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
+        if (deploymentStr == null) {
+            throw new IllegalStateException("Quarkus extension runtime artifact " + a + " is missing "
+                    + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " property in its "
+                    + BootstrapConstants.DESCRIPTOR_PATH);
+        }
+        return DependencyNodeUtils.toArtifact(deploymentStr);
+    }
+
+    private Properties getExtensionDescriptor(org.eclipse.aether.artifact.Artifact a, boolean packaged) {
         final File f;
         try {
             f = resolve(a);
@@ -547,31 +629,35 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return null;
         }
         // if it hasn't been packaged yet, we skip it, we are not packaging yet
-        if (isAnalyzable(f)) {
-            try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
-                final Path extDescr = fs.getPath(BootstrapConstants.DESCRIPTOR_PATH);
-                if (Files.exists(extDescr)) {
-                    final Properties props = new Properties();
-                    try (BufferedReader reader = Files.newBufferedReader(extDescr)) {
-                        props.load(reader);
-                    }
-                    final String deploymentStr = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-                    if (deploymentStr == null) {
-                        throw new IllegalStateException("Quarkus extension runtime artifact " + a + " is missing "
-                                + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " property in its "
-                                + BootstrapConstants.DESCRIPTOR_PATH);
-                    }
-                    return AppArtifactCoords.fromString(deploymentStr).getKey();
-                }
-            } catch (Throwable e) {
-                throw new IllegalStateException("Failed to read " + f, e);
-            }
+        if (packaged && !isJarFile(f)) {
+            return null;
         }
-        return null;
+        try {
+            if (f.isDirectory()) {
+                return readExtensionDescriptor(f.toPath().resolve(BootstrapConstants.DESCRIPTOR_PATH));
+            } else {
+                try (FileSystem fs = FileSystems.newFileSystem(f.toPath(), (ClassLoader) null)) {
+                    return readExtensionDescriptor(fs.getPath(BootstrapConstants.DESCRIPTOR_PATH));
+                }
+            }
+        } catch (Throwable e) {
+            throw new IllegalStateException("Failed to read " + f, e);
+        }
+    }
+
+    private Properties readExtensionDescriptor(final Path extDescr) throws IOException {
+        if (!Files.exists(extDescr)) {
+            return null;
+        }
+        final Properties props = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(extDescr)) {
+            props.load(reader);
+        }
+        return props;
     }
 
     private static AppArtifactKey toKey(org.eclipse.aether.artifact.Artifact a) {
-        return new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension());
+        return DependencyNodeUtils.toKey(a);
     }
 
     private CollectResult collectDeploymentDeps() throws MojoExecutionException {
@@ -618,7 +704,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         return request;
     }
 
-    private boolean isAnalyzable(final File f) {
+    private boolean isJarFile(final File f) {
         return f != null && f.getName().endsWith(".jar") && f.exists() && !f.isDirectory();
     }
 
@@ -820,13 +906,15 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     private MavenArtifactResolver resolver() throws MojoExecutionException {
         if (resolver == null) {
+            final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(repoSession);
+            session.setWorkspaceReader(workspaceProvider.workspace());
             try {
                 final BootstrapMavenContext ctx = new BootstrapMavenContext(BootstrapMavenContext.config()
                         .setRepositorySystem(repoSystem)
                         .setRemoteRepositoryManager(remoteRepoManager)
-                        .setRepositorySystemSession(repoSession)
+                        .setRepositorySystemSession(session)
                         .setRemoteRepositories(repos)
-                        .setCurrentProject(workpaceProvider.origin()));
+                        .setCurrentProject(workspaceProvider.origin()));
                 resolver = new MavenArtifactResolver(ctx);
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);

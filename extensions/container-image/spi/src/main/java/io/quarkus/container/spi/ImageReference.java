@@ -83,6 +83,39 @@ public class ImageReference {
     private final String digest;
 
     /**
+     * Returns {@code true} if {@code registry} is a valid registry string. For example, a valid
+     * registry could be {@code gcr.io} or {@code localhost:5000}.
+     *
+     * @param registry the registry to check
+     * @return {@code true} if is a valid registry; {@code false} otherwise
+     */
+    public static boolean isValidRegistry(String registry) {
+        return registry.matches(REGISTRY_REGEX);
+    }
+
+    /**
+     * Returns {@code true} if {@code repository} is a valid repository string. For example, a valid
+     * repository could be {@code distroless} or {@code my/container-image/repository}.
+     *
+     * @param repository the repository to check
+     * @return {@code true} if is a valid repository; {@code false} otherwise
+     */
+    public static boolean isValidRepository(String repository) {
+        return repository.matches(REPOSITORY_REGEX);
+    }
+
+    /**
+     * Returns {@code true} if {@code tag} is a valid tag string. For example, a valid tag could be
+     * {@code v120.5-release}.
+     *
+     * @param tag the tag to check
+     * @return {@code true} if is a valid tag; {@code false} otherwise
+     */
+    public static boolean isValidTag(String tag) {
+        return tag.matches(TAG_REGEX);
+    }
+
+    /**
      * Parses a string {@code reference} into an {@link ImageReference}.
      *
      * <p>
@@ -119,7 +152,7 @@ public class ImageReference {
         }
 
         if (Strings.isNullOrEmpty(repository)) {
-            throw new IllegalArgumentException("Reference " + reference + " is invalid");
+            throw new IllegalArgumentException("Reference " + reference + " is invalid: The repository was not set");
         }
         /*
          * If a registry was matched but it does not contain any dots or colons, it should actually be

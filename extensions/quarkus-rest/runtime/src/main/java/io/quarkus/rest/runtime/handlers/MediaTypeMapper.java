@@ -41,7 +41,7 @@ public class MediaTypeMapper implements RestHandler {
                 consumesTypes.add(mt);
                 resources.put(mt, new Holder());
             }
-            MediaType[] produces = i.getProduces().getSortedOriginalMediaTypes();
+            MediaType[] produces = i.getProduces() != null ? i.getProduces().getSortedOriginalMediaTypes() : null;
             if (produces == null) {
                 produces = new MediaType[] { MediaType.WILDCARD_TYPE };
             }

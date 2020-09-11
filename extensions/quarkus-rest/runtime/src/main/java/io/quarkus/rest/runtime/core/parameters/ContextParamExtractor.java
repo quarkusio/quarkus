@@ -5,10 +5,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
+import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -53,6 +55,9 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(Providers.class.getName())) {
             return context.getProviders();
+        }
+        if (type.equals(Sse.class.getName())) {
+            return QuarkusRestSse.INSTANCE;
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

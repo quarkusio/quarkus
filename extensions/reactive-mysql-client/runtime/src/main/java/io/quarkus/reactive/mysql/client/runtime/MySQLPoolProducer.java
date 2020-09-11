@@ -1,6 +1,5 @@
 package io.quarkus.reactive.mysql.client.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -9,7 +8,6 @@ import org.jboss.logging.Logger;
 
 import io.vertx.mysqlclient.MySQLPool;
 
-@ApplicationScoped
 public class MySQLPoolProducer {
 
     private static final Logger LOGGER = Logger.getLogger(MySQLPoolProducer.class);

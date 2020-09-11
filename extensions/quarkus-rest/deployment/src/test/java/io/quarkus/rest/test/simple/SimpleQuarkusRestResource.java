@@ -197,6 +197,12 @@ public class SimpleQuarkusRestResource {
     }
 
     @GET
+    @Path("dynamic-feature-filters")
+    public Response dynamicFeatureFilters(@Context HttpHeaders headers) {
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+    }
+
+    @GET
     @Path("fooFilters")
     @Foo
     public Response fooFilters(@Context HttpHeaders headers) {

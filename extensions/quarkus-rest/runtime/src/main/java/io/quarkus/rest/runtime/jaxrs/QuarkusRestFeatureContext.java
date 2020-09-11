@@ -29,7 +29,7 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 
 public class QuarkusRestFeatureContext implements FeatureContext {
 
-    private final ResourceInterceptors interceptors;
+    protected final ResourceInterceptors interceptors;
     private final ExceptionMapping exceptionMapping;
     private final BeanContainer beanContainer;
     private final QuarkusRestConfiguration configuration;
@@ -101,6 +101,10 @@ public class QuarkusRestFeatureContext implements FeatureContext {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void doRegister(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority) {
+        if (!isAllowed(componentClass)) {
+            //TODO: log a warning
+            return;
+        }
         if (ExceptionMapper.class.isAssignableFrom(componentClass)) {
             Type[] genericInterfaces = componentClass.getGenericInterfaces();
             for (Type type : genericInterfaces) {
@@ -120,51 +124,57 @@ public class QuarkusRestFeatureContext implements FeatureContext {
                 }
             }
         }
-        if (ContainerRequestFilter.class.isAssignableFrom(componentClass)
-                || ContainerResponseFilter.class.isAssignableFrom(componentClass)) {
-
-            boolean isRequest = ContainerRequestFilter.class.isAssignableFrom(componentClass);
-            boolean isResponse = ContainerResponseFilter.class.isAssignableFrom(componentClass);
-            if (isRequest) {
-                ResourceRequestInterceptor requestInterceptor = new ResourceRequestInterceptor();
-                Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority, requestInterceptor);
-                if (componentClass.isAnnotationPresent(PreMatching.class)) {
-                    requestInterceptor.setPreMatching(true);
-                    interceptors.addGlobalRequestInterceptor(requestInterceptor);
-                } else {
-                    if (nameBindings.isEmpty()) {
-                        interceptors.addGlobalRequestInterceptor(requestInterceptor);
-                    } else {
-                        interceptors.addNameRequestInterceptor(requestInterceptor);
-                    }
-                }
-            }
-            if (isResponse) {
-                ResourceResponseInterceptor responseInterceptor = new ResourceResponseInterceptor();
-                Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
-                        responseInterceptor);
-                if (nameBindings.isEmpty()) {
-                    interceptors.addGlobalResponseInterceptor(responseInterceptor);
-                } else {
-                    interceptors.addNameResponseInterceptor(responseInterceptor);
-                }
-            }
-
+        if (isFilter(componentClass)) {
+            registerFilters(componentClass, beanFactory, priority);
             filtersNeedSorting = true;
         }
+
+        //TODO: log warning if nothing was done
+    }
+
+    protected boolean isFilter(Class<?> componentClass) {
+        return ContainerRequestFilter.class.isAssignableFrom(componentClass)
+                || ContainerResponseFilter.class.isAssignableFrom(componentClass);
+    }
+
+    protected void registerFilters(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority) {
+        boolean isRequest = ContainerRequestFilter.class.isAssignableFrom(componentClass);
+        boolean isResponse = ContainerResponseFilter.class.isAssignableFrom(componentClass);
+        if (isRequest) {
+            ResourceRequestInterceptor requestInterceptor = new ResourceRequestInterceptor();
+            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority, requestInterceptor);
+            if (componentClass.isAnnotationPresent(PreMatching.class)) {
+                requestInterceptor.setPreMatching(true);
+                interceptors.addGlobalRequestInterceptor(requestInterceptor);
+            } else {
+                if (nameBindings.isEmpty()) {
+                    interceptors.addGlobalRequestInterceptor(requestInterceptor);
+                } else {
+                    interceptors.addNameRequestInterceptor(requestInterceptor);
+                }
+            }
+        }
+        if (isResponse) {
+            ResourceResponseInterceptor responseInterceptor = new ResourceResponseInterceptor();
+            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
+                    responseInterceptor);
+            if (nameBindings.isEmpty()) {
+                interceptors.addGlobalResponseInterceptor(responseInterceptor);
+            } else {
+                interceptors.addNameResponseInterceptor(responseInterceptor);
+            }
+        }
+    }
+
+    protected boolean isAllowed(Class<?> componentClass) {
+        return true;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private Set<String> setCommonFilterProperties(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority,
             SettableResourceInterceptor interceptor) {
         interceptor.setFactory(getFactory(componentClass, beanFactory));
-        if (priority == null) {
-            if (componentClass.isAnnotationPresent(Priority.class)) {
-                interceptor.setPriority(componentClass.getDeclaredAnnotation(Priority.class).value());
-            }
-        } else {
-            interceptor.setPriority(priority);
-        }
+        setFilterPriority(componentClass, priority, interceptor);
         Set<String> nameBindings = new HashSet<>();
         Annotation[] annotations = componentClass.getDeclaredAnnotations();
         for (Annotation annotation : annotations) {
@@ -180,8 +190,18 @@ public class QuarkusRestFeatureContext implements FeatureContext {
         return nameBindings;
     }
 
+    protected void setFilterPriority(Class<?> componentClass, Integer priority, SettableResourceInterceptor interceptor) {
+        if (priority == null) {
+            if (componentClass.isAnnotationPresent(Priority.class)) {
+                interceptor.setPriority(componentClass.getDeclaredAnnotation(Priority.class).value());
+            }
+        } else {
+            interceptor.setPriority(priority);
+        }
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private BeanFactory getFactory(Class<?> componentClass, BeanFactory explicitValue) {
+    protected BeanFactory getFactory(Class<?> componentClass, BeanFactory explicitValue) {
         if (explicitValue != null) {
             return explicitValue;
         }

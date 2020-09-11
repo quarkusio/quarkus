@@ -32,8 +32,8 @@ public class SimpleQuarkusRestTestCase {
                                     TestExceptionMapper.class, TestPreMatchRequestFilter.class,
                                     FeatureMappedException.class, FeatureMappedExceptionMapper.class,
                                     FeatureRequestFilterWithNormalPriority.class, FeatureRequestFilterWithHighestPriority.class,
-                                    FeatureResponseFilter.class,
-                                    TestFeature.class,
+                                    FeatureResponseFilter.class, DynamicFeatureRequestFilterWithLowPriority.class,
+                                    TestFeature.class, TestDynamicFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
                                     TestWriter.class, TestClass.class);
                 }
@@ -272,5 +272,14 @@ public class SimpleQuarkusRestTestCase {
                 .then().extract().headers();
         assertThat(headers.getValues("feature-filter-request")).containsOnly("authentication-default");
         assertThat(headers.getValues("feature-filter-response")).containsExactly("high-priority", "normal-priority");
+    }
+
+    @Test
+    public void testDynamicFeature() {
+        Headers headers = RestAssured.get("/simple/dynamic-feature-filters")
+                .then().extract().headers();
+        assertThat(headers.getValues("feature-filter-request")).containsOnly("authentication-default-low");
+        assertThat(headers.getValues("feature-filter-response")).containsExactly("high-priority", "normal-priority",
+                "low-priority");
     }
 }

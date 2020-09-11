@@ -40,6 +40,14 @@ public class ContainerImageConfig {
     public Optional<String> registry;
 
     /**
+     * Represents the entire image string.
+     * If set, then {@code group}, {@code name}, {@code registry}, {@code tags}, {@code additionalTags}
+     * are ignored
+     */
+    @ConfigItem
+    public Optional<String> image;
+
+    /**
      * The username to use to authenticate with the registry where the built image will be pushed
      */
     @ConfigItem

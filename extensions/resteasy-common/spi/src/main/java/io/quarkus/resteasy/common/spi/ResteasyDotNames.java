@@ -112,6 +112,8 @@ public final class ResteasyDotNames {
             // RESTEasy
             "org.jboss.resteasy.",
             // Vert.x JSON layer
-            "io.vertx.core.json."
+            "io.vertx.core.json.",
+            // Mutiny
+            "io.smallrye.mutiny."
     };
 }

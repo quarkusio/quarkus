@@ -90,6 +90,10 @@ public class JsonbProcessor {
         for (AnnotationInstance deserializeInstance : index.getAnnotations(JSONB_TYPE_DESERIALIZER)) {
             registerInstance(reflectiveClass, deserializeInstance);
         }
+
+        // register String constructors for reflection as they may not have been properly registered by default
+        // see https://github.com/quarkusio/quarkus/issues/10873
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "java.lang.String"));
     }
 
     private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {

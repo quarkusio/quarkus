@@ -1,0 +1,36 @@
+name: Quarkus Deploy Snapshots
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+
+env:
+  LANG: en_US.UTF-8
+jobs:
+  build-and-deploy:
+    name: "Build and deploy"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
+        with:
+          java-version: 8
+      - name: Build and Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          mvn -e -B --settings .github/mvn-settings.xml \
+            -DskipITs -Dno-format -Dinvoker.skip=true \
+            -DretryFailedDeploymentCount=10 \
+            clean deploy

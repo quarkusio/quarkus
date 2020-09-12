@@ -1,4 +1,13 @@
 <settings>
+  <servers>
+    <!-- Quarkus-->
+    <server>
+      <id>sonatype-nexus-snapshots</id>
+      <username>${env.SERVER_USERNAME}</username>
+      <password>${env.SERVER_PASSWORD}</password>
+    </server>
+    <!-- END OF Quarkus-->
+  </servers>
   <profiles>
     <profile>
       <id>google-mirror-jboss-proxy</id>

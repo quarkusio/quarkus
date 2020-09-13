@@ -735,8 +735,7 @@ quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related with standard and non-standard headers can be combine.
-In this case, the `Forwarded` header will have precedence in presence of both set of headers.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
 
 Supported forwarding address headers are:
 

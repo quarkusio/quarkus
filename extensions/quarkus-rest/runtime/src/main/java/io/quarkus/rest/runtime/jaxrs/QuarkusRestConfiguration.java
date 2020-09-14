@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.jaxrs;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -72,12 +73,12 @@ public class QuarkusRestConfiguration implements Configuration {
 
     @Override
     public Set<Class<?>> getClasses() {
-        return null;
+        return Collections.emptySet();
     }
 
     @Override
     public Set<Object> getInstances() {
-        return null;
+        return Collections.emptySet();
     }
 
     public void addEnabledFeature(Feature feature) {

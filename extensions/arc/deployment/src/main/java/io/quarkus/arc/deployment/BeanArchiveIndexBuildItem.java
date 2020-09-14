@@ -42,6 +42,13 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
         return generatedClassNames;
     }
 
+    /**
+     * This method will be removed at some point post Quarkus 1.9.
+     * 
+     * @return the list of additional beans
+     * @deprecated Use {@link AdditionalBeanBuildItem} instead
+     */
+    @Deprecated
     public List<String> getAdditionalBeans() {
         return additionalBeans;
     }

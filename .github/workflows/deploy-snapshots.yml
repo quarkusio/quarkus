@@ -14,9 +14,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: master
-      - uses: n1hility/cancel-previous-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 8

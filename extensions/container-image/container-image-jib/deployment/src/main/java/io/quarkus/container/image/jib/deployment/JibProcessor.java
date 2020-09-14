@@ -35,6 +35,7 @@ import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.builder.Version;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -170,6 +171,7 @@ public class JibProcessor {
             containerizer = Containerizer.to(DockerDaemonImage.named(imageReference));
         }
         containerizer.setToolName("Quarkus");
+        containerizer.setToolVersion(Version.getVersion());
         containerizer.addEventHandler(LogEvent.class, (e) -> {
             if (!e.getMessage().isEmpty()) {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());

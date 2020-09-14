@@ -1,16 +1,19 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;
 
 public class QuarkusRestStatusType implements StatusType {
 
-    private String reasonPhrase;
-    private int status;
+    public static final String DEFAULT_REASON_PHRASE = "Unknown code"; // needed to avoid NPE in the TCK
+
+    private final String reasonPhrase;
+    private final int status;
 
     public QuarkusRestStatusType(int status, String reasonPhrase) {
         this.status = status;
-        this.reasonPhrase = reasonPhrase;
+        this.reasonPhrase = reasonPhrase != null ? reasonPhrase : DEFAULT_REASON_PHRASE;
     }
 
     @Override
@@ -20,7 +23,7 @@ public class QuarkusRestStatusType implements StatusType {
 
     @Override
     public Family getFamily() {
-        return toEnum().getFamily();
+        return Response.Status.Family.familyOf(status);
     }
 
     @Override

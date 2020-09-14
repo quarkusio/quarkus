@@ -29,4 +29,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build
-        run: sleep 30
+        run: sleep 1

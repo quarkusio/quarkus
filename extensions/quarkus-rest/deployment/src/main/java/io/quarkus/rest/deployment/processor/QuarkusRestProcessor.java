@@ -87,6 +87,7 @@ import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWrite
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestProcessor {
@@ -118,7 +119,8 @@ public class QuarkusRestProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             QuarkusRestRecorder recorder,
             RecorderContext recorderContext,
-            ShutdownContextBuildItem shutdownContext) {
+            ShutdownContextBuildItem shutdownContext,
+            HttpBuildTimeConfig vertxConfig) {
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> paths = index.getAnnotations(QuarkusRestDotNames.PATH);
         Collection<ClassInfo> containerRequestFilters = index
@@ -380,7 +382,7 @@ public class QuarkusRestProcessor {
         return new FilterBuildItem(
                 recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
                         serialisers, resourceClasses, subResourceClasses,
-                        beanContainerBuildItem.getValue(), shutdownContext, config, clientImplementations),
+                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, clientImplementations),
                 10);
     }
 

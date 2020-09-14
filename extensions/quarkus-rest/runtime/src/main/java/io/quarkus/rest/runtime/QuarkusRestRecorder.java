@@ -99,6 +99,7 @@ import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -162,7 +163,7 @@ public class QuarkusRestRecorder {
             ExceptionMapping exceptionMapping,
             ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
-            ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig,
+            ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
             Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
@@ -290,7 +291,8 @@ public class QuarkusRestRecorder {
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
-                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter, createClientImpls(clientImplementations));
+                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter, createClientImpls(clientImplementations),
+                vertxConfig.rootPath);
 
         currentDeployment = deployment;
 

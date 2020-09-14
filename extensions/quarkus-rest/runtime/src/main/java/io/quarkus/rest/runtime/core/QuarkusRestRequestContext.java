@@ -496,6 +496,20 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
         return remaining;
     }
 
+    public String getPathWithoutPrefix() {
+        String path = getPath();
+        if (path != null) {
+            String prefix = deployment.getPrefix();
+            if (prefix != null && !prefix.isEmpty() && !prefix.equals("/")) {
+                // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
+                if (path.startsWith(prefix)) {
+                    return path.substring(prefix.length());
+                }
+            }
+        }
+        return path;
+    }
+
     public String getPath() {
         if (path == null) {
             return context.normalisedPath();

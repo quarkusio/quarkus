@@ -48,7 +48,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
         RoutingContext event = requestContext.getContext();
-        RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPath());
+        RequestMapper.RequestMatch<InitialMatch> target = mappers.map(requestContext.getPathWithoutPrefix());
         if (target == null) {
             event.next();
             return;

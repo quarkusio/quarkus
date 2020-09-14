@@ -11,16 +11,18 @@ public class QuarkusRestDeployment {
     private final RestHandler[] abortHandlerChain;
     private final EntityWriter dynamicEntityWriter;
     private final ClientProxies clientProxies;
+    private final String prefix;
 
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers, Serialisers serialisers,
             RestHandler[] abortHandlerChain,
-            EntityWriter dynamicEntityWriter, ClientProxies clientProxies) {
+            EntityWriter dynamicEntityWriter, ClientProxies clientProxies, String prefix) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
         this.abortHandlerChain = abortHandlerChain;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.clientProxies = clientProxies;
+        this.prefix = prefix;
     }
 
     public ExceptionMapping getExceptionMapping() {
@@ -45,5 +47,9 @@ public class QuarkusRestDeployment {
 
     public ClientProxies getClientProxies() {
         return clientProxies;
+    }
+
+    public String getPrefix() {
+        return prefix;
     }
 }

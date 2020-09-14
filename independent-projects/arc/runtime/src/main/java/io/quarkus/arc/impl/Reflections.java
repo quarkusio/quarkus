@@ -15,8 +15,10 @@ import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Neither the class nor its methods are considered a public API and should only be used internally.
@@ -174,6 +176,18 @@ public final class Reflections {
         } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
             throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name + " on " + instance, e);
         }
+    }
+
+    public static <T> T getEnumConstant(String name, Class<T> clazz) {
+        Optional<T> found = Stream.of(clazz.getEnumConstants())
+                .filter(e -> name.equals(e.toString()))
+                .findFirst();
+
+        if (found.isPresent())
+            return found.get();
+
+        throw new RuntimeException(String.format(
+                "Enum value '%s' not found in %s", name, clazz));
     }
 
     @SuppressWarnings("unchecked")

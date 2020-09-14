@@ -12,6 +12,7 @@ import java.util.OptionalLong;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.event.Event;
@@ -82,6 +83,7 @@ public final class DotNames {
     public static final DotName ALTERNATIVE_PRIORITY = create(AlternativePriority.class);
     public static final DotName DEFAULT_BEAN = create(DefaultBean.class);
     public static final DotName SINGLETON = create(Singleton.class);
+    public static final DotName APPLICATION_SCOPED = create(ApplicationScoped.class);
     public static final DotName STEREOTYPE = create(Stereotype.class);
     public static final DotName TYPED = create(Typed.class);
     public static final DotName VETOED = create(Vetoed.class);
@@ -117,7 +119,7 @@ public final class DotNames {
      * Note that this method does not attempt to detect a nested class because the computing cache is shared with the
      * {@link #create(String)} variant and so the results would be inconsistent. Therefore, this method should only be used for
      * top-level classes.
-     * 
+     *
      * @param clazz
      * @return the computed dot name
      */
@@ -129,7 +131,7 @@ public final class DotNames {
      * Note that the dollar sign is a valid character for class names so we cannot detect a nested class here. Therefore, this
      * method returns a dot name for which {@link DotName#local()} returns {@code Foo$Bar} for the parameter
      * "com.foo.Foo$Bar".
-     * 
+     *
      * @param name
      * @return the computed dot name
      */
@@ -145,7 +147,7 @@ public final class DotNames {
     }
 
     /**
-     * 
+     *
      * @param clazz
      * @return the simple name for the given top-level or nested class
      */
@@ -175,7 +177,7 @@ public final class DotNames {
      * method returns "Foo$Bar" for the parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to
      * distinguish
      * the nested classes.
-     * 
+     *
      * @param name
      * @return the simple name
      */

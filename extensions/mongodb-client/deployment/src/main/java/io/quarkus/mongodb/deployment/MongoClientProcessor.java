@@ -24,6 +24,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -91,12 +92,22 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    List<ReflectiveClassBuildItem> addCodecsAndDiscriminatorsToNative(CodecProviderBuildItem codecProviders,
-            PropertyCodecProviderBuildItem propertyCodecProviders, BsonDiscriminatorBuildItem bsonDiscriminators) {
+    CommandListenerBuildItem collectCommandListeners(CombinedIndexBuildItem indexBuildItem) {
+        Collection<ClassInfo> commandListenerClasses = indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(CommandListener.class.getName()));
+        List<String> names = commandListenerClasses.stream().map(ci -> ci.name().toString()).collect(Collectors.toList());
+        return new CommandListenerBuildItem(names);
+    }
+
+    @BuildStep
+    List<ReflectiveClassBuildItem> addExtensionPointsToNative(CodecProviderBuildItem codecProviders,
+            PropertyCodecProviderBuildItem propertyCodecProviders, BsonDiscriminatorBuildItem bsonDiscriminators,
+            CommandListenerBuildItem commandListeners) {
         List<String> reflectiveClassNames = new ArrayList<>();
         reflectiveClassNames.addAll(codecProviders.getCodecProviderClassNames());
         reflectiveClassNames.addAll(propertyCodecProviders.getPropertyCodecProviderClassNames());
         reflectiveClassNames.addAll(bsonDiscriminators.getBsonDiscriminatorClassNames());
+        reflectiveClassNames.addAll(commandListeners.getCommandListenerClassNames());
 
         return reflectiveClassNames.stream()
                 .map(s -> new ReflectiveClassBuildItem(true, true, false, s))
@@ -160,6 +171,7 @@ public class MongoClientProcessor {
             CodecProviderBuildItem codecProvider,
             PropertyCodecProviderBuildItem propertyCodecProvider,
             BsonDiscriminatorBuildItem bsonDiscriminator,
+            CommandListenerBuildItem commandListener,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
             BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
@@ -183,7 +195,7 @@ public class MongoClientProcessor {
                 .scope(Singleton.class)
                 .supplier(recorder.mongoClientSupportSupplier(codecProvider.getCodecProviderClassNames(),
                         propertyCodecProvider.getPropertyCodecProviderClassNames(),
-                        bsonDiscriminator.getBsonDiscriminatorClassNames(),
+                        bsonDiscriminator.getBsonDiscriminatorClassNames(), commandListener.getCommandListenerClassNames(),
                         poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
                 .done());
 

@@ -1,6 +1,5 @@
 package io.quarkus.devtools.commands.handlers;
 
-import static io.quarkus.devtools.codestarts.QuarkusCodestarts.prepareProject;
 import static io.quarkus.devtools.commands.CreateProject.CODESTARTS_ENABLED;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
@@ -10,12 +9,12 @@ import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.devtools.codestarts.CodestartProject;
+import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.Codestarts;
-import io.quarkus.devtools.codestarts.NestedMaps;
+import io.quarkus.devtools.codestarts.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.QuarkusCodestartData.LegacySupport;
-import io.quarkus.devtools.codestarts.QuarkusCodestartInput;
+import io.quarkus.devtools.codestarts.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -76,7 +75,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 if (platformDescr.getMetadata().get("gradle") != null) {
                     platformData.put("gradle", platformDescr.getMetadata().get("gradle"));
                 }
-                final QuarkusCodestartInput input = QuarkusCodestartInput.builder(platformDescr)
+                final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                         .addExtensions(extensionsToAdd)
                         .buildTool(invocation.getQuarkusProject().getBuildTool())
                         .noExamples(invocation.getValue(NO_EXAMPLES, false))
@@ -87,14 +86,19 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                         .messageWriter(invocation.log())
                         .build();
                 invocation.log().info("-----------");
-                invocation.log().info("selected extensions: \n"
-                        + extensionsToAdd.stream().map(e -> "- " + e.getGroupId() + ":" + e.getArtifactId() + "\n")
-                                .collect(Collectors.joining()));
-                final CodestartProject codestartProject = prepareProject(input);
-                Codestarts.generateProject(codestartProject, invocation.getQuarkusProject().getProjectDirPath());
+                if (!extensionsToAdd.isEmpty()) {
+                    invocation.log().info("selected extensions: \n"
+                            + extensionsToAdd.stream().map(e -> "- " + e.getGroupId() + ":" + e.getArtifactId() + "\n")
+                                    .collect(Collectors.joining()));
+                }
+
+                final QuarkusCodestartCatalog catalog = QuarkusCodestartCatalog
+                        .fromQuarkusPlatformDescriptor(invocation.getPlatformDescriptor());
+                final CodestartProjectDefinition projectDefinition = catalog.createProject(input);
+                projectDefinition.generate(invocation.getQuarkusProject().getProjectDirPath());
                 invocation.log()
                         .info("\n-----------\n" + MessageIcons.NOOP_ICON + " "
-                                + codestartProject.getRequiredCodestart(CodestartType.PROJECT).getName()
+                                + projectDefinition.getRequiredCodestart(CodestartType.PROJECT).getName()
                                 + " project has been successfully generated in:\n--> "
                                 + invocation.getQuarkusProject().getProjectDirPath().toString() + "\n-----------");
 

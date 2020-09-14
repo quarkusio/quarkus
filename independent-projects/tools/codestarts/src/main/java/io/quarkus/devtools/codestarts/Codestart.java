@@ -1,6 +1,7 @@
 package io.quarkus.devtools.codestarts;
 
-import java.util.Comparator;
+import io.quarkus.devtools.codestarts.core.CodestartSpec;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -10,11 +11,6 @@ public final class Codestart {
     private final String resourceDir;
     private final CodestartSpec spec;
     private final Set<String> implementedLanguages;
-
-    static final Comparator<Codestart> PROCESSING_ORDER = Comparator.comparingInt(Codestart::getTypeOrder)
-            .thenComparing(Codestart::getName);
-
-    static final Comparator<Codestart> SHARED_DATA_MERGE_ORDER = PROCESSING_ORDER;
 
     public Codestart(final String resourceName, final CodestartSpec spec, Set<String> implementedLanguages) {
         this.resourceDir = resourceName;

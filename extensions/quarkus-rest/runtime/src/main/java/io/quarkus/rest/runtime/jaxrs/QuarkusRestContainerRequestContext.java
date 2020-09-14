@@ -93,7 +93,7 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
     }
 
     public void assertNotResponse() {
-        if (!isResponse()) {
+        if (isResponse()) {
             throw new IllegalStateException("Cannot be called from response filter");
         }
     }

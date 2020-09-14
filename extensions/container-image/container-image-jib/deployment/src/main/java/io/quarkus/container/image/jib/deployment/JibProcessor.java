@@ -35,6 +35,7 @@ import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.builder.Version;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -46,7 +47,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -76,7 +76,7 @@ public class JibProcessor {
             ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,
             MainClassBuildItem mainClass,
-            OutputTargetBuildItem outputTarget, ApplicationInfoBuildItem applicationInfo,
+            OutputTargetBuildItem outputTarget,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -99,7 +99,7 @@ public class JibProcessor {
                     "Package type '" + packageType + "' is not supported by the container-image-jib extension");
         }
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
+        containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
@@ -109,7 +109,6 @@ public class JibProcessor {
     public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             ContainerImageInfoBuildItem containerImage,
             NativeImageBuildItem nativeImage,
-            ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
@@ -129,15 +128,15 @@ public class JibProcessor {
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
         handleExtraFiles(outputTarget, jibContainerBuilder);
-        containerize(applicationInfo, containerImageConfig, containerImage, jibContainerBuilder,
+        containerize(containerImageConfig, containerImage, jibContainerBuilder,
                 pushRequest.isPresent());
 
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 
-    private JibContainer containerize(ApplicationInfoBuildItem applicationInfo, ContainerImageConfig containerImageConfig,
+    private JibContainer containerize(ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
-        Containerizer containerizer = createContainerizer(containerImageConfig, containerImage, applicationInfo, pushRequested);
+        Containerizer containerizer = createContainerizer(containerImageConfig, containerImage, pushRequested);
         for (String additionalTag : containerImage.getAdditionalTags()) {
             containerizer.withAdditionalTag(additionalTag);
         }
@@ -156,16 +155,10 @@ public class JibProcessor {
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
             ContainerImageInfoBuildItem containerImage,
-            ApplicationInfoBuildItem applicationInfo, boolean pushRequested) {
+            boolean pushRequested) {
         Containerizer containerizer;
-        ImageReference imageReference = getImageReference(containerImageConfig, containerImage, applicationInfo);
-
-        for (String additionalTag : containerImage.getAdditionalTags()) {
-            if (!ImageReference.isValidTag(additionalTag)) {
-                throw new IllegalArgumentException(
-                        "The supplied container-image additional tag '" + additionalTag + "' is invalid");
-            }
-        }
+        ImageReference imageReference = ImageReference.of(containerImage.getRegistry().orElse(null),
+                containerImage.getRepository(), containerImage.getTag());
 
         if (pushRequested || containerImageConfig.push) {
             if (!containerImageConfig.registry.isPresent()) {
@@ -178,6 +171,7 @@ public class JibProcessor {
             containerizer = Containerizer.to(DockerDaemonImage.named(imageReference));
         }
         containerizer.setToolName("Quarkus");
+        containerizer.setToolVersion(Version.getVersion());
         containerizer.addEventHandler(LogEvent.class, (e) -> {
             if (!e.getMessage().isEmpty()) {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());
@@ -210,29 +204,6 @@ public class JibProcessor {
             default:
                 return Logger.Level.DEBUG;
         }
-    }
-
-    private ImageReference getImageReference(ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImage,
-            ApplicationInfoBuildItem applicationInfo) {
-
-        String registry = containerImageConfig.registry.orElse(null);
-        if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
-            throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
-        }
-
-        String repository = (containerImageConfig.getEffectiveGroup().map(s -> s + "/").orElse(""))
-                + containerImageConfig.name.orElse(applicationInfo.getName());
-        if (!ImageReference.isValidRepository(repository)) {
-            throw new IllegalArgumentException("The supplied container-image repository '" + repository + "' is invalid");
-        }
-
-        final String tag = containerImage.getTag();
-        if (!ImageReference.isValidTag(tag)) {
-            throw new IllegalArgumentException("The supplied container-image tag '" + tag + "' is invalid");
-        }
-
-        return ImageReference.of(registry, repository, tag);
     }
 
     /**

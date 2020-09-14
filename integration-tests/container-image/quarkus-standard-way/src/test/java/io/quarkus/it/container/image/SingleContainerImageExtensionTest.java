@@ -20,7 +20,7 @@ public class SingleContainerImageExtensionTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("SingleContainerImage")
+            .setApplicationName("single-container-image")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setForcedDependencies(
                     Collections.singletonList(

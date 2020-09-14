@@ -110,6 +110,22 @@ The following properties can be used to customize the container image build proc
 
 include::{generated-dir}/config/quarkus-container-image.adoc[opts=optional, leveloffset=+1]
 
+==== Using CI Environments
+
+Various CI environments provide a ready to use container-image registry which can be combined with the container-image Quarkus extensions in order to
+effortlessly create and push a Quarkus application to said registry.
+
+For example, https://gitlab.com/[GitLab] provides such a registry and in the provided CI environment,
+makes available the `CI_REGISTRY_IMAGE` environment variable
+(see GitLab's https://docs.gitlab.com/ee/ci/variables/[documentation]) for more information), which can be used in Quarkus like so:
+
+[source]
+----
+quarkus.container-image.image=${CI_REGISTRY_IMAGE}
+----
+
+NOTE: See link:config.adoc#combine-property-env-var[this] for more information on how to combine properties with environment variables.
+
 === Jib Options
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:

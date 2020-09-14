@@ -7,6 +7,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 
@@ -27,7 +28,9 @@ public class AdminClientResource {
                 .realm("master")
                 .clientId("admin-cli")
                 .username("admin")
-                .password("admin").build();
+                .password("admin")
+                .resteasyClient(new ResteasyClientBuilderImpl().disableTrustManager().build())
+                .build();
         return keycloak.realm("quarkus").toRepresentation().getRealm();
     }
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -24,7 +25,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.ssl.url", "https://localhost:8543/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
 
     private Keycloak keycloak;
@@ -40,11 +41,12 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
         keycloak = KeycloakBuilder.builder()
-                .serverUrl(KEYCLOAK_SERVER_URL)
+        	    .serverUrl(KEYCLOAK_SERVER_URL)
                 .realm("master")
                 .clientId("admin-cli")
                 .username("admin")
                 .password("admin")
+                .resteasyClient(new ResteasyClientBuilderImpl().disableTrustManager().build())
                 .build();
         keycloak.realms().create(realm);
 

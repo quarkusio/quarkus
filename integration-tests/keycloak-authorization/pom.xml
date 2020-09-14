@@ -16,6 +16,7 @@
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
     </properties>
 
     <dependencies>
@@ -170,7 +171,7 @@
                             <skip>false</skip>
                             <skipTests>${native.surefire.skip}</skipTests>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.url}</keycloak.url>
+                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -179,7 +180,7 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <keycloak.url>${keycloak.url}</keycloak.url>
+                                <keycloak.url>${keycloak.ssl.url}</keycloak.url>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -237,6 +238,7 @@
                                     <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
@@ -258,6 +260,7 @@
             </activation>
             <properties>
                 <keycloak.url>http://localhost:8180/auth</keycloak.url>
+                <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
             </properties>
             <build>
                 <plugins>
@@ -272,6 +275,7 @@
                                     <run>
                                         <ports>
                                             <port>8180:8080</port>
+                                            <port>8543:8443</port>
                                         </ports>
                                         <env>
                                             <KEYCLOAK_USER>admin</KEYCLOAK_USER>

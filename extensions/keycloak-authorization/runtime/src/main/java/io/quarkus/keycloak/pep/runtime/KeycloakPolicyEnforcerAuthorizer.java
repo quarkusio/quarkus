@@ -18,6 +18,7 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
@@ -110,6 +111,10 @@ public class KeycloakPolicyEnforcerAuthorizer
         }
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
+        if (oidcConfig.defaultTenant.tls.getVerification() == Verification.NONE) {
+            adapterConfig.setDisableTrustManager(true);
+            adapterConfig.setAllowAnyHostname(true);
+        }
 
         this.readTimeout = httpConfiguration.readTimeout.toMillis();
         this.delegate = new KeycloakAdapterPolicyEnforcer(

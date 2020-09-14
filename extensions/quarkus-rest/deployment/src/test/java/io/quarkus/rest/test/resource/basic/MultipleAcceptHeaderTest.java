@@ -60,7 +60,7 @@ public class MultipleAcceptHeaderTest {
 
         @GET
         @Path("accept")
-        @Produces({ "application/xml", "text/plain" })
+        @Produces("application/xml, text/plain")
         public String acceptXml() {
             return APPLICATION_XML;
         }

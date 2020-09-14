@@ -158,8 +158,8 @@ public class EndpointIndexer {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config) {
         List<ResourceMethod> ret = new ArrayList<>();
-        String[] classProduces = readStringArrayValue(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
-        String[] classConsumes = readStringArrayValue(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
+        String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
+        String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
         Set<String> classNameBindings = nameBindingNames(currentClassInfo, index);
 
         for (DotName httpMethod : QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS) {
@@ -340,8 +340,8 @@ public class EndpointIndexer {
                         elementType, type, single, converter, defaultValue);
             }
 
-            String[] produces = readStringArrayValue(info.annotation(PRODUCES), classProduces);
-            String[] consumes = readStringArrayValue(info.annotation(CONSUMES), classConsumes);
+            String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
+            String[] consumes = extractProducesConsumesValues(info.annotation(CONSUMES), classConsumes);
             Set<String> nameBindingNames = nameBindingNames(info, indexView, classNameBindings);
             boolean blocking = config.blocking;
             AnnotationInstance blockingAnnotation = getInheritableAnnotation(info, BLOCKING);
@@ -572,19 +572,32 @@ public class EndpointIndexer {
         return false;
     }
 
-    private static String[] readStringArrayValue(AnnotationInstance annotation, String[] defaultValue) {
-        String[] read = readStringArrayValue(annotation);
+    private static String[] extractProducesConsumesValues(AnnotationInstance annotation, String[] defaultValue) {
+        String[] read = extractProducesConsumesValues(annotation);
         if (read == null) {
             return defaultValue;
         }
         return read;
     }
 
-    private static String[] readStringArrayValue(AnnotationInstance annotation) {
+    private static String[] extractProducesConsumesValues(AnnotationInstance annotation) {
         if (annotation == null) {
             return null;
         }
-        return annotation.value().asStringArray();
+        String[] originalStrings = annotation.value().asStringArray();
+        if (originalStrings.length > 0) {
+            List<String> result = new ArrayList<>(originalStrings.length);
+            for (String s : originalStrings) {
+                String[] trimmed = s.split(","); // spec says that the value can be a comma separated list...
+                for (String t : trimmed) {
+                    result.add(t.trim());
+                }
+            }
+            return result.toArray(new String[0]);
+        } else {
+            return originalStrings;
+        }
+
     }
 
     private static String annotationToMethod(DotName httpMethod) {

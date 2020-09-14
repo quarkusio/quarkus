@@ -82,7 +82,7 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public Configuration getConfiguration() {
-        return null;
+        return configuration;
     }
 
     @Override

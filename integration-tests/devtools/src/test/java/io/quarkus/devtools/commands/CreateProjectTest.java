@@ -44,7 +44,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .groupId("org.acme.foo")
                 .artifactId("resteasy-app")
                 .version("1.0.0-FOO")
-                .className("org.acme.getting.started.GreetingResource")
+                .packageName("org.acme.getting.started")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
 

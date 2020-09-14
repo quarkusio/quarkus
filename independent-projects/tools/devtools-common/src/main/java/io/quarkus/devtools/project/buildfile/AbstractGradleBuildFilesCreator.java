@@ -12,7 +12,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Collection;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,7 +38,7 @@ abstract class AbstractGradleBuildFilesCreator {
     abstract void addDependencyInBuildFile(AppArtifactCoords coords) throws IOException;
 
     public void create(String groupId, String artifactId, String version,
-            Properties properties, List<AppArtifactCoords> extensions) throws IOException {
+            Properties properties, Collection<AppArtifactCoords> extensions) throws IOException {
         createSettingsContent(artifactId);
         createBuildContent(groupId, version);
         createProperties();

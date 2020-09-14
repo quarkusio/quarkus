@@ -14,6 +14,7 @@ import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.ExtensionRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ public class CreateProject {
     public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
     public static final String NO_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-examples");
     public static final String CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "codestarts");
+    public static final String EXTENSION_REGISTRY = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "extension-registry");
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
@@ -196,6 +198,11 @@ public class CreateProject {
 
     public CreateProject noDockerfiles() {
         return noDockerfiles(true);
+    }
+
+    public CreateProject extensionRegistry(ExtensionRegistry extensionRegistry) {
+        setValue(EXTENSION_REGISTRY, requireNonNull(extensionRegistry, "extensionRegistry is required"));
+        return this;
     }
 
     public CreateProject setValue(String name, Object value) {

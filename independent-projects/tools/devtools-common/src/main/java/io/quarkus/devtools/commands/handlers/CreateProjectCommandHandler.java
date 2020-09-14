@@ -4,13 +4,9 @@ import static io.quarkus.devtools.commands.CreateProject.CODESTARTS;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
 import static io.quarkus.devtools.commands.CreateProject.NO_EXAMPLES;
-import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_ARTIFACT_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.BOM_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PACKAGE_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_VERSION;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -19,18 +15,22 @@ import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.LegacySupport;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
+import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.codegen.ProjectGenerator;
+import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.DefaultExtensionRegistry;
+import io.quarkus.registry.ExtensionRegistry;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -41,6 +41,14 @@ import java.util.stream.Collectors;
  * of {@link QuarkusCommandInvocation}.
  */
 public class CreateProjectCommandHandler implements QuarkusCommandHandler {
+
+    private static Collection<AppArtifactCoords> getExtensionsToAdd(ExtensionInstallPlan extensionInstallPlan) {
+        Collection<AppArtifactCoords> extensionsToAdd = extensionInstallPlan.getPlatforms();
+        extensionsToAdd.addAll(extensionInstallPlan.getIndependentExtensions());
+        extensionsToAdd.addAll(extensionInstallPlan.getManagedExtensions().stream()
+                .map(coords -> new AppArtifactCoords(coords.getKey(), null)).collect(Collectors.toSet()));
+        return extensionsToAdd;
+    }
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
@@ -59,24 +67,15 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             }
         });
 
-        // Default to cleaned groupId if packageName not set
-        final String className = invocation.getStringValue(CLASS_NAME);
-        final String pkgName = invocation.getStringValue(PACKAGE_NAME);
-        final String groupId = invocation.getStringValue(PROJECT_GROUP_ID);
-        if (pkgName == null) {
-            if (className != null && className.contains(".")) {
-                final int idx = className.lastIndexOf('.');
-                invocation.setValue(PACKAGE_NAME, className.substring(0, idx));
-                invocation.setValue(CLASS_NAME, className.substring(idx + 1));
-            } else if (groupId != null) {
-                invocation.setValue(PACKAGE_NAME, groupId.replace("-", ".").replace("_", "."));
-            }
+        ExtensionRegistry extensionRegistry = invocation.getValue(CreateProject.EXTENSION_REGISTRY);
+        if (extensionRegistry == null) {
+            extensionRegistry = DefaultExtensionRegistry.fromPlatform(invocation.getPlatformDescriptor());
         }
 
-        final List<AppArtifactCoords> extensionsToAdd = computeCoordsFromQuery(invocation, extensionsQuery);
-        if (extensionsToAdd == null) {
-            throw new QuarkusCommandException("Failed to create project because of invalid extensions");
-        }
+        String quarkusVersion = invocation.getPlatformDescriptor().getQuarkusVersion();
+        ExtensionInstallPlan extensionInstallPlan = extensionRegistry.planInstallation(quarkusVersion, extensionsQuery);
+        Collection<AppArtifactCoords> extensionsToAdd = getExtensionsToAdd(extensionInstallPlan);
+
         try {
             Map<String, Object> platformData = new HashMap<>();
             if (platformDescr.getMetadata().get("maven") != null) {

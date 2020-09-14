@@ -14,6 +14,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -54,6 +55,7 @@ import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -138,6 +140,12 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
+
+    /**
+     * The extension registry URLs
+     */
+    @Parameter(property = "registry", alias = "quarkus.extension.registry")
+    List<URL> registries;
 
     @Component
     private Prompter prompter;
@@ -250,6 +258,10 @@ public class CreateProjectMojo extends AbstractMojo {
                     .noExamples(noExamples);
             if (path != null) {
                 createProject.setValue("path", path);
+            }
+
+            if (registries != null && !registries.isEmpty()) {
+                createProject.extensionRegistry(DefaultExtensionRegistry.fromURLs(registries));
             }
 
             success = createProject.execute().isSuccess();

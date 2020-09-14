@@ -262,12 +262,17 @@ public class Serialisers {
         if (selected.isWildcardType() || (selected.getType().equals("application") && selected.isWildcardSubtype())) {
             selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
-        List<MessageBodyWriter<?>> finalResult = new ArrayList<>();
+        List<MessageBodyWriter<?>> finalResult = new ArrayList<>(resultForClass.size());
         for (ResourceWriter i : resultForClass) {
-            for (MediaType mt : i.mediaTypes()) {
-                if (mt.isCompatible(selected)) {
-                    finalResult.add(i.getInstance());
-                    break;
+            // this part seems to be needed in order to pass com.sun.ts.tests.jaxrs.ee.resource.java2entity.JAXRSClient
+            if (i.mediaTypes().isEmpty()) {
+                finalResult.add(i.getInstance());
+            } else {
+                for (MediaType mt : i.mediaTypes()) {
+                    if (mt.isCompatible(selected)) {
+                        finalResult.add(i.getInstance());
+                        break;
+                    }
                 }
             }
         }

@@ -50,7 +50,7 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public ClientBuilder hostnameVerifier(HostnameVerifier verifier) {
-        this.hostnameVerifier = hostnameVerifier;
+        this.hostnameVerifier = verifier;
         return this;
     }
 

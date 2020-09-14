@@ -241,7 +241,8 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public ImpliedBlockingPersistenceUnitTypeBuildItem defineTypeOfImpliedPU(
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem, //This is from Agroal SPI: safe to use even for Hibernate Reactive
-            List<PersistenceXmlDescriptorBuildItem> actualXmlDescriptors) {
+            List<PersistenceXmlDescriptorBuildItem> actualXmlDescriptors,
+            Capabilities capabilities) {
 
         //We won't generate an implied PU if there are explicitly configured PUs
         if (actualXmlDescriptors.isEmpty() == false) {
@@ -250,10 +251,14 @@ public final class HibernateOrmProcessor {
         }
 
         // If we have some blocking datasources defined, we can have an implied PU
-        if (jdbcDataSourcesBuildItem.size() > 0) {
-            return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
-        } else {
+        if (jdbcDataSourcesBuildItem.size() == 0 && capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            // if we don't have any blocking datasources and Hibernate Reactive is present,
+            // we don't want a blocking persistence unit
             return ImpliedBlockingPersistenceUnitTypeBuildItem.none();
+        } else {
+            // even if we don't have any JDBC datasource, we trigger the implied blocking persistence unit
+            // to properly trigger error conditions and error messages to guide the user
+            return ImpliedBlockingPersistenceUnitTypeBuildItem.generateImpliedPersistenceUnit();
         }
     }
 
@@ -623,12 +628,14 @@ public final class HibernateOrmProcessor {
         Optional<JdbcDataSourceBuildItem> defaultJdbcDataSource = jdbcDataSources.stream()
                 .filter(i -> i.isDefault())
                 .findFirst();
-        boolean enableDefaultPersistenceUnit = ((defaultJdbcDataSource.isPresent()
-                && hibernateOrmConfig.persistenceUnits.isEmpty()) ||
-                hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet());
+        boolean enableDefaultPersistenceUnit = (defaultJdbcDataSource.isPresent()
+                && hibernateOrmConfig.persistenceUnits.isEmpty())
+                || hibernateOrmConfig.defaultPersistenceUnit.isAnyPropertySet();
 
         Map<String, Set<String>> modelClassesPerPersistencesUnits = getModelClassesPerPersistenceUnits(hibernateOrmConfig,
                 jpaEntities, index.getIndex(), enableDefaultPersistenceUnit);
+        Set<String> modelClassesForDefaultPersistenceUnit = modelClassesPerPersistencesUnits
+                .getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, Collections.emptySet());
 
         Set<String> storageEngineCollector = new HashSet<>();
 
@@ -636,11 +643,16 @@ public final class HibernateOrmProcessor {
             producePersistenceUnitDescriptorFromConfig(
                     hibernateOrmConfig, PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                     hibernateOrmConfig.defaultPersistenceUnit,
-                    modelClassesPerPersistencesUnits.getOrDefault(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
-                            Collections.emptySet()),
+                    modelClassesForDefaultPersistenceUnit,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode, capabilities,
                     systemProperties, nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     storageEngineCollector);
+        } else if (!modelClassesForDefaultPersistenceUnit.isEmpty()
+                && (!hibernateOrmConfig.defaultPersistenceUnit.datasource.isPresent()
+                        || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit.datasource.get()))
+                && !defaultJdbcDataSource.isPresent()) {
+            LOG.warn(
+                    "Model classes are defined for the default persistence unit but no default datasource found: the default EntityManagerFactory will not be created.");
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits

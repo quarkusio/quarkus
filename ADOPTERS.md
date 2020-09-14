@@ -22,3 +22,4 @@ If any organization would like get added or removed please make a pull request b
 |Suomen Asiakastieto Oy | https://quarkus.io/blog/asiakastieto-chooses-quarkus-for-microservices/          |
 |Talkdesk               | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/            |
 |Vodafone Greece        | https://quarkus.io/blog/vodafone-greece-replaces-spring-boot/                    |
+|Wipro                  | https://quarkus.io/blog/wipro-customer-story/                                    |

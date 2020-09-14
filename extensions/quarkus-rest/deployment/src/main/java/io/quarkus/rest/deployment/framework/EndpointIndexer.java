@@ -504,7 +504,7 @@ public class EndpointIndexer {
                 ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
                 mc.returnValue(ret);
             } else if (fromString != null) {
-                ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
+                ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
                 mc.returnValue(ret);
             } else {
                 throw new RuntimeException("Unknown parameter type " + elementType + " on method " + methodInfo + " on class "

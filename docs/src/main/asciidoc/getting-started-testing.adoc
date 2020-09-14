@@ -482,10 +482,12 @@ To implement a test profile we need to implement `io.quarkus.test.junit.QuarkusT
 package org.acme.getting.started.testing;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
 
 public class MockGreetingProfile implements QuarkusTestProfile {
 
@@ -504,11 +506,19 @@ public class MockGreetingProfile implements QuarkusTestProfile {
     public String getConfigProfile() { <3>
         return "test";
     }
+
+    @Override
+    public List<TestResourceEntry> testResources() { <4>
+        return Collections.singletonList(new TestResourceEntry(CustomWireMockServerManager.class));
+    }
 }
 ----
 <1> This method allows us to override configuration properties. Here we are changing the JAX-RS root path.
 <2> This method allows us to enable CDI `@Alternative` beans. This makes it easy to mock out certain beans functionality.
 <3> This can be used to change the config profile. As this default is `test` this does nothing, but is included for completeness.
+<4> This method allows us to apply **additional** `QuarkusTestResourceLifecycleManager` classes, specific for this profile only. If this
+method is not overridden, then only the `QuarkusTestResourceLifecycleManager` classes enabled via the `@QuarkusTestResource` class
+annotation will be used for the tests using this profile (which is the same behavior as tests that don't use a profile at all).
 
 Now we have defined our profile we need to include it on our test class. We do this with `@TestProfile(MockGreetingProfile.class)`.
 

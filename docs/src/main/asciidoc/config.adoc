@@ -543,6 +543,7 @@ quarkus.datasource.jdbc.url=jdbc:mysql://${application.server}:3306/mydatabase?u
 It does result in one more line in this example but the value of `application.server` can be reused in other properties,
 diminishing the possibility of typos and providing more flexibility in property definitions.
 
+[#combine-property-env-var]
 === Combining Property Expressions and Environment Variables
 
 Quarkus also supports the combination of both property expressions and environment variables.

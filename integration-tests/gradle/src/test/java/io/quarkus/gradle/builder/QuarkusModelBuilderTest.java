@@ -41,7 +41,7 @@ class QuarkusModelBuilderTest {
 
     @Test
     public void shouldLoadSimpleModuleModel() throws URISyntaxException, IOException {
-        File projectDir = getResourcesProject("simple-module-project");
+        File projectDir = getResourcesProject("builder/simple-module-project");
         final QuarkusModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "TEST");
 
         assertNotNull(quarkusModel);
@@ -52,7 +52,7 @@ class QuarkusModelBuilderTest {
 
     @Test
     public void shouldLoadMultiModuleModel() throws URISyntaxException, IOException {
-        File projectDir = getResourcesProject("multi-module-project");
+        File projectDir = getResourcesProject("builder/multi-module-project");
         final QuarkusModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"), "TEST");
 
         assertNotNull(quarkusModel);

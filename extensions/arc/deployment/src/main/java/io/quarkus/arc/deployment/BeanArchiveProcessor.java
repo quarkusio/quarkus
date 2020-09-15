@@ -64,7 +64,10 @@ public class BeanArchiveProcessor {
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
             additionalBeans.addAll(i.getBeanClasses());
         }
+        // NOTE: the types added directly must always declare a scope annotation otherwise they will be ignored during bean discovery
         additionalBeans.add(LifecycleEventRunner.class.getName());
+
+        // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,

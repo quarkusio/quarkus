@@ -4,6 +4,7 @@ import javax.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -29,12 +30,26 @@ import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.Pool;
 
-@SuppressWarnings("deprecation")
 class ReactivePgClientProcessor {
 
+    /**
+     * The producer needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
+     * consumes the AdditionalBeanBuildItems).
+     */
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(PgPoolProducer.class);
+    void poolProducer(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
+            return;
+        }
+
+        additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
+                .addBeanClass(PgPoolProducer.class)
+                .setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build());
     }
 
     @BuildStep
@@ -62,12 +77,7 @@ class ReactivePgClientProcessor {
         // Make sure the PgPoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-pg-client");
 
-        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
-            return serviceStart;
-        }
-
-        if (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
             return serviceStart;
         }
 
@@ -91,8 +101,29 @@ class ReactivePgClientProcessor {
     }
 
     @BuildStep
-    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled);
+    void addHealthCheck(
+            BuildProducer<HealthBuildItem> healthChecks,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
+            return;
+        }
+
+        healthChecks.produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourceHealthCheck",
+                dataSourcesBuildTimeConfig.healthEnabled));
+    }
+
+    private static boolean createPool(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+            return false;
+        }
+
+        if (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+                || !dataSourceReactiveBuildTimeConfig.enabled) {
+            return false;
+        }
+
+        return true;
     }
 }

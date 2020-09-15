@@ -83,6 +83,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
 import io.smallrye.health.api.HealthGroups;
+import io.smallrye.health.api.Wellness;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -94,6 +95,7 @@ class SmallRyeHealthProcessor {
     private static final DotName READINESS = DotName.createSimple(Readiness.class.getName());
     private static final DotName HEALTH_GROUP = DotName.createSimple(HealthGroup.class.getName());
     private static final DotName HEALTH_GROUPS = DotName.createSimple(HealthGroups.class.getName());
+    private static final DotName WELLNESS = DotName.createSimple(Wellness.class.getName());
     private static final DotName JAX_RS_PATH = DotName.createSimple("javax.ws.rs.Path");
 
     // For the UI
@@ -155,14 +157,17 @@ class SmallRyeHealthProcessor {
             displayableEndpoints
                     .produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.readinessPath));
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.groupPath));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.wellnessPath));
         }
 
-        // Discover the beans annotated with @Health, @Liveness, @Readiness, @HealthGroup and @HealthGroups even if no scope is defined
+        // Discover the beans annotated with @Health, @Liveness, @Readiness, @HealthGroup,
+        // @HealthGroups and @Wellness even if no scope is defined
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(LIVENESS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(READINESS));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUP));
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH_GROUPS));
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(WELLNESS));
 
         // Add additional beans
         additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class));
@@ -196,6 +201,7 @@ class SmallRyeHealthProcessor {
         warnIfJaxRsPathUsed(index, LIVENESS);
         warnIfJaxRsPathUsed(index, READINESS);
         warnIfJaxRsPathUsed(index, HEALTH);
+        warnIfJaxRsPathUsed(index, WELLNESS);
 
         // Register the health handler
         routes.produce(new RouteBuildItem(health.rootPath, new SmallRyeHealthHandler(), HandlerType.BLOCKING));
@@ -234,6 +240,12 @@ class SmallRyeHealthProcessor {
                     new RouteBuildItem(health.rootPath + health.groupPath + "/" + healthGroup,
                             handler, HandlerType.BLOCKING));
         }
+
+        // Register the wellness handler
+        routes.produce(
+                new RouteBuildItem(health.rootPath + health.wellnessPath, new SmallRyeWellnessHandler(),
+                        HandlerType.BLOCKING));
+
     }
 
     @BuildStep(onlyIf = OpenAPIIncluded.class)
@@ -303,6 +315,7 @@ class SmallRyeHealthProcessor {
         healthAnnotations.add(READINESS);
         healthAnnotations.add(HEALTH_GROUP);
         healthAnnotations.add(HEALTH_GROUPS);
+        healthAnnotations.add(WELLNESS);
 
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 

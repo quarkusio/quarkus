@@ -35,7 +35,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <version.junit>5.6.2</version.junit>
+        <version.junit>5.7.0</version.junit>
         <version.gizmo>1.0.4.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>

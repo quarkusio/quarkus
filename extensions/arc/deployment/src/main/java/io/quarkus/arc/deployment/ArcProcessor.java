@@ -153,7 +153,21 @@ public class ArcProcessor {
                     " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
         }
 
-        List<String> additionalBeansTypes = beanArchiveIndex.getAdditionalBeans();
+        // bean type -> default scope (may be null)
+        Map<String, DotName> additionalBeanTypes = new HashMap<>();
+        for (AdditionalBeanBuildItem additionalBean : additionalBeans) {
+            DotName defaultScope = additionalBean.getDefaultScope();
+            for (String beanClass : additionalBean.getBeanClasses()) {
+                DotName existingDefaultScope = additionalBeanTypes.get(beanClass);
+                if (existingDefaultScope != null && defaultScope != null && !existingDefaultScope.equals(defaultScope)) {
+                    throw new IllegalStateException("Different default scopes defined for additional bean class: " + beanClass
+                            + "\n\t - scopes: " + defaultScope + " and "
+                            + existingDefaultScope);
+                }
+                additionalBeanTypes.put(beanClass, defaultScope);
+            }
+        }
+
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
@@ -165,6 +179,7 @@ public class ArcProcessor {
                 return dotName;
             }
         });
+
         builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
             @Override
@@ -176,24 +191,27 @@ public class ArcProcessor {
             public void transform(TransformationContext transformationContext) {
                 ClassInfo beanClass = transformationContext.getTarget().asClass();
                 String beanClassName = beanClass.name().toString();
-                if (additionalBeansTypes.contains(beanClassName)) {
-                    if (scopes.isScopeDeclaredOn(beanClass)) {
-                        // If it declares a built-in scope no action is needed
-                        return;
-                    }
-                    // Try to determine the default scope
-                    DotName defaultScope = additionalBeans.stream()
-                            .filter(ab -> ab.contains(beanClassName)).findFirst().map(AdditionalBeanBuildItem::getDefaultScope)
-                            .orElse(null);
-                    if (defaultScope == null && !beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
-                        // Add special stereotype so that @Dependent is automatically used even if no scope is declared
+                if (!additionalBeanTypes.containsKey(beanClassName)) {
+                    // Not an additional bean type
+                    return;
+                }
+                if (scopes.isScopeDeclaredOn(beanClass)) {
+                    // If it declares a scope no action is needed
+                    return;
+                }
+                DotName defaultScope = additionalBeanTypes.get(beanClassName);
+                if (defaultScope != null) {
+                    transformationContext.transform().add(defaultScope).done();
+                } else {
+                    if (!beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
+                        // Add special stereotype is added so that @Dependent is automatically used even if no scope is declared
+                        // Otherwise the bean class would be ingnored during bean discovery
                         transformationContext.transform().add(ADDITIONAL_BEAN).done();
-                    } else {
-                        transformationContext.transform().add(defaultScope).done();
                     }
                 }
             }
         });
+
         builder.setBeanArchiveIndex(index);
         builder.setApplicationIndex(combinedIndex.getIndex());
         List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()

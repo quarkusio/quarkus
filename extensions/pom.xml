@@ -53,6 +53,7 @@
         <module>resteasy-mutiny-common</module>
         <module>resteasy-mutiny</module>
         <module>resteasy-qute</module>
+        <module>resteasy-multipart</module>
         <module>rest-client</module>
         <module>rest-client-jackson</module>
         <module>rest-client-jsonb</module>

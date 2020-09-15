@@ -36,6 +36,7 @@ updates:
       - dependency-name: io.quarkus.http:quarkus-http-servlet
       - dependency-name: io.quarkus.http:quarkus-http-websockets-jsr
       # Elytron
+      - dependency-name: org.wildfly.security:wildfly-elytron
       - dependency-name: org.wildfly.security:wildfly-elytron-*
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql

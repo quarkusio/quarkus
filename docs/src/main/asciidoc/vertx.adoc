@@ -703,6 +703,7 @@ java.lang.IllegalStateException: Failed to create cache dir
 
 Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
+[[reverse-proxy]]
 == Running behind a reverse proxy
 
 Quarkus could be accessed through proxies that additionally generate headers (e.g. `X-Forwarded-Host`) to keep
@@ -722,20 +723,19 @@ quarkus.http.proxy-address-forwarding=true
 To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:
 [source]
 ----
-quarkus.http.allow-forwarded=true
+quarkus.http.proxy.allow-forwarded=true
 ----
 
 To consider only non-standard headers, please include the following lines instead in `src/main/resources/application.properties`:
 
 [source]
 ----
-quarkus.http.proxy-address-forwarding=true
+quarkus.http.proxy.proxy-address-forwarding=true
 quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related with standard and non-standard headers can be combine.
-In this case, the `Forwarded` header will have precedence in presence of both set of headers.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
 
 Supported forwarding address headers are:
 

@@ -40,7 +40,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config
 
 Quarkus provides mTLS authentication so that you can authenticate users based on their X.509 certificates.
 
-To use this authentication method, you should first enable SSL for your application. For more details, check the link:http-reference[Supporting secure connections with SSL] guide.
+To use this authentication method, you should first enable SSL for your application. For more details, check the link:http-reference#ssl[Supporting secure connections with SSL] guide.
 
 Once your application is accepting secure connections, the next step is to configure a `quarkus.http.ssl.certificate.trust-store-file`
 holding all the certificates that your application should trust as well as how your application should ask for certificates when

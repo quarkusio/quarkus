@@ -99,6 +99,10 @@ The `quarkus.oidc.application-type` property is set to `web-app` in order to tel
 For last, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect. In this case,
 all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access. For more details check link:security[Security Guide].
 
+=== Configuring CORS
+
+If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more details.
+
 == Starting and Configuring the Keycloak Server
 
 To start a Keycloak Server you can use Docker and just run the following command:
@@ -287,7 +291,7 @@ If UserInfo is the source of the roles then set `quarkus.oidc.user-info-required
 
 Please check if implementing SPAs the way it is suggested in the link:security-openid-connect#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
 
-If you prefer to use SPA and `XMLHttpRequest`(XHR) with Quarkus applications, please be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
+If you prefer to use SPA and `XMLHttpRequest`(XHR) with Quarkus web applications, please be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
 
 In such cases, set the `quarkus.oidc.authentication.xhr-auto-redirect` property to `false` which will instruct Quarkus to return a `499` status code and `WWW-Authenticate` header with the `OIDC` value. The browser script also needs to be updated to set `X-Requested-With` header with the `XMLHttpRequest` value and reload the last requested page in case of `499`, for example:
 
@@ -306,6 +310,13 @@ Future<void> callQuarkusService() async {
   }
 ----
 
+== Running behind a reverse proxy
+
+OIDC authentication mechanism can be affected if your Quarkus application is running behind a reverse proxy/gateway/firewall when HTTP `Host` header may be reset to the internal IP address, HTTPS connection may be terminated, etc. For example, an authorization code flow `redirect_uri` parameter may be set to the internal host instead of the expected external one.
+
+In such cases configuring Quarkus to recognize the original headers forwarded by the proxy will be required, see link:vertx#reverse-proxy[Running behind a reverse proxy] Vert.x documentation section for more information.
+
+`quarkus.oidc.authentication.force-redirect-https-scheme` property may also be used when the Quarkus application is running behind a SSL terminating reverse proxy.
 
 == Configuration Reference
 

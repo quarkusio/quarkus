@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-logging-json</artifactId>
-    <name>Quarkus - Integration Tests - Logging (JSON)</name>
+    <name>Quarkus - Integration Tests - Logging - JSON</name>
     <description>
         Tests the JSON logging extension
     </description>

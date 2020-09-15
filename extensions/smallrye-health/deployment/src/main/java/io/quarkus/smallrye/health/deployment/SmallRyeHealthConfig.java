@@ -32,6 +32,12 @@ public class SmallRyeHealthConfig {
     String groupPath;
 
     /**
+     * The relative path of the wellness health-checking endpoint.
+     */
+    @ConfigItem(defaultValue = "/well")
+    String wellnessPath;
+
+    /**
      * UI configuration
      */
     @ConfigItem

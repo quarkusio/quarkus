@@ -320,4 +320,17 @@ public class MongoClientProcessor {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
                 buildTimeConfig.healthEnabled);
     }
+
+    @BuildStep
+    List<ReflectiveClassBuildItem> addJsonClasses() {
+        List<String> reflectiveClassNames = new ArrayList<>();
+        reflectiveClassNames.add("org.bson.json.JsonTokenType");
+        reflectiveClassNames.add("org.bson.json.JsonToken");
+        reflectiveClassNames.add("org.bson.json.JsonReader");
+
+        // TODO temporary so no rush to fine tune constructors, methods and fields to add
+        return reflectiveClassNames.stream()
+                .map(s -> new ReflectiveClassBuildItem(true, true, true, s))
+                .collect(Collectors.toList());
+    }
 }

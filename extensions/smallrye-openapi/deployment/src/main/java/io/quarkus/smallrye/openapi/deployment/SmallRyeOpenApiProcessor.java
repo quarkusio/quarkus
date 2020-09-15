@@ -44,6 +44,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
@@ -60,6 +61,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -110,6 +112,11 @@ public class SmallRyeOpenApiProcessor {
     private static final String VERT_X = "Vert.x";
 
     SmallRyeOpenApiConfig openApiConfig;
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capability.SMALLRYE_OPENAPI);
+    }
 
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
@@ -261,6 +268,7 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
             Capabilities capabilities,
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
             HttpRootPathBuildItem httpRootPathBuildItem,
             OutputTargetBuildItem out,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig) throws Exception {
@@ -276,7 +284,7 @@ public class SmallRyeOpenApiProcessor {
         } else {
             annotationModel = null;
         }
-        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems);
         boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
         for (Format format : Format.values()) {
             String name = OpenApiHandler.BASE_NAME + format;
@@ -451,7 +459,8 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel) {
+    public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
@@ -465,6 +474,10 @@ public class SmallRyeOpenApiProcessor {
         document.modelFromReader(readerModel);
         document.modelFromStaticFile(staticModel);
         document.filter(filter(openApiConfig));
+        for (AddToOpenAPIDefinitionBuildItem openAPIBuildItem : openAPIBuildItems) {
+            OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
+            document.filter(otherExtensionFilter);
+        }
         document.initialize();
         return document;
     }

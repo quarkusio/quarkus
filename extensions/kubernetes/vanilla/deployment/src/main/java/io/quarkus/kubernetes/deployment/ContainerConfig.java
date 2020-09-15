@@ -137,7 +137,8 @@ public class ContainerConfig implements EnvVarHolder {
 
     public Collection<Env> convertToEnvs() {
         return convertToBuildItems().stream()
-                .map(kebi -> new Env(kebi.getName(), kebi.getValue(), kebi.getSecret(), kebi.getConfigMap(), kebi.getField()))
+                .map(kebi -> new Env(EnvConverter.convertName(kebi.getName()), kebi.getValue(), kebi.getSecret(),
+                        kebi.getConfigMap(), kebi.getField()))
                 .collect(Collectors.toList());
     }
 

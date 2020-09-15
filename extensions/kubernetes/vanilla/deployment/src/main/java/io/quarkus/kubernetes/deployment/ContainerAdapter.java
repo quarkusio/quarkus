@@ -5,7 +5,6 @@ import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.kubernetes.config.Env;
 import io.dekorate.kubernetes.config.Mount;
 import io.dekorate.kubernetes.config.Port;
-import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;

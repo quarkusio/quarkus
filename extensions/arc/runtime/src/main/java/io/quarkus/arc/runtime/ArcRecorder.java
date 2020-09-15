@@ -75,13 +75,4 @@ public class ArcRecorder {
         };
     }
 
-    public BeanContainerListener initCommandLineArgs(Supplier<String[]> args) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer container) {
-                container.instance(CommandLineArgumentsProducer.class).setCommandLineArgs(args);
-            }
-        };
-    }
-
 }

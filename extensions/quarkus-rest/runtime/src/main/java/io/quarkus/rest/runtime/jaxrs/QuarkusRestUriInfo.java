@@ -14,6 +14,7 @@ import javax.ws.rs.core.UriInfo;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.UriMatch;
 import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
+import io.quarkus.rest.runtime.util.PathSegmentImpl;
 import io.quarkus.rest.runtime.util.UnmodifiableMultivaluedMap;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
@@ -49,7 +50,7 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public List<PathSegment> getPathSegments(boolean decode) {
-        return null;
+        return PathSegmentImpl.parseSegments(getPath(), decode);
     }
 
     @Override
@@ -72,12 +73,17 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public URI getAbsolutePath() {
-        return null;
+        HttpServerRequest request = currentRequest.getContext().request();
+        try {
+            return new URI(request.absoluteURI());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public UriBuilder getAbsolutePathBuilder() {
-        return null;
+        return UriBuilder.fromUri(getAbsolutePath());
     }
 
     @Override
@@ -101,7 +107,7 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public UriBuilder getBaseUriBuilder() {
-        return null;
+        return UriBuilder.fromUri(getBaseUri());
     }
 
     @Override

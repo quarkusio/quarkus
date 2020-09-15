@@ -23,3 +23,5 @@ language:
       project:
         group-id: org.acme
         artifact-id: quarkus-project
+    dependencies:
+      - io.quarkus:quarkus-arc

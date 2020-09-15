@@ -31,3 +31,20 @@ jobs:
             -DskipITs -Dno-format -Dinvoker.skip=true \
             -DretryFailedDeploymentCount=10 \
             clean deploy
+
+      - name: Report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          STATUS: ${{ job.status }}
+          ISSUE_NUMBER: "12111"
+        run: |
+          echo "The report step got status: ${STATUS}"
+          sudo apt-get update -o Dir::Etc::sourcelist="sources.list" \
+            -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
+          sudo apt-get install -y gnupg2 gnupg-agent
+          echo Installing SDKMAN
+          curl -s "https://get.sdkman.io" | bash
+          source ~/.sdkman/bin/sdkman-init.sh && \
+          sdk install jbang 0.36.1
+          jbang .github/NativeBuildReport.java token="${GITHUB_TOKEN}" status="${STATUS}" issueRepo="${GITHUB_REPOSITORY}" issueNumber="${ISSUE_NUMBER}" thisRepo="${GITHUB_REPOSITORY}" runId="${GITHUB_RUN_ID}"

@@ -135,6 +135,7 @@
         <module>micrometer-jmx</module>
         <module>micrometer-mp-metrics</module>
         <module>micrometer-prometheus</module>
+        <module>logging-json</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

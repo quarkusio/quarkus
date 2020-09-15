@@ -6,9 +6,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 = Quarkus - Scripting with Quarkus
 :extension-status: preview
 
-Quarkus provides integration with https://jbang.dev[jbang]] which allows you to write java scripts/applications requiring no maven nor gradle to get running.
+Quarkus provides integration with https://jbang.dev[jbang] which allows you to write Java scripts/applications requiring no Maven nor Gradle to get running.
 
-In this guide, we will see how you can write a REST application using just a singe java file.
+In this guide, we will see how you can write a REST application using just a single Java file.
 
 include::./status-include.adoc[]
 
@@ -83,7 +83,7 @@ image::getting-started-architecture.png[alt=Architecture]
 
 == Creating the initial file
 
-First, we need a java file. jbang lets you create an initial version using:
+First, we need a Java file. jbang lets you create an initial version using:
 
 [source,shell,subs=attributes+]
 ----
@@ -91,7 +91,7 @@ jbang scripting/quarkusapp.java
 cd scripting
 ----
 
-This command generates a .java file that you can directly run on Linux and OS X, i.e. `./quarkusapp.java` - on Windows you need to use `jbang quarkusapp.java`
+This command generates a .java file that you can directly run on Linux and macOS, i.e. `./quarkusapp.java` - on Windows you need to use `jbang quarkusapp.java`.
 
 This initial version will print `Hello World` when run.
 
@@ -104,7 +104,7 @@ You will find at the top a line looking like this:
 //usr/bin/env jbang "$0" "$@" ; exit $?
 ----
 
-This line is what on Linux and OS X allows you to run it as a script. On Windows this line is ignored.
+This line is what on Linux and macOS allows you to run it as a script. On Windows this line is ignored.
 
 The next line
 
@@ -122,7 +122,7 @@ Go ahead and update this line to include the `quarkus-resteasy` dependency like 
 //DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
 ----
 
-Now, run `jbang quarkusapp.java` and you will see `jbang` resolving this dependency and building the jar with help from Quarkus jbang integration.
+Now, run `jbang quarkusapp.java` and you will see `jbang` resolving this dependency and building the jar with help from Quarkus' jbang integration.
 
 [source,shell,subs=attributes+] 
 ----
@@ -145,10 +145,10 @@ For now the application does nothing new.
 [TIP]
 .How do I edit this file and get content assist ?
 ====
-As there is nothing but a `.java` file most IDE's does not handle content assist well.
+As there is nothing but a `.java` file, most IDE's does not handle content assist well.
 To work around that you can run `jbang edit quarkusapp.java` which will print out a directory that will have a temporary project setup you can use in your IDE.
 
-On Linux/OSX you can run `<idecommand> `jbang edit quarkusapp.java``.
+On Linux/macOS you can run `<idecommand> `jbang edit quarkusapp.java``.
 
 If you add dependencies while editing you can get jbang to automatically refresh
 the IDE project using `jbang edit --live=<idecommand> quarkusapp.java`.
@@ -157,7 +157,7 @@ the IDE project using `jbang edit --live=<idecommand> quarkusapp.java`.
 
 === The JAX-RS resources
 
-Now let us replace the class with one that uses Quarkus features.
+Now let us replace the class with one that uses Quarkus features:
 
 [source,java]
 ----
@@ -186,12 +186,12 @@ It's a very simple class with a main method that starts Quarkus with a REST endp
 [TIP]
 .Why is the `main` method there ?
 ====
-A `main` method is currently needed for the `jbang` integration to work - will be possible to remove in the future.
+A `main` method is currently needed for the `jbang` integration to work - we might remove this requirement in the future.
 ====
 
 == Running the application
 
-Now when youn run the application you will see Quarkus start up.
+Now when you run the application you will see Quarkus start up.
 
 Use: `jbang quarkusapp.java`:
 
@@ -216,10 +216,11 @@ __  ____  __  _____   ___  __ ____  ______
 
 Once started, you can request the provided endpoint:
 
-```
+[source,shell]
+----
 $ curl -w "\n" http://localhost:8080/hello
 hello
-```
+----
 
 Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
 
@@ -233,7 +234,7 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 .Why is `quarkus-resteasy` not resolved ? 
 ====
 In this second run you should not see a line saying it is resolving `quarkus-resteasy` as jbang caches the dependency resolution between runs.
-If you want to clear the caches to force resolution use `jbang cache clear`
+If you want to clear the caches to force resolution use `jbang cache clear`.
 ====
 
 == Using injection
@@ -267,8 +268,8 @@ static public class GreetingService {
 ====
 We are using a nested static public class instead of a top level class for two reasons:
 
-  1. jbang currently does not currently support multiple source files
-  2. All Java frameworks relying on introspection have challenges using top level classes as they are not as visible as public classes; and in java there can only be one top level public class in a file.
+  1. jbang currently does not support multiple source files
+  2. All Java frameworks relying on introspection have challenges using top level classes as they are not as visible as public classes; and in Java there can only be one top level public class in a file.
 
 ====
 
@@ -329,7 +330,7 @@ $ curl -w "\n" http://localhost:8080/hello/greeting/quarkus
 hello null
 ----
 
-Now that is unexpected, why is it returning `hello null` and not `hello quarkus` ?
+Now that is unexpected, why is it returning `hello null` and not `hello quarkus`?
 
 The reason is that JAX-RS `@PathParam` relies on the `-parameters` compiler flag to be set to be able to map `{name}` to the `name` parameter.
 
@@ -364,7 +365,7 @@ To use logging in Quarkus scripting with jbang you do as usual, with configuring
 public static final Logger LOG = Logger.getLogger(quarkusapp.class);
 ----
 
-To get it to work you need to add a java option to ensure the logging is initialized properly, i.e.
+To get it to work you need to add a Java option to ensure the logging is initialized properly, i.e.
 
 [source,java]
 ----
@@ -375,9 +376,9 @@ With that in place running `jbang quarkusapp.java` will log and render as expect
 
 == Configuring Application
 
-You can use `//Q:CONFIG <property>=<value>` to setup static configuration for your application.
+You can use `//Q:CONFIG <property>=<value>` to set up static configuration for your application.
 
-i.e. if you wanted to add the `smallrye-openapi` and `swagger-ui` and have the swagger-ui always show up you would add the following:
+I.e. if you wanted to add the `smallrye-openapi` and `swagger-ui` extensions and have the Swagger UI always show up you would add the following:
 
 [source,java,subs=attributes+]
 ----
@@ -390,7 +391,7 @@ Now during build the `quarkus.swagger-ui.always-include` will be generated into 
 
 == Running as a native application
 
-If you have `native-image` binary installed and GRAALVM_HOME set you can get native binary built and run using `jbang --native quarkusapp.java`:
+If you have the `native-image` binary installed and `GRAALVM_HOME` set, you can get the native executable built and run using `jbang --native quarkusapp.java`:
 
 [source,shell,subs=attributes+]
 ----
@@ -436,4 +437,4 @@ __  ____  __  _____   ___  __ ____  ______
 
 === Conclusion
 
-If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a java file. In this guide we outlined the very basics on using Quarkus with jbang; if you want to learn more about what jbang can do go see https://jbang.dev.
+If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a Java file. In this guide we outlined the very basics on using Quarkus with jbang; if you want to learn more about what jbang can do go see https://jbang.dev.

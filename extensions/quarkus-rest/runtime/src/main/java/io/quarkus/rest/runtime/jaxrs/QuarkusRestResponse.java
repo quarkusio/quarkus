@@ -3,7 +3,10 @@ package io.quarkus.rest.runtime.jaxrs;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,6 +25,8 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
+import io.quarkus.rest.runtime.util.DateUtil;
+import io.quarkus.rest.runtime.util.LocaleHelper;
 import io.vertx.core.http.HttpClientResponse;
 
 public class QuarkusRestResponse extends Response {
@@ -96,7 +101,7 @@ public class QuarkusRestResponse extends Response {
         Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
         if (first instanceof String) {
             String contentType = (String) first;
-            return contentType != null ? MediaType.valueOf(contentType) : null;
+            return MediaType.valueOf(contentType);
         } else {
             return (MediaType) first;
         }
@@ -104,50 +109,118 @@ public class QuarkusRestResponse extends Response {
 
     @Override
     public Locale getLanguage() {
-        // TODO Auto-generated method stub
-        return null;
+        Object obj = headers.getFirst(HttpHeaders.CONTENT_LANGUAGE);
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof Locale) {
+            return (Locale) obj;
+        }
+        return LocaleHelper.extractLocale(headerToString(obj));
     }
 
     @Override
     public int getLength() {
-        // TODO Auto-generated method stub
-        return 0;
+        Object obj = headers.getFirst(HttpHeaders.CONTENT_LENGTH);
+        if (obj == null) {
+            return -1;
+        }
+        if (obj instanceof Integer) {
+            return (Integer) obj;
+        }
+        return Integer.parseInt(headerToString(obj));
     }
 
     @Override
     public Set<String> getAllowedMethods() {
-        // TODO Auto-generated method stub
-        return null;
+        List<Object> allowed = headers.get(HttpHeaders.ALLOW);
+        if ((allowed == null) || allowed.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<String> allowedMethods = new HashSet<>();
+        for (Object header : allowed) {
+            if (header instanceof String) {
+                String[] list = ((String) header).split(",");
+                for (String str : list) {
+                    String trimmed = str.trim();
+                    if (!trimmed.isEmpty()) {
+                        allowedMethods.add(trimmed.toUpperCase());
+                    }
+                }
+            } else {
+                allowedMethods.add(headerToString(header).toUpperCase());
+            }
+        }
+        return allowedMethods;
     }
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        // TODO Auto-generated method stub
-        return null;
+        List<?> list = headers.get(HttpHeaders.SET_COOKIE);
+        if ((list == null) || list.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, NewCookie> cookies = new HashMap<>();
+        for (Object obj : list) {
+            if (obj instanceof NewCookie) {
+                NewCookie cookie = (NewCookie) obj;
+                cookies.put(cookie.getName(), cookie);
+            } else {
+                String str = headerToString(obj);
+                NewCookie cookie = NewCookie.valueOf(str);
+                cookies.put(cookie.getName(), cookie);
+            }
+        }
+        return cookies;
     }
 
     @Override
     public EntityTag getEntityTag() {
-        // TODO Auto-generated method stub
-        return null;
+        Object d = headers.getFirst(HttpHeaders.ETAG);
+        if (d == null) {
+            return null;
+        }
+        if (d instanceof EntityTag) {
+            return (EntityTag) d;
+        }
+        return EntityTag.valueOf(headerToString(d));
     }
 
     @Override
     public Date getDate() {
-        // TODO Auto-generated method stub
-        return null;
+        return firstHeaderToDate(HttpHeaders.DATE);
     }
 
     @Override
     public Date getLastModified() {
-        // TODO Auto-generated method stub
-        return null;
+        return firstHeaderToDate(HttpHeaders.LAST_MODIFIED);
+    }
+
+    private Date firstHeaderToDate(String date) {
+        Object d = headers.getFirst(date);
+        if (d == null)
+            return null;
+        if (d instanceof Date)
+            return (Date) d;
+        return DateUtil.parseDate(d.toString());
     }
 
     @Override
     public URI getLocation() {
-        // TODO Auto-generated method stub
-        return null;
+        Object uri = headers.getFirst(HttpHeaders.LOCATION);
+        if (uri == null) {
+            return null;
+        }
+        if (uri instanceof URI) {
+            return (URI) uri;
+        }
+        String str = null;
+        if (uri instanceof String) {
+            str = (String) uri;
+        } else {
+            str = headerToString(uri);
+        }
+        return URI.create(str);
     }
 
     @Override
@@ -187,18 +260,22 @@ public class QuarkusRestResponse extends Response {
             for (Entry<String, List<Object>> entry : headers.entrySet()) {
                 List<String> stringValues = new ArrayList<>(entry.getValue().size());
                 for (Object value : entry.getValue()) {
-                    if (value instanceof MediaType) {
-                        stringValues.add(MediaTypeHeaderDelegate.INSTANCE.toString(value));
-                    } else {
-                        // FIXME: serialisation support
-                        stringValues.add((String) value);
-                    }
+                    stringValues.add(headerToString(value));
                 }
                 stringHeaders.put(entry.getKey(), stringValues);
             }
         }
 
         return stringHeaders;
+    }
+
+    private String headerToString(Object value) {
+        if (value instanceof MediaType) {
+            return MediaTypeHeaderDelegate.INSTANCE.toString(value);
+        } else {
+            // FIXME: serialisation support
+            return value.toString();
+        }
     }
 
     @Override

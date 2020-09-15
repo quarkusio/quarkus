@@ -75,7 +75,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         defaultReasonPhrases.put(505, "HTTP Version Not Supported");
     }
 
-    int status;
+    int status = -1;
     String reasonPhrase;
     Object entity;
     MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
@@ -85,9 +85,15 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     @Override
     public QuarkusRestResponse build() {
         QuarkusRestResponse response = new QuarkusRestResponse();
-        response.status = status;
-        response.reasonPhrase = reasonPhrase;
         response.entity = entity;
+        if ((entity == null) && (status == -1)) {
+            response.status = 204; // spec says that when no status is set and the entity is null, we need to return 204
+        } else if (status == -1) {
+            response.status = 200;
+        } else {
+            response.status = status;
+        }
+        response.reasonPhrase = reasonPhrase;
         response.headers = new MultivaluedHashMap<>();
         response.headers.putAll(metadata);
         response.vertxClientResponse = vertxClientResponse;

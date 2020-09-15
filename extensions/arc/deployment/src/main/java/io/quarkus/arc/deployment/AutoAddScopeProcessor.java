@@ -98,12 +98,14 @@ public class AutoAddScopeProcessor {
         if (index != null) {
             DotName superName = clazz.superName();
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
-                ClassInfo superClass = index.getClassByName(superName);
+                final ClassInfo superClass = index.getClassByName(superName);
                 if (superClass != null) {
-                    if (hasContainerAnnotation(clazz, containerAnnotationNames)) {
+                    if (hasContainerAnnotation(superClass, containerAnnotationNames)) {
                         return true;
                     }
                     superName = superClass.superName();
+                } else {
+                    superName = null;
                 }
             }
         }

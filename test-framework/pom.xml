@@ -35,6 +35,7 @@
         <module>vault</module>
         <module>ldap</module>
         <module>security</module>
+        <module>jacoco</module>
     </modules>
 
 </project>

@@ -149,6 +149,7 @@
                         <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-class-change-agent</parentFirstArtifact>
                         <parentFirstArtifact>org.jacoco:org.jacoco.agent:runtime</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>

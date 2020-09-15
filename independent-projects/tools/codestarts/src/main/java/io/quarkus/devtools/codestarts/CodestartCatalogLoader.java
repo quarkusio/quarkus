@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
-import io.quarkus.devtools.codestarts.core.DefaultCodestartCatalog;
+import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,11 +31,12 @@ public final class CodestartCatalogLoader {
     private CodestartCatalogLoader() {
     }
 
-    public static DefaultCodestartCatalog loadDefaultCatalog(CodestartResourceLoader resourceLoader, String first,
+    public static CodestartCatalog<CodestartProjectInput> loadDefaultCatalog(CodestartResourceLoader resourceLoader,
+            String first,
             String... more)
             throws IOException {
         final List<Codestart> codestarts = loadCodestarts(resourceLoader, first, more);
-        return new DefaultCodestartCatalog(resourceLoader, codestarts);
+        return new GenericCodestartCatalog<>(resourceLoader, codestarts);
     }
 
     public static List<Codestart> loadCodestarts(CodestartResourceLoader resourceLoader, String first, String... more)

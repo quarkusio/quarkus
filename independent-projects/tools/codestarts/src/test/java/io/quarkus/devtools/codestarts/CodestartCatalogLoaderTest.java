@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
-import io.quarkus.devtools.codestarts.core.DefaultCodestartCatalog;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +69,7 @@ class CodestartCatalogLoaderTest {
 
     @Test
     void testLoadCodestartsFromDefaultDir() throws IOException {
-        final DefaultCodestartCatalog catalog = CodestartCatalogLoader
+        final CodestartCatalog<CodestartProjectInput> catalog = CodestartCatalogLoader
                 .loadDefaultCatalog(resourceLoader, "codestarts/core", "codestarts/examples");
         assertThat(catalog.getCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("y", "maven", "config-properties", "config-yaml", "foo", "a", "b", "replace", "t",
@@ -94,7 +93,7 @@ class CodestartCatalogLoaderTest {
 
     @Test
     void testLoadCodestartsFromSubDir() throws IOException {
-        final DefaultCodestartCatalog catalog = CodestartCatalogLoader.loadDefaultCatalog(resourceLoader,
+        final CodestartCatalog<CodestartProjectInput> catalog = CodestartCatalogLoader.loadDefaultCatalog(resourceLoader,
                 "codestarts/examples");
         assertThat(catalog.getCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("example1", "example2", "example-forbidden");

@@ -1,5 +1,7 @@
 package io.quarkus.devtools.codestarts;
 
+import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
+
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
@@ -68,7 +70,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         projectInput.getSelection().addNames(getToolingCodestarts(projectInput));
 
         // Filter out examples if noExamples
-        final List<Codestart> projectCodestarts = super.select(projectInput.getSelection()).stream()
+        final List<Codestart> projectCodestarts = super.select(projectInput).stream()
                 .filter(c -> !isExample(c) || !projectInput.noExamples())
                 .collect(Collectors.toCollection(ArrayList::new));
 
@@ -80,7 +82,15 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                     .filter(c -> c.isSelected(Collections.singleton(Example.COMMANDMODE_EXAMPLE.getKey())))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
                             Example.COMMANDMODE_EXAMPLE.getKey() + " codestart not found"));
-            projectCodestarts.add(commandModeCodestart);
+            final String languageName = findLanguageName(projectCodestarts);
+            if (commandModeCodestart.implementsLanguage(languageName)) {
+                projectCodestarts.add(commandModeCodestart);
+            } else {
+                projectInput.log().warn(
+                        commandModeCodestart.getName() + " codestart will not be applied (doesn't implement language '"
+                                + languageName
+                                + "' yet)");
+            }
         }
         return projectCodestarts;
     }

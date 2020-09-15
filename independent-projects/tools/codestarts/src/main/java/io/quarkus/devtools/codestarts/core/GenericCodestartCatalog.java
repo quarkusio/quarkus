@@ -5,7 +5,6 @@ import io.quarkus.devtools.codestarts.CodestartCatalog;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.codestarts.CodestartResourceLoader;
-import io.quarkus.devtools.codestarts.CodestartsSelection;
 import java.util.Collection;
 
 public class GenericCodestartCatalog<T extends CodestartProjectInput> implements CodestartCatalog<T> {
@@ -30,10 +29,7 @@ public class GenericCodestartCatalog<T extends CodestartProjectInput> implements
     }
 
     protected Collection<Codestart> select(T projectInput) {
-        return select(projectInput.getSelection());
+        return CodestartCatalogs.select(projectInput, this.codestarts);
     }
 
-    protected Collection<Codestart> select(CodestartsSelection selection) {
-        return CodestartCatalogs.select(this.codestarts, selection.getNames());
-    }
 }

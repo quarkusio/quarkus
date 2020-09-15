@@ -1,5 +1,7 @@
 package io.quarkus.devtools.codestarts.core;
 
+import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
+import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findRequiredCodestart;
 import static io.quarkus.devtools.codestarts.core.CodestartData.buildCodestartProjectData;
 import static io.quarkus.devtools.codestarts.core.CodestartData.buildDependenciesData;
 import static java.util.Objects.requireNonNull;
@@ -28,38 +30,29 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
     private static final Comparator<Codestart> SHARED_DATA_MERGE_ORDER = PROCESSING_ORDER;
 
     private final String languageName;
-    private final List<Codestart> implementedCodestarts;
-    private final List<Codestart> unimplementedCodestarts;
+    private final List<Codestart> codestarts;
     private final CodestartResourceLoader resourceLoader;
     private final CodestartProjectInput projectInput;
 
     private DefaultCodestartProjectDefinition(CodestartResourceLoader resourceLoader,
             CodestartProjectInput projectInput,
             String languageName,
-            List<Codestart> implementedCodestarts,
-            List<Codestart> unimplementedCodestarts) {
+            List<Codestart> codestarts) {
         this.resourceLoader = requireNonNull(resourceLoader, "resourceLoader is required");
-        ;
         this.projectInput = requireNonNull(projectInput, "codestartInput is required");
         this.languageName = requireNonNull(languageName, "languageName is required");
-        this.implementedCodestarts = requireNonNull(implementedCodestarts, "implementedCodestarts is required");
-        this.unimplementedCodestarts = requireNonNull(unimplementedCodestarts, "unimplementedCodestarts is required");
+        this.codestarts = requireNonNull(codestarts, "codestarts is required");
     }
 
     public static CodestartProjectDefinition of(CodestartResourceLoader resourceLoader,
             CodestartProjectInput projectInput,
             Collection<Codestart> codestarts) {
-        final String languageName = checkContainsType(codestarts, CodestartType.LANGUAGE).getName();
-        final List<Codestart> implementedCodestarts = codestarts.stream()
-                .filter(c -> c.implementsLanguage(languageName))
+        final String languageName = findLanguageName(codestarts);
+        findRequiredCodestart(codestarts, CodestartType.PROJECT);
+        final List<Codestart> sorted = codestarts.stream()
                 .sorted(PROCESSING_ORDER)
                 .collect(Collectors.toList());
-        checkContainsType(implementedCodestarts, CodestartType.PROJECT);
-        final List<Codestart> unimplemented = codestarts.stream()
-                .filter(c -> !c.implementsLanguage(languageName))
-                .collect(Collectors.toList());
-        return new DefaultCodestartProjectDefinition(resourceLoader, projectInput, languageName, implementedCodestarts,
-                unimplemented);
+        return new DefaultCodestartProjectDefinition(resourceLoader, projectInput, languageName, sorted);
     }
 
     @Override
@@ -73,13 +66,8 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
     }
 
     @Override
-    public List<Codestart> getImplementedCodestarts() {
-        return implementedCodestarts;
-    }
-
-    @Override
-    public List<Codestart> getUnimplementedCodestarts() {
-        return unimplementedCodestarts;
+    public List<Codestart> getCodestarts() {
+        return codestarts;
     }
 
     @Override
@@ -89,12 +77,12 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
 
     @Override
     public Optional<Codestart> getCodestart(CodestartType type) {
-        return getCodestart(implementedCodestarts, type);
+        return CodestartCatalogs.findCodestart(codestarts, type);
     }
 
     @Override
     public Codestart getRequiredCodestart(CodestartType type) {
-        return checkContainsType(implementedCodestarts, type);
+        return findRequiredCodestart(codestarts, type);
     }
 
     @Override
@@ -104,7 +92,7 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
 
     @Override
     public Map<String, Object> getSharedData() {
-        final Stream<Map<String, Object>> codestartsGlobal = getImplementedCodestarts().stream()
+        final Stream<Map<String, Object>> codestartsGlobal = getCodestarts().stream()
                 .sorted(SHARED_DATA_MERGE_ORDER)
                 .map(c -> c.getSharedData(getLanguageName()));
         return NestedMaps.deepMerge(Stream.concat(codestartsGlobal, Stream.of(getProjectInput().getData())));
@@ -112,7 +100,7 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
 
     @Override
     public Map<String, Object> getDepsData() {
-        return buildDependenciesData(getImplementedCodestarts().stream(), getLanguageName(),
+        return buildDependenciesData(getCodestarts().stream(), getLanguageName(),
                 getProjectInput().getDependencies());
     }
 
@@ -123,20 +111,11 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
 
     @Override
     public List<Codestart> getBaseCodestarts() {
-        return getImplementedCodestarts().stream().filter(c -> c.getSpec().getType().isBase()).collect(Collectors.toList());
+        return getCodestarts().stream().filter(c -> c.getSpec().getType().isBase()).collect(Collectors.toList());
     }
 
     @Override
     public List<Codestart> getExtraCodestarts() {
-        return getImplementedCodestarts().stream().filter(c -> !c.getSpec().getType().isBase()).collect(Collectors.toList());
-    }
-
-    static Codestart checkContainsType(Collection<Codestart> codestarts, CodestartType type) {
-        return getCodestart(codestarts, type)
-                .orElseThrow(() -> new IllegalArgumentException(type.toString().toLowerCase() + " Codestart is required"));
-    }
-
-    static Optional<Codestart> getCodestart(Collection<Codestart> codestarts, CodestartType type) {
-        return codestarts.stream().filter(c -> c.getType() == type).findFirst();
+        return getCodestarts().stream().filter(c -> !c.getSpec().getType().isBase()).collect(Collectors.toList());
     }
 }

@@ -1,11 +1,16 @@
 package io.quarkus.devtools.codestarts.core;
 
+import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
+
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.CodestartType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -14,11 +19,38 @@ public final class CodestartCatalogs {
     private CodestartCatalogs() {
     }
 
-    public static Collection<Codestart> select(Collection<Codestart> codestarts, Set<String> selection) {
+    public static Codestart findRequiredCodestart(Collection<Codestart> codestarts, CodestartType type) {
+        return findCodestart(codestarts, type)
+                .orElseThrow(() -> new IllegalArgumentException(type.toString().toLowerCase() + " Codestart is required"));
+    }
+
+    public static String findLanguageName(Collection<Codestart> codestarts) {
+        return findRequiredCodestart(codestarts, CodestartType.LANGUAGE).getName();
+    }
+
+    public static Optional<Codestart> findCodestart(Collection<Codestart> codestarts, CodestartType type) {
+        return codestarts.stream().filter(c -> c.getType() == type).findFirst();
+    }
+
+    public static Collection<Codestart> select(CodestartProjectInput projectInput, Collection<Codestart> codestarts) {
         final List<Codestart> selectedCodestarts = new ArrayList<>();
-        selectedCodestarts.addAll(getBaseSelection(codestarts, selection));
-        selectedCodestarts.addAll(getExtraSelection(codestarts, selection));
-        return selectedCodestarts;
+        selectedCodestarts.addAll(getBaseSelection(codestarts, projectInput.getSelection().getNames()));
+        selectedCodestarts.addAll(getExtraSelection(codestarts, projectInput.getSelection().getNames()));
+        return removeUnimplementedCodestarts(projectInput, selectedCodestarts);
+    }
+
+    public static Collection<Codestart> removeUnimplementedCodestarts(CodestartProjectInput projectInput,
+            Collection<Codestart> codestarts) {
+        final String languageName = findLanguageName(codestarts);
+        return codestarts.stream().filter(c -> {
+            if (!c.implementsLanguage(languageName)) {
+                projectInput.log().warn(
+                        c.getName() + " codestart will not be applied (doesn't implement language '" + languageName
+                                + "' yet)");
+                return false;
+            }
+            return true;
+        }).collect(Collectors.toList());
     }
 
     static Collection<Codestart> getBaseSelection(Collection<Codestart> codestarts, Set<String> selection) {

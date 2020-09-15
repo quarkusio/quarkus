@@ -12,9 +12,7 @@ public interface CodestartProjectDefinition {
 
     void generate(Path targetDirectory) throws IOException;
 
-    List<Codestart> getImplementedCodestarts();
-
-    List<Codestart> getUnimplementedCodestarts();
+    List<Codestart> getCodestarts();
 
     CodestartProjectInput getProjectInput();
 

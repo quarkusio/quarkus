@@ -3,7 +3,6 @@ package io.quarkus.devtools.codestarts;
 import static io.quarkus.devtools.codestarts.TestCodestartResourceLoader.getResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.devtools.codestarts.core.DefaultCodestartCatalog;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +27,7 @@ class CodestartProjectGenerationTest {
     void checkStaticConflictFail() throws IOException {
         final CodestartProjectInput input = CodestartProjectInput.builder()
                 .build();
-        final DefaultCodestartCatalog catalog = loadSpecific("static-conflicting-file");
+        final CodestartCatalog<CodestartProjectInput> catalog = loadSpecific("static-conflicting-file");
 
         final CodestartProjectDefinition projectDefinition = catalog.createProject(input);
         Assertions.assertThatExceptionOfType(CodestartStructureException.class)
@@ -41,7 +40,7 @@ class CodestartProjectGenerationTest {
     void checkConflictFail() throws IOException {
         final CodestartProjectInput input = CodestartProjectInput.builder()
                 .build();
-        final DefaultCodestartCatalog catalog = loadSpecific("conflicting-file");
+        final CodestartCatalog<CodestartProjectInput> catalog = loadSpecific("conflicting-file");
 
         final CodestartProjectDefinition projectDefinition = catalog.createProject(input);
         Assertions.assertThatExceptionOfType(CodestartStructureException.class)
@@ -54,7 +53,7 @@ class CodestartProjectGenerationTest {
     void checkConflictingFallbackProjectFail() throws IOException {
         final CodestartProjectInput input = CodestartProjectInput.builder()
                 .build();
-        final DefaultCodestartCatalog catalog = loadSpecific("conflicting-fallback-project");
+        final CodestartCatalog<CodestartProjectInput> catalog = loadSpecific("conflicting-fallback-project");
 
         Assertions.assertThatExceptionOfType(CodestartStructureException.class)
                 .isThrownBy(() -> catalog.createProject(input))
@@ -120,11 +119,11 @@ class CodestartProjectGenerationTest {
                 .hasSameTextualContentAs(getResource("expected-pom-maven-merge.xml"));
     }
 
-    private DefaultCodestartCatalog load() throws IOException {
+    private CodestartCatalog<CodestartProjectInput> load() throws IOException {
         return CodestartCatalogLoader.loadDefaultCatalog(resourceLoader, "codestarts/core", "codestarts/examples");
     }
 
-    private DefaultCodestartCatalog loadSpecific(String s) throws IOException {
+    private CodestartCatalog<CodestartProjectInput> loadSpecific(String s) throws IOException {
         return CodestartCatalogLoader.loadDefaultCatalog(resourceLoader, "codestarts/core", "codestarts/examples",
                 "codestarts/" + s);
     }

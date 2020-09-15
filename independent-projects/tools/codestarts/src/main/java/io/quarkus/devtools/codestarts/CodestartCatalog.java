@@ -6,4 +6,5 @@ public interface CodestartCatalog<T extends CodestartProjectInput> {
     Collection<Codestart> getCodestarts();
 
     CodestartProjectDefinition createProject(T projectInput);
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.devtools.codestarts;
 
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,10 @@ public final class QuarkusCodestartData {
 
         COMMANDMODE_EXAMPLE_PACKAGE_NAME("commandmode-example.package-name"),
         COMMANDMODE_EXAMPLE_RESOURCE_CLASS_NAME("commandmode-example.main.class-name"),
+
+        NO_EXAMPLES("quarkus-project.no-examples"),
+        NO_BUILD_TOOL_WRAPPER("quarkus-project.no-build-tool-wrapper"),
+        NO_DOCKERFILES("quarkus-project.no-dockerfiles");
 
         ;
 

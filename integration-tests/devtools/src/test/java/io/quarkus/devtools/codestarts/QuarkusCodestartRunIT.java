@@ -1,6 +1,5 @@
 package io.quarkus.devtools.codestarts;
 
-import static io.quarkus.devtools.codestarts.QuarkusCodestarts.prepareProject;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -25,8 +24,8 @@ import com.google.common.collect.Sets;
 
 import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.ProjectTestUtil;
+import io.quarkus.devtools.codestarts.QuarkusCodestartCatalog.Tag;
 import io.quarkus.devtools.codestarts.QuarkusCodestartData.DataKey;
-import io.quarkus.devtools.codestarts.QuarkusCodestarts.Tag;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 
@@ -48,13 +47,12 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return QuarkusCodestartGenerationIT.getTestInputData(getPlatformDescriptor(), override);
+        return QuarkusCodestartGenerationTest.getTestInputData(getPlatformDescriptor(), override);
     }
 
     private Stream<Arguments> provideGenerateCombinations() throws IOException {
-        final List<Codestart> examples = CodestartLoader
-                .loadAllCodestarts(QuarkusCodestarts.resourceLoader(getPlatformDescriptor())).stream()
-                .filter(QuarkusCodestarts::isExample)
+        final List<Codestart> examples = getCatalog().getCodestarts().stream()
+                .filter(QuarkusCodestartCatalog::isExample)
                 .filter(c -> !EXCLUDED.contains(c.getName()))
                 .collect(Collectors.toList());
         final List<List<String>> runAlone = examples.stream()
@@ -131,7 +129,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         final BuildTool buildTool = BuildTool.findTool(buildToolName);
 
         // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
-        final QuarkusCodestartInput input = QuarkusCodestartInput.builder(getPlatformDescriptor())
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getTestInputData(Collections.singletonMap("artifact-id", name)))
                 .buildTool(buildTool)
                 .addCodestarts(codestarts)
@@ -140,9 +138,9 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
                 .putData(DataKey.JAVA_VERSION.getKey(), System.getProperty("java.specification.version"))
                 .messageWriter(MessageWriter.debug())
                 .build();
-        final CodestartProject codestartProject = prepareProject(input);
+        final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         Path projectDir = testDirPath.resolve(name);
-        Codestarts.generateProject(codestartProject, projectDir);
+        projectDefinition.generate(projectDir);
         final int result = WrapperRunner.run(projectDir,
                 WrapperRunner.Wrapper.fromBuildtool(buildToolName));
         assertThat(result).isZero();
@@ -156,5 +154,9 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
             name += "-" + String.join("-", codestarts);
         }
         return name;
+    }
+
+    private QuarkusCodestartCatalog getCatalog() throws IOException {
+        return QuarkusCodestartCatalog.fromQuarkusPlatformDescriptor(getPlatformDescriptor());
     }
 }

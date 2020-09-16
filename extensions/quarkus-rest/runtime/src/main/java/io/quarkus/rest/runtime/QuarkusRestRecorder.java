@@ -231,7 +231,7 @@ public class QuarkusRestRecorder {
                     // in the global fields
                     ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
 
-                    QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method);
+                    QuarkusRestResourceMethod quarkusRestResourceMethod = new QuarkusRestResourceMethod(clazz, method); // TODO: look into using LazyMethod
                     QuarkusRestDynamicFeatureContext context = new QuarkusRestDynamicFeatureContext(
                             dynamicallyConfiguredInterceptors, quarkusRestConfiguration, beanContainer);
                     for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {

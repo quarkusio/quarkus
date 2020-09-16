@@ -24,7 +24,7 @@ public class SimpleQuarkusRestTestCase {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(SimpleQuarkusRestResource.class, Person.class,
                                     TestRequestFilter.class, TestRequestFilterWithHighPriority.class,
-                                    TestRequestFilterWithHighestPriority.class,
+                                    TestRequestFilterWithHighestPriority.class, ResourceInfoInjectingFilter.class,
                                     Foo.class, Bar.class,
                                     TestFooRequestFilter.class, TestBarRequestFilter.class, TestFooBarRequestFilter.class,
                                     TestFooResponseFilter.class, TestBarResponseFilter.class, TestFooBarResponseFilter.class,
@@ -281,5 +281,13 @@ public class SimpleQuarkusRestTestCase {
         assertThat(headers.getValues("feature-filter-request")).containsOnly("authentication-default-low");
         assertThat(headers.getValues("feature-filter-response")).containsExactly("high-priority", "normal-priority",
                 "low-priority");
+    }
+
+    @Test
+    public void testResourceInfo() {
+        Headers headers = RestAssured.get("/simple/resource-info")
+                .then().extract().headers();
+        assertThat(headers.getValues("class-name")).containsOnly("SimpleQuarkusRestResource");
+        assertThat(headers.getValues("method-name")).containsOnly("resourceInfo");
     }
 }

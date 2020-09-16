@@ -21,6 +21,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -324,4 +325,12 @@ public class SimpleQuarkusRestResource {
         return request.getMethod();
     }
 
+    @GET
+    @Path("resource-info")
+    public Response resourceInfo(@Context ResourceInfo resourceInfo, @Context HttpHeaders headers) {
+        return Response.ok()
+                .header("class-name", resourceInfo.getResourceClass().getSimpleName())
+                .header("method-name", headers.getHeaderString("method-name"))
+                .build();
+    }
 }

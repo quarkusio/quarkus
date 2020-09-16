@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.core.parameters;
 
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
@@ -58,6 +59,9 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(Sse.class.getName())) {
             return QuarkusRestSse.INSTANCE;
+        }
+        if (type.equals(ResourceInfo.class.getName())) {
+            return context.getTarget().getLazyMethod();
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

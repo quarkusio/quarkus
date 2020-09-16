@@ -4,6 +4,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
@@ -70,6 +71,12 @@ public class ContextProducers {
     @Produces
     Providers providers() {
         return getContext().getProviders();
+    }
+
+    @RequestScoped
+    @Produces
+    ResourceInfo resourceInfo() {
+        return getContext().getTarget().getLazyMethod();
     }
 
     private QuarkusRestRequestContext getContext() {

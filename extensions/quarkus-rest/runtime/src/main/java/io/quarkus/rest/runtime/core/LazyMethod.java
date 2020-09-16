@@ -4,13 +4,15 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
+import javax.ws.rs.container.ResourceInfo;
+
 /**
  * A lazy representation of a Method
  *
  * Only loaded if actually needed, which should not be the case generally
  * unless custom Serialization is in use.
  */
-public class LazyMethod {
+public class LazyMethod implements ResourceInfo {
 
     private final String name;
     private final Class<?> declaringClass;
@@ -63,5 +65,15 @@ public class LazyMethod {
             getMethod();
         }
         return returnType;
+    }
+
+    @Override
+    public Method getResourceMethod() {
+        return getMethod();
+    }
+
+    @Override
+    public Class<?> getResourceClass() {
+        return declaringClass;
     }
 }

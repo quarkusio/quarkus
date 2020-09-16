@@ -88,7 +88,7 @@ First, we need a Java file. jbang lets you create an initial version using:
 
 [source,shell,subs=attributes+]
 ----
-jbang scripting/quarkusapp.java
+jbang init scripting/quarkusapp.java
 cd scripting
 ----
 

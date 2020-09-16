@@ -18,6 +18,7 @@
         <module>arc</module>
         <module>scheduler</module>
         <module>quartz</module>
+        <module>jaxp</module>
 
         <!-- Configuration -->
         <module>config-yaml</module>

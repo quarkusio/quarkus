@@ -547,7 +547,7 @@ jobs:
             test-modules: >
               kubernetes-client
           - category: Misc4
-            timeout: 50
+            timeout: 55
             test-modules: >
               smallrye-graphql
               picocli-native
@@ -555,6 +555,7 @@ jobs:
               micrometer-mp-metrics
               micrometer-prometheus
               logging-json
+              jaxp
           - category: Spring
             timeout: 50
             test-modules: >

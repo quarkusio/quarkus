@@ -2,6 +2,7 @@ package io.quarkus.spring.cloud.config.client.runtime;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -96,7 +97,13 @@ public class SpringCloudConfigClientConfig {
      * When using HTTPS and no keyStore has been specified, whether or not to trust all certificates
      */
     @ConfigItem(defaultValue = "false")
-    boolean trustCerts;
+    public boolean trustCerts;
+
+    /**
+     * Custom headers to pass the Spring Cloud Config Server when performing the HTTP request
+     */
+    @ConfigItem
+    public Map<String, String> headers;
 
     public boolean usernameAndPasswordSet() {
         return username.isPresent() && password.isPresent();

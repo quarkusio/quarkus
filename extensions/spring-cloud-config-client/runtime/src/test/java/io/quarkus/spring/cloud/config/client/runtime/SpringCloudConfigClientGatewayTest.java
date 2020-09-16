@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.entry;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.apache.commons.io.IOUtils;
@@ -79,6 +80,7 @@ class SpringCloudConfigClientGatewayTest {
         springCloudConfigClientConfig.trustStore = Optional.empty();
         springCloudConfigClientConfig.keyStore = Optional.empty();
         springCloudConfigClientConfig.trustCerts = false;
+        springCloudConfigClientConfig.headers = new HashMap<>();
         return springCloudConfigClientConfig;
     }
 }

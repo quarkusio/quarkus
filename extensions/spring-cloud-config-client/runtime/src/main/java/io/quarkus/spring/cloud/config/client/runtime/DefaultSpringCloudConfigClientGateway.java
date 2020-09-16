@@ -162,6 +162,10 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
             final HttpGet request = new HttpGet(finalURI);
             request.addHeader("Accept", "application/json");
 
+            for (Map.Entry<String, String> entry : springCloudConfigClientConfig.headers.entrySet()) {
+                request.setHeader(entry.getKey(), entry.getValue());
+            }
+
             HttpClientContext context = setupContext(finalURI);
             try (CloseableHttpResponse response = client.execute(request, context)) {
                 if (response.getStatusLine().getStatusCode() != 200) {

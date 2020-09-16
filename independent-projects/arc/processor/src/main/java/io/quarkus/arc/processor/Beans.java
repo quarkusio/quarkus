@@ -65,6 +65,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = getDefaultName(beanClass);
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -202,6 +203,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = getDefaultName(producerMethod);
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -301,6 +303,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = producerField.name();
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -371,6 +374,13 @@ final class Beans {
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
                 declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean);
         return bean;
+    }
+
+    private static AnnotationInstance normalizedNamedQualifier(String defaultedName, AnnotationInstance originalAnnotation) {
+        // Replace @Named("") with @Named("foo")
+        // This is not explicitly defined by the spec but better align with the RI behavior
+        return AnnotationInstance.create(DotNames.NAMED, originalAnnotation.target(),
+                Collections.singletonList(AnnotationValue.createStringValue("value", defaultedName)));
     }
 
     private static DefinitionException multipleScopesFound(String baseMessage, List<ScopeInfo> scopes) {

@@ -149,6 +149,17 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         return self();
     }
 
+    /**
+     * Unlike for the {@link #name(String)} method a new {@link javax.inject.Named} qualifier with the specified value is added
+     * to the configured bean.
+     * 
+     * @param name
+     * @return self
+     */
+    public B named(String name) {
+        return name(name).addQualifier().annotation(DotNames.NAMED).addValue("value", name).done();
+    }
+
     public B defaultBean() {
         this.defaultBean = true;
         return self();

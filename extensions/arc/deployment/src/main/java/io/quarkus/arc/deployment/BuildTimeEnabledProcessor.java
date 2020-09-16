@@ -18,6 +18,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.arc.profile.IfBuildProfile;
@@ -146,18 +147,18 @@ public class BuildTimeEnabledProcessor {
                 if (ctx.isClass()) {
                     DotName classDotName = target.asClass().name();
                     if (classTargets.containsKey(classDotName)) {
-                        transformBean(target, ctx.transform(), classTargets.get(classDotName));
+                        transformBean(target, ctx, classTargets.get(classDotName));
                     }
                 } else if (ctx.isMethod()) {
                     MethodInfo method = target.asMethod();
                     if (methodTargets.containsKey(method)) {
-                        transformBean(target, ctx.transform(), methodTargets.get(method));
+                        transformBean(target, ctx, methodTargets.get(method));
                     }
                 } else if (ctx.isField()) {
                     FieldInfo field = target.asField();
                     String uniqueFieldName = toUniqueString(field);
                     if (fieldTargets.containsKey(uniqueFieldName)) {
-                        transformBean(target, ctx.transform(), fieldTargets.get(uniqueFieldName));
+                        transformBean(target, ctx, fieldTargets.get(uniqueFieldName));
                     }
                 }
             }
@@ -168,32 +169,18 @@ public class BuildTimeEnabledProcessor {
         return field.declaringClass().name().toString() + "." + field.name();
     }
 
-    private void transformBean(AnnotationTarget target, Transformation transform, boolean enable) {
-        if (enable) {
-            enableBean(transform);
-        } else {
-            disableBean(target, transform);
-        }
-        transform.done();
-    }
-
-    private void enableBean(Transformation transform) {
-        transform.add(DotNames.ALTERNATIVE_PRIORITY,
-                createAlternativePriority());
-    }
-
-    private AnnotationValue createAlternativePriority() {
-        // use Integer.MAX_VALUE - 1 to avoid having conflicts with enabling beans via config
-        return AnnotationValue.createIntegerValue("value", Integer.MAX_VALUE - 1);
-    }
-
-    private void disableBean(AnnotationTarget target, Transformation transform) {
-        if (target.kind() == Kind.CLASS) {
-            // Veto the class
-            transform.add(DotNames.VETOED);
-        } else {
-            // Add @Alternative to the producer
-            transform.add(DotNames.ALTERNATIVE);
+    private void transformBean(AnnotationTarget target, TransformationContext ctx, boolean enabled) {
+        if (!enabled) {
+            Transformation transform = ctx.transform();
+            if (target.kind() == Kind.CLASS) {
+                // Veto the class
+                transform.add(DotNames.VETOED);
+            } else {
+                // Add @Alternative to the producer
+                transform.add(DotNames.ALTERNATIVE);
+            }
+            transform.done();
         }
     }
+
 }

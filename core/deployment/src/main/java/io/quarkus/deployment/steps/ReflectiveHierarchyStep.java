@@ -165,6 +165,9 @@ public class ReflectiveHierarchyStep {
             Map<DotName, Set<String>> unindexedClasses,
             Predicate<ClassInfo> finalFieldsWritable,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        if (name == null) {
+            return;
+        }
         if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(name)) {
             return;
         }

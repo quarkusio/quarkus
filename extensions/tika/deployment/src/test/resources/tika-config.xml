@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+  <parsers>
+    <parser class="org.apache.tika.parser.pdf.PDFParser">
+      <mime>application/pdf</mime>
+    </parser>
+  </parsers>
+</properties>

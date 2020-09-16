@@ -745,6 +745,7 @@ it's implemented by the Agroal connection pool extension for Quarkus.
 
 Jump over to link:datasource[Quarkus - Datasources] for all details.
 
+[[multitenancy]]
 == Multitenancy
 
 "The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy[Hibernate User Guide]).
@@ -844,6 +845,30 @@ public class CustomTenantResolver implements TenantResolver {
 }
 ----
 <1> Make sure to use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the JPA one.
+====
+
+[NOTE]
+====
+If you also use link:security-openid-connect-multitenancy[OIDC multitenancy] and both OIDC and Hibernate ORM tenant IDs are the same and must be extracted from the Vert.x `RoutingContext` then you can pass the tenant id from the OIDC Tenant Resolver to the Hibernate ORM Tenant Resolver as a `RoutingContext` attribute, for example:
+
+[source,java]
+----
+import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@RequestScoped
+public class CustomTenantResolver implements TenantResolver {
+
+    @Inject
+    RoutingContext context;
+    ...
+    @Override
+    public String resolveTenantId() {
+        // OIDC TenantResolver has already calculated the tenant id and saved it as a RoutingContext `tenantId` attribute:
+        return context.get("tenantId");
+    }
+}
+----
 ====
 
 === Configuring the application

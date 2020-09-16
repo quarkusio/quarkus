@@ -11,7 +11,7 @@ RESTEasy has rich support for the `multipart/*` and `multipart/form-data` mime t
 
 
 This guide explains how to use the MicroProfile REST Client with Multipart in order to interact with REST APIs
-requiring multipart/form-data content-type with very little effort.
+requiring `multipart/form-data` content-type with very little effort.
 
 == Prerequisites
 
@@ -42,30 +42,21 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=rest-client-multipart-quickstart \
     -DclassName="org.acme.rest.client.multipart.MultipartClientResource" \
     -Dpath="/client" \
-    -Dextensions="rest-client, resteasy"
+    -Dextensions="rest-client, resteasy, resteasy-multipart"
 cd rest-client-multipart-quickstart
 ----
 
 This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy` extensions.
-
-Then, we'll add the following dependency to support `multipart/form-data` requests:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.jboss.resteasy</groupId>
-    <artifactId>resteasy-multipart-provider</artifactId>
-</dependency>
-----
+It also adds the `resteasy-multipart` extension to support `multipart/form-data` requests.
 
 == Setting up the model
 
-In this guide we will be demonstrating how to invoke a REST service accepting multipart/form-data input.
+In this guide we will be demonstrating how to invoke a REST service accepting `multipart/form-data` input.
 We are assuming the payload is well-known before the request is sent, so we can model as a POJO.
 
 [NOTE]
 ====
-If the payload is unknown, you can also use the RESTEasy custom API instead. If that's the case, see the RESTEasy Multipart Providers link in the end of the guide.
+If the payload is unknown, you can also use the RESTEasy custom API instead. If that's the case, see the RESTEasy Multipart Providers link at the end of the guide.
 ====
 
 Our first order of business is to setup the model we will be using to define the `multipart/form-data` payload, in the form of a `MultipartBody` POJO.
@@ -307,5 +298,5 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 
 == Further reading
 
- * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.2.1/microprofile-rest-client-1.2.1.html[MicroProfile Rest Client specification]
- * link:https://docs.jboss.org/resteasy/docs/4.3.1.Final/userguide/html/Multipart.html[RESTEasy Multipart Providers]
+ * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.4.1/microprofile-rest-client-1.4.1.html[MicroProfile Rest Client specification]
+ * link:https://docs.jboss.org/resteasy/docs/4.5.6.Final/userguide/html/Multipart.html[RESTEasy Multipart Provider]

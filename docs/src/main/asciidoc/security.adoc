@@ -119,6 +119,14 @@ Quarkus Security is highly customizable. One can register custom ``HttpAuthentic
 
 See link:security-customization[Security Customization] for more information about customizing Quarkus Security and other useful tips about the reactive security, registering the security providers, etc.
 
+== Secure connections with SSL
+
+See the link:http-reference#ssl[Supporting secure connections with SSL] guide for more information.
+
+== Cross-Origin Resource Sharing
+
+If you plan to make your Quarkus application accessible to another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more information.
+
 == Testing
 
 See link:security-testing[Security Testing] for more information about testing Quarkus Security.
@@ -126,4 +134,3 @@ See link:security-testing[Security Testing] for more information about testing Q
 == Secret Engines
 
 Quarkus provides a very comprehensive HashiCorp Vault support, please see the link:vault[Quarkus and HashiCorp Vault] documentation for more information.
-

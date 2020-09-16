@@ -78,6 +78,7 @@ public final class MySQLJDBCReflections {
                 com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StandardLogger.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, Wrapper.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.mysql.cj.jdbc.MysqlDataSource.class.getName()));
     }
 
     @BuildStep

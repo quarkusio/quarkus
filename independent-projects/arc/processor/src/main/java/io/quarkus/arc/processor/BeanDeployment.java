@@ -56,7 +56,9 @@ public class BeanDeployment {
 
     private final BuildContextImpl buildContext;
 
-    private final IndexView index;
+    private final IndexView beanArchiveIndex;
+
+    private final IndexView applicationIndex;
 
     private final Map<DotName, ClassInfo> qualifiers;
 
@@ -108,7 +110,7 @@ public class BeanDeployment {
 
     private final List<Predicate<ClassInfo>> excludeTypes;
 
-    BeanDeployment(IndexView index, BuildContextImpl buildContext, BeanProcessor.Builder builder) {
+    BeanDeployment(BuildContextImpl buildContext, BeanProcessor.Builder builder) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
@@ -116,7 +118,8 @@ public class BeanDeployment {
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
         this.resourceAnnotations = new HashSet<>(builder.resourceAnnotations);
-        this.index = index;
+        this.beanArchiveIndex = builder.beanArchiveIndex;
+        this.applicationIndex = builder.applicationIndex;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
         if (buildContext != null) {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
@@ -130,16 +133,16 @@ public class BeanDeployment {
 
         this.customContexts = new ConcurrentHashMap<>();
 
-        this.qualifiers = findQualifiers(index);
-        this.repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, index);
+        this.qualifiers = findQualifiers(this.beanArchiveIndex);
+        this.repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, this.beanArchiveIndex);
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
-        this.interceptorBindings = findInterceptorBindings(index);
+        this.interceptorBindings = findInterceptorBindings(this.beanArchiveIndex);
         this.nonBindingFields = new HashMap<>();
         for (InterceptorBindingRegistrar registrar : builder.additionalInterceptorBindingRegistrars) {
             for (Map.Entry<DotName, Set<String>> bindingEntry : registrar.registerAdditionalBindings().entrySet()) {
                 DotName dotName = bindingEntry.getKey();
-                ClassInfo classInfo = getClassByName(index, dotName);
+                ClassInfo classInfo = getClassByName(this.beanArchiveIndex, dotName);
                 if (classInfo != null) {
                     if (bindingEntry.getValue() != null) {
                         nonBindingFields.put(dotName, bindingEntry.getValue());
@@ -150,11 +153,12 @@ public class BeanDeployment {
         }
         buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
 
-        this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts,
+        this.stereotypes = findStereotypes(this.beanArchiveIndex, interceptorBindings, beanDefiningAnnotations, customContexts,
                 builder.additionalStereotypes, annotationStore);
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
-        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
+        this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(),
+                this.beanArchiveIndex,
                 new HashMap<>(), interceptorBindings, annotationStore);
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
@@ -356,8 +360,28 @@ public class BeanDeployment {
         return interceptors;
     }
 
-    public IndexView getIndex() {
-        return index;
+    /**
+     * This index was used to discover components (beans, interceptors, qualifiers, etc.) and during type-safe resolution.
+     * 
+     * @return the bean archive index
+     */
+    public IndexView getBeanArchiveIndex() {
+        return beanArchiveIndex;
+    }
+
+    /**
+     * This index is optional and is used to discover types during type-safe resolution.
+     * <p>
+     * Some types may not be part of the bean archive index but are still needed during type-safe resolution.
+     * 
+     * @return the application index or {@code null}
+     */
+    public IndexView getApplicationIndex() {
+        return applicationIndex;
+    }
+
+    boolean hasApplicationIndex() {
+        return applicationIndex != null;
     }
 
     BeanResolver getBeanResolver() {
@@ -631,7 +655,7 @@ public class BeanDeployment {
                 .map(Entry::getKey)
                 .collect(Collectors.toList());
 
-        for (ClassInfo beanClass : index.getKnownClasses()) {
+        for (ClassInfo beanClass : beanArchiveIndex.getKnownClasses()) {
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
             // Replace with ClassInfo#isAnnotation() and ClassInfo#isEnum() when using Jandex 2.1.4+
@@ -716,24 +740,22 @@ public class BeanDeployment {
 
             // inherited stuff
             ClassInfo aClass = beanClass;
-            Set<ClassInfo> scannedClasses = new HashSet<>();
-            Set<MethodInfo> methods = new HashSet<>();
+            Set<Methods.MethodKey> methods = new HashSet<>();
             while (aClass != null) {
-                if (!scannedClasses.add(aClass)) {
-                    continue;
-                }
                 for (MethodInfo method : aClass.methods()) {
-                    if (Methods.isSynthetic(method) || Methods.isOverriden(method, methods)) {
+                    Methods.MethodKey methodDescriptor = new Methods.MethodKey(method);
+                    if (Methods.isSynthetic(method) || Methods.isOverriden(methodDescriptor, methods)) {
                         continue;
                     }
-                    methods.add(method);
-                    if (annotationStore.getAnnotations(method).isEmpty()) {
+                    methods.add(methodDescriptor);
+                    Collection<AnnotationInstance> methodAnnotations = annotationStore.getAnnotations(method);
+                    if (methodAnnotations.isEmpty()) {
                         continue;
                     }
                     // Verify that non-producer methods are not annotated with stereotypes
                     // only account for 'real' stereotypes that are not additional BeanDefiningAnnotations
                     if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                        for (AnnotationInstance i : annotationStore.getAnnotations(method)) {
+                        for (AnnotationInstance i : methodAnnotations) {
                             if (realStereotypes.contains(i.name())) {
                                 throw new DefinitionException(
                                         "Method " + method + " of class " + beanClass
@@ -766,11 +788,10 @@ public class BeanDeployment {
                         }
                     }
                 }
-                Type superType = aClass.superClassType();
-                aClass = superType != null && !superType.name().equals(DotNames.OBJECT)
-                        && CLASS_TYPES.contains(superType.kind())
-                                ? getClassByName(index, superType.name())
-                                : null;
+                DotName superType = aClass.superName();
+                aClass = superType != null && !superType.equals(DotNames.OBJECT)
+                        ? getClassByName(beanArchiveIndex, superType)
+                        : null;
             }
             for (FieldInfo field : beanClass.fields()) {
                 if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
@@ -966,11 +987,19 @@ public class BeanDeployment {
     }
 
     private void addSyntheticBean(BeanInfo bean) {
+        for (BeanInfo b : beans) {
+            if (b.getIdentifier().equals(bean.getIdentifier())) {
+                throw new IllegalStateException(
+                        "A synthetic bean with identifier " + bean.getIdentifier() + " is already registered: "
+                                + b);
+            }
+        }
         beans.add(bean);
     }
 
     private void addSyntheticObserver(ObserverConfigurator configurator) {
-        observers.add(ObserverInfo.create(this, configurator.beanClass, null, null, null, null, configurator.observedType,
+        observers.add(ObserverInfo.create(configurator.id, this, configurator.beanClass, null, null, null, null,
+                configurator.observedType,
                 configurator.observedQualifiers,
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,
@@ -1005,7 +1034,7 @@ public class BeanDeployment {
 
     private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
         Set<ClassInfo> interceptorClasses = new HashSet<>();
-        for (AnnotationInstance annotation : index.getAnnotations(DotNames.INTERCEPTOR)) {
+        for (AnnotationInstance annotation : beanArchiveIndex.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
                 interceptorClasses.add(annotation.target().asClass());
             }

@@ -52,7 +52,7 @@ public class KubernetesWithRootAndHealthTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getReadinessProbe()).satisfies(p -> {
                                 assertProbePath(p, "/api/health/ready");
                             });

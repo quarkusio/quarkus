@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import io.quarkus.mailer.Mail;
@@ -91,11 +92,17 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             @SuppressWarnings("unchecked")
             List<Variant> variants = (List<Variant>) variantsAttr;
             for (Variant variant : variants) {
-                if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                if (variant.getContentType().equals(Variant.TEXT_HTML) || variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
                             Uni.createFrom().completionStage(
-                                    () -> templateInstance.setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
-                                            .renderAsync())));
+                                    new Supplier<CompletionStage<? extends String>>() {
+                                        @Override
+                                        public CompletionStage<? extends String> get() {
+                                            return templateInstance
+                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
+                                                    .renderAsync();
+                                        }
+                                    })));
                 }
             }
             if (results.isEmpty()) {
@@ -104,7 +111,12 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
             return Uni.combine().all().unis(unis)
                     .combinedWith(combine(results))
-                    .onItem().produceUni(m -> mailer.send(m))
+                    .chain(new Function<Mail, Uni<? extends Void>>() {
+                        @Override
+                        public Uni<? extends Void> apply(Mail m) {
+                            return mailer.send(m);
+                        }
+                    })
                     .subscribeAsCompletionStage();
         } else {
             throw new IllegalStateException("No template variant found");
@@ -112,17 +124,20 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     private Function<List<?>, Mail> combine(List<Result> results) {
-        return ignored -> {
-            for (Result res : results) {
-                // We can safely access the content here: 1. it has been resolved, 2. it's cached.
-                String content = res.value.await().indefinitely();
-                if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
-                    mail.setHtml(content);
-                } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
-                    mail.setText(content);
+        return new Function<List<?>, Mail>() {
+            @Override
+            public Mail apply(List<?> ignored) {
+                for (Result res : results) {
+                    // We can safely access the content here: 1. it has been resolved, 2. it's cached.
+                    String content = res.value.await().indefinitely();
+                    if (res.variant.getContentType().equals(Variant.TEXT_HTML)) {
+                        mail.setHtml(content);
+                    } else if (res.variant.getContentType().equals(Variant.TEXT_PLAIN)) {
+                        mail.setText(content);
+                    }
                 }
+                return mail;
             }
-            return mail;
         };
     }
 

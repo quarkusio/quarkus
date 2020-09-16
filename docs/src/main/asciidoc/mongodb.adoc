@@ -5,13 +5,10 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Using the MongoDB Client
 include::./attributes.adoc[]
-:extension-status: preview
 
 MongoDB is a well known NoSQL Database that is widely used.
 
 In this guide, we see how you can get your REST services to use the MongoDB database.
-
-include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -92,6 +89,7 @@ public class Fruit {
 
     private String name;
     private String description;
+    private String id;
 
     public Fruit() {
     }
@@ -131,6 +129,14 @@ public class Fruit {
     @Override
     public int hashCode() {
         return Objects.hash(this.name);
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
     }
 }
 ----
@@ -263,11 +269,11 @@ multiple clients are **not** necessary as a single client is able to access all 
 
 === Named Mongo client Injection
 
-When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.runtime.MongoClientName` qualifier.
+When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.MongoClientName` qualifier.
 Using the above properties to configure three different clients, you can also inject each one as follows:
 
 [source,java,indent=0]
---
+----
 @Inject
 MongoClient defaultMongoClient;
 
@@ -278,7 +284,12 @@ MongoClient mongoClient1;
 @Inject
 @MongoClientName("inventory")
 ReactiveMongoClient mongoClient2;
---
+----
+
+[NOTE]
+====
+The old `io.quarkus.mongodb.runtime.MongoClientName` has been deprecated. It still works, but will soon be removed, therefore users are encouraged to not use it.
+====
 
 == Running a MongoDB Database
 As by default, `MongoClient` is configured to access a local MongoDB database on port 27017 (the default MongoDB port), if you have a local running database on this port, there is nothing more to do before being able to test it!

@@ -177,7 +177,7 @@ vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
 
 // Mutiny Vert.x:
 vertx.fileSystem().readFile("lorem-ipsum.txt")
-    .onItem().apply(buffer -> buffer.toString("UTF-8"))
+    .onItem().transform(buffer -> buffer.toString("UTF-8"))
     .subscribe()
     .with(
             content -> System.out.println("Content: " + content),
@@ -268,7 +268,7 @@ public class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
     public Uni<String> doSomethingAsync() {
         return vertx.fileSystem().readFile("/META-INF/resources/lorem.txt")
-                .onItem().apply(b -> b.toString("UTF-8"));
+                .onItem().transform(b -> b.toString("UTF-8"));
     }
 }
 ----
@@ -535,7 +535,7 @@ public class ResourceUsingWebClient {
     public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
         return client.get("/api/fruit/" + name)
                 .send()
-                .onItem().apply(resp -> {
+                .onItem().transform(resp -> {
                     if (resp.statusCode() == 200) {
                         return resp.bodyAsJsonObject();
                     } else {
@@ -581,7 +581,7 @@ Then, create the native executable with:
 
 == Deploying verticles
 
-https://vertx.io/docs/vertx-core/java/#_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
+link:https://vertx.io/docs/vertx-core/java/#\_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
 This model does not claim to be a strict actor-model implementation, but it does share similarities especially with respect to concurrency, scaling and deployment.
 To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
 
@@ -703,6 +703,7 @@ java.lang.IllegalStateException: Failed to create cache dir
 
 Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
+[[reverse-proxy]]
 == Running behind a reverse proxy
 
 Quarkus could be accessed through proxies that additionally generate headers (e.g. `X-Forwarded-Host`) to keep
@@ -722,20 +723,19 @@ quarkus.http.proxy-address-forwarding=true
 To consider only de-facto standard header (`Forwarded` header), please include the following lines in `src/main/resources/application.properties`:
 [source]
 ----
-quarkus.http.allow-forwarded=true
+quarkus.http.proxy.allow-forwarded=true
 ----
 
 To consider only non-standard headers, please include the following lines instead in `src/main/resources/application.properties`:
 
 [source]
 ----
-quarkus.http.proxy-address-forwarding=true
+quarkus.http.proxy.proxy-address-forwarding=true
 quarkus.http.proxy.enable-forwarded-host=true
 quarkus.http.proxy.enable-forwarded-prefix=true
 ----
 
-Both configurations related with standard and non-standard headers can be combine.
-In this case, the `Forwarded` header will have precedence in presence of both set of headers.
+Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence.
 
 Supported forwarding address headers are:
 

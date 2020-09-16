@@ -20,7 +20,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -28,6 +27,7 @@ import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.data.deployment.DotNames;
 
 public class SpringDataRepositoryCreator {

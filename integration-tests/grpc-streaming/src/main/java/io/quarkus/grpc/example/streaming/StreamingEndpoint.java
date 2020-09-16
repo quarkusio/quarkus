@@ -25,7 +25,7 @@ public class StreamingEndpoint {
     @GET
     public Multi<String> invokeSource() {
         return client.source(Empty.newBuilder().build())
-                .onItem().apply(Item::getValue);
+                .onItem().transform(Item::getValue);
     }
 
     @GET
@@ -43,6 +43,6 @@ public class StreamingEndpoint {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))
                 .map(i -> Item.newBuilder().setValue(i).build());
-        return client.pipe(inputs).onItem().apply(Item::getValue);
+        return client.pipe(inputs).onItem().transform(Item::getValue);
     }
 }

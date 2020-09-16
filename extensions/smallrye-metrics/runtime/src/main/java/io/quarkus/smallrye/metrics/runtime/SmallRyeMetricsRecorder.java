@@ -13,6 +13,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.enterprise.inject.spi.BeanManager;
@@ -38,6 +39,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.metrics.ExtendedMetadata;
 import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
@@ -83,6 +85,8 @@ public class SmallRyeMetricsRecorder {
     private static final String MEMORY_MAX_NON_HEAP = "memory.maxNonHeap";
     private static final String MEMORY_USED_HEAP = "memory.usedHeap";
     private static final String MEMORY_USED_NON_HEAP = "memory.usedNonHeap";
+
+    private static final SmallRyeMetricsFactory factory = new SmallRyeMetricsFactory();
 
     public Function<Router, Route> route(String name) {
         return new Function<Router, Route>() {
@@ -206,6 +210,12 @@ public class SmallRyeMetricsRecorder {
                 break;
             default:
                 break;
+        }
+    }
+
+    public void registerMetrics(Consumer<MetricsFactory> consumer) {
+        if (consumer != null) {
+            consumer.accept(factory);
         }
     }
 
@@ -1019,5 +1029,4 @@ public class SmallRyeMetricsRecorder {
         }
         return count;
     }
-
 }

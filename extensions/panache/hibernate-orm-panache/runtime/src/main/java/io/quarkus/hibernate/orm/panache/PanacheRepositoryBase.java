@@ -9,6 +9,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.impl.GenerateBridge;
@@ -35,7 +36,16 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return the default {@link EntityManager}
      */
     default EntityManager getEntityManager() {
-        return JpaOperations.getEntityManager();
+        return JpaOperations.getEntityManager(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    /**
+     * Returns the {@link EntityManager} for the given entity class
+     *
+     * @return the default {@link EntityManager}
+     */
+    default EntityManager getEntityManager(Class<?> clazz) {
+        return JpaOperations.getEntityManager(clazz);
     }
 
     /**
@@ -63,7 +73,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     public default void persistAndFlush(Entity entity) {
         JpaOperations.persist(entity);
-        JpaOperations.flush();
+        JpaOperations.flush(entity);
     }
 
     /**
@@ -93,7 +103,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Flushes all pending changes to the database.
+     * FFlushes all pending changes to the database using the default EntityManager.
      */
     public default void flush() {
         JpaOperations.flush();

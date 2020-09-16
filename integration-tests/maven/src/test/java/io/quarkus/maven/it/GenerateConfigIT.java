@@ -62,8 +62,8 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections
-                .singletonList(getPluginGroupId() + ":" + getPluginArtifactId() + ":"
-                        + getPluginVersion() + ":generate-config"));
+                .singletonList(getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":"
+                        + getMavenPluginVersion() + ":generate-config"));
         Properties properties = new Properties();
         properties.setProperty("file", filename);
         request.setProperties(properties);

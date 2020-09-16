@@ -8,8 +8,10 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
+import javax.persistence.Table;
 
 @Entity
+@Table(schema = "myschema")
 @NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
 public class Person {
 

@@ -4,7 +4,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 /**
  * Represents a feature provided by a core extension.
- * 
+ *
  * @see FeatureBuildItem
  */
 public enum Feature {
@@ -23,7 +23,9 @@ public enum Feature {
     CDI,
     CONFIG_YAML,
     CONSUL_CONFIG,
+    ELASTICSEARCH_REST_CLIENT_COMMON,
     ELASTICSEARCH_REST_CLIENT,
+    ELASTICSEARCH_REST_HIGH_LEVEL_CLIENT,
     FLYWAY,
     GRPC_CLIENT,
     GRPC_SERVER,
@@ -55,8 +57,10 @@ public enum Feature {
     LIQUIBASE,
     LOGGING_GELF,
     MAILER,
+    MICROMETER,
     MONGODB_CLIENT,
     MONGODB_PANACHE,
+    MONGODB_PANACHE_KOTLIN,
     MUTINY,
     NARAYANA_JTA,
     NARAYANA_STM,
@@ -72,12 +76,14 @@ public enum Feature {
     RESTEASY_JACKSON,
     RESTEASY_JAXB,
     RESTEASY_JSONB,
+    RESTEASY_MULTIPART,
     RESTEASY_MUTINY,
     RESTEASY_QUTE,
     REST_CLIENT,
     REST_CLIENT_JACKSON,
     REST_CLIENT_JAXB,
     REST_CLIENT_JSONB,
+    REST_CLIENT_MUTINY,
     SCALA,
     SCHEDULER,
     SECURITY,

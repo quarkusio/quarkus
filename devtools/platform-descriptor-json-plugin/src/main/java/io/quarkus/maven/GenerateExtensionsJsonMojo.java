@@ -27,6 +27,7 @@ import javax.json.JsonWriter;
 import javax.json.JsonWriterFactory;
 import javax.json.stream.JsonGenerator;
 
+import org.apache.maven.model.Model;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -56,6 +57,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.tools.ToolsConstants;
@@ -109,22 +111,18 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         final DefaultArtifact bomArtifact = new DefaultArtifact(bomGroupId, bomArtifactId, "", "pom", bomVersion);
         info("Generating catalog of extensions for %s", bomArtifact);
 
-        // And get all its dependencies (which are extensions)
-        final List<Dependency> deps;
-        try {
-            deps = repoSystem
-                    .readArtifactDescriptor(repoSession,
-                            new ArtifactDescriptorRequest().setRepositories(repos).setArtifact(bomArtifact))
-                    .getManagedDependencies();
-        } catch (ArtifactDescriptorException e) {
-            throw new MojoExecutionException("Failed to read descriptor of " + bomArtifact, e);
+        // if the BOM is generated and has replaced the original one, to pick up the generated content
+        // we are first trying to read the dependencies from the project's POM file
+        List<Dependency> deps = readManagedDepsFromPom();
+        if (deps == null) {
+            deps = resolveManagedDeps(bomArtifact);
         }
         if (deps.isEmpty()) {
             getLog().warn("BOM " + bomArtifact + " does not include any dependency");
             return;
         }
 
-        List<OverrideInfo> allOverrides = new ArrayList();
+        List<OverrideInfo> allOverrides = new ArrayList<>();
         for (String path : overridesFile.split(",")) {
             OverrideInfo overrideInfo = getOverrideInfo(new File(path.trim()));
             if (overrideInfo != null) {
@@ -219,6 +217,57 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         info("Extensions file written to %s", outputFile);
 
         projectHelper.attachArtifact(project, "json", null, outputFile);
+    }
+
+    private List<Dependency> resolveManagedDeps(Artifact bomArtifact) throws MojoExecutionException {
+        try {
+            return repoSystem
+                    .readArtifactDescriptor(repoSession,
+                            new ArtifactDescriptorRequest().setRepositories(repos).setArtifact(bomArtifact))
+                    .getManagedDependencies();
+        } catch (ArtifactDescriptorException e) {
+            throw new MojoExecutionException("Failed to read descriptor of " + bomArtifact, e);
+        }
+    }
+
+    private List<Dependency> readManagedDepsFromPom() throws MojoExecutionException {
+        // if the configured BOM coordinates are not matching the current project
+        // the current project's POM isn't the right source
+        if (!project.getArtifact().getArtifactId().equals(bomArtifactId)
+                || !project.getArtifact().getVersion().equals(bomVersion)
+                || !project.getArtifact().getGroupId().equals(bomGroupId)
+                || !project.getFile().exists()) {
+            return null;
+        }
+
+        final Model bomModel;
+        try {
+            bomModel = ModelUtils.readModel(project.getFile().toPath());
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to parse " + project.getFile(), e);
+        }
+
+        // if the POM has a parent then we better resolve the descriptor
+        if (bomModel.getParent() != null) {
+            return null;
+        }
+
+        if (bomModel.getDependencyManagement() == null) {
+            return Collections.emptyList();
+        }
+        final List<org.apache.maven.model.Dependency> modelDeps = bomModel.getDependencyManagement().getDependencies();
+        if (modelDeps.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final List<Dependency> deps = new ArrayList<>(modelDeps.size());
+        for (org.apache.maven.model.Dependency modelDep : modelDeps) {
+            final Artifact artifact = new DefaultArtifact(modelDep.getGroupId(), modelDep.getArtifactId(),
+                    modelDep.getClassifier(), modelDep.getType(), modelDep.getVersion());
+            // exclusions aren't relevant in this context
+            deps.add(new Dependency(artifact, modelDep.getScope(), modelDep.isOptional(), Collections.emptyList()));
+        }
+        return deps;
     }
 
     private JsonObject processDependency(Artifact artifact) throws IOException {
@@ -440,7 +489,7 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         }
     }
 
-    private class OverrideInfo {
+    private static class OverrideInfo {
         private Map<String, JsonObject> extOverrides;
         private JsonObject theRest;
 

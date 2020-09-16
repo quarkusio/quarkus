@@ -1,0 +1,16 @@
+name: resteasy-example
+ref: resteasy
+type: code
+tags: example
+language:
+  base:
+    data:
+      resource:
+        class-name: ExampleResource
+        path: "/resteasy/hello"
+        response: "hello"
+      package-name: org.acme.resteasy
+    dependencies:
+      - io.quarkus:quarkus-resteasy
+    test-dependencies:
+      - io.rest-assured:rest-assured

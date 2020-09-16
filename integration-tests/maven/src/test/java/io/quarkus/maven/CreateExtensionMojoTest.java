@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class CreateExtensionMojoTest {
                 if (deps != null && !deps.isEmpty()) {
                     Dependency deploymentBom = null;
                     for (Dependency dep : deps) {
-                        if (dep.getArtifactId().equals("quarkus-bom-deployment") && dep.getGroupId().equals("io.quarkus")) {
+                        if (dep.getArtifactId().equals("quarkus-bom") && dep.getGroupId().equals("io.quarkus")) {
                             deploymentBom = dep;
                         }
                     }
@@ -140,7 +141,7 @@ public class CreateExtensionMojoTest {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(add-to-bom)";
         mojo.assumeManaged = false;
-        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
+        mojo.bomPath = Paths.get("bom/pom.xml");
         mojo.additionalRuntimeDependencies = Arrays.asList("org.example:example-1:1.2.3",
                 "org.acme:acme-@{quarkus.artifactIdBase}:@{$}{acme.version}");
         mojo.execute();
@@ -171,8 +172,7 @@ public class CreateExtensionMojoTest {
         mojo.grandParentRelativePath = "../pom.xml";
         mojo.templatesUriBase = "file:templates";
 
-        mojo.runtimeBomPath = Paths.get("boms/runtime/pom.xml");
-        mojo.deploymentBomPath = Paths.get("boms/deployment/pom.xml");
+        mojo.bomPath = Paths.get("bom/pom.xml");
         mojo.execute();
         assertTreesMatch(
                 Paths.get("src/test/resources/expected/create-extension-pom-with-grand-parent"),
@@ -199,8 +199,13 @@ public class CreateExtensionMojoTest {
             expectedFiles.add(relative);
             final Path actualPath = actual.resolve(relative);
             try {
-                assertEquals(new String(Files.readAllBytes(p), StandardCharsets.UTF_8),
-                        new String(Files.readAllBytes(actualPath), StandardCharsets.UTF_8));
+                String expectedContent = new String(Files.readAllBytes(p), StandardCharsets.UTF_8);
+                String actualContent = new String(Files.readAllBytes(actualPath), StandardCharsets.UTF_8);
+                if (System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows")) {
+                    expectedContent = expectedContent.replace(System.lineSeparator(), "\n");
+                    actualContent = actualContent.replace(System.lineSeparator(), "\n");
+                }
+                assertEquals(expectedContent, actualContent);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

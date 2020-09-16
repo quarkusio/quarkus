@@ -47,18 +47,19 @@ public class KubernetesWithApplicationPropertiesTest {
 
         assertThat(kubernetesList).hasSize(4);
 
-        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("test-it");
                     assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                    assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(3);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getEnv()).extracting("name", "value")
                                         .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
 
@@ -69,7 +70,7 @@ public class KubernetesWithApplicationPropertiesTest {
 
                                 assertThat(container.getImage())
                                         .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
-                                assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
+                                assertThat(container.getPorts()).singleElement().satisfies(p -> {
                                     assertThat(p.getContainerPort()).isEqualTo(9090);
                                 });
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
@@ -80,11 +81,15 @@ public class KubernetesWithApplicationPropertiesTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getNamespace()).isEqualTo("applications");
+                });
+
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getPort()).isEqualTo(9090);
                     });
                 });
@@ -94,16 +99,17 @@ public class KubernetesWithApplicationPropertiesTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceAccount".equals(i.getKind())).hasSize(1)
                 .hasOnlyElementsOfType(ServiceAccount.class);
 
-        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Ingress.class, in -> {
-                //Check that lables and annotations are also applied to Ingresses (#10260)
+                //Check that labels and annotations are also applied to Ingresses (#10260)
                 assertThat(i.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("test-it");
                     assertThat(m.getLabels()).contains(entry("foo", "bar"));
                     assertThat(m.getAnnotations()).contains(entry("bar", "baz"));
+                    assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 
-                assertThat(in.getSpec().getRules()).hasOnlyOneElementSatisfying(r -> {
+                assertThat(in.getSpec().getRules()).singleElement().satisfies(r -> {
                     assertThat(r.getHost()).isEqualTo("example.com");
                 });
             });

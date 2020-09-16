@@ -1,7 +1,5 @@
 package io.quarkus.it.kubernetes.client;
 
-import static io.quarkus.it.kubernetes.client.ConfigMapPropertiesTest.assertProperty;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,12 +17,18 @@ public class NamespacedConfigMapPropertiesTest {
 
     @Test
     public void testPropertiesReadFromConfigMap() {
-        assertProperty("dummy", "dummyFromDemo");
-        assertProperty("someProp1", "val1FromDemo");
-        assertProperty("someProp2", "val2FromDemo");
-        assertProperty("someProp3", "val3FromDemo");
-        assertProperty("someProp4", "val4FromDemo");
-        assertProperty("someProp5", "val5FromDemo");
+        ConfigMapPropertiesTest.assertProperty("dummy", "dummyFromDemo");
+        ConfigMapPropertiesTest.assertProperty("someProp1", "val1FromDemo");
+        ConfigMapPropertiesTest.assertProperty("someProp2", "val2FromDemo");
+        ConfigMapPropertiesTest.assertProperty("someProp3", "val3FromDemo");
+        ConfigMapPropertiesTest.assertProperty("someProp4", "val4FromDemo");
+        ConfigMapPropertiesTest.assertProperty("someProp5", "val5FromDemo");
+
+        SecretPropertiesTest.assertProperty("dummysecret", "dummysecretFromDemo");
+        SecretPropertiesTest.assertProperty("secretProp1", "val1FromDemo");
+        SecretPropertiesTest.assertProperty("secretProp2", "val2FromDemo");
+        SecretPropertiesTest.assertProperty("secretProp3", "val3FromDemo");
+        SecretPropertiesTest.assertProperty("secretProp4", "val4FromDemo");
     }
 
     public static class MyProfile implements QuarkusTestProfile {
@@ -36,6 +40,7 @@ public class NamespacedConfigMapPropertiesTest {
             conf.put("quarkus.kubernetes-config.config-maps", "cmap3");
             conf.put("quarkus.kubernetes-config.namespace", "demo");
             conf.put("quarkus.kubernetes-config.secrets", "s1");
+            conf.put("quarkus.kubernetes-config.secrets.enabled", "true");
             return conf;
         }
 

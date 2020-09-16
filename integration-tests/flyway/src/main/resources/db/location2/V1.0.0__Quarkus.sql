@@ -4,4 +4,4 @@ CREATE TABLE TEST_SCHEMA.quarkus
     name VARCHAR(20)
 );
 INSERT INTO TEST_SCHEMA.quarkus(id, name)
-VALUES (1, '${foo}');
+VALUES (1, '#[foo]');

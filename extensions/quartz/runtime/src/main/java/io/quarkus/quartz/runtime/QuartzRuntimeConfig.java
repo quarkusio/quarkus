@@ -8,6 +8,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class QuartzRuntimeConfig {
 
     /**
+     * The name of the Quartz instance.
+     */
+    @ConfigItem(defaultValue = "QuarkusQuartzScheduler")
+    public String instanceName;
+
+    /**
      * The size of scheduler thread pool. This will initialize the number of worker threads in the pool.
      */
     @ConfigItem(defaultValue = "25")

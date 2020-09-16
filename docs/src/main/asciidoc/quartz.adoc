@@ -82,6 +82,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[TIP]
+====
+To use a JDBC store, the `quarkus-agroal` extension, which provides the datasource support, is also required.
+====
+
 == Creating the Task Entity
 
 In the `org.acme.quartz` package, create the `Task` class, with the following content:
@@ -110,7 +115,7 @@ public class Task extends PanacheEntity { <1>
     }
 }
 ----
-1. Declare the entity using https://quarkus.io/guides/hibernate-orm-panache[Panache]
+1. Declare the entity using link:hibernate-orm-panache[Panache]
 
 == Creating a scheduled job
 
@@ -157,7 +162,7 @@ public class TaskBean {
     @Inject
     org.quartz.Scheduler quartz; <1>
     
-    void onStart(@Observes StartupEvent event) {
+    void onStart(@Observes StartupEvent event) throws SchedulerException {
        JobDetail job = JobBuilder.newJob(MyJob.class)
                          .withIdentity("myJob", "myGroup")
                          .build();
@@ -180,9 +185,12 @@ public class TaskBean {
     
     // A new instance of MyJob is created by Quartz for every job execution
     public static class MyJob implements Job {
+
+       @Inject
+       TaskBean taskBean;
     
        public void execute(JobExecutionContext context) throws JobExecutionException {
-          Arc.container().instance(TaskBean.class).get(). performTask(); <3>
+          taskBean.performTask(); <3>
        }
     
     }
@@ -190,7 +198,7 @@ public class TaskBean {
 ----
 1. Inject the underlying `org.quartz.Scheduler` instance.
 2. Schedule a new job using the Quartz API.
-3. Lookup the bean instance of `TaskBean` and invoke the `performTask()` method from the job.
+3. Invoke the `TaskBean#performTask()` method from the job. Jobs are also link:cdi[container-managed] beans if they belong to a link:cdi-reference[bean archive].
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.  
 
@@ -399,6 +407,31 @@ docker-compose up --scale tasks=2 --scale nginx=1 <1>
 After a few seconds, in another terminal, run `curl localhost:8080/tasks` to verify that tasks were only created at different instants and in an interval of 10 seconds.
 
 You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+[[quartz-register-plugin-listeners]]
+== Registering Plugin and Listeners
+
+You can register `plugins`, `job-listeners` and `trigger-listeners` through Quarkus configuration.
+
+The example below registers the plugin `org.quartz.plugins.history.LoggingJobHistoryPlugin` named as `jobHistory` with the property `jobSuccessMessage` defined as `Job [{1}.{0}] execution complete and reports: {8}`
+
+[source,conf]
+----
+quarkus.quartz.plugins.jobHistory.class=org.quartz.plugins.history.LoggingJobHistoryPlugin
+quarkus.quartz.plugins.jobHistory.properties.jobSuccessMessage=Job [{1}.{0}] execution complete and reports: {8}
+----
+
+You can also register a listener programmatically with an injected `org.quartz.Scheduler`:
+
+[source,java]
+----
+public class MyListenerManager {
+    void onStart(@Observes StartupEvent event, org.quartz.Scheduler scheduler) throws SchedulerException {
+        scheduler.getListenerManager().addJobListener(new MyJogListener());
+        scheduler.getListenerManager().addTriggerListener(new MyTriggerListener());
+    }
+}
+----
 
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference

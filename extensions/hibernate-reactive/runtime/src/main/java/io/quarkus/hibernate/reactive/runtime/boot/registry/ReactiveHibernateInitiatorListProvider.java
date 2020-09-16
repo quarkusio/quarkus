@@ -25,7 +25,6 @@ import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInit
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
@@ -33,6 +32,7 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
@@ -64,7 +64,7 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
-        serviceInitiators.add(ImportSqlCommandExtractorInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         serviceInitiators.add(JdbcEnvironmentInitiator.INSTANCE);

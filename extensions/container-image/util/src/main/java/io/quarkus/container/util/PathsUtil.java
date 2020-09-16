@@ -21,7 +21,7 @@ public final class PathsUtil {
             if (toCheck.toFile().exists()) {
                 return new AbstractMap.SimpleEntry<>(toCheck, currentPath);
             }
-            if (Files.exists(currentPath.getParent())) {
+            if (currentPath.getParent() != null && Files.exists(currentPath.getParent())) {
                 currentPath = currentPath.getParent();
             } else {
                 return null;

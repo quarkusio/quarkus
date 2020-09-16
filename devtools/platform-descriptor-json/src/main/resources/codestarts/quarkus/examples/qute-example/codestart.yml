@@ -1,0 +1,10 @@
+name: qute-example
+ref: qute
+type: code
+tags: example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-resteasy-qute
+    test-dependencies:
+      - io.rest-assured:rest-assured

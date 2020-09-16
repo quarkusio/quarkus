@@ -14,6 +14,8 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 public class Collection extends PanacheEntityBase {
 
     @Id
+    public String id;
+
     public String name;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "collection")

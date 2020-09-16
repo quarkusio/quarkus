@@ -27,8 +27,6 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
@@ -812,17 +810,16 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
         assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
     }
 
-    @DisabledOnOs(OS.WINDOWS) // need to figure this out...
     @Test
     public void testResourcesFromClasspath() throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath");
         RunningInvoker invoker = new RunningInvoker(testDir, false);
 
         // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
-        invoker.execute(Collections.singletonList("install"), Collections.emptyMap());
         MavenProcessInvocationResult installInvocation = invoker.execute(Arrays.asList("clean", "install", "-DskipTests"),
                 Collections.emptyMap());
         assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExecutionException()).isNull();
         assertThat(installInvocation.getExitCode()).isEqualTo(0);
 
         // run dev mode from the runner module

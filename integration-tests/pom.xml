@@ -19,15 +19,18 @@
         <maven.deploy.skip>true</maven.deploy.skip>
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
+        <native.surefire.skip>${skipTests}</native.surefire.skip>
     </properties>
 
     <modules>
         <module>funqy-amazon-lambda</module>
+        <module>funqy-google-cloud-functions</module>
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>
         <module>common-jpa-entities</module>
         <module>infinispan-client</module>
+        <module>devtools</module>
         <module>gradle</module>
         <module>main</module>
         <module>kafka</module>
@@ -54,6 +57,7 @@
         <module>hibernate-tenancy</module>
         <module>hibernate-orm-envers</module>
         <module>vertx-http</module>
+        <module>vertx-web</module>
         <module>vertx</module>
         <module>spring-di</module>
         <module>spring-web</module>
@@ -100,6 +104,7 @@
         <module>scala</module>
         <module>kotlin</module>
         <module>mongodb-panache</module>
+        <module>mongodb-panache-kotlin</module>
         <module>narayana-stm</module>
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
@@ -125,6 +130,12 @@
         <module>webjars-locator</module>
         <module>devmode</module>
         <module>ide-launcher</module>
+        <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
+        <module>micrometer-jmx</module>
+        <module>micrometer-mp-metrics</module>
+        <module>micrometer-prometheus</module>
+        <module>logging-json</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>
@@ -140,6 +151,30 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-deployment-deps</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-enforcer-rules</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>

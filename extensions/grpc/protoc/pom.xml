@@ -15,6 +15,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.salesforce.servicelibs</groupId>
             <artifactId>jprotoc</artifactId>
             <exclusions>
@@ -25,4 +29,36 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <filters>
+                                <filter>
+                                    <artifact>com.salesforce.servicelibs:jprotoc</artifact>
+                                    <excludes>
+                                        <exclude>com/google/protobuf/*</exclude>
+                                        <exclude>com/google/protobuf/compiler/*</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

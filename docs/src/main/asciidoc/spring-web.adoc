@@ -196,6 +196,185 @@ public class GreetingControllerTest {
 
 It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly setup.
 
+== Adding OpenAPI and Swagger-UI
+
+You can add support for link:https://www.openapis.org/[OpenAPI] and link:https://swagger.io/tools/swagger-ui/[Swagger-UI] by using the `quarkus-smallrye-openapi` extension.
+
+Add the extension by running this command:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-smallrye-openapi"
+----
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-openapi</artifactId>
+</dependency>
+----
+
+This is enough to generate a basic OpenAPI schema document from your REST Endpoints:
+
+[source,bash]
+----
+curl http://localhost:8080/openapi
+----
+
+You will see the generated OpenAPI schema document:
+
+[source, yaml]
+----
+---
+openapi: 3.0.1
+info:
+  title: Generated API
+  version: "1.0"
+paths:
+  /greeting:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /greeting/{name}:
+    get:
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Greeting'
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        message:
+          type: string
+----
+
+Also see link:https://quarkus.io/guides/openapi-swaggerui[the OpenAPI Guide]
+
+=== Adding MicroProfile OpenAPI Annotations
+
+You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
+example, adding the following to the class level of the `GreetingController`:
+
+[source, java]
+----
+@OpenAPIDefinition(
+    info = @Info(
+        title="Greeting API",
+        version = "1.0.1",
+        contact = @Contact(
+            name = "Greeting API Support",
+            url = "http://exampleurl.com/contact",
+            email = "techsupport@example.com"),
+        license = @License(
+            name = "Apache 2.0",
+            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+)
+----
+
+And describe your endpoints like this:
+
+[source, java]
+----
+@Tag(name = "Hello", description = "Just say hello")
+@GetMapping(produces=MediaType.TEXT_PLAIN_VALUE)
+public String hello() {
+    return "hello";
+}
+
+@GetMapping(value = "/{name}", produces=MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "Hello to someone", description = "Just say hello to someone")
+public Greeting hello(@PathVariable(name = "name") String name) {
+    return new Greeting("hello " + name);
+}
+----
+
+will generate this OpenAPI schema:
+
+[source, yaml]
+----
+---
+openapi: 3.0.1
+info:
+  title: Greeting API
+  contact:
+    name: Greeting API Support
+    url: http://exampleurl.com/contact
+    email: techsupport@example.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.1
+tags:
+- name: Hello
+  description: Just say hello
+- name: Hello to someone
+  description: Just say hello to someone
+paths:
+  /greeting:
+    get:
+      tags:
+      - Hello
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /greeting/{name}:
+    get:
+      tags:
+      - Hello to someone
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Greeting'
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        message:
+          type: string
+----
+
+=== Using Swagger UI
+
+Swagger UI is included by default when running in `Dev` or `Test` mode, and can optionally added to `Prod` mode.
+See link:https://quarkus.io/guides/openapi-swaggerui#use-swagger-ui-for-development[the Swagger UI] Guide for more details.
+
+Navigate to link:http://localhost:8080/swagger-ui/[localhost:8080/swagger-ui/] and you will see the Swagger UI screen:
+
+image:spring-web-guide-screenshot01.png[alt=Swagger UI]
+
 == Supported Spring Web functionalities
 
 Quarkus currently supports a subset of the functionalities that Spring Web provides. More specifically Quarkus supports the REST related features of Spring Web

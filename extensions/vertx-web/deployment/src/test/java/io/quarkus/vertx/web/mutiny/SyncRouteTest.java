@@ -3,13 +3,26 @@ package io.quarkus.vertx.web.mutiny;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.*;
 
+import java.net.URL;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.stream.JsonParser;
+
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.RoutingExchange;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 
@@ -18,6 +31,9 @@ public class SyncRouteTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
+
+    @TestHTTPResource
+    URL url;
 
     @Test
     public void testSynchronousRoute() {
@@ -47,6 +63,21 @@ public class SyncRouteTest {
         when().get("/fail-sync")
                 .then().statusCode(500)
                 .body(containsString("boom"));
+    }
+
+    //https://github.com/quarkusio/quarkus/issues/10960
+    @Test
+    public void testNoAcceptHeaderContentType() throws Exception {
+        //RESTAssured always sets an Accept header
+        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+            CloseableHttpResponse res = client.execute(new HttpGet(this.url.toExternalForm() + "/default-content-type"));
+            JsonParser parser = Json.createParser(res.getEntity().getContent());
+            parser.next();
+            JsonObject obj = parser.getObject();
+            Assertions.assertEquals("neo", obj.getString("name"));
+            Assertions.assertEquals(12345, obj.getInt("id"));
+            Assertions.assertEquals("application/json", res.getFirstHeader("content-type").getValue());
+        }
     }
 
     static class SimpleBean {
@@ -85,6 +116,13 @@ public class SyncRouteTest {
         Person getPersonUtf8(RoutingContext context) {
             context.response().putHeader("content-type", "application/json;charset=utf-8");
             return new Person("neo", 12345);
+        }
+
+        @Route(path = "default-content-type", produces = "application/json")
+        void hi(RoutingExchange routing) {
+            routing.ok(new io.vertx.core.json.JsonObject()
+                    .put("name", "neo")
+                    .put("id", 12345).encode());
         }
 
     }

@@ -23,7 +23,7 @@ class LiteralSupport {
             return Result.NOT_FOUND;
         }
         Object value = Result.NOT_FOUND;
-        if (Parser.isStringLiteralSeparator(literal.charAt(0))) {
+        if (isStringLiteralSeparator(literal.charAt(0))) {
             value = literal.substring(1, literal.length() - 1);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
@@ -65,6 +65,16 @@ class LiteralSupport {
             }
         }
         return value;
+    }
+
+    /**
+     *
+     * @param character
+     * @return <code>true</code> if the char is a string literal separator,
+     *         <code>false</code> otherwise
+     */
+    static boolean isStringLiteralSeparator(char character) {
+        return character == '"' || character == '\'';
     }
 
 }

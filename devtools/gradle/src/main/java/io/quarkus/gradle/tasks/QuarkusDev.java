@@ -8,10 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -424,10 +422,12 @@ public class QuarkusDev extends QuarkusTask {
         SourceSetContainer sourceSets = javaConvention.getSourceSets();
         SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
         Set<String> sourcePaths = new HashSet<>();
+        Set<String> sourceParentPaths = new HashSet<>();
 
         for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
             if (sourceDir.exists()) {
                 sourcePaths.add(sourceDir.getAbsolutePath());
+                sourceParentPaths.add(sourceDir.toPath().getParent().toAbsolutePath().toString());
             }
         }
         //TODO: multiple resource directories
@@ -457,7 +457,11 @@ public class QuarkusDev extends QuarkusTask {
                 sourcePaths,
                 classesDir,
                 resourcesSrcDir.getAbsolutePath(),
-                resourcesOutputPath);
+                resourcesOutputPath,
+                sourceParentPaths,
+                project.getBuildDir().toPath().resolve("generated-sources").toAbsolutePath().toString(),
+                project.getBuildDir().toString());
+
         if (root) {
             context.setApplicationRoot(wsModuleInfo);
         } else {
@@ -535,13 +539,4 @@ public class QuarkusDev extends QuarkusTask {
             classPathManifest.append(uri).append(" ");
         }
     }
-
-    private URL toUrl(URI uri) {
-        try {
-            return uri.toURL();
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException("Failed to convert URI to URL: " + uri, e);
-        }
-    }
-
 }

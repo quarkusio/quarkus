@@ -32,6 +32,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedDevModeMain;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
+import io.quarkus.dev.spi.DevModeType;
 
 @SuppressWarnings("Unused")
 public class DevModeTask {
@@ -65,6 +66,7 @@ public class DevModeTask {
             Map<String, Object> map = new HashMap<>();
             map.put(DevModeContext.class.getName(), context);
             map.put(IsolatedDevModeMain.APP_ROOT, appRoot);
+            map.put(DevModeType.class.getName(), DevModeType.REMOTE_SERVER_SIDE);
             return (Closeable) bootstrap.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(),
                     map);
 
@@ -81,7 +83,9 @@ public class DevModeTask {
 
                 DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo(dep.getKey(), dep.getArtifactId(), null,
                         Collections.emptySet(),
-                        moduleClasses.toAbsolutePath().toString(), null, moduleClasses.toAbsolutePath().toString());
+                        moduleClasses.toAbsolutePath().toString(), null, moduleClasses.toAbsolutePath().toString(),
+                        // the last three params are for code generation, in remote dev it happens on the "dev" side
+                        null, null, null);
 
                 if (appArtifact) {
                     context.setApplicationRoot(module);
@@ -125,8 +129,7 @@ public class DevModeTask {
                 //not all local projects are dependencies
                 continue;
             }
-            IoUtils.recursiveDelete(moduleClasses);
-            Files.createDirectories(moduleClasses);
+            IoUtils.recursiveDeleteAndThenCreate(moduleClasses);
             for (Path p : dep.getPaths()) {
                 if (Files.isDirectory(p)) {
                     Path moduleTarget = moduleClasses;

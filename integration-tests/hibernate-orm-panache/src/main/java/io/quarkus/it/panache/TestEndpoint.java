@@ -1215,7 +1215,7 @@ public class TestEndpoint {
     }
 
     private void ensureFieldSanitized(String fieldName) throws Exception {
-        Field f = JAXBEntity.class.getField(fieldName);
+        Field f = JAXBEntity.class.getDeclaredField(fieldName);
         assertNull(f.getAnnotation(XmlAttribute.class));
         assertNotNull(f.getAnnotation(XmlTransient.class));
     }

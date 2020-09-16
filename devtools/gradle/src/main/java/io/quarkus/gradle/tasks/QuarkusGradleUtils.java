@@ -105,4 +105,5 @@ public class QuarkusGradleUtils {
         }
         return classesDir.toString();
     }
+
 }

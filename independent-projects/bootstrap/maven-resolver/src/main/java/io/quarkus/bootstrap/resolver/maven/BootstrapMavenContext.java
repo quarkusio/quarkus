@@ -20,7 +20,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
+import org.apache.maven.cli.transfer.QuietMavenTransferListener;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
@@ -68,6 +70,7 @@ import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.transfer.TransferListener;
 import org.eclipse.aether.transport.wagon.WagonConfigurator;
 import org.eclipse.aether.transport.wagon.WagonProvider;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
@@ -87,6 +90,7 @@ public class BootstrapMavenContext {
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
     private static final String MAVEN_PROJECTBASEDIR = "MAVEN_PROJECTBASEDIR";
+    private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String userHome = PropertyUtils.getUserHome();
@@ -110,6 +114,7 @@ public class BootstrapMavenContext {
     private Boolean currentProjectExists;
     private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
+    private Path rootProjectDir;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -135,6 +140,7 @@ public class BootstrapMavenContext {
         this.remoteRepos = config.remoteRepos;
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
+        this.rootProjectDir = config.rootProjectDir;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
@@ -143,16 +149,7 @@ public class BootstrapMavenContext {
             currentProject = resolveCurrentProject();
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
         }
-        userSettings = config.userSettings == null
-                ? resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
-                        () -> new File(userMavenConfigurationHome, SETTINGS_XML))
-                : config.userSettings;
-        globalSettings = resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_GLOBAL_SETTINGS),
-                () -> {
-                    final String envM2Home = System.getenv(MAVEN_HOME);
-                    return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""),
-                            "conf/settings.xml");
-                });
+        userSettings = config.userSettings;
     }
 
     public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
@@ -180,11 +177,27 @@ public class BootstrapMavenContext {
     }
 
     public File getUserSettings() {
-        return userSettings;
+        return userSettings == null
+                ? userSettings = resolveSettingsFile(
+                        getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
+                        () -> {
+                            final String quarkusMavenSettings = PropertyUtils.getProperty(MAVEN_SETTINGS);
+                            return quarkusMavenSettings == null ? new File(userMavenConfigurationHome, SETTINGS_XML)
+                                    : new File(quarkusMavenSettings);
+                        })
+                : userSettings;
     }
 
     public File getGlobalSettings() {
-        return globalSettings;
+        return globalSettings == null
+                ? globalSettings = resolveSettingsFile(
+                        getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_GLOBAL_SETTINGS),
+                        () -> {
+                            final String envM2Home = System.getenv(MAVEN_HOME);
+                            return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""),
+                                    "conf/settings.xml");
+                        })
+                : globalSettings;
     }
 
     public boolean isOffline() throws BootstrapMavenException {
@@ -262,26 +275,42 @@ public class BootstrapMavenContext {
         return localRepo == null ? new File(userMavenConfigurationHome, "repository").getAbsolutePath() : localRepo;
     }
 
-    private static File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
+    private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
         File userSettings;
         if (settingsArg != null) {
             userSettings = new File(settingsArg);
             if (userSettings.exists()) {
                 return userSettings;
             }
-            String base = System.getenv("MAVEN_PROJECTBASEDIR"); // Root project base dir
-            if (base != null) {
-                userSettings = new File(base, settingsArg);
-                if (userSettings.exists()) {
-                    return userSettings;
+            if (userSettings.isAbsolute()) {
+                return null;
+            }
+
+            // in case the settings path is a relative one we check whether the pom path is also a relative one
+            // in which case we can resolve the settings path relative to the project directory
+            // otherwise, we don't have a clue what the settings path is relative to
+            String alternatePomDir = getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE);
+            if (alternatePomDir != null) {
+                File tmp = new File(alternatePomDir);
+                if (tmp.isAbsolute()) {
+                    alternatePomDir = null;
+                } else {
+                    if (!tmp.isDirectory()) {
+                        tmp = tmp.getParentFile();
+                    }
+                    alternatePomDir = tmp.toString();
                 }
             }
-            base = PropertyUtils.getProperty(BASEDIR); // current module project base dir
-            if (base != null) {
-                userSettings = new File(base, settingsArg);
-                if (userSettings.exists()) {
-                    return userSettings;
-                }
+
+            // Root project base dir
+            userSettings = resolveSettingsFile(settingsArg, alternatePomDir, System.getenv("MAVEN_PROJECTBASEDIR"));
+            if (userSettings != null) {
+                return userSettings;
+            }
+            // current module project base dir
+            userSettings = resolveSettingsFile(settingsArg, alternatePomDir, PropertyUtils.getProperty(BASEDIR));
+            if (userSettings != null) {
+                return userSettings;
             }
             userSettings = new File(PropertyUtils.getUserHome(), settingsArg);
             if (userSettings.exists()) {
@@ -290,6 +319,25 @@ public class BootstrapMavenContext {
         }
         userSettings = supplier.get();
         return userSettings.exists() ? userSettings : null;
+    }
+
+    private File resolveSettingsFile(String settingsArg, String alternatePomDir, String projectBaseDir) {
+        if (projectBaseDir == null) {
+            return null;
+        }
+        File userSettings;
+        if (alternatePomDir != null && projectBaseDir.endsWith(alternatePomDir)) {
+            userSettings = new File(projectBaseDir.substring(0, projectBaseDir.length() - alternatePomDir.length()),
+                    settingsArg);
+            if (userSettings.exists()) {
+                return userSettings;
+            }
+        }
+        userSettings = new File(projectBaseDir, settingsArg);
+        if (userSettings.exists()) {
+            return userSettings;
+        }
+        return null;
     }
 
     private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
@@ -381,7 +429,16 @@ public class BootstrapMavenContext {
         }
 
         if (session.getTransferListener() == null && artifactTransferLogging) {
-            session.setTransferListener(new ConsoleMavenTransferListener(System.out, true));
+            TransferListener transferListener;
+            if (mvnArgs.hasOption(BootstrapMavenOptions.NO_TRANSFER_PROGRESS)) {
+                transferListener = new QuietMavenTransferListener();
+            } else if (mvnArgs.hasOption(BootstrapMavenOptions.BATCH_MODE)) {
+                transferListener = new BatchModeMavenTransferListener(System.out);
+            } else {
+                transferListener = new ConsoleMavenTransferListener(System.out, true);
+            }
+
+            session.setTransferListener(transferListener);
         }
 
         return session;
@@ -716,6 +773,10 @@ public class BootstrapMavenContext {
     }
 
     public Path getRootProjectBaseDir() {
+        return rootProjectDir == null ? rootProjectDir = resolveRootProjectDir() : rootProjectDir;
+    }
+
+    private Path resolveRootProjectDir() {
         final String rootBaseDir = System.getenv(MAVEN_PROJECTBASEDIR);
         if (rootBaseDir == null) {
             return null;

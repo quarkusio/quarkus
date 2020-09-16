@@ -31,6 +31,7 @@ public final class Futures {
                 result.completeExceptionally(t1);
             } else {
                 // Build a map from the params
+                // IMPL NOTE: Keep the map mutable - it can be modified in UserTagSectionHelper 
                 Map<String, Object> paramValues = new HashMap<>();
                 int j = 0;
                 try {

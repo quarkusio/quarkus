@@ -89,7 +89,7 @@ The dynamic parts of a template include:
 ** Virtual methods: `{item.get(name)}`, `{name ?: 'John'}`,
 ** With namespace: `{inject:colors}`.
 * *Section*
-** May contain expressions and sections: `{#if foo}{foo.name}{/if}`,
+** May contain expressions and nested sections: `{#if foo}{foo.name}{/if}`,
 ** The name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
 ** Can be empty: `{#myTag image=true /}`,
 ** May declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
@@ -98,36 +98,51 @@ The dynamic parts of a template include:
 ** Could be multi-line,
 ** Used to mark the content that should be rendered but not parsed.
 
-=== Identifiers
+[[identifiers]]
+=== Identifiers and Tags
 
-Expressions/tags must start with a curly bracket (`{`) followed by a valid identifier.
-A valid identifier is a digit, an alphabet character, underscore (`_`), or a section command (`#`).
-Expressions/tags starting with an invalid identifier are ignored.
-A closing curly bracket (`}`) is ignored if not inside an expression/tag.
+Identifiers are used in expressions and section tags.
+A valid identifier is a sequence of non-whitespace characters.
+However, users are encouraged to only use valid Java identifiers in expressions.
+
+TIP: You can use bracket notation if you need to specify an identifier that contains a dot, e.g. `{map['my.key']}`.
+
+When parsing a template document the parser identifies all _tags_.
+A tag starts and ends with a curly bracket, e.g. `{foo}`.
+The content of a tag must start with:
+
+* a digit, or
+* an alphabet character, or
+* underscore, or 
+* a built-in command: `#`, `!`, `@`, `/`.
+
+If it does not start with any of the above it is ignored by the parser.
  
-.hello.html
+.Tag Examples
 [source,html]
 ----
 <html>
    <body>
-   {_foo}       <1>
-   {  foo}      <2>
-   {{foo}}      <3>
-   {"foo":true} <4>
+   {_foo.bar}   <1>
+   {! comment !}<2>
+   {  foo}      <3>
+   {{foo}}      <4>
+   {"foo":true} <5>
    </body>
 </html>
 ----
-<1> Evaluated: expression starts with underscore.
-<2> Ignored: expression starts with whitespace. 
-<3> Ignored: expression starts with `{`.
-<4> Ignored: expression starts with `"`.
+<1> Parsed: an expression that starts with underscore.
+<2> Parsed: a comment
+<3> Ignored: starts with whitespace. 
+<4> Ignored: starts with `{`.
+<5> Ignored: starts with `"`.
 
-TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no evaluation will happen).
+TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimiters in the text. In fact, an escape sequence is usually only needed for the start delimiter, ie. `\\{foo}` will be rendered as `{foo}` (no parsing/evaluation will happen).
 
 === Removing Standalone Lines From the Template
 
 By default, Qute parser removes standalone lines from the template output.
-A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`) or parameter declaration (e.g. `{@org.acme.Foo foo}`) but no expression and non-whitespace character.
+A *standalone line* is a line that contains at least one section tag (e.g. `{#each}` and `{/each}`), parameter declaration (e.g. `{@org.acme.Foo foo}`) or comment but no expression and no non-whitespace character.
 In other words, a line that contains no section tag or a parameter declaration is *not* a standalone line.
 Likewise, a line that contains an _expression_ or a _non-whitespace character_ is *not* a standalone line.
 
@@ -181,12 +196,70 @@ In this case, all whitespace characters from a standalone line will be printed t
 </html>
 ----
 
+[[expressions]]
 ==== Expressions
 
-An expression consists of:
+An expression outputs a value.
+It consists of one or more parts separated by dot (dot notation) or square brackets (bracket notation).
+In the `object.property` (dot notation) syntax, the `property` must be a <<identifiers,valid identifier>.
+In the `object[property_name]` (bracket notation) syntax, the `property_name` has to be a non-null <<literals, literal>> value. 
+An expression could start with an optional namespace followed by a colon (`:`).
 
-* an optional namespace followed by a colon (`:`), 
-* one or more parts separated by dot (`.`).
+.Expressions Example
+[source]
+----
+{name} <1>
+{item.name} <2>
+{item['name']} <3>
+{global:colors} <4> 
+----
+<1> no namespace, one part: `name`
+<2> no namespace, two parts: `item`, `name`
+<3> equivalent to `{item.name}` but using the bracket notation
+<4> namespace `global`, one part: `colors`
+
+A part of an expression could be a _virtual method_ in which case the name can be followed by a list of comma-separated parameters in parentheses. 
+A parameter of a virtual method can be either a nested expression or a <<literals, literal>> value.
+
+.Virtual Methods Example
+[source]
+----
+{item.getLabels(1)} <1>
+{name or 'John'} <2>
+----
+<1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
+<2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
+
+[[literals]]
+===== Supported Literals
+
+|===
+|Literal |Examples
+
+|boolean 
+|`true`, `false`
+
+|null 
+|`null`
+
+|string 
+|`'value'`, `"string"`
+
+|integer 
+|`1`, `-5`
+
+|long
+|`1l`, `-5L`
+
+|double
+|`1D`, `-5d`
+
+|float
+|`1f`, `-5F`
+
+|===
+
+===== Resolution
 
 The first part of the expression is always resolved against the <<current_context_object, current context object>>.
 If no result is found for the first part it's resolved against the parent context object (if available).
@@ -199,26 +272,6 @@ The "name" will be resolved using all available value resolvers against the curr
 However, the expression `{global:colors}` has the namespace `global` and single part - `colors`.
 First, all available ``NamespaceResolver``s will be used to find the current context object.
 And afterwards value resolvers will be used to resolve "colors" against the context object found. 
-
-[source]
-----
-{name} <1>
-{item.name} <2>
-{global:colors} <3> 
-----
-<1> no namespace, one part -`name`
-<2> no namespace, two parts - `item`, `name`
-<3> namespace `global`, one part - `colors`
-
-An expression part could be a "virtual method" in which case the name can be followed by a list of comma-separated parameters in parentheses: 
-
-[source]
-----
-{item.getLabels(1)} <1>
-{name or 'John'} <2>
-----
-<1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
-<2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
 
 [[current_context_object]]
 ===== Current Context
@@ -586,9 +639,27 @@ The section tag is also registered under the `set` alias:
 
 
 [[include_helper]]
-===== Include/Insert Sections
+===== Include Section
 
-These sections can be used to include another template and possibly override some parts of the template (template inheritance).
+This section can be used to include another template and possibly override some parts of the template (template inheritance).
+
+.Simple Example
+[source,html]
+----
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simple Include</title>
+</head>
+<body>
+  {#include foo limit=10 /} <1><2>
+</body>
+</html>
+----
+<1> Include a template with id `foo`. The included template can reference data from the current context. 
+<2> It's also possible to define optional parameters that can be used in the included template.
+
+Template inheritance makes it possible to reuse template layouts.
 
 .Template "base"
 [source,html]
@@ -633,10 +704,12 @@ Let's suppose we have a template called `itemDetail.html`:
 ----
 {#if showImage} <1>
   {it.image} <2>
+  {nested-content} <3>
 {/if}
 ----
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
+<3> (optional) `nested-content` is a special key that will be replaced by the content of the tag.
 
 Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
 
@@ -656,12 +729,15 @@ We can include the tag like this:
 <ul>
 {#for item in items}
   <li>
-  {#itemDetail item showImage=true /} <1>
+  {#itemDetail item showImage=true} <1>
+    = <b>{item.name}</b> <2>
+  {/itemDetail}
   </li>
 {/for}
 </ul>
 ----
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
+<2> Tag content injected using the `nested-content` key in the tag template.
 
 === Engine Configuration
 
@@ -801,23 +877,33 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 [[template_extension_methods]]
 === Template Extension Methods
 
-Extension methods can be used to extend the data classes with new functionality.
-For example, it is possible to add "computed properties" and "virtual methods".
+Extension methods can be used to extend the data classes with new functionality or resolve expressions for a specific <<namespace_extension_methods,namespace>>.
+For example, it is possible to add _computed properties_ and _virtual methods_.
+
 A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
-If declared on a class a value resolver is generated for every non-private method declared on the class.
+If a  class is annotated with `@TemplateExtension` then a value resolver is generated for every non-private static method declared on the class.
+Method-level annotations override the behavior defined on the class.
 Methods that do not meet the following requirements are ignored.
 
 A template extension method:
 
+* must not be `private`
 * must be static, 
 * must not return `void`,
-* must accept at least one parameter.
+* must accept at least one parameter, unless the namespace is specified.
  
-The class of the first parameter is always used to match the base object.
+The class of the first parameter is used to match the base object unless the namespace is specified. 
+In such case, the namespace is used to match an expression.
+
 The method name is used to match the property name by default. 
 However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
+A special constant - `TemplateExtension#ANY` - may be used to specify that the extension method matches any name.
+It is also possible to match the name against a regular expression specified in `TemplateExtension#matchRegex()`.
+In both cases, a string method parameter is used to pass the property name.
+If both `matchName()` and `matchRegex()` are set the regular expression is used for matching.
 
-NOTE: A special constant - `ANY` - may be used to specify that the extension method matches any name. In that case, the method must declare at least two parameters and the second parameter must be a string. 
+If a namespace is specified the method must declare at least one parameter and the first parameter must be a string. 
+If no namespace is specified the method must declare at least two parameters and the second parameter must be a string. 
 
 .Extension Method Example
 [source,java]
@@ -854,14 +940,14 @@ This template extension method makes it possible to render the following templat
 ==== Method Parameters
 
 An extension method may accept multiple parameters.
-The first parameter is always used to pass the base object, ie. `org.acme.Item` in the previous example.
+If no namespace is specified the first parameter is always used to pass the base object, i.e. `org.acme.Item` in the first example.
 Other parameters are resolved when rendering the template and passed to the extension method.
 
 .Multiple Parameters Example
 [source,java]
 ----
 @TemplateExtension
-class MyExtensions {
+class BigDecimalExtensions {
 
     static BigDecimal scale(BigDecimal val, int scale, RoundingMode mode) { <1>
         return val.setScale(scale, mode);
@@ -876,11 +962,44 @@ class MyExtensions {
 ----
 <1> `item.discountedPrice` is resolved to an instance of `BigDecimal`.
 
-==== Built-in Template Extension methods
+[[namespace_extension_methods]]
+==== Namespace Extention Methods
+
+If `TemplateExtension#namespace()` is specified then the extension method is used to resolve expressions with the given <<expressions,namespace>>.
+Template extension methods that share the same namespace are grouped in one resolver ordered by `TemplateExtension#priority()`.
+The first matching extension method is used to resolve an expression.
+
+.Namespace Extension Method Example
+[source,java]
+----
+@TemplateExtension(namespace = "str")
+public static class StringExtensions {
+
+   static String format(String fmt, Object... args) {
+      return String.format(fmt, args);
+   }
+   
+   static String reverse(String val) {
+      return new StringBuilder(val).reverse().toString();
+   }
+}
+----
+
+These extension methods can be used as follows.
+
+[source,html]
+----
+{str:format('%s %s!','Hello', 'world')} <1>
+{str:reverse('hello')} <2>
+----
+<1> The output is `Hello world!`
+<2> The output is `olleh`
+
+==== Built-in Template Extension
 
 Quarkus provides a set of built-in extension methods.
 
-===== Map extension methods:
+===== Maps
 
 * `keys` or `keySet`: Returns a Set view of the keys contained in a map
 ** `{#for key in map.keySet}`
@@ -895,17 +1014,29 @@ Quarkus provides a set of built-in extension methods.
 ** `{#if map.isEmpty}`
 
 * `get(key)`: Returns the value to which the specified key is mapped
-** `{map.get('foo')}` or `{map['foo']}`
+** `{map.get('foo')}`
 
-===== Collection extension methods:
+TIP: A map value can be also accessed directly: `{map.myKey}`. Use the bracket notation for keys that are not legal identifiers: `{map['my key']}`.
+
+===== Collections
 
 * `get(index)`: Returns the element at the specified position in a list
-** `{list.get(0)}` or `{list[0]}`
+** `{list.get(0)}`
 
-===== Number extension methods:
+TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
+
+===== Numbers
 
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
+
+===== Config 
+
+* `config:<name>` or `config:[<name>]`: Returns the config value for the given property name
+** `{config:foo}` or `{config:['property.with.dot.in.name']}`
+
+* `config:property(name)`: Returns the config value for the given property name; the name can be obtained dynamically by an expression 
+** `{config:property('quarkus.foo')}` or `{config:property(foo.getPropertyName())}`
 
 [[template_data]]
 === @TemplateData
@@ -1054,7 +1185,17 @@ Subsequently, the bundles can be used at runtime:
 
 1. Directly in your code via `io.quarkus.qute.i18n.MessageBundles#get()`; e.g. `MessageBundles.get(AppMessages.class).hello_name("Lucie")`
 2. Injected in your beans via `@Inject`; e.g. `@Inject AppMessages`
-3. Referenced in the templates via the message bundle name; e.g. `{msg:hello_name('Lucie')}`
+3. Referenced in the templates via the message bundle namespace:
++
+[source,html]
+----
+ {msg:hello_name('Lucie')} <1> <2> <3>
+ {msg:message(myKey,'Lu')} <4>
+----
+<1> `msg` is the default namespace.
+<2> `hello_name` is the message key.
+<3> `Lucie` is the parameter of the message bundle interface method.  
+<4> It is also possible to obtain a localized message for a key resolved at runtime using a reserved key `message`. The validation is skipped in this case though.
 
 .Message Bundle Interface Example
 [source,java]

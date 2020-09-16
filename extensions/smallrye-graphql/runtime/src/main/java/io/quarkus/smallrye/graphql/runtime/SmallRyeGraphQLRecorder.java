@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.runtime;
 
-import java.util.function.Supplier;
-
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
@@ -10,7 +8,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.smallrye.graphql.runtime.spi.QuarkusClassloadingService;
-import io.quarkus.vertx.http.runtime.ThreadLocalHandler;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
@@ -23,8 +21,7 @@ public class SmallRyeGraphQLRecorder {
 
     public void createExecutionService(BeanContainer beanContainer, Schema schema) {
         GraphQLProducer graphQLProducer = beanContainer.instance(GraphQLProducer.class);
-        graphQLProducer.setSchema(schema);
-        graphQLProducer.initialize();
+        graphQLProducer.initialize(schema);
     }
 
     public Handler<RoutingContext> executionHandler(boolean allowGet) {
@@ -36,7 +33,8 @@ public class SmallRyeGraphQLRecorder {
         } else {
             association = null;
         }
-        return new SmallRyeGraphQLExecutionHandler(allowGet, association);
+        CurrentVertxRequest currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
+        return new SmallRyeGraphQLExecutionHandler(allowGet, association, currentVertxRequest);
     }
 
     public Handler<RoutingContext> schemaHandler() {
@@ -45,14 +43,9 @@ public class SmallRyeGraphQLRecorder {
 
     public Handler<RoutingContext> uiHandler(String graphqlUiFinalDestination, String graphqlUiPath) {
 
-        Handler<RoutingContext> handler = new ThreadLocalHandler(new Supplier<Handler<RoutingContext>>() {
-            @Override
-            public Handler<RoutingContext> get() {
-                return StaticHandler.create().setAllowRootFileSystemAccess(true)
-                        .setWebRoot(graphqlUiFinalDestination)
-                        .setDefaultContentEncoding("UTF-8");
-            }
-        });
+        StaticHandler staticHandler = StaticHandler.create().setAllowRootFileSystemAccess(true)
+                .setWebRoot(graphqlUiFinalDestination)
+                .setDefaultContentEncoding("UTF-8");
 
         return new Handler<RoutingContext>() {
             @Override
@@ -68,7 +61,7 @@ public class SmallRyeGraphQLRecorder {
                     return;
                 }
 
-                handler.handle(event);
+                staticHandler.handle(event);
             }
         };
     }

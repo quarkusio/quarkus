@@ -41,14 +41,18 @@ public class MinikubeWithDefaultsTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("minikube.yml"));
 
-        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
+
+                assertThat(d.getMetadata()).satisfies(m -> {
+                    assertThat(m.getNamespace()).isNull();
+                });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                             });
                         });
@@ -57,11 +61,15 @@ public class MinikubeWithDefaultsTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getMetadata()).satisfies(m -> {
+                    assertThat(m.getNamespace()).isNull();
+                });
+
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getNodePort()).isNotNull();
                     });
                 });

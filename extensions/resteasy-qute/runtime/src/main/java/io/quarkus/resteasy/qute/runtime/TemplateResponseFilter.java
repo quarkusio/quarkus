@@ -34,7 +34,8 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
                 List<Variant> variants = (List<Variant>) variantsAttr;
                 javax.ws.rs.core.Variant selected = requestContext.getRequest()
                         .selectVariant(variants.stream()
-                                .map(v -> new javax.ws.rs.core.Variant(MediaType.valueOf(v.mediaType), v.locale, v.encoding))
+                                .map(v -> new javax.ws.rs.core.Variant(MediaType.valueOf(v.getMediaType()), v.getLocale(),
+                                        v.getEncoding()))
                                 .collect(Collectors.toList()));
                 if (selected != null) {
                     instance.setAttribute(TemplateInstance.SELECTED_VARIANT,

@@ -89,6 +89,7 @@ by making them implement `PanacheRepository`:
 
 [source,kotlin]
 ----
+@ApplicationScoped
 class PersonRepository: PanacheRepository<Person> {
      fun findByName(name: String) = find("name", name).firstResult()
      fun findAlive() = list("status", Status.Alive)

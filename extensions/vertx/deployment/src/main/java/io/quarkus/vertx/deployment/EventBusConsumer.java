@@ -20,7 +20,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -32,6 +31,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.smallrye.mutiny.Uni;
@@ -131,7 +131,7 @@ class EventBusConsumer {
             invoke(bean, method, messageHandle, tryBlock);
             tryBlock.invokeInterfaceMethod(FUTURE_COMPLETE, funcBytecode.getMethodParam(0), tryBlock.loadNull());
             CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-            catchBlock.invokeInterfaceMethod(FUTURE_FAIL, funcBytecode.getMethodParam(0), catchBlock.getMethodParam(0));
+            catchBlock.invokeInterfaceMethod(FUTURE_FAIL, funcBytecode.getMethodParam(0), catchBlock.getCaughtException());
             funcBytecode.returnValue(null);
 
             invoke.invokeInterfaceMethod(VERTX_EXECUTE_BLOCKING, vertxHandle, func.getInstance(), invoke.load(false),

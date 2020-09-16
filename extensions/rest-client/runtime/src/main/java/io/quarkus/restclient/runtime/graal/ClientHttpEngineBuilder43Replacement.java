@@ -24,7 +24,8 @@ public final class ClientHttpEngineBuilder43Replacement {
     @Substitute
     public ClientHttpEngineBuilder43Replacement resteasyClientBuilder(ResteasyClientBuilder resteasyClientBuilder) {
         that = resteasyClientBuilder;
-        if (that.getSSLContext() == null) {
+        // make sure we only set a context if there is none or one wouldn't be created implicitly
+        if ((that.getSSLContext() == null) && (that.getTrustStore() == null) && (that.getKeyStore() == null)) {
             try {
                 that.sslContext(SSLContext.getDefault());
             } catch (NoSuchAlgorithmException e) {

@@ -193,11 +193,33 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaults().removeStandaloneLines(true).build();
         String content = "{@java.lang.String foo}\n" // -> standalone
                 + "\n"
+                + " {! My comment !} \n"
                 + "  {#for i in 5}\n" // -> standalone
                 + "{index}:\n"
                 + "{/} "; // -> standalone
         assertEquals("\n0:\n1:\n2:\n3:\n4:\n", engine.parse(content).render());
         assertEquals("bar\n", engine.parse("{foo}\n").data("foo", "bar").render());
+    }
+
+    @Test
+    public void testValidIdentifiers() {
+        assertTrue(Parser.isValidIdentifier("foo"));
+        assertTrue(Parser.isValidIdentifier("_foo"));
+        assertTrue(Parser.isValidIdentifier("foo$$bar"));
+        assertTrue(Parser.isValidIdentifier("1Foo_$"));
+        assertTrue(Parser.isValidIdentifier("1"));
+        assertTrue(Parser.isValidIdentifier("1?"));
+        assertTrue(Parser.isValidIdentifier("1:"));
+        assertTrue(Parser.isValidIdentifier("-foo"));
+        assertTrue(Parser.isValidIdentifier("foo["));
+        assertTrue(Parser.isValidIdentifier("foo^"));
+        Engine engine = Engine.builder().addDefaults().build();
+        try {
+            engine.parse("{foo\nfoo}");
+            fail();
+        } catch (Exception expected) {
+            assertTrue(expected.getMessage().contains("Invalid identifier found"), expected.toString());
+        }
     }
 
     private void assertParserError(String template, String message, int line) {

@@ -185,6 +185,11 @@ public final class KubernetesEnvBuildItem extends MultiBuildItem {
         return target;
     }
 
+    public KubernetesEnvBuildItem newWithTarget(String newTarget) {
+        return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type, newTarget,
+                this.oldStyle);
+    }
+
     public String toString() {
         switch (type) {
             case var:

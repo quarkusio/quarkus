@@ -33,6 +33,7 @@ public class CORSHandlerTestCase {
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Credentials", "true")
                 .header("Access-Control-Allow-Headers", headers);
     }
 
@@ -52,6 +53,7 @@ public class CORSHandlerTestCase {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", methods)
                 .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Credentials", "true")
                 .body(is("test route"));
     }
 

@@ -1,0 +1,30 @@
+name: maven
+type: buildtool
+fallback: true
+output-strategy:
+  "mvnw": "executable"
+  "mvnw.cmd": "executable"
+language:
+  base:
+    data:
+      kotlin:
+        version: 1.3.72
+      scala:
+        version: 2.12.8
+      scala-maven-plugin:
+        version: 4.1.1
+      maven-compiler-plugin:
+        version: 3.8.1
+      maven-surefire-plugin:
+        version: 2.22.1
+    shared-data:
+      buildtool:
+        build-dir: target
+        guide: https://quarkus.io/guides/maven-tooling.html
+        guide-native: https://quarkus.io/guides/building-native-image
+        cmd:
+          dev: mvn compile quarkus:dev
+          package: mvn package
+          package-uberjar:  mvn package -PuberJar
+          package-native: mvn package -Pnative
+          package-native-container: mvn package -Pnative -Dquarkus.native.container-build=true

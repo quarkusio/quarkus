@@ -25,24 +25,24 @@ public class MethodPropertiesAccessor {
         this.index = index;
     }
 
-    public boolean isExposed(ClassInfo classInfo, MethodMetadata methodMetadata) {
-        AnnotationInstance annotation = getAnnotation(classInfo, methodMetadata);
+    public boolean isExposed(String type, MethodMetadata methodMetadata) {
+        AnnotationInstance annotation = getAnnotation(DotName.createSimple(type), methodMetadata);
 
         return annotation == null
                 || annotation.value("exposed") == null
                 || annotation.value("exposed").asBoolean();
     }
 
-    public String getPath(ClassInfo classInfo, MethodMetadata methodMetadata) {
-        AnnotationInstance annotation = getAnnotation(classInfo, methodMetadata);
+    public String getPath(String type, MethodMetadata methodMetadata) {
+        AnnotationInstance annotation = getAnnotation(DotName.createSimple(type), methodMetadata);
         if (annotation == null || annotation.value("path") == null) {
             return "";
         }
         return annotation.value("path").asString();
     }
 
-    public String getPath(ClassInfo classInfo, MethodMetadata methodMetadata, String lastSegment) {
-        String path = getPath(classInfo, methodMetadata);
+    public String getPath(String type, MethodMetadata methodMetadata, String lastSegment) {
+        String path = getPath(type, methodMetadata);
         if (path.endsWith("/")) {
             path = path.substring(0, path.lastIndexOf("/"));
         }
@@ -52,18 +52,18 @@ public class MethodPropertiesAccessor {
         return String.join("/", path, lastSegment);
     }
 
-    private AnnotationInstance getAnnotation(ClassInfo resourceInterface, MethodMetadata methodMetadata) {
-        Optional<MethodInfo> optionalMethod = getMethodInfo(resourceInterface, methodMetadata);
+    private AnnotationInstance getAnnotation(DotName type, MethodMetadata methodMetadata) {
+        ClassInfo classInfo = index.getClassByName(type);
+        if (classInfo == null) {
+            return null;
+        }
+        Optional<MethodInfo> optionalMethod = getMethodInfo(classInfo, methodMetadata);
         if (optionalMethod.isPresent() && optionalMethod.get().hasAnnotation(OPERATION_PROPERTIES_ANNOTATION)) {
             return optionalMethod.get().annotation(OPERATION_PROPERTIES_ANNOTATION);
         }
-        if (resourceInterface.superName() != null) {
-            ClassInfo superResourceInterface = index.getClassByName(resourceInterface.superName());
-            if (superResourceInterface != null) {
-                return getAnnotation(superResourceInterface, methodMetadata);
-            }
+        if (classInfo.superName() != null) {
+            return getAnnotation(classInfo.superName(), methodMetadata);
         }
-
         return null;
     }
 

@@ -1,0 +1,16 @@
+name: dockerfiles
+type: tooling
+language:
+  base:
+    data:
+      dockerfile:
+        jvm:
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.1
+          java-package: java-11-openjdk-headless
+          run-java-version: 1.3.8
+        fast-jar:
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.1
+          java-package: java-11-openjdk-headless
+          run-java-version: 1.3.8
+        native:
+          from: registry.access.redhat.com/ubi8/ubi-minimal:8.1

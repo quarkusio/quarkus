@@ -34,6 +34,18 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<String> version;
 
     /**
+     * The namespace the generated resources should belong to.
+     * If not value is set, then the 'namespace' field will not be
+     * added to the 'metadata' section of the generated manifests.
+     * This in turn means that when the manifests are applied to a cluster,
+     * the namespace will be resolved from the current Kubernetes context
+     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+     * for more details).
+     */
+    @ConfigItem
+    Optional<String> namespace;
+
+    /**
      * Custom labels to add to all resources
      */
     @ConfigItem
@@ -189,9 +201,18 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * Sidecar containers
+     * 
+     * @deprecated Use the {@code sidecars} property instead
      */
     @ConfigItem
+    @Deprecated
     Map<String, ContainerConfig> containers;
+
+    /**
+     * Sidecar containers
+     */
+    @ConfigItem
+    Map<String, ContainerConfig> sidecars;
 
     /**
      * If true, an Openshift Route will be created
@@ -209,6 +230,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
+    }
+
+    public Optional<String> getNamespace() {
+        return namespace;
     }
 
     public Map<String, String> getLabels() {
@@ -309,7 +334,16 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     public Map<String, ContainerConfig> getSidecars() {
-        return containers;
+        if (!containers.isEmpty() && !sidecars.isEmpty()) {
+            // done in order to make migration to the new property straight-forward
+            throw new IllegalStateException(
+                    "'quarkus.openshift.sidecars' and 'quarkus.openshift.containers' cannot be used together. Please use the former as the latter has been deprecated");
+        }
+        if (!containers.isEmpty()) {
+            return containers;
+        }
+
+        return sidecars;
     }
 
     @Override

@@ -28,6 +28,7 @@ import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
@@ -49,6 +50,7 @@ public class OidcBuildStep {
             removable.addBeanClass(CommonJwtProducer.class);
             removable.addBeanClass(RawClaimTypeProducer.class);
             removable.addBeanClass(JsonValueProducer.class);
+            removable.addBeanClass(ClaimValueProducer.class);
             removable.addBeanClass(Claim.class);
             return removable.build();
         }

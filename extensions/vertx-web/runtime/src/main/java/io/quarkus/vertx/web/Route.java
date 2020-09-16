@@ -26,6 +26,47 @@ import io.vertx.ext.web.RoutingContext;
  * <li>{@code io.vertx.reactivex.core.http.HttpServerRequest}</li>
  * <li>{@code io.vertx.reactivex.core.http.HttpServerResponse}</li>
  * </ul>
+ * Furthermore, it is possible to inject the request parameters into a method parameter annotated with
+ * {@link io.quarkus.vertx.web.Param}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *      {@literal @Route}
+ *      String hello({@literal @Param Optional<String>} name) {
+ *         return "Hello " + name.orElse("world");
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
+ * The request headers can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Header}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *     {@literal @Route}
+ *     String helloFromHeader({@literal @Header("My-Header")} String header) {
+ *         return "Hello " + header;
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
+ * The request body can be injected into a method parameter annotated with {@link io.quarkus.vertx.web.Body}:
+ * 
+ * <pre>
+ * <code>
+ *  class Routes {
+ *     {@literal @Route(produces = "application/json")}
+ *     Person updatePerson({@literal @Body} Person person) {
+ *        person.setName("Bob");
+ *        return person;
+ *     }
+ *  }
+ *  </code>
+ * </pre>
+ * 
  * If the annotated method returns {@code void} then it has to accept at least one argument.
  * If the annotated method does not return {@code void} then the arguments are optional.
  * <p>
@@ -69,7 +110,7 @@ public @interface Route {
     /**
      * If set to a positive number, it indicates the place of the route in the chain.
      * 
-     * @see io.vertx.ext.web.Route#order()
+     * @see io.vertx.ext.web.Route#order(int)
      */
     int order() default 0;
 
@@ -77,6 +118,9 @@ public @interface Route {
      * Used for content-based routing.
      * <p>
      * If no {@code Content-Type} header is set then try to use the most acceptable content type.
+     *
+     * If the request does not contain an 'Accept' header and no content type is explicitly set in the
+     * handler then the content type will be set to the first content type in the array.
      * 
      * @see io.vertx.ext.web.Route#produces(String)
      * @see RoutingContext#getAcceptableContentType()

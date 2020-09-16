@@ -179,6 +179,18 @@ class FlywayCreatorTest {
         assertTrue(createdFlywayConfig().isOutOfOrder());
     }
 
+    @Test
+    @DisplayName("ignoreMissingMigrations is correctly set")
+    void testIgnoreMissingMigrations() {
+        runtimeConfig.ignoreMissingMigrations = false;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertFalse(createdFlywayConfig().isIgnoreMissingMigrations());
+
+        runtimeConfig.ignoreMissingMigrations = true;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertTrue(createdFlywayConfig().isIgnoreMissingMigrations());
+    }
+
     @ParameterizedTest
     @MethodSource("validateOnMigrateOverwritten")
     @DisplayName("validate on migrate overwritten in configuration")

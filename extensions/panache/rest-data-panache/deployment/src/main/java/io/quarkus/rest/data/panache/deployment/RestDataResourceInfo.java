@@ -1,19 +1,28 @@
 package io.quarkus.rest.data.panache.deployment;
 
-import java.util.function.Predicate;
+public final class RestDataResourceInfo {
 
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.FieldInfo;
+    private final String type;
 
-public interface RestDataResourceInfo {
+    private final RestDataEntityInfo entityInfo;
 
-    ClassInfo getClassInfo();
+    private final DataAccessImplementor dataAccessImplementor;
 
-    DataAccessImplementor getDataAccessImplementor();
+    public RestDataResourceInfo(String type, RestDataEntityInfo entityInfo, DataAccessImplementor dataAccessImplementor) {
+        this.type = type;
+        this.entityInfo = entityInfo;
+        this.dataAccessImplementor = dataAccessImplementor;
+    }
 
-    String getIdClassName();
+    public String getType() {
+        return type;
+    }
 
-    String getEntityClassName();
+    public RestDataEntityInfo getEntityInfo() {
+        return entityInfo;
+    }
 
-    Predicate<FieldInfo> getIdFieldPredicate();
+    public DataAccessImplementor getDataAccessImplementor() {
+        return dataAccessImplementor;
+    }
 }

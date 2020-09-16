@@ -65,6 +65,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = getDefaultName(beanClass);
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -136,7 +137,7 @@ final class Beans {
             if (alternativePriority == null) {
                 // after all attempts, priority is still null, bean will be ignored
                 LOGGER.infof(
-                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
                         beanClass.name());
                 return null;
             }
@@ -151,7 +152,7 @@ final class Beans {
     private static ScopeInfo inheritScope(ClassInfo beanClass, BeanDeployment beanDeployment) {
         DotName superClassName = beanClass.superName();
         while (!superClassName.equals(DotNames.OBJECT)) {
-            ClassInfo classFromIndex = getClassByName(beanDeployment.getIndex(), superClassName);
+            ClassInfo classFromIndex = getClassByName(beanDeployment.getBeanArchiveIndex(), superClassName);
             if (classFromIndex == null) {
                 // class not in index
                 LOGGER.warnf("Unable to determine scope for bean %s using inheritance because its super class " +
@@ -202,6 +203,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = getDefaultName(producerMethod);
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -301,6 +303,7 @@ final class Beans {
                     name = nameValue.asString();
                 } else {
                     name = producerField.name();
+                    annotation = normalizedNamedQualifier(name, annotation);
                 }
             }
             Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
@@ -371,6 +374,13 @@ final class Beans {
         BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
                 declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean);
         return bean;
+    }
+
+    private static AnnotationInstance normalizedNamedQualifier(String defaultedName, AnnotationInstance originalAnnotation) {
+        // Replace @Named("") with @Named("foo")
+        // This is not explicitly defined by the spec but better align with the RI behavior
+        return AnnotationInstance.create(DotNames.NAMED, originalAnnotation.target(),
+                Collections.singletonList(AnnotationValue.createStringValue("value", defaultedName)));
     }
 
     private static DefinitionException multipleScopesFound(String baseMessage, List<ScopeInfo> scopes) {
@@ -476,27 +486,28 @@ final class Beans {
         List<BeanInfo> resolved = deployment.getBeanResolver().resolve(injectionPoint.getTypeAndQualifiers());
         BeanInfo selected = null;
         if (resolved.isEmpty()) {
+            List<BeanInfo> typeMatching = deployment.getBeanResolver().findTypeMatching(injectionPoint.getRequiredType());
+
             StringBuilder message = new StringBuilder("Unsatisfied dependency for type ");
-            message.append(injectionPoint.getRequiredType());
-            message.append(" and qualifiers ");
-            message.append(injectionPoint.getRequiredQualifiers());
-            message.append("\n\t- java member: ");
-            message.append(injectionPoint.getTargetInfo());
-            message.append("\n\t- declared on ");
-            message.append(target);
+            addStandardErroneousDependencyMessage(target, injectionPoint, message);
+            if (!typeMatching.isEmpty()) {
+                message.append("\n\tThe following beans match by type, but none have matching qualifiers:");
+                for (BeanInfo beanInfo : typeMatching) {
+                    message.append("\n\t\t- ");
+                    message.append("Bean [class=");
+                    message.append(beanInfo.getImplClazz());
+                    message.append(", qualifiers=");
+                    message.append(beanInfo.getQualifiers());
+                    message.append("]");
+                }
+            }
             errors.add(new UnsatisfiedResolutionException(message.toString()));
         } else if (resolved.size() > 1) {
             // Try to resolve the ambiguity
             selected = resolveAmbiguity(resolved);
             if (selected == null) {
                 StringBuilder message = new StringBuilder("Ambiguous dependencies for type ");
-                message.append(injectionPoint.getRequiredType());
-                message.append(" and qualifiers ");
-                message.append(injectionPoint.getRequiredQualifiers());
-                message.append("\n\t- java member: ");
-                message.append(injectionPoint.getTargetInfo());
-                message.append("\n\t- declared on ");
-                message.append(target);
+                addStandardErroneousDependencyMessage(target, injectionPoint, message);
                 message.append("\n\t- available beans:\n\t\t- ");
                 message.append(resolved.stream().map(Object::toString).collect(Collectors.joining("\n\t\t- ")));
                 errors.add(new AmbiguousResolutionException(message.toString()));
@@ -507,6 +518,17 @@ final class Beans {
         if (selected != null) {
             injectionPoint.resolve(selected);
         }
+    }
+
+    private static void addStandardErroneousDependencyMessage(InjectionTargetInfo target, InjectionPointInfo injectionPoint,
+            StringBuilder message) {
+        message.append(injectionPoint.getRequiredType());
+        message.append(" and qualifiers ");
+        message.append(injectionPoint.getRequiredQualifiers());
+        message.append("\n\t- java member: ");
+        message.append(injectionPoint.getTargetInfo());
+        message.append("\n\t- declared on ");
+        message.append(target);
     }
 
     static BeanInfo resolveAmbiguity(List<BeanInfo> resolved) {
@@ -668,7 +690,7 @@ final class Beans {
                 if (bean.getDeployment().transformUnproxyableClasses) {
                     DotName superName = beanClass.superName();
                     if (!DotNames.OBJECT.equals(superName)) {
-                        ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(beanClass.superName());
+                        ClassInfo superClass = bean.getDeployment().getBeanArchiveIndex().getClassByName(beanClass.superName());
                         if (superClass == null || !superClass.hasNoArgsConstructor()) {
                             // Bean class extends a class without no-args constructor
                             // It is not possible to generate a no-args constructor reliably
@@ -708,7 +730,7 @@ final class Beans {
             }
 
         } else if (bean.isProducerField() || bean.isProducerMethod()) {
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(),
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(),
                     bean.isProducerMethod() ? bean.getTarget().get().asMethod().returnType()
                             : bean.getTarget().get().asField().type());
             // can be null for primitive types
@@ -731,7 +753,8 @@ final class Beans {
                     if (bean.getDeployment().transformUnproxyableClasses) {
                         DotName superName = returnTypeClass.superName();
                         if (!DotNames.OBJECT.equals(superName)) {
-                            ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(returnTypeClass.superName());
+                            ClassInfo superClass = bean.getDeployment().getBeanArchiveIndex()
+                                    .getClassByName(returnTypeClass.superName());
                             if (superClass == null || !superClass.hasNoArgsConstructor()) {
                                 // Bean class extends a class without no-args constructor
                                 // It is not possible to generate a no-args constructor reliably
@@ -775,7 +798,7 @@ final class Beans {
         }
         if (type.kind() == Type.Kind.CLASS) {
             // Index the class additionally if needed
-            getClassByName(beanDeployment.getIndex(), type.name());
+            getClassByName(beanDeployment.getBeanArchiveIndex(), type.name());
         } else {
             analyzeType(type, beanDeployment);
         }

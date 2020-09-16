@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import javax.enterprise.context.NormalScope;
@@ -135,14 +134,30 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
 
     public B scope(Class<? extends Annotation> scope) {
         DotName scopeName = DotName.createSimple(scope.getName());
-        this.scope = Optional.ofNullable(BuiltinScope.from(scopeName)).map(BuiltinScope::getInfo).orElse(new ScopeInfo(
-                scopeName, scope.isAnnotationPresent(NormalScope.class), scope.isAnnotationPresent(Inherited.class)));
+        BuiltinScope builtinScope = BuiltinScope.from(scopeName);
+        if (builtinScope != null) {
+            this.scope = builtinScope.getInfo();
+        } else {
+            this.scope = new ScopeInfo(scopeName, scope.isAnnotationPresent(NormalScope.class),
+                    scope.isAnnotationPresent(Inherited.class));
+        }
         return self();
     }
 
     public B name(String name) {
         this.name = name;
         return self();
+    }
+
+    /**
+     * Unlike for the {@link #name(String)} method a new {@link javax.inject.Named} qualifier with the specified value is added
+     * to the configured bean.
+     * 
+     * @param name
+     * @return self
+     */
+    public B named(String name) {
+        return name(name).addQualifier().annotation(DotNames.NAMED).addValue("value", name).done();
     }
 
     public B defaultBean() {
@@ -224,7 +239,7 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
             ResultHandle destoyerHandle = mc.newInstance(MethodDescriptor.ofConstructor(destroyerClazz));
             ResultHandle[] params = { mc.getMethodParam(0), mc.getMethodParam(1), paramsHandle };
             mc.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", Void.class, Object.class, CreationalContext.class,
+                    MethodDescriptor.ofMethod(BeanDestroyer.class, "destroy", void.class, Object.class, CreationalContext.class,
                             Map.class),
                     destoyerHandle, params);
             mc.returnValue(null);

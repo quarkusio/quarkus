@@ -24,15 +24,22 @@ public class JaegerDeploymentRecorder {
         jaegerVersion = version;
     }
 
-    synchronized public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+    /* RUNTIME_INIT */
+    public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
         registerTracer(jaeger, appConfig, new NoopMetricsFactory());
     }
 
-    synchronized public void registerTracerWithMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
-        registerTracer(jaeger, appConfig, new QuarkusJaegerMetricsFactory());
+    /* RUNTIME_INIT */
+    public void registerTracerWithMpMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMpMetricsFactory());
     }
 
-    private void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
+    /* RUNTIME_INIT */
+    public void registerTracerWithMicrometerMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMicrometerFactory());
+    }
+
+    private synchronized void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
                 jaeger.serviceName = appConfig.name;
@@ -58,7 +65,7 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_AUTH_TOKEN", jaeger.authToken, token -> token);
         initTracerProperty("JAEGER_USER", jaeger.user, user -> user);
         initTracerProperty("JAEGER_PASSWORD", jaeger.password, pw -> pw);
-        initTracerProperty("JAEGER_AGENT_HOST", jaeger.agentHostPort, address -> address.getHostName());
+        initTracerProperty("JAEGER_AGENT_HOST", jaeger.agentHostPort, address -> address.getHostString());
         initTracerProperty("JAEGER_AGENT_PORT", jaeger.agentHostPort, address -> String.valueOf(address.getPort()));
         initTracerProperty("JAEGER_REPORTER_LOG_SPANS", jaeger.reporterLogSpans, log -> log.toString());
         initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize, size -> size.toString());

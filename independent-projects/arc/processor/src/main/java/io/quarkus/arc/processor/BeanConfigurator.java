@@ -44,7 +44,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
      */
     public void done() {
         if (consumed.compareAndSet(false, true)) {
-            ClassInfo implClass = getClassByName(beanDeployment.getIndex(), Objects.requireNonNull(implClazz));
+            ClassInfo implClass = getClassByName(beanDeployment.getBeanArchiveIndex(), Objects.requireNonNull(implClazz));
             if (implClass == null) {
                 throw new IllegalStateException("Unable to find the bean class in the index: " + implClazz);
             }

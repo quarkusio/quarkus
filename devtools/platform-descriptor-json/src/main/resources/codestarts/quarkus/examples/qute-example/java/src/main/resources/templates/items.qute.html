@@ -1,0 +1,24 @@
+{! This parameter declarations makes it possible to validate expressions in the template !}
+{@java.util.List<org.acme.qute.Item> items}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Qute - Items</title> 
+</head>
+<body>
+    <h1>List of Items</h1>
+    <ul>
+        {#for item in items}
+        <li>
+            {item.name}:
+            {#if item.price < 15}
+              {item.price}
+            {#else}
+              <del>{item.price}</del> <strong>{item.discountedPrice}</strong>
+            {/if}
+        </li>
+        {/for}
+    </ul>
+</body>
+</html>

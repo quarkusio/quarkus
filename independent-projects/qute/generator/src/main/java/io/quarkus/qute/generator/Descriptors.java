@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class Descriptors {
 
@@ -57,6 +59,16 @@ public final class Descriptors {
             "evaluate",
             EvaluatedParams.class,
             EvalContext.class);
+    public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE_MESSAGE_KEY = MethodDescriptor.ofMethod(
+            EvaluatedParams.class,
+            "evaluateMessageKey",
+            EvaluatedParams.class,
+            EvalContext.class);
+    public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE_MESSAGE_PARAMS = MethodDescriptor.ofMethod(
+            EvaluatedParams.class,
+            "evaluateMessageParams",
+            EvaluatedParams.class,
+            EvalContext.class);
     public static final MethodDescriptor EVALUATED_PARAMS_GET_RESULT = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "getResult",
             Object.class,
@@ -66,6 +78,12 @@ public final class Descriptors {
     static final MethodDescriptor EVALUATED_PARAMS_GET_VARARGS_RESULTS = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "getVarargsResults", Object.class, int.class,
             Class.class);
+    public static final MethodDescriptor PATTERN_COMPILE = MethodDescriptor.ofMethod(Pattern.class, "compile", Pattern.class,
+            String.class);
+    public static final MethodDescriptor PATTERN_MATCHER = MethodDescriptor.ofMethod(Pattern.class, "matcher", Matcher.class,
+            CharSequence.class);
+    public static final MethodDescriptor MATCHER_MATCHES = MethodDescriptor.ofMethod(Matcher.class, "matches", boolean.class);
+    public static final MethodDescriptor OBJECT_CONSTRUCTOR = MethodDescriptor.ofConstructor(Object.class);
 
     public static final FieldDescriptor RESULTS_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
             CompletionStage.class);

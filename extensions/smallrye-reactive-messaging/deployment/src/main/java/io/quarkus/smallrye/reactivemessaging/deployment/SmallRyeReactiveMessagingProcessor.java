@@ -53,13 +53,14 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
@@ -67,6 +68,8 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLi
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
+import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
+import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
 
 /**
  *
@@ -300,6 +303,14 @@ public class SmallRyeReactiveMessagingProcessor {
             });
             transformers.produce(veto);
         }
+    }
+
+    @BuildStep
+    public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig, BuildProducer<HealthBuildItem> producer) {
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingLivenessCheck.class.getName(), buildTimeConfig.healthEnabled));
+        producer.produce(
+                new HealthBuildItem(SmallRyeReactiveMessagingReadinessCheck.class.getName(), buildTimeConfig.healthEnabled));
     }
 
     @BuildStep

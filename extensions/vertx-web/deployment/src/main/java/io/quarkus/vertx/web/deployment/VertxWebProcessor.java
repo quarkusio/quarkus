@@ -1,9 +1,12 @@
 package io.quarkus.vertx.web.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.vertx.web.deployment.DotNames.PARAM;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,13 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
-import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -29,6 +33,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
@@ -36,33 +41,37 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.util.HashUtil;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
@@ -70,18 +79,27 @@ import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
+import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.RouteBase;
+import io.quarkus.vertx.web.Header;
+import io.quarkus.vertx.web.Param;
 import io.quarkus.vertx.web.RouteFilter;
-import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RouteMatcher;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
+import io.quarkus.vertx.web.runtime.UniFailureCallback;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
+import io.quarkus.vertx.web.runtime.devmode.ResourceNotFoundRecorder;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -95,27 +113,7 @@ class VertxWebProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(VertxWebProcessor.class.getName());
 
-    private static final DotName ROUTE = DotName.createSimple(Route.class.getName());
-    private static final DotName ROUTES = DotName.createSimple(Route.Routes.class.getName());
-    private static final DotName ROUTE_FILTER = DotName.createSimple(RouteFilter.class.getName());
-    private static final DotName ROUTE_BASE = DotName.createSimple(RouteBase.class.getName());
-    private static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
-    private static final DotName RX_ROUTING_CONTEXT = DotName
-            .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
-    private static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
-    private static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
-    private static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
-    private static final DotName RX_HTTP_SERVER_REQUEST = DotName
-            .createSimple(io.vertx.reactivex.core.http.HttpServerRequest.class.getName());
-    private static final DotName RX_HTTP_SERVER_RESPONSE = DotName
-            .createSimple(io.vertx.reactivex.core.http.HttpServerResponse.class.getName());
-    private static final DotName UNI = DotName.createSimple(Uni.class.getName());
-    private static final DotName MULTI = DotName.createSimple(Multi.class.getName());
-
     private static final String HANDLER_SUFFIX = "_RouteHandler";
-    private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE,
-            HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, RX_HTTP_SERVER_REQUEST, RX_HTTP_SERVER_RESPONSE };
-
     private static final String VALUE_PATH = "path";
     private static final String VALUE_REGEX = "regex";
     private static final String VALUE_PRODUCES = "produces";
@@ -124,6 +122,8 @@ class VertxWebProcessor {
     private static final String VALUE_ORDER = "order";
     private static final String SLASH = "/";
 
+    private static final List<ParameterInjector> PARAM_INJECTORS = initParamInjectors();
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.VERTX_WEB);
@@ -131,14 +131,19 @@ class VertxWebProcessor {
 
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTE));
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTES));
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(ROUTE_FILTER));
+        unremovableBeans
+                .produce(UnremovableBeanBuildItem.beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE));
+        unremovableBeans
+                .produce(UnremovableBeanBuildItem.beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTES));
+        unremovableBeans
+                .produce(UnremovableBeanBuildItem
+                        .beanClassAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER));
     }
 
     @BuildStep
     void validateBeanDeployment(
             ValidationPhaseBuildItem validationPhase,
+            TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors) {
@@ -148,18 +153,21 @@ class VertxWebProcessor {
         for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
             // NOTE: inherited business methods are not taken into account
             ClassInfo beanClass = bean.getTarget().get().asClass();
-            AnnotationInstance routeBaseAnnotation = beanClass.classAnnotation(ROUTE_BASE);
+            AnnotationInstance routeBaseAnnotation = beanClass
+                    .classAnnotation(io.quarkus.vertx.web.deployment.DotNames.ROUTE_BASE);
             for (MethodInfo method : beanClass.methods()) {
                 List<AnnotationInstance> routes = new LinkedList<>();
-                AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
+                AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTE);
                 if (routeAnnotation != null) {
-                    validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
+                    validateRouteMethod(bean, method, transformedAnnotations);
                     routes.add(routeAnnotation);
                 }
                 if (routes.isEmpty()) {
-                    AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
+                    AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method,
+                            io.quarkus.vertx.web.deployment.DotNames.ROUTES);
                     if (routesAnnotation != null) {
-                        validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
+                        validateRouteMethod(bean, method, transformedAnnotations);
                         Collections.addAll(routes, routesAnnotation.value().asNestedArray());
                     }
                 }
@@ -169,7 +177,8 @@ class VertxWebProcessor {
                             .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation));
                 }
                 //
-                AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, ROUTE_FILTER);
+                AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER);
                 if (filterAnnotation != null) {
                     if (!routes.isEmpty()) {
                         errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
@@ -200,23 +209,25 @@ class VertxWebProcessor {
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<FilterBuildItem> filterProducer,
             List<RequireBodyHandlerBuildItem> bodyHandlerRequired,
             BeanArchiveIndexBuildItem beanArchive,
-            ShutdownContextBuildItem shutdown) throws IOException {
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            ShutdownContextBuildItem shutdown,
+            LaunchModeBuildItem launchMode,
+            BuildProducer<RouteDescriptionBuildItem> descriptions,
+            Capabilities capabilities,
+            Optional<BeanValidationAnnotationsBuildItem> beanValidationAnnotations) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         IndexView index = beanArchive.getIndex();
         Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
+        boolean validatorAvailable = capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
 
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
-            String handlerClass = generateHandler(new HandlerDescriptor(businessMethod.getMethod()),
-                    businessMethod.getBean(), businessMethod.getMethod(), classOutput);
-            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
-            Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
-
             AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
             String pathPrefix = null;
             String[] baseProduces = null;
@@ -237,7 +248,14 @@ class VertxWebProcessor {
                 }
             }
 
+            // Route annotations with the same values share a single handler instance
+            // @Route string value -> handler
+            Map<String, Handler<RoutingContext>> routeHandlers = new HashMap<>();
+
             for (AnnotationInstance route : businessMethod.getRoutes()) {
+                String routeString = route.toString(true);
+                Handler<RoutingContext> routeHandler = routeHandlers.get(routeString);
+
                 AnnotationValue regexValue = route.value(VALUE_REGEX);
                 AnnotationValue pathValue = route.value(VALUE_PATH);
                 AnnotationValue orderValue = route.valueWithDefault(index, VALUE_ORDER);
@@ -249,6 +267,7 @@ class VertxWebProcessor {
                 String regex = null;
                 String[] produces = producesValue.asStringArray();
                 String[] consumes = consumesValue.asStringArray();
+
                 HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
                         .toArray(HttpMethod[]::new);
                 Integer order = orderValue.asInt();
@@ -284,6 +303,17 @@ class VertxWebProcessor {
                     consumes = baseConsumes;
                 }
 
+                if (routeHandler == null) {
+                    String handlerClass = generateHandler(
+                            new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null)),
+                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
+                            routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
+                            validatorAvailable);
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+                    routeHandler = recorder.createHandler(handlerClass);
+                    routeHandlers.put(routeString, routeHandler);
+                }
+
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
@@ -303,16 +333,31 @@ class VertxWebProcessor {
                             handlerType = HandlerType.FAILURE;
                             break;
                         default:
-                            throw new IllegalStateException("Unkown type " + typeString);
+                            throw new IllegalStateException("Unknown type " + typeString);
                     }
                 }
-                routeProducer.produce(new RouteBuildItem(routeFunction, routingHandler, handlerType));
+                routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
+
+                if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+                    if (methods.length == 0) {
+                        // No explicit method declared - match all methods
+                        methods = HttpMethod.values();
+                    }
+                    descriptions.produce(new RouteDescriptionBuildItem(
+                            businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
+                                    + businessMethod.getMethod().name() + "()",
+                            regex != null ? regex : path,
+                            Arrays.stream(methods).map(Object::toString).collect(Collectors.joining(", ")), produces,
+                            consumes));
+                }
             }
         }
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
-            String handlerClass = generateHandler(new HandlerDescriptor(filterMethod.getMethod()),
-                    filterMethod.getBean(), filterMethod.getMethod(), classOutput);
+            String handlerClass = generateHandler(
+                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null)),
+                    filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
+                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -325,30 +370,29 @@ class VertxWebProcessor {
         recorder.clearCacheOnShutdown(shutdown);
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(RUNTIME_INIT)
+    void routeNotFound(Capabilities capabilities, ResourceNotFoundRecorder recorder, VertxWebRouterBuildItem router,
+            List<RouteDescriptionBuildItem> descriptions,
+            HttpRootPathBuildItem httpRoot,
+            List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoints) {
+        if (capabilities.isMissing(Capability.RESTEASY)) {
+            // Register a special error handler if JAX-RS not available
+            recorder.registerNotFoundHandler(router.getRouter(), httpRoot.getRootPath(),
+                    descriptions.stream().map(RouteDescriptionBuildItem::getDescription).collect(Collectors.toList()),
+                    additionalEndpoints.stream().map(NotFoundPageDisplayableEndpointBuildItem::getEndpoint)
+                            .collect(Collectors.toList()));
+        }
+    }
+
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                if (!scopes.isScopeIn(context.getAnnotations())) {
-                    // Class with no scope annotation but with a method annotated with @Route, @RouteFilter
-                    ClassInfo target = context.getTarget().asClass();
-                    if (target.annotations().containsKey(ROUTE) || target.annotations().containsKey(ROUTES)
-                            || target.annotations().containsKey(ROUTE_FILTER)) {
-                        LOGGER.debugf(
-                                "Found route handler business methods on a class %s with no scope annotation - adding @Singleton",
-                                context.getTarget());
-                        context.transform().add(Singleton.class).done();
-                    }
-                }
-            }
-        });
+    AutoAddScopeBuildItem autoAddScope() {
+        return AutoAddScopeBuildItem.builder()
+                .containsAnnotations(io.quarkus.vertx.web.deployment.DotNames.ROUTE,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTES,
+                        io.quarkus.vertx.web.deployment.DotNames.ROUTE_FILTER)
+                .defaultScope(BuiltinScope.SINGLETON)
+                .reason("Found route handler business methods").build();
     }
 
     private void validateRouteFilterMethod(BeanInfo bean, MethodInfo method) {
@@ -357,55 +401,73 @@ class VertxWebProcessor {
                     String.format("Route filter method must return void [method: %s, bean: %s]", method, bean));
         }
         List<Type> params = method.parameters();
-        if (params.size() != 1 || !params.get(0).name().equals(ROUTING_CONTEXT)) {
+        if (params.size() != 1 || !params.get(0).name()
+                .equals(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)) {
             throw new IllegalStateException(String.format(
                     "Route filter method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
-                    ROUTING_CONTEXT, params, method, bean));
+                    io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT, params, method, bean));
         }
     }
 
-    private void validateRouteMethod(BeanInfo bean, MethodInfo method, DotName[] validParamTypes) {
+    private void validateRouteMethod(BeanInfo bean, MethodInfo method,
+            TransformedAnnotationsBuildItem transformedAnnotations) {
         List<Type> params = method.parameters();
         if (params.isEmpty()) {
             if (method.returnType().kind() == Kind.VOID && params.isEmpty()) {
                 throw new IllegalStateException(String.format(
-                        "Route method that returns void must accept at least one parameter of the following types %s [method: %s, bean: %s]",
-                        Arrays.toString(validParamTypes), method, bean));
+                        "Route method that returns void must accept at least one injectable parameter [method: %s, bean: %s]",
+                        method, bean));
             }
         } else {
-            if ((method.returnType().name().equals(UNI) || method.returnType().name().equals(MULTI))
+            if ((method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.UNI)
+                    || method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.MULTI))
                     && method.returnType().kind() == Kind.CLASS) {
                 throw new IllegalStateException(
                         String.format(
                                 "Route business method returning a Uni/Multi must have a generic parameter [method: %s, bean: %s]",
                                 method, bean));
             }
-            boolean hasInvalidParam = true;
+            int idx = 0;
             for (Type paramType : params) {
-                for (DotName type : validParamTypes) {
-                    if (type.equals(paramType.name())) {
-                        hasInvalidParam = false;
-                    }
+                Set<AnnotationInstance> paramAnnotations = Annotations
+                        .getParameterAnnotations(transformedAnnotations, method,
+                                idx);
+                List<ParameterInjector> injectors = getMatchingInjectors(paramType, paramAnnotations);
+                if (injectors.isEmpty()) {
+                    throw new IllegalStateException(String.format(
+                            "No parameter injector found for parameter %s of route method %s declared on %s", idx,
+                            method,
+                            bean));
                 }
-            }
-            if (hasInvalidParam) {
-                throw new IllegalStateException(String.format(
-                        "Route method must only accept arguments of types %s: %s [method: %s, bean: %s]",
-                        Arrays.toString(validParamTypes), params, method, bean));
+                if (injectors.size() > 1) {
+                    throw new IllegalStateException(String.format(
+                            "Multiple parameter injectors found for parameter %s of route method %s declared on %s",
+                            idx,
+                            method, bean));
+                }
+                idx++;
             }
         }
     }
 
-    private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
+    private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput,
+            TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces,
+            boolean validatorAvailable) {
+
+        if (desc.requireValidation() && !validatorAvailable) {
+            throw new IllegalStateException(
+                    "A route requires validation, but the Hibernate Validator extension is not present");
+        }
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
-                    + DotNames.simpleName(bean.getImplClazz().name());
+            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
+                    + io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
         } else {
-            baseName = DotNames.simpleName(bean.getImplClazz().name());
+            baseName = io.quarkus.arc.processor.DotNames.simpleName(bean.getImplClazz().name());
         }
-        String targetPackage = DotNames.packageName(bean.getImplClazz().name());
+        String targetPackage = io.quarkus.arc.processor.DotNames.packageName(bean.getImplClazz().name());
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
@@ -413,7 +475,7 @@ class VertxWebProcessor {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + HANDLER_SUFFIX + "_" + method.name() + "_"
-                + HashUtil.sha1(sigBuilder.toString());
+                + HashUtil.sha1(sigBuilder.toString() + hashSuffix);
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(RouteHandler.class).build();
@@ -432,8 +494,17 @@ class VertxWebProcessor {
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        implementConstructor(bean, invokerCreator, beanField, contextField, containerField);
-        implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField);
+        FieldCreator validatorField = null;
+        if (desc.isProducedResponseValidated()) {
+            // If the produced item needs to be validated, we inject the Validator
+            validatorField = invokerCreator.getFieldCreator("validator", Methods.VALIDATION_VALIDATOR)
+                    .setModifiers(ACC_PUBLIC | ACC_FINAL);
+        }
+
+        implementConstructor(bean, invokerCreator, beanField, contextField, containerField, validatorField);
+        implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField, validatorField,
+                transformedAnnotations,
+                reflectiveHierarchy, defaultProduces);
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
@@ -441,7 +512,7 @@ class VertxWebProcessor {
 
     void implementConstructor(BeanInfo bean, ClassCreator invokerCreator, FieldCreator beanField,
             FieldCreator contextField,
-            FieldCreator containerField) {
+            FieldCreator containerField, FieldCreator validatorField) {
         MethodCreator constructor = invokerCreator.getMethodCreator("<init>", void.class);
         // Invoke super()
         constructor.invokeSpecialMethod(Methods.OBJECT_CONSTRUCTOR, constructor.getThis());
@@ -463,12 +534,19 @@ class VertxWebProcessor {
         } else {
             constructor.writeInstanceField(containerField.getFieldDescriptor(), constructor.getThis(), containerHandle);
         }
+
+        if (validatorField != null) {
+            constructor.writeInstanceField(validatorField.getFieldDescriptor(), constructor.getThis(),
+                    constructor.invokeStaticMethod(Methods.VALIDATION_GET_VALIDATOR, containerHandle));
+        }
+
         constructor.returnValue(null);
     }
 
     void implementInvoke(HandlerDescriptor descriptor, BeanInfo bean, MethodInfo method, ClassCreator invokerCreator,
-            FieldCreator beanField,
-            FieldCreator contextField, FieldCreator containerField) {
+            FieldCreator beanField, FieldCreator contextField, FieldCreator containerField, FieldCreator validatorField,
+            TransformedAnnotationsBuildItem transformedAnnotations,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces) {
         // The descriptor is: void invoke(RoutingContext rc)
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
@@ -500,8 +578,9 @@ class VertxWebProcessor {
                         "Context not active: " + bean.getScope().getDotName());
             }
             // First try to obtain the bean via Context.get(bean)
-            invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(Methods.CONTEXT_GET_IF_PRESENT, contextInvokeHandle,
-                    beanHandle));
+            invoke.assign(beanInstanceHandle,
+                    invoke.invokeInterfaceMethod(Methods.CONTEXT_GET_IF_PRESENT, contextInvokeHandle,
+                            beanHandle));
             // If not present, try Context.get(bean,creationalContext)
             BytecodeCreator doesNotExist = invoke.ifNull(beanInstanceHandle).trueBranch();
             doesNotExist.assign(beanInstanceHandle,
@@ -519,7 +598,12 @@ class VertxWebProcessor {
 
         int idx = 0;
         for (Type paramType : parameters) {
-            paramHandles[idx] = getParamHandle(paramType, routingContext, invoke);
+            Set<AnnotationInstance> paramAnnotations = Annotations
+                    .getParameterAnnotations(transformedAnnotations, method, idx);
+            // At this point we can be sure that a matching injector is available
+            paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations).get(0)
+                    .getResultHandle(method, paramType,
+                            paramAnnotations, routingContext, invoke, idx, reflectiveHierarchy);
             parameterTypes[idx] = paramType.name().toString();
             idx++;
         }
@@ -527,11 +611,38 @@ class VertxWebProcessor {
         MethodDescriptor methodDescriptor = MethodDescriptor
                 .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType, parameterTypes);
 
-        // Invoke the business method handler
-        ResultHandle res = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
-
         // If no content-type header is set then try to use the most acceptable content type
-        invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext);
+        // the business method can override this manually if required
+        invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext,
+                defaultProduces == null ? invoke.loadNull() : invoke.load(defaultProduces));
+
+        // Invoke the business method handler
+        AssignableResultHandle res;
+        if (descriptor.isReturningUni()) {
+            res = invoke.createVariable(Uni.class);
+        } else if (descriptor.isReturningMulti()) {
+            res = invoke.createVariable(Multi.class);
+        } else {
+            res = invoke.createVariable(Object.class);
+        }
+        invoke.assign(res, invoke.loadNull());
+        if (!descriptor.requireValidation()) {
+            ResultHandle value = invoke.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
+            if (value != null) {
+                invoke.assign(res, value);
+            }
+        } else {
+            TryBlock block = invoke.tryBlock();
+            ResultHandle value = block.invokeVirtualMethod(methodDescriptor, beanInstanceHandle, paramHandles);
+            if (value != null) {
+                block.assign(res, value);
+            }
+            CatchBlockCreator caught = block.addCatch(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION);
+            caught.invokeStaticMethod(
+                    Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION,
+                    caught.getCaughtException(), invoke.getMethodParam(0));
+            caught.returnValue(caught.loadNull());
+        }
 
         // Get the response: HttpServerResponse response = rc.response()
         MethodDescriptor end = Methods.getEndMethodForContentType(descriptor);
@@ -545,14 +656,18 @@ class VertxWebProcessor {
             // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
             // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
 
-            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, response);
-            FunctionCreator failureCallback = getUniOnFailureCallback(invoke, routingContext);
+            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, response,
+                    validatorField);
+
+            ResultHandle failureCallback = getUniOnFailureCallback(invoke, routingContext);
 
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
             invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
-                    failureCallback.getInstance());
-        } else if (descriptor.isReturningMulti()) {
+                    failureCallback);
 
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
+
+        } else if (descriptor.isReturningMulti()) {
             // 3 cases - regular multi vs. sse multi vs. json array multi, we need to check the type.
             BranchResult isItSSE = invoke.ifTrue(invoke.invokeStaticMethod(Methods.IS_SSE, res));
             BytecodeCreator isSSE = isItSSE.trueBranch();
@@ -564,10 +679,13 @@ class VertxWebProcessor {
             BytecodeCreator isJson = isItJson.trueBranch();
             handleJsonArrayMulti(descriptor, isJson, routingContext, res);
             isJson.close();
+
             BytecodeCreator isRegular = isItJson.falseBranch();
             handleRegularMulti(descriptor, isRegular, routingContext, res);
             isRegular.close();
             isNotSSE.close();
+
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
 
         } else if (descriptor.getContentType() != null) {
             // The method returns "something" in a synchronous manner, write it into the response
@@ -575,8 +693,12 @@ class VertxWebProcessor {
             // If the method returned null, we fail
             // If the method returns string or buffer, the response.end method is used to write the response
             // If the method returns an object, the result is mapped to JSON and written into the response
-            ResultHandle content = getContentToWrite(descriptor, response, res, invoke);
+
+            ResultHandle content = getContentToWrite(descriptor, response, res, invoke, validatorField,
+                    invoke.getThis());
             invoke.invokeInterfaceMethod(end, response, content);
+
+            registerForReflection(descriptor.getContentType(), reflectiveHierarchy);
         }
 
         // Destroy dependent instance afterwards
@@ -587,46 +709,21 @@ class VertxWebProcessor {
         invoke.returnValue(null);
     }
 
-    private ResultHandle getParamHandle(Type paramType, ResultHandle routingContext, MethodCreator invoke) {
-        ResultHandle paramHandle;
-        if (paramType.name().equals(ROUTING_CONTEXT)) {
-            paramHandle = routingContext;
-        } else if (paramType.name().equals(RX_ROUTING_CONTEXT)) {
-            paramHandle = invoke.newInstance(
-                    MethodDescriptor
-                            .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class, RoutingContext.class),
-                    routingContext);
-        } else if (paramType.name().equals(ROUTING_EXCHANGE)) {
-            paramHandle = invoke
-                    .newInstance(MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
-                            routingContext);
-        } else if (paramType.name().equals(HTTP_SERVER_REQUEST)) {
-            paramHandle = invoke
-                    .invokeInterfaceMethod(Methods.REQUEST,
-                            routingContext);
-        } else if (paramType.name().equals(HTTP_SERVER_RESPONSE)) {
-            paramHandle = invoke
-                    .invokeInterfaceMethod(Methods.RESPONSE,
-                            routingContext);
-        } else if (paramType.name().equals(RX_HTTP_SERVER_REQUEST)) {
-            paramHandle = invoke.newInstance(
-                    MethodDescriptor
-                            .ofConstructor(io.vertx.reactivex.core.http.HttpServerRequest.class, HttpServerRequest.class),
-                    invoke
-                            .invokeInterfaceMethod(Methods.REQUEST,
-                                    routingContext));
-        } else if (paramType.name().equals(RX_HTTP_SERVER_RESPONSE)) {
-            paramHandle = invoke.newInstance(
-                    MethodDescriptor
-                            .ofConstructor(io.vertx.reactivex.core.http.HttpServerResponse.class, HttpServerResponse.class),
-                    invoke
-                            .invokeInterfaceMethod(Methods.RESPONSE,
-                                    routingContext));
-        } else {
-            // This should never happen because we validate the method earlier
-            throw new IllegalArgumentException("Unsupported parameter type: " + paramType);
+    private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays
+            .asList(io.quarkus.arc.processor.DotNames.STRING,
+                    DotNames.BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
+
+    private static void registerForReflection(Type contentType,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+        if (TYPES_IGNORED_FOR_REFLECTION.contains(contentType.name())) {
+            return;
         }
-        return paramHandle;
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                .type(contentType)
+                .ignoreTypePredicate(ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
+                        .or(TYPES_IGNORED_FOR_REFLECTION::contains))
+                .source(VertxWebProcessor.class.getSimpleName() + " > " + contentType)
+                .build());
     }
 
     private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
@@ -707,15 +804,15 @@ class VertxWebProcessor {
 
     /**
      * Generates the following function depending on the payload type
-     *
+     * <p>
      * If the method returns a {@code Uni<Void>}
-     * 
+     *
      * <pre>
      *     item -> rc.response().setStatusCode(204).end();
      * </pre>
-     *
+     * <p>
      * If the method returns a {@code Uni<Buffer>}:
-     * 
+     *
      * <pre>
      *     item -> {
      *       if (item != null) {
@@ -726,9 +823,9 @@ class VertxWebProcessor {
      *       }
      *     }
      * </pre>
-     *
+     * <p>
      * If the method returns a {@code Uni<String>} :
-     * 
+     *
      * <pre>
      *     item -> {
      *       if (item != null) {
@@ -738,9 +835,9 @@ class VertxWebProcessor {
      *       }
      *     }
      * </pre>
-     *
+     * <p>
      * If the method returns a {@code Uni<T>} :
-     * 
+     *
      * <pre>
      *     item -> {
      *       if (item != null) {
@@ -751,7 +848,7 @@ class VertxWebProcessor {
      *       }
      *     }
      * </pre>
-     *
+     * <p>
      * This last version also set the {@code content-type} header to {@code application/json }if not set.
      *
      * @param descriptor the method descriptor
@@ -759,10 +856,11 @@ class VertxWebProcessor {
      * @param rc the reference to the routing context variable
      * @param end the end method to use
      * @param response the reference to the response variable
+     * @param validatorField the validator field if validation is enabled
      * @return the function creator
      */
     private FunctionCreator getUniOnItemCallback(HandlerDescriptor descriptor, MethodCreator invoke, ResultHandle rc,
-            MethodDescriptor end, ResultHandle response) {
+            MethodDescriptor end, ResultHandle response, FieldCreator validatorField) {
         FunctionCreator callback = invoke.createFunction(Consumer.class);
         BytecodeCreator creator = callback.getBytecode();
         if (Methods.isNoContent(descriptor)) { // Uni<Void> - so return a 204.
@@ -774,7 +872,8 @@ class VertxWebProcessor {
             BranchResult isItemNull = creator.ifNull(item);
 
             BytecodeCreator itemIfNotNull = isItemNull.falseBranch();
-            ResultHandle content = getContentToWrite(descriptor, response, item, itemIfNotNull);
+            ResultHandle content = getContentToWrite(descriptor, response, item, itemIfNotNull, validatorField,
+                    invoke.getThis());
             itemIfNotNull.invokeInterfaceMethod(end, response, content);
             itemIfNotNull.close();
 
@@ -787,27 +886,13 @@ class VertxWebProcessor {
         return callback;
     }
 
-    /**
-     * Generates the following function:
-     *
-     * <pre>
-     *     throwable -> rc.fail(throwable);
-     * </pre>
-     *
-     * @param writer the bytecode writer
-     * @param rc the reference to the RoutingContext variable
-     * @return the function creator.
-     */
-    private FunctionCreator getUniOnFailureCallback(MethodCreator writer, ResultHandle rc) {
-        FunctionCreator callback = writer.createFunction(Consumer.class);
-        BytecodeCreator creator = callback.getBytecode();
-        Methods.fail(creator, rc, creator.getMethodParam(0));
-        Methods.returnAndClose(creator);
-        return callback;
+    private ResultHandle getUniOnFailureCallback(MethodCreator writer, ResultHandle routingContext) {
+        return writer.newInstance(MethodDescriptor.ofConstructor(UniFailureCallback.class, RoutingContext.class),
+                routingContext);
     }
 
     private ResultHandle getContentToWrite(HandlerDescriptor descriptor, ResultHandle response, ResultHandle res,
-            BytecodeCreator writer) {
+            BytecodeCreator writer, FieldCreator validatorField, ResultHandle owner) {
         if (descriptor.isContentTypeString() || descriptor.isContentTypeBuffer()) {
             return res;
         }
@@ -822,7 +907,13 @@ class VertxWebProcessor {
 
         // Encode to Json
         Methods.setContentTypeToJson(response, writer);
-        return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);
+        // Validate res if needed
+        if (descriptor.isProducedResponseValidated()) {
+            return Methods.validateProducedItem(response, writer, res, validatorField, owner);
+        } else {
+            return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);
+        }
+
     }
 
     private static String dashify(String value) {
@@ -842,7 +933,7 @@ class VertxWebProcessor {
         if (matchers.isEmpty()) {
             return;
         }
-        // First we need to group matchers that could potentially match the same request 
+        // First we need to group matchers that could potentially match the same request
         Set<LinkedHashSet<RouteMatcher>> groups = new HashSet<>();
         for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator
                 .hasNext();) {
@@ -921,4 +1012,403 @@ class VertxWebProcessor {
         }
         return true;
     }
+
+    private List<ParameterInjector> getMatchingInjectors(Type paramType, Set<AnnotationInstance> paramAnnotations) {
+        List<ParameterInjector> injectors = new ArrayList<>();
+        for (ParameterInjector injector : PARAM_INJECTORS) {
+            if (injector.matches(paramType, paramAnnotations)) {
+                injectors.add(injector);
+            }
+        }
+        return injectors;
+    }
+
+    static List<ParameterInjector> initParamInjectors() {
+        List<ParameterInjector> injectors = new ArrayList<>();
+
+        injectors.add(ParameterInjector.builder().matchType(io.quarkus.vertx.web.deployment.DotNames.ROUTING_CONTEXT)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return routingContext;
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(DotNames.RX_ROUTING_CONTEXT)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke.newInstance(
+                                MethodDescriptor
+                                        .ofConstructor(io.vertx.reactivex.ext.web.RoutingContext.class,
+                                                RoutingContext.class),
+                                routingContext);
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(DotNames.ROUTING_EXCHANGE)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke
+                                .newInstance(
+                                        MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
+                                        routingContext);
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(DotNames.HTTP_SERVER_REQUEST)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke
+                                .invokeInterfaceMethod(Methods.REQUEST,
+                                        routingContext);
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(DotNames.HTTP_SERVER_RESPONSE)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke
+                                .invokeInterfaceMethod(Methods.RESPONSE,
+                                        routingContext);
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(DotNames.RX_HTTP_SERVER_REQUEST)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke.newInstance(
+                                MethodDescriptor
+                                        .ofConstructor(io.vertx.reactivex.core.http.HttpServerRequest.class,
+                                                HttpServerRequest.class),
+                                invoke
+                                        .invokeInterfaceMethod(Methods.REQUEST,
+                                                routingContext));
+                    }
+                }).build());
+
+        injectors
+                .add(ParameterInjector.builder().matchType(DotNames.RX_HTTP_SERVER_RESPONSE)
+                        .resultHandleProvider(new ResultHandleProvider() {
+                            @Override
+                            public ResultHandle get(MethodInfo method, Type paramType,
+                                    Set<AnnotationInstance> annotations,
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                                return invoke.newInstance(
+                                        MethodDescriptor
+                                                .ofConstructor(io.vertx.reactivex.core.http.HttpServerResponse.class,
+                                                        HttpServerResponse.class),
+                                        invoke
+                                                .invokeInterfaceMethod(Methods.RESPONSE,
+                                                        routingContext));
+                            }
+                        }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .matchType(ParameterizedType.create(DotNames.LIST,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .requireAnnotations(PARAM)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        AnnotationValue paramAnnotationValue = Annotations
+                                .find(annotations, PARAM).value();
+                        String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
+                        if (paramName == null || paramName.equals(Param.ELEMENT_NAME)) {
+                            paramName = method.parameterName(position);
+                        }
+                        if (paramName == null) {
+                            throw parameterNameNotAvailable(position, method);
+                        }
+                        ResultHandle paramHandle;
+                        if (paramType.name().equals(DotNames.LIST)) {
+                            // routingContext.request().params().getAll(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                                    invoke.invokeInterfaceMethod(Methods.REQUEST_PARAMS, invoke
+                                            .invokeInterfaceMethod(Methods.REQUEST,
+                                                    routingContext)),
+                                    invoke.load(paramName));
+                        } else {
+                            // routingContext.request().getParam(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_PARAM, invoke
+                                    .invokeInterfaceMethod(Methods.REQUEST,
+                                            routingContext),
+                                    invoke.load(paramName));
+                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
+                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                            }
+                        }
+                        return paramHandle;
+                    }
+                }).build());
+
+        injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchType(ParameterizedType.create(io.quarkus.arc.processor.DotNames.OPTIONAL,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .matchType(ParameterizedType.create(DotNames.LIST,
+                        new Type[] { Type.create(io.quarkus.arc.processor.DotNames.STRING, Kind.CLASS) }, null))
+                .requireAnnotations(DotNames.HEADER)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        AnnotationValue paramAnnotationValue = Annotations
+                                .find(annotations, DotNames.HEADER).value();
+                        String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
+                        if (paramName == null || paramName.equals(Header.ELEMENT_NAME)) {
+                            paramName = method.parameterName(position);
+                        }
+                        if (paramName == null) {
+                            throw parameterNameNotAvailable(position, method);
+                        }
+                        ResultHandle paramHandle;
+                        if (paramType.name().equals(DotNames.LIST)) {
+                            // routingContext.request().headers().getAll(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                                    invoke.invokeInterfaceMethod(Methods.REQUEST_HEADERS, invoke
+                                            .invokeInterfaceMethod(Methods.REQUEST,
+                                                    routingContext)),
+                                    invoke.load(paramName));
+                        } else {
+                            // routingContext.request().getHeader(paramName)
+                            paramHandle = invoke.invokeInterfaceMethod(Methods.REQUEST_GET_HEADER, invoke
+                                    .invokeInterfaceMethod(Methods.REQUEST,
+                                            routingContext),
+                                    invoke.load(paramName));
+                            if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
+                                paramHandle = invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle);
+                            }
+
+                        }
+                        return paramHandle;
+                    }
+                }).build());
+
+        injectors
+                .add(ParameterInjector.builder()
+                        .matchType(io.quarkus.arc.processor.DotNames.STRING)
+                        .matchType(DotNames.BUFFER)
+                        .matchType(DotNames.JSON_OBJECT)
+                        .matchType(DotNames.JSON_ARRAY)
+                        .requireAnnotations(DotNames.BODY)
+                        .resultHandleProvider(new ResultHandleProvider() {
+                            @Override
+                            public ResultHandle get(MethodInfo method, Type paramType,
+                                    Set<AnnotationInstance> annotations,
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                                if (paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_STRING, routingContext);
+                                } else if (paramType.name().equals(DotNames.BUFFER)) {
+                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY, routingContext);
+                                } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
+                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON, routingContext);
+                                } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
+                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON_ARRAY, routingContext);
+                                }
+                                // This should never happen
+                                throw new IllegalArgumentException("Unsupported param type: " + paramType);
+                            }
+                        }).build());
+
+        injectors
+                .add(ParameterInjector.builder()
+                        .skipType(io.quarkus.arc.processor.DotNames.STRING)
+                        .skipType(DotNames.BUFFER)
+                        .skipType(DotNames.JSON_OBJECT)
+                        .skipType(DotNames.JSON_ARRAY)
+                        .requireAnnotations(DotNames.BODY)
+                        .resultHandleProvider(new ResultHandleProvider() {
+                            @Override
+                            public ResultHandle get(MethodInfo method, Type paramType,
+                                    Set<AnnotationInstance> annotations,
+                                    ResultHandle routingContext, MethodCreator invoke, int position,
+                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                                registerForReflection(paramType, reflectiveHierarchy);
+                                AssignableResultHandle ret = invoke.createVariable(Object.class);
+                                ResultHandle bodyAsJson = invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON,
+                                        routingContext);
+                                BranchResult bodyIfNotNull = invoke.ifNotNull(bodyAsJson);
+                                BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
+                                bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
+                                        bodyAsJson,
+                                        invoke.loadClass(paramType.name().toString())));
+                                BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
+                                bodyNull.assign(ret, bodyNull.loadNull());
+                                return ret;
+                            }
+                        }).build());
+
+        return injectors;
+    }
+
+    private static IllegalStateException parameterNameNotAvailable(int position, MethodInfo method) {
+        return new IllegalStateException(
+                "Unable to determine the name of the parameter at position " + position + " in method "
+                        + method.declaringClass().name() + "#" + method.name()
+                        + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or specify the appropriate annotation value");
+
+    }
+
+    static class ParameterInjector {
+
+        static Builder builder() {
+            return new Builder();
+        }
+
+        final List<Type> matchTypes;
+        final List<Type> skipTypes;
+        final List<DotName> requiredAnnotationNames;
+        final ResultHandleProvider provider;
+
+        ParameterInjector(ParameterInjector.Builder builder) {
+            this.matchTypes = builder.matchTypes;
+            this.skipTypes = builder.skipTypes;
+            this.requiredAnnotationNames = builder.requiredAnnotationNames;
+            this.provider = builder.provider;
+        }
+
+        boolean matches(Type paramType, Set<AnnotationInstance> paramAnnotations) {
+            // First iterate over all types that should be skipped
+            if (skipTypes != null) {
+                for (Type skipType : skipTypes) {
+                    if (skipType.kind() != paramType.kind()) {
+                        continue;
+                    }
+                    if (skipType.kind() == Kind.CLASS && skipType.name().equals(paramType.name())) {
+                        return false;
+                    }
+                    if (skipType.kind() == Kind.PARAMETERIZED_TYPE && skipType.name().equals(paramType.name())
+                            && skipType.asParameterizedType().arguments()
+                                    .equals(paramType.asParameterizedType().arguments())) {
+                        return false;
+                    }
+                }
+            }
+            // Match any of the specified types
+            if (matchTypes != null) {
+                boolean matches = false;
+                for (Type matchType : matchTypes) {
+                    if (matchType.kind() != paramType.kind()) {
+                        continue;
+                    }
+                    if (matchType.kind() == Kind.CLASS && matchType.name().equals(paramType.name())) {
+                        matches = true;
+                        break;
+                    }
+                    if (matchType.kind() == Kind.PARAMETERIZED_TYPE && matchType.name().equals(paramType.name())
+                            && matchType.asParameterizedType().arguments()
+                                    .equals(paramType.asParameterizedType().arguments())) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (!matches) {
+                    return false;
+                }
+            }
+            // Find required annotations if specified
+            if (!requiredAnnotationNames.isEmpty()) {
+                for (DotName annotationName : requiredAnnotationNames) {
+                    if (!Annotations.contains(paramAnnotations, annotationName)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        ResultHandle getResultHandle(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                ResultHandle routingContext, MethodCreator invoke, int position,
+                BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+            return provider.get(method, paramType, annotations, routingContext, invoke, position, reflectiveHierarchy);
+        }
+
+        @Override
+        public String toString() {
+            String builder = "ParameterInjector [matchTypes=" + matchTypes + ", skipTypes=" + skipTypes
+                    + ", requiredAnnotationNames="
+                    + requiredAnnotationNames + "]";
+            return builder;
+        }
+
+        static class Builder {
+
+            List<Type> matchTypes;
+            List<Type> skipTypes;
+            List<DotName> requiredAnnotationNames = Collections.emptyList();
+            ResultHandleProvider provider;
+
+            Builder matchType(DotName className) {
+                return matchType(Type.create(className, Kind.CLASS));
+            }
+
+            Builder matchType(Type type) {
+                if (matchTypes == null) {
+                    matchTypes = new ArrayList<>();
+                }
+                matchTypes.add(type);
+                return this;
+            }
+
+            Builder skipType(DotName className) {
+                return skipType(Type.create(className, Kind.CLASS));
+            }
+
+            Builder skipType(Type type) {
+                if (skipTypes == null) {
+                    skipTypes = new ArrayList<>();
+                }
+                skipTypes.add(type);
+                return this;
+            }
+
+            Builder requireAnnotations(DotName... names) {
+                this.requiredAnnotationNames = Arrays.asList(names);
+                return this;
+            }
+
+            Builder resultHandleProvider(ResultHandleProvider provider) {
+                this.provider = provider;
+                return this;
+            }
+
+            ParameterInjector build() {
+                return new ParameterInjector(this);
+            }
+
+        }
+
+    }
+
+    interface ResultHandleProvider {
+
+        ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                ResultHandle routingContext, MethodCreator invoke, int position,
+                BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy);
+
+    }
+
 }

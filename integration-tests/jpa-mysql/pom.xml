@@ -15,8 +15,8 @@
     <description>Module that contains JPA related tests running with the MySQL database</description>
 
     <properties>
-        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
-        <mysql.image>mysql:8.0.17</mysql.image>
+        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
+        <mysql.image>mysql:8.0.21</mysql.image>
     </properties>
 
     <dependencies>
@@ -43,6 +43,47 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-mysql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -117,6 +158,13 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>${native.surefire.skip}</skipTests>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <executions>
                             <execution>
@@ -165,7 +213,7 @@
                 </property>
             </activation>
             <properties>
-                <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
+                <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
             </properties>
             <build>
                 <plugins>

@@ -50,15 +50,15 @@ public class SimpleGeneratorTest {
         MethodInfo extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
-        extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 PrimitiveType.LONG);
-        extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
-        extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, null, null);
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 
@@ -102,6 +102,9 @@ public class SimpleGeneratorTest {
         }
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if active} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if !hasItems} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if !items} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals("OK", engine.parse("{#if this.getList(5).size == 5}OK{/if}").render(new MyService()));
         assertEquals("2", engine.parse("{this.getListVarargs('foo','bar').size}").render(new MyService()));
         assertEquals("NOT_FOUND", engine.parse("{this.getAnotherTestName(1)}").render(new MyService()));

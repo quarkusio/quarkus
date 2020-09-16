@@ -66,6 +66,10 @@ public class TestRecorder {
         bean.getValue().setIval(bean.getValue().getIval() + 1);
     }
 
+    public void bean(TestConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
     public void result(RuntimeValue<TestJavaBean> bean) {
         RESULT.add(bean.getValue());
     }

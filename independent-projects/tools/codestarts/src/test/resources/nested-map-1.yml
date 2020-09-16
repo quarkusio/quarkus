@@ -1,0 +1,15 @@
+---
+foo:
+  baz: baz
+  foo: bar
+  bar:
+    foo: bar
+    bar: foo
+baz: baz
+bar:
+  foo:
+    bar:
+      foo: baz
+list:
+  - foo
+  - bar

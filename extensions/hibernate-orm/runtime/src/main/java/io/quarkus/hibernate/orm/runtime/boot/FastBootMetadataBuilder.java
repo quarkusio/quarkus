@@ -96,6 +96,7 @@ public class FastBootMetadataBuilder {
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
+    private final String dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
 
@@ -103,6 +104,7 @@ public class FastBootMetadataBuilder {
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
+        this.dataSource = puDefinition.getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.additionalIntegrators = additionalIntegrators;
         this.preGeneratedProxies = preGeneratedProxies;
@@ -173,7 +175,8 @@ public class FastBootMetadataBuilder {
 
         final MultiTenancyStrategy strategy = puDefinition.getMultitenancyStrategy();
         if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class, new HibernateMultiTenantConnectionProvider());
+            ssrBuilder.addService(MultiTenantConnectionProvider.class,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
         }
         this.multiTenancyStrategy = strategy;
 
@@ -312,7 +315,8 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry();
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy, isReactive);
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, dataSource, multiTenancyStrategy,
+                isReactive);
     }
 
     private void destroyServiceRegistry() {

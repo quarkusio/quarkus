@@ -139,6 +139,7 @@ public class JarResultBuildStep {
     public static final String APP = "app";
     public static final String QUARKUS = "quarkus";
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
+    public static final String RENAMED_JAR_EXTENSION = ".jar.original";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -174,6 +175,12 @@ public class JarResultBuildStep {
 
         if (appCDS.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, appCDS.get());
+        }
+        if (!(packageConfig.type.equalsIgnoreCase(PackageConfig.JAR) ||
+                packageConfig.type.equalsIgnoreCase(PackageConfig.UBER_JAR))
+                && packageConfig.uberJar) {
+            throw new RuntimeException(
+                    "Cannot set quarkus.package.uber-jar=true and quarkus.package.type, if you want an uber-jar set quarkus.package.type=uber-jar.");
         }
 
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar
@@ -251,12 +258,17 @@ public class JarResultBuildStep {
         final Path originalJar;
         if (Files.exists(standardJar)) {
             originalJar = outputTargetBuildItem.getOutputDirectory()
-                    .resolve(outputTargetBuildItem.getBaseName() + ".jar.original");
+                    .resolve(outputTargetBuildItem.getBaseName() + RENAMED_JAR_EXTENSION);
         } else {
             originalJar = null;
         }
 
-        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR);
+        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.UBER_JAR,
+                suffixToClassifier(packageConfig.runnerSuffix));
+    }
+
+    private String suffixToClassifier(String suffix) {
+        return suffix.startsWith("-") ? suffix.substring(1) : suffix;
     }
 
     private void buildUberJar0(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -402,8 +414,7 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
         Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
         Files.deleteIfExists(runnerJar);
-        IoUtils.recursiveDelete(libDir);
-        Files.createDirectories(libDir);
+        IoUtils.recursiveDeleteAndThenCreate(libDir);
 
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 
@@ -414,7 +425,7 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY);
+        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.LEGACY, suffixToClassifier(packageConfig.runnerSuffix));
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -452,8 +463,7 @@ public class JarResultBuildStep {
             userProviders = buildDir.resolve(packageConfig.userProvidersDirectory.get());
         }
         if (!rebuild) {
-            IoUtils.recursiveDelete(buildDir);
-            Files.createDirectories(buildDir);
+            IoUtils.recursiveDeleteAndThenCreate(buildDir);
             Files.createDirectories(mainLib);
             Files.createDirectories(baseLib);
             Files.createDirectories(appDir);
@@ -465,8 +475,7 @@ public class JarResultBuildStep {
                 Files.createFile(userProviders.resolve(".keep"));
             }
         } else {
-            IoUtils.recursiveDelete(quarkus);
-            Files.createDirectories(quarkus);
+            IoUtils.recursiveDeleteAndThenCreate(quarkus);
         }
         Map<AppArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
 
@@ -621,7 +630,7 @@ public class JarResultBuildStep {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.type);
+        return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
     }
 
     private void copyDependency(CurateOutcomeBuildItem curateOutcomeBuildItem, Map<AppArtifactKey, List<Path>> runtimeArtifacts,
@@ -700,8 +709,7 @@ public class JarResultBuildStep {
             List<UberJarRequiredBuildItem> uberJarRequired) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
-        IoUtils.recursiveDelete(targetDirectory);
-        Files.createDirectories(targetDirectory);
+        IoUtils.recursiveDeleteAndThenCreate(targetDirectory);
 
         List<GeneratedClassBuildItem> allClasses = new ArrayList<>(generatedClasses);
         allClasses.addAll(nativeImageResources.stream()
@@ -714,9 +722,14 @@ public class JarResultBuildStep {
                     "maximum command length (see https://github.com/oracle/graal/issues/2387).");
             // Native image source jar generation with the uber jar strategy is provided as a workaround for Windows and
             // will be removed once https://github.com/oracle/graal/issues/2387 is fixed.
-            return buildNativeImageUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
+            final NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem = buildNativeImageUberJar(curateOutcomeBuildItem,
+                    outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, allClasses, generatedResources, mainClassBuildItem, targetDirectory);
+            // additionally copy any json config files to a location accessible by native-image tool during
+            // native-image generation
+            copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
+            return nativeImageSourceJarBuildItem;
         } else {
             return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,

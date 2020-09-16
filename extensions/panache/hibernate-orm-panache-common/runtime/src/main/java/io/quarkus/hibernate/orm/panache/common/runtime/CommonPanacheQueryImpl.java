@@ -29,11 +29,11 @@ public class CommonPanacheQueryImpl<Entity> {
     // match SELECT DISTINCT? id (AS id)? (, id (AS id)?)*
     static final Pattern SELECT_PATTERN = Pattern.compile(
             "^\\s*SELECT\\s+((?:DISTINCT\\s+)?\\w+(?:\\.\\w+)*)(?:\\s+AS\\s+\\w+)?(\\s*,\\s*\\w+(?:\\.\\w+)*(?:\\s+AS\\s+\\w+)?)*\\s+(.*)",
-            Pattern.CASE_INSENSITIVE);
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     // match FROM
     static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*",
-            Pattern.CASE_INSENSITIVE);
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private interface NonThrowingCloseable extends AutoCloseable {
         @Override

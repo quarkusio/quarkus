@@ -113,11 +113,15 @@ public class TsArtifact {
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep) {
+        return addDependency(dep, false);
+    }
+
+    public TsArtifact addDependency(TsQuarkusExt dep, boolean optional) {
         if (extDeps.isEmpty()) {
             extDeps = new ArrayList<>(1);
         }
         extDeps.add(dep);
-        return addDependency(new TsDependency(dep.getRuntime()));
+        return addDependency(new TsDependency(dep.getRuntime(), optional));
     }
 
     public TsArtifact addDependency(TsDependency dep) {

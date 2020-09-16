@@ -10,17 +10,38 @@ If you think some information is outdated, either provide a pull request or send
 |Agroal
 |https://github.com/gsmet[Guillaume Smet], https://github.com/barreiro[Luis Barreiro]
 
-|Amazon DynamoDB
-|https://github.com/marcinczeczko[Marcin Czeczko]
+|Amazon Alexa
+|https://github.com/oztimpower[Timothy Power]
 
 |Amazon Lambda
-|https://github.com/patriot1burke[Bill Burke], https://github.com/evanchooly[Justin Lee]
+|https://github.com/patriot1burke[Bill Burke]
+
+|Amazon Services - KMS
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Services - DynamoDB
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Services - S3
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Services - SES
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Services - SNS
+|https://github.com/marcinczeczko[Marcin Czeczko]
+
+|Amazon Services - SQS
+|https://github.com/marcinczeczko[Marcin Czeczko]
 
 |ArC
 |https://github.com/mkouba[Martin Kouba], https://github.com/manovotn[Matěj Novotný]
 
 |Artemis (Core and JMS)
 |https://github.com/middagj[Jacob Middag]
+
+|Avro
+|https://github.com/cescoffier[Clément Escoffier]
 
 |Azure Functions HTTP
 |https://github.com/patriot1burke[Bill Burke]
@@ -31,8 +52,29 @@ If you think some information is outdated, either provide a pull request or send
 |Caffeine
 |https://github.com/galderz[Galder Zamarreño], https://github.com/wburns[William Burns]
 
+|https://github.com/apache/camel-quarkus[Camel]
+|https://github.com/jamesnetherton[James Netherton], https://github.com/ppalaga[Peter Palaga]
+
+|Cassandra-Quarkus
+|https://github.com/adutra[Alexandre Dutra], https://github.com/tomekl007[Tomasz Lelek], https://github.com/absurdfarce[Bret McGuire], https://github.com/emerkle826[Erik Merkle], https://github.com/olim7t[Olivier Michallat]
+
+|Consul Config
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Container Image Jib
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Container Image Docker
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Elasticsearch REST Client Common
+|https://github.com/gsmet[Guillaume Smet], https://github.com/loicmathieu[Loïc Mathieu]
+
 |Elasticsearch REST Client
-|https://github.com/gsmet[Guillaume Smet]
+|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/gsmet[Guillaume Smet]
+
+|Elasticsearch REST High Level Client
+|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/gsmet[Guillaume Smet]
 
 |Elytron Security
 |https://github.com/sberyozkin[Sergey Beryozkin]
@@ -47,13 +89,25 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/stuartwdouglas[Stuart Douglas]
 
 |Flyway
-|https://github.com/gastaldi[George Gastaldi]
+|https://github.com/gastaldi[George Gastaldi], https://github.com/geoand[Georgios Andrianakis]
+
+|Funqy
+|https://github.com/patriot1burke[Bill Burke]
+
+|Google Cloud Functions
+|https://github.com/loicmathieu[Loïc Mathieu]
+
+|gRPC
+|https://github.com/cescoffier[Clément Escoffier], https://github.com/michalszynkiewicz[Michal Szynkiewicz]
 
 |Hibernate ORM
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
 
 |Hibernate ORM with Panache
 |https://github.com/FroMage[Stéphane Épardaud]
+
+|Hibernate ORM with Panache for Kotlin
+|https://github.com/evanchooly[Justin Lee]
 
 |Hibernate Search
 |https://github.com/gsmet[Guillaume Smet]
@@ -110,7 +164,7 @@ If you think some information is outdated, either provide a pull request or send
 |https://github.com/mariofusco[Mario Fusco], https://github.com/cristianonicolai[Cristiano Nicolai]
 
 |Kotlin
-|https://github.com/geoand[Georgios Andrianakis]
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/evanchooly[Justin Lee]
 
 |Kubernetes
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/iocanel[Ioannis Canellos]
@@ -118,14 +172,20 @@ If you think some information is outdated, either provide a pull request or send
 |Kubernetes Client
 |https://github.com/geoand[Georgios Andrianakis], https://github.com/gastaldi[George Gastaldi]
 
+|Liquibase
+|https://github.com/andrejpetras[Andrej Petras], https://github.com/geoand[Georgios Andrianakis]
+
 |Mailer
 |https://github.com/cescoffier[Clément Escoffier]
+
+|Minikube
+|https://github.com/geoand[Georgios Andrianakis], https://github.com/iocanel[Ioannis Canellos]
 
 |MongoDB client
 |https://github.com/cescoffier[Clément Escoffier]
 
 |MongoDB with Panache
-|https://github.com/loicmathieu[Loïc Mathieu]
+|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/evanchooly[Justin Lee]
 
 |Narayana JTA
 |https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]
@@ -142,6 +202,12 @@ If you think some information is outdated, either provide a pull request or send
 |OIDC (OpenID Connect)
 |https://github.com/sberyozkin[Sergey Beryozkin], https://github.com/stuartwdouglas[Stuart Douglas], https://github.com/pedroigor[Pedro Igor]
 
+|OpenShift
+|https://github.com/iocanel[Ioannis Canellos], https://github.com/geoand[Georgios Andrianakis]
+
+|Quartz
+|https://github.com/mkouba[Martin Kouba], https://github.com/machi1990[Manyanda Chitimbo]
+
 |Qute (Templates)
 |https://github.com/mkouba[Martin Kouba]
 
@@ -156,6 +222,9 @@ If you think some information is outdated, either provide a pull request or send
 
 |Reactive Streams Operators
 |https://github.com/cescoffier[Clément Escoffier]
+
+|Redis Client
+|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/cescoffier[Clément Escoffier], https://github.com/gsmet[Guillaume Smet]
 
 |REST Client
 |https://github.com/phillip-kruger[Phillip Kruger], https://github.com/asoldano[Alessio Soldano], https://github.com/ronsigal[Ron Sigal]
@@ -181,6 +250,9 @@ If you think some information is outdated, either provide a pull request or send
 |Scheduler
 |https://github.com/mkouba[Martin Kouba]
 
+|SmallRye Config
+|https://github.com/radcortez[Roberto Cortez]
+
 |SmallRye Context Propagation
 |https://github.com/FroMage[Stéphane Épardaud], https://github.com/manovotn[Matěj Novotný]
 
@@ -199,6 +271,9 @@ If you think some information is outdated, either provide a pull request or send
 |SmallRye OpenAPI
 |https://github.com/phillip-kruger[Phillip Kruger], https://github.com/radcortez[Roberto Cortez], https://github.com/EricWittmann[Eric Wittmann]
 
+|SmallRye GraphQL
+|https://github.com/phillip-kruger[Phillip Kruger], https://github.com/jmartisk[Jan Martiska]
+
 |SmallRye OpenTracing
 |https://github.com/pavolloffay[Pavol Loffay], https://github.com/Ladicek[Ladislav Thon]
 
@@ -214,11 +289,23 @@ If you think some information is outdated, either provide a pull request or send
 |SmallRye Reactive Messaging - MQTT
 |https://github.com/cescoffier[Clément Escoffier], https://github.com/michalszynkiewicz[Michał Szynkiewicz]
 
+|Spring Boot Properties
+|https://github.com/gytis[Gytis Trikleris]
+
+|Spring Cache
+|https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Cloud Config Client
+|https://github.com/geoand[Georgios Andrianakis]
+
 |Spring DI
 |https://github.com/geoand[Georgios Andrianakis]
 
 |Spring Data JPA
 |https://github.com/geoand[Georgios Andrianakis]
+
+|Spring Scheduled
+|https://github.com/aureamunoz[Aurea Munoz]
 
 |Spring Web
 |https://github.com/geoand[Georgios Andrianakis]

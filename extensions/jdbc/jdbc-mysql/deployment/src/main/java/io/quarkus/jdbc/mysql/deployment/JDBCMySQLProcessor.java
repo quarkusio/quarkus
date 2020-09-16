@@ -19,7 +19,7 @@ import com.mysql.cj.jdbc.ha.ReplicationConnection;
 import com.mysql.cj.jdbc.result.ResultSetInternalMethods;
 import com.mysql.cj.protocol.Resultset;
 
-import io.quarkus.agroal.deployment.JdbcDriverBuildItem;
+import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -33,6 +33,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -66,8 +67,8 @@ public class JDBCMySQLProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void abandonedConnectionCleanUp(MySQLRecorder recorder) {
-        recorder.startAbandonedConnectionCleanup();
+    void abandonedConnectionCleanUp(MySQLRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
+        recorder.startAbandonedConnectionCleanup(shutdownContextBuildItem);
     }
 
     @BuildStep

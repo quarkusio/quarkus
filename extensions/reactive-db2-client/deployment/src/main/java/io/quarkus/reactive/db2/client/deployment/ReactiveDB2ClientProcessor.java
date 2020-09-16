@@ -4,6 +4,7 @@ import javax.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -30,9 +31,24 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
 
+    /**
+     * The producer needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
+     * consumes the AdditionalBeanBuildItems).
+     */
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(DB2PoolProducer.class);
+    void poolProducer(
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
+            return;
+        }
+
+        additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
+                .addBeanClass(DB2PoolProducer.class)
+                .setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build());
     }
 
     @BuildStep
@@ -53,10 +69,7 @@ class ReactiveDB2ClientProcessor {
         // Make sure the DB2PoolProducer is initialized before the StartupEvent is fired
         ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-db2-client");
 
-        // Note: we had to tweak that logic to support the legacy configuration
-        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
-                && (!DatabaseKind.isDB2(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
-                        || !dataSourceReactiveBuildTimeConfig.enabled)) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
             return serviceStart;
         }
 
@@ -80,8 +93,30 @@ class ReactiveDB2ClientProcessor {
     }
 
     @BuildStep
-    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.reactive.db2.client.runtime.health.ReactiveDB2DataSourceHealthCheck",
-                dataSourcesBuildTimeConfig.healthEnabled);
+    void addHealthCheck(
+            BuildProducer<HealthBuildItem> healthChecks,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!createPool(dataSourcesBuildTimeConfig, dataSourceReactiveBuildTimeConfig)) {
+            return;
+        }
+
+        healthChecks
+                .produce(new HealthBuildItem("io.quarkus.reactive.db2.client.runtime.health.ReactiveDB2DataSourceHealthCheck",
+                        dataSourcesBuildTimeConfig.healthEnabled));
+    }
+
+    private static boolean createPool(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig) {
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+            return false;
+        }
+
+        if (!DatabaseKind.isDB2(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+                || !dataSourceReactiveBuildTimeConfig.enabled) {
+            return false;
+        }
+
+        return true;
     }
 }

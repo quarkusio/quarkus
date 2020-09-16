@@ -24,6 +24,7 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassVisitor;
 
 public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
 
@@ -41,13 +42,14 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
 
     public PanacheJpaEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
-        super(index, PanacheHibernateResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE, methodCustomizers);
+        super(index, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheJpaEntityClassVisitor(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo,
+        return new PanacheJpaEntityClassVisitor(className, outputClassVisitor, modelInfo,
+                indexView.getClassByName(PanacheHibernateResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE),
                 indexView.getClassByName(DotName.createSimple(className)), methodCustomizers);
     }
 
@@ -72,7 +74,7 @@ public class PanacheJpaEntityEnhancer extends PanacheEntityEnhancer<MetamodelInf
         }
 
         @Override
-        protected String getPanacheOperationsBinaryName() {
+        protected String getPanacheOperationsInternalName() {
             return JPA_OPERATIONS_BINARY_NAME;
         }
 

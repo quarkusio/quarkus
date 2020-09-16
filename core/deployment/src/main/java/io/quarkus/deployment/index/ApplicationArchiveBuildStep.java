@@ -45,6 +45,8 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -63,10 +65,13 @@ public class ApplicationArchiveBuildStep {
     @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
     static final class IndexDependencyConfiguration {
         /**
-         * Artifacts on the class path that should also be indexed, which will allow classes in the index to be
-         * processed by Quarkus processors
+         * Artifacts on the classpath that should also be indexed.
+         * <p>
+         * Their classes will be in the index and processed by Quarkus processors.
          */
         @ConfigItem(name = ConfigItem.PARENT)
+        @ConfigDocSection
+        @ConfigDocMapKey("dependency-name")
         Map<String, IndexDependencyConfig> indexDependency;
     }
 
@@ -247,18 +252,6 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static Index handleFilePath(Path path) throws IOException {
-        Path existing = path.resolve(JANDEX_INDEX);
-        if (Files.exists(existing)) {
-            try (FileInputStream in = new FileInputStream(existing.toFile())) {
-                IndexReader reader = new IndexReader(in);
-                if (reader.getIndexVersion() < REQUIRED_INDEX_VERSION) {
-                    LOGGER.warnf("Re-indexing %s - at least Jandex 2.1 must be used to index an application dependency", path);
-                    return indexFilePath(path);
-                } else {
-                    return reader.read();
-                }
-            }
-        }
         return indexFilePath(path);
     }
 

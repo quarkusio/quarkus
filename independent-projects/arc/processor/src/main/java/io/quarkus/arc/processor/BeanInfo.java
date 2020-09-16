@@ -281,9 +281,10 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         if (isClassBean()) {
             return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getIndex()).isEmpty();
+                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getBeanArchiveIndex())
+                            .isEmpty();
         } else {
-            return disposer == null;
+            return disposer == null && destroyerConsumer == null;
         }
     }
 
@@ -452,7 +453,7 @@ public class BeanInfo implements InjectionTargetInfo {
                         && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
                 .forEach(a -> bindings.add(a));
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = getClassByName(beanDeployment.getIndex(), classInfo.superName());
+            ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
                 addClassLevelBindings(superClass, bindings);
             }
@@ -495,7 +496,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identifier);
+        return identifier.hashCode();
     }
 
     @Override
@@ -536,9 +537,9 @@ public class BeanInfo implements InjectionTargetInfo {
             case CLASS:
                 return target.asClass();
             case FIELD:
-                return getClassByName(beanDeployment.getIndex(), target.asField().type());
+                return getClassByName(beanDeployment.getBeanArchiveIndex(), target.asField().type());
             case METHOD:
-                return getClassByName(beanDeployment.getIndex(), target.asMethod().returnType());
+                return getClassByName(beanDeployment.getBeanArchiveIndex(), target.asMethod().returnType());
             default:
                 break;
         }

@@ -28,6 +28,6 @@ public class ServicePublicKeyTestCase {
         Response r = RestAssured.given().auth()
                 .oauth2(jwt + "1")
                 .get("/service/tenant-public-key");
-        Assertions.assertEquals(403, r.getStatusCode());
+        Assertions.assertEquals(401, r.getStatusCode());
     }
 }

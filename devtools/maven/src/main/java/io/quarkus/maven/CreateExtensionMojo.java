@@ -54,7 +54,7 @@ import io.quarkus.maven.utilities.PomTransformer.Transformation;
 
 /**
  * Creates a triple of stub Maven modules (Parent, Runtime and Deployment) to implement a new
- * <a href="https://quarkus.io/guides/extension-authors-guide">Quarkus Extension</a>.
+ * <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a>.
  *
  * <h2>Adding into an established source tree</h2>
  * <p>
@@ -87,7 +87,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("@\\{([^\\}]+)\\}");
 
     static final String PLATFORM_DEFAULT_GROUP_ID = "io.quarkus";
-    static final String PLATFORM_DEFAULT_ARTIFACT_ID = "quarkus-bom-deployment";
+    static final String PLATFORM_DEFAULT_ARTIFACT_ID = "quarkus-bom";
 
     static final String COMPILER_PLUGIN_VERSION_PROP = "compiler-plugin.version";
     static final String COMPILER_PLUGIN_VERSION_POM_EXPR = "${" + COMPILER_PLUGIN_VERSION_PROP + "}";
@@ -106,13 +106,13 @@ public class CreateExtensionMojo extends AbstractMojo {
     File basedir;
 
     /**
-     * The {@code groupId} of the Quarkus platform's BOM containing deployment dependencies.
+     * The {@code groupId} of the Quarkus platform BOM.
      */
     @Parameter(property = "platformGroupId", defaultValue = PLATFORM_DEFAULT_GROUP_ID)
     String platformGroupId;
 
     /**
-     * The {@code artifactId} of the Quarkus platform's BOM containing deployment dependencies.
+     * The {@code artifactId} of the Quarkus platform BOM.
      */
     @Parameter(property = "platformArtifactId", defaultValue = PLATFORM_DEFAULT_ARTIFACT_ID)
     String platformArtifactId;
@@ -385,25 +385,14 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     /**
      * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
-     * manages runtime extension artifacts. If set, the newly created Runtime module will be added to
-     * {@code <dependencyManagement>} section of this bom; otherwise the newly created Runtime module will not be added
+     * manages extension artifacts. If set, the newly created runtime and deployment modules will be added to
+     * {@code <dependencyManagement>} section of this bom; otherwise the newly created modules will not be added
      * to any BOM.
      *
-     * @since 0.21.0
+     * @since 1.7.0.Final
      */
-    @Parameter(property = "quarkus.runtimeBomPath")
-    Path runtimeBomPath;
-
-    /**
-     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
-     * manages deployment time extension artifacts. If set, the newly created Deployment module will be added to
-     * {@code <dependencyManagement>} section of this bom; otherwise the newly created Deployment module will not be
-     * added to any BOM.
-     *
-     * @since 0.21.0
-     */
-    @Parameter(property = "quarkus.deploymentBomPath")
-    Path deploymentBomPath;
+    @Parameter(property = "bomPath")
+    Path bomPath;
 
     /**
      * A version for the entries added to the runtime BOM (see {@link #runtimeBomPath}) and to the deployment BOM (see
@@ -560,16 +549,10 @@ public class CreateExtensionMojo extends AbstractMojo {
             }
         }
 
-        if (runtimeBomPath != null) {
-            runtimeBomPath = basedir.toPath().resolve(runtimeBomPath);
-            if (!Files.exists(runtimeBomPath)) {
-                throw new MojoFailureException("runtimeBomPath does not exist: " + runtimeBomPath);
-            }
-        }
-        if (deploymentBomPath != null) {
-            deploymentBomPath = basedir.toPath().resolve(deploymentBomPath);
-            if (!Files.exists(deploymentBomPath)) {
-                throw new MojoFailureException("deploymentBomPath does not exist: " + deploymentBomPath);
+        if (bomPath != null) {
+            bomPath = basedir.toPath().resolve(bomPath);
+            if (!Files.exists(bomPath)) {
+                throw new MojoFailureException("runtimeBomPath does not exist: " + bomPath);
             }
         }
 
@@ -659,26 +642,24 @@ public class CreateExtensionMojo extends AbstractMojo {
                 addModules(rootPom.toPath(), templateParams, rootModel);
             }
 
-            if (runtimeBomPath != null) {
+            if (bomPath != null) {
                 getLog().info(
                         String.format("Adding [%s] to dependencyManagement in [%s]", templateParams.artifactId,
-                                runtimeBomPath));
+                                bomPath));
                 List<PomTransformer.Transformation> transformations = new ArrayList<PomTransformer.Transformation>();
                 transformations
                         .add(Transformation.addManagedDependency(templateParams.groupId, templateParams.artifactId,
                                 templateParams.bomEntryVersion));
                 for (Gavtcs gavtcs : templateParams.additionalRuntimeDependencies) {
-                    getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", gavtcs, runtimeBomPath));
+                    getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", gavtcs, bomPath));
                     transformations.add(Transformation.addManagedDependency(gavtcs));
                 }
-                pomTransformer(runtimeBomPath).transform(transformations);
-            }
-            if (deploymentBomPath != null) {
                 final String aId = templateParams.artifactId + "-deployment";
-                getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", aId, deploymentBomPath));
-                pomTransformer(deploymentBomPath)
-                        .transform(Transformation.addManagedDependency(templateParams.groupId, aId,
-                                templateParams.bomEntryVersion));
+                getLog().info(String.format("Adding [%s] to dependencyManagement in [%s]", aId, bomPath));
+                transformations.add(Transformation.addManagedDependency(templateParams.groupId, aId,
+                        templateParams.bomEntryVersion));
+
+                pomTransformer(bomPath).transform(transformations);
             }
             if (itestParentPath != null) {
                 generateItest(cfg, templateParams);
@@ -854,7 +835,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         templateParams.javaPackageBase = javaPackageBase != null ? javaPackageBase
                 : getJavaPackage(templateParams.groupId, javaPackageInfix, artifactId);
         templateParams.additionalRuntimeDependencies = getAdditionalRuntimeDependencies();
-        templateParams.runtimeBomPathSet = runtimeBomPath != null;
+        templateParams.runtimeBomPathSet = bomPath != null;
         return templateParams;
     }
 
@@ -1061,22 +1042,8 @@ public class CreateExtensionMojo extends AbstractMojo {
         }
     }
 
-    public void setRuntimeBomPath(String runtimeBomPath) {
-        this.runtimeBomPath = Paths.get(runtimeBomPath);
-    }
-
-    public void setDeploymentBomPath(String deploymentBomPath) {
-        this.deploymentBomPath = Paths.get(deploymentBomPath);
-    }
-
     public void setItestParentPath(String itestParentPath) {
         this.itestParentPath = Paths.get(itestParentPath);
-    }
-
-    private void debug(String format, Object... args) {
-        if (getLog().isDebugEnabled()) {
-            getLog().debug(String.format(format, args));
-        }
     }
 
     public static class TemplateParams {

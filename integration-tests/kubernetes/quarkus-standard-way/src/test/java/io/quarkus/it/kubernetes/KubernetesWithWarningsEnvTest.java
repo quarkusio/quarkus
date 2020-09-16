@@ -50,24 +50,24 @@ public class KubernetesWithWarningsEnvTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "MY_FIELD".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             env -> assertThat(env.getValueFrom().getFieldRef().getFieldPath())
                                                     .isEqualTo("newField"));
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "MY_VAR".equals(env.getName()))
-                                    .hasOnlyOneElementSatisfying(env -> assertThat(env.getValue()).isEqualTo("newVariable"));
+                                    .singleElement().satisfies(env -> assertThat(env.getValue()).isEqualTo("newVariable"));
                             final List<EnvFromSource> envFrom = container.getEnvFrom();
                             assertThat(envFrom).hasSize(2);
                             assertThat(envFrom)
                                     .filteredOn(e -> e.getSecretRef() != null)
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             e -> assertThat(e.getSecretRef().getName()).isEqualTo("secret"));
                             assertThat(envFrom)
                                     .filteredOn(e -> e.getConfigMapRef() != null)
-                                    .hasOnlyOneElementSatisfying(
+                                    .singleElement().satisfies(
                                             e -> assertThat(e.getConfigMapRef().getName()).isEqualTo("configMap"));
                         });
                     });
@@ -80,13 +80,13 @@ public class KubernetesWithWarningsEnvTest {
         assertThat(buildLogRecords).hasSize(4);
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("my-field"))
-                .hasOnlyOneElementSatisfying(r -> assertThat(r.getMessage()).contains("newField"));
+                .singleElement().satisfies(r -> assertThat(r.getMessage()).contains("newField"));
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("my-var"))
-                .hasOnlyOneElementSatisfying(r -> assertThat(r.getMessage()).contains("newVariable"));
+                .singleElement().satisfies(r -> assertThat(r.getMessage()).contains("newVariable"));
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("configMap"))
-                .hasOnlyOneElementSatisfying(
+                .singleElement().satisfies(
                         r -> assertThat(r.getMessage().contains("'xxx'") && r.getMessage().contains("'secret'")));
         assertThat(buildLogRecords)
                 .filteredOn(r -> r.getMessage().contains("secret"))

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ public class DocGeneratorUtil {
     private static final String CORE = "core";
     private static final String CONFIG = "Config";
     private static final String CONFIGURATION = "Configuration";
+    public static final String LEVEL_HACK_URL = "https://docs.jboss.org/jbossas/javadoc/7.1.2.Final/org/jboss/logmanager/Level.html";
     private static String CONFIG_GROUP_DOC_PREFIX = "config-group-";
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
@@ -77,6 +79,12 @@ public class DocGeneratorUtil {
      * Get javadoc link of a given type value
      */
     static String getJavaDocSiteLink(String type) {
+        if (type.equals(Level.class.getName())) {
+            //hack, we don't want to link to the JUL version, but the jboss logging version
+            //this seems like a one off use case so for now it is just hacked in here
+            //if there are other use cases we should do something more generic
+            return LEVEL_HACK_URL;
+        }
         Matcher packageMatcher = PACKAGE_PATTERN.matcher(type);
 
         if (!packageMatcher.find()) {
@@ -247,6 +255,17 @@ public class DocGeneratorUtil {
         }
         matcher.appendTail(target);
         return target.toString();
+    }
+
+    static String normalizeDurationValue(String value) {
+        if (!value.isEmpty() && Character.isDigit(value.charAt(value.length() - 1))) {
+            try {
+                value = Integer.parseInt(value) + "S";
+            } catch (NumberFormatException ignore) {
+            }
+        }
+        value = value.toUpperCase(Locale.ROOT);
+        return value;
     }
 
     static String joinAcceptedValues(List<String> acceptedValues) {
@@ -433,7 +452,7 @@ public class DocGeneratorUtil {
 
             ConfigDocSection configDocSection = configDocItem.getConfigDocSection();
             if (configDocSection.equals(section)) {
-                configDocSection.addConfigDocItems(section.getConfigDocItems());
+                appendConfigItemsIntoExistingOnes(configDocSection.getConfigDocItems(), section.getConfigDocItems());
                 return true;
             } else {
                 boolean configSectionMerged = mergeSectionIntoPreviousExistingConfigItems(section,

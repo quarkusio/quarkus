@@ -12,16 +12,21 @@ import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 
 public class ApplyHttpGetActionPortDecorator extends ApplicationContainerDecorator<HTTPGetActionFluent<?>> {
 
-    private final int port;
+    private final Integer port;
 
-    public ApplyHttpGetActionPortDecorator(int port) {
+    public ApplyHttpGetActionPortDecorator(Integer port) {
         super(ANY, ANY); //We need to apply this to all deployments and all containers.
         this.port = port;
     }
 
     @Override
     public void andThenVisit(HTTPGetActionFluent<?> action) {
-        action.withNewPort(port);
+        if (port == null) {
+            // workaround to make sure we don't get a NPE
+            action.withNewPort((String) null);
+        } else {
+            action.withNewPort(port);
+        }
     }
 
     @Override

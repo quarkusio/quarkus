@@ -40,6 +40,14 @@ public class ContainerImageConfig {
     public Optional<String> registry;
 
     /**
+     * Represents the entire image string.
+     * If set, then {@code group}, {@code name}, {@code registry}, {@code tags}, {@code additionalTags}
+     * are ignored
+     */
+    @ConfigItem
+    public Optional<String> image;
+
+    /**
      * The username to use to authenticate with the registry where the built image will be pushed
      */
     @ConfigItem
@@ -68,6 +76,13 @@ public class ContainerImageConfig {
      */
     @ConfigItem
     public boolean push;
+
+    /**
+     * The name of the container image extension to use (e.g. docker, jib, s2i).
+     * The option will be used in case multiple extensions are present.
+     */
+    @ConfigItem
+    public Optional<String> builder;
 
     /**
      * Since user.name which is default value can be uppercase and uppercase values are not allowed

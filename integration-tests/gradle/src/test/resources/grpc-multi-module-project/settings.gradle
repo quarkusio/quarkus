@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+rootProject.name = 'quarkus-grpc-multi-module-build'
+
+include ':common'
+include ':application'
+

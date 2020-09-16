@@ -1,0 +1,12 @@
+---
+name: "Funqy HTTP Binding"
+metadata:
+  keywords:
+  - "funqy"
+  - "function"
+  - "http"
+  guide: "https://quarkus.io/guides/funqy-http"
+  categories:
+  - "cloud"
+  status: "experimental"
+  codestart: "funqy-http"

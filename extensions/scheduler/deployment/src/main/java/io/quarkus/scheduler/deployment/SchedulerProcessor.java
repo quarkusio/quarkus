@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Singleton;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -30,17 +28,15 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -57,12 +53,12 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
@@ -95,27 +91,10 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-            }
-
-            @Override
-            public void transform(TransformationContext context) {
-                ClassInfo target = context.getTarget().asClass();
-                if (!scopes.isScopeIn(context.getAnnotations())
-                        && (target.annotations().containsKey(SCHEDULED_NAME)
-                                || target.annotations().containsKey(SCHEDULES_NAME))) {
-                    // Class with no scope annotation but with @Scheduled method
-                    LOGGER.debugf("Found scheduled business methods on a class %s with no scope defined - adding @Singleton",
-                            context.getTarget());
-                    context.transform().add(Singleton.class).done();
-                }
-            }
-        });
+    AutoAddScopeBuildItem autoAddScope() {
+        return AutoAddScopeBuildItem.builder().containsAnnotations(SCHEDULED_NAME, SCHEDULES_NAME)
+                .defaultScope(BuiltinScope.SINGLETON)
+                .reason("Found scheduled business methods").build();
     }
 
     @BuildStep

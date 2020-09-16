@@ -1,0 +1,14 @@
+---
+name: "Funqy AWS Lambda Binding"
+metadata:
+  keywords:
+  - "funqy"
+  - "function"
+  - "lambda"
+  - "aws"
+  - "amazon"
+  guide: "https://quarkus.io/guides/funqy-amazon-lambda"
+  categories:
+  - "cloud"
+  status: "experimental"
+  codestart: "funqy-amazon-lambda"

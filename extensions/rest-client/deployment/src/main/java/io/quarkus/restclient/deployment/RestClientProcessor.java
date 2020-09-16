@@ -21,6 +21,7 @@ import javax.ws.rs.ext.Providers;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProviders;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
@@ -44,6 +45,7 @@ import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
@@ -73,8 +75,8 @@ import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
 import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
-import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyDotNames;
 
 class RestClientProcessor {
     private static final Logger log = Logger.getLogger(RestClientProcessor.class);
@@ -88,6 +90,7 @@ class RestClientProcessor {
 
     private static final DotName REGISTER_PROVIDER = DotName.createSimple(RegisterProvider.class.getName());
     private static final DotName REGISTER_PROVIDERS = DotName.createSimple(RegisterProviders.class.getName());
+    private static final DotName REGISTER_CLIENT_HEADERS = DotName.createSimple(RegisterClientHeaders.class.getName());
 
     private static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
     private static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
@@ -103,6 +106,11 @@ class RestClientProcessor {
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
+    @BuildStep
+    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {
@@ -112,6 +120,19 @@ class RestClientProcessor {
     @BuildStep
     NativeImageProxyDefinitionBuildItem addProxy() {
         return new NativeImageProxyDefinitionBuildItem(ResteasyConfiguration.class.getName());
+    }
+
+    @BuildStep
+    void registerRestClientListenerForTracing(
+            Capabilities capabilities,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
+            resource.produce(new NativeImageResourceBuildItem(
+                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+        }
     }
 
     @BuildStep
@@ -188,7 +209,13 @@ class RestClientProcessor {
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
             reflectiveHierarchy
-                    .produce(new ReflectiveHierarchyBuildItem(returnType, ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+                    .produce(new ReflectiveHierarchyBuildItem.Builder()
+                            .type(returnType)
+                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                            .source(getClass().getSimpleName() + " > " + returnType.toString())
+                            .build());
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
@@ -218,6 +245,7 @@ class RestClientProcessor {
                                 MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
                     });
+                    configurator.destroyer(BeanDestroyer.CloseableDestroyer.class);
                     configurator.done();
                 }
             }
@@ -395,6 +423,15 @@ class RestClientProcessor {
                     .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
         }
 
+        // Register @RegisterClientHeaders for reflection
+        for (AnnotationInstance annotationInstance : index.getAnnotations(REGISTER_CLIENT_HEADERS)) {
+            AnnotationValue value = annotationInstance.value();
+            if (value != null) {
+                reflectiveClass
+                        .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+            }
+        }
+
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
@@ -412,10 +449,14 @@ class RestClientProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
             allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
         }
+        allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         for (AnnotationInstance annotationInstance : allInstances) {
             // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
-            builder.addBeanClass(annotationInstance.value().asClass().toString());
+            AnnotationValue value = annotationInstance.value();
+            if (value != null) {
+                builder.addBeanClass(value.asClass().toString());
+            }
         }
         return builder.build();
     }

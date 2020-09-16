@@ -69,6 +69,7 @@ public class AccessLogFileTestCase {
                         p.setProperty("quarkus.http.access-log.log-to-file", "true");
                         p.setProperty("quarkus.http.access-log.base-file-name", "server");
                         p.setProperty("quarkus.http.access-log.log-directory", logDirectory.toAbsolutePath().toString());
+                        p.setProperty("quarkus.http.access-log.pattern", "long");
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
                         p.store(out, null);
 
@@ -116,7 +117,6 @@ public class AccessLogFileTestCase {
                         Path path = logDirectory.resolve("server.log");
                         Assertions.assertTrue(Files.exists(path));
                         String data = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
-                        Assertions.assertTrue(data.contains("404"));
                         Assertions.assertTrue(data.contains("/does-not-exist"));
                         Assertions.assertTrue(data.contains("?foo=" + paramValue),
                                 "access log is missing query params");
@@ -124,6 +124,8 @@ public class AccessLogFileTestCase {
                                 "access log contains duplicated query params");
                         Assertions.assertTrue(data.contains("HTTP/1.0"),
                                 "HTTP/1.0 protocol value is missing in the access log");
+                        Assertions.assertTrue(data.contains("Accept: */*"),
+                                "Accept header is missing in the access log");
                     }
                 });
     }

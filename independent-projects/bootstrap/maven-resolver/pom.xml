@@ -19,8 +19,8 @@
             <artifactId>quarkus-bootstrap-app-model</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
+            <groupId>org.jboss.slf4j</groupId>
+            <artifactId>slf4j-jboss-logging</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

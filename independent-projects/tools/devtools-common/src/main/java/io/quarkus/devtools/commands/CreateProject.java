@@ -1,14 +1,6 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.CLASS_NAME;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.EXTENSIONS;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.IS_SPRING;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.JAVA_TARGET;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_ARTIFACT_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_GROUP_ID;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.PROJECT_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.QUARKUS_PLUGIN_VERSION;
-import static io.quarkus.devtools.project.codegen.ProjectGenerator.SOURCE_TYPE;
+import static io.quarkus.devtools.project.codegen.ProjectGenerator.*;
 import static java.util.Objects.requireNonNull;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -19,7 +11,8 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import java.io.IOException;
+import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.platform.tools.ToolsUtils;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,6 +31,12 @@ import javax.lang.model.SourceVersion;
 public class CreateProject {
 
     public static final String NAME = "create-project";
+
+    public static final String CODESTARTS_ENABLED = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "codestarts-enabled");
+    public static final String NO_DOCKERFILES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-dockerfiles");
+    public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
+    public static final String NO_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-examples");
+
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     private final Path projectDirPath;
@@ -67,8 +66,13 @@ public class CreateProject {
         return this;
     }
 
-    public CreateProject quarkusPluginVersion(String version) {
-        setValue(QUARKUS_PLUGIN_VERSION, version);
+    public CreateProject quarkusMavenPluginVersion(String version) {
+        setValue(QUARKUS_MAVEN_PLUGIN_VERSION, version);
+        return this;
+    }
+
+    public CreateProject quarkusGradlePluginVersion(String version) {
+        setValue(QUARKUS_GRADLE_PLUGIN_VERSION, version);
         return this;
     }
 
@@ -101,8 +105,46 @@ public class CreateProject {
         return this;
     }
 
+    public CreateProject codestartsEnabled(boolean value) {
+        setValue(CODESTARTS_ENABLED, value);
+        return this;
+    }
+
+    public CreateProject codestartsEnabled() {
+        return codestartsEnabled(true);
+    }
+
+    public CreateProject noExamples(boolean value) {
+        setValue(NO_EXAMPLES, value);
+        return this;
+    }
+
+    public CreateProject noExamples() {
+        return noExamples(true);
+    }
+
+    public CreateProject noBuildToolWrapper(boolean value) {
+        setValue(NO_BUILDTOOL_WRAPPER, value);
+        return this;
+    }
+
+    public CreateProject noBuildToolWrapper() {
+        return noBuildToolWrapper(true);
+    }
+
+    public CreateProject noDockerfiles(boolean value) {
+        setValue(NO_DOCKERFILES, value);
+        return this;
+    }
+
+    public CreateProject noDockerfiles() {
+        return noDockerfiles(true);
+    }
+
     public CreateProject setValue(String name, Object value) {
-        values.put(name, value);
+        if (value != null) {
+            values.put(name, value);
+        }
         return this;
     }
 
@@ -111,7 +153,7 @@ public class CreateProject {
         return this;
     }
 
-    public boolean doCreateProject(final Map<String, Object> context) throws IOException {
+    public boolean doCreateProject(final Map<String, Object> context) throws QuarkusCommandException {
         if (context != null && !context.isEmpty()) {
             for (Map.Entry<String, Object> entry : context.entrySet()) {
                 if (entry.getValue() != null) {
@@ -119,12 +161,7 @@ public class CreateProject {
                 }
             }
         }
-
-        try {
-            return execute().isSuccess();
-        } catch (QuarkusCommandException e) {
-            throw new IOException("Failed to create project", e);
-        }
+        return execute().isSuccess();
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {

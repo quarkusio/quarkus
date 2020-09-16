@@ -17,6 +17,12 @@ class QuarkusRedisTest {
     @Test
     public void sync() {
         RestAssured.given()
+                .when()
+                .get("/quarkus-redis/sync/" + SYNC_KEY)
+                .then()
+                .statusCode(204); // the key is not set yet
+
+        RestAssured.given()
                 .body(SYNC_VALUE)
                 .when()
                 .post("/quarkus-redis/sync/" + SYNC_KEY)
@@ -33,6 +39,12 @@ class QuarkusRedisTest {
 
     @Test
     public void reactive() {
+        RestAssured.given()
+                .when()
+                .get("/quarkus-redis/reactive/" + REACTIVE_KEY)
+                .then()
+                .statusCode(204); // the reactive key is not set yet
+
         RestAssured.given()
                 .body(REACTIVE_VALUE)
                 .when()

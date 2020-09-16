@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
 @Recorder
 public class ExceptionMapperRecorder {
@@ -15,6 +16,10 @@ public class ExceptionMapperRecorder {
 
     public void setAdditionalEndpoints(List<String> additionalEndpoints) {
         NotFoundExceptionMapper.setAdditionalEndpoints(additionalEndpoints);
+    }
+
+    public void setReactiveRoutes(List<RouteDescription> reactiveRoutes) {
+        NotFoundExceptionMapper.setReactiveRoutes(reactiveRoutes);
     }
 
     public void setServlets(Map<String, List<String>> servletToMapping) {

@@ -127,6 +127,7 @@ public class ArcProcessor {
     public ContextRegistrationPhaseBuildItem initialize(
             ArcConfig arcConfig,
             BeanArchiveIndexBuildItem beanArchiveIndex,
+            CombinedIndexBuildItem combinedIndex,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
@@ -152,7 +153,21 @@ public class ArcProcessor {
                     " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
         }
 
-        List<String> additionalBeansTypes = beanArchiveIndex.getAdditionalBeans();
+        // bean type -> default scope (may be null)
+        Map<String, DotName> additionalBeanTypes = new HashMap<>();
+        for (AdditionalBeanBuildItem additionalBean : additionalBeans) {
+            DotName defaultScope = additionalBean.getDefaultScope();
+            for (String beanClass : additionalBean.getBeanClasses()) {
+                DotName existingDefaultScope = additionalBeanTypes.get(beanClass);
+                if (existingDefaultScope != null && defaultScope != null && !existingDefaultScope.equals(defaultScope)) {
+                    throw new IllegalStateException("Different default scopes defined for additional bean class: " + beanClass
+                            + "\n\t - scopes: " + defaultScope + " and "
+                            + existingDefaultScope);
+                }
+                additionalBeanTypes.put(beanClass, defaultScope);
+            }
+        }
+
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         BeanProcessor.Builder builder = BeanProcessor.builder();
@@ -164,6 +179,7 @@ public class ArcProcessor {
                 return dotName;
             }
         });
+
         builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
             @Override
@@ -175,25 +191,29 @@ public class ArcProcessor {
             public void transform(TransformationContext transformationContext) {
                 ClassInfo beanClass = transformationContext.getTarget().asClass();
                 String beanClassName = beanClass.name().toString();
-                if (additionalBeansTypes.contains(beanClassName)) {
-                    if (scopes.isScopeDeclaredOn(beanClass)) {
-                        // If it declares a built-in scope no action is needed
-                        return;
-                    }
-                    // Try to determine the default scope
-                    DotName defaultScope = additionalBeans.stream()
-                            .filter(ab -> ab.contains(beanClassName)).findFirst().map(AdditionalBeanBuildItem::getDefaultScope)
-                            .orElse(null);
-                    if (defaultScope == null && !beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
-                        // Add special stereotype so that @Dependent is automatically used even if no scope is declared
+                if (!additionalBeanTypes.containsKey(beanClassName)) {
+                    // Not an additional bean type
+                    return;
+                }
+                if (scopes.isScopeDeclaredOn(beanClass)) {
+                    // If it declares a scope no action is needed
+                    return;
+                }
+                DotName defaultScope = additionalBeanTypes.get(beanClassName);
+                if (defaultScope != null) {
+                    transformationContext.transform().add(defaultScope).done();
+                } else {
+                    if (!beanClass.annotations().containsKey(ADDITIONAL_BEAN)) {
+                        // Add special stereotype is added so that @Dependent is automatically used even if no scope is declared
+                        // Otherwise the bean class would be ingnored during bean discovery
                         transformationContext.transform().add(ADDITIONAL_BEAN).done();
-                    } else {
-                        transformationContext.transform().add(defaultScope).done();
                     }
                 }
             }
         });
-        builder.setIndex(index);
+
+        builder.setBeanArchiveIndex(index);
+        builder.setApplicationIndex(combinedIndex.getIndex());
         List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());
         beanDefiningAnnotations.add(new BeanDefiningAnnotation(ADDITIONAL_BEAN, null));
@@ -396,7 +416,7 @@ public class ArcProcessor {
     // PHASE 5 - generate resources and initialize the container
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem generateResources(ArcRecorder recorder, ShutdownContextBuildItem shutdown,
+    public BeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder, ShutdownContextBuildItem shutdown,
             ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
@@ -435,7 +455,8 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
-        }, existingClasses.existingClasses, bytecodeTransformerConsumer);
+        }, existingClasses.existingClasses, bytecodeTransformerConsumer,
+                config.shouldEnableBeanRemoval() && config.detectUnusedFalsePositives);
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
                 case JAVA_CLASS:
@@ -465,10 +486,7 @@ public class ArcProcessor {
         ArcContainer container = recorder.getContainer(shutdown);
         BeanContainer beanContainer = recorder.initBeanContainer(container,
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
-                        .collect(Collectors.toList()),
-                beanProcessor.getBeanDeployment().getRemovedBeans().stream().flatMap(b -> b.getTypes().stream())
-                        .map(t -> t.name().toString())
-                        .collect(Collectors.toSet()));
+                        .collect(Collectors.toList()));
 
         return new BeanContainerBuildItem(beanContainer);
 

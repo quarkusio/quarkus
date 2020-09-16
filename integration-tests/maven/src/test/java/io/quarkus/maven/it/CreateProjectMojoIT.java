@@ -238,7 +238,14 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         testDir = new File(testDir, "acme");
 
         assertThat(new File(testDir, "build.gradle")).isFile();
+        assertThat(new File(testDir, "gradlew.bat")).isFile();
+        assertThat(new File(testDir, "gradlew")).isFile();
+        assertThat(new File(testDir, "gradle/wrapper")).isDirectory();
         assertThat(new File(testDir, "src/main/kotlin")).isDirectory();
+
+        File gradleProperties = new File(testDir, "gradle.properties");
+        assertThat(gradleProperties).isFile();
+        check(gradleProperties, "org.gradle.logging.level=INFO");
 
         check(new File(testDir, "src/main/kotlin/org/acme/MyResource.kt"), "package org.acme");
 
@@ -354,12 +361,12 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", getPluginVersion());
+        params.setProperty("platformVersion", getQuarkusCoreVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":create"));
+                getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(false);
         request.setProperties(params);

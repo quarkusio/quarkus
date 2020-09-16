@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public class S2iConfig {
 
-    public static final String DEFAULT_BASE_JVM_IMAGE = "fabric8/s2i-java:2.3";
+    public static final String DEFAULT_BASE_JVM_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
@@ -30,14 +30,14 @@ public class S2iConfig {
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
+    @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0")
-    public List<String> nativeArguments;
+    @ConfigItem
+    public Optional<List<String>> nativeArguments;
 
     /**
      * The directory where the jar is added during the assemble phase.

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import io.quarkus.panache.common.Sort;
 public class JpaOperations {
 
     private static final KotlinJpaOperations delegate = new KotlinJpaOperations();
+    private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
 
     public static Query bindParameters(Query query, Object[] params) {
         return AbstractJpaOperations.bindParameters(query, params);
@@ -157,12 +159,30 @@ public class JpaOperations {
         return delegate.findByIdOptional(entityClass, id, lockModeType);
     }
 
+    /**
+     * Flushes all pending changes to the database using the default EntityManager.
+     */
     public static void flush() {
-        delegate.flush();
+        delegate.getEntityManager().flush();
+    }
+
+    /**
+     * Flushes all pending changes to the database using entity's EntityManager.
+     */
+    public static void flush(Object entity) {
+        delegate.flush(entity);
     }
 
     public static EntityManager getEntityManager() {
         return delegate.getEntityManager();
+    }
+
+    public static EntityManager getEntityManager(Class<?> clazz) {
+        return delegate.getEntityManager(clazz);
+    }
+
+    public static EntityManager getEntityManager(String persistentUnitName) {
+        return delegate.getEntityManager(persistentUnitName);
     }
 
     public static TransactionManager getTransactionManager() {
@@ -289,6 +309,10 @@ public class JpaOperations {
         return delegate.update(entityClass, query, params);
     }
 
+    static void setEntityToPersistenceUnit(Map<String, String> entityToPersistenceUnit) {
+        JpaOperations.entityToPersistenceUnit = Collections.unmodifiableMap(entityToPersistenceUnit);
+    }
+
     private static class KotlinJpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
 
         @Override
@@ -305,6 +329,13 @@ public class JpaOperations {
         @Override
         protected Stream<?> stream(PanacheQueryImpl<?> query) {
             return query.stream();
+        }
+
+        @Override
+        public EntityManager getEntityManager(Class<?> clazz) {
+            String clazzName = clazz.getName();
+            String persistentUnitName = entityToPersistenceUnit.get(clazzName);
+            return super.getEntityManager(persistentUnitName);
         }
 
     }

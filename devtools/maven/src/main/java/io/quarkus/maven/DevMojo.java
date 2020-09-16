@@ -1,5 +1,14 @@
 package io.quarkus.maven;
 
+import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.groupId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -64,7 +73,6 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
-import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
@@ -74,6 +82,7 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 /**
@@ -107,6 +116,10 @@ public class DevMojo extends AbstractMojo {
             "verify",
             "install",
             "deploy"));
+
+    private static final String QUARKUS_PLUGIN_GROUPID = "io.quarkus";
+    private static final String QUARKUS_PLUGIN_ARTIFACTID = "quarkus-maven-plugin";
+    private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
 
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
@@ -318,7 +331,13 @@ public class DevMojo extends AbstractMojo {
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
             if (!preventnoverify) {
-                args.add("-Xverify:none");
+                // in Java 13 and up, preventing verification is deprecated - see https://bugs.openjdk.java.net/browse/JDK-8218003
+                // this test isn't absolutely correct in the sense that depending on the user setup, the actual Java binary
+                // that is used might be different that the one running Maven, but given how small of an impact this has
+                // it's probably better than running an extra command on 'javaTool' just to figure out the version
+                if (!JavaVersionUtil.isJava13OrHigher()) {
+                    args.add("-Xverify:none");
+                }
             }
 
             DevModeRunner runner = new DevModeRunner(args);
@@ -373,7 +392,12 @@ public class DevMojo extends AbstractMojo {
     private void handleAutoCompile() throws MojoExecutionException {
         //we check to see if there was a compile (or later) goal before this plugin
         boolean compileNeeded = true;
+        boolean prepareNeeded = true;
         for (String goal : session.getGoals()) {
+            if (goal.endsWith("quarkus:prepare")) {
+                prepareNeeded = false;
+            }
+
             if (POST_COMPILE_PHASES.contains(goal)) {
                 compileNeeded = false;
                 break;
@@ -385,8 +409,26 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
+            if (prepareNeeded) {
+                triggerPrepare();
+            }
             triggerCompile();
         }
+    }
+
+    private void triggerPrepare() throws MojoExecutionException {
+        Plugin quarkusPlugin = project.getPlugin(QUARKUS_PLUGIN_GROUPID + ":" + QUARKUS_PLUGIN_ARTIFACTID);
+        if (quarkusPlugin == null) {
+            return;
+        }
+        executeMojo(
+                quarkusPlugin,
+                goal(QUARKUS_GENERATE_CODE_GOAL),
+                configuration(),
+                executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
     }
 
     private void triggerCompile() throws MojoExecutionException {
@@ -419,37 +461,37 @@ public class DevMojo extends AbstractMojo {
         if (resourcesPlugin == null) {
             return;
         }
-        MojoExecutor.executeMojo(
-                MojoExecutor.plugin(
-                        MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
-                        MojoExecutor.artifactId(MAVEN_RESOURCES_PLUGIN),
-                        MojoExecutor.version(resourcesPlugin.getVersion()),
+        executeMojo(
+                plugin(
+                        groupId(ORG_APACHE_MAVEN_PLUGINS),
+                        artifactId(MAVEN_RESOURCES_PLUGIN),
+                        version(resourcesPlugin.getVersion()),
                         resourcesPlugin.getDependencies()),
-                MojoExecutor.goal("resources"),
+                goal("resources"),
                 getPluginConfig(resourcesPlugin),
-                MojoExecutor.executionEnvironment(
+                executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
     private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
-        MojoExecutor.executeMojo(
-                MojoExecutor.plugin(
-                        MojoExecutor.groupId(groupId),
-                        MojoExecutor.artifactId(artifactId),
-                        MojoExecutor.version(plugin.getVersion()),
+        executeMojo(
+                plugin(
+                        groupId(groupId),
+                        artifactId(artifactId),
+                        version(plugin.getVersion()),
                         plugin.getDependencies()),
-                MojoExecutor.goal("compile"),
+                goal("compile"),
                 getPluginConfig(plugin),
-                MojoExecutor.executionEnvironment(
+                executionEnvironment(
                         project,
                         session,
                         pluginManager));
     }
 
     private Xpp3Dom getPluginConfig(Plugin plugin) {
-        Xpp3Dom configuration = MojoExecutor.configuration();
+        Xpp3Dom configuration = configuration();
         Xpp3Dom pluginConfiguration = (Xpp3Dom) plugin.getConfiguration();
         if (pluginConfiguration != null) {
             //Filter out `test*` configurations
@@ -487,7 +529,6 @@ public class DevMojo extends AbstractMojo {
 
         final MavenProject mavenProject = session.getProjectMap().get(
                 String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
-
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();
             Path sourcePath = localProject.getSourcesSourcesDir().toAbsolutePath();
@@ -505,6 +546,7 @@ public class DevMojo extends AbstractMojo {
                     .map(src -> src.toAbsolutePath().toString())
                     .collect(Collectors.toSet());
         }
+        Path sourceParent = localProject.getSourcesDir().toAbsolutePath();
 
         Path classesDir = localProject.getClassesDir();
         if (Files.isDirectory(classesDir)) {
@@ -514,12 +556,18 @@ public class DevMojo extends AbstractMojo {
         if (Files.isDirectory(resourcesSourcesDir)) {
             resourcePath = resourcesSourcesDir.toAbsolutePath().toString();
         }
+
+        Path targetDir = Paths.get(project.getBuild().getDirectory());
+
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(localProject.getKey(),
                 localProject.getArtifactId(),
                 projectDirectory,
                 sourcePaths,
                 classesPath,
-                resourcePath);
+                resourcePath,
+                sourceParent.toAbsolutePath().toString(),
+                targetDir.resolve("generated-sources").toAbsolutePath().toString(),
+                targetDir.toAbsolutePath().toString());
         if (root) {
             devModeContext.setApplicationRoot(moduleInfo);
         } else {
@@ -642,15 +690,14 @@ public class DevMojo extends AbstractMojo {
             }
 
             setKotlinSpecificFlags(devModeContext);
-            final LocalProject localProject;
             if (noDeps) {
-                localProject = LocalProject.load(project.getModel().getPomFile().toPath());
+                final LocalProject localProject = LocalProject.load(project.getModel().getPomFile().toPath());
                 addProject(devModeContext, localProject, true);
                 pomFiles.add(localProject.getRawModel().getPomFile().toPath());
                 devModeContext.getLocalArtifacts()
                         .add(new AppArtifactKey(localProject.getGroupId(), localProject.getArtifactId(), null, "jar"));
             } else {
-                localProject = LocalProject.loadWorkspace(project.getModel().getPomFile().toPath());
+                final LocalProject localProject = LocalProject.loadWorkspace(project.getModel().getPomFile().toPath());
                 for (LocalProject project : filterExtensionDependencies(localProject)) {
                     addProject(devModeContext, project, project == localProject);
                     pomFiles.add(project.getRawModel().getPomFile().toPath());
@@ -891,6 +938,11 @@ public class DevMojo extends AbstractMojo {
             final AppArtifactKey depKey = new AppArtifactKey(a.getGroupId(), a.getArtifactId());
             final LocalProject project = workspace.getProject(depKey);
             if (project == null) {
+                continue;
+            }
+            if (!project.getVersion().equals(a.getVersion())) {
+                getLog().warn(depKey + " is excluded from live coding since the application depends on version "
+                        + a.getVersion() + " while the version present in the workspace is " + project.getVersion());
                 continue;
             }
             if (project.getClassesDir() != null &&

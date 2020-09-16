@@ -48,6 +48,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -151,7 +152,8 @@ public class UndertowDeploymentRecorder {
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context, String contextPath, String httpRootPath, String defaultCharset,
-            String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth) {
+            String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
+            List<String> welcomeFiles) {
         String realMountPoint;
         if (contextPath.equals("/")) {
             realMountPoint = httpRootPath;
@@ -196,7 +198,12 @@ public class UndertowDeploymentRecorder {
         }
         d.setResourceManager(resourceManager);
 
-        d.addWelcomePages("index.html", "index.htm");
+        if (welcomeFiles != null) {
+            // if available, use welcome-files from web.xml
+            d.addWelcomePages(welcomeFiles);
+        } else {
+            d.addWelcomePages("index.html", "index.htm");
+        }
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
         for (HandlerWrapper i : hotDeploymentWrappers) {
@@ -378,6 +385,7 @@ public class UndertowDeploymentRecorder {
                 event.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
                         event.getBody());
+                exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());

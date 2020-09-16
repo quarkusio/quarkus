@@ -41,6 +41,7 @@
         <module>smallrye-opentracing</module>
         <module>smallrye-fault-tolerance</module>
         <module>jaeger</module>
+        <module>micrometer</module>
 
         <!-- REST services -->
         <module>resteasy-common</module>
@@ -49,12 +50,15 @@
         <module>resteasy-jsonb</module>
         <module>resteasy-jackson</module>
         <module>resteasy-jaxb</module>
+        <module>resteasy-mutiny-common</module>
         <module>resteasy-mutiny</module>
         <module>resteasy-qute</module>
+        <module>resteasy-multipart</module>
         <module>rest-client</module>
         <module>rest-client-jackson</module>
         <module>rest-client-jsonb</module>
         <module>rest-client-jaxb</module>
+        <module>rest-client-mutiny</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>
@@ -90,7 +94,9 @@
         <module>hibernate-validator</module>
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
+        <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
+        <module>elasticsearch-rest-high-level-client</module>
         <module>jsch</module>
         <module>jgit</module>
         <module>kafka-client</module>
@@ -100,6 +106,7 @@
         <module>mongodb-client</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>
+        <module>avro</module>
 
         <!-- Spring -->
         <module>spring-di</module>
@@ -200,8 +207,7 @@
                     <artifactIdPrefix>quarkus-</artifactIdPrefix>
                     <namePrefix xml:space="preserve">Quarkus - </namePrefix>
                     <quarkusVersion>@{project.version}</quarkusVersion>
-                    <runtimeBomPath>../bom/runtime/pom.xml</runtimeBomPath>
-                    <deploymentBomPath>../bom/deployment/pom.xml</deploymentBomPath>
+                    <bomPath>../bom/application/pom.xml</runtimeBomPath>
                     <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
             </plugin>

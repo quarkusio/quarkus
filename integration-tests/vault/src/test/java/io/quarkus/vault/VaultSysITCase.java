@@ -1,11 +1,17 @@
 package io.quarkus.vault;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -16,6 +22,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.sys.VaultSealStatus;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 
+@Disabled("https://github.com/quarkusio/quarkus/issues/11879")
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class VaultSysITCase {
@@ -35,4 +42,19 @@ public class VaultSysITCase {
         assertThat(vaultSealStatus).returns(false, VaultSealStatus::isSealed);
     }
 
+    @Test
+    public void policy() {
+        String rules = "path \"transit/*\" {\n" +
+                "  capabilities = [ \"create\", \"read\", \"update\" ]\n" +
+                "}";
+        String name = "sys-test-policy";
+        vaultSystemBackendEngine.createUpdatePolicy(name, rules);
+        List<String> policies = vaultSystemBackendEngine.getPolicies();
+        assertTrue(policies.contains(name));
+        String policyRules = vaultSystemBackendEngine.getPolicyRules(name);
+        assertEquals(rules, policyRules);
+        vaultSystemBackendEngine.deletePolicy(name);
+        policies = vaultSystemBackendEngine.getPolicies();
+        assertFalse(policies.contains(name));
+    }
 }

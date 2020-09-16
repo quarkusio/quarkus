@@ -41,7 +41,7 @@ public abstract class PanacheEntityBase {
     // @JsonIgnore is here to avoid serialization of this property with jackson
     @JsonIgnore
     public EntityManager getEntityManager() {
-        return JpaOperations.getEntityManager();
+        return JpaOperations.getEntityManager(this.getClass());
     }
 
     /**
@@ -67,7 +67,7 @@ public abstract class PanacheEntityBase {
      */
     public void persistAndFlush() {
         JpaOperations.persist(this);
-        JpaOperations.flush();
+        JpaOperations.flush(this);
     }
 
     /**
@@ -101,7 +101,7 @@ public abstract class PanacheEntityBase {
      * Flushes all pending changes to the database.
      */
     public void flush() {
-        JpaOperations.flush();
+        JpaOperations.flush(this);
     }
 
     // Queries

@@ -66,7 +66,7 @@ public class InterceptorGenerator extends BeanGenerator {
         } else {
             baseName = DotNames.simpleName(interceptorClass);
         }
-        ClassInfo providerClass = getClassByName(interceptor.getDeployment().getIndex(), providerType.name());
+        ClassInfo providerClass = getClassByName(interceptor.getDeployment().getBeanArchiveIndex(), providerType.name());
         String providerTypeName = providerClass.name().toString();
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
@@ -113,6 +113,9 @@ public class InterceptorGenerator extends BeanGenerator {
         implementIntercepts(interceptorCreator, interceptor);
         implementIntercept(interceptorCreator, interceptor, providerTypeName, reflectionRegistration, isApplicationClass);
         implementGetPriority(interceptorCreator, interceptor);
+
+        implementEquals(interceptor, interceptorCreator);
+        implementHashCode(interceptor, interceptorCreator);
 
         interceptorCreator.close();
         return classOutput.getResources();

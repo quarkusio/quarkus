@@ -2,7 +2,7 @@ package io.quarkus.platform.tools.maven;
 
 import org.apache.maven.plugin.logging.Log;
 
-import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 public class MojoMessageWriter implements MessageWriter {
 

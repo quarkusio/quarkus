@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>36</version>
+        <version>37</version>
     </parent>
     <groupId>io.quarkus.qute</groupId>
     <artifactId>qute-parent</artifactId>
@@ -35,12 +35,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <version.junit>5.6.2</version.junit>
+        <version.junit>5.7.0</version.junit>
         <version.gizmo>1.0.4.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
-        <version.smallrye-mutiny>0.5.4</version.smallrye-mutiny>
+        <version.smallrye-mutiny>0.7.0</version.smallrye-mutiny>
     </properties>
 
     <modules>
@@ -191,7 +191,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.12.0</version>
+                    <version>2.12.2</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>

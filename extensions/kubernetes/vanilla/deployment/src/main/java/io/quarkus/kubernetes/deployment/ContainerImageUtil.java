@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
-
 import java.util.Optional;
 
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
@@ -21,7 +19,7 @@ final class ContainerImageUtil {
             return false;
         }
 
-        return !hasRegistry(containerImageInfo.getImage())
-                && !Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability.get());
+        return !containerImageInfo.getRegistry().isPresent()
+                && !Capability.CONTAINER_IMAGE_S2I.getName().equals(activeContainerImageCapability.get());
     }
 }

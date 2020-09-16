@@ -14,6 +14,7 @@ import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 public final class RecordedState {
 
     private final Dialect dialect;
+    private final String dataSource;
     private final PrevalidatedQuarkusMetadata metadata;
     private final BuildTimeSettings settings;
     private final Collection<Integrator> integrators;
@@ -26,7 +27,7 @@ public final class RecordedState {
     public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
             Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
-            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy, boolean isReactive) {
+            ProxyDefinitions classDefinitions, String dataSource, MultiTenancyStrategy strategy, boolean isReactive) {
         this.dialect = dialect;
         this.metadata = metadata;
         this.settings = settings;
@@ -34,6 +35,7 @@ public final class RecordedState {
         this.providedServices = providedServices;
         this.integrationSettings = integrationSettings;
         this.proxyClassDefinitions = classDefinitions;
+        this.dataSource = dataSource;
         this.multiTenancyStrategy = strategy;
         this.isReactive = isReactive;
     }
@@ -64,6 +66,10 @@ public final class RecordedState {
 
     public ProxyDefinitions getProxyClassDefinitions() {
         return proxyClassDefinitions;
+    }
+
+    public String getDataSource() {
+        return dataSource;
     }
 
     public MultiTenancyStrategy getMultiTenancyStrategy() {

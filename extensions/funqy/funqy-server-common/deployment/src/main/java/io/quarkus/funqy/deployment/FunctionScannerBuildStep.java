@@ -1,6 +1,7 @@
 package io.quarkus.funqy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.*;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.ClassVisitor;
@@ -32,13 +34,16 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.funqy.Context;
 import io.quarkus.funqy.Funq;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.gizmo.Gizmo;
 
 public class FunctionScannerBuildStep {
     public static final DotName FUNQ = DotName.createSimple(Funq.class.getName());
+    public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
 
     @BuildStep
     public void scanFunctions(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -46,8 +51,10 @@ public class FunctionScannerBuildStep {
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<FunctionBuildItem> functions) {
-        Collection<AnnotationInstance> funqs = beanArchiveIndexBuildItem.getIndex().getAnnotations(FUNQ);
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> funqs = index.getAnnotations(FUNQ);
         Set<ClassInfo> classes = new HashSet<>();
         Set<String> classNames = new HashSet<>();
         for (AnnotationInstance funqMethod : funqs) {
@@ -60,9 +67,37 @@ public class FunctionScannerBuildStep {
             if (funqMethod.value() != null) {
                 functionName = funqMethod.value().asString();
             }
-            if (functionName != null && "".equals(functionName))
+            if (functionName != null && functionName.isEmpty())
                 functionName = null;
             functions.produce(new FunctionBuildItem(className, methodName, functionName));
+
+            String source = FunctionScannerBuildStep.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
+                    + "]";
+
+            Type returnType = method.returnType();
+            if (returnType.kind() != Type.Kind.VOID) {
+                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                        .type(returnType)
+                        .index(index)
+                        .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                        .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                        .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                        .source(source)
+                        .build());
+            }
+            for (short i = 0; i < method.parameters().size(); i++) {
+                Type parameterType = method.parameters().get(i);
+                if (!hasAnnotation(method, i, CONTEXT)) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                            .type(parameterType)
+                            .index(index)
+                            .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                            .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                            .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                            .source(source)
+                            .build());
+                }
+            }
         }
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (ClassInfo clazz : classes) {
@@ -94,6 +129,18 @@ public class FunctionScannerBuildStep {
                 transformation.done();
             }
         }));
+    }
+
+    private static boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
+        for (AnnotationInstance annotationInstance : method.annotations()) {
+            AnnotationTarget target = annotationInstance.target();
+            if (target != null && target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                    && target.asMethodParameter().position() == paramPosition
+                    && annotationInstance.name().equals(annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @BuildStep

@@ -265,7 +265,7 @@ Let's see what happens if we start from one day in the future using the `http://
 You should get an answer two seconds later since two of the requested days were already loaded in the cache.
 
 You can also try calling the same URL with a different city and see the cache in action again.
-The first call will take six seconds and the following ones will be answered immediately.  
+The first call will take six seconds and the following ones will be answered immediately.
 
 Congratulations! You just added application data caching to your Quarkus application with a single line of code!
 
@@ -283,9 +283,9 @@ Loads a method result from the cache without executing the method body whenever 
 When a method annotated with `@CacheResult` is invoked, Quarkus will compute a cache key and use it to check in the cache whether the method has been already invoked.
 If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
 Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is generated in that case.
+This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
 If a value is found in the cache, it is returned and the annotated method is never actually executed.
-If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed or generated key.
+If no value is found, the annotated method is invoked and the returned value is stored in the cache using the computed key.
 
 A method annotated with `CacheResult` is protected by a lock on cache miss mechanism.
 If several concurrent invocations try to retrieve a cache value from the same missing key, the method will only be invoked once.
@@ -296,19 +296,20 @@ See the parameter Javadoc for more details.
 
 This annotation cannot be used on a method returning `void`.
 
+[NOTE]
+====
+Quarkus is able to also cache `null` values unlike the underlying Caffeine provider.
+See <<negative-cache,more on this topic below>>.
+====
+
 === @CacheInvalidate
 
 Removes an entry from the cache.
 
 When a method annotated with `@CacheInvalidate` is invoked, Quarkus will compute a cache key and use it to try to remove an existing entry from the cache.
 If the method has one or more arguments, the key computation is done from all the method arguments if none of them is annotated with `@CacheKey`, or all the arguments annotated with `@CacheKey` otherwise.
-This annotation can also be used on a method with no arguments, a default key derived from the cache name is generated in that case.
+This annotation can also be used on a method with no arguments, a default key derived from the cache name is used in that case.
 If the key does not identify any cache entry, nothing will happen.
-
-[TIP]
-====
-If the `@CacheResult` or `@CacheInvalidate` annotations are used on a method with no parameters, a unique default cache key derived from the cache name will be generated and used.
-====
 
 === @CacheInvalidateAll
 
@@ -320,6 +321,49 @@ When a method argument is annotated with `@CacheKey`, it is identified as a part
 method annotated with `@CacheResult` or `@CacheInvalidate`.
 
 This annotation is optional and should only be used when some of the method arguments are NOT part of the cache key.
+
+=== Composite cache key building logic
+
+When a cache key is built from several method arguments, whether they are explicitly identified with `@CacheKey` or not, the building logic depends on the order of these arguments in the method signature. On the other hand, the arguments names are not used at all and do not have any effect on the cache key.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheResult;
+
+@ApplicationScoped
+public class CachedService {
+
+    @CacheResult(cacheName = "foo")
+    public Object load(String keyElement1, Integer keyElement2) {
+        // Call expensive service here.
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate1(String keyElement2, Integer keyElement1) { <1>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate2(Integer keyElement2, String keyElement1) { <2>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate3(Object notPartOfTheKey, @CacheKey String keyElement1, @CacheKey Integer keyElement2) { <3>
+    }
+
+    @CacheInvalidate(cacheName = "foo")
+    public void invalidate4(Object notPartOfTheKey, @CacheKey Integer keyElement2, @CacheKey String keyElement1) { <4>
+    }
+}
+----
+<1> Calling this method WILL invalidate values cached by the `load` method even if the key elements names have been swapped.
+<2> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
+<3> Calling this method WILL invalidate values cached by the `load` method because the key elements order is the same.
+<4> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
 
 == Configuring the underlying caching provider
 
@@ -455,7 +499,7 @@ public class CachedService {
     }
 }
 ----
-<1> A unique default cache key derived from the cache name is generated and used.
+<1> A unique default cache key derived from the cache name is used because the method has no arguments.
 
 === Multiple annotations on a single method
 
@@ -484,5 +528,88 @@ public class CachedService {
     }
 }
 ----
-<1> This method can be used to force a refresh of the cache entry corresponding to the given key. 
+<1> This method can be used to force a refresh of the cache entry corresponding to the given key.
 <2> This method will invalidate all entries from the `foo` and `bar` caches with a single call.
+
+[#negative-cache]
+== Negative caching and nulls
+
+Sometimes one wants to cache the results of an (expensive) remote call.
+If the remote call fails, one may not want to cache the result or exception,
+but rather re-try the remote call on the next invocation.
+
+A simple approach could be to catch the exception and return `null`, so that the caller can
+act accordingly:
+
+.Sample code
+[source,java]
+----
+    public void caller(int val) {
+
+        Integer result = callRemote(val);  //<1>
+        if (result == null) {
+            System.out.println("Result is " + result);
+        else {
+           System.out.println("Got an exception");
+        }
+    }
+
+    @CacheResult(name = "foo")
+    private Integer callRemote(int val)  {
+
+        try {
+            Integer val = remoteWebServer.getResult(val);  //<2>
+            return val;
+        } catch (Exception e) {
+            return null;  // <3>
+        }
+    }
+----
+<1> Call the method to call the remote
+<2> Do the remote call and return its result
+<3> Return in case of exception
+
+This approach has an unfortunate side effect: as we said before, Quarkus can also cache
+`null` values. Which means that the next call to `callRemote()` with the same parameter value
+will be answered out of the cache, returning `null` and no remote call will be done.
+This may be desired in some scenarios, but usually one wants to retry the remote call until it returns a result.
+
+=== Let exceptions bubble up
+
+To prevent the cache from caching (marker) results from a remote call, we need to let
+the exception bubble out of the called method and catch it at the caller side:
+
+.With Exception bubbling up
+[source,java]
+----
+   public void caller(int val) {
+       try {
+           Integer result = callRemote(val);  //<1>
+           System.out.println("Result is " + result);
+       } catch (Exception e) {
+           System.out.println("Got an exception");
+   }
+
+   @CacheResult(name = "foo")
+   private Integer callRemote(int val) throws Exception { // <2>
+
+      Integer val = remoteWebServer.getResult(val);  //<3>
+      return val;
+
+   }
+----
+<1> Call the method to call the remote
+<2> Exceptions may bubble up
+<3> This can throw all kinds of remote exceptions
+
+When the call to the remote throws an exception, the cache does not store the result,
+so that a subsequent call to `callRemote()` with the same parameter value will not be
+answered out of the cache.
+It will instead result in another
+attempt to call the remote.
+
+The previous code example has the side-effect that the cache logs the thrown exception
+with a long stack trace to the console. This is done to inform developers that something
+exceptional has happened, but if you have a setup like above, you are already catching
+the exception and know what you are doing.
+

@@ -41,6 +41,7 @@ class FlywayCreator {
         }
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
+        configure.ignoreMissingMigrations(flywayRuntimeConfig.ignoreMissingMigrations);
         configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         if (flywayRuntimeConfig.baselineVersion.isPresent()) {
             configure.baselineVersion(flywayRuntimeConfig.baselineVersion.get());
@@ -49,6 +50,13 @@ class FlywayCreator {
             configure.baselineDescription(flywayRuntimeConfig.baselineDescription.get());
         }
         configure.placeholders(flywayRuntimeConfig.placeholders);
+        configure.createSchemas(flywayRuntimeConfig.createSchemas);
+        if (flywayRuntimeConfig.placeholderPrefix.isPresent()) {
+            configure.placeholderPrefix(flywayRuntimeConfig.placeholderPrefix.get());
+        }
+        if (flywayRuntimeConfig.placeholderSuffix.isPresent()) {
+            configure.placeholderSuffix(flywayRuntimeConfig.placeholderSuffix.get());
+        }
 
         /*
          * Ensure that no classpath scanning takes place by setting the ClassProvider and the ResourceProvider

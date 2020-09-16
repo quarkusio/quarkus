@@ -12,6 +12,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
@@ -31,6 +32,7 @@ import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.simpl.InitThreadContextClassLoadHelper;
 import org.quartz.simpl.SimpleJobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
@@ -71,13 +73,13 @@ public class QuartzScheduler implements Scheduler {
     org.quartz.Scheduler produceQuartzScheduler() {
         if (scheduler == null) {
             throw new IllegalStateException(
-                    "Cannot produce org.quartz.Scheduler - Quartz scheduler is disabled or no schedules were found");
+                    "Quartz scheduler is either explicitly disabled through quarkus.scheduler.enabled=false or no @Scheduled methods were found. If you only need to schedule a job programmatically you can force the start of the scheduler via quarkus.quartz.force-start=true");
         }
         return scheduler;
     }
 
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config,
-            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent) {
+            SchedulerRuntimeConfig schedulerRuntimeConfig, Event<SkippedExecution> skippedExecutionEvent, Instance<Job> jobs) {
         enabled = schedulerRuntimeConfig.enabled;
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
@@ -101,7 +103,7 @@ public class QuartzScheduler implements Scheduler {
                 scheduler = schedulerFactory.getScheduler();
 
                 // Set custom job factory
-                scheduler.setJobFactory(new InvokerJobFactory(invokers));
+                scheduler.setJobFactory(new InvokerJobFactory(invokers, jobs));
 
                 CronType cronType = context.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
@@ -290,10 +292,11 @@ public class QuartzScheduler implements Scheduler {
         QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
         props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
         props.put("org.quartz.scheduler.skipUpdateCheck", "true");
-        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, quartzSupport.getRuntimeConfig().instanceName);
         props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
         props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
+        props.put(StdSchedulerFactory.PROP_SCHED_CLASS_LOAD_HELPER_CLASS, InitThreadContextClassLoadHelper.class.getName());
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount",
                 "" + quartzSupport.getRuntimeConfig().threadCount);
         props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority",
@@ -307,7 +310,7 @@ public class QuartzScheduler implements Scheduler {
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties", "true");
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold", "60000");
-            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", "QRTZ_");
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", buildTimeConfig.tablePrefix);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".dataSource", dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".driverDelegateClass",
                     quartzSupport.getDriverDialect().get());
@@ -322,7 +325,23 @@ public class QuartzScheduler implements Scheduler {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".nonManagedTXDataSource", dataSource);
             }
         }
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_PLUGIN_PREFIX, buildTimeConfig.plugins));
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_JOB_LISTENER_PREFIX,
+                buildTimeConfig.jobListeners));
+        props.putAll(getAdditionalConfigurationProperties(StdSchedulerFactory.PROP_TRIGGER_LISTENER_PREFIX,
+                buildTimeConfig.triggerListeners));
 
+        return props;
+    }
+
+    private Properties getAdditionalConfigurationProperties(String prefix, Map<String, QuartzExtensionPointConfig> config) {
+        Properties props = new Properties();
+        for (Map.Entry<String, QuartzExtensionPointConfig> configEntry : config.entrySet()) {
+            props.put(String.format("%s.%s.class", prefix, configEntry.getKey()), configEntry.getValue().clazz);
+            for (Map.Entry<String, String> propsEntry : configEntry.getValue().properties.entrySet()) {
+                props.put(String.format("%s.%s.%s", prefix, configEntry.getKey(), propsEntry.getKey()), propsEntry.getValue());
+            }
+        }
         return props;
     }
 
@@ -399,9 +418,11 @@ public class QuartzScheduler implements Scheduler {
     static class InvokerJobFactory extends SimpleJobFactory {
 
         final Map<String, ScheduledInvoker> invokers;
+        final Instance<Job> jobs;
 
-        InvokerJobFactory(Map<String, ScheduledInvoker> invokers) {
+        InvokerJobFactory(Map<String, ScheduledInvoker> invokers, Instance<Job> jobs) {
             this.invokers = invokers;
+            this.jobs = jobs;
         }
 
         @Override
@@ -409,6 +430,10 @@ public class QuartzScheduler implements Scheduler {
             Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
             if (jobClass.equals(InvokerJob.class)) {
                 return new InvokerJob(invokers);
+            }
+            Instance<?> instance = jobs.select(jobClass);
+            if (instance.isResolvable()) {
+                return (Job) instance.get();
             }
             return super.newJob(bundle, Scheduler);
         }

@@ -40,6 +40,8 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {
     private static final Logger log = Logger.getLogger("quarkus.amazon.lambda.http");
 
+    private static final int BUFFER_SIZE = 8096;
+
     private static Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
@@ -122,7 +124,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                             responseBuilder.setBase64Encoded(true);
                             responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
                         } else {
-                            responseBuilder.setBody(new String(baos.toByteArray(), "UTF-8"));
+                            responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
                         }
                     }
                     future.complete(responseBuilder);
@@ -205,8 +207,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     }
 
     private ByteArrayOutputStream createByteStream() {
-        ByteArrayOutputStream baos;// todo what is right size?
-        baos = new ByteArrayOutputStream(1000);
+        ByteArrayOutputStream baos;
+        baos = new ByteArrayOutputStream(BUFFER_SIZE);
         return baos;
     }
 

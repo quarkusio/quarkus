@@ -23,18 +23,16 @@ public class DataSourceSupport {
         public String dataSourceName;
         public String resolvedDbKind;
         public String resolvedDriverClass;
-        public boolean isLegacy;
         public boolean isDefault;
 
         public Entry() {
         }
 
-        public Entry(String dataSourceName, String resolvedDbKind, String resolvedDriverClass, boolean isLegacy,
+        public Entry(String dataSourceName, String resolvedDbKind, String resolvedDriverClass,
                 boolean isDefault) {
             this.dataSourceName = dataSourceName;
             this.resolvedDbKind = resolvedDbKind;
             this.resolvedDriverClass = resolvedDriverClass;
-            this.isLegacy = isLegacy;
             this.isDefault = isDefault;
         }
     }

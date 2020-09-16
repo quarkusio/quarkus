@@ -13,10 +13,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -83,9 +85,11 @@ public class QuarkusDevModeTest
     private DevModeMain devModeMain;
     private Path deploymentDir;
     private Supplier<JavaArchive> archiveProducer;
+    private List<String> codeGenSources = Collections.emptyList();
     private String logFileName;
     private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
 
+    private Path deploymentSourceParentPath;
     private Path deploymentSourcePath;
     private Path deploymentResourcePath;
     private Path projectSourceRoot;
@@ -108,6 +112,11 @@ public class QuarkusDevModeTest
 
     public QuarkusDevModeTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = archiveProducer;
+        return this;
+    }
+
+    public QuarkusDevModeTest setCodeGenSources(String... codeGenSources) {
+        this.codeGenSources = Arrays.asList(codeGenSources);
         return this;
     }
 
@@ -175,15 +184,16 @@ public class QuarkusDevModeTest
             //TODO: this is a huge hack, at the moment this just guesses the source location
             //this can be improved, but as this is for testing extensions it is probably fine for now
             String sourcePath = System.getProperty("quarkus.test.source-path");
-            ;
             if (sourcePath == null) {
                 //TODO: massive hack, make sure this works in eclipse
                 projectSourceRoot = testLocation.getParent().getParent().resolve("src/test/java");
             } else {
                 projectSourceRoot = Paths.get(sourcePath);
             }
+            // TODO: again a hack, assumes the sources dir is one dir above java sources path
+            Path projectSourceParent = projectSourceRoot.getParent();
 
-            DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
+            DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
             context.setArgs(commandLineArgs);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
@@ -199,6 +209,7 @@ public class QuarkusDevModeTest
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
         rootLogger.setHandlers(originalRootLoggerHandlers);
+        inMemoryLogHandler.clearRecords();
     }
 
     @Override
@@ -216,12 +227,14 @@ public class QuarkusDevModeTest
         rootLogger.removeHandler(inMemoryLogHandler);
     }
 
-    private DevModeContext exportArchive(Path deploymentDir, Path testSourceDir) {
+    private DevModeContext exportArchive(Path deploymentDir, Path testSourceDir, Path testSourcesParentDir) {
         try {
 
             deploymentSourcePath = deploymentDir.resolve("src/main/java");
+            deploymentSourceParentPath = deploymentDir.resolve("src/main");
             deploymentResourcePath = deploymentDir.resolve("src/main/resources");
             Path classes = deploymentDir.resolve("target/classes");
+            Path targetDir = deploymentDir.resolve("target");
             Path cache = deploymentDir.resolve("target/dev-cache");
             Files.createDirectories(deploymentSourcePath);
             Files.createDirectories(deploymentResourcePath);
@@ -232,8 +245,8 @@ public class QuarkusDevModeTest
             //then we attempt to generate a source tree
             JavaArchive archive = archiveProducer.get();
             archive.as(ExplodedExporter.class).exportExplodedInto(classes.toFile());
-
             copyFromSource(testSourceDir, deploymentSourcePath, classes);
+            copyCodeGenSources(testSourcesParentDir, deploymentSourceParentPath, codeGenSources);
 
             //now copy resources
             //we assume everything that is not a .class file is a resource
@@ -269,12 +282,38 @@ public class QuarkusDevModeTest
                     new DevModeContext.ModuleInfo(AppArtifactKey.fromString("io.quarkus.test:app-under-test"), "default",
                             deploymentDir.toAbsolutePath().toString(),
                             Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
-                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString()));
+                            classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString(),
+                            deploymentSourceParentPath.toAbsolutePath().toString(),
+                            targetDir.resolve("generated-sources").toAbsolutePath().toString(),
+                            targetDir.toAbsolutePath().toString()));
 
             setDevModeRunnerJarFile(context);
             return context;
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
+        }
+    }
+
+    private void copyCodeGenSources(Path testSourcesParent, Path deploymentSourceParentPath, List<String> codeGenSources) {
+        for (String codeGenDirName : codeGenSources) {
+            Path codeGenSource = testSourcesParent.resolve(codeGenDirName);
+            try {
+                Path target = deploymentSourceParentPath.resolve(codeGenDirName);
+                try (Stream<Path> files = Files.walk(codeGenSource)) {
+                    files.forEach(
+                            file -> {
+                                Path targetPath = target.resolve(codeGenSource.relativize(file));
+                                try {
+                                    Files.copy(file, targetPath);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(
+                                            "Failed to copy file : " + file + " to " + targetPath.toAbsolutePath().toString());
+                                }
+                            });
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to copy code gen directory", e);
+            }
         }
     }
 
@@ -383,6 +422,16 @@ public class QuarkusDevModeTest
     }
 
     /**
+     * Modifies a file
+     *
+     * @param file file path relative to the project's sources parent dir (`src/main` for Maven)
+     * @param mutator A function that will modify the file
+     */
+    public void modifyFile(String file, Function<String, String> mutator) {
+        modifyPath(mutator, deploymentSourceParentPath, deploymentSourceParentPath.resolve(file));
+    }
+
+    /**
      * Modifies a source file.
      *
      * @param sourceFile The Class corresponding to the source file to modify
@@ -415,32 +464,41 @@ public class QuarkusDevModeTest
     }
 
     void modifyFile(String name, Function<String, String> mutator, Path path) {
+        AtomicBoolean found = new AtomicBoolean(false);
         try (Stream<Path> sources = Files.walk(path)) {
             sources.forEach(s -> {
                 if (s.endsWith(name)) {
-                    try {
-                        byte[] data;
-                        try (InputStream in = Files.newInputStream(s)) {
-                            data = FileUtil.readFileContents(in);
-
-                        }
-                        String oldContent = new String(data, StandardCharsets.UTF_8);
-                        String content = mutator.apply(oldContent);
-                        if (content.equals(oldContent)) {
-                            throw new RuntimeException("File was not modified, mutator function had no effect");
-                        }
-
-                        sleepForFileChanges(path);
-                        Files.write(s, content.getBytes(StandardCharsets.UTF_8));
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    found.set(true);
+                    modifyPath(mutator, path, s);
                 }
             });
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
+        if (!found.get()) {
+            throw new IllegalArgumentException("File " + name + " was not part of the test application");
+        }
+    }
+
+    private void modifyPath(Function<String, String> mutator, Path sourceDirectory, Path input) {
+        try {
+            byte[] data;
+            try (InputStream in = Files.newInputStream(input)) {
+                data = FileUtil.readFileContents(in);
+
+            }
+            String oldContent = new String(data, StandardCharsets.UTF_8);
+            String content = mutator.apply(oldContent);
+            if (content.equals(oldContent)) {
+                throw new RuntimeException("File was not modified, mutator function had no effect");
+            }
+
+            sleepForFileChanges(sourceDirectory);
+            Files.write(input, content.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void sleepForFileChanges(Path path) {

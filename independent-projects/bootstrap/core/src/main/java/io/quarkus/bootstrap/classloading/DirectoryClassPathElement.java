@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
@@ -36,7 +37,13 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     @Override
     public ClassPathResource getResource(String name) {
-        Path file = root.resolve(name);
+        final Path file;
+        try {
+            file = root.resolve(name);
+        } catch (InvalidPathException ipe) {
+            // can't resolve the resource
+            return null;
+        }
         Path normal = file.normalize();
         String cn = name;
         if (File.separatorChar == '\\') {
@@ -100,6 +107,11 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
                     } catch (IOException e) {
                         throw new RuntimeException("Unable to read " + file, e);
                     }
+                }
+
+                @Override
+                public boolean isDirectory() {
+                    return Files.isDirectory(file);
                 }
             };
         }

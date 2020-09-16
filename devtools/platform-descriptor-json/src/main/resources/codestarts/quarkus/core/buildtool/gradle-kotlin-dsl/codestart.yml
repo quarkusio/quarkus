@@ -1,0 +1,30 @@
+name: gradle-kotlin-dsl
+type: buildtool
+output-strategy:
+  "gradlew": "executable"
+  "gradlew.bat": "executable"
+language:
+  base:
+    data:
+      kotlin:
+        version: 1.3.72
+    shared-data:
+      quarkus:
+        gradle-plugin:
+          id: io.quarkus
+      buildtool:
+        build-dir: build
+        guide: https://quarkus.io/guides/gradle-tooling
+        guide-native: https://quarkus.io/guides/gradle-tooling#building-a-native-executable
+        cmd:
+          dev: gradle quarkusDev
+          package: gradle quarkusBuild
+          package-uberjar: gradle quarkusBuild --uber-jar
+          package-native: gradle build -Dquarkus.package.type=native
+          package-native-container: gradle build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+  kotlin:
+    dependencies:
+      - org.jetbrains.kotlin:kotlin-stdlib-jdk8
+  scala:
+    dependencies:
+      - org.scala-lang:scala-library:2.12.8

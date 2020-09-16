@@ -33,6 +33,18 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<String> version;
 
     /**
+     * The namespace the generated resources should belong to.
+     * If not value is set, then the 'namespace' field will not be
+     * added to the 'metadata' section of the generated manifests.
+     * This in turn means that when the manifests are applied to a cluster,
+     * the namespace will be resolved from the current Kubernetes context
+     * (see https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+     * for more details).
+     */
+    @ConfigItem
+    Optional<String> namespace;
+
+    /**
      * Custom labels to add to all resources
      */
     @ConfigItem
@@ -217,6 +229,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Optional<String> getVersion() {
         return version;
+    }
+
+    public Optional<String> getNamespace() {
+        return namespace;
     }
 
     public Map<String, String> getLabels() {

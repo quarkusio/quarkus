@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -26,7 +28,6 @@ import io.quarkus.smallrye.context.runtime.SmallRyeContextPropagationRecorder;
  * The deployment processor for MP-CP applications
  */
 class SmallRyeContextPropagationProcessor {
-    private static final Logger log = Logger.getLogger(SmallRyeContextPropagationProcessor.class.getName());
 
     @BuildStep
     void registerBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -65,13 +66,24 @@ class SmallRyeContextPropagationProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(SmallRyeContextPropagationRecorder recorder,
-            BeanContainerBuildItem beanContainer,
             ExecutorBuildItem executorBuildItem,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<ManagedExecutorInitializedBuildItem> managedExecutorInitialized) {
+            BuildProducer<ManagedExecutorInitializedBuildItem> managedExecutorInitialized,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
 
-        recorder.configureRuntime(beanContainer.getValue(), executorBuildItem.getExecutorProxy());
+        recorder.configureRuntime(executorBuildItem.getExecutorProxy());
+
+        // Synthetic bean for ManagedExecutor
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(ManagedExecutor.class)
+                        .scope(ApplicationScoped.class)
+                        .defaultBean()
+                        .unremovable()
+                        .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
+                        .setRuntimeInit().done());
+
+        // This should be removed at some point after Quarkus 1.7
         managedExecutorInitialized.produce(new ManagedExecutorInitializedBuildItem());
     }
 }

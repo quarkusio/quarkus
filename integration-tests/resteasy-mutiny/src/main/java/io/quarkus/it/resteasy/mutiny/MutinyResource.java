@@ -37,7 +37,7 @@ public class MutinyResource {
     @Path("/response")
     public Uni<Response> response() {
         return service.greeting()
-                .onItem().apply(v -> Response.accepted().type("text/plain").entity(v).build());
+                .onItem().transform(v -> Response.accepted().type("text/plain").entity(v).build());
     }
 
     @GET

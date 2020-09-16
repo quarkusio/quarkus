@@ -20,7 +20,7 @@ To complete this guide, you need:
 
 * less than 20 minutes
 * an IDE
-* GraalVM installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
+* GraalVM (Java 11) installed with `JAVA_HOME` and `GRAALVM_HOME` configured appropriately
 * Apache Maven {maven-version}
 
 This guide is based on the REST client guide so you should get this Maven project first.
@@ -82,6 +82,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Reactive client for PostgreSQL extension (`quarkus-reactive-pg-client`),
  * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`),
  * the Reactive client for DB2 extension (`quarkus-reactive-db2-client`).
+ * the Cassandra client extensions (`cassandra-quarkus-client`)
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 
@@ -190,6 +191,7 @@ will ensure that the certificates of `/tmp/mycerts` are baked into the native bi
 The file containing the custom TrustStore does *not* have to be present at runtime as its content has been baked into the native binary.
 ====
 
+[#working-with-containers]
 === Working with containers
 
 No special action needs to be taken when running the native binary in a container. If the native binary was properly built with the custom TrustStore

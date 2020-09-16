@@ -18,7 +18,7 @@ public class MultipleContainerImageExtensionTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("MultipleContainerImage")
+            .setApplicationName("multiple-container-image")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setExpectedException(IllegalStateException.class)
             .setForcedDependencies(

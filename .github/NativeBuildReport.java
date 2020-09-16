@@ -3,7 +3,12 @@
 //DEPS org.kohsuke:github-api:1.101
 //DEPS info.picocli:picocli:4.2.0
 
-import org.kohsuke.github.*;
+import org.kohsuke.github.GitHub;
+import org.kohsuke.github.GitHubBuilder;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHIssue;
+import org.kohsuke.github.GHIssueComment;
+import org.kohsuke.github.GHIssueState;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -87,7 +92,7 @@ class Report implements Runnable {
 	private static boolean isOpen(GHIssue issue) {
 		return (issue.getState() == GHIssueState.OPEN);
 	}
-	
+
 	public static void main(String... args) {
 		int exitCode = new CommandLine(new Report()).execute(args);
 		System.exit(exitCode);

@@ -14,6 +14,9 @@ public interface AppMessages {
     @Message("Hello {name}!")
     String hello_name(String name);
 
+    @Message("Hello {name} {surname}!")
+    String hello_fullname(String name, String surname);
+
     // key=hello_with_if_section
     @Message(key = UNDERSCORED_ELEMENT_NAME, value = "{#if count eq 1}"
             + "{msg:hello_name('you guy')}"
@@ -24,5 +27,8 @@ public interface AppMessages {
 
     @Message("Item name: {item.name}, age: {item.age}")
     String itemDetail(Item item);
+
+    @Message(key = "dot.test", value = "Dot test!")
+    String dotTest();
 
 }

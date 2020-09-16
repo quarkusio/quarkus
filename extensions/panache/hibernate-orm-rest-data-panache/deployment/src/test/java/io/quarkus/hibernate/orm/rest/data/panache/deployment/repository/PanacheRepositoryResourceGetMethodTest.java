@@ -12,8 +12,8 @@ class PanacheRepositoryResourceGetMethodTest extends AbstractGetMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsController.class, CollectionsRepository.class, Item.class,
-                            ItemsController.class, ItemsRepository.class)
+                    .addClasses(Collection.class, CollectionsController.class, CollectionsRepository.class, AbstractItem.class,
+                            Item.class, ItemsController.class, ItemsRepository.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
 }

@@ -101,4 +101,18 @@ public class IncludeTest {
                         + "{/include}").render());
     }
 
+    @Test
+    public void testEmptyInclude() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("bar/fool.html", engine.parse("{foo} and {that}"));
+        assertEquals("1 and true", engine.parse("{#include bar/fool.html that=true /}").data("foo", 1).render());
+    }
+
+    @Test
+    public void testInsertParam() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert} and {#insert footer}{that}{/}"));
+        assertEquals("1 and 1", engine.parse("{#include 'super' that=foo}{#header}{that}{/}{/}").data("foo", 1).render());
+    }
+
 }

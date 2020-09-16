@@ -9,7 +9,6 @@ import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -27,8 +26,7 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
 
 /**
- *
- * @author Martin Kouba
+ * Implements type-safe resolution rules.
  */
 class BeanResolver {
 
@@ -45,13 +43,19 @@ class BeanResolver {
         this.assignableFromMap = new ConcurrentHashMap<>();
         this.assignableFromMapFunction = name -> {
             Set<DotName> assignables = new HashSet<>();
-            Collection<ClassInfo> subclasses = beanDeployment.getIndex().getAllKnownSubclasses(name);
-            for (ClassInfo subclass : subclasses) {
+            for (ClassInfo subclass : beanDeployment.getBeanArchiveIndex().getAllKnownSubclasses(name)) {
                 assignables.add(subclass.name());
             }
-            Collection<ClassInfo> implementors = beanDeployment.getIndex().getAllKnownImplementors(name);
-            for (ClassInfo implementor : implementors) {
+            for (ClassInfo implementor : beanDeployment.getBeanArchiveIndex().getAllKnownImplementors(name)) {
                 assignables.add(implementor.name());
+            }
+            if (beanDeployment.hasApplicationIndex()) {
+                for (ClassInfo subclass : beanDeployment.getApplicationIndex().getAllKnownSubclasses(name)) {
+                    assignables.add(subclass.name());
+                }
+                for (ClassInfo implementor : beanDeployment.getApplicationIndex().getAllKnownImplementors(name)) {
+                    assignables.add(implementor.name());
+                }
             }
             return assignables;
         };
@@ -66,6 +70,16 @@ class BeanResolver {
         List<BeanInfo> resolved = new ArrayList<>();
         for (BeanInfo b : beanDeployment.getBeans()) {
             if (Beans.matches(b, typeAndQualifiers)) {
+                resolved.add(b);
+            }
+        }
+        return resolved.isEmpty() ? Collections.emptyList() : resolved;
+    }
+
+    List<BeanInfo> findTypeMatching(Type type) {
+        List<BeanInfo> resolved = new ArrayList<>();
+        for (BeanInfo b : beanDeployment.getBeans()) {
+            if (Beans.matchesType(b, type)) {
                 resolved.add(b);
             }
         }

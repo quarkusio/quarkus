@@ -321,7 +321,7 @@ The implementation is pretty straightforward and you just need to define your en
 == Configuring DynamoDB clients
 
 Both DynamoDB clients (sync and async) are configurable via the `application.properties` file that can be provided in the `src/main/resources` directory.
-Additionally, you need to added to the classpath a proper implementation of the sync client. By default the extension uses URL connection HTTP client, so
+Additionally, you need to add to the classpath a proper implementation of the sync client. By default the extension uses the `java.net.URLConnection` HTTP client, so
 you need to add a URL connection client dependency to the `pom.xml` file:
 
 [source,xml]
@@ -332,7 +332,7 @@ you need to add a URL connection client dependency to the `pom.xml` file:
 </dependency>
 ----
 
-If you want to use Apache HTTP client instead, configure it as follows:
+If you want to use the Apache HTTP client instead, configure it as follows:
 [source,properties]
 ----
 quarkus.dynamodb.sync-client.type=apache
@@ -413,7 +413,7 @@ public class FruitAsyncService extends AbstractService {
 
     public Uni<List<Fruit>> findAll() {
         return Uni.createFrom().completionStage(() -> dynamoDB.scan(scanRequest()))
-                .onItem().apply(res -> res.items().stream().map(Fruit::from).collect(Collectors.toList()));
+                .onItem().transform(res -> res.items().stream().map(Fruit::from).collect(Collectors.toList()));
     }
 
     public Uni<List<Fruit>> add(Fruit fruit) {
@@ -423,7 +423,7 @@ public class FruitAsyncService extends AbstractService {
 
     public Uni<Fruit> get(String name) {
         return Uni.createFrom().completionStage(() -> dynamoDB.getItem(getRequest(name)))
-                .onItem().apply(resp -> Fruit.from(resp.item()));
+                .onItem().transform(resp -> Fruit.from(resp.item()));
     }
 }
 ----

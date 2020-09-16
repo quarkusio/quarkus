@@ -55,10 +55,18 @@ public class RestAssuredURLManager {
     }
 
     public static void setURL(boolean useSecureConnection) {
-        setURL(useSecureConnection, null);
+        setURL(useSecureConnection, null, null);
+    }
+
+    public static void setURL(boolean useSecureConnection, String additionalPath) {
+        setURL(useSecureConnection, null, additionalPath);
     }
 
     public static void setURL(boolean useSecureConnection, Integer port) {
+        setURL(useSecureConnection, port, null);
+    }
+
+    public static void setURL(boolean useSecureConnection, Integer port, String additionalPath) {
         if (portField != null) {
             try {
                 oldPort = (Integer) portField.get(null);
@@ -91,8 +99,28 @@ public class RestAssuredURLManager {
                 oldBasePath = (String) basePathField.get(null);
                 Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
                         String.class);
-                if (basePath.isPresent()) {
-                    basePathField.set(null, basePath.get());
+                if (basePath.isPresent() || additionalPath != null) {
+                    StringBuilder bp = new StringBuilder();
+                    if (basePath.isPresent()) {
+                        if (basePath.get().startsWith("/")) {
+                            bp.append(basePath.get().substring(1));
+                        } else {
+                            bp.append(basePath.get());
+                        }
+                        if (bp.toString().endsWith("/")) {
+                            bp.setLength(bp.length() - 1);
+                        }
+                    }
+                    if (additionalPath != null) {
+                        if (!additionalPath.startsWith("/")) {
+                            bp.append("/");
+                        }
+                        bp.append(additionalPath);
+                        if (bp.toString().endsWith("/")) {
+                            bp.setLength(bp.length() - 1);
+                        }
+                    }
+                    basePathField.set(null, bp.toString());
                 }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

@@ -1,7 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
@@ -25,6 +25,8 @@ import io.dekorate.deps.kubernetes.api.model.HasMetadata;
 import io.dekorate.deps.kubernetes.api.model.KubernetesList;
 import io.dekorate.deps.kubernetes.client.KubernetesClient;
 import io.dekorate.deps.kubernetes.client.KubernetesClientException;
+import io.dekorate.deps.openshift.api.model.Route;
+import io.dekorate.deps.openshift.client.OpenShiftClient;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
 import io.quarkus.container.image.deployment.ContainerImageCapabilitiesUtil;
@@ -34,6 +36,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
@@ -49,11 +52,31 @@ public class KubernetesDeployer {
             .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
     @BuildStep(onlyIf = IsNormal.class)
-    public void deploy(KubernetesClientBuildItem kubernetesClient,
-            ContainerImageInfoBuildItem containerImageInfo,
+    public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets,
-            OutputTargetBuildItem outputTarget,
             Capabilities capabilities,
+            BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget) {
+
+        Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
+                .getActiveContainerImageCapability(capabilities);
+
+        if (!activeContainerImageCapability.isPresent()) {
+            // we can't thrown an exception here, because it could prevent the Kubernetes resources from being generated
+            return;
+        }
+
+        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(
+                containerImageInfo, targets, activeContainerImageCapability.get());
+        selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    public void deploy(KubernetesClientBuildItem kubernetesClient,
+            Capabilities capabilities,
+            Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
+            OutputTargetBuildItem outputTarget,
+            OpenshiftConfig openshiftConfig,
+            ApplicationInfoBuildItem applicationInfo,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
             // needed to ensure that this step runs after the container image has been built
             @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
@@ -62,21 +85,22 @@ public class KubernetesDeployer {
             return;
         }
 
-        Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
-                .getActiveContainerImageCapability(capabilities);
+        if (!selectedDeploymentTarget.isPresent()) {
 
-        if (!activeContainerImageCapability.isPresent()) {
-            throw new RuntimeException(
-                    "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
-                            + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
+            if (!ContainerImageCapabilitiesUtil
+                    .getActiveContainerImageCapability(capabilities).isPresent()) {
+                throw new RuntimeException(
+                        "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
+                                + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
+            }
+
+            return;
         }
-
-        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget = determineDeploymentTarget(
-                containerImageInfo, targets, activeContainerImageCapability.get());
 
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
         deploymentResult
-                .produce(deploy(selectedTarget, client, outputTarget.getOutputDirectory()));
+                .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
+                        openshiftConfig, applicationInfo));
     }
 
     /**
@@ -90,10 +114,10 @@ public class KubernetesDeployer {
      *
      * If the user specifies deployment targets, pick the first one
      */
-    private EnabledKubernetesDeploymentTargetsBuildItem.Entry determineDeploymentTarget(
+    private DeploymentTargetEntry determineDeploymentTarget(
             ContainerImageInfoBuildItem containerImageInfo,
             EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability) {
-        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget;
+        final DeploymentTargetEntry selectedTarget;
 
         boolean checkForMissingRegistry = true;
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
@@ -120,12 +144,12 @@ public class KubernetesDeployer {
         }
 
         if (OPENSHIFT.equals(selectedTarget.getName())) {
-            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
+            checkForMissingRegistry = Capability.CONTAINER_IMAGE_S2I.getName().equals(activeContainerImageCapability);
         } else if (MINIKUBE.equals(selectedTarget.getName())) {
             checkForMissingRegistry = false;
         }
 
-        if (checkForMissingRegistry && !hasRegistry(containerImageInfo.getImage())) {
+        if (checkForMissingRegistry && !containerImageInfo.getRegistry().isPresent()) {
             log.warn(
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
@@ -139,8 +163,9 @@ public class KubernetesDeployer {
         return deploymentTargets.stream().filter(d -> name.equals(d.getName())).findFirst();
     }
 
-    private DeploymentResultBuildItem deploy(EnabledKubernetesDeploymentTargetsBuildItem.Entry deploymentTarget,
-            KubernetesClient client, Path outputDir) {
+    private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
+            KubernetesClient client, Path outputDir,
+            OpenshiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
                 + " in namespace: " + namespace + ".");
@@ -150,9 +175,15 @@ public class KubernetesDeployer {
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             distinct(list.getItems()).forEach(i -> {
-                client.resource(i).inNamespace(namespace).createOrReplace();
+                if (KNATIVE.equals(deploymentTarget.getName().toLowerCase())) {
+                    client.resource(i).inNamespace(namespace).deletingExisting().createOrReplace();
+                } else {
+                    client.resource(i).inNamespace(namespace).createOrReplace();
+                }
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
+
+            printExposeInformation(client, list, openshiftConfig, applicationInfo);
 
             HasMetadata m = list.getItems().stream().filter(r -> r.getKind().equals(deploymentTarget.getKind()))
                     .findFirst().orElseThrow(() -> new IllegalStateException(
@@ -167,6 +198,27 @@ public class KubernetesDeployer {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());
         }
 
+    }
+
+    private void printExposeInformation(KubernetesClient client, KubernetesList list, OpenshiftConfig openshiftConfig,
+            ApplicationInfoBuildItem applicationInfo) {
+        String generatedRouteName = ResourceNameUtil.getResourceName(openshiftConfig, applicationInfo);
+        List<HasMetadata> items = list.getItems();
+        for (HasMetadata item : items) {
+            if (Constants.ROUTE_API_GROUP.equals(item.getApiVersion()) && Constants.ROUTE.equals(item.getKind())
+                    && generatedRouteName.equals(item.getMetadata().getName())) {
+                try {
+                    OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
+                    Route route = openShiftClient.routes().withName(generatedRouteName).get();
+                    boolean isTLS = (route.getSpec().getTls() != null);
+                    String host = route.getSpec().getHost();
+                    log.infov("The deployed application can be accessed at: http{0}://{1}", isTLS ? "s" : "", host);
+                } catch (KubernetesClientException ignored) {
+
+                }
+                break;
+            }
+        }
     }
 
     public static Predicate<HasMetadata> distictByResourceKey() {

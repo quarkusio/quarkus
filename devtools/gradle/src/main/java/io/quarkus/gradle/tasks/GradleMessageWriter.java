@@ -2,7 +2,7 @@ package io.quarkus.gradle.tasks;
 
 import org.gradle.api.logging.Logger;
 
-import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 public class GradleMessageWriter implements MessageWriter {
 

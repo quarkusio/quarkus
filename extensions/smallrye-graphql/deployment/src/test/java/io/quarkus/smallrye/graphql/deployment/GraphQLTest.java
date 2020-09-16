@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import static io.quarkus.smallrye.graphql.deployment.AbstractGraphQLTest.MEDIATYPE_JSON;
+
 import org.hamcrest.CoreMatchers;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -42,6 +44,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("\"Query root\""));
         Assertions.assertTrue(body.contains("type Query {"));
         Assertions.assertTrue(body.contains("ping: TestPojo"));
+        Assertions.assertTrue(body.contains("enum SomeEnum {"));
     }
 
     @Test
@@ -120,5 +123,20 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .body(CoreMatchers.containsString(
                         "{\"data\":{\"foos\":[{\"message\":\"bar\",\"randomNumber\":{\"value\":123.0},\"list\":[\"a\",\"b\",\"c\"]}]}}"));
 
+    }
+
+    @Test
+    public void testContext() {
+        String query = getPayload("{context}");
+
+        RestAssured.given()
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body(CoreMatchers.containsString("{\"data\":{\"context\":\"/context\"}}"));
     }
 }

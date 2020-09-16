@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,13 +36,24 @@ public class JpaOperations {
             return query.stream();
         }
 
+        @Override
+        public EntityManager getEntityManager(Class<?> clazz) {
+            String clazzName = clazz.getName();
+            String persistentUnitName = entityToPersistenceUnit.get(clazzName);
+            return super.getEntityManager(persistentUnitName);
+        }
     }
 
     private static final JavaJpaOperations delegate = new JavaJpaOperations();
 
+    private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
+
+    static void setEntityToPersistenceUnit(Map<String, String> entityToPersistenceUnit) {
+        JpaOperations.entityToPersistenceUnit = Collections.unmodifiableMap(entityToPersistenceUnit);
+    }
+
     //
     // Instance methods
-
     public static void persist(Object entity) {
         delegate.persist(entity);
     }
@@ -70,15 +82,33 @@ public class JpaOperations {
         return delegate.isPersistent(entity);
     }
 
+    /**
+     * Flushes the default to the database using the default EntityManager.
+     */
     public static void flush() {
-        delegate.flush();
+        delegate.getEntityManager().flush();
     }
 
-    //
-    // Private stuff
+    /**
+     * Flushes all pending changes to the database using entity's EntityManager.
+     */
+    public static void flush(Object entity) {
+        delegate.flush(entity);
+    }
 
+    /**
+     * Default entity manager
+     */
     public static EntityManager getEntityManager() {
         return delegate.getEntityManager();
+    }
+
+    public static EntityManager getEntityManager(Class<?> clazz) {
+        return delegate.getEntityManager(clazz);
+    }
+
+    public static EntityManager getEntityManager(String persistentUnitName) {
+        return delegate.getEntityManager(persistentUnitName);
     }
 
     public static TransactionManager getTransactionManager() {

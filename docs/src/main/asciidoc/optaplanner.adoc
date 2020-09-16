@@ -70,7 +70,7 @@ Alternatively, generate it from the command line with Maven:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=optaplanner-quickstart \
-    -Dextensions="resteasy, resteasy-jackson, optaplanner, optaplanner-jackson"
+    -Dextensions="resteasy, resteasy-jackson, optaplanner-quarkus, optaplanner-quarkus-jackson"
 cd optaplanner-quickstart
 ----
 

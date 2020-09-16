@@ -10,7 +10,6 @@ import javax.ws.rs.core.Context;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.rest.data.panache.deployment.methods.AddMethodImplementor;
@@ -26,6 +25,7 @@ import io.quarkus.rest.data.panache.deployment.methods.hal.UpdateHalMethodImplem
 import io.quarkus.rest.data.panache.deployment.methods.internal.IsPagedMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.MethodPropertiesAccessor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourcePropertiesAccessor;
+import io.quarkus.runtime.util.HashUtil;
 
 class RestDataResourceImplementor {
 
@@ -57,7 +57,7 @@ class RestDataResourceImplementor {
     }
 
     void implement(ClassOutput classOutput, RestDataResourceInfo resourceInfo) {
-        String resourceInterfaceName = resourceInfo.getClassInfo().toString();
+        String resourceInterfaceName = resourceInfo.getType();
         String implementationClassName = resourceInterfaceName + "Impl_" + HashUtil.sha1(resourceInterfaceName);
         LOGGER.tracef("Starting generation of '%s'", implementationClassName);
         ClassCreator classCreator = ClassCreator.builder()
@@ -66,7 +66,7 @@ class RestDataResourceImplementor {
                 .interfaces(resourceInterfaceName)
                 .build();
         classCreator.addAnnotation(Path.class)
-                .addValue("value", resourcePropertiesAccessor.path(resourceInfo.getClassInfo()));
+                .addValue("value", resourcePropertiesAccessor.path(resourceInterfaceName));
         implementPrivateFields(classCreator);
         implementMethods(classCreator, resourceInfo);
         implementPrivateMethods(classCreator, resourceInfo);
@@ -85,7 +85,7 @@ class RestDataResourceImplementor {
         for (MethodImplementor methodImplementor : STANDARD_METHOD_IMPLEMENTORS) {
             methodImplementor.implement(classCreator, index, methodPropertiesAccessor, resourceInfo);
         }
-        if (resourcePropertiesAccessor.isHal(resourceInfo.getClassInfo())) {
+        if (resourcePropertiesAccessor.isHal(resourceInfo.getType())) {
             for (MethodImplementor methodImplementor : HAL_METHOD_IMPLEMENTORS) {
                 methodImplementor.implement(classCreator, index, methodPropertiesAccessor, resourceInfo);
             }
@@ -93,7 +93,7 @@ class RestDataResourceImplementor {
     }
 
     private void implementPrivateMethods(ClassCreator classCreator, RestDataResourceInfo resourceInfo) {
-        new IsPagedMethodImplementor(resourcePropertiesAccessor.isPaged(resourceInfo.getClassInfo()))
+        new IsPagedMethodImplementor(resourcePropertiesAccessor.isPaged(resourceInfo.getType()))
                 .implement(classCreator, index, methodPropertiesAccessor, resourceInfo);
     }
 }

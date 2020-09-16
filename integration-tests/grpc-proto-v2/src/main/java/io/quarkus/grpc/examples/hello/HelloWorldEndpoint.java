@@ -34,7 +34,7 @@ public class HelloWorldEndpoint {
     @Path("/mutiny/{name}")
     public Uni<String> helloMutiny(@PathParam("name") String name) {
         return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
-                .onItem().apply((reply) -> generateResponse(reply));
+                .onItem().transform((reply) -> generateResponse(reply));
     }
 
     public String generateResponse(HelloReply reply) {

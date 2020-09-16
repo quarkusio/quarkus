@@ -10,6 +10,14 @@ import java.util.concurrent.ExecutionException;
 @SuppressWarnings("rawtypes")
 public final class EvaluatedParams {
 
+    static final EvaluatedParams EMPTY;
+
+    static {
+        CompletableFuture<Void> empty = new CompletableFuture<Void>();
+        empty.complete(null);
+        EMPTY = new EvaluatedParams(empty, new CompletableFuture<?>[0]);
+    }
+
     /**
      * 
      * @param context
@@ -17,12 +25,36 @@ public final class EvaluatedParams {
      */
     public static EvaluatedParams evaluate(EvalContext context) {
         List<Expression> params = context.getParams();
-        if (params.size() == 1) {
+        if (params.isEmpty()) {
+            return EMPTY;
+        } else if (params.size() == 1) {
             return new EvaluatedParams(context.evaluate(params.get(0)));
         }
         CompletableFuture<?>[] results = new CompletableFuture<?>[params.size()];
         int i = 0;
         Iterator<Expression> it = params.iterator();
+        while (it.hasNext()) {
+            results[i++] = context.evaluate(it.next()).toCompletableFuture();
+        }
+        return new EvaluatedParams(CompletableFuture.allOf(results), results);
+    }
+
+    public static EvaluatedParams evaluateMessageKey(EvalContext context) {
+        List<Expression> params = context.getParams();
+        if (params.isEmpty()) {
+            throw new IllegalArgumentException("No params to evaluate");
+        }
+        return new EvaluatedParams(context.evaluate(params.get(0)));
+    }
+
+    public static EvaluatedParams evaluateMessageParams(EvalContext context) {
+        List<Expression> params = context.getParams();
+        if (params.size() < 2) {
+            return EMPTY;
+        }
+        CompletableFuture<?>[] results = new CompletableFuture<?>[params.size() - 1];
+        int i = 0;
+        Iterator<Expression> it = params.subList(1, params.size()).iterator();
         while (it.hasNext()) {
             results[i++] = context.evaluate(it.next()).toCompletableFuture();
         }

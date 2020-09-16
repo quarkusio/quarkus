@@ -78,6 +78,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
+    private final boolean generateDocs = !(Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly"));
 
     public ExtensionAnnotationProcessor() {
     }
@@ -99,11 +100,15 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        doProcess(annotations, roundEnv);
-        if (roundEnv.processingOver()) {
-            doFinish();
+        try {
+            doProcess(annotations, roundEnv);
+            if (roundEnv.processingOver()) {
+                doFinish();
+            }
+            return true;
+        } finally {
+            JDeparser.dropCaches();
         }
-        return true;
     }
 
     @Override
@@ -236,7 +241,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
 
         try {
-            if (!Constants.SKIP_DOCS_GENERATION) {
+            if (generateDocs) {
                 final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
                         .scanExtensionsConfigurationItems(javaDocProperties);
                 for (ConfigDocGeneratedOutput output : outputs) {
@@ -412,7 +417,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             if (groupClassNames.add(i.getQualifiedName().toString())) {
                 generateAccessor(i);
                 recordConfigJavadoc(i);
-                configDocItemScanner.addConfigGroups(i);
+                if (generateDocs) {
+                    configDocItemScanner.addConfigGroups(i);
+                }
             }
         }
     }
@@ -428,7 +435,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 continue;
             }
 
-            configDocItemScanner.addConfigRoot(pkg, clazz);
+            if (generateDocs) {
+                configDocItemScanner.addConfigRoot(pkg, clazz);
+            }
 
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (rootClassNames.add(binaryName)) {

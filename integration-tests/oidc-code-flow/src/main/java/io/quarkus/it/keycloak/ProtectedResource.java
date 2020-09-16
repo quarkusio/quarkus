@@ -14,10 +14,15 @@ import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/web-app")
 @Authenticated
 public class ProtectedResource {
+
+    @Inject
+    SecurityIdentity identity;
 
     @Inject
     @IdToken
@@ -39,6 +44,9 @@ public class ProtectedResource {
     public String getName() {
         if (!idTokenCredential.getToken().equals(idToken.getRawToken())) {
             throw new OIDCException("ID token values are not equal");
+        }
+        if (idTokenCredential.getRoutingContext() != identity.getAttribute(RoutingContext.class.getName())) {
+            throw new OIDCException("SecurityIdentity must have a RoutingContext attribute");
         }
         return idToken.getName();
     }

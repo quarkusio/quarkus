@@ -22,7 +22,7 @@ public class PostResourceTest {
         assertThat(posts)
                 .hasSize(3)
                 .filteredOn(p -> p.getTitle().contains("first"))
-                .hasOnlyOneElementSatisfying(p -> {
+                .singleElement().satisfies(p -> {
                     assertThat(p.getComments()).hasSize(2);
                 });
     }

@@ -48,3 +48,13 @@ INSERT INTO song(id, title, author) VALUES (4, 'Whatever it takes' , 'Imagine Dr
 INSERT INTO song(id, title, author) VALUES (5, 'Santos que yo te pinte' , 'Los planetas');
 INSERT INTO song(id, title, author) VALUES (6, 'Drinkee' , 'Sofi Tukker');
 
+INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (1, 'Jason', 'Bourne',  'jason.bourne@mail.com', '0102030405', TRUE);
+INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (2, 'Homer', 'Simpson', 'homer.simpson@mail.com',  '0605040302', TRUE);
+INSERT INTO customer(id, first_name, last_name, email, telephone, enabled) VALUES (3, 'Peter', 'Quin', 'pater.quin@mail.com',  '0706050403', FALSE);
+
+INSERT INTO cart(id, customer_id, status) VALUES (1, 1, 'NEW');
+INSERT INTO cart(id, customer_id, status) VALUES (2, 2, 'NEW');
+INSERT INTO cart(id, customer_id, status) VALUES (3, 3, 'CANCELED');
+
+INSERT INTO orders(id, cart_id) VALUES (1, 1);
+INSERT INTO orders(id, cart_id) VALUES (2, 2);

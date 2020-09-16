@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.runtime.boot.scan;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.hibernate.boot.archive.internal.UrlInputStreamAccess;
@@ -26,7 +27,7 @@ public class QuarkusScanner implements Scanner {
 
     @Override
     public ScanResult scan(ScanEnvironment scanEnvironment, ScanOptions scanOptions, ScanParameters scanParameters) {
-        return new Result();
+        return new Result(classDescriptors, scanEnvironment, scanOptions);
     }
 
     public Set<ClassDescriptor> getClassDescriptors() {
@@ -37,7 +38,20 @@ public class QuarkusScanner implements Scanner {
         this.classDescriptors = classDescriptors;
     }
 
-    public class Result implements ScanResult {
+    public static class Result implements ScanResult {
+
+        private final Set<ClassDescriptor> selectedClassDescriptors;
+
+        Result(Set<ClassDescriptor> classDescriptors, ScanEnvironment scanEnvironment, ScanOptions scanOptions) {
+            this.selectedClassDescriptors = new HashSet<>();
+
+            for (ClassDescriptor classDescriptor : classDescriptors) {
+                if (scanOptions.canDetectUnlistedClassesInRoot() ||
+                        scanEnvironment.getExplicitlyListedClassNames().contains(classDescriptor.getName())) {
+                    this.selectedClassDescriptors.add(classDescriptor);
+                }
+            }
+        }
 
         @Override
         public Set<PackageDescriptor> getLocatedPackages() {
@@ -47,7 +61,7 @@ public class QuarkusScanner implements Scanner {
 
         @Override
         public Set<ClassDescriptor> getLocatedClasses() {
-            return classDescriptors;
+            return selectedClassDescriptors;
         }
 
         @Override

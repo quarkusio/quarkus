@@ -135,14 +135,18 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-
+        if (skip) {
+            getLog().info("Skipping Quarkus build");
+            return;
+        }
         if (project.getPackaging().equals("pom")) {
             getLog().info("Type of the artifact is POM, skipping build goal");
             return;
         }
-        if (skip) {
-            getLog().info("Skipping Quarkus build");
-            return;
+        if (!project.getArtifact().getArtifactHandler().getExtension().equals("jar")) {
+            throw new MojoExecutionException(
+                    "The project artifact's extension is '" + project.getArtifact().getArtifactHandler().getExtension()
+                            + "' while this goal expects it be 'jar'");
         }
 
         boolean clear = false;
@@ -196,6 +200,7 @@ public class BuildMojo extends AbstractMojo {
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setAppArtifact(appArtifact)
                     .setMavenArtifactResolver(resolver)
+                    .setIsolateDeployment(true)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())
                     .setBuildSystemProperties(effectiveProperties)
                     .setLocalProjectDiscovery(false)
@@ -216,6 +221,7 @@ public class BuildMojo extends AbstractMojo {
 
                 Artifact original = project.getArtifact();
                 if (result.getJar() != null) {
+
                     if (result.getJar().isUberJar() && result.getJar().getOriginalArtifact() != null) {
                         final Path standardJar = curatedApplication.getAppModel().getAppArtifact().getPaths().getSinglePath();
                         if (Files.exists(standardJar)) {
@@ -229,7 +235,8 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                     if (result.getJar().isUberJar()) {
-                        projectHelper.attachArtifact(project, result.getJar().getPath().toFile(), "runner");
+                        projectHelper.attachArtifact(project, result.getJar().getPath().toFile(),
+                                result.getJar().getClassifier());
                     }
                 }
             }

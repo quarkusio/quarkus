@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
@@ -15,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +51,7 @@ import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -55,6 +59,8 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.util.QuarkusModelHelper;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -62,12 +68,14 @@ import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback;
@@ -96,11 +104,12 @@ public class QuarkusTestExtension
     private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
-    private static List<Object> beforeAllCallbacks = new ArrayList<>();
-    private static List<Object> beforeEachCallbacks = new ArrayList<>();
-    private static List<Object> afterEachCallbacks = new ArrayList<>();
+    private static List<Object> beforeAllCallbacks;
+    private static List<Object> beforeEachCallbacks;
+    private static List<Object> afterEachCallbacks;
     private static Class<?> quarkusTestMethodContextClass;
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
+    private static List<Function<Class<?>, String>> testHttpEndpointProviders;
 
     private static DeepClone deepClone;
 
@@ -125,10 +134,17 @@ public class QuarkusTestExtension
                     rootBuilder.add(testResourcesLocation);
                 }
             }
+            if (Files.exists(testClassLocation.getParent().resolve("testFixtures"))) {
+                rootBuilder.add(testClassLocation.getParent().resolve("testFixtures"));
+            }
+
             originalCl = Thread.currentThread().getContextClassLoader();
             Map<String, String> sysPropRestore = new HashMap<>();
             sysPropRestore.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP,
                     System.getProperty(ProfileManager.QUARKUS_TEST_PROFILE_PROP));
+
+            // clear the test.url system property as the value leaks into the run when using different profiles
+            System.clearProperty("test.url");
 
             final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
@@ -160,12 +176,27 @@ public class QuarkusTestExtension
                 }
             }
 
-            runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+            final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
+            runnerBuilder.setProjectRoot(projectRoot);
+            Path outputDir;
+            try {
+                // this should work for both maven and gradle
+                outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
+            } catch (Exception e) {
+                // this shouldn't happen since testClassLocation is usually found under the project dir
+                outputDir = projectRoot;
+            }
+            runnerBuilder.setTargetDirectory(outputDir);
 
             rootBuilder.add(appClassLocation);
             final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
             if (appResourcesLocation != null) {
                 rootBuilder.add(appResourcesLocation);
+            }
+
+            // If gradle project running directly with IDE
+            if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
+                BuildToolHelper.enableGradleAppModel(projectRoot, "TEST", QuarkusModelHelper.TEST_REQUIRED_TASKS);
             }
 
             runnerBuilder.setApplicationRoot(rootBuilder.build());
@@ -183,7 +214,9 @@ public class QuarkusTestExtension
             final Map<String, Object> props = new HashMap<>();
             props.put(TEST_LOCATION, testClassLocation);
             props.put(TEST_CLASS, requiredTestClass);
-            AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(), props);
+            AugmentAction augmentAction = curatedApplication
+                    .createAugmentor(TestBuildChainFunction.class.getName(), props);
+            testHttpEndpointProviders = TestHttpEndpointProvider.load();
             StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
             Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
             populateDeepCloneField(startupAction);
@@ -293,6 +326,13 @@ public class QuarkusTestExtension
     }
 
     private void populateCallbacks(ClassLoader classLoader) throws ClassNotFoundException {
+        // make sure that we start over everytime we populate the callbacks
+        // otherwise previous runs of QuarkusTest (with different TestProfile values can leak into the new run)
+        quarkusTestMethodContextClass = null;
+        beforeAllCallbacks = new ArrayList<>();
+        beforeEachCallbacks = new ArrayList<>();
+        afterEachCallbacks = new ArrayList<>();
+
         ServiceLoader<?> quarkusTestBeforeAllLoader = ServiceLoader
                 .load(Class.forName(QuarkusTestBeforeAllCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestBeforeAllCallback : quarkusTestBeforeAllLoader) {
@@ -324,9 +364,16 @@ public class QuarkusTestExtension
                     beforeEachCallback.getClass().getMethod("beforeEach", tuple.getKey())
                             .invoke(beforeEachCallback, tuple.getValue());
                 }
+                String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
                 if (runningQuarkusApplication != null) {
+                    boolean secure = false;
+                    Optional<String> insecureAllowed = runningQuarkusApplication
+                            .getConfigValue("quarkus.http.insecure-requests", String.class);
+                    if (insecureAllowed.isPresent()) {
+                        secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
+                    }
                     runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                            .getDeclaredMethod("setURL", boolean.class).invoke(null, false);
+                            .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
                     runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                             .getDeclaredMethod("setup", boolean.class).invoke(null, false);
                 }
@@ -337,6 +384,38 @@ public class QuarkusTestExtension
             throwBootFailureException();
             return;
         }
+    }
+
+    public static String getEndpointPath(ExtensionContext context, List<Function<Class<?>, String>> testHttpEndpointProviders) {
+        String endpointPath = null;
+        TestHTTPEndpoint testHTTPEndpoint = context.getRequiredTestMethod().getAnnotation(TestHTTPEndpoint.class);
+        if (testHTTPEndpoint == null) {
+            Class<?> clazz = context.getRequiredTestClass();
+            while (true) {
+                // go up the hierarchy because most Native tests extend from a regular Quarkus test
+                testHTTPEndpoint = clazz.getAnnotation(TestHTTPEndpoint.class);
+                if (testHTTPEndpoint != null) {
+                    break;
+                }
+                clazz = clazz.getSuperclass();
+                if (clazz == Object.class) {
+                    break;
+                }
+            }
+        }
+        if (testHTTPEndpoint != null) {
+            for (Function<Class<?>, String> i : testHttpEndpointProviders) {
+                endpointPath = i.apply(testHTTPEndpoint.value());
+                if (endpointPath != null) {
+                    break;
+                }
+            }
+            if (endpointPath == null) {
+                throw new RuntimeException("Cannot determine HTTP path for endpoint " + testHTTPEndpoint.value()
+                        + " for test method " + context.getRequiredTestMethod());
+            }
+        }
+        return endpointPath;
     }
 
     @Override
@@ -363,14 +442,45 @@ public class QuarkusTestExtension
         }
     }
 
+    // We need the usual ClassLoader hacks in order to present the callbacks with the proper test object and context
     private Map.Entry<Class<?>, ?> createQuarkusTestMethodContextTuple(ExtensionContext context) throws Exception {
+        ClassLoader classLoader = runningQuarkusApplication.getClassLoader();
         if (quarkusTestMethodContextClass == null) {
-            quarkusTestMethodContextClass = Class.forName(QuarkusTestMethodContext.class.getName(), true,
-                    runningQuarkusApplication.getClassLoader());
+            quarkusTestMethodContextClass = Class.forName(QuarkusTestMethodContext.class.getName(), true, classLoader);
         }
+
+        Method originalTestMethod = context.getRequiredTestMethod();
+        Class<?>[] originalParameterTypes = originalTestMethod.getParameterTypes();
+        Method actualTestMethod = null;
+
+        // go up the class hierarchy to fetch the proper test method
+        Class<?> c = actualTestClass;
+        List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+        for (Class<?> type : originalParameterTypes) {
+            if (type.isPrimitive()) {
+                parameterTypesFromTccl.add(type);
+            } else {
+                parameterTypesFromTccl
+                        .add(Class.forName(type.getName(), true, classLoader));
+            }
+        }
+        Class<?>[] parameterTypes = parameterTypesFromTccl.toArray(new Class[0]);
+        while (c != Object.class) {
+            try {
+                actualTestMethod = c.getDeclaredMethod(originalTestMethod.getName(), parameterTypes);
+                break;
+            } catch (NoSuchMethodException ignored) {
+
+            }
+            c = c.getSuperclass();
+        }
+        if (actualTestMethod == null) {
+            throw new RuntimeException("Could not find method " + originalTestMethod + " on test class");
+        }
+
         Constructor<?> constructor = quarkusTestMethodContextClass.getConstructor(Object.class, Method.class);
         return new AbstractMap.SimpleEntry<>(quarkusTestMethodContextClass,
-                constructor.newInstance(actualTestInstance, context.getRequiredTestMethod()));
+                constructor.newInstance(actualTestInstance, actualTestMethod));
     }
 
     private boolean isNativeTest(ExtensionContext context) {
@@ -528,7 +638,8 @@ public class QuarkusTestExtension
             actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
-            resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
+            resM.getDeclaredMethod("inject", Object.class, List.class).invoke(null, actualTestInstance,
+                    testHttpEndpointProviders);
             state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
                     actualTestInstance);
             for (Object beforeAllCallback : beforeAllCallbacks) {
@@ -631,8 +742,8 @@ public class QuarkusTestExtension
                         newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
                                 parameterTypesFromTccl.toArray(new Class[0]));
                         break;
-                    } catch (NoSuchMethodException e) {
-                        //ignore
+                    } catch (NoSuchMethodException ignored) {
+
                     }
                 }
                 c = c.getSuperclass();

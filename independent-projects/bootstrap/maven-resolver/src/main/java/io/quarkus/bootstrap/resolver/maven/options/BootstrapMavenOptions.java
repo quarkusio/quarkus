@@ -39,6 +39,8 @@ public class BootstrapMavenOptions {
     public static final String UPDATE_SNAPSHOTS = "U";
     public static final String CHECKSUM_FAILURE_POLICY = "C";
     public static final String CHECKSUM_WARNING_POLICY = "c";
+    public static final String BATCH_MODE = "B";
+    public static final String NO_TRANSFER_PROGRESS = "ntp";
 
     public static Map<String, Object> parse(String cmdLine) {
         if (cmdLine == null) {

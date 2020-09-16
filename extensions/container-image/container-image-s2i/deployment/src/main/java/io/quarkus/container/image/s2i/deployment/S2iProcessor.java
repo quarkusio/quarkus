@@ -53,19 +53,19 @@ import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
 public class S2iProcessor {
 
-    private static final String S2I = "s2i";
+    public static final String S2I = "s2i";
     private static final String OPENSHIFT = "openshift";
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
-    @BuildStep
+    @BuildStep(onlyIf = S2iBuild.class)
     public CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capability.CONTAINER_IMAGE_S2I);
     }
 
-    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -106,7 +106,7 @@ public class S2iProcessor {
         }
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -134,17 +134,17 @@ public class S2iProcessor {
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseNativeImage));
         Optional<S2iBaseNativeImage> baseImage = S2iBaseNativeImage.findMatching(s2iConfig.baseNativeImage);
+        List<String> nativeArguments = s2iConfig.nativeArguments.orElse(Collections.emptyList());
         baseImage.ifPresent(b -> {
             envProducer.produce(
                     KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory, OPENSHIFT));
             envProducer.produce(
-                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", s2iConfig.nativeArguments),
+                    KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(), String.join(" ", nativeArguments),
                             OPENSHIFT));
         });
 
         if (!baseImage.isPresent()) {
-            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                    s2iConfig.nativeArguments.toArray(new String[s2iConfig.nativeArguments.size()])));
+            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary, nativeArguments.toArray(new String[0])));
         }
     }
 

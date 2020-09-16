@@ -43,8 +43,8 @@ class HtmlEscaper implements ResultMapper {
     }
 
     static boolean requiresDefaultEscaping(Variant variant) {
-        return variant.mediaType != null
-                ? (Variant.TEXT_HTML.equals(variant.mediaType) || Variant.TEXT_XML.equals(variant.mediaType))
+        return variant.getContentType() != null
+                ? (Variant.TEXT_HTML.equals(variant.getContentType()) || Variant.TEXT_XML.equals(variant.getContentType()))
                 : false;
     }
 

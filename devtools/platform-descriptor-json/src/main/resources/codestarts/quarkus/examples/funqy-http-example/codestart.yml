@@ -1,0 +1,10 @@
+name: funqy-http-example
+ref: funqy-http
+type: code
+tags: example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-funqy-http
+    test-dependencies:
+      - io.rest-assured:rest-assured

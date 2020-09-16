@@ -1,0 +1,15 @@
+name: gradle-wrapper
+type: tooling
+language:
+  base:
+    data:
+      gradle:
+        version: 6.5.1
+    shared-data:
+      buildtool:
+        cmd:
+          dev: ./gradlew quarkusDev
+          package: ./gradlew quarkusBuild
+          package-uberjar: ./gradlew quarkusBuild --uber-jar
+          package-native: ./gradlew build -Dquarkus.package.type=native
+          package-native-container: ./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true

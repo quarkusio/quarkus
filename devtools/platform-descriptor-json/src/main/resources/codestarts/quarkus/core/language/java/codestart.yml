@@ -1,0 +1,9 @@
+name: java
+type: language
+fallback: true
+language:
+  base:
+    shared-data:
+      language:
+        dir:
+          code: src/main/java

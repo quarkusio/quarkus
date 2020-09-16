@@ -44,7 +44,7 @@ The easiest way to start working with SQS is to run a local instance as a contai
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-sqs 8010:4576 -e SERVICES=sqs -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-sqs -p 8010:4576 -e SERVICES=sqs -e START_WEB=0 -d localstack/localstack:0.11.1
 ----
 This starts a SQS instance that is accessible on port `8010`.
 
@@ -379,8 +379,8 @@ public class QuarksCannonAsyncResource {
         return Uni.createFrom()
             .completionStage(sqs.sendMessage(m -> m.queueUrl(queueUrl).messageBody(message)))
             .onItem().invoke(item -> LOGGER.infov("Fired Quark[{0}, {1}}]", quark.getFlavor(), quark.getSpin()))
-            .onItem().apply(SendMessageResponse::messageId)
-            .onItem().apply(id -> Response.ok().entity(id).build());
+            .onItem().transform(SendMessageResponse::messageId)
+            .onItem().transform(id -> Response.ok().entity(id).build());
     }
 }
 ----
@@ -428,8 +428,8 @@ public class QuarksShieldAsyncResource {
     public Uni<List<Quark>> receive() {
         return Uni.createFrom()
             .completionStage(sqs.receiveMessage(m -> m.maxNumberOfMessages(10).queueUrl(queueUrl)))
-            .onItem().apply(ReceiveMessageResponse::messages)
-            .onItem().apply(m -> m.stream().map(Message::body).map(this::toQuark).collect(Collectors.toList()));
+            .onItem().transform(ReceiveMessageResponse::messages)
+            .onItem().transform(m -> m.stream().map(Message::body).map(this::toQuark).collect(Collectors.toList()));
     }
 
     private Quark toQuark(String message) {

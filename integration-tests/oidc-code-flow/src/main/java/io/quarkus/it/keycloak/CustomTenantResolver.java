@@ -23,8 +23,16 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-logout";
         }
 
+        if (path.contains("tenant-autorefresh")) {
+            return "tenant-autorefresh";
+        }
+
         if (path.contains("tenant-https")) {
             return "tenant-https";
+        }
+
+        if (path.contains("tenant-xhr")) {
+            return "tenant-xhr";
         }
 
         return path.contains("callback-after-redirect") || path.contains("callback-before-redirect") ? "tenant-1"

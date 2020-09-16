@@ -32,7 +32,9 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.deployment.util.FSWatchUtil;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 
@@ -45,6 +47,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final Path applicationRoot;
     private final DevModeContext context;
     private final ClassLoaderCompiler compiler;
+    private final DevModeType devModeType;
     volatile Throwable compileProblem;
 
     // file path -> isRestartNeeded
@@ -77,10 +80,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
 
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, ClassLoaderCompiler compiler,
-            Consumer<Set<String>> restartCallback, BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification) {
+            DevModeType devModeType, Consumer<Set<String>> restartCallback,
+            BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification) {
         this.applicationRoot = applicationRoot;
         this.context = context;
         this.compiler = compiler;
+        this.devModeType = devModeType;
         this.restartCallback = restartCallback;
         this.copyResourceNotification = copyResourceNotification;
     }
@@ -147,6 +152,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     @Override
+    public DevModeType getDevModeType() {
+        return devModeType;
+    }
+
+    @Override
     public boolean doScan(boolean userInitiated) throws IOException {
         final long startNanoseconds = System.nanoTime();
         for (Runnable step : preScanSteps) {
@@ -199,6 +209,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public Set<String> syncState(Map<String, String> fileHashes) {
+        if (getDevModeType() != DevModeType.REMOTE_SERVER_SIDE) {
+            throw new RuntimeException("Can only sync state on the server side of remote dev mode");
+        }
         Set<String> ret = new HashSet<>();
         try {
             Map<String, String> ourHashes = new HashMap<>(IsolatedRemoteDevModeMain.createHashes(applicationRoot));
@@ -536,5 +549,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void close() throws IOException {
         compiler.close();
+        FSWatchUtil.shutdown();
     }
 }

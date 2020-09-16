@@ -14,7 +14,10 @@ This guide explains how your Quarkus application can utilize OAuth2 tokens to pr
 OAuth2 is an authorization framework that enables applications to obtain access to an HTTP resource on behalf of a user. 
 It can be used to implement an application authentication mechanism based on tokens by delegating to an external server (the authentication server) the user authentication and providing a token for the authentication context.
 
-If your OAuth2 Authentication server provides JWT tokens, you should use link:security-jwt[MicroProfile JWT RBAC] instead, this extension aims to be used with opaque tokens and validate the token by calling an introspection endpoint.
+This extension provides a light-weight support for using the opaque Bearer Tokens and validating them by calling an introspection endpoint.
+
+If the OAuth2 Authentication server provides JWT Bearer Tokens then you should consider using either link:security-openid-connect[OpenId Connect] or link:security-jwt[MicroProfile JWT RBAC] extensions instead.
+OpenId Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow, please read link:security-openid-connect-web-authentication[Using OpenID Connect to Protect Web Applications] guide for more information.
 
 include::./status-include.adoc[]
 
@@ -343,6 +346,7 @@ $ ./target/security-oauth2-quickstart-runner
 2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, security-oauth2]
 ----
 
+[[integration-testing]]
 == Integration testing
 
 If you don't want to use a real OAuth2 authorization server for your integration tests, you can use the
@@ -461,3 +465,8 @@ class TokenSecuredResourceTest {
 ====
 `@QuarkusTestResource` applies to all tests, not just `TokenSecuredResourceTest`.
 ====
+
+== References
+
+* https://tools.ietf.org/html/rfc6749[OAuth2]
+* link:security[Quarkus Security]

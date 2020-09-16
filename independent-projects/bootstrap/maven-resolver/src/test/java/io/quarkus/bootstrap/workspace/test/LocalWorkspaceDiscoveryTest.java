@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
@@ -116,6 +118,27 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void loadWorkspaceWithDirBreaks() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-with-dir-breaks/root");
+        assertNotNull(projectUrl);
+        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(rootProjectDir));
+        final Path nestedProjectDir = rootProjectDir.resolve("module1/break/nested-project/module1");
+        assertTrue(Files.exists(nestedProjectDir));
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setRootProjectDir(rootProjectDir)
+                .setCurrentProject(nestedProjectDir.toString()))
+                        .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "nested-project-module1"));
+        assertNotNull(ws.getProject("org.acme", "nested-project-parent"));
+        assertNotNull(ws.getProject("org.acme", "root-module1"));
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(4, ws.getProjects().size());
+    }
+
+    @Test
     public void loadWorkspaceFromRootDirWithParentInChildDir() throws Exception {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
         assertNotNull(projectUrl);
@@ -125,6 +148,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         assertEquals("acme", project.getArtifactId());
         assertWorkspaceWithParentInChildDir(project);
+        assertParents(project, "acme-parent", "acme-dependencies");
     }
 
     @Test
@@ -138,6 +162,8 @@ public class LocalWorkspaceDiscoveryTest {
 
         assertEquals("acme-application", project.getArtifactId());
         assertWorkspaceWithParentInChildDir(project);
+
+        assertParents(project, "acme-parent", "acme-dependencies");
     }
 
     private void assertWorkspaceWithParentInChildDir(final LocalProject project) {
@@ -159,13 +185,20 @@ public class LocalWorkspaceDiscoveryTest {
         final Path projectDir = Paths.get(projectUrl.toURI());
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
+        assertParents(project, "root");
 
         assertEquals("root-module1", project.getArtifactId());
         final LocalWorkspace workspace = project.getWorkspace();
-        assertNotNull(workspace.getProject("org.acme", "root"));
-        assertNotNull(workspace.getProject("org.acme", "root-module1"));
+        LocalProject rootProject = workspace.getProject("org.acme", "root");
+        assertNotNull(rootProject);
+        assertNull(rootProject.getLocalParent());
+        LocalProject module1 = workspace.getProject("org.acme", "root-module1");
+        assertNotNull(module1);
+        assertParents(module1, "root");
         assertNull(workspace.getProject("org.acme", "root-module2"));
-        assertNotNull(workspace.getProject("org.acme", "root-submodule"));
+        LocalProject submodule = workspace.getProject("org.acme", "root-submodule");
+        assertNotNull(submodule);
+        assertParents(submodule, "root-module1", "root");
         assertEquals(3, workspace.getProjects().size());
     }
 
@@ -177,12 +210,19 @@ public class LocalWorkspaceDiscoveryTest {
         final Path projectDir = Paths.get(projectUrl.toURI());
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
+        assertParents(project, "root");
 
         assertEquals("root-module1", project.getArtifactId());
         final LocalWorkspace workspace = project.getWorkspace();
-        assertNotNull(workspace.getProject("org.acme", "root"));
-        assertNotNull(workspace.getProject("org.acme", "root-module1"));
-        assertNotNull(workspace.getProject("org.acme", "root-module2"));
+        LocalProject root = workspace.getProject("org.acme", "root");
+        assertNotNull(root);
+        assertNull(root.getLocalParent());
+        LocalProject module1 = workspace.getProject("org.acme", "root-module1");
+        assertNotNull(module1);
+        assertParents(module1, "root");
+        LocalProject module2 = workspace.getProject("org.acme", "root-module2");
+        assertNotNull(module2);
+        assertParents(module2, "root");
         assertNull(workspace.getProject("org.acme", "root-submodule"));
         assertEquals(3, workspace.getProjects().size());
     }
@@ -199,6 +239,8 @@ public class LocalWorkspaceDiscoveryTest {
         final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(6, projects.size());
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
+
+        assertNull(project.getLocalParent());
     }
 
     @Test
@@ -210,6 +252,7 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_GROUP_ID, project.getGroupId());
         assertEquals("root-no-parent-module", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
+        assertNull(project.getLocalParent());
     }
 
     @Test
@@ -224,6 +267,8 @@ public class LocalWorkspaceDiscoveryTest {
         final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+
+        assertParents(project);
     }
 
     @Test
@@ -235,6 +280,8 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_GROUP_ID, project.getGroupId());
         assertEquals("root-module-with-parent", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
+
+        assertParents(project);
     }
 
     @Test
@@ -248,6 +295,7 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
 
         assertCompleteWorkspace(project);
+        assertParents(project, "root");
     }
 
     @Test
@@ -261,6 +309,7 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
 
         assertCompleteWorkspace(project);
+        assertParents(project, "root");
     }
 
     @Test
@@ -281,6 +330,8 @@ public class LocalWorkspaceDiscoveryTest {
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "another-child")));
         assertTrue(projects
                 .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
+
+        assertParents(project, "root");
     }
 
     /**
@@ -297,6 +348,8 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
 
         assertCompleteWorkspace(project);
+
+        assertParents(project);
     }
 
     @Test
@@ -353,6 +406,28 @@ public class LocalWorkspaceDiscoveryTest {
         testMavenCiFriendlyVersion("${revision}${sha1}${changelist}", "workspace-multiple", expectedResolvedVersion, false);
     }
 
+    @Test
+    public void testBuildDirs() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("build-directories/multimodule/runner");
+        assertNotNull(projectUrl);
+        final Path runnerDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(runnerDir));
+        final LocalProject project = LocalProject.loadWorkspace(runnerDir);
+        assertNotNull(project);
+        assertEquals(runnerDir.resolve("custom-target"), project.getOutputDir());
+        assertEquals(runnerDir.resolve("src/main/other"), project.getSourcesSourcesDir());
+        assertEquals(runnerDir.resolve("custom-target").resolve("other-classes"), project.getClassesDir());
+        assertEquals(runnerDir.resolve("custom-target").resolve("test-classes"), project.getTestClassesDir());
+
+        final LocalProject parent = project.getLocalParent();
+        final Path parentDir = parent.getDir();
+        assertEquals(parentDir.resolve("custom-target"), parent.getOutputDir());
+        assertEquals(parentDir.resolve("src/main/other"), parent.getSourcesSourcesDir());
+        assertEquals(parentDir.resolve("custom-target").resolve("custom-classes"), parent.getClassesDir());
+        assertEquals(parentDir.resolve("custom-target").resolve("test-classes"), parent.getTestClassesDir());
+    }
+
     private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
             boolean resolvesFromWorkspace) throws Exception {
         final URL module1Url = Thread.currentThread().getContextClassLoader()
@@ -391,5 +466,20 @@ public class LocalWorkspaceDiscoveryTest {
         assertTrue(projects
                 .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+    }
+
+    private static void assertParents(LocalProject project, String... parentArtifactId) {
+        LocalProject parent = project.getLocalParent();
+        int i = 0;
+        while (parent != null) {
+            if (i == parentArtifactId.length) {
+                fail("Unexpected parent " + parent.getKey());
+            }
+            assertEquals(parentArtifactId[i++], parent.getArtifactId());
+            parent = parent.getLocalParent();
+        }
+        if (i != parentArtifactId.length) {
+            fail("Missing parent " + parentArtifactId[i]);
+        }
     }
 }

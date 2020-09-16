@@ -1,5 +1,37 @@
 
 {
+    "any-future-property" : "blah",
+    "metadata":{
+        "application-properties": {
+            "quarkus.native.builder-image" : "foo-bar"
+        },
+        "maven" :  {
+            "repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com",
+                    "releases-enabled": "true",
+                    "snapshots-enabled": "false"
+                }
+            ],
+            "plugin-repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com",
+                    "releases-enabled": "true",
+                    "snapshots-enabled": "false"
+                }
+            ]
+        },
+        "gradle" :  {
+            "repositories" : [
+                {
+                    "id": "redhat",
+                    "url": "https://maven.repository.redhat.com"
+                }
+            ]
+        }
+    },
     "bom": {
         "group-id": "io.quarkus",
         "artifact-id": "quarkus-bom",

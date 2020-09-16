@@ -21,10 +21,10 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
         Object key = null;
         for (CacheInvalidateInterceptorBinding binding : getInterceptorBindings(context,
                 CacheInvalidateInterceptorBinding.class)) {
-            if (key == null) {
-                key = buildCacheKey(binding.cacheName(), binding.cacheKeyParameterPositions(), context.getParameters());
-            }
             CaffeineCache cache = cacheRepository.getCache(binding.cacheName());
+            if (key == null) {
+                key = getCacheKey(cache, binding.cacheKeyParameterPositions(), context.getParameters());
+            }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf("Invalidating entry with key [%s] from cache [%s]", key, cache.getName());
             }

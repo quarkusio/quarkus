@@ -1,7 +1,7 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
 import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
-import static io.quarkus.platform.tools.ConsoleMessageFormats.nok;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
@@ -10,6 +10,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
 import io.quarkus.devtools.project.extensions.Extensions;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,7 +35,8 @@ final class QuarkusCommandHandlers {
             } else if (countColons > 1) {
                 builder.add(AppArtifactCoords.fromString(query));
             } else {
-                SelectionResult result = select(query, invocation.getPlatformDescriptor().getExtensions(), false);
+                Collection<Extension> extensions = invocation.getPlatformDescriptor().getExtensions();
+                SelectionResult result = select(query, extensions, false);
                 if (result.matches()) {
                     final Set<AppArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
                             .map(Extensions::stripVersion).collect(Collectors.toSet());
@@ -47,10 +49,10 @@ final class QuarkusCommandHandlers {
                     Set<Extension> candidates = result.getExtensions();
                     if (candidates.isEmpty()) {
                         // No matches at all.
-                        invocation.log().info(nok("Cannot find a dependency matching '" + query + "', maybe a typo?"));
+                        invocation.log().error("Cannot find a dependency matching '" + query + "', maybe a typo?");
                         return null;
                     } else {
-                        sb.append(nok("Multiple extensions matching '")).append(query).append("'");
+                        sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
                         result.getExtensions()
                                 .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
                                         .append(extension.managementKey()));
@@ -74,7 +76,8 @@ final class QuarkusCommandHandlers {
      *        be {@code false} by default.
      * @return the list of matching candidates and whether or not a match has been found.
      */
-    static SelectionResult select(final String query, final List<Extension> allPlatformExtensions, final boolean labelLookup) {
+    static SelectionResult select(final String query, final Collection<Extension> allPlatformExtensions,
+            final boolean labelLookup) {
         String q = query.trim().toLowerCase();
 
         // Try exact matches

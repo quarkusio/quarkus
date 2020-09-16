@@ -117,7 +117,7 @@ class DefaultConsulConfigGateway implements ConsulConfigGateway {
         }
         try (CloseableHttpClient client = httpClientBuilder.build()) {
             String finalUri = (consulConfig.agent.useHttps ? "https" : "http") + "://"
-                    + consulConfig.agent.hostPort.getHostName() + ":" + consulConfig.agent.hostPort.getPort()
+                    + consulConfig.agent.hostPort.getHostString() + ":" + consulConfig.agent.hostPort.getPort()
                     + "/v1/kv/"
                     + key;
             HttpGet request = new HttpGet(finalUri);

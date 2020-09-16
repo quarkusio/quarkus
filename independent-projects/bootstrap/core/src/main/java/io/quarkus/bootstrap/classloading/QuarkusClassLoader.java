@@ -1,13 +1,11 @@
 package io.quarkus.bootstrap.classloading;
 
-import io.quarkus.bootstrap.BootstrapDebug;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -19,17 +17,13 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 
 /**
  * The ClassLoader used for non production Quarkus applications (i.e. dev and test mode). Production
@@ -74,10 +68,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
      *
      */
     private volatile MemoryClassPathElement resettableElement;
-
-    private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers;
-    private volatile Map<String, Predicate<byte[]>> transformerPredicates;
-    private volatile ClassLoader transformerClassLoader;
+    private volatile MemoryClassPathElement transformedClasses;
     private volatile ClassLoaderState state;
 
     static final ClassLoader PLATFORM_CLASS_LOADER;
@@ -92,6 +83,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         PLATFORM_CLASS_LOADER = cl;
     }
 
+    private boolean closed;
+
     private QuarkusClassLoader(Builder builder) {
         //we need the parent to be null
         //as MP has super broken class loading where it attempts to resolve stuff from the parent
@@ -104,15 +97,13 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         super(PLATFORM_CLASS_LOADER);
         this.name = builder.name;
         this.elements = builder.elements;
-        this.bytecodeTransformers = builder.bytecodeTransformers;
-        this.transformerPredicates = builder.transformerPredicates;
         this.bannedElements = builder.bannedElements;
         this.parentFirstElements = builder.parentFirstElements;
         this.lesserPriorityElements = builder.lesserPriorityElements;
         this.parent = builder.parent;
         this.parentFirst = builder.parentFirst;
         this.resettableElement = builder.resettableElement;
-        this.transformerClassLoader = builder.transformerClassLoader;
+        this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses);
         this.aggregateParentResources = builder.aggregateParentResources;
     }
 
@@ -134,24 +125,20 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return parentFirst || state.parentFirstResources.contains(name);
     }
 
-    public void reset(Map<String, byte[]> resources,
-            Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers,
-            Map<String, Predicate<byte[]>> transformerPredicates,
-            ClassLoader transformerClassLoader) {
+    public void reset(Map<String, byte[]> generatedResources, Map<String, byte[]> transformedClasses) {
         if (resettableElement == null) {
             throw new IllegalStateException("Classloader is not resettable");
         }
-        this.transformerClassLoader = transformerClassLoader;
         synchronized (this) {
-            this.transformerPredicates = transformerPredicates;
-            resettableElement.reset(resources);
-            this.bytecodeTransformers = bytecodeTransformers;
+            this.transformedClasses = new MemoryClassPathElement(transformedClasses);
+            resettableElement.reset(generatedResources);
             state = null;
         }
     }
 
     @Override
     public Enumeration<URL> getResources(String unsanitisedName) throws IOException {
+        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
         //for resources banned means that we don't delegate to the parent, as there can be multiple resources
@@ -184,7 +171,21 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
             for (ClassPathElement element : providers) {
-                resources.add(element.getResource(name).getUrl());
+                ClassPathResource res = element.getResource(name);
+                //if the requested name ends with a trailing / we make sure
+                //that the resource is a directory, and return a URL that ends with a /
+                //this matches the behaviour of URLClassLoader
+                if (endsWithTrailingSlash) {
+                    if (res.isDirectory()) {
+                        try {
+                            resources.add(new URL(res.getUrl().toString() + "/"));
+                        } catch (MalformedURLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } else {
+                    resources.add(res.getUrl());
+                }
             }
         } else if (name.isEmpty()) {
             for (ClassPathElement i : elements) {
@@ -218,11 +219,15 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                                 throw new RuntimeException(
                                         "Resources cannot start with /, " + i + " is incorrect provided by " + element);
                             }
-                            List<ClassPathElement> list = elementMap.get(i);
-                            if (list == null) {
-                                elementMap.put(i, list = new ArrayList<>());
+                            if (transformedClasses.getResource(i) != null) {
+                                elementMap.put(i, Collections.singletonList(transformedClasses));
+                            } else {
+                                List<ClassPathElement> list = elementMap.get(i);
+                                if (list == null) {
+                                    elementMap.put(i, list = new ArrayList<>());
+                                }
+                                list.add(element);
                             }
-                            list.add(element);
                         }
                     }
                     Map<String, ClassPathElement[]> finalElements = new HashMap<>();
@@ -263,6 +268,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public URL getResource(String unsantisedName) {
+        boolean endsWithTrailingSlash = unsantisedName.endsWith("/");
         String name = sanitizeName(unsantisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -271,7 +277,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //TODO: because of dev mode we iterate, to see if any resources were added
         //not for .class files though, adding them causes a restart
         //this is very important for bytebuddy performance
-        if (name.endsWith(".class")) {
+        if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
                 return providers[0].getResource(name).getUrl();
@@ -280,7 +286,20 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             for (ClassPathElement i : elements) {
                 ClassPathResource res = i.getResource(name);
                 if (res != null) {
-                    return res.getUrl();
+                    //if the requested name ends with a trailing / we make sure
+                    //that the resource is a directory, and return a URL that ends with a /
+                    //this matches the behaviour of URLClassLoader
+                    if (endsWithTrailingSlash) {
+                        if (res.isDirectory()) {
+                            try {
+                                return new URL(res.getUrl().toString() + "/");
+                            } catch (MalformedURLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    } else {
+                        return res.getUrl();
+                    }
                 }
             }
         }
@@ -304,6 +323,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             for (ClassPathElement i : elements) {
                 ClassPathResource res = i.getResource(name);
                 if (res != null) {
+                    if (res.isDirectory()) {
+                        try {
+                            return res.getUrl().openStream();
+                        } catch (IOException e) {
+                            log.debug("Ignoring exception that occurred while opening a stream for resource " + unsanitisedName,
+                                    e);
+                            // behave like how java.lang.ClassLoader#getResourceAsStream() behaves
+                            // and don't propagate the exception
+                            continue;
+                        }
+                    }
                     return new ByteArrayInputStream(res.getData());
                 }
             }
@@ -366,26 +396,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     ClassPathResource classPathElementResource = classPathElement.getResource(resourceName);
                     if (classPathElementResource != null) { //can happen if the class loader was closed
                         byte[] data = classPathElementResource.getData();
-                        List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
-                        Map<String, Predicate<byte[]>> constPoolEntries = transformerPredicates;
-                        if (transformers != null) {
-                            data = handleTransform(name, data, transformers, constPoolEntries);
-
-                            if (BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR != null) {
-                                File debugPath = new File(BootstrapDebug.DEBUG_TRANSFORMED_CLASSES_DIR);
-                                if (!debugPath.exists()) {
-                                    debugPath.mkdir();
-                                }
-                                File classFile = new File(debugPath, name.replace(".", "/") + ".class");
-                                classFile.getParentFile().mkdirs();
-                                try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
-                                    classWriter.write(data);
-                                } catch (Exception e) {
-                                    log.errorf(e, "Failed to write transformed class %s", name);
-                                }
-                                log.infof("Wrote transformed class to %s", classFile.getAbsolutePath());
-                            }
-                        }
                         definePackage(name, classPathElement);
                         return defineClass(name, data, 0, data.length,
                                 protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
@@ -458,30 +468,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
-    private byte[] handleTransform(String name, byte[] bytes,
-            List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers,
-            Map<String, Predicate<byte[]>> transformerPredicates) {
-        if (transformerPredicates.containsKey(name)) {
-            if (!transformerPredicates.get(name).test(bytes)) {
-                return bytes;
-            }
-        }
-        ClassReader cr = new ClassReader(bytes);
-        ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
-
-            @Override
-            protected ClassLoader getClassLoader() {
-                return transformerClassLoader;
-            }
-        };
-        ClassVisitor visitor = writer;
-        for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers) {
-            visitor = i.apply(name, visitor);
-        }
-        cr.accept(visitor, 0);
-        return writer.toByteArray();
-    }
-
     @SuppressWarnings("unused")
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
         return super.defineClass(name, b, off, len);
@@ -489,6 +475,21 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public void close() {
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+        }
+        //DriverManager only lets you remove drivers with the same CL as the caller
+        //so we need do define the cleaner in this class loader
+        try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
+            byte[] data = JarClassPathElement.readStreamContents(is);
+            Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length).newInstance();
+            r.run();
+        } catch (Exception e) {
+            log.debug("Failed to clean up DB drivers");
+        }
         for (ClassPathElement element : elements) {
             //note that this is a 'soft' close
             //all resources are closed, however the CL can still be used
@@ -499,6 +500,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 log.error("Failed to close " + element, e);
             }
         }
+        ResourceBundle.clearCache(this);
+
     }
 
     @Override
@@ -513,11 +516,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         final List<ClassPathElement> bannedElements = new ArrayList<>();
         final List<ClassPathElement> parentFirstElements = new ArrayList<>();
         final List<ClassPathElement> lesserPriorityElements = new ArrayList<>();
-        Map<String, Predicate<byte[]>> transformerPredicates = Collections.emptyMap();
-        Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = Collections.emptyMap();
         final boolean parentFirst;
         MemoryClassPathElement resettableElement;
-        private volatile ClassLoader transformerClassLoader;
+        private Map<String, byte[]> transformedClasses = Collections.emptyMap();
         boolean aggregateParentResources;
 
         public Builder(String name, ClassLoader parent, boolean parentFirst) {
@@ -613,29 +614,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
 
         /**
-         * Sets any bytecode transformers that should be applied to this Class Loader
-         *
-         * @param bytecodeTransformers
-         */
-        public void setBytecodeTransformers(
-                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers) {
-            if (bytecodeTransformers == null) {
-                this.bytecodeTransformers = Collections.emptyMap();
-            } else {
-                this.bytecodeTransformers = bytecodeTransformers;
-            }
-        }
-
-        /**
-         * Sets const pool entries that need to be present for a class to be transformed. This optimisation
-         * allows for transformation to be skipped if the scanner detects that no transformation is required.
-         */
-        public Builder setTransformerPredicates(Map<String, Predicate<byte[]>> transformerPredicates) {
-            this.transformerPredicates = transformerPredicates;
-            return this;
-        }
-
-        /**
          * If this is true then a getResources call will always include the parent resources.
          *
          * If this is false then getResources will not return parent resources if local resources were found.
@@ -647,8 +625,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             return this;
         }
 
-        public Builder setTransformerClassLoader(ClassLoader transformerClassLoader) {
-            this.transformerClassLoader = transformerClassLoader;
+        public Builder setTransformedClasses(Map<String, byte[]> transformedClasses) {
+            this.transformedClasses = transformedClasses;
             return this;
         }
 

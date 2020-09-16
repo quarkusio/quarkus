@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 
-import io.quarkus.amazon.common.runtime.SyncHttpClientBuildTimeConfig.SyncClientType;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import software.amazon.awssdk.http.SdkHttpClient;
@@ -23,55 +22,6 @@ import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 @Recorder
 public class AmazonClientTransportRecorder {
-
-    public RuntimeValue<SdkHttpClient.Builder> configureSync(String clientName, SyncHttpClientBuildTimeConfig buildConfig,
-            RuntimeValue<SyncHttpClientConfig> syncConfigRuntime) {
-
-        SdkHttpClient.Builder syncBuilder;
-        SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
-
-        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
-
-        if (buildConfig.type == SyncClientType.APACHE) {
-            Builder builder = ApacheHttpClient.builder();
-            validateApacheClientConfig(clientName, syncConfig);
-
-            builder.connectionTimeout(syncConfig.connectionTimeout);
-            builder.connectionAcquisitionTimeout(syncConfig.apache.connectionAcquisitionTimeout);
-            builder.connectionMaxIdleTime(syncConfig.apache.connectionMaxIdleTime);
-            syncConfig.apache.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
-            builder.expectContinueEnabled(syncConfig.apache.expectContinueEnabled);
-            builder.maxConnections(syncConfig.apache.maxConnections);
-            builder.socketTimeout(syncConfig.socketTimeout);
-            builder.useIdleConnectionReaper(syncConfig.apache.useIdleConnectionReaper);
-
-            if (syncConfig.apache.proxy.enabled && syncConfig.apache.proxy.endpoint.isPresent()) {
-                ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder()
-                        .endpoint(syncConfig.apache.proxy.endpoint.get());
-                syncConfig.apache.proxy.username.ifPresent(proxyBuilder::username);
-                syncConfig.apache.proxy.password.ifPresent(proxyBuilder::password);
-                syncConfig.apache.proxy.nonProxyHosts.ifPresent(c -> c.forEach(proxyBuilder::addNonProxyHost));
-                syncConfig.apache.proxy.ntlmDomain.ifPresent(proxyBuilder::ntlmDomain);
-                syncConfig.apache.proxy.ntlmWorkstation.ifPresent(proxyBuilder::ntlmWorkstation);
-                syncConfig.apache.proxy.preemptiveBasicAuthenticationEnabled
-                        .ifPresent(proxyBuilder::preemptiveBasicAuthenticationEnabled);
-
-                builder.proxyConfiguration(proxyBuilder.build());
-            }
-            getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
-
-            syncBuilder = builder;
-        } else {
-            UrlConnectionHttpClient.Builder builder = UrlConnectionHttpClient.builder();
-            builder.connectionTimeout(syncConfig.connectionTimeout);
-            builder.socketTimeout(syncConfig.socketTimeout);
-            getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
-
-            syncBuilder = builder;
-        }
-
-        return new RuntimeValue<>(syncBuilder);
-    }
 
     public RuntimeValue<SdkAsyncHttpClient.Builder> configureAsync(String clientName,
             RuntimeValue<NettyHttpClientConfig> asyncConfigRuntime) {
@@ -123,6 +73,50 @@ public class AmazonClientTransportRecorder {
             builder.eventLoopGroupBuilder(eventLoopBuilder);
         }
 
+        return new RuntimeValue<>(builder);
+    }
+
+    public RuntimeValue<SdkHttpClient.Builder> configureSyncUrlConnectionHttpClient(String clientName,
+            RuntimeValue<SyncHttpClientConfig> syncConfigRuntime) {
+        SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
+        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
+        UrlConnectionHttpClient.Builder builder = UrlConnectionHttpClient.builder();
+        builder.connectionTimeout(syncConfig.connectionTimeout);
+        builder.socketTimeout(syncConfig.socketTimeout);
+        getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
+        return new RuntimeValue<>(builder);
+    }
+
+    public RuntimeValue<SdkHttpClient.Builder> configureSyncApacheHttpClient(String clientName,
+            RuntimeValue<SyncHttpClientConfig> syncConfigRuntime) {
+        SyncHttpClientConfig syncConfig = syncConfigRuntime.getValue();
+        validateTlsManagersProvider(clientName, syncConfig.tlsManagersProvider, "sync");
+        Builder builder = ApacheHttpClient.builder();
+        validateApacheClientConfig(clientName, syncConfig);
+
+        builder.connectionTimeout(syncConfig.connectionTimeout);
+        builder.connectionAcquisitionTimeout(syncConfig.apache.connectionAcquisitionTimeout);
+        builder.connectionMaxIdleTime(syncConfig.apache.connectionMaxIdleTime);
+        syncConfig.apache.connectionTimeToLive.ifPresent(builder::connectionTimeToLive);
+        builder.expectContinueEnabled(syncConfig.apache.expectContinueEnabled);
+        builder.maxConnections(syncConfig.apache.maxConnections);
+        builder.socketTimeout(syncConfig.socketTimeout);
+        builder.useIdleConnectionReaper(syncConfig.apache.useIdleConnectionReaper);
+
+        if (syncConfig.apache.proxy.enabled && syncConfig.apache.proxy.endpoint.isPresent()) {
+            ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder()
+                    .endpoint(syncConfig.apache.proxy.endpoint.get());
+            syncConfig.apache.proxy.username.ifPresent(proxyBuilder::username);
+            syncConfig.apache.proxy.password.ifPresent(proxyBuilder::password);
+            syncConfig.apache.proxy.nonProxyHosts.ifPresent(c -> c.forEach(proxyBuilder::addNonProxyHost));
+            syncConfig.apache.proxy.ntlmDomain.ifPresent(proxyBuilder::ntlmDomain);
+            syncConfig.apache.proxy.ntlmWorkstation.ifPresent(proxyBuilder::ntlmWorkstation);
+            syncConfig.apache.proxy.preemptiveBasicAuthenticationEnabled
+                    .ifPresent(proxyBuilder::preemptiveBasicAuthenticationEnabled);
+
+            builder.proxyConfiguration(proxyBuilder.build());
+        }
+        getTlsKeyManagersProvider(syncConfig.tlsManagersProvider).ifPresent(builder::tlsKeyManagersProvider);
         return new RuntimeValue<>(builder);
     }
 

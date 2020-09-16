@@ -7,7 +7,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -253,6 +255,13 @@ public class MethodNameParser {
 
             String upperPrefix = (ignoreCase || allIgnoreCase) ? "UPPER(" : "";
             String upperSuffix = (ignoreCase || allIgnoreCase) ? ")" : "";
+
+            // If the fieldName is not a field in the class and in camelcase format,
+            // then split it as hierarchy of fields
+            if (entityClass.field(fieldName) == null) {
+                fieldName = handleFieldsHierarchy(fieldName, fieldInfo);
+            }
+
             where.append(upperPrefix).append(fieldName).append(upperSuffix);
             if ((operation == null) || "Equals".equals(operation) || "Is".equals(operation)) {
                 paramsCount++;
@@ -364,6 +373,74 @@ public class MethodNameParser {
         String whereQuery = where.toString().isEmpty() ? "" : " WHERE " + where.toString();
         return new Result(entityClass, "FROM " + getEntityName() + whereQuery, queryType, paramsCount, sort,
                 topCount);
+    }
+
+    private String handleFieldsHierarchy(String fieldName, FieldInfo currentField) {
+        StringBuilder finalName = new StringBuilder(fieldName);
+
+        Set<String> childFields = new HashSet<>();
+
+        childFields.addAll(entityClass.fields().stream()
+                .map(FieldInfo::name)
+                .collect(Collectors.toList()));
+
+        // Collecting the current class fields
+        ClassInfo currentClassInfo = indexView.getClassByName(currentField.type().name());
+
+        if (currentClassInfo != null) {
+            childFields.addAll(
+                    currentClassInfo.fields()
+                            .stream()
+                            .map(FieldInfo::name)
+                            .collect(Collectors.toList()));
+        }
+
+        // Collecting the inherited fields from the superclass of the actual class
+        DotName superClassName = entityClass.superClassType().name();
+        ClassInfo superClassInfo = indexView.getClassByName(superClassName);
+
+        ClassInfo classByName;
+
+        if (superClassName != null && superClassInfo != null && currentClassInfo != null &&
+                currentClassInfo.superClassType() != null &&
+                (classByName = indexView.getClassByName(currentClassInfo.superClassType().name())) != null) {
+
+            childFields.addAll(superClassInfo.fields()
+                    .stream()
+                    .map(FieldInfo::name).collect(Collectors.toList()));
+
+            childFields.addAll(classByName.fields()
+                    .stream()
+                    .map(FieldInfo::name).collect(Collectors.toList()));
+        }
+
+        // Collecting the inherited fields from the superclasses of the attributes
+        if (currentClassInfo != null && currentClassInfo.superClassType() != null
+                && (classByName = indexView.getClassByName(currentClassInfo.superClassType().name())) != null) {
+
+            childFields.addAll(
+                    classByName.fields()
+                            .stream()
+                            .map(FieldInfo::name).collect(Collectors.toList()));
+        }
+
+        // Building the fieldName from the members classes and their superclasses
+        for (String fieldInf : childFields) {
+            if (StringUtils.containsIgnoreCase(fieldName, fieldInf)) {
+                String newValue = finalName.toString()
+                        .replaceAll("(?i)" + fieldInf, lowerFirstLetter(fieldInf) + ".");
+                finalName.delete(0, finalName.length());
+                finalName.append(newValue);
+            }
+        }
+
+        // In some cases, the built hierarchy is ending by a joining point. so we need to remove it
+        if (finalName.toString().charAt(finalName.length() - 1) == '.') {
+            fieldName = finalName.toString().replaceAll(".$", "");
+        } else {
+            fieldName = finalName.toString();
+        }
+        return fieldName;
     }
 
     /**
@@ -488,7 +565,13 @@ public class MethodNameParser {
     }
 
     private FieldInfo getField(String fieldName) {
+        // Before validating the fieldInfo,
+        // we need to split the camelcase format and grab the first item
         FieldInfo fieldInfo = entityClass.field(fieldName);
+        if (fieldInfo == null) {
+            String[] camelCaseStrings = StringUtils.splitByCharacterTypeCamelCase(fieldName);
+            fieldInfo = entityClass.field(camelCaseStrings[0]);
+        }
         if (fieldInfo == null) {
             for (ClassInfo superClass : mappedSuperClassInfos) {
                 fieldInfo = superClass.field(fieldName);
@@ -501,12 +584,12 @@ public class MethodNameParser {
     }
 
     private List<ClassInfo> getMappedSuperClassInfos(IndexView indexView, ClassInfo entityClass) {
-        List<ClassInfo> mappedSuperClassInfos = new ArrayList<>(3);
+        List<ClassInfo> mappedSuperClassInfoElements = new ArrayList<>(3);
         Type superClassType = entityClass.superClassType();
         while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = indexView.getClassByName(entityClass.superName());
             if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
-                mappedSuperClassInfos.add(superClass);
+                mappedSuperClassInfoElements.add(superClass);
             }
 
             if (superClassType.kind() == Kind.CLASS) {
@@ -516,10 +599,7 @@ public class MethodNameParser {
                 superClassType = parameterizedType.owner();
             }
         }
-        if (mappedSuperClassInfos.size() > 0) {
-            return mappedSuperClassInfos;
-        }
-        return Collections.emptyList();
+        return mappedSuperClassInfoElements;
     }
 
     public static class Result {

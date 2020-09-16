@@ -213,6 +213,44 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
             assertEquals("Log in to logout-realm", page.getTitleText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testTokenAutoRefresh() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-autorefresh");
+            assertEquals("Log in to logout-realm", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertTrue(page.asText().contains("Tenant AutoRefresh"));
+
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
+            assertNotNull(sessionCookie);
+            String idToken = getIdToken(sessionCookie);
+
+            //wait now so that we reach the refresh timeout
+            await().atMost(5, TimeUnit.SECONDS)
+                    .pollInterval(Duration.ofSeconds(1))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            webClient.getOptions().setRedirectEnabled(false);
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(
+                                            new WebRequest(URI.create("http://localhost:8081/tenant-autorefresh").toURL()));
+                            assertEquals(200, webResponse.getStatusCode());
+                            assertTrue(webResponse.getContentAsString().contains("Tenant AutoRefresh"));
+                            // Should not redirect to OP but silently refresh token
+                            Cookie newSessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
+                            assertNotNull(newSessionCookie);
+                            return !idToken.equals(getIdToken(newSessionCookie));
+                        }
+                    });
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -496,6 +534,22 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("RT injected:aValue", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testXhrRequest() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("X-Requested-With", "XMLHttpRequest");
+                webClient.getPage("http://localhost:8081/tenant-xhr");
+                fail("499 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(499, ex.getStatusCode());
+                assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
+
             webClient.getCookieManager().clearCookies();
         }
     }

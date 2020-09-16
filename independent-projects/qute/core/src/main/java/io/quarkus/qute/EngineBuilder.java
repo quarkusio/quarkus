@@ -99,7 +99,7 @@ public final class EngineBuilder {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             if (namespaceResolver.getNamespace().equals(resolver.getNamespace())) {
                 throw new IllegalArgumentException(
-                        String.format("Namespace %s is already handled by %s", resolver.getNamespace()));
+                        String.format("Namespace %s is already handled by %s", resolver.getNamespace(), namespaceResolver));
             }
         }
         this.namespaceResolvers.add(resolver);
@@ -139,8 +139,10 @@ public final class EngineBuilder {
     }
 
     /**
-     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains
-     * only section tags, parameter declarations and whitespace characters.
+     * Specify whether the parser should remove standalone lines from the output.
+     * <p>
+     * A standalone line is a line that contains at least one section tag, parameter declaration, or comment but no expression
+     * and no non-whitespace character.
      * 
      * @param value
      * @return self

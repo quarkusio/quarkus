@@ -45,9 +45,14 @@ public class InputHandler implements RestHandler {
         InputListener h = new InputListener(context);
         context.suspend();
         HttpServerRequest req = context.getContext().request();
-        req.endHandler(h);
-        req.handler(h::handleBuffer);
-        req.resume();
+        if (!req.isEnded()) {
+            req.endHandler(h);
+            req.handler(h::handleBuffer);
+            req.resume();
+        } else {
+            req.resume();
+            h.handle(null);
+        }
     }
 
     class InputListener implements Handler<Void> {

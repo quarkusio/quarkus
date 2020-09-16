@@ -27,11 +27,14 @@ public class VertxTcpMetrics extends VertxNetworkMetrics
      *
      * @param remoteAddress the remote address of the client
      * @param remoteName the remote name of the client
-     * @return the socket metric
+     * @return a MetricsContext object for socket metric context or null
      */
     @Override
     public MetricsContext connected(SocketAddress remoteAddress, String remoteName) {
         Context vertxContext = Vertx.currentContext();
+        if (vertxContext == null) {
+            return null;
+        }
         MetricsContext metricsContext = MetricsContext.addMetricsContext(vertxContext);
 
         metricsContext.put(CONNECTED_SOCKET_SAMPLE,
@@ -43,17 +46,18 @@ public class VertxTcpMetrics extends VertxNetworkMetrics
      * Called when a client has disconnected, which is applicable for TCP
      * connections.
      *
-     * @param socketMetric the socket metric
+     * @param socketMetric a MetricsContext object for socket metric context or null
      * @param remoteAddress the remote address of the client
      */
     @Override
     public void disconnected(MetricsContext socketMetric, SocketAddress remoteAddress) {
-        if (socketMetric != null) {
-            LongTaskTimer.Sample sample = (LongTaskTimer.Sample) socketMetric.get(CONNECTED_SOCKET_SAMPLE);
-            if (sample != null) {
-                sample.stop();
-            }
-            socketMetric.removeMetricsContext();
+        if (socketMetric == null) {
+            return;
         }
+        LongTaskTimer.Sample sample = (LongTaskTimer.Sample) socketMetric.get(CONNECTED_SOCKET_SAMPLE);
+        if (sample != null) {
+            sample.stop();
+        }
+        socketMetric.removeMetricsContext();
     }
 }

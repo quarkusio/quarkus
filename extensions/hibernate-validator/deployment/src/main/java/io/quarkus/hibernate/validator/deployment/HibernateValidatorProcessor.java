@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.validation.ClockProvider;
 import javax.validation.Constraint;
@@ -203,9 +202,9 @@ class HibernateValidatorProcessor {
         allConsideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         beanValidationAnnotations.produce(new BeanValidationAnnotationsBuildItem(
-                VALID.toString(),
-                constraints.stream().map(a -> a.toString()).collect(Collectors.toSet()),
-                allConsideredAnnotations.stream().map(a -> a.toString()).collect(Collectors.toSet())));
+                VALID,
+                constraints,
+                allConsideredAnnotations));
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
         Map<DotName, Set<SimpleMethodSignatureKey>> inheritedAnnotationsToBeValidated = new HashMap<>();

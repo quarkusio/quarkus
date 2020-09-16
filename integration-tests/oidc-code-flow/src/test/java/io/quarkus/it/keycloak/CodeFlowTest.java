@@ -42,7 +42,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
-            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, false);
+            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), null, "web-app", false);
 
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
@@ -75,15 +75,46 @@ public class CodeFlowTest {
             WebResponse webResponse = webClient
                     .loadWebResponse(
                             new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
-            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), "tenant-https", true);
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https", "tenant-https",
+                    true);
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+            URI endpointLocationUri = URI.create(endpointLocation);
+            assertNotNull(endpointLocationUri.getRawQuery());
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            // This is a redirect from quarkus-oidc which drops the query parameters
+            String endpointLocation2 = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation2.startsWith("https"));
+
+            endpointLocation2 = "http" + endpointLocation2.substring(5);
+            URI endpointLocationUri2 = URI.create(endpointLocation2);
+            assertNull(endpointLocationUri2.getRawQuery());
+
+            page = webClient.getPage(endpointLocationUri2.toURL());
+            assertEquals("tenant-https", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
     }
 
-    private void verifyLocationHeader(WebClient webClient, String loc, String tenant, boolean forceHttps) {
+    private void verifyLocationHeader(WebClient webClient, String loc, String tenant, String path, boolean forceHttps) {
         assertTrue(loc.startsWith("http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth"));
         String scheme = forceHttps ? "https" : "http";
-        assertTrue(loc.contains("redirect_uri=" + scheme + "%3A%2F%2Flocalhost%3A8081%2Fweb-app"));
+        assertTrue(loc.contains("redirect_uri=" + scheme + "%3A%2F%2Flocalhost%3A8081%2F" + path));
         assertTrue(loc.contains("state=" + getStateCookieStateParam(webClient, tenant)));
         assertTrue(loc.contains("scope=openid+profile+email+phone"));
         assertTrue(loc.contains("response_type=code"));

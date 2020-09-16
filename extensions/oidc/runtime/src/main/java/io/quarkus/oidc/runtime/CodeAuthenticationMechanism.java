@@ -318,7 +318,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                                         if (configContext.oidcConfig.authentication.isRemoveRedirectParameters()
                                                 && context.request().query() != null) {
-                                            String finalRedirectUri = buildUriWithoutQueryParams(context);
+                                            String finalRedirectUri = buildUriWithoutQueryParams(context,
+                                                    isForceHttps(configContext));
                                             if (finalUserQuery != null) {
                                                 finalRedirectUri += ("?" + finalUserQuery);
                                             }
@@ -429,9 +430,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .toString();
     }
 
-    private String buildUriWithoutQueryParams(RoutingContext context) {
+    private String buildUriWithoutQueryParams(RoutingContext context, boolean forceHttps) {
+        final String scheme = forceHttps ? "https" : context.request().scheme();
         URI absoluteUri = URI.create(context.request().absoluteURI());
-        return new StringBuilder(context.request().scheme()).append("://")
+        return new StringBuilder(scheme).append("://")
                 .append(absoluteUri.getAuthority())
                 .append(absoluteUri.getRawPath())
                 .toString();

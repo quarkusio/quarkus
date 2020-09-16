@@ -130,6 +130,10 @@
   title: "(?i).*openshift.*"
   description: "(?i).*openshift.*"
   notify: [geoand]
+- labels: [area/kubernetes]
+  title: "(?i).*knative.*"
+  description: "(?i).*knative.*"
+  notify: [geoand]
 - labels: [area/container-image]
   title: "(?i).*jib.*"
   description: "(?i).*jib.*"

@@ -109,6 +109,7 @@ import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.ConfigTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
 
 public class QuteProcessor {
 
@@ -162,7 +163,8 @@ public class QuteProcessor {
                 .setUnremovable()
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, ContentTypes.class, ResourcePath.class,
                         Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
-                        MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class)
+                        MapTemplateExtensions.class, NumberTemplateExtensions.class, ConfigTemplateExtensions.class,
+                        TimeTemplateExtensions.class)
                 .build();
     }
 

@@ -877,11 +877,11 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 [[template_extension_methods]]
 === Template Extension Methods
 
-Extension methods can be used to extend the data classes with new functionality or resolve expressions for a specific <<namespace_extension_methods,namespace>>.
+Extension methods can be used to extend the data classes with new functionality (to extend the set of accessible properties and methods) or to resolve expressions for a specific <<namespace_extension_methods,namespace>>.
 For example, it is possible to add _computed properties_ and _virtual methods_.
 
 A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
-If a  class is annotated with `@TemplateExtension` then a value resolver is generated for every non-private static method declared on the class.
+If a class is annotated with `@TemplateExtension` then a value resolver is generated for every _non-private static method_ declared on the class.
 Method-level annotations override the behavior defined on the class.
 Methods that do not meet the following requirements are ignored.
 
@@ -1037,6 +1037,26 @@ TIP: A list element can be accessed directly: `{list.10}` or `{list[10]}`.
 
 * `config:property(name)`: Returns the config value for the given property name; the name can be obtained dynamically by an expression 
 ** `{config:property('quarkus.foo')}` or `{config:property(foo.getPropertyName())}`
+
+===== Time
+
+* `format(pattern)`: Formats temporal objects from the `java.time` package
+** `{dateTime.format('d MMM uuuu')}`
+
+* `format(pattern,locale)`: Formats temporal objects from the `java.time` package
+** `{dateTime.format('d MMM uuuu',myLocale)}`
+
+* `format(pattern,locale,timeZone)`: Formats temporal objects from the `java.time` package
+** `{dateTime.format('d MMM uuuu',myLocale,myTimeZoneId)}`
+
+* `time:format(dateTime,pattern)`: Formats temporal objects from the `java.time` package, `java.util.Date`, `java.util.Calendar` and `java.lang.Number`
+** `{time:format(myDate,'d MMM uuuu')}`
+
+* `time:format(dateTime,pattern,locale)`: Formats temporal objects from the `java.time` package, `java.util.Date`, `java.util.Calendar` and `java.lang.Number`
+** `{time:format(myDate,'d MMM uuuu', myLocale)}`
+
+* `time:format(dateTime,pattern,locale,timeZone)`: Formats temporal objects from the `java.time` package, `java.util.Date`, `java.util.Calendar` and `java.lang.Number`
+** `{time:format(myDate,'d MMM uuuu',myTimeZoneId)}`
 
 [[template_data]]
 === @TemplateData

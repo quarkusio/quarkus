@@ -5,11 +5,14 @@ import static io.quarkus.qute.TemplateExtension.DEFAULT_PRIORITY;
 
 import java.util.Optional;
 
+import javax.enterprise.inject.Vetoed;
+
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateExtension;
 
+@Vetoed // Make sure no bean is created from this class
 public class ConfigTemplateExtensions {
 
     static final String CONFIG = "config";

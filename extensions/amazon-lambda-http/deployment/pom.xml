@@ -31,10 +31,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda-http</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-        </dependency>
     </dependencies>
     <build>
         <plugins>

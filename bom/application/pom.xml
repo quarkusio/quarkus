@@ -3100,6 +3100,7 @@
                 <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>svm</artifactId>
                 <version>${graal-sdk.version}</version>
+                <!-- TODO: declaring a provided or test scope in BoM is not necessarily a good practice. We should think of removing it -->
                 <scope>provided</scope>
                 <!-- We only want the included annotations -->
                 <exclusions>

@@ -68,11 +68,11 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     /**
      * Called when an http server response is pushed.
      *
-     * @param socketMetric the socket metric
+     * @param socketMetric a MetricsContext object for socket metric context
      * @param method the pushed response method
      * @param uri the pushed response uri
      * @param response the http server response
-     * @return the request metric
+     * @return a MetricsContext object for request metric context or null
      */
     @Override
     public MetricsContext responsePushed(MetricsContext socketMetric, HttpMethod method, String uri,
@@ -92,14 +92,14 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * {@link #responseEnd} when the response has ended or {@link #requestReset} if
      * the request/response has failed before.
      *
-     * @param socketMetric the socket metric
-     * @param request the http server reuqest
-     * @return the request metric
+     * @param socketMetric a MetricsContext object for socket metric context
+     * @param request the http server request
+     * @return a MetricsContext object for request metric context or null
      */
     @Override
     public MetricsContext requestBegin(MetricsContext socketMetric, HttpServerRequest request) {
         String path = VertxMetricsTags.parseUriPath(matchPatterns, ignorePatterns, request.uri());
-        if (path != null) {
+        if (path != null && socketMetric != null) {
             // Pre-add the request method tag to the sample
             socketMetric.put(MetricsContext.HTTP_REQUEST_SAMPLE,
                     Timer.start(registry).tags(Tags.of(VertxMetricsTags.method(request.method()))));
@@ -114,11 +114,11 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
      * Called when the http server request couldn't complete successfully, for
      * instance the connection was closed before the response was sent.
      *
-     * @param requestMetric the request metric
+     * @param requestMetric a MetricsContext object for request metric context or null
      */
     @Override
     public void requestReset(MetricsContext requestMetric) {
-        Timer.Sample sample = requestMetric.getValue(MetricsContext.HTTP_REQUEST_SAMPLE);
+        Timer.Sample sample = getRequestSample(requestMetric);
         if (sample != null) {
             String requestPath = getServerRequestPath(requestMetric);
             sample.stop(registry,
@@ -131,12 +131,12 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     /**
      * Called when an http server response has ended.
      *
-     * @param requestMetric the request metric
-     * @param response the http server request
+     * @param requestMetric a MetricsContext object for request metric context or null
+     * @param response the http server response
      */
     @Override
     public void responseEnd(MetricsContext requestMetric, HttpServerResponse response) {
-        Timer.Sample sample = requestMetric.getValue(MetricsContext.HTTP_REQUEST_SAMPLE);
+        Timer.Sample sample = getRequestSample(requestMetric);
         if (sample != null) {
             String requestPath = getServerRequestPath(requestMetric);
             sample.stop(registry, Timer.builder(nameHttpServerRequests)
@@ -150,10 +150,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     /**
      * Called when a server web socket connects.
      *
-     * @param socketMetric the socket metric
-     * @param requestMetric the request metric
+     * @param socketMetric a MetricsContext object for socket metric context or null
+     * @param requestMetric a MetricsContext object for request metric context or null
      * @param serverWebSocket the server web socket
-     * @return the server web socket metric
+     * @return a LongTaskTimer.Sample containing websocket metric context or null
      */
     @Override
     public LongTaskTimer.Sample connected(MetricsContext socketMetric, MetricsContext requestMetric,
@@ -171,7 +171,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     /**
      * Called when the server web socket has disconnected.
      *
-     * @param websocketMetric the server web socket metric
+     * @param websocketMetric a LongTaskTimer.Sample containing websocket metric context or null
      */
     @Override
     public void disconnected(LongTaskTimer.Sample websocketMetric) {
@@ -180,7 +180,18 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         }
     }
 
+    private Timer.Sample getRequestSample(MetricsContext requestMetric) {
+        if (requestMetric == null) {
+            return null;
+        }
+        return requestMetric.getValue(MetricsContext.HTTP_REQUEST_SAMPLE);
+    }
+
     private String getServerRequestPath(MetricsContext source) {
+        if (source == null) {
+            return null;
+        }
+
         String path = source.getFromRoutingContext(MetricsContext.HTTP_REQUEST_PATH);
         if (path != null) {
             log.debugf("Using path from routing context %s", path);

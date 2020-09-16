@@ -206,7 +206,7 @@
                     <artifactIdPrefix>quarkus-</artifactIdPrefix>
                     <namePrefix xml:space="preserve">Quarkus - </namePrefix>
                     <quarkusVersion>@{project.version}</quarkusVersion>
-                    <bomPath>../bom/application/pom.xml</runtimeBomPath>
+                    <bomPath>../bom/application/pom.xml</bomPath>
                     <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
             </plugin>

@@ -384,7 +384,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String encoding;
 
     /**
-     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the BOM (Bill of Materials) that
+     * Path relative to {@link #basedir} pointing at a {@code pom.xml} file containing the platform BOM (Bill of Materials) that
      * manages extension artifacts. If set, the newly created runtime and deployment modules will be added to
      * {@code <dependencyManagement>} section of this bom; otherwise the newly created modules will not be added
      * to any BOM.
@@ -395,8 +395,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     Path bomPath;
 
     /**
-     * A version for the entries added to the runtime BOM (see {@link #runtimeBomPath}) and to the deployment BOM (see
-     * {@link #deploymentBomPath}). If you want to pass a property placeholder, use {@code @} instead if {@code $} so
+     * A version for the entries added to the platform BOM (see {@link #bomPath}).
+     * If you want to pass a property placeholder, use {@code @} instead if {@code $} so
      * that the property is not evaluated by the current mojo - e.g. <code>@{my-project.version}</code>
      *
      * @since 0.25.0
@@ -406,15 +406,15 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     /**
      * A list of strings of the form {@code groupId:artifactId:version[:type[:classifier[:scope]]]} representing the
-     * dependencies that should be added to the generated runtime module and to the runtime BOM if it is specified via
-     * {@link #runtimeBomPath}.
+     * dependencies that should be added to the generated runtime module and to the platform BOM if it is specified via
+     * {@link #bomPath}.
      * <p>
      * In case the built-in Maven <code>${placeholder}</code> expansion does not work well for you (because you e.g.
      * pass {@link #additionalRuntimeDependencies}) via CLI, the Mojo supports a custom <code>@{placeholder}</code>
      * expansion:
      * <ul>
      * <li><code>@{$}</code> will be expanded to {@code $} - handy for escaping standard placeholders. E.g. to insert
-     * <code>${quarkus.version}</code> to the BOM, you need to pass <code>@{$}{quarkus.version}</code></li>
+     * <code>${quarkus.version}</code> to the platform BOM, you need to pass <code>@{$}{quarkus.version}</code></li>
      * <li><code>@{quarkus.field}</code> will be expanded to whatever value the given {@code field} of this mojo has at
      * runtime.</li>
      * <li>Any other <code>@{placeholder}</code> will be resolved using the current project's properties</li>
@@ -552,7 +552,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         if (bomPath != null) {
             bomPath = basedir.toPath().resolve(bomPath);
             if (!Files.exists(bomPath)) {
-                throw new MojoFailureException("runtimeBomPath does not exist: " + bomPath);
+                throw new MojoFailureException("bomPath does not exist: " + bomPath);
             }
         }
 
@@ -835,7 +835,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         templateParams.javaPackageBase = javaPackageBase != null ? javaPackageBase
                 : getJavaPackage(templateParams.groupId, javaPackageInfix, artifactId);
         templateParams.additionalRuntimeDependencies = getAdditionalRuntimeDependencies();
-        templateParams.runtimeBomPathSet = bomPath != null;
+        templateParams.bomPathSet = bomPath != null;
         return templateParams;
     }
 
@@ -1068,7 +1068,7 @@ public class CreateExtensionMojo extends AbstractMojo {
         boolean assumeManaged;
         String quarkusVersion;
         List<Gavtcs> additionalRuntimeDependencies;
-        boolean runtimeBomPathSet;
+        boolean bomPathSet;
         String bomEntryVersion;
 
         public String getJavaPackageBase() {
@@ -1139,8 +1139,8 @@ public class CreateExtensionMojo extends AbstractMojo {
             return additionalRuntimeDependencies;
         }
 
-        public boolean isRuntimeBomPathSet() {
-            return runtimeBomPathSet;
+        public boolean isBomPathSet() {
+            return bomPathSet;
         }
 
         public String getItestParentRelativePath() {

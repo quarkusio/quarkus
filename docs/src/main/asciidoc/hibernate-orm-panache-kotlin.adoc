@@ -36,7 +36,7 @@ language doesn't support the notion of static methods in quite the same way as J
 [source,kotlin]
 ----
 @Entity
-class Person : PanacheEntity {
+class Person : PanacheEntity() {
     companion object: PanacheCompanion<Person> {  // <1>
         fun findByName(name: String) = find("name", name).firstResult()
         fun findAlive() = list("status", Status.Alive)

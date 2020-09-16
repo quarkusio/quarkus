@@ -41,6 +41,6 @@ public abstract class AbstractGroovyGradleBuildFile extends AbstractGradleBuildF
 
     static boolean addDependencyInModel(Model model, AppArtifactCoords coords, boolean managed) {
         return addDependencyInModel(model,
-                String.format("    implementation %s%n", createDependencyCoordinatesString(model, coords, managed, '\'')));
+                String.format("    implementation %s%n", createDependencyCoordinatesString(coords, managed, '\'')));
     }
 }

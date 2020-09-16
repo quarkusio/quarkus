@@ -10,4 +10,5 @@ public interface QuarkusModel {
 
     List<Dependency> getExtensionDependencies();
 
+    List<Dependency> getEnforcedPlatformDependencies();
 }

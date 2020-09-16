@@ -1,9 +1,16 @@
 plugins {
     java
+    id("io.quarkus")
 }
 
 repositories {
-    mavenLocal()
+    if (System.getProperties().containsKey("maven.repo.local")) {
+        maven {
+            url = uri(System.getProperties().get("maven.repo.local") as String)
+        }
+    } else {
+        mavenLocal()
+    }
     mavenCentral()
 }
 

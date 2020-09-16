@@ -10,13 +10,16 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // We keep it here to take advantage of the abstract tests
 abstract class AbstractGradleBuildFile extends BuildFile {
+
+    private static final Pattern DEPENDENCIES_SECTION = Pattern.compile("^[\\t ]*dependencies\\s*\\{\\s*$", Pattern.MULTILINE);
 
     private static final String GRADLE_PROPERTIES_PATH = "gradle.properties";
 
@@ -57,46 +60,36 @@ abstract class AbstractGradleBuildFile extends BuildFile {
         writeToProjectFile(getBuildGradlePath(), getModel().getBuildContent().getBytes());
     }
 
-    static String createDependencyCoordinatesString(Model model, AppArtifactCoords coords, boolean managed, char quoteChar) {
-        boolean isBOM = "pom".equals(coords.getType());
-        // Special case for platform dependency. We will create properties based dependency string.
-        // It will be ignored if it is already in "dependencies" section.
-        // Note that we ignore version here - if someone tries to add platform with different version, we will still use
-        // version from properties.
-        if (isBOM && !managed
-                && Objects.equals(coords.getGroupId(), getProperty(model, "quarkusPlatformGroupId"))
-                && Objects.equals(coords.getArtifactId(), getProperty(model, "quarkusPlatformArtifactId"))) {
-            return "enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")";
-        }
+    static String createDependencyCoordinatesString(AppArtifactCoords coords, boolean managed, char quoteChar) {
         StringBuilder newDependency = new StringBuilder().append(quoteChar)
                 .append(coords.getGroupId()).append(":").append(coords.getArtifactId());
         if (!managed &&
                 (coords.getVersion() != null && !coords.getVersion().isEmpty())) {
             newDependency.append(":").append(coords.getVersion());
         }
+        boolean isBOM = "pom".equals(coords.getType());
+        if (isBOM && !managed) {
+            return String.format("enforcedPlatform(%s)", newDependency.append(quoteChar).toString());
+        }
         return newDependency.append(quoteChar).toString();
     }
 
     static boolean addDependencyInModel(Model model, String newDependency) {
         StringBuilder buildContent = new StringBuilder(model.getBuildContent());
-        boolean changed = false;
-        if (buildContent.indexOf(newDependency) == -1) {
-            changed = true;
-            // Add dependency after "dependencies {"
-            int indexOfDeps = buildContent.indexOf("dependencies {");
-            if (indexOfDeps > -1) {
-                // The line below fails on Windows if System.lineSeparator() is used
-                int nextLine = buildContent.indexOf("\n", indexOfDeps) + 1;
-                buildContent.insert(nextLine, newDependency);
-            } else {
-                // if no "dependencies {" found, add one
-                buildContent.append("dependencies {").append(System.lineSeparator())
-                        .append(newDependency)
-                        .append("}").append(System.lineSeparator());
-            }
-            model.setBuildContent(buildContent.toString());
+        // Add dependency after "dependencies {"
+        Matcher matcher = DEPENDENCIES_SECTION.matcher(buildContent);
+        if (matcher.find()) {
+            // The line below fails on Windows if System.lineSeparator() is used
+            int nextLine = buildContent.indexOf("\n", matcher.start()) + 1;
+            buildContent.insert(nextLine, newDependency);
+        } else {
+            // if no "dependencies {" found, add one
+            buildContent.append("dependencies {").append(System.lineSeparator())
+                    .append(newDependency)
+                    .append("}").append(System.lineSeparator());
         }
-        return changed;
+        model.setBuildContent(buildContent.toString());
+        return true;
     }
 
     static String getProperty(Model model, String propertyName) {

@@ -18,6 +18,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -44,6 +45,8 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -71,6 +74,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeIndividualHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeWellnessHandler;
+import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -103,6 +107,15 @@ class SmallRyeHealthProcessor {
     private static final String TEMP_DIR_PREFIX = "quarkus-health-ui_" + System.nanoTime();
     private static final List<String> IGNORE_LIST = Arrays.asList("logo.png", "favicon.ico");
     private static final String FILE_TO_UPDATE = "healthui.js";
+
+    static class OpenAPIIncluded implements BooleanSupplier {
+        HealthBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.openapiIncluded;
+        }
+    }
+
     /**
      * The configuration for health checking.
      */
@@ -233,6 +246,18 @@ class SmallRyeHealthProcessor {
                 new RouteBuildItem(health.rootPath + health.wellnessPath, new SmallRyeWellnessHandler(),
                         HandlerType.BLOCKING));
 
+    }
+
+    @BuildStep(onlyIf = OpenAPIIncluded.class)
+    public void includeInOpenAPIEndpoint(BuildProducer<AddToOpenAPIDefinitionBuildItem> openAPIProducer,
+            Capabilities capabilities) {
+
+        // Add to OpenAPI if OpenAPI is available
+        if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
+            HealthOpenAPIFilter filter = new HealthOpenAPIFilter(health.rootPath, health.rootPath + health.livenessPath,
+                    health.rootPath + health.readinessPath);
+            openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(filter));
+        }
     }
 
     private void warnIfJaxRsPathUsed(IndexView index, DotName healthAnnotation) {

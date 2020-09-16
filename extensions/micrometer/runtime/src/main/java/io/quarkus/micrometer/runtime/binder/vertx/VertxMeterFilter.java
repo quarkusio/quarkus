@@ -15,13 +15,15 @@ public class VertxMeterFilter implements Handler<RoutingContext> {
         final Context context = Vertx.currentContext();
         log.debugf("Handling event %s with context %s", event, context);
 
-        MetricsContext.addRoutingContext(context, event);
-        event.addBodyEndHandler(new Handler<Void>() {
-            @Override
-            public void handle(Void x) {
-                MetricsContext.removeRoutingContext(context);
-            }
-        });
+        if (context != null) {
+            MetricsContext.addRoutingContext(context, event);
+            event.addBodyEndHandler(new Handler<Void>() {
+                @Override
+                public void handle(Void x) {
+                    MetricsContext.removeRoutingContext(context);
+                }
+            });
+        }
 
         event.next();
     }

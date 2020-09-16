@@ -45,8 +45,7 @@ class HandlerDescriptor {
             return false;
         }
         for (AnnotationInstance annotation : method.annotations()) {
-            String name = annotation.name().toString();
-            if (validationAnnotations.getAllAnnotations().contains(name)) {
+            if (validationAnnotations.getAllAnnotations().contains(annotation.name())) {
                 return true;
             }
         }
@@ -61,8 +60,7 @@ class HandlerDescriptor {
             return false;
         }
         for (AnnotationInstance annotation : method.annotations()) {
-            String name = annotation.name().toString();
-            if (validationAnnotations.getValidAnnotation().equals(name)) {
+            if (validationAnnotations.getValidAnnotation().equals(annotation.name())) {
                 return true;
             }
         }

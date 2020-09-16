@@ -3,6 +3,8 @@ package io.quarkus.hibernate.validator.spi;
 import java.util.Collections;
 import java.util.Set;
 
+import org.jboss.jandex.DotName;
+
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
@@ -11,25 +13,25 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class BeanValidationAnnotationsBuildItem extends SimpleBuildItem {
 
-    private final String valid;
-    private final Set<String> constraints;
-    private final Set<String> all;
+    private final DotName valid;
+    private final Set<DotName> constraints;
+    private final Set<DotName> all;
 
-    public BeanValidationAnnotationsBuildItem(String valid, Set<String> constraints, Set<String> all) {
+    public BeanValidationAnnotationsBuildItem(DotName valid, Set<DotName> constraints, Set<DotName> all) {
         this.valid = valid;
         this.constraints = Collections.unmodifiableSet(constraints);
         this.all = Collections.unmodifiableSet(all);
     }
 
-    public String getValidAnnotation() {
+    public DotName getValidAnnotation() {
         return valid;
     }
 
-    public Set<String> getConstraintAnnotations() {
+    public Set<DotName> getConstraintAnnotations() {
         return constraints;
     }
 
-    public Set<String> getAllAnnotations() {
+    public Set<DotName> getAllAnnotations() {
         return all;
     }
 }

@@ -9,6 +9,7 @@ import java.util.SortedSet;
 import java.util.function.Predicate;
 
 import javax.annotation.Priority;
+import javax.enterprise.inject.Vetoed;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -72,6 +73,7 @@ public final class QuarkusRestDotNames {
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
+    public static final DotName VETOED = DotName.createSimple(Vetoed.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());
@@ -84,6 +86,10 @@ public final class QuarkusRestDotNames {
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));
+
+    // TODO: add Path, Cookie and Matrix param handling
+    public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
+            Arrays.asList(QUERY_PARAM, HEADER_PARAM));
 
     public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
 

@@ -1,6 +1,7 @@
 package io.quarkus.rest.test.simple;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.emptyString;
 
 import java.util.function.Supplier;
 
@@ -35,6 +36,7 @@ public class SimpleQuarkusRestTestCase {
                                     FeatureResponseFilter.class, DynamicFeatureRequestFilterWithLowPriority.class,
                                     TestFeature.class, TestDynamicFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
+                                    QueryParamResource.class, HeaderParamResource.class,
                                     TestWriter.class, TestClass.class);
                 }
             });
@@ -289,5 +291,35 @@ public class SimpleQuarkusRestTestCase {
                 .then().extract().headers();
         assertThat(headers.getValues("class-name")).containsOnly("SimpleQuarkusRestResource");
         assertThat(headers.getValues("method-name")).containsOnly("resourceInfo");
+    }
+
+    @Test
+    public void testQueryParamInCtor() {
+        RestAssured.get("/ctor-query")
+                .then().body(Matchers.is(emptyString()));
+
+        RestAssured.get("/ctor-query?q1=v1")
+                .then().body(Matchers.equalTo("v1"));
+
+        RestAssured.get("/ctor-query?q1=v11")
+                .then().body(Matchers.equalTo("v11"));
+
+        RestAssured.get("/ctor-query?q2=v2")
+                .then().body(Matchers.is(emptyString()));
+    }
+
+    @Test
+    public void testHeaderParamInCtor() {
+        RestAssured.get("/ctor-header")
+                .then().body(Matchers.is(emptyString()));
+
+        RestAssured.with().header("h1", "v1").get("/ctor-header")
+                .then().body(Matchers.equalTo("v1"));
+
+        RestAssured.with().header("h1", "v11").get("/ctor-header")
+                .then().body(Matchers.equalTo("v11"));
+
+        RestAssured.with().header("h2", "v2").get("/ctor-header")
+                .then().body(Matchers.is(emptyString()));
     }
 }

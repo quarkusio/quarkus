@@ -11,6 +11,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -30,10 +31,12 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.Capability;
@@ -44,6 +47,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -112,17 +116,97 @@ public class QuarkusRestProcessor {
     }
 
     @BuildStep
+    void scanResources(
+            // TODO: We need to use this index instead of BeanArchiveIndexBuildItem to avoid build cycles. It it OK?
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerBuildItemBuildProducer,
+            BuildProducer<ResourceScanningResultBuildItem> resourceScanningResultBuildItemBuildProducer) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> paths = index.getAnnotations(QuarkusRestDotNames.PATH);
+
+        Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
+
+        if (allPaths.isEmpty()) {
+            // no detected @Path, bail out
+            return;
+        }
+
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
+        Map<DotName, String> scannedResourcePaths = new HashMap<>();
+        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
+        Map<DotName, String> pathInterfaces = new HashMap<>();
+        Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
+
+        for (AnnotationInstance annotation : allPaths) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                ClassInfo clazz = annotation.target().asClass();
+                if (!Modifier.isInterface(clazz.flags())) {
+                    scannedResources.put(clazz.name(), clazz);
+                    scannedResourcePaths.put(clazz.name(), annotation.value().asString());
+                } else {
+                    pathInterfaces.put(clazz.name(), annotation.value().asString());
+                }
+                MethodInfo ctor = hasJaxRsCtorParams(clazz);
+                if (ctor != null) {
+                    resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
+                }
+            }
+        }
+
+        if (!resourcesThatNeedCustomProducer.isEmpty()) {
+            annotationsTransformerBuildItemBuildProducer
+                    .produce(new AnnotationsTransformerBuildItem(
+                            new VetoingAnnotationTransformer(resourcesThatNeedCustomProducer.keySet())));
+        }
+
+        for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
+            for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
+                if (!Modifier.isAbstract(clazz.flags())) {
+                    if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
+                            clazz.enclosingMethod() == null) {
+                        scannedResources.put(clazz.name(), clazz);
+                        scannedResourcePaths.put(clazz.name(), i.getValue());
+                    }
+                }
+            }
+        }
+
+        resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(scannedResources,
+                scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer));
+    }
+
+    @BuildStep
+    void generateCustomProducer(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer) {
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            return;
+        }
+
+        Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = resourceScanningResultBuildItem.get()
+                .getResourcesThatNeedCustomProducer();
+        if (!resourcesThatNeedCustomProducer.isEmpty()) {
+            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer, generatedBeanBuildItemBuildProducer);
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public FilterBuildItem setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             QuarkusRestConfig config,
+            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             QuarkusRestRecorder recorder,
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
             HttpBuildTimeConfig vertxConfig) {
+
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            // no detected @Path, bail out
+            return null;
+        }
+
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        Collection<AnnotationInstance> paths = index.getAnnotations(QuarkusRestDotNames.PATH);
         Collection<ClassInfo> containerRequestFilters = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER);
         Collection<ClassInfo> containerResponseFilters = index
@@ -140,40 +224,11 @@ public class QuarkusRestProcessor {
         Collection<ClassInfo> dynamicFeatures = index
                 .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
 
-        Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
+        Map<DotName, ClassInfo> scannedResources = resourceScanningResultBuildItem.get().getScannedResources();
+        Map<DotName, String> scannedResourcePaths = resourceScanningResultBuildItem.get().getScannedResourcePaths();
+        Map<DotName, ClassInfo> possibleSubResources = resourceScanningResultBuildItem.get().getPossibleSubResources();
+        Map<DotName, String> pathInterfaces = resourceScanningResultBuildItem.get().getPathInterfaces();
 
-        if (allPaths.isEmpty()) {
-            // no detected @Path, bail out
-            return null;
-        }
-
-        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
-        Map<DotName, String> scannedResourcePaths = new HashMap<>();
-        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
-        Map<DotName, String> pathInterfaces = new HashMap<>();
-        List<RestClientInterface> clientDefinitions = new ArrayList<>();
-        for (AnnotationInstance annotation : allPaths) {
-            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                ClassInfo clazz = annotation.target().asClass();
-                if (!Modifier.isInterface(clazz.flags())) {
-                    scannedResources.put(clazz.name(), clazz);
-                    scannedResourcePaths.put(clazz.name(), annotation.value().asString());
-                } else {
-                    pathInterfaces.put(clazz.name(), annotation.value().asString());
-                }
-            }
-        }
-        for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
-            for (ClassInfo clazz : index.getAllKnownImplementors(i.getKey())) {
-                if (!Modifier.isAbstract(clazz.flags())) {
-                    if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
-                            clazz.enclosingMethod() == null) {
-                        scannedResources.put(clazz.name(), clazz);
-                        scannedResourcePaths.put(clazz.name(), i.getValue());
-                    }
-                }
-            }
-        }
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
@@ -185,6 +240,8 @@ public class QuarkusRestProcessor {
                 resourceClasses.add(endpoints);
             }
         }
+
+        List<RestClientInterface> clientDefinitions = new ArrayList<>();
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
@@ -519,4 +576,31 @@ public class QuarkusRestProcessor {
         }
         return ret;
     }
+
+    private MethodInfo hasJaxRsCtorParams(ClassInfo classInfo) {
+        List<MethodInfo> methods = classInfo.methods();
+        List<MethodInfo> ctors = new ArrayList<>();
+        for (MethodInfo method : methods) {
+            if (method.name().equals("<init>")) {
+                ctors.add(method);
+            }
+        }
+        if (ctors.size() != 1) { // we only need to deal with a single ctor here
+            return null;
+        }
+        MethodInfo ctor = ctors.get(0);
+        if (ctor.parameters().size() == 0) { // default ctor - we don't need to do anything
+            return null;
+        }
+
+        boolean needsHandling = false;
+        for (DotName dotName : QuarkusRestDotNames.RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING) {
+            if (ctor.hasAnnotation(dotName)) {
+                needsHandling = true;
+                break;
+            }
+        }
+        return needsHandling ? ctor : null;
+    }
+
 }

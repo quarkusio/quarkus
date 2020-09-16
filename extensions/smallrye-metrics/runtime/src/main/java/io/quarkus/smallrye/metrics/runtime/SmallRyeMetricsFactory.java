@@ -102,26 +102,39 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         public Runnable buildTimer(Runnable f) {
             builder.withType(MetricType.SIMPLE_TIMER);
             SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return () -> timer.time(f);
+            return new Runnable() {
+                @Override
+                public void run() {
+                    timer.time(f);
+                }
+            };
         }
 
         @Override
         public <T> Callable<T> buildTimer(Callable<T> f) {
             builder.withType(MetricType.SIMPLE_TIMER);
             SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return () -> timer.time(f);
+            return new Callable<T>() {
+                @Override
+                public T call() throws Exception {
+                    return timer.time(f);
+                }
+            };
         }
 
         @Override
         public <T> Supplier<T> buildTimer(Supplier<T> f) {
             builder.withType(MetricType.SIMPLE_TIMER);
             SimpleTimer timer = registry.simpleTimer(builder.build(), tags.toArray(new Tag[0]));
-            return () -> {
-                SimpleTimer.Context ctx = timer.time();
-                try {
-                    return f.get();
-                } finally {
-                    ctx.stop();
+            return new Supplier<T>() {
+                @Override
+                public T get() {
+                    SimpleTimer.Context ctx = timer.time();
+                    try {
+                        return f.get();
+                    } finally {
+                        ctx.stop();
+                    }
                 }
             };
         }

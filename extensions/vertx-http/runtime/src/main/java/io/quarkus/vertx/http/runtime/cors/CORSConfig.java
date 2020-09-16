@@ -8,7 +8,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
-import io.vertx.core.http.HttpMethod;
 
 @ConfigGroup
 public class CORSConfig {
@@ -34,7 +33,7 @@ public class CORSConfig {
      * default: returns any requested method as valid
      */
     @ConfigItem
-    public Optional<List<HttpMethod>> methods;
+    public Optional<List<String>> methods;
 
     /**
      * HTTP headers allowed for CORS

@@ -176,13 +176,13 @@ following properties will be applied before passing the request on to its actual
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.http.cors.origins||The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not
-set.
-|quarkus.http.cors.methods||The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
-not set.
-|quarkus.http.cors.headers||The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
-not set.
-|quarkus.http.cors.exposed-headers||The comma-separated list of HTTP headers exposed in CORS.
+|quarkus.http.cors.origins|*|The comma-separated list of origins allowed for CORS. The filter allows any origin if this is not set or set to '*'.
+|quarkus.http.cors.methods|*|The comma-separated list of HTTP methods allowed for CORS. The filter allows any method if this is
+not set or set to '*'.
+|quarkus.http.cors.headers|*|The comma-separated list of HTTP headers allowed for CORS. The filter allows any header if this is
+not set or set to '*'.
+|quarkus.http.cors.exposed-headers|*|The comma-separated list of HTTP headers exposed in CORS. The filter allows any headers to be exposed if this is
+not set or set to '*'.
 |quarkus.http.cors.access-control-max-age||The duration (see note below) indicating how long the results of a pre-flight request can be cached.
 This value will be returned in a `Access-Control-Max-Age` response header.
 |quarkus.http.cors.access-control-allow-credentials||Boolean value to tell the browsers to expose the response to front-end JavaScript code

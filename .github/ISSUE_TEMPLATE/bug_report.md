@@ -18,6 +18,11 @@ assignees: ''
 
 
 **To Reproduce**
+
+Link to a small reproducer (preferably a Maven project if the issue is not Gradle-specific).
+
+Or attach an archive containing the reproducer to the issue.
+
 Steps to reproduce the behavior:
 1. 
 2. 

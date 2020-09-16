@@ -66,6 +66,17 @@ You can now test your application.
 
 To contribute, use GitHub Pull Requests, from your **own** fork.
 
+Also, make sure you have set up your Git authorship correctly:
+
+```
+git config --global user.name "Your Full Name"
+git config --global user.email your.email@example.com
+```
+
+If you use different computers to contribute, please make sure the name is the same on all your computers.
+
+We use this information to acknowledge your contributions in release announcements.
+
 ### Code reviews
 
 All submissions, including submissions by project members, need to be reviewed before being merged.

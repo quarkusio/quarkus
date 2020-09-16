@@ -2,9 +2,12 @@ package io.quarkus.qute.runtime.extensions;
 
 import java.util.List;
 
+import javax.enterprise.inject.Vetoed;
+
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateExtension;
 
+@Vetoed // Make sure no bean is created from this class
 @TemplateExtension
 public class CollectionTemplateExtensions {
 

@@ -4,9 +4,12 @@ import static io.quarkus.qute.TemplateExtension.ANY;
 
 import java.util.Map;
 
+import javax.enterprise.inject.Vetoed;
+
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateExtension;
 
+@Vetoed // Make sure no bean is created from this class
 @TemplateExtension
 public class MapTemplateExtensions {
     @SuppressWarnings({ "rawtypes", "unchecked" })

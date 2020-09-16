@@ -19,8 +19,6 @@ package io.quarkus.smallrye.metrics.runtime;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -84,15 +82,18 @@ public class QuarkusJaxRsMetricsFilter implements ContainerRequestFilter {
     private MetricID getMetricID(Class<?> resourceClass, Method resourceMethod) {
         Tag classTag = new Tag("class", resourceClass.getName());
         String methodName = resourceMethod.getName();
-        String encodedParameterNames = Arrays.stream(resourceMethod.getParameterTypes())
-                .map(clazz -> {
-                    if (clazz.isArray()) {
-                        return clazz.getComponentType().getName() + "[]";
-                    } else {
-                        return clazz.getName();
-                    }
-                })
-                .collect(Collectors.joining("_"));
+        StringBuilder sb = new StringBuilder();
+        for (Class<?> parameterType : resourceMethod.getParameterTypes()) {
+            if (sb.length() > 0) {
+                sb.append("_");
+            }
+            if (parameterType.isArray()) {
+                sb.append(parameterType.getComponentType().getName()).append("[]");
+            } else {
+                sb.append(parameterType.getName());
+            }
+        }
+        String encodedParameterNames = sb.toString();
         String methodTagValue = encodedParameterNames.isEmpty() ? methodName : methodName + "_" + encodedParameterNames;
         Tag methodTag = new Tag("method", methodTagValue);
         return new MetricID("REST.request", classTag, methodTag);

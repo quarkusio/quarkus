@@ -49,9 +49,7 @@ public class PanacheMongoRepositoryClassVisitor extends PanacheRepositoryClassVi
                 descriptor,
                 signature,
                 null);
-        for (int i = 0; i < parameters.size(); i++) {
-            mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
-        }
+        AsmUtil.copyParameterNames(mv, method);
         mv.visitFieldInsn(Opcodes.GETSTATIC, daoBinaryName, "operations",
                 typeBundle.operations().descriptor());
         mv.visitCode();

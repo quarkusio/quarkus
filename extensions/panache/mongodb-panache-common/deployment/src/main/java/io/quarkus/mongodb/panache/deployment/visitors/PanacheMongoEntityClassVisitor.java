@@ -56,9 +56,7 @@ public class PanacheMongoEntityClassVisitor extends PanacheEntityClassVisitor<En
                 descriptor,
                 signature,
                 null);
-        for (int i = 0; i < parameters.size(); i++) {
-            mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
-        }
+        AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
             customizer.customize(thisClass, method, mv);

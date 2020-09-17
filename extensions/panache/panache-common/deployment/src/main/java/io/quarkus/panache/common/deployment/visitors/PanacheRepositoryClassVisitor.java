@@ -167,9 +167,7 @@ public abstract class PanacheRepositoryClassVisitor extends ClassVisitor {
                     null,
                     null);
             List<org.jboss.jandex.Type> parameters = method.parameters();
-            for (int i = 0; i < parameters.size(); i++) {
-                mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
-            }
+            AsmUtil.copyParameterNames(mv, method);
             mv.visitCode();
             // this
             mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -229,9 +227,7 @@ public abstract class PanacheRepositoryClassVisitor extends ClassVisitor {
                 descriptor,
                 signature,
                 null);
-        for (int i = 0; i < parameters.size(); i++) {
-            mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
-        }
+        AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         injectModel(mv);
         for (int i = 0; i < parameters.size(); i++) {

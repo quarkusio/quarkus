@@ -112,9 +112,7 @@ public class KotlinGenerator {
                 getDescriptor(method, argMapper), getSignature(method, argMapper), null);
 
         List<Type> parameters = method.parameters();
-        for (int i = 0; i < parameters.size(); i++) {
-            mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
-        }
+        AsmUtil.copyParameterNames(mv, method);
 
         addNullityChecks(mv, parameters);
 

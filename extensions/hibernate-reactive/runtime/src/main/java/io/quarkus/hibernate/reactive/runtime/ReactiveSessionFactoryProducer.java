@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.reactive.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
@@ -13,7 +12,6 @@ import org.hibernate.reactive.stage.Stage;
 
 import io.quarkus.arc.DefaultBean;
 
-@ApplicationScoped
 public class ReactiveSessionFactoryProducer {
 
     @Inject

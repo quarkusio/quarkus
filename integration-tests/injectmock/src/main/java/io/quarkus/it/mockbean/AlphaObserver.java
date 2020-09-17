@@ -9,7 +9,7 @@ import javax.enterprise.event.Observes;
 @ApplicationScoped
 public class AlphaObserver {
 
-    boolean test() {
+    public boolean test() {
         return true;
     }
 

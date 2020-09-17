@@ -17,7 +17,7 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.panache.common.exception.PanacheQueryException;
+import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
 
@@ -119,135 +119,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return params != null ? params.size() : 0;
     }
 
-    private String getEntityName(Class<?> entityClass) {
-        // FIXME: not true?
-        return entityClass.getName();
-    }
-
-    public String createFindQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null) {
-            return "FROM " + getEntityName(entityClass);
-        }
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty()) {
-            return "FROM " + getEntityName(entityClass);
-        }
-
-        if (isNamedQuery(query)) {
-            // we return named query as is
-            return query;
-        }
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
-            return query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            return "FROM " + getEntityName(entityClass) + " " + query;
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    static boolean isNamedQuery(String query) {
-        if (query == null || query.isEmpty()) {
-            return false;
-        }
-        return query.charAt(0) == '#';
-    }
-
-    private String createCountQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ")) {
-            return "SELECT COUNT(*) " + query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            // ignore it
-            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    private String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null) {
-            throw new PanacheQueryException("Query string cannot be null");
-        }
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty()) {
-            throw new PanacheQueryException("Query string cannot be empty");
-        }
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("update ")) {
-            return query;
-        }
-        if (trimmedLc.startsWith("from ")) {
-            return "UPDATE " + query;
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        if (trimmedLc.startsWith("set ")) {
-            return "UPDATE FROM " + getEntityName(entityClass) + " " + query;
-        }
-        return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
-    }
-
-    private String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
-            return "DELETE FROM " + getEntityName(entityClass);
-
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
-            return "DELETE FROM " + getEntityName(entityClass);
-
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ")) {
-            return "DELETE " + query;
-        }
-        if (trimmedLc.startsWith("order by ")) {
-            // ignore it
-            return "DELETE FROM " + getEntityName(entityClass);
-        }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
-            query += " = ?1";
-        }
-        return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
-    }
-
-    public String toOrderBy(Sort sort) {
-        if (sort == null) {
-            return null;
-        }
-        if (sort.getColumns().size() == 0) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder(" ORDER BY ");
-        for (int i = 0; i < sort.getColumns().size(); i++) {
-            Sort.Column column = sort.getColumns().get(i);
-            if (i > 0)
-                sb.append(" , ");
-            sb.append(column.getName());
-            if (column.getDirection() != Sort.Direction.Ascending)
-                sb.append(" DESC");
-        }
-        return sb.toString();
-    }
-
     //
     // Queries
 
@@ -272,15 +143,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String findQuery = createFindQuery(entityClass, query, paramCount(params));
+        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager(entityClass);
         // FIXME: check for duplicate ORDER BY clause?
-        if (isNamedQuery(query)) {
+        if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }
-        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -288,15 +159,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String findQuery = createFindQuery(entityClass, query, paramCount(params));
+        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager(entityClass);
         // FIXME: check for duplicate ORDER BY clause?
-        if (isNamedQuery(query)) {
+        if (PanacheJpaUtil.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
         }
-        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
     public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
@@ -356,15 +227,15 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public PanacheQueryType findAll(Class<?> entityClass) {
-        String query = "FROM " + getEntityName(entityClass);
+        String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         EntityManager em = getEntityManager(entityClass);
         return createPanacheQuery(em, query, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
-        String query = "FROM " + getEntityName(entityClass);
+        String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         EntityManager em = getEntityManager(entityClass);
-        return createPanacheQuery(em, query, toOrderBy(sort), null);
+        return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
     public List<?> listAll(Class<?> entityClass) {
@@ -384,19 +255,22 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long count(Class<?> entityClass) {
-        return (long) getEntityManager(entityClass).createQuery("SELECT COUNT(*) FROM " + getEntityName(entityClass))
+        return (long) getEntityManager(entityClass)
+                .createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
                 .getSingleResult();
     }
 
     public long count(Class<?> entityClass, String query, Object... params) {
         return (long) bindParameters(
-                getEntityManager(entityClass).createQuery(createCountQuery(entityClass, query, paramCount(params))),
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
     public long count(Class<?> entityClass, String query, Map<String, Object> params) {
         return (long) bindParameters(
-                getEntityManager(entityClass).createQuery(createCountQuery(entityClass, query, paramCount(params))),
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
@@ -421,7 +295,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public long deleteAll(Class<?> entityClass) {
-        return (long) getEntityManager(entityClass).createQuery("DELETE FROM " + getEntityName(entityClass)).executeUpdate();
+        return (long) getEntityManager(entityClass).createQuery("DELETE FROM " + PanacheJpaUtil.getEntityName(entityClass))
+                .executeUpdate();
     }
 
     public boolean deleteById(Class<?> entityClass, Object id) {
@@ -437,13 +312,17 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public long delete(Class<?> entityClass, String query, Object... params) {
         return bindParameters(
-                getEntityManager(entityClass).createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
+                params)
                         .executeUpdate();
     }
 
     public long delete(Class<?> entityClass, String query, Map<String, Object> params) {
         return bindParameters(
-                getEntityManager(entityClass).createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
+                getEntityManager(entityClass)
+                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
+                params)
                         .executeUpdate();
     }
 
@@ -487,12 +366,12 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public int executeUpdate(Class<?> entityClass, String query, Object... params) {
-        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
+        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
         return executeUpdate(updateQuery, entityClass, params);
     }
 
     public int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
-        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
+        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
         return executeUpdate(updateQuery, entityClass, params);
     }
 

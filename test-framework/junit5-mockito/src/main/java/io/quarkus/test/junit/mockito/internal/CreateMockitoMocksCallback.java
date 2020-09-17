@@ -10,6 +10,7 @@ import javax.inject.Qualifier;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
 import io.quarkus.test.junit.mockito.InjectMock;
@@ -33,7 +34,14 @@ public class CreateMockitoMocksCallback implements QuarkusTestBeforeAllCallback 
     }
 
     private Object createMockAndSetTestField(Object testInstance, Field field, Object beanInstance) {
-        Object mock = Mockito.mock(beanInstance.getClass());
+        Class<?> beanClass = beanInstance.getClass();
+        // make sure we don't mock proxy classes, especially given that they don't have generics info
+        if (ClientProxy.class.isAssignableFrom(beanClass)) {
+            // and yet some of them appear to have Object as supertype, avoid them
+            if (beanClass.getSuperclass() != Object.class)
+                beanClass = beanClass.getSuperclass();
+        }
+        Object mock = Mockito.mock(beanClass);
         field.setAccessible(true);
         try {
             field.set(testInstance, mock);

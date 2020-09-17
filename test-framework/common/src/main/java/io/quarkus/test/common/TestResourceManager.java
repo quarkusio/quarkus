@@ -249,7 +249,11 @@ public class TestResourceManager implements Closeable {
                     }
                 }
 
-                boolean isParallel = annotation.value("parallel").asBoolean();
+                boolean isParallel = false;
+                AnnotationValue parallelAnnotationValue = annotation.value("parallel");
+                if (parallelAnnotationValue != null) {
+                    isParallel = parallelAnnotationValue.asBoolean();
+                }
 
                 uniqueEntries.add(new TestResourceClassEntry(testResourceClass, args, isParallel));
             } catch (IllegalArgumentException | SecurityException e) {

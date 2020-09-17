@@ -544,6 +544,40 @@ So when you access the `/health/ready` endpoint of your application you will hav
 
 This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
 
+== Multiple Redis Clients
+
+The Redis extension allows you to configure multiple clients.
+Using several clients works the same way as having a single client.
+
+[source,properties]
+----
+quarkus.redis.hosts = localhost:6379
+quarkus.redis.second.hosts = localhost:6379
+----
+
+Notice there's an extra bit in the key (the `second` segment).
+The syntax is as follows: `quarkus.redis.[optional name.][redis configuration property]`.
+If the name is omitted, it configures the default client.
+
+=== Named Redis client Injection
+
+When using multiple clients, you can select the client to inject using the `io.quarkus.redis.client.RedisClientName` qualifier.
+Using the above properties to configure three different clients, you can also inject each one as follows:
+
+[source,java,indent=0]
+----
+@Inject
+RedisClient defaultRedisClient;
+
+@Inject
+@RedisClientName("second")
+RedisClient redisClient2;
+
+@Inject
+@RedisClientName("second")
+ReactiveRedisClient reactiveClient2;
+----
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]

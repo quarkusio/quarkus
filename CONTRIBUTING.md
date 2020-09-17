@@ -48,6 +48,7 @@ Just do the following:
 ```
 git clone git@github.com:quarkusio/quarkus.git
 cd quarkus
+export MAVEN_OPTS="-Xmx1563m"
 ./mvnw -Dquickly
 ```
 
@@ -155,11 +156,13 @@ select the `eclipse.importorder` file as the import order config file.
 
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
+* Set Maven heap to 1.5GB `export MAVEN_OPTS="-Xmx1563m"`
 * Invoke `./mvnw -Dquickly` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
+export MAVEN_OPTS="-Xmx1563m"
 ./mvnw -Dquickly
 # Wait... success!
 ```
@@ -333,7 +336,7 @@ This project is an open source project, please act responsibly, be nice, polite 
 
 * The Maven build fails with `OutOfMemoryException`
 
-The project is large: ensure Maven has at least 1.5GB of heap available: `export MAVEN_OPTS="-Xmx1563m"`.
+Set Maven options to use 1.5GB of heap: `export MAVEN_OPTS="-Xmx1563m"`.
 
 * IntelliJ fails to import Quarkus Maven project with `java.lang.OutOfMemoryError: GC overhead limit exceeded` 
 

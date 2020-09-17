@@ -100,7 +100,7 @@ public final class QuarkusRestDotNames {
         @Override
         public boolean test(DotName name) {
             return QuarkusRestDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name)
-                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(name);
+                    || ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(name);
         }
     }
 

@@ -34,7 +34,7 @@ public class QuarkusRestResponse extends Response {
     int status;
     String reasonPhrase;
     Object entity;
-    MultivaluedHashMap<String, Object> headers;
+    MultivaluedMap<String, Object> headers;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
     HttpClientResponse vertxClientResponse;

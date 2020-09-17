@@ -27,6 +27,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.quarkus.rest.runtime.util.HeaderHelper;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -78,7 +79,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     int status = -1;
     String reasonPhrase;
     Object entity;
-    MultivaluedMap<String, Object> metadata = new MultivaluedHashMap<>();
+    MultivaluedMap<String, Object> metadata = new CaseInsensitiveMap<>();
     Annotation[] entityAnnotations;
     HttpClientResponse vertxClientResponse;
 
@@ -94,7 +95,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
             response.status = status;
         }
         response.reasonPhrase = reasonPhrase;
-        response.headers = new MultivaluedHashMap<>();
+        response.headers = new CaseInsensitiveMap<>();
         response.headers.putAll(metadata);
         response.vertxClientResponse = vertxClientResponse;
         return response;

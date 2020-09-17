@@ -13,12 +13,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
@@ -184,7 +182,8 @@ public class TestResourceManager implements Closeable {
             }
         }
 
-        for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader.load(QuarkusTestResourceLifecycleManager.class,
+        for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader.load(
+                QuarkusTestResourceLifecycleManager.class,
                 Thread.currentThread().getContextClassLoader())) {
             TestResourceEntry testResourceEntry = new TestResourceEntry(quarkusTestResourceLifecycleManager);
             this.sequentialTestResourceEntries.add(testResourceEntry);
@@ -217,12 +216,14 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
+    private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,
+            List<TestResourceClassEntry> additionalTestResources) {
         IndexView index = TestClassIndexer.readIndex(testClass);
         Set<TestResourceClassEntry> uniqueEntries = new HashSet<>();
         for (AnnotationInstance annotation : findQuarkusTestResourceInstances(index)) {
             try {
-                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = loadTestResourceClassFromTCCL(annotation.value().asString());
+                Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = loadTestResourceClassFromTCCL(
+                        annotation.value().asString());
 
                 AnnotationValue argsAnnotationValue = annotation.value("initArgs");
                 Map<String, String> args;
@@ -261,7 +262,8 @@ public class TestResourceManager implements Closeable {
     private Collection<AnnotationInstance> findQuarkusTestResourceInstances(IndexView index) {
         Set<AnnotationInstance> testResourceAnnotations = new HashSet<>(
                 index.getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName())));
-        for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(QuarkusTestResource.List.class.getName()))) {
+        for (AnnotationInstance annotation : index
+                .getAnnotations(DotName.createSimple(QuarkusTestResource.List.class.getName()))) {
             Collections.addAll(testResourceAnnotations, annotation.value().asNestedArray());
         }
         return testResourceAnnotations;
@@ -273,7 +275,8 @@ public class TestResourceManager implements Closeable {
         private Map<String, String> args;
         private boolean parallel;
 
-        public TestResourceClassEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args, boolean parallel) {
+        public TestResourceClassEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args,
+                boolean parallel) {
             this.clazz = clazz;
             this.args = args;
             this.parallel = parallel;

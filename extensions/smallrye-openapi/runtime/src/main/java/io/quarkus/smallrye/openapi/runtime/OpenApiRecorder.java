@@ -7,11 +7,11 @@ import io.quarkus.runtime.annotations.Recorder;
 public class OpenApiRecorder {
 
     public void setupClDevMode(ShutdownContext shutdownContext) {
-        OpenApiHandler.classLoader = Thread.currentThread().getContextClassLoader();
+        OpenApiConstants.classLoader = Thread.currentThread().getContextClassLoader();
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
             public void run() {
-                OpenApiHandler.classLoader = null;
+                OpenApiConstants.classLoader = null;
             }
         });
     }

@@ -331,4 +331,17 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.with().header("h2", "v2").get("/ctor-header")
                 .then().body(Matchers.is(emptyString()));
     }
+
+    @Test
+    public void testFormMap() {
+        RestAssured
+                .given()
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .formParam("f1", "v1")
+                .formParam("f2", "v2")
+                .post("/simple/form-map")
+                .then()
+                .contentType("text/plain")
+                .body(Matchers.equalTo("f1=v1,f2=v2"));
+    }
 }

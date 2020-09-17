@@ -1,5 +1,7 @@
 package io.quarkus.rest.test.simple;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -26,6 +28,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Providers;
@@ -332,5 +335,22 @@ public class SimpleQuarkusRestResource {
                 .header("class-name", resourceInfo.getResourceClass().getSimpleName())
                 .header("method-name", headers.getHeaderString("method-name"))
                 .build();
+    }
+
+    @Path("form-map")
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public String map(MultivaluedMap<String, String> map) {
+        StringBuilder sb = new StringBuilder();
+        boolean isFirst = true;
+        for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+            if (!isFirst) {
+                sb.append(",");
+            }
+            sb.append(entry.getKey()).append("=").append(entry.getValue().get(0));
+            isFirst = false;
+        }
+        return sb.toString();
     }
 }

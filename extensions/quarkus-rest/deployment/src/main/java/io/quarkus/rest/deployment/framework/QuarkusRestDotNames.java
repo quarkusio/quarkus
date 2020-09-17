@@ -28,6 +28,7 @@ import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -84,6 +85,7 @@ public final class QuarkusRestDotNames {
     public static final DotName LIST = DotName.createSimple(List.class.getName());
     public static final DotName SET = DotName.createSimple(Set.class.getName());
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
+    public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
     public static final DotName STRING = DotName.createSimple(String.class.getName());
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections

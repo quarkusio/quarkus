@@ -58,6 +58,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.rest.deployment.framework.AdditionalReaders;
 import io.quarkus.rest.deployment.framework.EndpointIndexer;
 import io.quarkus.rest.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.runtime.QuarkusRestConfig;
@@ -234,10 +235,11 @@ public class QuarkusRestProcessor {
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
+        AdditionalReaders additionalReaders = new AdditionalReaders();
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config);
+                    scannedResourcePaths, config, additionalReaders);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -250,7 +252,7 @@ public class QuarkusRestProcessor {
             //so we generate client proxies for them
             clientDefinitions.add(EndpointIndexer.createClientProxy(index, clazz,
                     generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    i.getValue(), config));
+                    i.getValue(), config, additionalReaders));
         }
         Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
                 clientDefinitions, generatedClassBuildItemBuildProducer);
@@ -276,7 +278,7 @@ public class QuarkusRestProcessor {
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config);
+                    scannedResourcePaths, config, additionalReaders);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }
@@ -437,6 +439,12 @@ public class QuarkusRestProcessor {
                 MediaType.WILDCARD);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
+        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
+                MediaType.WILDCARD);
+        for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
+            registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
+                    beanContainerBuildItem.getValue(), additionalReader.getMediaType());
+        }
 
         return new FilterBuildItem(
                 recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,

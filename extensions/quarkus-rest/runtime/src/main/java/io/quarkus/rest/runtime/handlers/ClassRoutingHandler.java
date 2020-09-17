@@ -1,15 +1,20 @@
 package io.quarkus.rest.runtime.handlers;
 
+import java.util.Collections;
 import java.util.Map;
 
 import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.NotSupportedException;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
+import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
@@ -67,6 +72,19 @@ public class ClassRoutingHandler implements RestHandler {
             }
             throw new NotFoundException();
         }
+
+        // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
+        if (target.value.getConsumes() != null) {
+            String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
+            if (contentType != null) {
+                if (MediaTypeHelper.getBestMatch(
+                        Collections.singletonList(target.value.getConsumes()),
+                        Collections.singletonList(MediaType.valueOf(contentType))) == null) {
+                    throw new NotSupportedException();
+                }
+            }
+        }
+
         requestContext.restart(target.value);
         requestContext.setRemaining(target.remaining);
         for (int i = 0; i < target.pathParamValues.length; ++i) {

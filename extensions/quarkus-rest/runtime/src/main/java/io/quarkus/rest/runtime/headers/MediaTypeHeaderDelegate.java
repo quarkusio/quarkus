@@ -10,12 +10,12 @@ import javax.ws.rs.ext.RuntimeDelegate;
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
-public class MediaTypeHeaderDelegate<T> implements RuntimeDelegate.HeaderDelegate<T> {
+public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<MediaType> {
     public static final MediaTypeHeaderDelegate INSTANCE = new MediaTypeHeaderDelegate();
-    private static final int MAX_MT_CACHE_SIZE = Integer.getInteger("org.jboss.resteasy.max_mediatype_cache_size", 200);
+    private static final int MAX_MT_CACHE_SIZE = 200;
     private static final char[] quotedChars = "()<>@,;:\\\"/[]?= \t\r\n".toCharArray();
-    private static Map<String, MediaType> map = new ConcurrentHashMap<String, MediaType>();
-    private static Map<MediaType, String> reverseMap = new ConcurrentHashMap<MediaType, String>();
+    private static final Map<String, MediaType> map = new ConcurrentHashMap<String, MediaType>();
+    private static final Map<MediaType, String> reverseMap = new ConcurrentHashMap<MediaType, String>();
 
     protected static boolean isValid(String str) {
         if (str == null || str.length() == 0)
@@ -117,16 +117,16 @@ public class MediaTypeHeaderDelegate<T> implements RuntimeDelegate.HeaderDelegat
         return false;
     }
 
-    public T fromString(String type) throws IllegalArgumentException {
+    public MediaType fromString(String type) throws IllegalArgumentException {
         if (type == null)
             throw new IllegalArgumentException("Media type was null");
-        return (T) parse(type);
+        return parse(type);
     }
 
-    public String toString(Object o) {
+    public String toString(MediaType o) {
         if (o == null)
             throw new IllegalArgumentException("Param was null");
-        MediaType type = (MediaType) o;
+        MediaType type = o;
         String result = reverseMap.get(type);
         if (result == null) {
             result = internalToString(type);

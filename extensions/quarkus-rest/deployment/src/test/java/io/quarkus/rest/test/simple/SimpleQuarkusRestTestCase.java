@@ -117,7 +117,7 @@ public class SimpleQuarkusRestTestCase {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
-        RestAssured.with().body(person).post("/simple/person")
+        RestAssured.with().body(person).contentType("application/json; charset=utf-8").post("/simple/person")
                 .then().body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
     }
 
@@ -131,7 +131,7 @@ public class SimpleQuarkusRestTestCase {
         Person person = new Person();
         person.setFirst(longString);
         person.setLast(longString);
-        RestAssured.with().body(person).post("/simple/person-large")
+        RestAssured.with().body(person).contentType("application/json; charset=utf-8").post("/simple/person-large")
                 .then().body("first", Matchers.equalTo(longString)).body("last", Matchers.equalTo(longString));
     }
 
@@ -146,16 +146,16 @@ public class SimpleQuarkusRestTestCase {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
-        RestAssured.with().body(person).post("/simple/person-validated")
+        RestAssured.with().body(person).contentType("application/json").post("/simple/person-validated")
                 .then().statusCode(200).body("first", Matchers.equalTo("Bob")).body("last", Matchers.equalTo("Builder"));
 
-        RestAssured.with().body(person).post("/simple/person-invalid-result")
+        RestAssured.with().body(person).contentType("application/json").post("/simple/person-invalid-result")
                 .then()
                 .statusCode(500)
                 .contentType("application/json");
 
         person.setLast(null);
-        RestAssured.with().body(person).post("/simple/person-validated")
+        RestAssured.with().body(person).contentType("application/json").post("/simple/person-validated")
                 .then()
                 .statusCode(400)
                 .contentType("application/json");

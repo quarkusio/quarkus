@@ -271,7 +271,7 @@ public class QuarkusRestResponse extends Response {
 
     private String headerToString(Object value) {
         if (value instanceof MediaType) {
-            return MediaTypeHeaderDelegate.INSTANCE.toString(value);
+            return MediaTypeHeaderDelegate.INSTANCE.toString((MediaType) value);
         } else {
             // FIXME: serialisation support
             return value.toString();

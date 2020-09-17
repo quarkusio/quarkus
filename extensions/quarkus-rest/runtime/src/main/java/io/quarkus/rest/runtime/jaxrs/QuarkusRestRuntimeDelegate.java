@@ -49,7 +49,7 @@ public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
     @Override
     public <T> HeaderDelegate<T> createHeaderDelegate(Class<T> type) throws IllegalArgumentException {
         if (type.equals(MediaType.class)) {
-            return MediaTypeHeaderDelegate.INSTANCE;
+            return (HeaderDelegate<T>) MediaTypeHeaderDelegate.INSTANCE;
         } else if (type.equals(Date.class)) {
             return (HeaderDelegate<T>) DateDelegate.INSTANCE;
         } else if (type.equals(CacheControl.class)) {

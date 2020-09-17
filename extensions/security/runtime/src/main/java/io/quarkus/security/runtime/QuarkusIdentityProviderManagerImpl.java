@@ -37,7 +37,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
         @Override
         public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-            return Uni.createFrom().deferred(new Supplier<Uni<SecurityIdentity>>() {
+            return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
                 @Override
                 public Uni<SecurityIdentity> get() {
                     if (BlockingOperationControl.isBlockingAllowed()) {
@@ -137,7 +137,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
         IdentityProvider<T> current = providers.get(pos);
         Uni<SecurityIdentity> cs = current.authenticate(request, context)
-                .onItem().transformToUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
+                .onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {

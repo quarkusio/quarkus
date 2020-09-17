@@ -13,6 +13,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SE
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
+import static javax.ws.rs.core.MediaType.WILDCARD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -34,7 +35,6 @@ import javax.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -67,6 +67,7 @@ import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.RestClientInterface;
+import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
@@ -74,6 +75,7 @@ import io.quarkus.runtime.util.HashUtil;
 public class EndpointIndexer {
 
     private static final Map<String, String> primitiveTypes;
+    private static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
 
@@ -343,6 +345,9 @@ public class EndpointIndexer {
                     }
                 } else {
                     elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
+                    if (paramType.name().equals(BYTE_ARRAY_DOT_NAME)) {
+                        additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
+                    }
                     if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
                         converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                                 existingEndpoints, info);
@@ -665,13 +670,7 @@ public class EndpointIndexer {
             case PARAMETERIZED_TYPE:
                 return indexType.asParameterizedType().name().toString();
             case ARRAY:
-                ArrayType arrayType = indexType.asArrayType();
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < arrayType.dimensions(); ++i) {
-                    sb.append("[");
-                }
-                sb.append(toClassName(arrayType.component(), currentClass, actualEndpointClass, indexView));
-                return sb.toString();
+                return indexType.asArrayType().name().toString();
             case TYPE_VARIABLE:
                 TypeVariable typeVariable = indexType.asTypeVariable();
                 if (typeVariable.bounds().isEmpty()) {

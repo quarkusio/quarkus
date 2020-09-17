@@ -62,7 +62,8 @@ import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
-import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
+import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
+import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -162,8 +163,10 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(OpenApiDocumentProducer.class);
+    void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(OpenApiDocumentService.class)
+                .setUnremovable().build());
     }
 
     @BuildStep
@@ -287,7 +290,7 @@ public class SmallRyeOpenApiProcessor {
         OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems);
         boolean shouldStore = openApiConfig.storeSchemaDirectory.isPresent();
         for (Format format : Format.values()) {
-            String name = OpenApiHandler.BASE_NAME + format;
+            String name = OpenApiConstants.BASE_NAME + format;
             byte[] schemaDocument = OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8);
             resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name, schemaDocument));
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
@@ -459,7 +462,7 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    public OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
+    private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);

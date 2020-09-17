@@ -49,6 +49,14 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testSystemPropertyWithSpaces() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-prop-with-spaces");
+        runAndCheck("-Dgreeting=\"1 2 3\"");
+        final String greeting = DevModeTestUtils.getHttpResponse("/app/hello/greeting");
+        assertThat(greeting).isEqualTo("1 2 3");
+    }
+
+    @Test
     public void testThatClassAppCanRun() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run");
         runAndCheck();

@@ -77,6 +77,15 @@ public class SimpleQuarkusRestTestCase {
     }
 
     @Test
+    public void test405() {
+        RestAssured.put("/ctor-query")
+                .then().statusCode(405);
+
+        RestAssured.put("/simple/person")
+                .then().statusCode(405);
+    }
+
+    @Test
     public void testInjection() {
         RestAssured.get("/simple/hello")
                 .then().body(Matchers.equalTo("Hello"));

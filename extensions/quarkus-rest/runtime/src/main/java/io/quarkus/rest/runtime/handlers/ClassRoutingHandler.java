@@ -2,9 +2,12 @@ package io.quarkus.rest.runtime.handlers;
 
 import java.util.Map;
 
+import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.vertx.core.http.HttpMethod;
@@ -34,13 +37,34 @@ public class ClassRoutingHandler implements RestHandler {
                     return;
                 }
                 if (mapper == null) {
+                    // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+                    String remaining = getRemaining(requestContext);
+                    for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
+                        if (existingMapper.map(remaining) != null) {
+                            throw new NotAllowedException(
+                                    new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                        }
+                    }
                     throw new NotFoundException();
                 }
             }
         }
-        RequestMapper.RequestMatch<RuntimeResource> target = mapper
-                .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
+        String remaining = getRemaining(requestContext);
+        RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(remaining);
         if (target == null) {
+            // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+            for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : mappers.entrySet()) {
+                if (entry.getKey() == null) {
+                    continue;
+                }
+                if (entry.getKey().equals(requestContext.getMethod())) {
+                    continue;
+                }
+                if (entry.getValue().map(remaining) != null) {
+                    throw new NotAllowedException(
+                            new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                }
+            }
             throw new NotFoundException();
         }
         requestContext.restart(target.value);
@@ -52,5 +76,9 @@ public class ClassRoutingHandler implements RestHandler {
             }
             requestContext.setPathParamValue(i + parameterOffset, pathParamValue);
         }
+    }
+
+    private String getRemaining(QuarkusRestRequestContext requestContext) {
+        return requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining();
     }
 }

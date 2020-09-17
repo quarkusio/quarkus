@@ -4,7 +4,6 @@ import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.kubernetes.annotation.Protocol;
 import io.dekorate.kubernetes.config.Port;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
-import io.dekorate.kubernetes.decorator.ContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 
@@ -31,6 +30,6 @@ class AddContainerPortDecorator extends Decorator<ContainerBuilder> {
     }
 
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, ContainerDecorator.class, AddSidecarDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class };
     }
 }

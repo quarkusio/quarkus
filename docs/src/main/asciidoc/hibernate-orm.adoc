@@ -679,6 +679,13 @@ applications perform better.
 Typically you would need to adapt your build scripts to include the Hibernate Enhancement plugins; in Quarkus this is
 not necessary as the enhancement step is integrated in the build and analysis of the Quarkus application.
 
+[WARNING]
+====
+Due to the usage of enhancement, using the `clone()` method on entities is currently not supported
+as it will also clone some enhancement-specific fields that are specific to the entity.
+
+This limitation might be removed in the future.
+====
 
 === Automatic integration
 

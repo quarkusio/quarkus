@@ -164,7 +164,7 @@ Your extension is a multi-module project. So let's start by checking out the par
         <dependencies>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom-deployment</artifactId> #<2>
+                <artifactId>quarkus-bom</artifactId> #<2>
                 <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -186,7 +186,7 @@ Your extension is a multi-module project. So let's start by checking out the par
 ----
 
 <1> Your extension declares 2 sub-modules `deployment` and `runtime`.
-<2> The `quarkus-bom-deployment` aligns your dependencies with those used by Quarkus during the augmentation phase.
+<2> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
 <3> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 
 === The Deployment module
@@ -356,7 +356,7 @@ To do so, our extension will deploy, in the user application, a Servlet exposing
 The `runtime` module is where you develop the feature you want to propose to your users, so it's time to create our Web Servlet.
 
 To use Servlets in your applications you need to have a Servlet Container such as http://undertow.io[Undertow].
-Luckily, `quarkus-bom-deployment` imported by our parent `pom.xml` already includes the Undertow Quarkus extension.
+Luckily, `quarkus-bom` imported by our parent `pom.xml` already includes the Undertow Quarkus extension.
 All we need to do is add
 [source, xml]
 ----

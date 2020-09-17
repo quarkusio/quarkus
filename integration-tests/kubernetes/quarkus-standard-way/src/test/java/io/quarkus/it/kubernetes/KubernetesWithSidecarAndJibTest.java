@@ -70,9 +70,8 @@ public class KubernetesWithSidecarAndJibTest {
                     assertThat(c.getArgs()).isEmpty();
                     assertThat(c.getWorkingDir()).isNull();
                     assertThat(c.getVolumeMounts()).isEmpty();
-                    assertThat(c.getPorts()).singleElement().satisfies(p -> {
-                        assertThat(p.getContainerPort()).isEqualTo(8080);
-                    });
+                    assertThat(c.getPorts()).singleElement().satisfies(p -> assertThat(p.getContainerPort()).isEqualTo(8080));
+                    assertThat(c.getEnv()).allSatisfy(e -> assertThat(e.getName()).isNotEqualToIgnoringCase("foo"));
                 });
     }
 
@@ -90,6 +89,10 @@ public class KubernetesWithSidecarAndJibTest {
                     });
                     assertThat(c.getPorts()).singleElement().satisfies(p -> {
                         assertThat(p.getContainerPort()).isEqualTo(3000);
+                    });
+                    assertThat(c.getEnv()).singleElement().satisfies(e -> {
+                        assertThat(e.getName()).isEqualTo("FOO");
+                        assertThat(e.getValue()).isEqualTo("bar");
                     });
                 });
     }

@@ -28,7 +28,7 @@ public class RedisConfig {
     /**
      * Configures additional Redis client connections.
      * <p>
-     * Each client have a unique identifier which must be identified to select the right connection.
+     * Each client has a unique identifier which must be identified to select the right connection.
      * For example:
      * <p>
      *
@@ -37,9 +37,8 @@ public class RedisConfig {
      * quarkus.redis.client2.hosts = redis://localhost:6380
      * </pre>
      * <p>
-     * And then use the {@link RedisClientName} to select the {@link RedisClient} or
-     * {@link io.quarkus.redis.client.reactive.ReactiveRedisClient}
-     * we are going to use.
+     * And then use the {@link RedisClientName} annotation to select the {@link RedisClient} or
+     * {@link io.quarkus.redis.client.reactive.ReactiveRedisClient}.
      * <p>
      * 
      * <pre>

@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * Marker annotation to select the redis client
+ * Marker annotation to select the Redis client.
  *
  * For example, if the Redis connection is configured like so in {@code application.properties}:
  *
@@ -32,9 +32,7 @@ import javax.inject.Qualifier;
 @Qualifier
 public @interface RedisClientName {
     /**
-     * Specify the cluster name of the connection.
-     *
-     * @return the value
+     * The Redis client name.
      */
     String value() default "";
 }

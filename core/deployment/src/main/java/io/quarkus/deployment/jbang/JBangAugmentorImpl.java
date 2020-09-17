@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IDEDevModeMain;
@@ -77,6 +78,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         });
         builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());
         builder.addFinal(GeneratedClassBuildItem.class);
+        builder.addFinal(MainClassBuildItem.class);
         builder.addFinal(GeneratedResourceBuildItem.class);
         builder.addFinal(TransformedClassesBuildItem.class);
         boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"));
@@ -112,6 +114,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             List javaargs = new ArrayList<String>();
             javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             resultMap.put("java-args", javaargs);
+            resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
             if (nativeRequested) {
                 resultMap.put("native-image", buildResult.consume(NativeImageBuildItem.class).getPath());
             }

@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 
 import javax.annotation.Priority;
 import javax.enterprise.inject.Vetoed;
+import javax.json.JsonObject;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -87,6 +88,11 @@ public final class QuarkusRestDotNames {
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
     public static final DotName STRING = DotName.createSimple(String.class.getName());
+    public static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
+
+    public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(javax.json.JsonObject.class.getName());
+    public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(javax.json.JsonArray.class.getName());
+    public static final DotName JSONP_JSON_STRUCTURE = DotName.createSimple(javax.json.JsonStructure.class.getName());
 
     public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
             .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));

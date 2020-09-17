@@ -88,10 +88,10 @@ import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
-import io.quarkus.rest.runtime.providers.serialisers.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
+import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;

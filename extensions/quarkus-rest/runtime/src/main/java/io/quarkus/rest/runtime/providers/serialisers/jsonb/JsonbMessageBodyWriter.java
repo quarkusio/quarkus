@@ -1,4 +1,4 @@
-package io.quarkus.rest.runtime.providers.serialisers;
+package io.quarkus.rest.runtime.providers.serialisers.jsonb;
 
 import java.io.IOException;
 import java.io.OutputStream;

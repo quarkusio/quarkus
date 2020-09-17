@@ -13,6 +13,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SE
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
 import java.lang.reflect.Modifier;
@@ -69,13 +70,15 @@ import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonArrayReader;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonObjectReader;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonStructureReader;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
 
 public class EndpointIndexer {
 
     private static final Map<String, String> primitiveTypes;
-    private static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
 
@@ -345,9 +348,17 @@ public class EndpointIndexer {
                     }
                 } else {
                     elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
-                    if (paramType.name().equals(BYTE_ARRAY_DOT_NAME)) {
+
+                    if (paramType.name().equals(QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME)) {
                         additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
+                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_OBJECT)) {
+                        additionalReaders.add(JsonObjectReader.class, APPLICATION_JSON, javax.json.JsonObject.class);
+                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_ARRAY)) {
+                        additionalReaders.add(JsonArrayReader.class, APPLICATION_JSON, javax.json.JsonArray.class);
+                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_STRUCTURE)) {
+                        additionalReaders.add(JsonStructureReader.class, APPLICATION_JSON, javax.json.JsonStructure.class);
                     }
+
                     if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
                         converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                                 existingEndpoints, info);

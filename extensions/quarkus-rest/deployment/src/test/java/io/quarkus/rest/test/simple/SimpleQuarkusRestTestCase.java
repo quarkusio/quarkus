@@ -345,4 +345,13 @@ public class SimpleQuarkusRestTestCase {
                 .contentType("application/x-www-form-urlencoded")
                 .body(Matchers.equalTo("f1=v1&f2=v2"));
     }
+
+    @Test
+    public void testJsonp() {
+        RestAssured.with().body("{\"k\": \"v\"}").contentType("application/json; charset=utf-8").post("/simple/jsonp-object")
+                .then().statusCode(200).body(Matchers.equalTo("v"));
+
+        RestAssured.with().body("[{}, {}]").contentType("application/json").post("/simple/jsonp-array")
+                .then().statusCode(200).body(Matchers.equalTo("2"));
+    }
 }

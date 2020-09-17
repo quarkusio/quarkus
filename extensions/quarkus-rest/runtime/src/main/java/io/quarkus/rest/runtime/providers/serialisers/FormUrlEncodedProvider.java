@@ -40,15 +40,13 @@ import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
 @ConstrainedTo(RuntimeType.CLIENT)
 public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>, QuarkusRestMessageBodyWriter<MultivaluedMap> {
 
-    public static final String UTF8_CHARSET = StandardCharsets.UTF_8.name();
-
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
     }
 
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        String charset = charsetFromMediaType(mediaType);
+        String charset = CharsetUtil.charsetFromMediaType(mediaType);
         return Encode.decode(parseForm(entityStream, charset), charset);
     }
 
@@ -96,7 +94,7 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public void writeResponse(MultivaluedMap o, QuarkusRestRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
-            context.getContext().response().end(multiValuedMapToString(o, UTF8_CHARSET));
+            context.getContext().response().end(multiValuedMapToString(o, CharsetUtil.UTF8_CHARSET));
         } catch (UnsupportedEncodingException e) {
             throw new WebApplicationException(e);
         }
@@ -111,19 +109,8 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public void writeTo(MultivaluedMap multivaluedMap, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        String chartSet = charsetFromMediaType(mediaType);
+        String chartSet = CharsetUtil.charsetFromMediaType(mediaType);
         entityStream.write(multiValuedMapToString(multivaluedMap, chartSet).getBytes(chartSet));
-    }
-
-    private String charsetFromMediaType(MediaType mediaType) {
-        if (mediaType == null) {
-            return UTF8_CHARSET;
-        }
-        String charset = mediaType.getParameters().get(MediaType.CHARSET_PARAMETER);
-        if (charset != null) {
-            return charset;
-        }
-        return UTF8_CHARSET;
     }
 
     private String multiValuedMapToString(MultivaluedMap data, String charset) throws UnsupportedEncodingException {

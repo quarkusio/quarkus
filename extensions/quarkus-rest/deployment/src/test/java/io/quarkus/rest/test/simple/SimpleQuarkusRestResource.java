@@ -4,6 +4,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -341,5 +343,21 @@ public class SimpleQuarkusRestResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public MultivaluedMap<String, String> map(MultivaluedMap<String, String> map) {
         return map;
+    }
+
+    @Path("jsonp-object")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String jsonpObject(JsonObject jsonbObject) {
+        return jsonbObject.getString("k");
+    }
+
+    @Path("jsonp-array")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Integer jsonpArray(JsonArray jsonArray) {
+        return jsonArray.size();
     }
 }

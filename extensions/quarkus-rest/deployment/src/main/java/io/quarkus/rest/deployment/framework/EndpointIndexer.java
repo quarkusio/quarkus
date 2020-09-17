@@ -101,12 +101,11 @@ public class EndpointIndexer {
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
+            AdditionalReaders additionalReaders) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                    additionalWriters);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -135,11 +134,10 @@ public class EndpointIndexer {
     public static RestClientInterface createClientProxy(IndexView index, ClassInfo classInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
+            AdditionalReaders additionalReaders) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                    additionalWriters);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -164,8 +162,7 @@ public class EndpointIndexer {
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
-            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
-            AdditionalWriters additionalWriters) {
+            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
@@ -193,7 +190,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders, additionalWriters);
+                            config, additionalReaders);
 
                     ret.add(method);
                 }
@@ -219,7 +216,7 @@ public class EndpointIndexer {
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders, additionalWriters);
+                            existingConverters, config, additionalReaders);
                     ret.add(method);
                 }
             }
@@ -230,8 +227,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                        additionalWriters));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -239,8 +235,7 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                        additionalWriters));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
             }
         }
         return ret;
@@ -251,7 +246,7 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
+            AdditionalReaders additionalReaders) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -337,14 +332,14 @@ public class EndpointIndexer {
                         converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                                 existingEndpoints, info);
                         converter = new SortedSetConverter.SortedSetSupplier(converter);
-                    } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)
-                            && consumesUrlEncodedForm(consumes)) {
+                    } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
                         elementType = pt.name().toString();
                         single = true;
                         converter = null;
                         additionalReaders.add(FormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED, MultivaluedMap.class);
                     } else {
-                        throw new RuntimeException("Invalid parameter type " + pt);
+                        throw new RuntimeException("Invalid parameter type '" + pt + "' used on method '" + info.name()
+                                + "' of class '" + info.declaringClass().name().toString() + "'");
                     }
                 } else {
                     elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
@@ -460,18 +455,6 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
-    }
-
-    private static boolean consumesUrlEncodedForm(String[] consumes) {
-        if ((consumes == null) || consumes.length == 0) {
-            return false;
-        }
-        for (String consume : consumes) {
-            if (consume.startsWith(APPLICATION_FORM_URLENCODED)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static AnnotationInstance getInheritableAnnotation(MethodInfo info, DotName name) {

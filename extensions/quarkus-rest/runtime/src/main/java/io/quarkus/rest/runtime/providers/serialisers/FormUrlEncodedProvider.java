@@ -116,11 +116,14 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     }
 
     private String charsetFromMediaType(MediaType mediaType) {
-        String charset = mediaType.getParameters().get(MediaType.CHARSET_PARAMETER);
-        if (charset == null) {
-            charset = StandardCharsets.UTF_8.name();
+        if (mediaType == null) {
+            return UTF8_CHARSET;
         }
-        return charset;
+        String charset = mediaType.getParameters().get(MediaType.CHARSET_PARAMETER);
+        if (charset != null) {
+            return charset;
+        }
+        return UTF8_CHARSET;
     }
 
     private String multiValuedMapToString(MultivaluedMap data, String charset) throws UnsupportedEncodingException {

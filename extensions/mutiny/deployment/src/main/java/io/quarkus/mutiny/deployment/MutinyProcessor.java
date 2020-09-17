@@ -23,4 +23,10 @@ public class MutinyProcessor {
         ExecutorService executor = executorBuildItem.getExecutorProxy();
         recorder.configureMutinyInfrastructure(executor);
     }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void defineDroppedExceptionHandler(ExecutorBuildItem executorBuildItem, MutinyInfrastructure recorder) {
+        recorder.configureDroppedExceptionHandler();
+    }
 }

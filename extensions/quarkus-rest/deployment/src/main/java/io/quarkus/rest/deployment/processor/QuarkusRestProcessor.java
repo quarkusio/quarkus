@@ -164,8 +164,10 @@ public class QuarkusRestProcessor {
                 if (!Modifier.isAbstract(clazz.flags())) {
                     if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
                             clazz.enclosingMethod() == null) {
-                        scannedResources.put(clazz.name(), clazz);
-                        scannedResourcePaths.put(clazz.name(), i.getValue());
+                        if (!scannedResources.containsKey(clazz.name())) {
+                            scannedResources.put(clazz.name(), clazz);
+                            scannedResourcePaths.put(clazz.name(), i.getValue());
+                        }
                     }
                 }
             }

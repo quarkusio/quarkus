@@ -3,7 +3,6 @@ package io.quarkus.kubernetes.deployment;
 import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.kubernetes.config.Env;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
-import io.dekorate.kubernetes.decorator.ContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 
@@ -25,6 +24,6 @@ public class AddEnvVarDecorator extends Decorator<ContainerBuilder> {
     }
 
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, ContainerDecorator.class, AddSidecarDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class };
     }
 }

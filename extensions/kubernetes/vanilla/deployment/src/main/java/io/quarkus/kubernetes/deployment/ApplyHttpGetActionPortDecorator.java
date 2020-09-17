@@ -6,7 +6,6 @@ import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
-import io.dekorate.kubernetes.decorator.ContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 
@@ -31,7 +30,7 @@ public class ApplyHttpGetActionPortDecorator extends ApplicationContainerDecorat
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class, ContainerDecorator.class,
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class,
                 AddLivenessProbeDecorator.class, AddReadinessProbeDecorator.class };
     }
 }

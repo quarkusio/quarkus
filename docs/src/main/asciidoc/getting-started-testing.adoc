@@ -159,6 +159,16 @@ quarkus.http.test-ssl-port=8446
 Quarkus also provides RestAssured integration that updates the default port used by RestAssured before the tests are run,
 so no additional configuration should be required.
 
+=== Controlling HTTP interaction timeout
+
+When using REST Assured in your test, the connection and response timeouts are set to 30 seconds.
+You can override this setting with the `quarkus.http.test-timeout` property:
+
+[source]
+----
+quarkus.http.test-timeout=10s
+----
+
 === Injecting a URI
 
 It is also possible to directly inject the URL into the test which can make is easy to use a different client. This is

@@ -1,7 +1,5 @@
 package io.quarkus.rest.test.simple;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -339,18 +337,9 @@ public class SimpleQuarkusRestResource {
 
     @Path("form-map")
     @POST
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.APPLICATION_FORM_URLENCODED)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public String map(MultivaluedMap<String, String> map) {
-        StringBuilder sb = new StringBuilder();
-        boolean isFirst = true;
-        for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-            if (!isFirst) {
-                sb.append(",");
-            }
-            sb.append(entry.getKey()).append("=").append(entry.getValue().get(0));
-            isFirst = false;
-        }
-        return sb.toString();
+    public MultivaluedMap<String, String> map(MultivaluedMap<String, String> map) {
+        return map;
     }
 }

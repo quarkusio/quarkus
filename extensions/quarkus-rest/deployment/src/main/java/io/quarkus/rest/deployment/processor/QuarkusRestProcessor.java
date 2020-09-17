@@ -19,6 +19,7 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -59,6 +60,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.deployment.framework.AdditionalReaders;
+import io.quarkus.rest.deployment.framework.AdditionalWriters;
 import io.quarkus.rest.deployment.framework.EndpointIndexer;
 import io.quarkus.rest.deployment.framework.QuarkusRestDotNames;
 import io.quarkus.rest.runtime.QuarkusRestConfig;
@@ -85,6 +87,7 @@ import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
@@ -236,10 +239,11 @@ public class QuarkusRestProcessor {
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
         AdditionalReaders additionalReaders = new AdditionalReaders();
+        AdditionalWriters additionalWriters = new AdditionalWriters();
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders);
+                    scannedResourcePaths, config, additionalReaders, additionalWriters);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -252,7 +256,7 @@ public class QuarkusRestProcessor {
             //so we generate client proxies for them
             clientDefinitions.add(EndpointIndexer.createClientProxy(index, clazz,
                     generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    i.getValue(), config, additionalReaders));
+                    i.getValue(), config, additionalReaders, additionalWriters));
         }
         Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
                 clientDefinitions, generatedClassBuildItemBuildProducer);
@@ -278,7 +282,7 @@ public class QuarkusRestProcessor {
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders);
+                    scannedResourcePaths, config, additionalReaders, additionalWriters);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }
@@ -431,6 +435,12 @@ public class QuarkusRestProcessor {
         registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
                 beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
+        registerWriter(recorder, serialisers, MultivaluedMap.class, FormUrlEncodedProvider.class,
+                beanContainerBuildItem.getValue(), MediaType.APPLICATION_FORM_URLENCODED);
+        for (AdditionalWriters.Entry additionalWriter : additionalWriters.get()) {
+            registerWriter(recorder, serialisers, additionalWriter.getEntityClass(), additionalWriter.getWriterClass(),
+                    beanContainerBuildItem.getValue(), additionalWriter.getMediaType());
+        }
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);

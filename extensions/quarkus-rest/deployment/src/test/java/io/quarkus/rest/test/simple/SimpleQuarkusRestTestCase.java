@@ -337,11 +337,12 @@ public class SimpleQuarkusRestTestCase {
         RestAssured
                 .given()
                 .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Accept", "application/x-www-form-urlencoded")
                 .formParam("f1", "v1")
                 .formParam("f2", "v2")
                 .post("/simple/form-map")
                 .then()
-                .contentType("text/plain")
-                .body(Matchers.equalTo("f1=v1,f2=v2"));
+                .contentType("application/x-www-form-urlencoded")
+                .body(Matchers.equalTo("f1=v1&f2=v2"));
     }
 }

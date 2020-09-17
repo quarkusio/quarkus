@@ -101,11 +101,12 @@ public class EndpointIndexer {
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                    additionalWriters);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -134,10 +135,11 @@ public class EndpointIndexer {
     public static RestClientInterface createClientProxy(IndexView index, ClassInfo classInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                    additionalWriters);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -162,7 +164,8 @@ public class EndpointIndexer {
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
-            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders) {
+            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
+            AdditionalWriters additionalWriters) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
@@ -190,7 +193,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders);
+                            config, additionalReaders, additionalWriters);
 
                     ret.add(method);
                 }
@@ -216,7 +219,7 @@ public class EndpointIndexer {
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders);
+                            existingConverters, config, additionalReaders, additionalWriters);
                     ret.add(method);
                 }
             }
@@ -227,7 +230,8 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                        additionalWriters));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -235,7 +239,8 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                        additionalWriters));
             }
         }
         return ret;
@@ -246,7 +251,7 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -370,6 +375,7 @@ public class EndpointIndexer {
                     blocking = true;
                 }
             }
+
             ResourceMethod method = new ResourceMethod()
                     .setHttpMethod(annotationToMethod(httpMethod))
                     .setPath(methodPath)

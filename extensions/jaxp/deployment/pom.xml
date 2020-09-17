@@ -3,15 +3,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-jaxb-parent</artifactId>
+        <artifactId>quarkus-jaxp-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jaxb-deployment</artifactId>
-    <name>Quarkus - JAXB - Deployment</name>
+    <artifactId>quarkus-jaxp-deployment</artifactId>
+    <name>Quarkus - JAXP - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -20,11 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxp-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaxb</artifactId>
+            <artifactId>quarkus-jaxp</artifactId>
         </dependency>
     </dependencies>
 

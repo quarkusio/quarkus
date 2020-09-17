@@ -101,12 +101,6 @@ class JaxbProcessor {
     private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = Arrays.asList(
             XmlAccessOrder.class);
 
-    private static final List<String> JAXB_SERIALIZERS = Arrays.asList(
-            "html",
-            "text",
-            "xml",
-            "unknown");
-
     private static final DotName XML_ROOT_ELEMENT = DotName.createSimple(XmlRootElement.class.getName());
     private static final DotName XML_TYPE = DotName.createSimple(XmlType.class.getName());
     private static final DotName XML_REGISTRY = DotName.createSimple(XmlRegistry.class.getName());
@@ -193,10 +187,6 @@ class JaxbProcessor {
             BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
             BuildProducer<ServiceProviderBuildItem> providerItem) {
 
-        addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
-        addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl");
-        addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
-        addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");
         addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
         addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
 
@@ -207,11 +197,6 @@ class JaxbProcessor {
 
         addResourceBundle("javax.xml.bind.Messages");
         addResourceBundle("javax.xml.bind.helpers.Messages");
-        addResourceBundle("com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages");
-        addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
-        addResourceBundle("com.sun.org.apache.xerces.internal.impl.msg.XMLMessages");
-        addResourceBundle("com.sun.org.apache.xerces.internal.impl.msg.XMLSchemaMessages");
-        addResourceBundle("com.sun.org.apache.xerces.internal.impl.xpath.regex.message");
 
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
@@ -219,10 +204,6 @@ class JaxbProcessor {
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)
                 .forEach(className -> addReflectiveClass(true, false, className));
-
-        JAXB_SERIALIZERS.stream()
-                .map(s -> "com/sun/org/apache/xml/internal/serializer/output_" + s + ".properties")
-                .forEach(this::addResource);
 
         providerItem
                 .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));

@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Scripting with Quarkus
+include::./attributes.adoc[]
 :extension-status: preview
 
 Quarkus provides integration with https://jbang.dev[jbang] which allows you to write Java scripts/applications requiring no Maven nor Gradle to get running.
@@ -28,7 +29,7 @@ Normally we would link to a Git repository to clone but in this case there is no
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy:999-SNAPSHOT
+//DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
 //JAVAC_OPTIONS -parameters
 //JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
 
@@ -87,7 +88,7 @@ First, we need a Java file. jbang lets you create an initial version using:
 
 [source,shell,subs=attributes+]
 ----
-jbang scripting/quarkusapp.java
+jbang init scripting/quarkusapp.java
 cd scripting
 ----
 
@@ -124,10 +125,10 @@ Go ahead and update this line to include the `quarkus-resteasy` dependency like 
 
 Now, run `jbang quarkusapp.java` and you will see `jbang` resolving this dependency and building the jar with help from Quarkus' jbang integration.
 
-[source,shell,subs=attributes+] 
+[source,shell,subs=attributes+]
 ----
 $ jbang quarkusapp.java
-❯ jbang quarkusapp.java
+
 [jbang] Resolving dependencies...
 [jbang]     Resolving io.quarkus:quarkus-resteasy:{quarkus-version}...Done
 [jbang] Dependencies resolved
@@ -143,10 +144,10 @@ Hello World
 For now the application does nothing new.
 
 [TIP]
-.How do I edit this file and get content assist ?
+.How do I edit this file and get content assist?
 ====
-As there is nothing but a `.java` file, most IDE's does not handle content assist well.
-To work around that you can run `jbang edit quarkusapp.java` which will print out a directory that will have a temporary project setup you can use in your IDE.
+As there is nothing but a `.java` file, most IDE's don't handle content assist well.
+To work around that you can run `jbang edit quarkusapp.java`, this will print out a directory that will have a temporary project setup you can use in your IDE.
 
 On Linux/macOS you can run `<idecommand> `jbang edit quarkusapp.java``.
 
@@ -184,7 +185,7 @@ public class quarkusapp {
 It's a very simple class with a main method that starts Quarkus with a REST endpoint, returning "hello" to requests on "/hello".
 
 [TIP]
-.Why is the `main` method there ?
+.Why is the `main` method there?
 ====
 A `main` method is currently needed for the `jbang` integration to work - we might remove this requirement in the future.
 ====
@@ -198,7 +199,7 @@ Use: `jbang quarkusapp.java`:
 [source,shell,subs=attributes+]
 ----
 $ jbang quarkusapp.java
- jbang quarkusapp.java
+
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration
 Aug 30, 2020 5:49:01 AM org.jboss.threads.Version <clinit>
@@ -222,7 +223,7 @@ $ curl -w "\n" http://localhost:8080/hello
 hello
 ----
 
-Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
+After that, hit `CTRL+C` to stop the application.
 
 [TIP]
 .Automatically add newline with `curl -w "\n"`
@@ -231,7 +232,7 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 ====
 
 [TIP]
-.Why is `quarkus-resteasy` not resolved ? 
+.Why is `quarkus-resteasy` not resolved?
 ====
 In this second run you should not see a line saying it is resolving `quarkus-resteasy` as jbang caches the dependency resolution between runs.
 If you want to clear the caches to force resolution use `jbang cache clear`.
@@ -246,7 +247,7 @@ ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 
 Let's modify the application and add a companion bean.
 
-Normally you would add a separate class, but as we are aiming to have it all in one file you will add a 
+Normally you would add a separate class, but as we are aiming to have it all in one file you will add a
 nested class.
 
 Add the following *inside* the `quarkusapp` class body.
@@ -268,17 +269,17 @@ static public class GreetingService {
 ====
 We are using a nested static public class instead of a top level class for two reasons:
 
-  1. jbang currently does not support multiple source files
-  2. All Java frameworks relying on introspection have challenges using top level classes as they are not as visible as public classes; and in Java there can only be one top level public class in a file.
+. jbang currently does not support multiple source files.
+. All Java frameworks relying on introspection have challenges using top level classes as they are not as visible as public classes; and in Java there can only be one top level public class in a file.
 
 ====
 
 Edit the `quarksapp` class to inject the `GreetingService` and create a new endpoint using it, you should end up with something like:
 
-[source, java]
+[source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-resteasy:999-SNAPSHOT
+//DEPS io.quarkus:quarkus-resteasy:{quarkus-version}
 
 import io.quarkus.runtime.Quarkus;
 import javax.enterprise.context.ApplicationScoped;
@@ -396,7 +397,7 @@ If you have the `native-image` binary installed and `GRAALVM_HOME` set, you can 
 [source,shell,subs=attributes+]
 ----
 $ jbang --native quarkusapp
- jbang --native quarkusapp.java
+
 [jbang] Building jar...
 [jbang] Post build with io.quarkus.launcher.JBangIntegration
 Aug 30, 2020 6:21:15 AM org.jboss.threads.Version <clinit>
@@ -421,7 +422,7 @@ __  ____  __  _____   ___  __ ____  ______
 2020-08-30 06:22:32,013 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 ----
 
-This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant:
+This native build will take some time on first run but any subsequent runs (without changing `quarkusapp.java`) will be close to instant thanks to jbang cache:
 
 [source,shell,subs=attributes+]
 ----
@@ -437,4 +438,4 @@ __  ____  __  _____   ___  __ ____  ______
 
 === Conclusion
 
-If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a Java file. In this guide we outlined the very basics on using Quarkus with jbang; if you want to learn more about what jbang can do go see https://jbang.dev.
+If you want to get started with Quarkus or write something quickly, Quarkus Scripting with jbang lets you do that. No Maven, no Gradle - just a Java file. In this guide we outlined the very basics on using Quarkus with jbang; if you want to learn more about what jbang can do, go see https://jbang.dev.

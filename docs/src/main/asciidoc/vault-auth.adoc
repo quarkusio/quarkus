@@ -327,7 +327,10 @@ such that they will be accessible from the pod):
 [source, properties, subs=attributes+]
 ----
 quarkus.vault.url=http://<host>:8200
-quarkus.datasource.url = jdbc:postgresql://<host>:5432/mydatabase
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=<your username>
+quarkus.datasource.password=<your password>
+quarkus.datasource.jdbc.url = jdbc:postgresql://<host>:5432/mydatabase
 
 quarkus.vault.authentication.kubernetes.role=vault-quickstart-role
 

@@ -73,7 +73,11 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         if (event.failure() instanceof AuthenticationFailedException) {
             return; //handled elsewhere
         }
-        event.response().setStatusCode(500);
+
+        if (!event.response().headWritten()) {
+            event.response().setStatusCode(event.statusCode() > 0 ? event.statusCode() : 500);
+        }
+
         String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();
         String details = "";
         String stack = "";

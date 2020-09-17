@@ -263,6 +263,7 @@ public class EndpointIndexer {
                 AnnotationInstance headerParam = anns.get(QuarkusRestDotNames.HEADER_PARAM);
                 AnnotationInstance formParam = anns.get(QuarkusRestDotNames.FORM_PARAM);
                 AnnotationInstance contextParam = anns.get(QuarkusRestDotNames.CONTEXT);
+                AnnotationInstance matrixParam = anns.get(QuarkusRestDotNames.MATRIX_PARAM);
                 AnnotationInstance defaultValueAnnotation = anns.get(QuarkusRestDotNames.DEFAULT_VALUE);
                 AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
                 String defaultValue = null;
@@ -293,6 +294,9 @@ public class EndpointIndexer {
                     // no name required
                     type = ParameterType.ASYNC_RESPONSE;
                     suspended = true;
+                } else if (matrixParam != null) {
+                    // no name required
+                    type = ParameterType.MATRIX;
                 } else {
                     type = ParameterType.BODY;
                 }

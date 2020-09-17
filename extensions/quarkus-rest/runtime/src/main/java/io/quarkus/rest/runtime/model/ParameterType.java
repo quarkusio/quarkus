@@ -7,6 +7,7 @@ public enum ParameterType {
     HEADER,
     FORM,
     BODY,
+    MATRIX,
     CONTEXT,
     ASYNC_RESPONSE
 }

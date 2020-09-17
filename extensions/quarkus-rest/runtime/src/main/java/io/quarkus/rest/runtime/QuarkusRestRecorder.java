@@ -44,6 +44,7 @@ import io.quarkus.rest.runtime.core.parameters.BodyParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ContextParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.FormParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.HeaderParamExtractor;
+import io.quarkus.rest.runtime.core.parameters.MatrixParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
@@ -546,6 +547,9 @@ public class QuarkusRestRecorder {
                     break;
                 case BODY:
                     extractor = new BodyParamExtractor();
+                    break;
+                case MATRIX:
+                    extractor = new MatrixParamExtractor(param.name, single);
                     break;
                 default:
                     extractor = new QueryParamExtractor(param.name, single);

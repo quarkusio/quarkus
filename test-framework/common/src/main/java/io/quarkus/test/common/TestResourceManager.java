@@ -64,7 +64,7 @@ public class TestResourceManager implements Closeable {
         started = true;
         Map<String, String> ret = new ConcurrentHashMap<>();
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = newExecutor();
         List<Future> startFutures = new ArrayList<>();
         for (TestResourceEntry entry : parallelTestResourceEntries) {
             try {
@@ -83,13 +83,10 @@ public class TestResourceManager implements Closeable {
         Future sequentialStartFuture = executor.submit(() -> {
             for (TestResourceEntry entry : sequentialTestResourceEntries) {
                 try {
-
                     Map<String, String> start = entry.getTestResource().start();
                     if (start != null) {
                         ret.putAll(start);
                     }
-
-                    startFutures.add(startFuture);
                 } catch (Exception e) {
                     throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
                 }
@@ -111,6 +108,10 @@ public class TestResourceManager implements Closeable {
             }
         }
         return ret;
+    }
+
+    private ExecutorService newExecutor() {
+        return Executors.newWorkStealingPool();
     }
 
     public void inject(Object testInstance) {

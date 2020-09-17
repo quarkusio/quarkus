@@ -13,7 +13,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -67,17 +69,18 @@ public class TestResourceManager implements Closeable {
         ExecutorService executor = newExecutor();
         List<Future> startFutures = new ArrayList<>();
         for (TestResourceEntry entry : parallelTestResourceEntries) {
-            try {
-                Future startFuture = executor.submit(() -> {
+            Future startFuture = executor.submit(() -> {
+                try {
                     Map<String, String> start = entry.getTestResource().start();
                     if (start != null) {
                         ret.putAll(start);
                     }
-                });
-                startFutures.add(startFuture);
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
-            }
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
+                }
+            });
+            startFutures.add(startFuture);
+
         }
 
         Future sequentialStartFuture = executor.submit(() -> {
@@ -94,9 +97,7 @@ public class TestResourceManager implements Closeable {
         });
         startFutures.add(sequentialStartFuture);
 
-        for (Future future : startFutures) {
-            future.get();
-        }
+        waitForAllFutures(startFutures);
 
         oldSystemProps = new HashMap<>();
         for (Map.Entry<String, String> i : ret.entrySet()) {
@@ -108,6 +109,16 @@ public class TestResourceManager implements Closeable {
             }
         }
         return ret;
+    }
+
+    private void waitForAllFutures(List<Future> startFutures) {
+        for (Future future : startFutures) {
+            try {
+                future.get();
+            } catch (CancellationException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Error waiting for test resource future to finish.", e);
+            }
+        }
     }
 
     private ExecutorService newExecutor() {

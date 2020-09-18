@@ -94,12 +94,14 @@ public final class QuarkusRestDotNames {
     public static final DotName FLOAT = DotName.createSimple(Float.class.getName());
     public static final DotName DOUBLE = DotName.createSimple(Double.class.getName());
     public static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
+    public static final DotName CHARACTER = DotName.createSimple(Character.class.getName());
 
     public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());
     public static final DotName PRIMITIVE_FLOAT = DotName.createSimple(float.class.getName());
     public static final DotName PRIMITIVE_DOUBLE = DotName.createSimple(double.class.getName());
     public static final DotName PRIMITIVE_BOOLEAN = DotName.createSimple(boolean.class.getName());
+    public static final DotName PRIMITIVE_CHAR = DotName.createSimple(char.class.getName());
 
     public static final DotName STRING = DotName.createSimple(String.class.getName());
     public static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());

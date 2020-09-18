@@ -21,6 +21,7 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,6 +87,9 @@ public class EndpointIndexer {
 
     private static final Map<String, String> primitiveTypes;
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
+    private static final Set<DotName> SUPPORTED_TEXT_PLAIN_READER_TYPES = Collections
+            .unmodifiableSet(new HashSet<>(Arrays.asList(PRIMITIVE_INTEGER, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE,
+                    PRIMITIVE_BOOLEAN, PRIMITIVE_CHAR, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, CHARACTER)));
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
 
@@ -115,11 +119,13 @@ public class EndpointIndexer {
         supportedReaderJavaTps.put(PRIMITIVE_FLOAT, float.class);
         supportedReaderJavaTps.put(PRIMITIVE_LONG, long.class);
         supportedReaderJavaTps.put(PRIMITIVE_INTEGER, int.class);
+        supportedReaderJavaTps.put(PRIMITIVE_CHAR, char.class);
         supportedReaderJavaTps.put(BOOLEAN, Boolean.class);
         supportedReaderJavaTps.put(DOUBLE, Double.class);
         supportedReaderJavaTps.put(FLOAT, Float.class);
         supportedReaderJavaTps.put(LONG, Long.class);
         supportedReaderJavaTps.put(INTEGER, Integer.class);
+        supportedReaderJavaTps.put(CHARACTER, Character.class);
         supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
     }
 
@@ -496,11 +502,7 @@ public class EndpointIndexer {
             additionalReaders.add(JsonArrayReader.class, APPLICATION_JSON, javax.json.JsonArray.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
             additionalReaders.add(JsonStructureReader.class, APPLICATION_JSON, javax.json.JsonStructure.class);
-        } else if (dotName.equals(DOUBLE) || dotName.equals(PRIMITIVE_DOUBLE)
-                || dotName.equals(FLOAT) || dotName.equals(PRIMITIVE_FLOAT)
-                || dotName.equals(LONG) || dotName.equals(PRIMITIVE_LONG)
-                || dotName.equals(INTEGER) || dotName.equals(PRIMITIVE_INTEGER)
-                || dotName.equals(BOOLEAN) || dotName.equals(PRIMITIVE_BOOLEAN)) {
+        } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
             additionalReaders.add(DefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType));
         }
     }

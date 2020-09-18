@@ -67,6 +67,15 @@ To generate the index just add the following to your `pom.xml`:
 </build>
 ----
 
+If you are are using gradle, you can apply the following plugin to your `build.gradle`:
+
+[source,groovy]
+----
+plugins {
+    id 'org.kordamp.gradle.jandex' version '0.6.0'
+}
+----
+
 If you can't modify the dependency, you can still index it by adding `quarkus.index-dependency` entries to your `application.properties`:
 
 [source,properties]

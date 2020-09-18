@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.sql.Driver;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,6 +85,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     }
 
     private boolean closed;
+    private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
         //we need the parent to be null
@@ -397,8 +399,12 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     if (classPathElementResource != null) { //can happen if the class loader was closed
                         byte[] data = classPathElementResource.getData();
                         definePackage(name, classPathElement);
-                        return defineClass(name, data, 0, data.length,
+                        Class<?> cl = defineClass(name, data, 0, data.length,
                                 protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
+                        if (Driver.class.isAssignableFrom(cl)) {
+                            driverLoaded = true;
+                        }
+                        return cl;
                     }
                 }
 
@@ -481,14 +487,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
             closed = true;
         }
-        //DriverManager only lets you remove drivers with the same CL as the caller
-        //so we need do define the cleaner in this class loader
-        try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
-            byte[] data = JarClassPathElement.readStreamContents(is);
-            Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length).newInstance();
-            r.run();
-        } catch (Exception e) {
-            log.debug("Failed to clean up DB drivers");
+        if (driverLoaded) {
+            //DriverManager only lets you remove drivers with the same CL as the caller
+            //so we need do define the cleaner in this class loader
+            try (InputStream is = getClass().getResourceAsStream("DriverRemover.class")) {
+                byte[] data = JarClassPathElement.readStreamContents(is);
+                Runnable r = (Runnable) defineClass(DriverRemover.class.getName(), data, 0, data.length)
+                        .getConstructor(ClassLoader.class).newInstance(this);
+                r.run();
+            } catch (Exception e) {
+                log.debug("Failed to clean up DB drivers");
+            }
         }
         for (ClassPathElement element : elements) {
             //note that this is a 'soft' close

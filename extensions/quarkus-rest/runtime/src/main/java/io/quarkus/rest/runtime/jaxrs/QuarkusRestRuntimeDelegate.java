@@ -19,6 +19,7 @@ import io.quarkus.rest.runtime.headers.CacheControlDelegate;
 import io.quarkus.rest.runtime.headers.CookieHeaderDelegate;
 import io.quarkus.rest.runtime.headers.DateDelegate;
 import io.quarkus.rest.runtime.headers.EntityTagDelegate;
+import io.quarkus.rest.runtime.headers.LinkDelegate;
 import io.quarkus.rest.runtime.headers.LocaleDelegate;
 import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
 import io.quarkus.rest.runtime.headers.NewCookieHeaderDelegate;
@@ -62,8 +63,10 @@ public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
             return (HeaderDelegate<T>) EntityTagDelegate.INSTANCE;
         } else if (type.equals(Locale.class)) {
             return (HeaderDelegate<T>) LocaleDelegate.INSTANCE;
+        } else if (type.equals(Link.class)) {
+            return (HeaderDelegate<T>) LinkDelegate.INSTANCE;
         }
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("Header delegate missing for " + type);
     }
 
     @Override

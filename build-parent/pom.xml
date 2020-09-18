@@ -394,6 +394,8 @@
                                             <exclude>org.checkerframework:checker-qual</exclude>
                                             <!-- We use our own impl here, including this one causes problems-->
                                             <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
+                                            <exclude>com.google.android:annotations</exclude>
+                                            <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

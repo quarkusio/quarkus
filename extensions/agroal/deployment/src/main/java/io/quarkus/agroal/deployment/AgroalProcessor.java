@@ -72,6 +72,12 @@ class AgroalProcessor {
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig) throws Exception {
+        if (dataSourcesBuildTimeConfig.driver.isPresent() || dataSourcesBuildTimeConfig.url.isPresent()) {
+            throw new ConfigurationException(
+                    "quarkus.datasource.url and quarkus.datasource.driver have been deprecated in Quarkus 1.3 and removed in 1.9. "
+                            + "Please use the new datasource configuration as explained in https://quarkus.io/guides/datasource.");
+        }
+
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
                 dataSourcesJdbcBuildTimeConfig,
@@ -252,7 +258,6 @@ class AgroalProcessor {
             List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
-        // New configuration
         if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,

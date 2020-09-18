@@ -1,6 +1,7 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -43,5 +44,23 @@ public class DataSourcesBuildTimeConfig {
      */
     @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
+
+    /**
+     * Only here to detect configuration errors.
+     * <p>
+     * This used to be runtime but we don't really care, we just want to catch invalid configurations.
+     *
+     * @deprecated
+     */
+    @Deprecated
+    public Optional<String> url;
+
+    /**
+     * Only here to detect configuration errors.
+     *
+     * @deprecated
+     */
+    @Deprecated
+    public Optional<String> driver;
 
 }

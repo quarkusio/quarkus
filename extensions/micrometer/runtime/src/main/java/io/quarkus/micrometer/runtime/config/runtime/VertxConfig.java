@@ -10,18 +10,28 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "micrometer.binder.vertx", phase = ConfigPhase.RUN_TIME)
 public class VertxConfig {
     /**
-     * Comma-separated case-sensitive list of regular expressions defining Paths
-     * that should be matched and used as tags. By default, the first path
-     * segment will be used. This default behavior will also apply to any
-     * URI path that is found (2xx or 5xx) but doesn't match elements
-     * in this list.
+     * Comma-separated list of regular expressions used to specify uri
+     * labels in http metrics.
+     *
+     * Vertx instrumentation will attempt to transform parameterized
+     * resource paths, `/item/123`, into a generic form, `/item/{id}`,
+     * to reduce the cardinality of uri label values.
+     *
+     * Patterns specified here will take precedence over those computed
+     * values.
+     *
+     * For example, if `/item/\\d+=/item/custom` is specified in this list,
+     * a request to a matching path (`/item/123`) will use the specified
+     * replacement value (`/item/custom`) as the value for the uri label.
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Optional<List<String>> matchPatterns = Optional.empty();
 
     /**
-     * Comma-separated case-sensitive list of regular expressions defining Paths
-     * that should be ignored / not measured.
+     * Comma-separated list of regular expressions defining uri paths
+     * that should be ignored (not measured).
      */
     @ConfigItem
     public Optional<List<String>> ignorePatterns = Optional.empty();

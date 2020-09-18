@@ -2,7 +2,9 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Assertions;
@@ -18,6 +20,7 @@ import io.vertx.core.http.HttpServerResponse;
 
 /**
  * Test tag creation
+ * Disabled on Java 8 because of Mocks
  */
 @DisabledOnJre(JRE.JAVA_8)
 public class VertxMetricsTagsTest {
@@ -26,7 +29,9 @@ public class VertxMetricsTagsTest {
     HttpServerResponse response;
 
     final List<Pattern> NO_IGNORE_PATTERNS = Collections.emptyList();
-    final List<Pattern> NO_MATCH_PATTERNS = Collections.emptyList();
+    final List<Pattern> ignorePatterns = Arrays.asList(Pattern.compile("/ignore.*"));
+
+    final Map<Pattern, String> NO_MATCH_PATTERNS = Collections.emptyMap();
 
     @BeforeEach
     public void initMocks() {
@@ -34,23 +39,81 @@ public class VertxMetricsTagsTest {
     }
 
     @Test
-    public void testParsePathNoIgnorePatterns() {
-        Assertions.assertEquals("/", VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "//"));
-        Assertions.assertEquals("/", VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, ""));
-        Assertions.assertEquals("/path/with/no/leading/slash",
-                VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "path/with/no/leading/slash"));
-        Assertions.assertEquals("/path/with/query/string",
-                VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/path/with/query/string?stuff"));
+    public void testParsePathDoubleSlash() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "//");
+        Assertions.assertEquals("/", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
     }
 
     @Test
-    public void testParsePathWithIgnorePatterns() {
-        List<Pattern> ignorePatterns = Arrays.asList(Pattern.compile("/ignore.*"));
+    public void testParseEmptyPath() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "");
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
+        Assertions.assertEquals("/", requestMetric.path);
+    }
 
-        Assertions.assertNull(
-                VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, ignorePatterns, "ignore/me/with/no/leading/slash"));
-        Assertions.assertNull(
-                VertxMetricsTags.parseUriPath(NO_MATCH_PATTERNS, ignorePatterns, "/ignore/me/with/query/string?stuff"));
+    @Test
+    public void testParsePathNoLeadingSlash() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "path/with/no/leading/slash");
+        Assertions.assertEquals("/path/with/no/leading/slash", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
+    }
+
+    @Test
+    public void testParsePathWithQueryString() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/path/with/query/string?stuff");
+        Assertions.assertEquals("/path/with/query/string", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
+    }
+
+    @Test
+    public void testParsePathIgnoreNoLeadingSlash() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, ignorePatterns, "ignore/me/with/no/leading/slash");
+        Assertions.assertEquals("/ignore/me/with/no/leading/slash", requestMetric.path);
+        Assertions.assertFalse(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
+    }
+
+    @Test
+    public void testParsePathIgnoreWithQueryString() {
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, NO_MATCH_PATTERNS, ignorePatterns, "/ignore/me/with/query/string?stuff");
+        Assertions.assertEquals("/ignore/me/with/query/string", requestMetric.path);
+        Assertions.assertFalse(requestMetric.measure);
+        Assertions.assertFalse(requestMetric.pathMatched);
+    }
+
+    @Test
+    public void testParsePathMatchReplaceNoLeadingSlash() {
+        final Map<Pattern, String> matchPatterns = new HashMap<>();
+        matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
+
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, NO_IGNORE_PATTERNS, "item/123");
+        Assertions.assertEquals("/item/{id}", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertTrue(requestMetric.pathMatched);
+    }
+
+    @Test
+    public void testParsePathMatchReplaceLeadingSlash() {
+        final Map<Pattern, String> matchPatterns = new HashMap<>();
+        matchPatterns.put(Pattern.compile("/item/\\d+"), "/item/{id}");
+
+        RequestMetric requestMetric = new RequestMetric();
+        VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, NO_IGNORE_PATTERNS, "/item/123");
+        Assertions.assertEquals("/item/{id}", requestMetric.path);
+        Assertions.assertTrue(requestMetric.measure);
+        Assertions.assertTrue(requestMetric.pathMatched);
     }
 
     @Test

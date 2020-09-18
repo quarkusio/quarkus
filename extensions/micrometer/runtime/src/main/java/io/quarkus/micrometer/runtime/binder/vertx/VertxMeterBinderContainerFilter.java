@@ -20,20 +20,26 @@ public class VertxMeterBinderContainerFilter implements ContainerRequestFilter {
     @Override
     public void filter(final ContainerRequestContext requestContext) {
         RoutingContext routingContext = CDI.current().select(CurrentVertxRequest.class).get().getCurrent();
+
+        // bail early if we have no routing context, or if path munging isn't necessary
+        if (routingContext == null || routingContext.get(RequestMetric.HTTP_REQUEST_PATH_MATCHED) != null) {
+            return;
+        }
+
         UriInfo info = requestContext.getUriInfo();
+        String path = info.getPath();
 
         MultivaluedMap<String, String> pathParameters = info.getPathParameters();
-        if (!pathParameters.isEmpty() && routingContext != null) {
+        if (!pathParameters.isEmpty()) {
             // Replace parameter values in the URI with {key}: /items/123 -> /items/{id}
-            String path = info.getPath();
             for (Map.Entry<String, List<String>> entry : pathParameters.entrySet()) {
                 for (String value : entry.getValue()) {
                     path = path.replace(value, "{" + entry.getKey() + "}");
                 }
             }
-
             log.debugf("Saving parameterized path %s in %s", path, routingContext);
-            routingContext.put(RequestMetric.HTTP_REQUEST_PATH, path);
         }
+
+        routingContext.put(RequestMetric.HTTP_REQUEST_PATH, path);
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -110,9 +111,10 @@ public class VertxMetricsTags {
      * Extract the path out of the uri. Return null if the path should be
      * ignored.
      */
-    static String parseUriPath(List<Pattern> matchPattern, List<Pattern> ignorePatterns, String uri) {
+    static void parseUriPath(RequestMetric requestMetric, Map<Pattern, String> matchPattern, List<Pattern> ignorePatterns,
+            String uri) {
         if (uri == null) {
-            return null;
+            return;
         }
 
         String path = "/" + extractPath(uri);
@@ -122,15 +124,20 @@ public class VertxMetricsTags {
         if (path.isEmpty()) {
             path = "/";
         }
+        requestMetric.path = path;
+        for (Map.Entry<Pattern, String> mp : matchPattern.entrySet()) {
+            requestMetric.path = mp.getKey().matcher(requestMetric.path).replaceAll(mp.getValue());
+        }
+        requestMetric.pathMatched = !path.equals(requestMetric.path);
 
         // Compare path against "ignore this path" patterns
         for (Pattern p : ignorePatterns) {
             if (p.matcher(path).matches()) {
                 log.debugf("Path %s ignored; matches pattern %s", uri, p.pattern());
-                return null;
+                return;
             }
         }
-        return path;
+        requestMetric.measure = true;
     }
 
     private static String extractPath(String uri) {

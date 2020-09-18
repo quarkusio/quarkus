@@ -2,9 +2,11 @@ package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.jboss.logging.Logger;
 
@@ -34,7 +36,7 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     static final Logger log = Logger.getLogger(VertxHttpServerMetrics.class);
 
     final List<Pattern> ignorePatterns;
-    final List<Pattern> matchPatterns;
+    final Map<Pattern, String> matchPatterns;
 
     final String nameWebsocketConnections;
     final String nameHttpServerPush;
@@ -58,12 +60,23 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
 
         if (config.matchPatterns.isPresent()) {
             List<String> stringPatterns = config.matchPatterns.get();
-            matchPatterns = new ArrayList<>(stringPatterns.size());
+            matchPatterns = new HashMap<>(stringPatterns.size());
             for (String s : stringPatterns) {
-                matchPatterns.add(Pattern.compile(s));
+                int pos = s.indexOf("=");
+                if (pos > 0 && s.length() > 2) {
+                    String pattern = s.substring(0, pos);
+                    String replacement = s.substring(pos + 1);
+                    try {
+                        matchPatterns.put(Pattern.compile(pattern), replacement);
+                    } catch (PatternSyntaxException pse) {
+                        log.errorf("Invalid pattern in replacement string (%s=%s): %s", pattern, replacement, pse);
+                    }
+                } else {
+                    log.errorf("Invalid pattern in replacement string (%s). Should be pattern=replacement", s);
+                }
             }
         } else {
-            matchPatterns = Collections.emptyList();
+            matchPatterns = Collections.emptyMap();
         }
     }
 
@@ -80,10 +93,10 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
     public RequestMetric responsePushed(Map<String, Object> socketMetric, HttpMethod method, String uri,
             HttpServerResponse response) {
         RequestMetric requestMetric = new RequestMetric();
-        String path = VertxMetricsTags.parseUriPath(matchPatterns, ignorePatterns, uri);
-        if (path != null) {
+        VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, ignorePatterns, uri);
+        if (requestMetric.measure) {
             registry.counter(nameHttpServerPush, Tags.of(
-                    VertxMetricsTags.uri(path, response.getStatusCode()),
+                    VertxMetricsTags.uri(requestMetric.path, response.getStatusCode()),
                     VertxMetricsTags.method(method),
                     VertxMetricsTags.outcome(response),
                     VertxMetricsTags.status(response.getStatusCode())))
@@ -107,17 +120,16 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         RequestMetric requestMetric = new RequestMetric();
         RequestMetric.setRequestMetric(Vertx.currentContext(), requestMetric);
 
-        String path = VertxMetricsTags.parseUriPath(matchPatterns, ignorePatterns, request.uri());
-        if (path != null) {
-            // Pre-add the request method tag to the sample
-            requestMetric.put(RequestMetric.HTTP_REQUEST_SAMPLE,
-                    Timer.start(registry).tags(Tags.of(VertxMetricsTags.method(request.method()))));
+        // evaluate and remember the path to monitor for use later (maybe a 404 or redirect..)
+        VertxMetricsTags.parseUriPath(requestMetric, matchPatterns, ignorePatterns, request.path());
+        if (requestMetric.measure) {
+            // If we're measuring this request, create/remember the sample
+            requestMetric.sample = Timer.start(registry).tags(Tags.of(
+                    VertxMetricsTags.method(request.method())));
 
-            // remember the path to monitor for use later (maybe a 404 or redirect..)
-            requestMetric.put(RequestMetric.HTTP_REQUEST_PATH, path);
+            log.debugf("requestBegin %s: %s, %s", requestMetric.path, socketMetric, requestMetric);
         }
 
-        log.debugf("requestBegin %s: %s, %s, %s", request.uri(), socketMetric, requestMetric, request.headers());
         return requestMetric;
     }
 
@@ -200,19 +212,13 @@ public class VertxHttpServerMetrics extends VertxTcpMetrics
         if (metricsContext == null) {
             return null;
         }
-        return metricsContext.getValue(RequestMetric.HTTP_REQUEST_SAMPLE);
+        return metricsContext.sample;
     }
 
     private String getServerRequestPath(RequestMetric metricsContext) {
         if (metricsContext == null) {
             return null;
         }
-
-        String path = metricsContext.getFromRoutingContext(RequestMetric.HTTP_REQUEST_PATH);
-        if (path != null) {
-            log.debugf("Using path from routing context %s", path);
-            return path;
-        }
-        return metricsContext.getValue(RequestMetric.HTTP_REQUEST_PATH);
+        return metricsContext.getHttpRequestPath();
     }
 }

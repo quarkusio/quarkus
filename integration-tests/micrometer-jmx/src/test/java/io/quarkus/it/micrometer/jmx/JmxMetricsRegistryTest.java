@@ -24,7 +24,7 @@ class JmxMetricsRegistryTest {
     @Order(1)
     void testRegistryInjection() {
         given()
-                .when().get("/message")
+                .when().get("/message/ping")
                 .then()
                 .statusCode(200)
                 .body(containsString("io.micrometer.jmx.JmxMeterRegistry"));
@@ -49,7 +49,7 @@ class JmxMetricsRegistryTest {
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     void testPathParameter() {
         given()
                 .when().get("/message/item/123")
@@ -64,6 +64,7 @@ class JmxMetricsRegistryTest {
         given()
                 .when().get("/message/mbeans")
                 .then()
+                .log().all()
                 .statusCode(200)
 
                 // JMX endpoint is returning a subset of mbean objects to inspect
@@ -78,7 +79,7 @@ class JmxMetricsRegistryTest {
                         "metrics:name=httpServerRequests.env.test.method.GET.outcome.SERVER_ERROR.registry.jmx.status.500.uri./message/fail"))
 
                 .body(containsString(
-                        "metrics:name=httpServerRequests.env.test.method.GET.outcome.SUCCESS.registry.jmx.status.200.uri./message"))
+                        "metrics:name=httpServerRequests.env.test.method.GET.outcome.SUCCESS.registry.jmx.status.200.uri./message/ping"))
                 .body(containsString(
                         "metrics:name=httpServerRequests.env.test.method.GET.outcome.SUCCESS.registry.jmx.status.200.uri./message/item/{id}"))
 

@@ -2,6 +2,7 @@ package io.quarkus.rest.runtime.client;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -66,6 +67,7 @@ public class QuarkusRestClient implements Client {
     @Override
     public WebTarget target(String uri) {
         abortIfClosed();
+        Objects.requireNonNull(uri);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
     }
@@ -73,6 +75,7 @@ public class QuarkusRestClient implements Client {
     @Override
     public WebTarget target(URI uri) {
         abortIfClosed();
+        Objects.requireNonNull(uri);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
     }
@@ -80,6 +83,7 @@ public class QuarkusRestClient implements Client {
     @Override
     public WebTarget target(UriBuilder uriBuilder) {
         abortIfClosed();
+        Objects.requireNonNull(uriBuilder);
         return new QuarkusRestWebTarget(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
                 clientProxies);
     }
@@ -87,6 +91,7 @@ public class QuarkusRestClient implements Client {
     @Override
     public WebTarget target(Link link) {
         abortIfClosed();
+        Objects.requireNonNull(link);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromLink(link),
                 new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
@@ -95,6 +100,7 @@ public class QuarkusRestClient implements Client {
     @Override
     public Invocation.Builder invocation(Link link) {
         abortIfClosed();
+        Objects.requireNonNull(link);
         return target(link).request();
     }
 

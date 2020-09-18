@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.client;
 
 import java.security.KeyStore;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -13,6 +14,8 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
+import io.quarkus.rest.runtime.core.Serialisers;
 
 public class QuarkusRestClientBuilder extends ClientBuilder {
 
@@ -76,8 +79,14 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public Client build() {
-        return new QuarkusRestClient(QuarkusRestRecorder.getCurrentDeployment().getSerialisers(),
-                QuarkusRestRecorder.getCurrentDeployment().getClientProxies(), hostnameVerifier, sslContext);
+        QuarkusRestDeployment currentDeployment = QuarkusRestRecorder.getCurrentDeployment();
+        if (currentDeployment == null) {
+            return new QuarkusRestClient(new Serialisers(),
+                    new ClientProxies(Collections.emptyMap()), hostnameVerifier, sslContext);
+        } else {
+            return new QuarkusRestClient(currentDeployment.getSerialisers(),
+                    currentDeployment.getClientProxies(), hostnameVerifier, sslContext);
+        }
     }
 
     @Override

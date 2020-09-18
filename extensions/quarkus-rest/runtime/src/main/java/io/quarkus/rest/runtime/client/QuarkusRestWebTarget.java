@@ -307,7 +307,7 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestInvocationBuilder(uri.build(), client, this, configuration, serialisers);
+        return new QuarkusRestInvocationBuilder(uri.build(), restClient, client, this, configuration, serialisers);
     }
 
     @Override

@@ -1,12 +1,7 @@
 package io.quarkus.rest.runtime.client;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -17,25 +12,14 @@ import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.rest.runtime.core.Serialisers;
-import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
-import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
 
 public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxInvoker {
+
     public static final Buffer EMPTY_BUFFER = Buffer.buffer(new byte[0]);
 
     final HttpClient httpClient;
@@ -43,9 +27,12 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     final Serialisers serialisers;
     final RequestSpec requestSpec;
     final Map<String, Object> properties;
+    final QuarkusRestClient restClient;
 
-    public QuarkusRestAsyncInvoker(HttpClient httpClient, URI uri, Serialisers serialisers, RequestSpec requestSpec,
+    public QuarkusRestAsyncInvoker(QuarkusRestClient restClient, HttpClient httpClient, URI uri, Serialisers serialisers,
+            RequestSpec requestSpec,
             Map<String, Object> properties) {
+        this.restClient = restClient;
         this.httpClient = httpClient;
         this.uri = uri;
         this.serialisers = serialisers;
@@ -245,137 +232,15 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<T> rt) {
-        return (CompletableFuture<Response>) (CompletableFuture) performRequestInternal(httpMethodName, entity, rt, true);
+    private <T> CompletableFuture<Response> performRequestInternal(String httpMethodName, Entity<?> entity,
+            GenericType<?> responseType) {
+        return (CompletableFuture) performRequestInternal(httpMethodName, entity, responseType, true).getResult();
     }
 
-    @SuppressWarnings("deprecation")
-    <T> CompletableFuture<QuarkusRestResponse> performRequestInternal(String httpMethodName, Entity<?> entity,
-            GenericType<T> rt,
+    <T> InvocationState performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<?> responseType,
             boolean registerBodyHandler) {
-
-        CompletableFuture<QuarkusRestResponse> result = new CompletableFuture<>();
-        try {
-            GenericType<T> responseType = getResponseType(rt);
-            HttpClientRequest httpClientRequest = createRequest(httpMethodName);
-            Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest, entity, responseType);
-            httpClientRequest
-                    .handler(new Handler<HttpClientResponse>() {
-                        @Override
-                        public void handle(HttpClientResponse clientResponse) {
-                            QuarkusRestResponseBuilder response;
-                            MediaType mediaType;
-                            try {
-                                response = new QuarkusRestResponseBuilder();
-                                mediaType = initialiseResponse(clientResponse, response);
-                            } catch (Throwable t) {
-                                result.completeExceptionally(t);
-                                return;
-                            }
-                            if (!registerBodyHandler) {
-                                result.complete(response.build());
-                            } else {
-                                clientResponse.bodyHandler(new Handler<Buffer>() {
-                                    @Override
-                                    public void handle(Buffer buffer) {
-                                        try {
-                                            T entity = readEntity(buffer, responseType, mediaType, response.getMetadata());
-                                            response.entity(entity);
-                                            result.complete(response.build());
-                                        } catch (Throwable t) {
-                                            result.completeExceptionally(t);
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    }).exceptionHandler(new Handler<Throwable>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            result.completeExceptionally(event);
-                        }
-                    }).end(actualEntity);
-        } catch (Throwable e) {
-            result.completeExceptionally(e);
-        }
-
-        return result;
-    }
-
-    public <T> T readEntity(Buffer buffer,
-            GenericType<T> responseType, MediaType mediaType, MultivaluedMap<String, Object> metadata)
-            throws IOException {
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
-                mediaType);
-        for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
-                    mediaType)) {
-                ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
-                return (T) ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
-                        null, mediaType, metadata, in);
-            }
-        }
-
-        return (T) buffer.toString(StandardCharsets.UTF_8);
-    }
-
-    private MediaType initialiseResponse(HttpClientResponse vertxResponse, QuarkusRestResponseBuilder response) {
-        MediaType mediaType = MediaType.WILDCARD_TYPE;
-        for (String i : vertxResponse.headers().names()) {
-            response.header(i, vertxResponse.getHeader(i));
-
-        }
-        String mediaTypeHeader = vertxResponse.getHeader(HttpHeaderNames.CONTENT_TYPE);
-        if (mediaTypeHeader != null) {
-            mediaType = MediaType.valueOf(mediaTypeHeader);
-        }
-        response.status(vertxResponse.statusCode());
-        response.vertxClientResponse(vertxResponse);
-        return mediaType;
-    }
-
-    private <T> GenericType<T> getResponseType(GenericType<T> rt) {
-        if (rt == null) {
-            return new GenericType<>(String.class);
-        }
-        return rt;
-    }
-
-    private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest, Entity<?> entity, GenericType<T> rt)
-            throws IOException {
-        ClientRequestHeaders headers = requestSpec.headers;
-        MultivaluedMap<String, String> headerMap = headers.asMap();
-        for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
-            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
-        }
-        if (entity != null && entity.getMediaType() != null) {
-            httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
-        }
-        Buffer actualEntity = EMPTY_BUFFER;
-        if (entity != null) {
-
-            Class<?> entityType = entity.getEntity().getClass();
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityType, entity.getMediaType());
-            for (MessageBodyWriter writer : writers) {
-                if (writer.isWriteable(entityType, entityType, entity.getAnnotations(), entity.getMediaType())) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    writer.writeTo(entity.getEntity(), entityType, entityType, entity.getAnnotations(),
-                            entity.getMediaType(), headerMap, baos);
-                    actualEntity = Buffer.buffer(baos.toByteArray());
-                    break;
-                }
-            }
-        }
-        return actualEntity;
-    }
-
-    private <T> HttpClientRequest createRequest(String httpMethodName) {
-        HttpClient httpClient = this.httpClient;
-        URI uri = this.uri;
-        HttpClientRequest httpClientRequest = httpClient.request(HttpMethod.valueOf(httpMethodName), uri.getPort(),
-                uri.getHost(),
-                uri.getPath() + (uri.getQuery() == null ? "" : "?" + uri.getQuery()));
-
-        return httpClientRequest;
+        return new InvocationState(restClient, httpClient, httpMethodName, uri,
+                requestSpec.headers, serialisers,
+                entity, responseType, registerBodyHandler);
     }
 }

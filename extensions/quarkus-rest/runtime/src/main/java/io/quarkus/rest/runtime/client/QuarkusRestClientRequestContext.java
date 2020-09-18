@@ -19,18 +19,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.rest.runtime.NotImplementedYet;
+import io.quarkus.rest.runtime.core.Serialisers;
+
 public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     private final Map<String, Object> properties = new HashMap<>();
-    private final Configuration configuration;
     private final Client client;
     private OutputStream entityStream;
-    private URI uri;
-    private String method;
+    private InvocationState invocationState;
+    Response abortedWith;
 
-    public QuarkusRestClientRequestContext(Configuration configuration, Client client) {
-        this.configuration = configuration;
+    public QuarkusRestClientRequestContext(InvocationState invocationState, QuarkusRestClient client) {
         this.client = client;
+        this.invocationState = invocationState;
     }
 
     @Override
@@ -55,112 +57,114 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public URI getUri() {
-        return uri;
+        return invocationState.uri;
     }
 
     @Override
     public void setUri(URI uri) {
-        this.uri = uri;
+        invocationState.uri = uri;
     }
 
     @Override
     public String getMethod() {
-        return method;
+        return invocationState.httpMethod;
     }
 
     @Override
     public void setMethod(String method) {
-        this.method = method;
+        invocationState.httpMethod = method;
     }
 
     @Override
     public MultivaluedMap<String, Object> getHeaders() {
-        return null;
+        return invocationState.requestHeaders.getHeaders();
     }
 
     @Override
     public MultivaluedMap<String, String> getStringHeaders() {
-        return null;
+        // FIXME: this should be mutable, but it's a copy ATM
+        return invocationState.requestHeaders.asMap();
     }
 
     @Override
     public String getHeaderString(String name) {
-        return null;
+        return invocationState.requestHeaders.getHeader(name);
     }
 
     @Override
     public Date getDate() {
-        return null;
+        return invocationState.requestHeaders.getDate();
     }
 
     @Override
     public Locale getLanguage() {
-        return null;
+        return invocationState.requestHeaders.getLanguage();
     }
 
     @Override
     public MediaType getMediaType() {
-        return null;
+        return invocationState.requestHeaders.getMediaType();
     }
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
-        return null;
+        return invocationState.requestHeaders.getAcceptableMediaTypes();
     }
 
     @Override
     public List<Locale> getAcceptableLanguages() {
-        return null;
+        return invocationState.requestHeaders.getAcceptableLanguages();
     }
 
     @Override
     public Map<String, Cookie> getCookies() {
-        return null;
+        return invocationState.requestHeaders.getCookies();
     }
 
     @Override
     public boolean hasEntity() {
-        return false;
+        return invocationState.entity != null;
     }
 
     @Override
     public Object getEntity() {
-        return null;
+        return invocationState.entity.getEntity();
     }
 
     @Override
     public Class<?> getEntityClass() {
-        return null;
+        return invocationState.entity.getClass();
     }
 
     @Override
     public Type getEntityType() {
-        return null;
+        // FIXME: this is incomplete
+        return getEntityClass();
     }
 
     @Override
     public void setEntity(Object entity) {
-
+        setEntity(entity, Serialisers.NO_ANNOTATION, null);
     }
 
     @Override
     public void setEntity(Object entity, Annotation[] annotations, MediaType mediaType) {
-
+        invocationState.setEntity(entity, annotations, mediaType);
     }
 
     @Override
     public Annotation[] getEntityAnnotations() {
-        return new Annotation[0];
+        return invocationState.entity.getAnnotations();
     }
 
     @Override
     public OutputStream getEntityStream() {
-        return null;
+        throw new NotImplementedYet();
     }
 
     @Override
     public void setEntityStream(OutputStream outputStream) {
-
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -170,11 +174,11 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Configuration getConfiguration() {
-        return configuration;
+        return client.getConfiguration();
     }
 
     @Override
     public void abortWith(Response response) {
-
+        this.abortedWith = response;
     }
 }

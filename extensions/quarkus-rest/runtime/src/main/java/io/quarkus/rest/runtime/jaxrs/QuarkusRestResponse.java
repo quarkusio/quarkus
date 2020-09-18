@@ -27,7 +27,6 @@ import javax.ws.rs.core.Response;
 import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
 import io.quarkus.rest.runtime.util.DateUtil;
 import io.quarkus.rest.runtime.util.LocaleHelper;
-import io.vertx.core.http.HttpClientResponse;
 
 public class QuarkusRestResponse extends Response {
 
@@ -37,11 +36,18 @@ public class QuarkusRestResponse extends Response {
     MultivaluedMap<String, Object> headers;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
-    HttpClientResponse vertxClientResponse;
 
     @Override
     public int getStatus() {
         return status;
+    }
+
+    /**
+     * Internal: this is just cheaper than duplicating the response just to change the status
+     */
+    public void setStatus(int status) {
+        this.status = status;
+        statusType = null;
     }
 
     @Override
@@ -50,6 +56,14 @@ public class QuarkusRestResponse extends Response {
             statusType = new QuarkusRestStatusType(status, reasonPhrase);
         }
         return statusType;
+    }
+
+    /**
+     * Internal: this is just cheaper than duplicating the response just to change the status
+     */
+    public void setStatusInfo(StatusType statusType) {
+        this.statusType = QuarkusRestStatusType.valueOf(statusType);
+        status = statusType.getStatusCode();
     }
 
     @Override
@@ -281,9 +295,5 @@ public class QuarkusRestResponse extends Response {
     @Override
     public String getHeaderString(String name) {
         return getStringHeaders().getFirst(name);
-    }
-
-    public HttpClientResponse getVertxClientResponse() {
-        return vertxClientResponse;
     }
 }

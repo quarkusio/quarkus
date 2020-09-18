@@ -11,7 +11,6 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
@@ -119,7 +118,7 @@ public class QuarkusRestClient implements Client {
     }
 
     @Override
-    public Configuration getConfiguration() {
+    public QuarkusRestConfiguration getConfiguration() {
         abortIfClosed();
         return configuration;
     }

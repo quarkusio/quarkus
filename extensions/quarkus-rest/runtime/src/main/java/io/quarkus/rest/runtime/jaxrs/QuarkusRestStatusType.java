@@ -31,4 +31,9 @@ public class QuarkusRestStatusType implements StatusType {
         return reasonPhrase;
     }
 
+    public static QuarkusRestStatusType valueOf(StatusType statusType) {
+        if (statusType instanceof QuarkusRestStatusType)
+            return (QuarkusRestStatusType) statusType;
+        return new QuarkusRestStatusType(statusType.getStatusCode(), statusType.getReasonPhrase());
+    }
 }

@@ -39,23 +39,23 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) target.request().rx();
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
-            invoker.performRequestInternal(name, entity, responseType, false)
-                    .handle((response, connectionError) -> {
-                        if (connectionError != null) {
-                            emitter.fail(connectionError);
-                        } else {
-                            HttpClientResponse vertxResponse = response.getVertxClientResponse();
-                            // FIXME: this is probably not good enough
-                            if (response.getStatus() == 200
-                                    && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                                registerForSse(emitter, vertxResponse);
-                            } else {
-                                // read stuff in chunks
-                                registerForChunks(emitter, invoker, responseType, response, vertxResponse);
-                            }
-                        }
-                        return null;
-                    });
+            InvocationState invocationState = invoker.performRequestInternal(name, entity, responseType, false);
+            invocationState.getResult().handle((response, connectionError) -> {
+                if (connectionError != null) {
+                    emitter.fail(connectionError);
+                } else {
+                    HttpClientResponse vertxResponse = invocationState.getVertxClientResponse();
+                    // FIXME: this is probably not good enough
+                    if (response.getStatus() == 200
+                            && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
+                        registerForSse(emitter, vertxResponse);
+                    } else {
+                        // read stuff in chunks
+                        registerForChunks(emitter, invocationState, responseType, response, vertxResponse);
+                    }
+                }
+                return null;
+            });
         });
     }
 
@@ -77,7 +77,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     private <R> void registerForChunks(MultiEmitter<? super R> emitter,
-            QuarkusRestAsyncInvoker invoker,
+            InvocationState invocationState,
             GenericType<R> responseType,
             Response response,
             HttpClientResponse vertxClientResponse) {
@@ -99,7 +99,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
             @Override
             public void handle(Buffer buffer) {
                 try {
-                    R item = invoker.readEntity(buffer, responseType, response.getMediaType(), response.getMetadata());
+                    R item = invocationState.readEntity(buffer, responseType, response.getMediaType(), response.getMetadata());
                     emitter.emit(item);
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler

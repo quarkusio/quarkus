@@ -112,16 +112,16 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
             return;
         isOpen = true;
         QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) endpoint.request().rx();
-        invoker.performRequestInternal("GET", null, null, false)
-                .handle((response, throwable) -> {
-                    if (throwable != null)
-                        receiveThrowable(throwable);
-                    else {
-                        // FIXME: check response
-                        registerOnClient(response.getVertxClientResponse());
-                    }
-                    return null;
-                });
+        InvocationState invocationState = invoker.performRequestInternal("GET", null, null, false);
+        invocationState.getResult().handle((response, throwable) -> {
+            if (throwable != null)
+                receiveThrowable(throwable);
+            else {
+                // FIXME: check response
+                registerOnClient(invocationState.getVertxClientResponse());
+            }
+            return null;
+        });
     }
 
     /**

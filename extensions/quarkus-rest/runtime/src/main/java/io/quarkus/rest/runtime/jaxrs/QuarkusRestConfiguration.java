@@ -14,6 +14,7 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.ext.RuntimeDelegate;
 
 public class QuarkusRestConfiguration implements Configuration {
 
@@ -108,8 +109,7 @@ public class QuarkusRestConfiguration implements Configuration {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            //TODO: fixme
-            return new QuarkusRestRuntimeDelegate().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
+            return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
         }
     }
 
@@ -157,5 +157,13 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public void register(Object component, int priority) {
         register(component);
+    }
+
+    public List<ClientRequestFilter> getRequestFilters() {
+        return requestFilters;
+    }
+
+    public List<ClientResponseFilter> getResponseFilters() {
+        return responseFilters;
     }
 }

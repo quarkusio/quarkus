@@ -30,11 +30,14 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     final Serialisers serialisers;
     final RequestSpec requestSpec;
     final Map<String, Object> properties = new HashMap<>();
+    final QuarkusRestClient restClient;
 
-    public QuarkusRestInvocationBuilder(URI uri, HttpClient httpClient, QuarkusRestWebTarget target,
+    public QuarkusRestInvocationBuilder(URI uri, QuarkusRestClient restClient, HttpClient httpClient,
+            QuarkusRestWebTarget target,
             QuarkusRestConfiguration configuration,
             Serialisers serialisers) {
         this.uri = uri;
+        this.restClient = restClient;
         this.httpClient = httpClient;
         this.target = target;
         this.requestSpec = new RequestSpec(configuration);
@@ -73,7 +76,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public QuarkusRestAsyncInvoker async() {
-        return new QuarkusRestAsyncInvoker(httpClient, uri, serialisers, requestSpec, properties);
+        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, requestSpec, properties);
     }
 
     @Override
@@ -144,7 +147,7 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return new QuarkusRestAsyncInvoker(httpClient, uri, serialisers, requestSpec, properties);
+        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, requestSpec, properties);
     }
 
     @Override

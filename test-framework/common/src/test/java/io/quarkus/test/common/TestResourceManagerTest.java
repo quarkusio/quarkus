@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 public class TestResourceManagerTest {
 
     private static final String OVERRIDEN_KEY = "overridenKey";
-    public static AtomicInteger parallelCounter = new AtomicInteger();
+    public static boolean parallelTestResourceRunned = false;
 
     @Test
     void testRepeatableAnnotationsAreIndexed() {
@@ -38,7 +38,6 @@ public class TestResourceManagerTest {
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
-        Assertions.assertEquals(2, parallelCounter.get(), "Some test resource did not run!");
     }
 
     @QuarkusTestResource(FirstLifecycleManager.class)
@@ -139,9 +138,8 @@ public class TestResourceManagerTest {
         public Map<String, String> start() {
             try {
                 // sleep so the SecondParallelQuarkusTestResource finishes, incrementing the parallel counter first
-                Thread.sleep(10);
-                Assertions.assertEquals(1, parallelCounter.get(), "The SecondParallelQuarkusTestResource did not run yet!");
-                parallelCounter.incrementAndGet();
+                Thread.sleep(25);
+                Assertions.assertTrue(parallelTestResourceRunned, "The SecondParallelQuarkusTestResource did not run yet!");
                 return Collections.singletonMap("key1", "value1");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -162,7 +160,7 @@ public class TestResourceManagerTest {
 
         @Override
         public Map<String, String> start() {
-            parallelCounter.incrementAndGet();
+            parallelTestResourceRunned = true;
             return Collections.singletonMap("key2", "value2");
         }
 

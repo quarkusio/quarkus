@@ -1,14 +1,16 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.TCPMetrics;
 
 public class VertxTcpMetrics extends VertxNetworkMetrics
-        implements TCPMetrics<MetricsContext> {
+        implements TCPMetrics<Map<String, Object>> {
+
     private static final String CONNECTED_SOCKET_SAMPLE = "CONNECTED_SOCKET_SAMPLE";
 
     final String nameConnections;
@@ -27,30 +29,25 @@ public class VertxTcpMetrics extends VertxNetworkMetrics
      *
      * @param remoteAddress the remote address of the client
      * @param remoteName the remote name of the client
-     * @return a MetricsContext object for socket metric context or null
+     * @return a map for socket metric context
      */
     @Override
-    public MetricsContext connected(SocketAddress remoteAddress, String remoteName) {
-        Context vertxContext = Vertx.currentContext();
-        if (vertxContext == null) {
-            return null;
-        }
-        MetricsContext metricsContext = MetricsContext.addMetricsContext(vertxContext);
-
-        metricsContext.put(CONNECTED_SOCKET_SAMPLE,
+    public Map<String, Object> connected(SocketAddress remoteAddress, String remoteName) {
+        Map<String, Object> socketMetric = new HashMap<>();
+        socketMetric.put(CONNECTED_SOCKET_SAMPLE,
                 LongTaskTimer.builder(nameConnections).register(registry).start());
-        return metricsContext;
+        return socketMetric;
     }
 
     /**
      * Called when a client has disconnected, which is applicable for TCP
      * connections.
      *
-     * @param socketMetric a MetricsContext object for socket metric context or null
+     * @param socketMetric a Map for socket metric context or null
      * @param remoteAddress the remote address of the client
      */
     @Override
-    public void disconnected(MetricsContext socketMetric, SocketAddress remoteAddress) {
+    public void disconnected(Map<String, Object> socketMetric, SocketAddress remoteAddress) {
         if (socketMetric == null) {
             return;
         }
@@ -58,6 +55,5 @@ public class VertxTcpMetrics extends VertxNetworkMetrics
         if (sample != null) {
             sample.stop();
         }
-        socketMetric.removeMetricsContext();
     }
 }

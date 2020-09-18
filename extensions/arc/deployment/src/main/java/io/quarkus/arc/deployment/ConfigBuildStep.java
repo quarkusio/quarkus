@@ -1,21 +1,26 @@
 package io.quarkus.arc.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.smallrye.config.ConfigMappings.ConfigMappingWithPrefix.configMappingWithPrefix;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.CreationException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -30,15 +35,23 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.runtime.ConfigBeanCreator;
+import io.quarkus.arc.runtime.ConfigMappingCreator;
 import io.quarkus.arc.runtime.ConfigRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config.ConfigMappingObjectLoader;
+import io.smallrye.config.ConfigMappings.ConfigMappingWithPrefix;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
@@ -47,6 +60,7 @@ import io.smallrye.config.inject.ConfigProducer;
 public class ConfigBuildStep {
 
     private static final DotName CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
+    private static final DotName CONFIG_MAPPING_NAME = DotName.createSimple(ConfigMapping.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
     private static final DotName LIST_NAME = DotName.createSimple(List.class.getName());
 
@@ -172,6 +186,71 @@ public class ConfigBuildStep {
                 }
             }
         });
+    }
+
+    @BuildStep
+    void generateConfigMappings(
+            CombinedIndexBuildItem combinedIndex,
+            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigMappingBuildItem> configMappings,
+            BuildProducer<BeanConfiguratorBuildItem> beanConfigurators) {
+
+        for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(CONFIG_MAPPING_NAME)) {
+            AnnotationTarget target = instance.target();
+            if (!target.kind().equals(AnnotationTarget.Kind.CLASS)) {
+                continue;
+            }
+
+            ClassInfo classInfo = target.asClass();
+            String prefix = Optional.ofNullable(instance.value("prefix")).map(AnnotationValue::asString).orElse("");
+
+            ConfigMappingMetadata configMappingMetadata = ConfigMappingObjectLoader
+                    .getConfigMappingMetadata(toClass(classInfo));
+
+            generatedClasses.produce(new GeneratedClassBuildItem(true, configMappingMetadata.getClassName(),
+                    configMappingMetadata.getClassBytes()));
+            reflectiveClasses
+                    .produce(new ReflectiveClassBuildItem(true, false, configMappingMetadata.getInterfaceType()));
+            reflectiveClasses
+                    .produce(new ReflectiveClassBuildItem(true, false, false, configMappingMetadata.getClassName()));
+            configMappings.produce(new ConfigMappingBuildItem(toClass(classInfo), prefix));
+
+            beanConfigurators.produce(new BeanConfiguratorBuildItem(
+                    beanRegistrationPhase.getContext()
+                            .configure(configMappingMetadata.getInterfaceType())
+                            .types(configMappingMetadata.getInterfaceType())
+                            .creator(ConfigMappingCreator.class)
+                            .param("interfaceType", configMappingMetadata.getInterfaceType())));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void registerConfigMappings(
+            RecorderContext context,
+            ConfigRecorder recorder,
+            List<ConfigMappingBuildItem> configMappings) throws Exception {
+
+        context.registerNonDefaultConstructor(
+                ConfigMappingWithPrefix.class.getDeclaredConstructor(Class.class, String.class),
+                configMappingWithPrefix -> Stream.of(configMappingWithPrefix.getKlass(), configMappingWithPrefix.getPrefix())
+                        .collect(toList()));
+
+        recorder.registerConfigMappings(configMappings.stream()
+                .map(configMapping -> configMappingWithPrefix(configMapping.getInterfaceType(), configMapping.getPrefix()))
+                .collect(toSet()));
+    }
+
+    private static Class<?> toClass(ClassInfo classInfo) {
+        String className = classInfo.name().toString();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            return classLoader.loadClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("The class (" + className + ") cannot be created during deployment.", e);
+        }
     }
 
     private String getPropertyName(String name, ClassInfo declaringClass) {

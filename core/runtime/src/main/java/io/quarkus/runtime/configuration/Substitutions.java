@@ -12,6 +12,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.threadlocal.FastThreadLocalFactory;
 import com.oracle.svm.core.threadlocal.FastThreadLocalInt;
 
+import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.Expressions;
 
 /**
@@ -49,6 +50,31 @@ final class Substitutions {
                 }
             } else {
                 return supplier.get();
+            }
+        }
+    }
+
+    @TargetClass(className = "io.smallrye.config.ConfigMappingObjectLoader")
+    static final class Target_ConfigMappingObjectLoader {
+        @Substitute
+        static Class<?> createMappingObjectClass(final String className, final byte[] bytes) {
+            return null;
+        }
+    }
+
+    @TargetClass(className = "io.smallrye.config.ConfigMappingInterface")
+    static final class Target_ConfigMappingInterface {
+        @Alias
+        static ClassValue<Target_ConfigMappingInterface> cv = null;
+
+        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
+        @Substitute
+        public static Target_ConfigMappingInterface getConfigurationInterface(Class<?> interfaceType) {
+            Assert.checkNotNullParam("interfaceType", interfaceType);
+            try {
+                return cv.get(interfaceType);
+            } catch (NullPointerException e) {
+                return null;
             }
         }
     }

@@ -10,6 +10,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * @author Martin Kouba
@@ -42,6 +44,12 @@ public class ConfigRecorder {
                 }
             }
         }
+    }
+
+    public void registerConfigMappings(final Set<ConfigMappings.ConfigMappingWithPrefix> configMappingsWithPrefix)
+            throws Exception {
+        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        config.getConfigMappings().registerConfigMappings(config, configMappingsWithPrefix);
     }
 
     private Class<?> load(String className, ClassLoader cl) {

@@ -1,8 +1,10 @@
 package io.quarkus.rest.runtime.handlers;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.NotAllowedException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.NotSupportedException;
@@ -81,6 +83,16 @@ public class ClassRoutingHandler implements RestHandler {
                         Collections.singletonList(target.value.getConsumes()),
                         Collections.singletonList(MediaType.valueOf(contentType))) == null) {
                     throw new NotSupportedException();
+                }
+            }
+        }
+        // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
+        if (target.value.getProduces() != null) {
+            String accepts = requestContext.getContext().request().headers().get(HttpHeaders.ACCEPT);
+            if (accepts != null) {
+                if (MediaTypeHelper.getBestMatch(Arrays.asList(target.value.getProduces().getSortedMediaTypes()),
+                        Collections.singletonList(MediaType.valueOf(accepts))) == null) {
+                    throw new NotAcceptableException();
                 }
             }
         }

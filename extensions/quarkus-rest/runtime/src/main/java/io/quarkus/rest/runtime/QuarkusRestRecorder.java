@@ -572,6 +572,9 @@ public class QuarkusRestRecorder {
         handlers.add(new UniResponseHandler());
         handlers.add(new MultiResponseHandler());
         ServerMediaType serverMediaType = null;
+        if (method.getProduces() != null && method.getProduces().length > 0) {
+            serverMediaType = new ServerMediaType(method.getProduces(), StandardCharsets.UTF_8.name());
+        }
         if (method.getHttpMethod() == null) {
             //this is a resource locator method
             handlers.add(resourceLocatorHandler);
@@ -580,7 +583,6 @@ public class QuarkusRestRecorder {
             //we can't do this for all cases, but we can do it for the most common ones
             //in practice this should work for the majority of endpoints
             if (method.getProduces() != null && method.getProduces().length > 0) {
-                serverMediaType = new ServerMediaType(method.getProduces(), StandardCharsets.UTF_8.name());
                 //the method can only produce a single content type, which is the most common case
                 if (method.getProduces().length == 1) {
                     MediaType mediaType = MediaType.valueOf(method.getProduces()[0]);

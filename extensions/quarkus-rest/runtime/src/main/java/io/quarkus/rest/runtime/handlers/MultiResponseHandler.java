@@ -120,13 +120,13 @@ public class MultiResponseHandler implements RestHandler {
         if (requestContext.getResult() instanceof Multi) {
             Multi<?> result = (Multi<?>) requestContext.getResult();
             // FIXME: if we make a pretend Response and go through the normal route, we will get
-            // media type negociation and fixed entity writer set up, perhaps it's better than
+            // media type negotiation and fixed entity writer set up, perhaps it's better than
             // cancelling the normal route?
             // or make this SSE produce build-time
             MediaType[] mediaTypes = requestContext.getTarget().getProduces().getSortedMediaTypes();
             if (mediaTypes.length != 1)
                 throw new IllegalStateException(
-                        "Negociation or dynamic media type not supported yet for Multi: please use a single @Produces annotation");
+                        "Negotiation or dynamic media type not supported yet for Multi: please use a single @Produces annotation");
             requestContext.setProducesMediaType(mediaTypes[0]);
             // this is the non-async return type
             requestContext.setGenericReturnType(requestContext.getTarget().getReturnType());

@@ -7,7 +7,7 @@ import static io.quarkus.runtime.util.StringUtil.withoutSuffix;
 
 public final class ResourceName {
 
-    private static final String[] SUFFIXES = { "controller", "resource" };
+    private static final String[] SUFFIXES = { "controller", "resource", "repository" };
 
     public static String fromClass(String resourceClassName) {
         return String.join("-",

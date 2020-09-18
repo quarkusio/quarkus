@@ -114,8 +114,8 @@
         },
         {
             "category": "Spring",
-            "timeout": 50,
-            "test-modules": "spring-di spring-web spring-data-jpa spring-boot-properties spring-cloud-config-client"
+            "timeout": 55,
+            "test-modules": "spring-di spring-web spring-data-jpa spring-boot-properties spring-cloud-config-client spring-data-rest"
         },
         {
             "category": "gRPC",

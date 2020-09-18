@@ -120,6 +120,7 @@
         <module>spring-cloud-config-client</module>
         <module>spring-cache</module>
         <module>spring-scheduled</module>
+        <module>spring-data-rest</module>
 
         <!-- Security -->
         <module>security</module>

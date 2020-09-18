@@ -2,7 +2,7 @@ package io.quarkus.rest.data.panache.deployment.properties;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public class ResourcePropertiesBuildItem extends MultiBuildItem {
+public final class ResourcePropertiesBuildItem extends MultiBuildItem {
 
     private final String resourceType;
 

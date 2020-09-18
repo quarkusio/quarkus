@@ -334,6 +334,14 @@ This could be useful to access data for which the key is overridden:
 |Ternary 
 |Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
+
+|Logical AND 
+|Outputs `true` if both parts are not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
+|`{person.isActive && person.hasStyle}`
+
+|Logical OR 
+|Outputs `true` if any of the parts is not `falsy` as described in the <<if_section>>. The parameter is only evaluated if needed.
+|`{person.isActive || person.hasStyle}`
 |===
 
 TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.

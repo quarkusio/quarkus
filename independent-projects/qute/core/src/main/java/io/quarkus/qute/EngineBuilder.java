@@ -1,13 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.ValueResolvers.collectionResolver;
-import static io.quarkus.qute.ValueResolvers.mapEntryResolver;
-import static io.quarkus.qute.ValueResolvers.mapResolver;
-import static io.quarkus.qute.ValueResolvers.mapperResolver;
-import static io.quarkus.qute.ValueResolvers.orResolver;
-import static io.quarkus.qute.ValueResolvers.thisResolver;
-import static io.quarkus.qute.ValueResolvers.trueResolver;
-
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -87,8 +79,10 @@ public final class EngineBuilder {
      * @return self
      */
     public EngineBuilder addDefaultValueResolvers() {
-        return addValueResolvers(mapResolver(), mapperResolver(), mapEntryResolver(), collectionResolver(),
-                thisResolver(), orResolver(), trueResolver());
+        return addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.mapperResolver(),
+                ValueResolvers.mapEntryResolver(), ValueResolvers.collectionResolver(),
+                ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
+                ValueResolvers.logicalAndResolver(), ValueResolvers.logicalOrResolver());
     }
 
     public EngineBuilder addDefaults() {

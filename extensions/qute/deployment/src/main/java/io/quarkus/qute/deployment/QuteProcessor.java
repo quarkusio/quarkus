@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -93,7 +94,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
-import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
+import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ExtensionMethodGenerator.NamespaceResolverCreator;
@@ -495,7 +496,7 @@ public class QuteProcessor {
 
                 if (member == null) {
                     // Test whether the validation should be skipped
-                    Check check = new Check(info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
+                    TypeCheck check = new TypeCheck(info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
                             match.clazz, info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
                     if (isExcluded(check, excludes)) {
                         LOGGER.debugf(
@@ -916,16 +917,18 @@ public class QuteProcessor {
     @BuildStep
     void excludeTypeChecks(BuildProducer<TypeCheckExcludeBuildItem> excludes) {
         // Exclude all checks that involve built-in value resolvers
-        // TODO we need a better way to exclude value resolvers that are not template extension methods
-        excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<Check>() {
+        // TODO: We need a better way to exclude value resolvers that are not template extension methods
+        List<String> skipOperators = Arrays.asList("?:", "or", ":", "?", "&&", "||");
+
+        excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheck>() {
             @Override
-            public boolean test(Check check) {
-                // RawString
-                if (check.isProperty() && check.nameIn("raw", "safe")) {
+            public boolean test(TypeCheck check) {
+                // RawString - these properties can be used on any object
+                if (check.isProperty() && ("raw".equals(check.name) || "safe".equals(check.name))) {
                     return true;
                 }
-                // Elvis and ternary operators
-                if (check.numberOfParameters == 1 && check.nameIn("?:", "or", ":", "?")) {
+                // Elvis, ternary and logical operators
+                if (check.numberOfParameters == 1 && skipOperators.contains(check.name)) {
                     return true;
                 }
                 // Collection.contains()
@@ -1392,7 +1395,7 @@ public class QuteProcessor {
         }
     }
 
-    private static boolean isExcluded(Check check, List<TypeCheckExcludeBuildItem> excludes) {
+    private static boolean isExcluded(TypeCheck check, List<TypeCheckExcludeBuildItem> excludes) {
         for (TypeCheckExcludeBuildItem exclude : excludes) {
             if (exclude.getPredicate().test(check)) {
                 return true;

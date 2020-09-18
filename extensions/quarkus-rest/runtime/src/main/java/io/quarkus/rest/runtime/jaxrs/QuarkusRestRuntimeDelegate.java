@@ -23,6 +23,7 @@ import io.quarkus.rest.runtime.headers.LinkDelegate;
 import io.quarkus.rest.runtime.headers.LocaleDelegate;
 import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
 import io.quarkus.rest.runtime.headers.NewCookieHeaderDelegate;
+import io.quarkus.rest.runtime.headers.ObjectToStringDelegate;
 
 public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
 
@@ -65,8 +66,9 @@ public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
             return (HeaderDelegate<T>) LocaleDelegate.INSTANCE;
         } else if (type.equals(Link.class)) {
             return (HeaderDelegate<T>) LinkDelegate.INSTANCE;
+        } else {
+            return (HeaderDelegate<T>) ObjectToStringDelegate.INSTANCE;
         }
-        throw new IllegalArgumentException("Header delegate missing for " + type);
     }
 
     @Override

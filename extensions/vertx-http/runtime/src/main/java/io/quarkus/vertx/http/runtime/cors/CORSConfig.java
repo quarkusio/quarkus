@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.vertx.core.http.HttpMethod;
 
 @ConfigGroup
@@ -20,6 +22,7 @@ public class CORSConfig {
      * default: returns any requested origin as valid
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> origins;
 
     /**
@@ -42,6 +45,7 @@ public class CORSConfig {
      * default: returns any requested header as valid
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> headers;
 
     /**
@@ -52,6 +56,7 @@ public class CORSConfig {
      * default: empty
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> exposedHeaders;
 
     /**

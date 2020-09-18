@@ -4,16 +4,19 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -114,9 +117,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
             for (ClientRequestFilter filter : filters) {
                 try {
                     filter.filter(requestContext);
-                } catch (IOException e) {
-                    // FIXME: What do we do here?
-                    e.printStackTrace();
+                } catch (Exception x) {
+                    throw new ProcessingException(x);
                 }
                 if (requestContext.abortedWith != null) {
                     return;
@@ -168,13 +170,22 @@ public class InvocationState implements Handler<HttpClientResponse> {
         }
         Buffer actualEntity = QuarkusRestAsyncInvoker.EMPTY_BUFFER;
         if (entity != null) {
-
-            Class<?> entityType = entity.getEntity().getClass();
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityType, entity.getMediaType());
+            Object entityObject = entity.getEntity();
+            Class<?> entityClass;
+            Type entityType;
+            if (entityObject instanceof GenericEntity) {
+                GenericEntity<?> genericEntity = (GenericEntity<?>) entityObject;
+                entityClass = genericEntity.getRawType();
+                entityType = genericEntity.getType();
+                entityObject = genericEntity.getEntity();
+            } else {
+                entityType = entityClass = entityObject.getClass();
+            }
+            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType());
             for (MessageBodyWriter writer : writers) {
-                if (writer.isWriteable(entityType, entityType, entity.getAnnotations(), entity.getMediaType())) {
+                if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    writer.writeTo(entity.getEntity(), entityType, entityType, entity.getAnnotations(),
+                    writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
                             entity.getMediaType(), headerMap, baos);
                     actualEntity = Buffer.buffer(baos.toByteArray());
                     break;
@@ -206,9 +217,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
             for (ClientResponseFilter filter : filters) {
                 try {
                     filter.filter(requestContext, responseContext);
-                } catch (IOException e) {
-                    // FIXME: What do we do here?
-                    e.printStackTrace();
+                } catch (Exception x) {
+                    throw new ProcessingException(x);
                 }
             }
         }

@@ -13,8 +13,10 @@ import java.util.Map;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -98,12 +100,14 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Locale getLanguage() {
-        return invocationState.requestHeaders.getLanguage();
+        // those come from the entity
+        return invocationState.entity != null ? invocationState.entity.getLanguage() : null;
     }
 
     @Override
     public MediaType getMediaType() {
-        return invocationState.requestHeaders.getMediaType();
+        // those come from the entity
+        return invocationState.entity != null ? invocationState.entity.getMediaType() : null;
     }
 
     @Override
@@ -128,18 +132,41 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Object getEntity() {
-        return invocationState.entity.getEntity();
+        Entity<?> entity = invocationState.entity;
+        if (entity != null) {
+            Object ret = entity.getEntity();
+            if (ret instanceof GenericEntity) {
+                return ((GenericEntity<?>) ret).getEntity();
+            }
+            return ret;
+        }
+        return null;
     }
 
     @Override
     public Class<?> getEntityClass() {
-        return invocationState.entity.getClass();
+        Entity<?> entity = invocationState.entity;
+        if (entity != null) {
+            Object ret = entity.getEntity();
+            if (ret instanceof GenericEntity) {
+                return ((GenericEntity<?>) ret).getRawType();
+            }
+            return ret.getClass();
+        }
+        return null;
     }
 
     @Override
     public Type getEntityType() {
-        // FIXME: this is incomplete
-        return getEntityClass();
+        Entity<?> entity = invocationState.entity;
+        if (entity != null) {
+            Object ret = entity.getEntity();
+            if (ret instanceof GenericEntity) {
+                return ((GenericEntity<?>) ret).getType();
+            }
+            return ret.getClass();
+        }
+        return null;
     }
 
     @Override
@@ -154,7 +181,7 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Annotation[] getEntityAnnotations() {
-        return invocationState.entity.getAnnotations();
+        return invocationState.entity != null ? invocationState.entity.getAnnotations() : Serialisers.NO_ANNOTATION;
     }
 
     @Override

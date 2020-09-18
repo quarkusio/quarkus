@@ -1011,9 +1011,8 @@ public class OidcTenantConfig {
 
     public static enum ApplicationType {
         /**
-         * A {@code WEB_APP} is a client that server pages, usually a frontend application. For this type of client the
-         * Authorization Code Flow is
-         * defined as the preferred method for authenticating users.
+         * A {@code WEB_APP} is a client that serves pages, usually a frontend application. For this type of client the
+         * Authorization Code Flow is defined as the preferred method for authenticating users.
          */
         WEB_APP,
 

@@ -25,6 +25,7 @@ import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.OidcTenantConfig.Credentials;
 import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -80,8 +81,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager,
-            DefaultTenantConfigResolver resolver) {
+            IdentityProviderManager identityProviderManager) {
 
         Cookie sessionCookie = context.request().getCookie(
                 getSessionCookieName(resolver.resolve(context, false)));
@@ -100,6 +100,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         @Override
                         public SecurityIdentity apply(SecurityIdentity identity) {
                             if (isLogout(context, configContext)) {
+                                fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
                                 throw redirectToLogoutEndpoint(context, configContext, idToken);
                             }
 
@@ -130,12 +131,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 if (identity == null) {
                                     LOG.debug("SecurityIdentity is null after a token refresh");
                                     throw new AuthenticationCompletionException();
+                                } else {
+                                    fireEvent(SecurityEvent.Type.OIDC_SESSION_EXPIRED_AND_REFRESHED, identity);
                                 }
                             } else {
                                 identity = trySilentRefresh(configContext, refreshToken, context, identityProviderManager);
                                 if (identity == null) {
                                     LOG.debug("ID token can no longer be refreshed, using the current SecurityIdentity");
                                     identity = ((TokenAutoRefreshException) throwable).getSecurityIdentity();
+                                } else {
+                                    fireEvent(SecurityEvent.Type.OIDC_SESSION_REFRESHED, identity);
                                 }
                             }
                             return identity;
@@ -164,7 +169,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 : true;
     }
 
-    public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
 
         TenantConfigContext configContext = resolver.resolve(context, true);
         removeCookie(context, configContext, getSessionCookieName(configContext));
@@ -390,6 +395,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             maxAge += configContext.oidcConfig.authentication.sessionAgeExtension.getSeconds();
         }
         createCookie(context, configContext, getSessionCookieName(configContext), cookieValue, maxAge);
+        fireEvent(SecurityEvent.Type.OIDC_LOGIN, securityIdentity);
+    }
+
+    private void fireEvent(SecurityEvent.Type eventType, SecurityIdentity securityIdentity) {
+        if (resolver.isSecurityEventObserved()) {
+            resolver.getSecurityEvent().fire(new SecurityEvent(eventType, securityIdentity));
+        }
     }
 
     private String getRedirectPath(TenantConfigContext configContext, RoutingContext context) {

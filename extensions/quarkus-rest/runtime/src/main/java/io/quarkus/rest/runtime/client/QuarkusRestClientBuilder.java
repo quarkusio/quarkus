@@ -83,10 +83,10 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
     public Client build() {
         QuarkusRestDeployment currentDeployment = QuarkusRestRecorder.getCurrentDeployment();
         if (currentDeployment == null) {
-            return new QuarkusRestClient(new Serialisers(),
+            return new QuarkusRestClient(configuration, new Serialisers(),
                     new ClientProxies(Collections.emptyMap()), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
         } else {
-            return new QuarkusRestClient(currentDeployment.getSerialisers(),
+            return new QuarkusRestClient(configuration, currentDeployment.getSerialisers(),
                     currentDeployment.getClientProxies(), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
         }
     }
@@ -98,6 +98,7 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public ClientBuilder property(String name, Object value) {
+        configuration.property(name, value);
         return this;
     }
 

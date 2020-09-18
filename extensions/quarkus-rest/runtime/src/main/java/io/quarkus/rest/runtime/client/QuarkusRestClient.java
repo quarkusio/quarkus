@@ -25,15 +25,17 @@ public class QuarkusRestClient implements Client {
     final Vertx vertx;
     final boolean closeVertx;
     final HttpClient httpClient;
-    final QuarkusRestConfiguration configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
+    final QuarkusRestConfiguration configuration;
     final Serialisers serialisers;
     final ClientProxies clientProxies;
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
     private boolean isClosed;
 
-    public QuarkusRestClient(Serialisers serialisers, ClientProxies clientProxies, HostnameVerifier hostnameVerifier,
+    public QuarkusRestClient(QuarkusRestConfiguration configuration, Serialisers serialisers, ClientProxies clientProxies,
+            HostnameVerifier hostnameVerifier,
             SSLContext sslContext, Supplier<Vertx> vertx) {
+        this.configuration = configuration != null ? configuration : new QuarkusRestConfiguration(RuntimeType.CLIENT);
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
         this.hostnameVerifier = hostnameVerifier;

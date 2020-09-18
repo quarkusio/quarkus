@@ -90,7 +90,7 @@ This is done in the `application.properties` configuration file. Edit it to the 
 
 [source]
 ----
-quarkus.redis.hosts=localhost:6379 <1>
+quarkus.redis.hosts=redis://localhost:6379 <1>
 ----
 
 1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
@@ -551,8 +551,8 @@ Using several clients works the same way as having a single client.
 
 [source,properties]
 ----
-quarkus.redis.hosts = localhost:6379
-quarkus.redis.second.hosts = localhost:6379
+quarkus.redis.hosts=redis://localhost:6379
+quarkus.redis.second.hosts=redis://localhost:6379
 ----
 
 Notice there's an extra bit in the key (the `second` segment).

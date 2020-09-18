@@ -3,6 +3,8 @@ package io.quarkus.mutiny.deployment.test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
@@ -67,6 +69,37 @@ public class MutinyTest {
         Throwable thrown = logRecord.getThrown();
         Assertions.assertTrue(thrown instanceof IOException);
         Assertions.assertEquals("boom", thrown.getMessage());
+    }
+
+    @Test
+    public void testAllowedUniBlocking() {
+        String str = Uni.createFrom().item("ok").await().indefinitely();
+        Assertions.assertEquals("ok", str);
+    }
+
+    @Test
+    public void testForbiddenUniBlocking() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<String> item = new AtomicReference<>();
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+
+        new Thread(() -> {
+            try {
+                String str = Uni.createFrom().item("ok").await().indefinitely();
+                item.set(str);
+            } catch (Throwable err) {
+                throwable.set(err);
+            }
+            latch.countDown();
+        }, "vertx-eventloop-thread-0").start();
+
+        Assertions.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assertions.assertNull(item.get());
+
+        Throwable exception = throwable.get();
+        Assertions.assertNotNull(exception);
+        Assertions.assertTrue(exception instanceof IllegalStateException);
+        Assertions.assertTrue(exception.getMessage().contains("The current thread cannot be blocked"));
     }
 
     @ApplicationScoped

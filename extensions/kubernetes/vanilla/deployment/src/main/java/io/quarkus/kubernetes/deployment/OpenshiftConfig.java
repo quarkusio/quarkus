@@ -201,7 +201,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * Sidecar containers
-     * 
+     *
      * @deprecated Use the {@code sidecars} property instead
      */
     @ConfigItem
@@ -213,6 +213,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Map<String, ContainerConfig> sidecars;
+
+    /**
+     * The host aliases
+     */
+    @ConfigItem
+    Map<String, HostAliasConfig> hostAliases;
 
     /**
      * If true, an Openshift Route will be created
@@ -333,6 +339,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Map<String, AzureDiskVolumeConfig> getAzureDiskVolumes() {
         return azureDiskVolumes;
+    }
+
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
     }
 
     public Map<String, ContainerConfig> getInitContainers() {

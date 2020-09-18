@@ -214,6 +214,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<List<String>> deploymentTarget;
 
     /**
+     * The host aliases
+     */
+    @ConfigItem(name = "hostaliases")
+    Map<String, HostAliasConfig> hostAliases;
+
+    /**
      * If true, a Kubernetes Ingress will be created
      */
     @ConfigItem
@@ -379,6 +385,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Map<String, ContainerConfig> getSidecars() {
         return sidecars;
+    }
+
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
     }
 
     @Override

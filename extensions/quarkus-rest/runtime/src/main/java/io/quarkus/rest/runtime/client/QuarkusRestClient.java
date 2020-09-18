@@ -29,6 +29,7 @@ public class QuarkusRestClient implements Client {
     final ClientProxies clientProxies;
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
+    private boolean isClosed;
 
     public QuarkusRestClient(Serialisers serialisers, ClientProxies clientProxies, HostnameVerifier hostnameVerifier,
             SSLContext sslContext, Supplier<Vertx> vertx) {
@@ -48,106 +49,132 @@ public class QuarkusRestClient implements Client {
 
     @Override
     public void close() {
+        if (isClosed)
+            return;
+        isClosed = true;
         httpClient.close();
         if (closeVertx) {
             vertx.close();
         }
     }
 
+    void abortIfClosed() {
+        if (isClosed)
+            throw new IllegalStateException("Client is closed");
+    }
+
     @Override
     public WebTarget target(String uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
+        abortIfClosed();
+        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(URI uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
+        abortIfClosed();
+        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(UriBuilder uriBuilder) {
-        return new QuarkusRestWebTarget(httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
+        abortIfClosed();
+        return new QuarkusRestWebTarget(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
                 clientProxies);
     }
 
     @Override
     public WebTarget target(Link link) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromLink(link), new QuarkusRestConfiguration(configuration),
+        abortIfClosed();
+        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromLink(link),
+                new QuarkusRestConfiguration(configuration),
                 serialisers, clientProxies);
     }
 
     @Override
     public Invocation.Builder invocation(Link link) {
+        abortIfClosed();
         return target(link).request();
     }
 
     @Override
     public SSLContext getSslContext() {
+        abortIfClosed();
         return sslContext;
     }
 
     @Override
     public HostnameVerifier getHostnameVerifier() {
+        abortIfClosed();
         return hostnameVerifier;
     }
 
     @Override
     public Configuration getConfiguration() {
+        abortIfClosed();
         return configuration;
     }
 
     @Override
     public Client property(String name, Object value) {
+        abortIfClosed();
         configuration.property(name, value);
         return this;
     }
 
     @Override
     public Client register(Class<?> componentClass) {
+        abortIfClosed();
         configuration.register(componentClass);
         return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, int priority) {
+        abortIfClosed();
         configuration.register(componentClass, priority);
         return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, Class<?>... contracts) {
+        abortIfClosed();
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
     public Client register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+        abortIfClosed();
         configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
     public Client register(Object component) {
+        abortIfClosed();
         configuration.register(component);
         return this;
     }
 
     @Override
     public Client register(Object component, int priority) {
+        abortIfClosed();
         configuration.register(component, priority);
         return this;
     }
 
     @Override
     public Client register(Object component, Class<?>... contracts) {
+        abortIfClosed();
         configuration.register(component, contracts);
         return this;
     }
 
     @Override
     public Client register(Object component, Map<Class<?>, Integer> contracts) {
+        abortIfClosed();
         configuration.register(component, contracts);
         return this;
     }

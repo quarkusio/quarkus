@@ -26,9 +26,11 @@ public class QuarkusRestWebTarget implements WebTarget {
     private final Serialisers serialisers;
     private final ClientProxies clientProxies;
     private boolean chunked = false;
+    private final QuarkusRestClient restClient;
 
-    public QuarkusRestWebTarget(UriBuilder uriBuilder, HttpClient client, Serialisers serialisers,
+    public QuarkusRestWebTarget(QuarkusRestClient restClient, UriBuilder uriBuilder, HttpClient client, Serialisers serialisers,
             ClientProxies clientProxies) {
+        this.restClient = restClient;
         this.uriBuilder = uriBuilder;
         this.client = client;
         this.serialisers = serialisers;
@@ -36,8 +38,10 @@ public class QuarkusRestWebTarget implements WebTarget {
         configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
     }
 
-    public QuarkusRestWebTarget(HttpClient client, UriBuilder uriBuilder, QuarkusRestConfiguration configuration,
+    public QuarkusRestWebTarget(QuarkusRestClient restClient, HttpClient client, UriBuilder uriBuilder,
+            QuarkusRestConfiguration configuration,
             Serialisers serialisers, ClientProxies clientProxies) {
+        this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;
         this.configuration = configuration;
@@ -268,7 +272,7 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestWebTarget newInstance(HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestWebTarget(client, uriBuilder, configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(restClient, client, uriBuilder, configuration, serialisers, clientProxies);
     }
 
     @Override
@@ -298,7 +302,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     private void abortIfClosed() {
-        //todo
+        restClient.abortIfClosed();
     }
 
     protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,

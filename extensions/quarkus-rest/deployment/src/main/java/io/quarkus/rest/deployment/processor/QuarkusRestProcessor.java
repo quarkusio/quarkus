@@ -250,9 +250,12 @@ public class QuarkusRestProcessor {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them
-            clientDefinitions.add(EndpointIndexer.createClientProxy(index, clazz,
+            RestClientInterface clientProxy = EndpointIndexer.createClientProxy(index, clazz,
                     generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    i.getValue(), config, additionalReaders));
+                    i.getValue(), config, additionalReaders);
+            if (clientProxy != null) {
+                clientDefinitions.add(clientProxy);
+            }
         }
         Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations = generateClientInvokers(recorderContext,
                 clientDefinitions, generatedClassBuildItemBuildProducer);

@@ -1,13 +1,17 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
 
@@ -15,10 +19,21 @@ public class QuarkusRestConfiguration implements Configuration {
 
     private final RuntimeType runtimeType;
     private final Map<String, Object> properties = new HashMap<>();
-    private final Set<Feature> enabledFeatures = new HashSet<>();
+    private final Map<Class<?>, Object> allInstances = new HashMap<>();
+    private final List<Feature> enabledFeatures = new ArrayList<>();
+    private final List<ClientRequestFilter> requestFilters = new ArrayList<>();
+    private final List<ClientResponseFilter> responseFilters = new ArrayList<>();
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
+    }
+
+    public QuarkusRestConfiguration(Configuration configuration) {
+        this.runtimeType = configuration.getRuntimeType();
+        this.properties.putAll(configuration.getProperties());
+        for (Object i : configuration.getInstances()) {
+            register(i);
+        }
     }
 
     @Override
@@ -58,27 +73,27 @@ public class QuarkusRestConfiguration implements Configuration {
 
     @Override
     public boolean isRegistered(Object component) {
-        return false;
+        return allInstances.get(component.getClass()) == component;
     }
 
     @Override
     public boolean isRegistered(Class<?> componentClass) {
-        return false;
+        return allInstances.containsKey(componentClass);
     }
 
     @Override
     public Map<Class<?>, Integer> getContracts(Class<?> componentClass) {
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
     public Set<Class<?>> getClasses() {
-        return Collections.emptySet();
+        return new HashSet<>(allInstances.keySet());
     }
 
     @Override
     public Set<Object> getInstances() {
-        return Collections.emptySet();
+        return new HashSet<>(allInstances.values());
     }
 
     public void addEnabledFeature(Feature feature) {
@@ -103,26 +118,44 @@ public class QuarkusRestConfiguration implements Configuration {
     }
 
     public void register(Class<?> componentClass, int priority) {
-
+        try {
+            register(componentClass.newInstance());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void register(Class<?> componentClass, Class<?>... contracts) {
-
+        try {
+            register(componentClass.newInstance());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void register(Object component) {
-
+        allInstances.put(component.getClass(), component);
+        if (component instanceof Feature) {
+            enabledFeatures.add((Feature) component);
+        }
+        if (component instanceof ClientRequestFilter) {
+            requestFilters.add((ClientRequestFilter) component);
+        }
+        if (component instanceof ClientResponseFilter) {
+            responseFilters.add((ClientResponseFilter) component);
+        }
     }
 
     public void register(Object component, Class<?>[] contracts) {
-
+        register(component);
     }
 
     public void register(Object component, Map<Class<?>, Integer> contracts) {
+        register(component);
 
     }
 
     public void register(Object component, int priority) {
-
+        register(component);
     }
 }

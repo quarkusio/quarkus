@@ -2,6 +2,7 @@ package io.quarkus.rest.runtime.client;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -15,13 +16,13 @@ import javax.ws.rs.core.UriBuilder;
 
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 
 public class QuarkusRestClient implements Client {
 
-    final Vertx vertx = VertxCoreRecorder.getVertx().get();
+    final Vertx vertx;
+    final boolean closeVertx;
     final HttpClient httpClient;
     final QuarkusRestConfiguration configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
     final Serialisers serialisers;
@@ -30,37 +31,51 @@ public class QuarkusRestClient implements Client {
     final SSLContext sslContext;
 
     public QuarkusRestClient(Serialisers serialisers, ClientProxies clientProxies, HostnameVerifier hostnameVerifier,
-            SSLContext sslContext) {
+            SSLContext sslContext, Supplier<Vertx> vertx) {
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
         this.hostnameVerifier = hostnameVerifier;
         this.sslContext = sslContext;
-        this.httpClient = vertx.createHttpClient();
+        if (vertx != null) {
+            this.vertx = vertx.get();
+            closeVertx = false;
+        } else {
+            this.vertx = Vertx.vertx();
+            closeVertx = true;
+        }
+        this.httpClient = this.vertx.createHttpClient();
     }
 
     @Override
     public void close() {
         httpClient.close();
+        if (closeVertx) {
+            vertx.close();
+        }
     }
 
     @Override
     public WebTarget target(String uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
+                serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(URI uri) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
+                serialisers, clientProxies);
     }
 
     @Override
     public WebTarget target(UriBuilder uriBuilder) {
-        return new QuarkusRestWebTarget(httpClient, uriBuilder, configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
+                clientProxies);
     }
 
     @Override
     public WebTarget target(Link link) {
-        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromLink(link), configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(httpClient, UriBuilder.fromLink(link), new QuarkusRestConfiguration(configuration),
+                serialisers, clientProxies);
     }
 
     @Override

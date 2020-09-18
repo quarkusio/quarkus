@@ -16,11 +16,13 @@ import javax.ws.rs.core.Configuration;
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 
 public class QuarkusRestClientBuilder extends ClientBuilder {
 
     private ClientProxies clientProxies;
-    private Configuration configuration;
+    private QuarkusRestConfiguration configuration;
     private SSLContext sslContext;
     private KeyStore trustStore;
     private KeyStore keyStore;
@@ -29,7 +31,7 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
 
     @Override
     public ClientBuilder withConfig(Configuration config) {
-        this.configuration = config;
+        this.configuration = new QuarkusRestConfiguration(config);
         return this;
     }
 
@@ -82,10 +84,10 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
         QuarkusRestDeployment currentDeployment = QuarkusRestRecorder.getCurrentDeployment();
         if (currentDeployment == null) {
             return new QuarkusRestClient(new Serialisers(),
-                    new ClientProxies(Collections.emptyMap()), hostnameVerifier, sslContext);
+                    new ClientProxies(Collections.emptyMap()), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
         } else {
             return new QuarkusRestClient(currentDeployment.getSerialisers(),
-                    currentDeployment.getClientProxies(), hostnameVerifier, sslContext);
+                    currentDeployment.getClientProxies(), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
         }
     }
 
@@ -100,42 +102,50 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
     }
 
     @Override
-    public ClientBuilder register(Class<?> componentClass) {
+    public QuarkusRestClientBuilder register(Class<?> componentClass) {
+        configuration.register(componentClass);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Class<?> componentClass, int priority) {
+    public QuarkusRestClientBuilder register(Class<?> componentClass, int priority) {
+        configuration.register(componentClass, priority);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Class<?> componentClass, Class<?>... contracts) {
+    public QuarkusRestClientBuilder register(Class<?> componentClass, Class<?>... contracts) {
+        configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+    public QuarkusRestClientBuilder register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+        configuration.register(componentClass, contracts);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Object component) {
+    public QuarkusRestClientBuilder register(Object component) {
+        configuration.register(component);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Object component, int priority) {
+    public QuarkusRestClientBuilder register(Object component, int priority) {
+        configuration.register(component, priority);
         return this;
     }
 
     @Override
-    public ClientBuilder register(Object component, Class<?>... contracts) {
-        return null;
+    public QuarkusRestClientBuilder register(Object component, Class<?>... contracts) {
+        configuration.register(component, contracts);
+        return this;
     }
 
     @Override
-    public ClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
+    public QuarkusRestClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
+        configuration.register(component, contracts);
         return this;
     }
 }

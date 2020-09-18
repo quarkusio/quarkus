@@ -360,4 +360,12 @@ public class SimpleQuarkusRestResource {
     public Integer jsonpArray(JsonArray jsonArray) {
         return jsonArray.size();
     }
+
+    @Path("/bool")
+    @POST
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public boolean bool(boolean bool) {
+        return bool;
+    }
 }

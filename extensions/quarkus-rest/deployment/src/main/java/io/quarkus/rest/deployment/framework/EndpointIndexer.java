@@ -1,5 +1,6 @@
 package io.quarkus.rest.deployment.framework;
 
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.*;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LIST;
@@ -14,8 +15,10 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SUSPENDED;
 import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -69,7 +73,9 @@ import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonArrayReader;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonObjectReader;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonStructureReader;
@@ -79,6 +85,7 @@ import io.quarkus.runtime.util.HashUtil;
 public class EndpointIndexer {
 
     private static final Map<String, String> primitiveTypes;
+    private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
 
@@ -101,6 +108,19 @@ public class EndpointIndexer {
         prims.put(long.class.getName(), Long.class.getName());
         prims.put(Long.class.getName(), Long.class.getName());
         primitiveTypes = Collections.unmodifiableMap(prims);
+
+        Map<DotName, Class<?>> supportedReaderJavaTps = new HashMap<>();
+        supportedReaderJavaTps.put(PRIMITIVE_BOOLEAN, boolean.class);
+        supportedReaderJavaTps.put(PRIMITIVE_DOUBLE, double.class);
+        supportedReaderJavaTps.put(PRIMITIVE_FLOAT, float.class);
+        supportedReaderJavaTps.put(PRIMITIVE_LONG, long.class);
+        supportedReaderJavaTps.put(PRIMITIVE_INTEGER, int.class);
+        supportedReaderJavaTps.put(BOOLEAN, Boolean.class);
+        supportedReaderJavaTps.put(DOUBLE, Double.class);
+        supportedReaderJavaTps.put(FLOAT, Float.class);
+        supportedReaderJavaTps.put(LONG, Long.class);
+        supportedReaderJavaTps.put(INTEGER, Integer.class);
+        supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
     }
 
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
@@ -169,11 +189,11 @@ public class EndpointIndexer {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders) {
         List<ResourceMethod> ret = new ArrayList<>();
-        String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.PRODUCES));
-        String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(QuarkusRestDotNames.CONSUMES));
+        String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
+        String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
         Set<String> classNameBindings = nameBindingNames(currentClassInfo, index);
 
-        for (DotName httpMethod : QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS) {
+        for (DotName httpMethod : JAXRS_METHOD_ANNOTATIONS) {
             List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
             if (foundMethods != null) {
                 for (AnnotationInstance annotation : foundMethods) {
@@ -271,13 +291,13 @@ public class EndpointIndexer {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
 
                 String name = null;
-                AnnotationInstance pathParam = anns.get(QuarkusRestDotNames.PATH_PARAM);
+                AnnotationInstance pathParam = anns.get(PATH_PARAM);
                 AnnotationInstance queryParam = anns.get(QUERY_PARAM);
-                AnnotationInstance headerParam = anns.get(QuarkusRestDotNames.HEADER_PARAM);
-                AnnotationInstance formParam = anns.get(QuarkusRestDotNames.FORM_PARAM);
-                AnnotationInstance contextParam = anns.get(QuarkusRestDotNames.CONTEXT);
-                AnnotationInstance matrixParam = anns.get(QuarkusRestDotNames.MATRIX_PARAM);
-                AnnotationInstance defaultValueAnnotation = anns.get(QuarkusRestDotNames.DEFAULT_VALUE);
+                AnnotationInstance headerParam = anns.get(HEADER_PARAM);
+                AnnotationInstance formParam = anns.get(FORM_PARAM);
+                AnnotationInstance contextParam = anns.get(CONTEXT);
+                AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
+                AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
                 AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
                 String defaultValue = null;
                 if (defaultValueAnnotation != null) {
@@ -348,16 +368,7 @@ public class EndpointIndexer {
                     }
                 } else {
                     elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
-
-                    if (paramType.name().equals(QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME)) {
-                        additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
-                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_OBJECT)) {
-                        additionalReaders.add(JsonObjectReader.class, APPLICATION_JSON, javax.json.JsonObject.class);
-                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_ARRAY)) {
-                        additionalReaders.add(JsonArrayReader.class, APPLICATION_JSON, javax.json.JsonArray.class);
-                    } else if (paramType.name().equals(QuarkusRestDotNames.JSONP_JSON_STRUCTURE)) {
-                        additionalReaders.add(JsonStructureReader.class, APPLICATION_JSON, javax.json.JsonStructure.class);
-                    }
+                    addReaderForType(additionalReaders, paramType);
 
                     if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
                         converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
@@ -471,6 +482,33 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private static void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
+        DotName dotName = paramType.name();
+        if (dotName.equals(BYTE_ARRAY_DOT_NAME)) {
+            additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
+        } else if (dotName.equals(INPUT_STREAM)) {
+            additionalReaders.add(InputStreamMessageBodyReader.class, WILDCARD, InputStream.class);
+        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
+            additionalReaders.add(JsonObjectReader.class, APPLICATION_JSON, javax.json.JsonObject.class);
+        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
+            additionalReaders.add(JsonArrayReader.class, APPLICATION_JSON, javax.json.JsonArray.class);
+        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
+            additionalReaders.add(JsonStructureReader.class, APPLICATION_JSON, javax.json.JsonStructure.class);
+        } else if (dotName.equals(DOUBLE) || dotName.equals(PRIMITIVE_DOUBLE)
+                || dotName.equals(FLOAT) || dotName.equals(PRIMITIVE_FLOAT)
+                || dotName.equals(LONG) || dotName.equals(PRIMITIVE_LONG)
+                || dotName.equals(INTEGER) || dotName.equals(PRIMITIVE_INTEGER)
+                || dotName.equals(BOOLEAN) || dotName.equals(PRIMITIVE_BOOLEAN)) {
+            additionalReaders.add(DefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> getSupportedReaderJavaClass(Type paramType) {
+        Class<T> result = (Class<T>) supportedReaderJavaTypes.get(paramType.name());
+        return Objects.requireNonNull(result);
     }
 
     private static AnnotationInstance getInheritableAnnotation(MethodInfo info, DotName name) {
@@ -638,19 +676,19 @@ public class EndpointIndexer {
         if (httpMethod == null) {
             return null; //resource locators
         }
-        if (httpMethod.equals(QuarkusRestDotNames.GET)) {
+        if (httpMethod.equals(GET)) {
             return "GET";
-        } else if (httpMethod.equals(QuarkusRestDotNames.POST)) {
+        } else if (httpMethod.equals(POST)) {
             return "POST";
-        } else if (httpMethod.equals(QuarkusRestDotNames.HEAD)) {
+        } else if (httpMethod.equals(HEAD)) {
             return "HEAD";
-        } else if (httpMethod.equals(QuarkusRestDotNames.PUT)) {
+        } else if (httpMethod.equals(PUT)) {
             return "PUT";
-        } else if (httpMethod.equals(QuarkusRestDotNames.DELETE)) {
+        } else if (httpMethod.equals(DELETE)) {
             return "DELETE";
-        } else if (httpMethod.equals(QuarkusRestDotNames.PATCH)) {
+        } else if (httpMethod.equals(PATCH)) {
             return "PATCH";
-        } else if (httpMethod.equals(QuarkusRestDotNames.OPTIONS)) {
+        } else if (httpMethod.equals(OPTIONS)) {
             return "OPTIONS";
         }
         throw new IllegalStateException("Unknown HTTP method annotation " + httpMethod);

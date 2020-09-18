@@ -1,15 +1,12 @@
 package io.quarkus.rest.runtime.providers.serialisers;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -46,26 +43,12 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
 
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        String charset = CharsetUtil.charsetFromMediaType(mediaType);
-        return Encode.decode(parseForm(entityStream, charset), charset);
+        String charset = MessageReaderUtil.charsetFromMediaType(mediaType);
+        return Encode.decode(parseForm(entityStream, mediaType), charset);
     }
 
-    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, String charset) throws IOException {
-        char[] buffer = new char[100];
-        StringBuilder buf = new StringBuilder();
-        if (charset == null) {
-            charset = StandardCharsets.UTF_8.name();
-        }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(entityStream, charset));
-
-        int wasRead;
-        do {
-            wasRead = reader.read(buffer, 0, 100);
-            if (wasRead > 0)
-                buf.append(buffer, 0, wasRead);
-        } while (wasRead > -1);
-
-        String form = buf.toString();
+    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset) throws IOException {
+        String form = MessageReaderUtil.readString(entityStream, charset);
 
         MultivaluedMap<String, String> formData = new MultivaluedMapImpl<String, String>();
         if ("".equals(form)) {
@@ -94,7 +77,7 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public void writeResponse(MultivaluedMap o, QuarkusRestRequestContext context) throws WebApplicationException {
         try {
             // FIXME: use response encoding
-            context.getContext().response().end(multiValuedMapToString(o, CharsetUtil.UTF8_CHARSET));
+            context.getContext().response().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));
         } catch (UnsupportedEncodingException e) {
             throw new WebApplicationException(e);
         }
@@ -109,7 +92,7 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public void writeTo(MultivaluedMap multivaluedMap, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        String chartSet = CharsetUtil.charsetFromMediaType(mediaType);
+        String chartSet = MessageReaderUtil.charsetFromMediaType(mediaType);
         entityStream.write(multiValuedMapToString(multivaluedMap, chartSet).getBytes(chartSet));
     }
 

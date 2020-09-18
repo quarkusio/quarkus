@@ -354,4 +354,10 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.with().body("[{}, {}]").contentType("application/json").post("/simple/jsonp-array")
                 .then().statusCode(200).body(Matchers.equalTo("2"));
     }
+
+    @Test
+    public void testPrimitiveBody() {
+        RestAssured.with().body("true").contentType("text/plain").post("/simple/bool")
+                .then().statusCode(200).contentType("text/plain").body(Matchers.equalTo("true"));
+    }
 }

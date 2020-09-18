@@ -1,5 +1,6 @@
 package io.quarkus.rest.deployment.framework;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -87,8 +88,22 @@ public final class QuarkusRestDotNames {
     public static final DotName SET = DotName.createSimple(Set.class.getName());
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
+
+    public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());
+    public static final DotName LONG = DotName.createSimple(Long.class.getName());
+    public static final DotName FLOAT = DotName.createSimple(Float.class.getName());
+    public static final DotName DOUBLE = DotName.createSimple(Double.class.getName());
+    public static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
+
+    public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
+    public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());
+    public static final DotName PRIMITIVE_FLOAT = DotName.createSimple(float.class.getName());
+    public static final DotName PRIMITIVE_DOUBLE = DotName.createSimple(double.class.getName());
+    public static final DotName PRIMITIVE_BOOLEAN = DotName.createSimple(boolean.class.getName());
+
     public static final DotName STRING = DotName.createSimple(String.class.getName());
     public static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
+    public static final DotName INPUT_STREAM = DotName.createSimple(InputStream.class.getName());
 
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(javax.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(javax.json.JsonArray.class.getName());

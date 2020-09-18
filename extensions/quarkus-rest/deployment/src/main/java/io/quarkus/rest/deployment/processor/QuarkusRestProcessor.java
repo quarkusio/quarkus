@@ -1,6 +1,5 @@
 package io.quarkus.rest.deployment.processor;
 
-import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -87,7 +86,6 @@ import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
-import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
@@ -438,9 +436,7 @@ public class QuarkusRestProcessor {
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
-        registerReader(recorder, serialisers, InputStream.class, InputStreamMessageBodyReader.class,
-                beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
+        //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),

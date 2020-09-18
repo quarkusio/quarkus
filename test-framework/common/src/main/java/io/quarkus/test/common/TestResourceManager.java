@@ -13,6 +13,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
@@ -22,7 +28,9 @@ import org.jboss.jandex.IndexView;
 
 public class TestResourceManager implements Closeable {
 
-    private final List<TestResourceEntry> testResourceEntries;
+    private final List<TestResourceEntry> sequentialTestResourceEntries;
+    private final List<TestResourceEntry> parallelTestResourceEntries;
+    private final List<TestResourceEntry> allTestResourceEntries;
     private Map<String, String> oldSystemProps;
     private boolean started = false;
 
@@ -31,11 +39,21 @@ public class TestResourceManager implements Closeable {
     }
 
     public TestResourceManager(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
-        testResourceEntries = getTestResources(testClass, additionalTestResources);
+        this.parallelTestResourceEntries = new ArrayList<>();
+        this.sequentialTestResourceEntries = new ArrayList<>();
+
+        // we need to keep track of duplicate entries to make sure we don't start the same resource
+        // multiple times even if there are multiple same @QuarkusTestResource annotations
+        Set<TestResourceClassEntry> uniqueEntries = getUniqueTestResourceClassEntries(testClass, additionalTestResources);
+        Set<TestResourceClassEntry> remainingUniqueEntries = initParallelTestResources(uniqueEntries);
+        initSequentialTestResources(remainingUniqueEntries);
+
+        this.allTestResourceEntries = new ArrayList<>(sequentialTestResourceEntries);
+        this.allTestResourceEntries.addAll(parallelTestResourceEntries);
     }
 
     public void init() {
-        for (TestResourceEntry entry : testResourceEntries) {
+        for (TestResourceEntry entry : allTestResourceEntries) {
             try {
                 entry.getTestResource().init(entry.getArgs());
             } catch (Exception e) {
@@ -46,17 +64,41 @@ public class TestResourceManager implements Closeable {
 
     public Map<String, String> start() {
         started = true;
-        Map<String, String> ret = new HashMap<>();
-        for (TestResourceEntry entry : testResourceEntries) {
-            try {
-                Map<String, String> start = entry.getTestResource().start();
-                if (start != null) {
-                    ret.putAll(start);
+        Map<String, String> ret = new ConcurrentHashMap<>();
+
+        ExecutorService executor = newExecutor();
+        List<Future> startFutures = new ArrayList<>();
+        for (TestResourceEntry entry : parallelTestResourceEntries) {
+            Future startFuture = executor.submit(() -> {
+                try {
+                    Map<String, String> start = entry.getTestResource().start();
+                    if (start != null) {
+                        ret.putAll(start);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
                 }
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
-            }
+            });
+            startFutures.add(startFuture);
+
         }
+
+        Future sequentialStartFuture = executor.submit(() -> {
+            for (TestResourceEntry entry : sequentialTestResourceEntries) {
+                try {
+                    Map<String, String> start = entry.getTestResource().start();
+                    if (start != null) {
+                        ret.putAll(start);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
+                }
+            }
+        });
+        startFutures.add(sequentialStartFuture);
+
+        waitForAllFutures(startFutures);
+
         oldSystemProps = new HashMap<>();
         for (Map.Entry<String, String> i : ret.entrySet()) {
             oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
@@ -69,8 +111,22 @@ public class TestResourceManager implements Closeable {
         return ret;
     }
 
+    private void waitForAllFutures(List<Future> startFutures) {
+        for (Future future : startFutures) {
+            try {
+                future.get();
+            } catch (CancellationException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Error waiting for test resource future to finish.", e);
+            }
+        }
+    }
+
+    private ExecutorService newExecutor() {
+        return Executors.newWorkStealingPool();
+    }
+
     public void inject(Object testInstance) {
-        for (TestResourceEntry entry : testResourceEntries) {
+        for (TestResourceEntry entry : allTestResourceEntries) {
             entry.getTestResource().inject(testInstance);
         }
     }
@@ -91,7 +147,7 @@ public class TestResourceManager implements Closeable {
             }
         }
         oldSystemProps = null;
-        for (TestResourceEntry entry : testResourceEntries) {
+        for (TestResourceEntry entry : allTestResourceEntries) {
             try {
                 entry.getTestResource().stop();
             } catch (Exception e) {
@@ -105,13 +161,76 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    private List<TestResourceEntry> getTestResources(Class<?> testClass, List<TestResourceClassEntry> additionalTestResources) {
+    private Set<TestResourceClassEntry> initParallelTestResources(Set<TestResourceClassEntry> uniqueEntries) {
+        Set<TestResourceClassEntry> remainingUniqueEntries = new HashSet<>(uniqueEntries);
+        for (TestResourceClassEntry entry : uniqueEntries) {
+            if (entry.isParallel()) {
+                TestResourceEntry testResourceEntry = buildTestResourceEntry(entry);
+                this.parallelTestResourceEntries.add(testResourceEntry);
+                remainingUniqueEntries.remove(entry);
+            }
+        }
+        parallelTestResourceEntries.sort(new Comparator<TestResourceEntry>() {
+
+            private final QuarkusTestResourceLifecycleManagerComparator lifecycleManagerComparator = new QuarkusTestResourceLifecycleManagerComparator();
+
+            @Override
+            public int compare(TestResourceEntry o1, TestResourceEntry o2) {
+                return lifecycleManagerComparator.compare(o1.getTestResource(), o2.getTestResource());
+            }
+        });
+
+        return remainingUniqueEntries;
+    }
+
+    private Set<TestResourceClassEntry> initSequentialTestResources(Set<TestResourceClassEntry> uniqueEntries) {
+        Set<TestResourceClassEntry> remainingUniqueEntries = new HashSet<>(uniqueEntries);
+        Set<TestResourceEntry> testResourceEntries = new HashSet<>();
+        for (TestResourceClassEntry entry : uniqueEntries) {
+            if (!entry.isParallel()) {
+                TestResourceEntry testResourceEntry = buildTestResourceEntry(entry);
+                this.sequentialTestResourceEntries.add(testResourceEntry);
+                remainingUniqueEntries.remove(entry);
+            }
+        }
+
+        for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader.load(
+                QuarkusTestResourceLifecycleManager.class,
+                Thread.currentThread().getContextClassLoader())) {
+            TestResourceEntry testResourceEntry = new TestResourceEntry(quarkusTestResourceLifecycleManager);
+            this.sequentialTestResourceEntries.add(testResourceEntry);
+        }
+
+        this.sequentialTestResourceEntries.sort(new Comparator<TestResourceEntry>() {
+
+            private final QuarkusTestResourceLifecycleManagerComparator lifecycleManagerComparator = new QuarkusTestResourceLifecycleManagerComparator();
+
+            @Override
+            public int compare(TestResourceEntry o1, TestResourceEntry o2) {
+                return lifecycleManagerComparator.compare(o1.getTestResource(), o2.getTestResource());
+            }
+        });
+
+        return remainingUniqueEntries;
+    }
+
+    private TestResourceManager.TestResourceEntry buildTestResourceEntry(TestResourceClassEntry entry) {
+        Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = entry.clazz;
+        try {
+            return new TestResourceEntry(testResourceClass.getConstructor().newInstance(), entry.args);
+        } catch (InstantiationException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | InvocationTargetException
+                | NoSuchMethodException
+                | SecurityException e) {
+            throw new RuntimeException("Unable to instantiate the test resource " + testResourceClass.getName(), e);
+        }
+    }
+
+    private Set<TestResourceClassEntry> getUniqueTestResourceClassEntries(Class<?> testClass,
+            List<TestResourceClassEntry> additionalTestResources) {
         IndexView index = TestClassIndexer.readIndex(testClass);
-
-        List<TestResourceEntry> testResourceEntries = new ArrayList<>();
-
-        // we need to keep track of duplicate entries to make sure we don't start the same resource
-        // multiple times even if there are multiple same @QuarkusTestResource annotations
         Set<TestResourceClassEntry> uniqueEntries = new HashSet<>();
         for (AnnotationInstance annotation : findQuarkusTestResourceInstances(index)) {
             try {
@@ -130,56 +249,35 @@ public class TestResourceManager implements Closeable {
                     }
                 }
 
-                uniqueEntries.add(new TestResourceClassEntry(testResourceClass, args));
+                boolean isParallel = false;
+                AnnotationValue parallelAnnotationValue = annotation.value("parallel");
+                if (parallelAnnotationValue != null) {
+                    isParallel = parallelAnnotationValue.asBoolean();
+                }
+
+                uniqueEntries.add(new TestResourceClassEntry(testResourceClass, args, isParallel));
             } catch (IllegalArgumentException | SecurityException e) {
                 throw new RuntimeException("Unable to instantiate the test resource " + annotation.value().asString(), e);
             }
         }
 
         uniqueEntries.addAll(additionalTestResources);
-
-        for (TestResourceClassEntry entry : uniqueEntries) {
-            Class<? extends QuarkusTestResourceLifecycleManager> testResourceClass = entry.clazz;
-            Map<String, String> args = entry.args;
-            try {
-                testResourceEntries.add(new TestResourceEntry(testResourceClass.getConstructor().newInstance(), args));
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-                    | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-                throw new RuntimeException("Unable to instantiate the test resource " + testResourceClass.getName(), e);
-            }
-        }
-
-        for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader
-                .load(QuarkusTestResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())) {
-            testResourceEntries.add(new TestResourceEntry(quarkusTestResourceLifecycleManager));
-        }
-
-        testResourceEntries.sort(new Comparator<TestResourceEntry>() {
-
-            private final QuarkusTestResourceLifecycleManagerComparator lifecycleManagerComparator = new QuarkusTestResourceLifecycleManagerComparator();
-
-            @Override
-            public int compare(TestResourceEntry o1, TestResourceEntry o2) {
-                return lifecycleManagerComparator.compare(o1.getTestResource(), o2.getTestResource());
-            }
-        });
-
-        return testResourceEntries;
+        return uniqueEntries;
     }
 
     @SuppressWarnings("unchecked")
     private Class<? extends QuarkusTestResourceLifecycleManager> loadTestResourceClassFromTCCL(String className) {
         try {
-            return (Class<? extends QuarkusTestResourceLifecycleManager>) Class
-                    .forName(className, true, Thread.currentThread().getContextClassLoader());
+            return (Class<? extends QuarkusTestResourceLifecycleManager>) Class.forName(className, true,
+                    Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
     private Collection<AnnotationInstance> findQuarkusTestResourceInstances(IndexView index) {
-        Set<AnnotationInstance> testResourceAnnotations = new HashSet<>(index
-                .getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName())));
+        Set<AnnotationInstance> testResourceAnnotations = new HashSet<>(
+                index.getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName())));
         for (AnnotationInstance annotation : index
                 .getAnnotations(DotName.createSimple(QuarkusTestResource.List.class.getName()))) {
             Collections.addAll(testResourceAnnotations, annotation.value().asNestedArray());
@@ -188,12 +286,16 @@ public class TestResourceManager implements Closeable {
     }
 
     public static class TestResourceClassEntry {
+
         private Class<? extends QuarkusTestResourceLifecycleManager> clazz;
         private Map<String, String> args;
+        private boolean parallel;
 
-        public TestResourceClassEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args) {
+        public TestResourceClassEntry(Class<? extends QuarkusTestResourceLifecycleManager> clazz, Map<String, String> args,
+                boolean parallel) {
             this.clazz = clazz;
             this.args = args;
+            this.parallel = parallel;
         }
 
         @Override
@@ -203,17 +305,21 @@ public class TestResourceManager implements Closeable {
             if (o == null || getClass() != o.getClass())
                 return false;
             TestResourceClassEntry that = (TestResourceClassEntry) o;
-            return clazz.equals(that.clazz) &&
-                    args.equals(that.args);
+            return clazz.equals(that.clazz) && args.equals(that.args) && parallel == that.parallel;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(clazz, args);
+            return Objects.hash(clazz, args, parallel);
+        }
+
+        public boolean isParallel() {
+            return parallel;
         }
     }
 
     private static class TestResourceEntry {
+
         private final QuarkusTestResourceLifecycleManager testResource;
         private final Map<String, String> args;
 

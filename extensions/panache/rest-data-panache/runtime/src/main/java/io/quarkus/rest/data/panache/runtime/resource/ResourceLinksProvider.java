@@ -7,9 +7,9 @@ import javax.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.core.ResteasyContext;
-import org.jboss.resteasy.links.ClassLinksProvider;
-import org.jboss.resteasy.links.ObjectLinksProvider;
 import org.jboss.resteasy.links.RESTServiceDiscovery;
+import org.jboss.resteasy.links.impl.ClassLinksProvider;
+import org.jboss.resteasy.links.impl.ObjectLinksProvider;
 import org.jboss.resteasy.spi.Registry;
 
 public final class ResourceLinksProvider {

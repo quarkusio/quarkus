@@ -219,8 +219,7 @@ public class MultiRxInvokerImpl implements MultiRxInvoker {
         if (executorService != null) {
             builder.executor(executorService);
         }
-        SseEventSourceImpl sseEventSource = (SseEventSourceImpl) builder.build();
-        sseEventSource.setAlwaysReconnect(false);
+        SseEventSourceImpl sseEventSource = (SseEventSourceImpl) builder.alwaysReconnect(false).build();
         return sseEventSource;
     }
 

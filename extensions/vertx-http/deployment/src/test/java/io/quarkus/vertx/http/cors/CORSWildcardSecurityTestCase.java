@@ -18,11 +18,10 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.http.security.PathHandler;
 
-public class CoresSecurityTestCase {
+public class CORSWildcardSecurityTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.cors=true\n" +
-            "quarkus.http.cors.methods=GET, OPTIONS, POST\n" +
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
             "quarkus.http.auth.permission.roles1.paths=/test\n" +

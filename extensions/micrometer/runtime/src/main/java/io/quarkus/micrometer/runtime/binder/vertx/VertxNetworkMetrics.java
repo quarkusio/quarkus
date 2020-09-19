@@ -1,5 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.Map;
+
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.vertx.core.net.SocketAddress;
@@ -11,7 +13,7 @@ import io.vertx.core.spi.metrics.NetworkMetrics;
  * <li>S for Socket metric -- Vert.x Context</li>
  * </ul>
  */
-public class VertxNetworkMetrics implements NetworkMetrics<MetricsContext> {
+public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> {
     final MeterRegistry registry;
 
     final String nameBytesRead;
@@ -33,7 +35,7 @@ public class VertxNetworkMetrics implements NetworkMetrics<MetricsContext> {
      * @param numberOfBytes the number of bytes read
      */
     @Override
-    public void bytesRead(MetricsContext socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
+    public void bytesRead(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
         DistributionSummary.builder(nameBytesRead).register(registry).record(numberOfBytes);
     }
 
@@ -45,7 +47,7 @@ public class VertxNetworkMetrics implements NetworkMetrics<MetricsContext> {
      * @param numberOfBytes the number of bytes written
      */
     @Override
-    public void bytesWritten(MetricsContext socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
+    public void bytesWritten(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
         DistributionSummary.builder(nameBytesWritten).register(registry).record(numberOfBytes);
     }
 
@@ -58,7 +60,7 @@ public class VertxNetworkMetrics implements NetworkMetrics<MetricsContext> {
      * @param t the exception that occurred
      */
     @Override
-    public void exceptionOccurred(MetricsContext socketMetric, SocketAddress remoteAddress, Throwable t) {
+    public void exceptionOccurred(Map<String, Object> socketMetric, SocketAddress remoteAddress, Throwable t) {
         registry.counter(nameExceptionOccurred, "class", t.getClass().getName()).increment();
     }
 }

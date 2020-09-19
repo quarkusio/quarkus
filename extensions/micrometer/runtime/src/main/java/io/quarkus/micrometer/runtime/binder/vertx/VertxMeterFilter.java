@@ -7,6 +7,12 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
+/**
+ * High priority handler that sets the Vertx RouterContext
+ * attribute on the active RequestMetric.
+ * To quote Stuart, "YUCK".
+ * Reference: https://github.com/eclipse-vertx/vert.x/issues/3579
+ */
 public class VertxMeterFilter implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger(VertxMeterFilter.class);
 
@@ -15,16 +21,10 @@ public class VertxMeterFilter implements Handler<RoutingContext> {
         final Context context = Vertx.currentContext();
         log.debugf("Handling event %s with context %s", event, context);
 
-        if (context != null) {
-            MetricsContext.addRoutingContext(context, event);
-            event.addBodyEndHandler(new Handler<Void>() {
-                @Override
-                public void handle(Void x) {
-                    MetricsContext.removeRoutingContext(context);
-                }
-            });
+        RequestMetric requestMetric = RequestMetric.retrieveRequestMetric(context);
+        if (requestMetric != null) {
+            requestMetric.routingContext = event;
         }
-
         event.next();
     }
 }

@@ -74,18 +74,24 @@ public class HibernateOrmConfigPersistenceUnit {
      * The size of the batches used when loading entities and collections.
      *
      * `-1` means batch loading is disabled. This is the default.
-     *
+     * 
+     * @deprecated {@link #fetch} should be used to configure fetching properties.
      * @asciidoclet
      */
     @ConfigItem(defaultValue = "-1")
+    @Deprecated
     public int batchFetchSize;
 
     /**
      * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
      *
      * A `0` disables default outer join fetching.
+     * 
+     * @deprecated {@link #fetch} should be used to configure fetching properties.
+     * @asciidoclet
      */
     @ConfigItem
+    @Deprecated
     public OptionalInt maxFetchDepth;
 
     /**
@@ -131,6 +137,13 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem
     @ConfigDocSection
     public HibernateOrmConfigPersistenceUnitLog log;
+
+    /**
+     * Fetching logic configuration.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitFetch fetch;
 
     /**
      * Caching configuration
@@ -182,7 +195,8 @@ public class HibernateOrmConfigPersistenceUnit {
                 !cache.isEmpty() ||
                 !secondLevelCachingEnabled ||
                 multitenant.isPresent() ||
-                multitenantSchemaDatasource.isPresent();
+                multitenantSchemaDatasource.isPresent() ||
+                fetch.isAnyPropertySet();
     }
 
     @ConfigGroup
@@ -403,5 +417,33 @@ public class HibernateOrmConfigPersistenceUnit {
          */
         @ConfigItem
         public OptionalLong objectCount;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitFetch {
+        /**
+         * The size of the batches used when loading entities and collections.
+         *
+         * `-1` means batch loading is disabled. This is the default.
+         *
+         * @asciidoclet
+         */
+        @ConfigItem(defaultValue = "-1")
+        public int batchSize;
+
+        /**
+         * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
+         *
+         * A `0` disables default outer join fetching.
+         * 
+         * @asciidoclet
+         */
+        @ConfigItem
+        public OptionalInt maxDepth;
+
+        public boolean isAnyPropertySet() {
+            return batchSize > 0 || maxDepth.isPresent();
+        }
+
     }
 }

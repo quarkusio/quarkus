@@ -98,4 +98,10 @@ public class JibConfig {
      */
     @ConfigItem
     public Optional<String> baseRegistryPassword;
+
+    /**
+     * The ports to expose
+     */
+    @ConfigItem(defaultValue = "8080")
+    public List<Integer> ports;
 }

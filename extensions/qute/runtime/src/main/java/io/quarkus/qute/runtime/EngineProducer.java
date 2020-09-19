@@ -73,6 +73,8 @@ public class EngineProducer {
         builder.addValueResolver(ValueResolvers.mapEntryResolver());
         // foo.string.raw returns a RawString which is never escaped
         builder.addValueResolver(ValueResolvers.rawResolver());
+        builder.addValueResolver(ValueResolvers.logicalAndResolver());
+        builder.addValueResolver(ValueResolvers.logicalOrResolver());
 
         // Escape some characters for HTML templates
         builder.addResultMapper(new HtmlEscaper());

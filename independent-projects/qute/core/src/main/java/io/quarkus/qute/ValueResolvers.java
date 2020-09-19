@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * Common value resolvers.
@@ -162,6 +163,64 @@ public final class ValueResolvers {
             public CompletionStage<Object> resolve(EvalContext context) {
                 Mapper mapper = (Mapper) context.getBase();
                 return CompletableFuture.completedFuture(mapper.get(context.getName()));
+            }
+
+        };
+    }
+
+    /**
+     * Performs conditional AND on the base object and the first parameter.
+     * It's a short-circuiting operation - the parameter is only evaluated if needed.
+     * 
+     * @see Booleans#isFalsy(Object)
+     */
+    public static ValueResolver logicalAndResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return context.getBase() != null && context.getParams().size() == 1
+                        && ("&&".equals(context.getName()));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
+                return baseIsFalsy ? CompletableFuture.completedFuture(false)
+                        : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                            @Override
+                            public Object apply(Object booleanParam) {
+                                return !Booleans.isFalsy(booleanParam);
+                            }
+                        });
+            }
+
+        };
+    }
+
+    /**
+     * Performs conditional OR on the base object and the first parameter.
+     * It's a short-circuiting operation - the parameter is only evaluated if needed.
+     * 
+     * @see Booleans#isFalsy(Object)
+     */
+    public static ValueResolver logicalOrResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return context.getBase() != null && context.getParams().size() == 1
+                        && ("||".equals(context.getName()));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                boolean baseIsFalsy = Booleans.isFalsy(context.getBase());
+                return !baseIsFalsy ? CompletableFuture.completedFuture(true)
+                        : context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                            @Override
+                            public Object apply(Object booleanParam) {
+                                return !Booleans.isFalsy(booleanParam);
+                            }
+                        });
             }
 
         };

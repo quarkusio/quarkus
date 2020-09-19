@@ -376,13 +376,19 @@ public class HibernateOrmConfigPersistenceUnit {
         public boolean sql;
 
         /**
+         * Format the SQL logs if SQL log is enabled
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean formatSql;
+
+        /**
          * Whether JDBC warnings should be collected and logged.
          */
         @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings;
 
         public boolean isAnyPropertySet() {
-            return sql || jdbcWarnings.isPresent();
+            return sql || !formatSql || jdbcWarnings.isPresent();
         }
     }
 

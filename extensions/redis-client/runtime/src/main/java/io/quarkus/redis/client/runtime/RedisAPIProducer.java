@@ -33,7 +33,7 @@ class RedisAPIProducer {
                 if (redisConfig.timeout.isPresent()) {
                     timeout = redisConfig.timeout.get().getSeconds();
                 }
-                RedisOptions options = RedisClientUtil.buildOptions(redisConfig);
+                RedisOptions options = RedisClientUtil.buildOptions(redisConfig, name);
                 Redis redis = Redis.createClient(vertx, options);
                 RedisAPI redisAPI = RedisAPI.api(redis);
                 MutinyRedis mutinyRedis = new MutinyRedis(redis);

@@ -21,5 +21,6 @@ If any organization would like get added or removed please make a pull request b
 |Sedona                 | https://quarkus.io/blog/sedona-rewrites-insurance-premium/                       |
 |Suomen Asiakastieto Oy | https://quarkus.io/blog/asiakastieto-chooses-quarkus-for-microservices/          |
 |Talkdesk               | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/            |
+|UTN Faculty Córdoba    | https://www.frc.utn.edu.ar/computos/tech/                                        |
 |Vodafone Greece        | https://quarkus.io/blog/vodafone-greece-replaces-spring-boot/                    |
 |Wipro                  | https://quarkus.io/blog/wipro-customer-story/                                    |

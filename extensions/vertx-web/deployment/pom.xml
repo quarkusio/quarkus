@@ -33,7 +33,7 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-security</artifactId>
+            <artifactId>quarkus-security-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

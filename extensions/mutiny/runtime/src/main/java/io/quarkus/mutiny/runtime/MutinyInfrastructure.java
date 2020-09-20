@@ -17,11 +17,10 @@ public class MutinyInfrastructure {
     }
 
     public void configureDroppedExceptionHandler() {
-        Logger logger = Logger.getLogger(MutinyInfrastructure.class);
         Infrastructure.setDroppedExceptionHandler(new Consumer<Throwable>() {
             @Override
             public void accept(Throwable throwable) {
-                logger.error("Mutiny had to drop the following exception", throwable);
+                Logger.getLogger(MutinyInfrastructure.class).error("Mutiny had to drop the following exception", throwable);
             }
         });
     }

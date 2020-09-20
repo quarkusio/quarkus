@@ -190,12 +190,36 @@
         <module>google-cloud-functions</module>
     </modules>
 
-    <!-- Unfortunately the config below introduces a build dependency on the maven plugin
-         which leads to an ordering that prevents the tooling to include the generated
-         JSON platform descriptor.
-         Hopefully, this can be re-enabled once we refactor the tools.
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-no-runtime-deps</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bansRuntimeDependency implementation="io.quarkus.enforcer.BansRuntimeDependency"/>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-enforcer-rules</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- Unfortunately the config below introduces a build dependency on the maven plugin
+                 which leads to an ordering that prevents the tooling to include the generated
+                 JSON platform descriptor.
+                 Hopefully, this can be re-enabled once we refactor the tools.
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
@@ -211,8 +235,7 @@
                     <bomPath>../bom/application/pom.xml</bomPath>
                     <itestParentPath>../integration-tests/pom.xml</itestParentPath>
                 </configuration>
-            </plugin>
+            </plugin> -->
         </plugins>
     </build>
-    -->
 </project>

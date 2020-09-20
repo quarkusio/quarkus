@@ -26,7 +26,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson</artifactId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
         </dependency>
     </dependencies>
 

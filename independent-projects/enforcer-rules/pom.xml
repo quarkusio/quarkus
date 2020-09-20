@@ -136,6 +136,7 @@
                 <skipITs>true</skipITs>
                 <enforcer.skip>true</enforcer.skip>
                 <format.skip>true</format.skip>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>

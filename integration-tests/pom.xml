@@ -112,6 +112,7 @@
         <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>
         <module>smallrye-context-propagation</module>
+        <module>smallrye-metrics</module>
         <module>smallrye-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>

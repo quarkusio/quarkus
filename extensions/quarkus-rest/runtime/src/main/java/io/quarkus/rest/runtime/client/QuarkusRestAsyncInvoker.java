@@ -14,6 +14,7 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.rest.runtime.NotImplementedYet;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -51,17 +52,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> get(Class<T> responseType) {
-        return mapResponse(performRequestInternal("GET", null, new GenericType<>(responseType)));
+        return mapResponse(performRequestInternal("GET", null, new GenericType<>(responseType)), responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> get(GenericType<T> responseType) {
-        return mapResponse(performRequestInternal("GET", null, responseType));
+        return mapResponse(performRequestInternal("GET", null, responseType), responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> get(InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -72,27 +73,18 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     @Override
     public <T> CompletableFuture<T> put(Entity<?> entity, Class<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("PUT", entity, new GenericType<>(responseType));
-        return mapResponse(res);
-    }
-
-    public <T> CompletableFuture<T> mapResponse(CompletableFuture<Response> res) {
-        return res.thenApply(new Function<Response, T>() {
-            @Override
-            public T apply(Response response) {
-                return (T) response.getEntity();
-            }
-        });
+        return mapResponse(res, responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> put(Entity<?> entity, GenericType<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("PUT", entity, responseType);
-        return mapResponse(res);
+        return mapResponse(res, responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> put(Entity<?> entity, InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -103,18 +95,18 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     @Override
     public <T> CompletableFuture<T> post(Entity<?> entity, Class<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("POST", entity, new GenericType<>(responseType));
-        return mapResponse(res);
+        return mapResponse(res, responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> post(Entity<?> entity, GenericType<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("POST", entity, responseType);
-        return mapResponse(res);
+        return mapResponse(res, responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> post(Entity<?> entity, InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -125,18 +117,18 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     @Override
     public <T> CompletableFuture<T> delete(Class<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("DELETE", null, new GenericType<>(responseType));
-        return mapResponse(res);
+        return mapResponse(res, responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> delete(GenericType<T> responseType) {
         CompletableFuture<Response> res = performRequestInternal("DELETE", null, responseType);
-        return mapResponse(res);
+        return mapResponse(res, responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> delete(InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -146,7 +138,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public Future<Response> head(InvocationCallback<Response> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -156,17 +148,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> options(Class<T> responseType) {
-        return mapResponse(performRequestInternal("OPTIONS", null, new GenericType<>(responseType)));
+        return mapResponse(performRequestInternal("OPTIONS", null, new GenericType<>(responseType)), responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> options(GenericType<T> responseType) {
-        return mapResponse(performRequestInternal("OPTIONS", null, responseType));
+        return mapResponse(performRequestInternal("OPTIONS", null, responseType), responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> options(InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -176,17 +168,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> trace(Class<T> responseType) {
-        return mapResponse(performRequestInternal("TRACE", null, new GenericType<>(responseType)));
+        return mapResponse(performRequestInternal("TRACE", null, new GenericType<>(responseType)), responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> trace(GenericType<T> responseType) {
-        return mapResponse(performRequestInternal("TRACE", null, responseType));
+        return mapResponse(performRequestInternal("TRACE", null, responseType), responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> trace(InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -196,17 +188,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> method(String name, Class<T> responseType) {
-        return mapResponse(performRequestInternal(name, null, new GenericType<>(responseType)));
+        return mapResponse(performRequestInternal(name, null, new GenericType<>(responseType)), responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> method(String name, GenericType<T> responseType) {
-        return mapResponse(performRequestInternal(name, null, responseType));
+        return mapResponse(performRequestInternal(name, null, responseType), responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> method(String name, InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @Override
@@ -217,18 +209,18 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, Class<T> responseType) {
         CompletableFuture<Response> response = performRequestInternal(name, entity, new GenericType<>(responseType));
-        return mapResponse(response);
+        return mapResponse(response, responseType);
     }
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, GenericType<T> responseType) {
         CompletableFuture<Response> response = performRequestInternal(name, entity, responseType);
-        return mapResponse(response);
+        return mapResponse(response, responseType.getRawType());
     }
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, InvocationCallback<T> callback) {
-        throw new RuntimeException("NYI");
+        throw new NotImplementedYet();
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -242,5 +234,18 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         return new InvocationState(restClient, httpClient, httpMethodName, uri,
                 requestSpec.headers, serialisers,
                 entity, responseType, registerBodyHandler);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> CompletableFuture<T> mapResponse(CompletableFuture<Response> res, Class<?> responseType) {
+        if (responseType.equals(Response.class)) {
+            return (CompletableFuture<T>) res;
+        }
+        return res.thenApply(new Function<Response, T>() {
+            @Override
+            public T apply(Response response) {
+                return (T) response.getEntity();
+            }
+        });
     }
 }

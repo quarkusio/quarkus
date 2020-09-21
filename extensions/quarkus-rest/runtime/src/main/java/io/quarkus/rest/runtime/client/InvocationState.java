@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
@@ -21,6 +22,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -53,6 +55,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
     private final Serialisers serialisers;
     final ClientRequestHeaders requestHeaders;
     private final boolean registerBodyHandler;
+    // will be used to check if we need to throw a WebApplicationException
+    // see Javadoc of javax.ws.rs.client.Invocation or javax.ws.rs.client.SyncInvoker
+    private final boolean checkSuccessfulFamily;
     private final CompletableFuture<QuarkusRestResponse> result;
     /**
      * Only initialised if we have request or response filters
@@ -74,7 +79,13 @@ public class InvocationState implements Handler<HttpClientResponse> {
         this.requestHeaders = requestHeaders;
         this.serialisers = serialisers;
         this.entity = entity;
-        this.responseType = responseType != null ? responseType : new GenericType<>(String.class);
+        if (responseType == null) {
+            this.responseType = new GenericType<>(String.class);
+            this.checkSuccessfulFamily = false;
+        } else {
+            this.responseType = responseType;
+            this.checkSuccessfulFamily = !responseType.getRawType().equals(Response.class);
+        }
         this.registerBodyHandler = registerBodyHandler;
         this.result = new CompletableFuture<>();
         start();
@@ -88,7 +99,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 QuarkusRestClientResponseContext context = new QuarkusRestClientResponseContext(
                         requestContext.abortedWith.getStatus(), requestContext.abortedWith.getStatusInfo().getReasonPhrase(),
                         requestContext.abortedWith.getStringHeaders());
-                runResponseFilters(context, requestContext.abortedWith.getEntity());
+                ensureResponseAndRunFilters(context, requestContext.abortedWith.getEntity());
             } else {
                 HttpClientRequest httpClientRequest = createRequest();
                 Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest);
@@ -96,6 +107,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 httpClientRequest.exceptionHandler(new Handler<Throwable>() {
                     @Override
                     public void handle(Throwable event) {
+                        if (event instanceof IOException) {
+                            result.completeExceptionally(new ProcessingException(event));
+                        }
                         result.completeExceptionally(event);
                     }
                 });
@@ -197,7 +211,11 @@ public class InvocationState implements Handler<HttpClientResponse> {
         return httpClientRequest;
     }
 
-    private void runResponseFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity) {
+    private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity) {
+        if (checkSuccessfulFamily && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
+            throw new WebApplicationException("Server response status was: " + responseContext.getStatus());
+        }
+
         List<ClientResponseFilter> filters = restClient.getConfiguration().getResponseFilters();
         if (!filters.isEmpty()) {
             if (requestContext == null)
@@ -248,14 +266,14 @@ public class InvocationState implements Handler<HttpClientResponse> {
         try {
             QuarkusRestClientResponseContext context = initialiseResponse(clientResponse);
             if (!registerBodyHandler) {
-                runResponseFilters(context, null);
+                ensureResponseAndRunFilters(context, null);
             } else {
                 clientResponse.bodyHandler(new Handler<Buffer>() {
                     @Override
                     public void handle(Buffer buffer) {
                         try {
                             context.setData(buffer.getBytes());
-                            runResponseFilters(context, null);
+                            ensureResponseAndRunFilters(context, null);
                         } catch (Throwable t) {
                             result.completeExceptionally(t);
                         }

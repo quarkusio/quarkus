@@ -4,6 +4,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.InvocationCallback;
@@ -52,6 +53,9 @@ public class QuarkusRestInvocation implements Invocation {
             if (e.getCause() instanceof ProcessingException) {
                 throw (ProcessingException) e.getCause();
             }
+            if (e.getCause() instanceof WebApplicationException) {
+                throw (WebApplicationException) e.getCause();
+            }
             throw new RuntimeException(e.getCause());
         }
     }
@@ -65,6 +69,9 @@ public class QuarkusRestInvocation implements Invocation {
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ProcessingException) {
                 throw (ProcessingException) e.getCause();
+            }
+            if (e.getCause() instanceof WebApplicationException) {
+                throw (WebApplicationException) e.getCause();
             }
             throw new RuntimeException(e.getCause());
         }

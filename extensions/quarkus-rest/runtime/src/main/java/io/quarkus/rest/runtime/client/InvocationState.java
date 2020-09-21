@@ -236,7 +236,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                     break;
                 }
             }
-            if (!done) {
+            if (!done && (responseContext.getData() != null)) {
                 builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
             }
         }

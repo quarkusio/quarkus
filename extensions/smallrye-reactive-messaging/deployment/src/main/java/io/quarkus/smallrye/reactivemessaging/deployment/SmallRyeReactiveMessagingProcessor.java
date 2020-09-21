@@ -3,7 +3,12 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.Dependent;
@@ -67,9 +72,6 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
 
-/**
- *
- */
 public class SmallRyeReactiveMessagingProcessor {
 
     private static final Logger LOGGER = Logger
@@ -167,9 +169,9 @@ public class SmallRyeReactiveMessagingProcessor {
             Optional<AnnotationInstance> broadcast = getAnnotation(annotationStore, injectionPoint,
                     ReactiveMessagingDotNames.BROADCAST);
 
-            // New emitter from the spec.
-            if (injectionPoint.getRequiredType().name().equals(
-                    ReactiveMessagingDotNames.EMITTER)) {
+            // New emitter from the spec, or Mutiny emitter
+            if (injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER)
+                    || injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER)) {
                 AnnotationInstance instance = injectionPoint
                         .getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
                 if (instance == null) {
@@ -227,7 +229,8 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private void createEmitter(BuildProducer<EmitterBuildItem> emitters, InjectionPointInfo injectionPoint,
+    private void createEmitter(BuildProducer<EmitterBuildItem> emitters,
+            InjectionPointInfo injectionPoint,
             String channelName,
             Optional<AnnotationInstance> overflow,
             Optional<AnnotationInstance> broadcast) {
@@ -251,8 +254,9 @@ public class SmallRyeReactiveMessagingProcessor {
             strategy = annotation.value().asString();
         }
 
+        boolean isMutinyEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
         emitters.produce(
-                EmitterBuildItem.of(channelName, strategy, bufferSize, hasBroadcast, awaitSubscribers));
+                EmitterBuildItem.of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
     @BuildStep

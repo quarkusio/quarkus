@@ -1,5 +1,18 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.*;
+
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
@@ -8,18 +21,6 @@ import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Merge;
-import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.*;
 
 public final class QuarkusMediatorConfigurationUtil {
 
@@ -90,7 +91,8 @@ public final class QuarkusMediatorConfigurationUtil {
         }
 
         configuration.setMerge(mediatorConfigurationSupport.processMerge(incomingValues, new Supplier<Merge.Mode>() {
-            @Override public Merge.Mode get() {
+            @Override
+            public Merge.Mode get() {
                 AnnotationInstance instance = methodInfo.annotation(MERGE);
                 if (instance != null) {
                     AnnotationValue value = instance.value();
@@ -105,7 +107,8 @@ public final class QuarkusMediatorConfigurationUtil {
 
         configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValue,
                 new Supplier<Integer>() {
-                    @Override public Integer get() {
+                    @Override
+                    public Integer get() {
                         AnnotationInstance instance = methodInfo.annotation(BROADCAST);
                         if (instance != null) {
                             AnnotationValue value = instance.value();

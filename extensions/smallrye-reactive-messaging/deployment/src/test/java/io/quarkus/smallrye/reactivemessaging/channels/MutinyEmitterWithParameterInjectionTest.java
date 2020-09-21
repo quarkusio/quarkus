@@ -19,16 +19,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.Vertx;
 
-public class MutinyEmitterTest {
+public class MutinyEmitterWithParameterInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyEmitterExample.class));
+                    .addClasses(MutinyEmitterExampleWithParameterInjection.class));
 
     @Inject
-    MutinyEmitterExample example;
+    MutinyEmitterExampleWithParameterInjection example;
 
     @Test
     public void testMutinyEmitter() {
@@ -44,11 +45,17 @@ public class MutinyEmitterTest {
     }
 
     @ApplicationScoped
-    public static class MutinyEmitterExample {
+    public static class MutinyEmitterExampleWithParameterInjection {
 
-        @Inject
-        @Channel("sink")
         MutinyEmitter<String> emitter;
+
+        @SuppressWarnings("unused")
+        @Inject
+        public void inject(
+                Vertx vertx, // Not used on purpose
+                @Channel("sink") MutinyEmitter<String> e) {
+            emitter = e;
+        }
 
         private final List<String> list = new CopyOnWriteArrayList<>();
 

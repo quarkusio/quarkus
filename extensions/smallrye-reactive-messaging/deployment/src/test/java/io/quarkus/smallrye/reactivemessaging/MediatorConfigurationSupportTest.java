@@ -1,11 +1,16 @@
 package io.quarkus.smallrye.reactivemessaging;
 
-import io.quarkus.smallrye.reactivemessaging.deployment.QuarkusMediatorConfigurationUtil;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
-import io.smallrye.reactive.messaging.Shape;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+
+import javax.enterprise.inject.spi.DefinitionException;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.ProcessorBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
@@ -21,15 +26,12 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
-import javax.enterprise.inject.spi.DefinitionException;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
+import io.quarkus.smallrye.reactivemessaging.deployment.QuarkusMediatorConfigurationUtil;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MediatorConfiguration;
+import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
+import io.smallrye.reactive.messaging.Shape;
 
 @SuppressWarnings("ConstantConditions")
 public class MediatorConfigurationSupportTest {
@@ -41,7 +43,7 @@ public class MediatorConfigurationSupportTest {
     static void index() throws IOException {
         Indexer indexer = new Indexer();
         indexer.index(MediatorConfigurationSupportTest.class.getClassLoader().getResourceAsStream(
-                    "io/quarkus/smallrye/reactivemessaging/MediatorConfigurationSupportTest$ClassContainingAllSortsOfMethods.class"));
+                "io/quarkus/smallrye/reactivemessaging/MediatorConfigurationSupportTest$ClassContainingAllSortsOfMethods.class"));
         Index index = indexer.complete();
         classInfo = index
                 .getClassByName(DotName.createSimple(ClassContainingAllSortsOfMethods.class.getName()));
@@ -59,10 +61,8 @@ public class MediatorConfigurationSupportTest {
                         list.toArray(new Class[0]),
                         new QuarkusMediatorConfigurationUtil.ReturnTypeGenericTypeAssignable(m, classLoader),
                         m.parameters().size() == 0
-                                ?
-                                new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
-                                :
-                                new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
+                                ? new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
+                                : new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
                                         classLoader));
             }
         }

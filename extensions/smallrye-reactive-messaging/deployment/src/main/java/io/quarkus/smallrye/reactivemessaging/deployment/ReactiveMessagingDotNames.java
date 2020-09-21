@@ -5,6 +5,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.DotName;
 
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.smallrye.reactive.messaging.annotations.Channel;
@@ -21,6 +22,7 @@ public final class ReactiveMessagingDotNames {
     static final DotName CHANNEL = DotName.createSimple(org.eclipse.microprofile.reactive.messaging.Channel.class.getName());
     static final DotName LEGACY_CHANNEL = DotName.createSimple(Channel.class.getName());
     static final DotName EMITTER = DotName.createSimple(org.eclipse.microprofile.reactive.messaging.Emitter.class.getName());
+    static final DotName MUTINY_EMITTER = DotName.createSimple(MutinyEmitter.class.getName());
     static final DotName LEGACY_EMITTER = DotName.createSimple(Emitter.class.getName());
     static final DotName ON_OVERFLOW = DotName
             .createSimple(org.eclipse.microprofile.reactive.messaging.OnOverflow.class.getName());

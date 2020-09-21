@@ -380,8 +380,8 @@ public class EndpointIndexer {
                 ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
                         generatedClassBuildItemBuildProducer, indexView, existingEndpoints, additionalReaders, suspended, sse,
                         anns, paramType, errorLocation, false).invoke();
-                suspended = parameterExtractor.isSuspended();
-                sse = parameterExtractor.isSse();
+                suspended |= parameterExtractor.isSuspended();
+                sse |= parameterExtractor.isSse();
                 String name = parameterExtractor.getName();
                 String defaultValue = parameterExtractor.getDefaultValue();
                 ParameterType type = parameterExtractor.getType();

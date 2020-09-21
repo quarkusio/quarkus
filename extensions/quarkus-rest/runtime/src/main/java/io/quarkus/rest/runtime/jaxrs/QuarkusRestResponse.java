@@ -1,5 +1,6 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public class QuarkusRestResponse extends Response {
     MultivaluedMap<String, Object> headers;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
+    private InputStream entityStream;
 
     @Override
     public int getStatus() {

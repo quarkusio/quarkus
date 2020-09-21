@@ -4,6 +4,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.json.bind.Jsonb;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
@@ -24,6 +25,12 @@ import io.vertx.core.http.HttpServerResponse;
  */
 @Singleton
 public class ContextProducers {
+
+    /**
+     * TODO: Remove this, stops the warning about JSONB being removed
+     */
+    @Inject
+    Jsonb jsonb;
 
     @Inject
     CurrentVertxRequest currentVertxRequest;

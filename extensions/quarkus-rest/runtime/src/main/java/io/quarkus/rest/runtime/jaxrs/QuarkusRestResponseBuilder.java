@@ -98,6 +98,14 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         return response;
     }
 
+    public void setAllHeaders(MultivaluedMap<String, String> values) {
+        for (Map.Entry<String, List<String>> i : values.entrySet()) {
+            for (String v : i.getValue()) {
+                metadata.add(i.getKey(), v);
+            }
+        }
+    }
+
     @Override
     public QuarkusRestResponseBuilder clone() {
         QuarkusRestResponseBuilder responseBuilder = new QuarkusRestResponseBuilder();

@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.client;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -13,7 +14,6 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericEntity;
@@ -21,7 +21,6 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -29,7 +28,7 @@ import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
+import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -86,7 +85,10 @@ public class InvocationState implements Handler<HttpClientResponse> {
             runRequestFilters();
             if (requestContext != null && requestContext.abortedWith != null) {
                 // just run the response filters
-                forwardResponse(requestContext.abortedWith);
+                QuarkusRestClientResponseContext context = new QuarkusRestClientResponseContext(
+                        requestContext.abortedWith.getStatus(), requestContext.abortedWith.getStatusInfo().getReasonPhrase(),
+                        requestContext.getStringHeaders());
+                runResponseFilters(context, requestContext.abortedWith.getEntity());
             } else {
                 HttpClientRequest httpClientRequest = createRequest();
                 Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest);
@@ -102,10 +104,6 @@ public class InvocationState implements Handler<HttpClientResponse> {
         } catch (Throwable e) {
             result.completeExceptionally(e);
         }
-    }
-
-    private void forwardResponse(Response response) {
-        result.complete(runResponseFilters((QuarkusRestResponse) response));
     }
 
     private void runRequestFilters() {
@@ -144,19 +142,13 @@ public class InvocationState implements Handler<HttpClientResponse> {
         return (T) buffer.toString(StandardCharsets.UTF_8);
     }
 
-    private MediaType initialiseResponse(HttpClientResponse vertxResponse, QuarkusRestResponseBuilder response) {
-        MediaType mediaType = MediaType.WILDCARD_TYPE;
+    private QuarkusRestClientResponseContext initialiseResponse(HttpClientResponse vertxResponse) {
+        MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
         for (String i : vertxResponse.headers().names()) {
-            response.header(i, vertxResponse.getHeader(i));
-
+            headers.addAll(i, vertxResponse.getHeader(i));
         }
-        String mediaTypeHeader = vertxResponse.getHeader(HttpHeaderNames.CONTENT_TYPE);
-        if (mediaTypeHeader != null) {
-            mediaType = MediaType.valueOf(mediaTypeHeader);
-        }
-        response.status(vertxResponse.statusCode());
         this.vertxClientResponse = vertxResponse;
-        return mediaType;
+        return new QuarkusRestClientResponseContext(vertxResponse.statusCode(), vertxResponse.statusMessage(), headers);
     }
 
     private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest)
@@ -205,15 +197,13 @@ public class InvocationState implements Handler<HttpClientResponse> {
         return httpClientRequest;
     }
 
-    private QuarkusRestResponse runResponseFilters(QuarkusRestResponse response) {
+    private void runResponseFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity) {
         List<ClientResponseFilter> filters = restClient.getConfiguration().getResponseFilters();
         if (!filters.isEmpty()) {
             if (requestContext == null)
                 requestContext = new QuarkusRestClientRequestContext(this, restClient);
             // FIXME: pretty sure we'll have to mark it as immutable in this phase, but the spec is not verbose about this
             // the server does it.
-            ClientResponseContext responseContext = new QuarkusRestClientResponseContext(response);
-
             for (ClientResponseFilter filter : filters) {
                 try {
                     filter.filter(requestContext, responseContext);
@@ -222,36 +212,59 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 }
             }
         }
-        return response;
+        QuarkusRestResponseBuilder builder = new QuarkusRestResponseBuilder();
+        builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
+        builder.setAllHeaders(responseContext.getHeaders());
+        if (existingEntity != null) {
+            builder.entity(existingEntity);
+        } else {
+            MediaType mediaType = responseContext.getMediaType();
+            List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
+                    mediaType);
+            boolean done = false;
+            for (MessageBodyReader<?> reader : readers) {
+                if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
+                        mediaType)) {
+                    InputStream in = responseContext.getEntityStream();
+                    try {
+                        builder.entity(((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
+                                null, mediaType, responseContext.getHeaders(), in));
+                    } catch (IOException e) {
+                        result.completeExceptionally(e);
+                    }
+                    done = true;
+                    break;
+                }
+            }
+            if (!done) {
+                builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
+            }
+        }
+        result.complete(builder.build());
     }
 
     @Override
     public void handle(HttpClientResponse clientResponse) {
-        QuarkusRestResponseBuilder response;
-        MediaType mediaType;
         try {
-            response = new QuarkusRestResponseBuilder();
-            mediaType = initialiseResponse(clientResponse, response);
+            QuarkusRestClientResponseContext context = initialiseResponse(clientResponse);
+            if (!registerBodyHandler) {
+                runResponseFilters(context, null);
+            } else {
+                clientResponse.bodyHandler(new Handler<Buffer>() {
+                    @Override
+                    public void handle(Buffer buffer) {
+                        try {
+                            context.setData(buffer.getBytes());
+                            runResponseFilters(context, null);
+                        } catch (Throwable t) {
+                            result.completeExceptionally(t);
+                        }
+                    }
+                });
+            }
         } catch (Throwable t) {
             result.completeExceptionally(t);
             return;
-        }
-        if (!registerBodyHandler) {
-            result.complete(response.build());
-        } else {
-            clientResponse.bodyHandler(new Handler<Buffer>() {
-                @Override
-                public void handle(Buffer buffer) {
-                    try {
-                        Object entity = readEntity(buffer, InvocationState.this.responseType, mediaType,
-                                response.getMetadata());
-                        response.entity(entity);
-                        forwardResponse(response.build());
-                    } catch (Throwable t) {
-                        result.completeExceptionally(t);
-                    }
-                }
-            });
         }
     }
 

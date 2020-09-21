@@ -68,7 +68,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
 
             List<String> validRequestedMethods = new ArrayList<>();
-            List<HttpMethod> methods = corsConfig.methods.get().stream().map(String::trim).map(HttpMethod::valueOf)
+            List<HttpMethod> methods = corsConfig.methods.get().stream().map(HttpMethod::valueOf)
                     .collect(Collectors.toList());
             for (HttpMethod configMethod : methods) {
                 if (requestedMethods.contains(configMethod.name().toLowerCase())) {

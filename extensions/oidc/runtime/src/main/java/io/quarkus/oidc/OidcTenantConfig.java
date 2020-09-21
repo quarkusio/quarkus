@@ -582,13 +582,13 @@ public class OidcTenantConfig {
             idtoken,
 
             /**
-             * Access Token - the default and only supported value for the 'service' applications;
+             * Access Token - the default value for the 'service' applications;
              * can also be used as the source of roles for the 'web-app' applications.
              */
             accesstoken,
 
             /**
-             * User Info - only supported for the "web-app" applications
+             * User Info
              */
             userinfo
         }

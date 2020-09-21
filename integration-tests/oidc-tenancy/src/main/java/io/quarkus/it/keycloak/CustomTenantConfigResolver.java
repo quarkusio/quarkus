@@ -19,6 +19,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             config.setClientId("quarkus-d");
             config.getCredentials().setSecret("secret");
             config.getToken().setIssuer(getIssuerUrl() + "/realms/quarkus-d");
+            config.getAuthentication().setUserInfoRequired(true);
             return config;
         } else if ("tenant-oidc".equals(tenantId)) {
             OidcTenantConfig config = new OidcTenantConfig();

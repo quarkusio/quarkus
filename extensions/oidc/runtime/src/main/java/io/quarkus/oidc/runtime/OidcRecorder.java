@@ -126,10 +126,10 @@ public class OidcRecorder {
                 if (oidcConfig.getTokenPath().isPresent()) {
                     options.setTokenPath(authServerUrl + prependSlash(oidcConfig.getTokenPath().get()));
                 }
+            }
 
-                if (oidcConfig.getUserInfoPath().isPresent()) {
-                    options.setUserInfoPath(authServerUrl + prependSlash(oidcConfig.getUserInfoPath().get()));
-                }
+            if (oidcConfig.getUserInfoPath().isPresent()) {
+                options.setUserInfoPath(authServerUrl + prependSlash(oidcConfig.getUserInfoPath().get()));
             }
 
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications  
@@ -169,9 +169,9 @@ public class OidcRecorder {
                         "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
-            if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() != Source.accesstoken) {
+            if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() == Source.idtoken) {
                 throw new RuntimeException(
-                        "The 'roles.source' property can only be set to 'accesstoken' for " + ApplicationType.SERVICE
+                        "The 'roles.source' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
                                 + " application types");
             }
         }

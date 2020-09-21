@@ -37,7 +37,12 @@ public class TenantResource {
         if (tenant.startsWith("tenant-web-app")) {
             throw new OIDCException("Wrong tenant");
         }
-        return tenant + ":" + getNameServiceType();
+        String name = getNameServiceType();
+        if ("tenant-d".equals(tenant)) {
+            UserInfo userInfo = getUserInfo();
+            name = name + "." + userInfo.getString("preferred_username");
+        }
+        return tenant + ":" + name;
     }
 
     @GET
@@ -47,15 +52,19 @@ public class TenantResource {
         if (!tenant.equals("tenant-web-app")) {
             throw new OIDCException("Wrong tenant");
         }
-        if (!(securityIdentity.getAttribute("userinfo") instanceof UserInfo)) {
-            throw new OIDCException("userinfo attribute muset be set");
-        }
-        // Not injecting in the service field as not all tenants require it
-        UserInfo userInfo = Arc.container().instance(UserInfo.class).get();
+        UserInfo userInfo = getUserInfo();
         if (!idToken.getGroups().contains("user")) {
             throw new OIDCException("Groups expected");
         }
         return tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+    }
+
+    private UserInfo getUserInfo() {
+        if (!(securityIdentity.getAttribute("userinfo") instanceof UserInfo)) {
+            throw new OIDCException("userinfo attribute must be set");
+        }
+        // Not injecting in the service field as not all tenants require it
+        return Arc.container().instance(UserInfo.class).get();
     }
 
     @GET

@@ -4,16 +4,18 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
@@ -102,16 +104,42 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public String getHeaderString(String name) {
-        return headers.getFirst(name);
+        List<String> list = headers.get(name);
+        if (list == null) {
+            return null;
+        }
+        if (list.size() == 1) {
+            return list.get(0);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String part : list) {
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(part);
+        }
+        return sb.toString();
     }
 
     @Override
     public Set<String> getAllowedMethods() {
-        String cl = headers.getFirst(HttpHeaderNames.ALLOW);
-        if (cl == null) {
-            return null;
+        List<String> allowed = headers.get(HttpHeaderNames.ALLOW);
+        if (allowed == null) {
+            return Collections.emptySet();
         }
-        return Arrays.stream(cl.split(",")).map(String::trim).collect(Collectors.toSet());
+        Set<String> result = new HashSet<>();
+        for (String header : allowed) {
+            if (header != null) {
+                String[] parts = header.split(",");
+                for (String part : parts) {
+                    if (!part.trim().isEmpty()) {
+                        result.add(part.trim().toUpperCase());
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -152,7 +180,17 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        throw new RuntimeException("NYI");
+        List<String> cookies = headers.get(HttpHeaders.SET_COOKIE);
+        if (cookies == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, NewCookie> result = new HashMap<String, NewCookie>();
+        for (String obj : cookies) {
+            NewCookie cookie = NewCookie.valueOf(obj);
+            result.put(cookie.getName(), cookie);
+        }
+        return result;
     }
 
     @Override

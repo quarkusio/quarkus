@@ -105,10 +105,12 @@ public class QuarkusRestConfiguration implements Configuration {
         return value.toString();
     }
 
+    @SuppressWarnings("unchecked")
     public String toHeaderString(Object obj) {
         if (obj instanceof String) {
             return (String) obj;
         } else {
+            // TODO: we probably want a more direct way to get the delegate instead of going through all the indirection
             return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
         }
     }

@@ -87,7 +87,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 // just run the response filters
                 QuarkusRestClientResponseContext context = new QuarkusRestClientResponseContext(
                         requestContext.abortedWith.getStatus(), requestContext.abortedWith.getStatusInfo().getReasonPhrase(),
-                        requestContext.getStringHeaders());
+                        requestContext.abortedWith.getStringHeaders());
                 runResponseFilters(context, requestContext.abortedWith.getEntity());
             } else {
                 HttpClientRequest httpClientRequest = createRequest();

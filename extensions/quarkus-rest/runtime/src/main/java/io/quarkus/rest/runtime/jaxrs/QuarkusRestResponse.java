@@ -24,8 +24,8 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.RuntimeDelegate;
 
-import io.quarkus.rest.runtime.headers.MediaTypeHeaderDelegate;
 import io.quarkus.rest.runtime.util.DateUtil;
 import io.quarkus.rest.runtime.util.LocaleHelper;
 
@@ -285,12 +285,13 @@ public class QuarkusRestResponse extends Response {
         return stringHeaders;
     }
 
-    private String headerToString(Object value) {
-        if (value instanceof MediaType) {
-            return MediaTypeHeaderDelegate.INSTANCE.toString((MediaType) value);
+    @SuppressWarnings("unchecked")
+    private String headerToString(Object obj) {
+        if (obj instanceof String) {
+            return (String) obj;
         } else {
-            // FIXME: serialisation support
-            return value.toString();
+            // TODO: we probably want a more direct way to get the delegate instead of going through all the indirection
+            return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
         }
     }
 

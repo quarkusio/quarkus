@@ -208,10 +208,16 @@ public class SpringDIProcessor {
         if (target.kind() == AnnotationTarget.Kind.CLASS) {
             if (target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
                 value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value();
+                if ((value == null) || value.asString().isEmpty()) {
+                    value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
+                }
             }
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             if (target.asMethod().hasAnnotation(SPRING_SCOPE_ANNOTATION)) {
                 value = target.asMethod().annotation(SPRING_SCOPE_ANNOTATION).value();
+                if ((value == null) || value.asString().isEmpty()) {
+                    value = target.asMethod().annotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
+                }
             }
         }
         if (value != null) {

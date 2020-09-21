@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import io.quarkus.rest.api.WebClientApplicationException;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
@@ -213,7 +214,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
 
     private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity) {
         if (checkSuccessfulFamily && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
-            throw new WebApplicationException("Server response status was: " + responseContext.getStatus());
+            throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
         }
 
         List<ClientResponseFilter> filters = restClient.getConfiguration().getResponseFilters();

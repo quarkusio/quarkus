@@ -2,6 +2,7 @@ package io.quarkus.qute;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -30,13 +31,19 @@ public final class EvaluatedParams {
         } else if (params.size() == 1) {
             return new EvaluatedParams(context.evaluate(params.get(0)));
         }
-        CompletableFuture<?>[] results = new CompletableFuture<?>[params.size()];
+        CompletableFuture<?>[] allResults = new CompletableFuture<?>[params.size()];
+        List<CompletableFuture<?>> results = new LinkedList<>();
         int i = 0;
         Iterator<Expression> it = params.iterator();
         while (it.hasNext()) {
-            results[i++] = context.evaluate(it.next()).toCompletableFuture();
+            Expression expression = it.next();
+            CompletableFuture<Object> result = context.evaluate(expression).toCompletableFuture();
+            allResults[i++] = result;
+            if (!expression.isLiteral()) {
+                results.add(result);
+            }
         }
-        return new EvaluatedParams(CompletableFuture.allOf(results), results);
+        return new EvaluatedParams(CompletableFuture.allOf(results.toArray(Futures.EMPTY_RESULTS)), allResults);
     }
 
     public static EvaluatedParams evaluateMessageKey(EvalContext context) {

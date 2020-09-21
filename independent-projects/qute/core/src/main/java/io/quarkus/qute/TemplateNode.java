@@ -32,6 +32,14 @@ public interface TemplateNode {
     Origin getOrigin();
 
     /**
+     * 
+     * @return {@code true} if the node represents a constant
+     */
+    default boolean isConstant() {
+        return false;
+    }
+
+    /**
      * Represents an origin of a template node.
      */
     public interface Origin {

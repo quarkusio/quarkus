@@ -222,6 +222,16 @@ public class ParserTest {
         }
     }
 
+    @Test
+    public void testTextNodeCollapse() {
+        TemplateImpl template = (TemplateImpl) Engine.builder().addDefaults().build().parse("Hello\nworld!{foo}next");
+        List<TemplateNode> rootNodes = template.root.blocks.get(0).nodes;
+        assertEquals(3, rootNodes.size());
+        assertEquals("Hello\nworld!", ((TextNode) rootNodes.get(0)).getValue());
+        assertEquals(1, ((ExpressionNode) rootNodes.get(1)).getExpressions().size());
+        assertEquals("next", ((TextNode) rootNodes.get(2)).getValue());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

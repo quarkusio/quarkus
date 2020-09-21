@@ -208,6 +208,7 @@ final class ExpressionImpl implements Expression {
 
         protected final String name;
         protected final String typeInfo;
+        protected volatile ValueResolver cachedResolver;
 
         PartImpl(String name, String typeInfo) {
             this.name = name;
@@ -220,6 +221,18 @@ final class ExpressionImpl implements Expression {
 
         public String getTypeInfo() {
             return typeInfo;
+        }
+
+        void setCachedResolver(ValueResolver resolver) {
+            ValueResolver last = this.cachedResolver;
+            if (last != null) {
+                return;
+            }
+            synchronized (this) {
+                if (this.cachedResolver == null) {
+                    this.cachedResolver = resolver;
+                }
+            }
         }
 
         @Override

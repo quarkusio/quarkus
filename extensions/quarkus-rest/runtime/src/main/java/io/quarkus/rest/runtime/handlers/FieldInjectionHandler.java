@@ -6,15 +6,16 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 
-public class ParameterHandler implements RestHandler {
+public class FieldInjectionHandler implements RestHandler {
 
-    private final int index;
+    private final BiConsumer<Object, Object> setter;
     private final String defaultValue;
     private final ParameterExtractor extractor;
     private final ParameterConverter converter;
 
-    public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter) {
-        this.index = index;
+    public FieldInjectionHandler(BiConsumer<Object, Object> setter, String defaultValue, ParameterExtractor extractor,
+            ParameterConverter converter) {
+        this.setter = setter;
         this.defaultValue = defaultValue;
         this.extractor = extractor;
         this.converter = converter;
@@ -48,6 +49,6 @@ public class ParameterHandler implements RestHandler {
         if (converter != null && result != null) {
             result = converter.convert(result);
         }
-        requestContext.getParameters()[index] = result;
+        setter.accept(requestContext.getEndpointInstance(), result);
     }
 }

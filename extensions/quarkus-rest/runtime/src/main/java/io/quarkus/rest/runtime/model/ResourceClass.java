@@ -21,8 +21,10 @@ public class ResourceClass {
      * The resource methods
      */
     private final List<ResourceMethod> methods = new ArrayList<>();
+    private final List<InjectableField> injectableFields = new ArrayList<>();
 
     private BeanFactory<Object> factory;
+    private boolean perRequestResource;
 
     public boolean isSubResource() {
         return path == null;
@@ -57,5 +59,17 @@ public class ResourceClass {
 
     public List<ResourceMethod> getMethods() {
         return methods;
+    }
+
+    public boolean isPerRequestResource() {
+        return perRequestResource;
+    }
+
+    public void setPerRequestResource(boolean perRequestResource) {
+        this.perRequestResource = perRequestResource;
+    }
+
+    public List<InjectableField> getInjectableFields() {
+        return injectableFields;
     }
 }

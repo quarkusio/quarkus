@@ -1,13 +1,43 @@
 package io.quarkus.rest.deployment.framework;
 
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.*;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BOOLEAN;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CHARACTER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONTEXT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DEFAULT_VALUE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DELETE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DOUBLE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FLOAT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FORM_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.GET;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEAD;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEADER_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INPUT_STREAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INTEGER;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LIST;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LONG;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MULTI_VALUED_MAP;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.OPTIONS;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_BOOLEAN;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_CHAR;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_DOUBLE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_FLOAT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_INTEGER;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
@@ -31,6 +61,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -43,6 +74,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -58,6 +90,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -68,6 +101,7 @@ import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
+import io.quarkus.rest.runtime.model.InjectableField;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -150,6 +184,10 @@ public class EndpointIndexer {
                 clazz.setPath(path);
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
+
+            handleFieldInjection(clazz, classInfo, classInfo, index, generatedClassBuildItemBuildProducer, existingConverters,
+                    additionalReaders);
+
             return clazz;
         } catch (Exception e) {
             if (Modifier.isInterface(classInfo.flags()) || Modifier.isAbstract(classInfo.flags())) {
@@ -159,6 +197,49 @@ public class EndpointIndexer {
                 return null;
             }
             throw new RuntimeException(e);
+        }
+    }
+
+    private static void handleFieldInjection(ResourceClass clazz, ClassInfo currentClassInfo,
+            ClassInfo actualEndpointInfo, IndexView index,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            Map<String, String> existingConverters,
+            AdditionalReaders additionalReaders) {
+        for (FieldInfo field : currentClassInfo.fields()) {
+            Map<DotName, AnnotationInstance> annotations = new HashMap<>();
+            for (AnnotationInstance i : field.annotations()) {
+                annotations.put(i.name(), i);
+            }
+            ParameterExtractor extractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
+                    generatedClassBuildItemBuildProducer, index, existingConverters, additionalReaders, false, false,
+                    annotations, field.type(), field.toString(), true);
+            ParameterExtractor result = extractor.invoke();
+            if (result.getType() != null) {
+                //BODY means no annotation, so for fields not injectable
+                clazz.setPerRequestResource(true);
+
+                String accessorName = currentClassInfo.name().toString() + "$$RestFieldAccessor$" + field.name();
+
+                try (ClassCreator c = new ClassCreator(
+                        new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), accessorName, null,
+                        Object.class.getName(), BiConsumer.class.getName())) {
+                    MethodCreator m = c.getMethodCreator("accept", void.class, Object.class, Object.class);
+                    m.writeInstanceField(FieldDescriptor.of(field), m.getMethodParam(0), m.getMethodParam(1));
+                    m.returnValue(null);
+                }
+                clazz.getInjectableFields().add(new InjectableField(extractor.name, extractor.elementType, extractor.type,
+                        extractor.single, extractor.converter, extractor.defaultValue, accessorName));
+
+            }
+        }
+
+        DotName superClassName = currentClassInfo.superName();
+        if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
+            ClassInfo superClass = index.getClassByName(superClassName);
+            if (superClass != null) {
+                handleFieldInjection(clazz, superClass, actualEndpointInfo, index, generatedClassBuildItemBuildProducer,
+                        existingConverters, additionalReaders);
+            }
         }
     }
 
@@ -295,97 +376,22 @@ public class EndpointIndexer {
             boolean sse = false;
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
-
-                String name = null;
-                AnnotationInstance pathParam = anns.get(PATH_PARAM);
-                AnnotationInstance queryParam = anns.get(QUERY_PARAM);
-                AnnotationInstance headerParam = anns.get(HEADER_PARAM);
-                AnnotationInstance formParam = anns.get(FORM_PARAM);
-                AnnotationInstance contextParam = anns.get(CONTEXT);
-                AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
-                AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
-                AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
-                String defaultValue = null;
-                if (defaultValueAnnotation != null) {
-                    defaultValue = defaultValueAnnotation.value().asString();
-                }
-                ParameterType type;
-                if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
-                    throw new RuntimeException(
-                            "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
-                                    + info);
-                } else if (pathParam != null) {
-                    name = pathParam.value().asString();
-                    type = ParameterType.PATH;
-                } else if (queryParam != null) {
-                    name = queryParam.value().asString();
-                    type = ParameterType.QUERY;
-                } else if (headerParam != null) {
-                    name = headerParam.value().asString();
-                    type = ParameterType.HEADER;
-                } else if (formParam != null) {
-                    name = formParam.value().asString();
-                    type = ParameterType.FORM;
-                } else if (contextParam != null) {
-                    // no name required
-                    type = ParameterType.CONTEXT;
-                } else if (suspendedAnnotation != null) {
-                    // no name required
-                    type = ParameterType.ASYNC_RESPONSE;
-                    suspended = true;
-                } else if (matrixParam != null) {
-                    // no name required
-                    type = ParameterType.MATRIX;
-                } else {
-                    type = ParameterType.BODY;
-                }
-                String elementType;
-                boolean single = true;
-                Supplier<ParameterConverter> converter = null;
                 Type paramType = info.parameters().get(i);
-                if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                    ParameterizedType pt = paramType.asParameterizedType();
-                    if (pt.name().equals(LIST)) {
-                        single = false;
-                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                                existingEndpoints, info);
-                        converter = new ListConverter.ListSupplier(converter);
-                    } else if (pt.name().equals(SET)) {
-                        single = false;
-                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                                existingEndpoints, info);
-                        converter = new SetConverter.SetSupplier(converter);
-                    } else if (pt.name().equals(SORTED_SET)) {
-                        single = false;
-                        elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
-                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                                existingEndpoints, info);
-                        converter = new SortedSetConverter.SortedSetSupplier(converter);
-                    } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
-                        elementType = pt.name().toString();
-                        single = true;
-                        converter = null;
-                        additionalReaders.add(FormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED, MultivaluedMap.class);
-                    } else {
-                        throw new RuntimeException("Invalid parameter type '" + pt + "' used on method '" + info.name()
-                                + "' of class '" + info.declaringClass().name().toString() + "'");
-                    }
-                } else {
-                    elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
-                    addReaderForType(additionalReaders, paramType);
+                String errorLocation = "method " + info + " on class " + info.declaringClass();
 
-                    if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
-                        converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
-                                existingEndpoints, info);
-                    }
-                    if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
-                        sse = true;
-                    }
-                }
-                if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
-                    throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+                ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
+                        generatedClassBuildItemBuildProducer, indexView, existingEndpoints, additionalReaders, suspended, sse,
+                        anns, paramType, errorLocation, false).invoke();
+                suspended = parameterExtractor.isSuspended();
+                sse = parameterExtractor.isSse();
+                String name = parameterExtractor.getName();
+                String defaultValue = parameterExtractor.getDefaultValue();
+                ParameterType type = parameterExtractor.getType();
+                String elementType = parameterExtractor.getElementType();
+                boolean single = parameterExtractor.isSingle();
+                Supplier<ParameterConverter> converter = parameterExtractor.getConverter();
+                if (defaultValue == null && paramType.kind() == Type.Kind.PRIMITIVE) {
+                    defaultValue = "0";
                 }
                 methodParameters[i] = new MethodParameter(name,
                         elementType, type, single, converter, defaultValue);
@@ -524,7 +530,7 @@ public class EndpointIndexer {
 
     private static Supplier<ParameterConverter> extractConverter(String elementType, IndexView indexView,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            Map<String, String> existingConverters, MethodInfo methodInfo) {
+            Map<String, String> existingConverters, String errorLocation) {
         if (elementType.equals(String.class.getName())) {
             return null;
         } else if (existingConverters.containsKey(elementType)) {
@@ -581,8 +587,7 @@ public class EndpointIndexer {
                 ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
                 mc.returnValue(ret);
             } else {
-                throw new RuntimeException("Unknown parameter type " + elementType + " on method " + methodInfo + " on class "
-                        + methodInfo.declaringClass());
+                throw new RuntimeException("Unknown parameter type " + elementType + " on ");
             }
         }
         existingConverters.put(elementType, baseName);
@@ -766,11 +771,174 @@ public class EndpointIndexer {
         }
     }
 
-    static class MethodDesc {
-        AnnotationInstance httpMethod;
-        AnnotationInstance path;
-        boolean blocking;
+    private static class ParameterExtractor {
+        private ClassInfo currentClassInfo;
+        private ClassInfo actualEndpointInfo;
+        private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+        private IndexView indexView;
+        private Map<String, String> existingEndpoints;
+        private AdditionalReaders additionalReaders;
+        private boolean suspended;
+        private boolean sse;
+        private Map<DotName, AnnotationInstance> anns;
+        private Type paramType;
+        private String errorLocation;
+        private String name;
+        private String defaultValue;
+        private ParameterType type;
+        private String elementType;
+        private boolean single;
+        private Supplier<ParameterConverter> converter;
+        private final boolean field;
 
+        public ParameterExtractor(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, IndexView indexView,
+                Map<String, String> existingConverters, AdditionalReaders additionalReaders, boolean suspended, boolean sse,
+                Map<DotName, AnnotationInstance> anns, Type paramType, String errorLocation, boolean field) {
+            this.currentClassInfo = currentClassInfo;
+            this.actualEndpointInfo = actualEndpointInfo;
+            this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
+            this.indexView = indexView;
+            this.existingEndpoints = existingConverters;
+            this.additionalReaders = additionalReaders;
+            this.suspended = suspended;
+            this.sse = sse;
+            this.anns = anns;
+            this.paramType = paramType;
+            this.errorLocation = errorLocation;
+            this.field = field;
+        }
+
+        public boolean isSuspended() {
+            return suspended;
+        }
+
+        public boolean isSse() {
+            return sse;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getDefaultValue() {
+            return defaultValue;
+        }
+
+        public ParameterType getType() {
+            return type;
+        }
+
+        public String getElementType() {
+            return elementType;
+        }
+
+        public boolean isSingle() {
+            return single;
+        }
+
+        public Supplier<ParameterConverter> getConverter() {
+            return converter;
+        }
+
+        public ParameterExtractor invoke() {
+            name = null;
+            AnnotationInstance pathParam = anns.get(PATH_PARAM);
+            AnnotationInstance queryParam = anns.get(QUERY_PARAM);
+            AnnotationInstance headerParam = anns.get(HEADER_PARAM);
+            AnnotationInstance formParam = anns.get(FORM_PARAM);
+            AnnotationInstance contextParam = anns.get(CONTEXT);
+            AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
+            AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
+            AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
+            defaultValue = null;
+            if (defaultValueAnnotation != null) {
+                defaultValue = defaultValueAnnotation.value().asString();
+            }
+            if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
+                throw new RuntimeException(
+                        "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
+                                + errorLocation);
+            } else if (pathParam != null) {
+                name = pathParam.value().asString();
+                type = ParameterType.PATH;
+            } else if (queryParam != null) {
+                name = queryParam.value().asString();
+                type = ParameterType.QUERY;
+            } else if (headerParam != null) {
+                name = headerParam.value().asString();
+                type = ParameterType.HEADER;
+            } else if (formParam != null) {
+                name = formParam.value().asString();
+                type = ParameterType.FORM;
+            } else if (contextParam != null) {
+                //this is handled by CDI
+                if (field) {
+                    return this;
+                }
+                // no name required
+                type = ParameterType.CONTEXT;
+            } else if (suspendedAnnotation != null) {
+                // no name required
+                type = ParameterType.ASYNC_RESPONSE;
+                suspended = true;
+            } else if (matrixParam != null) {
+                // no name required
+                type = ParameterType.MATRIX;
+            } else {
+                //unannoated field
+                //just ignore it
+                if (field) {
+                    return this;
+                }
+                type = ParameterType.BODY;
+            }
+            single = true;
+            converter = null;
+            if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType pt = paramType.asParameterizedType();
+                if (pt.name().equals(LIST)) {
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, errorLocation);
+                    converter = new ListConverter.ListSupplier(converter);
+                } else if (pt.name().equals(SET)) {
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, errorLocation);
+                    converter = new SetConverter.SetSupplier(converter);
+                } else if (pt.name().equals(SORTED_SET)) {
+                    single = false;
+                    elementType = toClassName(pt.arguments().get(0), currentClassInfo, actualEndpointInfo, indexView);
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, errorLocation);
+                    converter = new SortedSetConverter.SortedSetSupplier(converter);
+                } else if ((pt.name().equals(MULTI_VALUED_MAP)) && (type == ParameterType.BODY)) {
+                    elementType = pt.name().toString();
+                    single = true;
+                    converter = null;
+                    additionalReaders.add(FormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED, MultivaluedMap.class);
+                } else {
+                    throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+                }
+            } else {
+                elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
+                addReaderForType(additionalReaders, paramType);
+
+                if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
+                    converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
+                            existingEndpoints, errorLocation);
+                }
+                if (type == ParameterType.CONTEXT && elementType.equals(SseEventSink.class.getName())) {
+                    sse = true;
+                }
+            }
+            if (suspendedAnnotation != null && !elementType.equals(AsyncResponse.class.getName())) {
+                throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
+            }
+            return this;
+        }
     }
-
 }

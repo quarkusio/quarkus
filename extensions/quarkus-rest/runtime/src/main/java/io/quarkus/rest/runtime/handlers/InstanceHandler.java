@@ -6,7 +6,7 @@ import io.quarkus.rest.runtime.spi.BeanFactory;
 public class InstanceHandler implements RestHandler {
 
     /**
-     * CDI Manages the lifecycle. If this is a per request resource then this will be a client proxy
+     * CDI Manages the lifecycle
      *
      */
     private final Object instance;

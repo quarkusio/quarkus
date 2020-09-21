@@ -14,6 +14,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -54,12 +55,14 @@ import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.rest.runtime.handlers.BlockingHandler;
 import io.quarkus.rest.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.runtime.handlers.CompletionStageResponseHandler;
+import io.quarkus.rest.runtime.handlers.FieldInjectionHandler;
 import io.quarkus.rest.runtime.handlers.InputHandler;
 import io.quarkus.rest.runtime.handlers.InstanceHandler;
 import io.quarkus.rest.runtime.handlers.InvocationHandler;
 import io.quarkus.rest.runtime.handlers.MediaTypeMapper;
 import io.quarkus.rest.runtime.handlers.MultiResponseHandler;
 import io.quarkus.rest.runtime.handlers.ParameterHandler;
+import io.quarkus.rest.runtime.handlers.PerRequestInstanceHandler;
 import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
 import io.quarkus.rest.runtime.handlers.ReadBodyHandler;
 import io.quarkus.rest.runtime.handlers.RequestDeserializeHandler;
@@ -80,6 +83,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceMethod;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
+import io.quarkus.rest.runtime.model.InjectableField;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -504,8 +508,27 @@ public class QuarkusRestRecorder {
 
         EndpointInvoker invoker = method.getInvoker().get();
         if (!locatableResource) {
-            handlers.add(new InstanceHandler(clazz.getFactory()));
+            if (clazz.isPerRequestResource()) {
+                handlers.add(new PerRequestInstanceHandler(clazz.getFactory()));
+            } else {
+                handlers.add(new InstanceHandler(clazz.getFactory()));
+            }
         }
+
+        for (InjectableField field : clazz.getInjectableFields()) {
+            boolean single = field.isSingle();
+            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, field.parameterType, field.type,
+                    field.parameterName,
+                    single);
+            Class<?> setter = loadClass(field.getAccessorClass());
+            try {
+                handlers.add(new FieldInjectionHandler((BiConsumer<Object, Object>) setter.newInstance(),
+                        field.getDefaultValue(), extractor, field.converter == null ? null : field.converter.get()));
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
             parameterTypes[i] = loadClass(method.getParameters()[i].type);
@@ -524,37 +547,9 @@ public class QuarkusRestRecorder {
         }
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
-            ParameterExtractor extractor;
             boolean single = param.isSingle();
-            switch (param.parameterType) {
-                case HEADER:
-                    extractor = new HeaderParamExtractor(param.name, single);
-                    break;
-                case FORM:
-                    extractor = new FormParamExtractor(param.name, single);
-                    break;
-                case PATH:
-                    extractor = new PathParamExtractor(pathParameterIndexes.get(param.name));
-                    break;
-                case CONTEXT:
-                    extractor = new ContextParamExtractor(param.type);
-                    break;
-                case ASYNC_RESPONSE:
-                    extractor = new AsyncResponseExtractor();
-                    break;
-                case QUERY:
-                    extractor = new QueryParamExtractor(param.name, single);
-                    break;
-                case BODY:
-                    extractor = new BodyParamExtractor();
-                    break;
-                case MATRIX:
-                    extractor = new MatrixParamExtractor(param.name, single);
-                    break;
-                default:
-                    extractor = new QueryParamExtractor(param.name, single);
-                    break;
-            }
+            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
+                    single);
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
                     param.converter == null ? null : param.converter.get()));
         }
@@ -679,6 +674,42 @@ public class QuarkusRestRecorder {
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 new LazyMethod(method.getName(), resourceClass, parameterTypes));
+    }
+
+    public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
+            String name,
+            boolean single) {
+        ParameterExtractor extractor;
+        switch (type) {
+            case HEADER:
+                extractor = new HeaderParamExtractor(name, single);
+                break;
+            case FORM:
+                extractor = new FormParamExtractor(name, single);
+                break;
+            case PATH:
+                extractor = new PathParamExtractor(pathParameterIndexes.get(name));
+                break;
+            case CONTEXT:
+                extractor = new ContextParamExtractor(javaType);
+                break;
+            case ASYNC_RESPONSE:
+                extractor = new AsyncResponseExtractor();
+                break;
+            case QUERY:
+                extractor = new QueryParamExtractor(name, single);
+                break;
+            case BODY:
+                extractor = new BodyParamExtractor();
+                break;
+            case MATRIX:
+                extractor = new MatrixParamExtractor(name, single);
+                break;
+            default:
+                extractor = new QueryParamExtractor(name, single);
+                break;
+        }
+        return extractor;
     }
 
     public Map<String, Integer> buildParamIndexMap(URITemplate classPathTemplate, URITemplate methodPathTemplate) {

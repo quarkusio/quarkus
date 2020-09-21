@@ -194,7 +194,9 @@ public class QuarkusRestRecorder {
                 globalRequestInterceptorsMap.values(), false);
 
         ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler();
-        for (ResourceClass clazz : locatableResourceClasses) {
+        List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
+        possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
+        for (ResourceClass clazz : possibleSubResource) {
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (ResourceMethod method : clazz.getMethods()) {

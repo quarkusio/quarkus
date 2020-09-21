@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.channels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,15 +13,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EmitterWithBroadcastAndSubscriberTest {
+public class EmitterWithBroadcastTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EmitterWithBroadcastAndSubscriberExample.class));
+                    .addClasses(EmitterWithBroadcastExample.class));
 
     @Inject
-    EmitterWithBroadcastAndSubscriberExample bean;
+    EmitterWithBroadcastExample bean;
 
     @Test
     public void testEmitter() {

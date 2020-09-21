@@ -41,6 +41,9 @@ public class ResponseHandler implements RestHandler {
                 requestContext.setGenericReturnType(genericEntity.getType());
                 response = Response.fromResponse(existing).entity(genericEntity.getEntity());
             } else {
+                // TCK says to use the entity type as generic type if we return a response
+                if (existing.hasEntity())
+                    requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficent
                 response = Response.fromResponse((Response) result);
             }

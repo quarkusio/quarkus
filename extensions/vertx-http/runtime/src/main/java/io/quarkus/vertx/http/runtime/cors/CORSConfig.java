@@ -33,6 +33,7 @@ public class CORSConfig {
      * default: returns any requested method as valid
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<List<String>> methods;
 
     /**

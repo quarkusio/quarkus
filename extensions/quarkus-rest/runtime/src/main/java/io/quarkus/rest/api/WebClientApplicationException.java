@@ -3,7 +3,6 @@ package io.quarkus.rest.api;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-
 /**
  * Subclass of {@link WebApplicationException} for use by clients, which forbids setting a response that
  * would be used by the server.
@@ -12,11 +11,11 @@ import javax.ws.rs.core.Response;
  */
 @SuppressWarnings("serial")
 public class WebClientApplicationException extends WebApplicationException {
-    
+
     public WebClientApplicationException() {
         super();
     }
-    
+
     public WebClientApplicationException(String reason) {
         super(reason);
     }

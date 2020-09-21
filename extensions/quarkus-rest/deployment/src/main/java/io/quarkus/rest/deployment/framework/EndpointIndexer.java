@@ -884,6 +884,7 @@ public class EndpointIndexer {
                 suspended = true;
             } else if (matrixParam != null) {
                 // no name required
+                name = matrixParam.value().asString();
                 type = ParameterType.MATRIX;
             } else {
                 //unannoated field

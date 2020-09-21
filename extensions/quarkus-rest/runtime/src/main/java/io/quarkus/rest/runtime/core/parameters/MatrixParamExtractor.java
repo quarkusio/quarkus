@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.core.parameters;
 
+import javax.ws.rs.core.PathSegment;
+
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
 public class MatrixParamExtractor implements ParameterExtractor {
@@ -14,7 +16,12 @@ public class MatrixParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        // TODO: implement
+        for (PathSegment i : context.getPathSegments()) {
+            String res = i.getMatrixParameters().getFirst(name);
+            if (res != null) {
+                return res;
+            }
+        }
         return null;
     }
 

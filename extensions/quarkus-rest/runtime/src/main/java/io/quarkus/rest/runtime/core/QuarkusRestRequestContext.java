@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
@@ -34,6 +36,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriInfo;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
 import io.quarkus.rest.runtime.util.EmptyInputStream;
+import io.quarkus.rest.runtime.util.PathSegmentImpl;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
@@ -110,6 +113,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
 
     private QuarkusRestAsyncResponse asyncResponse;
     private QuarkusRestSseEventSink sseEventSink;
+    private List<PathSegment> pathSegments;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
@@ -643,4 +647,56 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
     public void setSseEventSink(QuarkusRestSseEventSink sseEventSink) {
         this.sseEventSink = sseEventSink;
     }
+
+    /**
+     * Return the path segments
+     *
+     * This is lazily initialized
+     */
+    public List<PathSegment> getPathSegments() {
+        if (pathSegments == null) {
+            initPathSegments();
+        }
+        return pathSegments;
+    }
+
+    /**
+     * initializes the path seegments and removes any matrix params for the path
+     * used for matching.
+     */
+    public void initPathSegments() {
+        if (pathSegments != null) {
+            return;
+        }
+        //this is not super optimised
+        //I don't think we care about it that much though
+        String path = getPath();
+        String[] parts = path.split("/");
+        pathSegments = new ArrayList<>();
+        boolean hasMatrix = false;
+        for (String i : parts) {
+            if (i.isEmpty()) {
+                continue;
+            }
+            PathSegmentImpl ps = new PathSegmentImpl(i, true);
+            hasMatrix = ps.hasMatrixParams() || hasMatrix;
+            pathSegments.add(ps);
+        }
+        if (hasMatrix) {
+            StringBuilder sb = new StringBuilder();
+            for (PathSegment i : pathSegments) {
+                sb.append("/");
+                sb.append(i.getPath());
+            }
+            if (path.endsWith("/")) {
+                sb.append("/");
+            }
+            String newPath = sb.toString();
+            this.path = newPath;
+            if (this.remaining != null) {
+                this.remaining = newPath.substring(getPathWithoutPrefix().length() - this.remaining.length());
+            }
+        }
+    }
+
 }

@@ -29,9 +29,9 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
         this.providers = new QuarkusRestProviders(QuarkusRestRecorder.getCurrentDeployment());
         this.preMappingHandler = preMappingHandler;
         if (preMappingHandler == null) {
-            initialChain = new RestHandler[] { this };
+            initialChain = new RestHandler[] { new MatrixParamHandler(), this };
         } else {
-            initialChain = new RestHandler[] { preMappingHandler, this };
+            initialChain = new RestHandler[] { new MatrixParamHandler(), preMappingHandler, this };
         }
         this.requestContext = Arc.container().requestContext();
         this.currentVertxRequest = Arc.container().instance(CurrentVertxRequest.class).get();

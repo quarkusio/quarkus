@@ -1,4 +1,4 @@
-package io.quarkus.it.main;
+package io.quarkus.it.metrics;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

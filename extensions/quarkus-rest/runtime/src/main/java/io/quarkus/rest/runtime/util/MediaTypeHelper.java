@@ -2,7 +2,6 @@ package io.quarkus.rest.runtime.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +140,7 @@ public class MediaTypeHelper {
     public static void sortByWeight(List<MediaType> types) {
         if (types == null || types.size() <= 1)
             return;
-        Collections.sort(types, COMPARATOR);
+        types.sort(COMPARATOR);
     }
 
     public static MediaType getBestMatch(List<MediaType> desired, List<MediaType> provided) {
@@ -152,15 +151,13 @@ public class MediaTypeHelper {
 
         if (emptyDesired && emptyProvided)
             return null;
-        if (emptyDesired && !emptyProvided)
+        if (emptyDesired)
             return provided.get(0);
-        if (emptyProvided && !emptyDesired)
+        if (emptyProvided)
             return desired.get(0);
 
-        for (int i = 0; i < desired.size(); i++) {
-            MediaType desire = desired.get(i);
-            for (int j = 0; j < provided.size(); j++) {
-                MediaType provide = provided.get(j);
+        for (MediaType desire : desired) {
+            for (MediaType provide : provided) {
                 if (provide.isCompatible(desire))
                     return provide;
             }
@@ -176,15 +173,13 @@ public class MediaTypeHelper {
 
         if (emptyDesired && emptyProvided)
             return null;
-        if (emptyDesired && !emptyProvided)
+        if (emptyDesired)
             return provided.get(0);
-        if (emptyProvided && !emptyDesired)
+        if (emptyProvided)
             return desired.get(0);
 
-        for (int i = 0; i < desired.size(); i++) {
-            MediaType desire = desired.get(i);
-            for (int j = 0; j < provided.size(); j++) {
-                MediaType provide = provided.get(j);
+        for (MediaType desire : desired) {
+            for (MediaType provide : provided) {
                 if (provide.isCompatible(desire)) {
                     if (provide.isWildcardType()) {
                         return desire;
@@ -200,8 +195,8 @@ public class MediaTypeHelper {
     public static List<MediaType> parseHeader(String header) {
         ArrayList<MediaType> types = new ArrayList<MediaType>();
         String[] medias = header.split(",");
-        for (int i = 0; i < medias.length; i++) {
-            types.add(MediaType.valueOf(medias[i].trim()));
+        for (String media : medias) {
+            types.add(MediaType.valueOf(media.trim()));
         }
         return types;
     }

@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.handlers;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,10 +11,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
-import io.quarkus.rest.runtime.util.ServerMediaType;
 
 /**
  * Handler that deals with the case when two methods have the same path,
@@ -26,31 +25,30 @@ import io.quarkus.rest.runtime.util.ServerMediaType;
  */
 public class MediaTypeMapper implements RestHandler {
 
-    final Map<MediaType, Holder> resources;
+    final Map<MediaType, Holder> resourcesByConsumes;
     final List<MediaType> consumesTypes;
 
     public MediaTypeMapper(List<RuntimeResource> runtimeResources) {
-        resources = new HashMap<>();
+        resourcesByConsumes = new HashMap<>();
         consumesTypes = new ArrayList<>();
-        for (RuntimeResource i : runtimeResources) {
-            MediaType mt = i.getConsumes();
-            if (mt == null) {
-                mt = MediaType.WILDCARD_TYPE;
+        for (RuntimeResource runtimeResource : runtimeResources) {
+            MediaType consumesMT = runtimeResource.getConsumes();
+            if (consumesMT == null) {
+                consumesMT = MediaType.WILDCARD_TYPE;
             }
-            if (!resources.containsKey(mt)) {
-                consumesTypes.add(mt);
-                resources.put(mt, new Holder());
+            if (!resourcesByConsumes.containsKey(consumesMT)) {
+                consumesTypes.add(consumesMT);
+                resourcesByConsumes.put(consumesMT, new Holder());
             }
-            MediaType[] produces = i.getProduces() != null ? i.getProduces().getSortedOriginalMediaTypes() : null;
+            MediaType[] produces = runtimeResource.getProduces() != null
+                    ? runtimeResource.getProduces().getSortedOriginalMediaTypes()
+                    : null;
             if (produces == null) {
                 produces = new MediaType[] { MediaType.WILDCARD_TYPE };
             }
-            for (MediaType j : produces) {
-                resources.get(mt).resources.put(new MediaType(j.getType(), j.getSubtype()), i);
+            for (MediaType producesMT : produces) {
+                resourcesByConsumes.get(consumesMT).setResource(runtimeResource, producesMT);
             }
-        }
-        for (Holder i : resources.values()) {
-            i.producesTypes = new ServerMediaType(new ArrayList<>(i.resources.keySet()), StandardCharsets.UTF_8.name());
         }
 
     }
@@ -58,33 +56,34 @@ public class MediaTypeMapper implements RestHandler {
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
         String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
-        Holder selected = null;
+        Holder selectedHolder = null;
         if (contentType == null) {
-            selected = resources.get(MediaType.WILDCARD_TYPE);
+            selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
         } else {
             MediaType consumes = MediaTypeHelper.getBestMatch(consumesTypes,
                     Collections.singletonList(MediaType.valueOf(contentType)));
-            selected = resources.get(consumes);
-            if (selected == null) {
-                selected = resources.get(MediaType.WILDCARD_TYPE);
+            selectedHolder = resourcesByConsumes.get(consumes);
+            if (selectedHolder == null) {
+                selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
             }
         }
-        if (selected == null) {
+        if (selectedHolder == null) {
             throw new WebApplicationException(Response.status(416).build());
         }
-        RuntimeResource selectedResource = null;
-        if (selected.resources.size() == 1) {
-            selectedResource = selected.resources.values().iterator().next();
+        RuntimeResource selectedResource;
+        if (selectedHolder.mtWithoutParamsToResource.size() == 1) {
+            selectedResource = selectedHolder.mtWithoutParamsToResource.values().iterator().next();
         } else {
-            MediaType produces = selected.producesTypes.negotiateProduces(requestContext.getContext().request());
+            MediaType produces = selectMediaType(selectedHolder.mtsWithParams,
+                    requestContext.getContext().request().getHeader(HttpHeaderNames.ACCEPT));
             requestContext.setProducesMediaType(produces);
             MediaType key = produces;
             if (!key.getParameters().isEmpty()) {
                 key = new MediaType(key.getType(), key.getSubtype());
             }
-            selectedResource = selected.resources.get(key);
+            selectedResource = selectedHolder.mtWithoutParamsToResource.get(key);
             if (selectedResource == null) {
-                selectedResource = selected.resources.get(MediaType.WILDCARD_TYPE);
+                selectedResource = selectedHolder.mtWithoutParamsToResource.get(MediaType.WILDCARD_TYPE);
             }
         }
 
@@ -94,9 +93,35 @@ public class MediaTypeMapper implements RestHandler {
         requestContext.restart(selectedResource);
     }
 
-    final static class Holder {
+    // TODO: this is probably too naive but it works better with the TCK than ServerMediaType#negotiateProduces
+    public MediaType selectMediaType(List<MediaType> availableMediaTypes, String accept) {
+        MediaType selected = null;
+        if (accept != null) {
+            List<MediaType> acceptedMediaTypes = MediaTypeHelper.parseHeader(accept);
+            selected = MediaTypeHelper.getBestConcreteMatch(acceptedMediaTypes, availableMediaTypes);
+        }
+        if (selected == null) {
+            selected = availableMediaTypes.get(0);
+        }
+        if (selected.equals(MediaType.WILDCARD_TYPE)) {
+            return MediaType.APPLICATION_OCTET_STREAM_TYPE;
+        }
+        return selected;
+    }
 
-        final Map<MediaType, RuntimeResource> resources = new HashMap<>();
-        ServerMediaType producesTypes;
+    private static final class Holder {
+
+        private final Map<MediaType, RuntimeResource> mtWithoutParamsToResource = new HashMap<>();
+        private final List<MediaType> mtsWithParams = new ArrayList<>();
+
+        public void setResource(RuntimeResource runtimeResource, MediaType mediaType) {
+            MediaType withoutParams = mediaType;
+            MediaType withParas = mediaType;
+            if (!mediaType.getParameters().isEmpty()) {
+                withoutParams = new MediaType(mediaType.getType(), mediaType.getSubtype());
+            }
+            mtWithoutParamsToResource.put(withoutParams, runtimeResource);
+            mtsWithParams.add(withParas);
+        }
     }
 }

@@ -99,7 +99,7 @@
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
+        <slf4j-jboss-logging.version>1.2.1.Final</slf4j-jboss-logging.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.13.0.Final</wildfly-elytron.version>
@@ -129,7 +129,7 @@
         <caffeine.version>2.8.5</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
-        <jboss-logging.version>3.3.2.Final</jboss-logging.version>
+        <jboss-logging.version>3.4.1.Final</jboss-logging.version>
         <mutiny.version>0.8.1</mutiny.version>
         <axle-client.version>1.2.1</axle-client.version>
         <mutiny-client.version>1.2.1</mutiny-client.version>

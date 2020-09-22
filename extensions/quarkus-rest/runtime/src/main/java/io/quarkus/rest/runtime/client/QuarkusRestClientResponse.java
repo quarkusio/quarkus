@@ -1,12 +1,12 @@
 package io.quarkus.rest.runtime.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
@@ -22,14 +22,23 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         return readEntity(entityType, null, null);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T readEntity(GenericType<T> entityType) {
+        return (T) readEntity(entityType.getRawType(), entityType.getType(), null);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T readEntity(GenericType<T> entityType, Annotation[] annotations) {
+        return (T) readEntity(entityType.getRawType(), entityType.getType(), annotations);
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
-        if (entityType.isInstance(getEntity())) {
+        // TODO: we probably need better state handling
+        if (hasEntity() && entityType.isInstance(getEntity())) {
             return (T) getEntity();
-        }
-
-        if (!(getEntityStream() instanceof ByteArrayInputStream)) {
-            throw new IllegalStateException("Data cannot be re-read");
         }
 
         MediaType mediaType = getMediaType();
@@ -43,10 +52,11 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
+                setEntity(entity);
                 return (T) entity;
             }
         }
-
+        setEntity(null);
         return null;
     }
 }

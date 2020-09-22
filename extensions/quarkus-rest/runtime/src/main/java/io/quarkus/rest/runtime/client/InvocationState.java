@@ -50,6 +50,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
     // Changeable by the request filter
     Entity<?> entity;
     GenericType<?> responseType;
+    private boolean responseTypeSpecified;
     private final QuarkusRestClient restClient;
     private final Serialisers serialisers;
     final ClientRequestHeaders requestHeaders;
@@ -81,9 +82,11 @@ public class InvocationState implements Handler<HttpClientResponse> {
         if (responseType == null) {
             this.responseType = new GenericType<>(String.class);
             this.checkSuccessfulFamily = false;
+            this.responseTypeSpecified = false;
         } else {
             this.responseType = responseType;
             this.checkSuccessfulFamily = !responseType.getRawType().equals(Response.class);
+            this.responseTypeSpecified = true;
         }
         this.registerBodyHandler = registerBodyHandler;
         this.result = new CompletableFuture<>();
@@ -236,40 +239,36 @@ public class InvocationState implements Handler<HttpClientResponse> {
         if (existingEntity != null) {
             builder.entity(existingEntity);
         } else {
-            MediaType mediaType = responseContext.getMediaType();
-            List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
-                    mediaType);
-            boolean done = false;
-            for (MessageBodyReader<?> reader : readers) {
-                if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
-                        mediaType)) {
-                    InputStream in = responseContext.getEntityStream();
-                    try {
-                        Object entity = ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
-                                null, mediaType, responseContext.getHeaders(), in);
-                        builder.entity(entity);
-
-                        // because we convert the bytes into the response type eagerly (as opposed to RESTEasy for example which does it on demand)
-                        // what we are doing here is making the data available for re-consumption which is needed when the Response is used
-                        // to read any entity of some specific class (the TCK does this extensively)
-                        if (in instanceof ByteArrayInputStream) {
-                            try {
-                                in.reset();
-                                builder.entityStream(in);
-                            } catch (IOException e) {
-                                // ignore as it just means that the input stream won't be available for re-consumption
-                            }
+            if (responseTypeSpecified) { // this case means that a specific response type was requested
+                MediaType mediaType = responseContext.getMediaType();
+                List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
+                        mediaType);
+                boolean done = false;
+                for (MessageBodyReader<?> reader : readers) {
+                    if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
+                            mediaType)) {
+                        InputStream in = responseContext.getEntityStream();
+                        try {
+                            @SuppressWarnings({ "unchecked", "rawtypes" })
+                            Object entity = ((MessageBodyReader) reader).readFrom(responseType.getRawType(),
+                                    responseType.getType(),
+                                    null, mediaType, responseContext.getHeaders(), in);
+                            builder.entity(entity);
+                        } catch (IOException e) {
+                            result.completeExceptionally(e);
                         }
-
-                    } catch (IOException e) {
-                        result.completeExceptionally(e);
+                        done = true;
+                        break;
                     }
-                    done = true;
-                    break;
+
                 }
-            }
-            if (!done && (responseContext.getData() != null)) {
-                builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
+                if (!done && (responseContext.getData() != null)) {
+                    builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
+                }
+            } else {
+                // in this case no specific response type was requested so we just prepare the stream
+                // the users of the response are meant to use readEntity
+                builder.entityStream(responseContext.getEntityStream());
             }
         }
         result.complete(builder.build());

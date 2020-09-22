@@ -73,6 +73,10 @@ public class QuarkusRestResponse extends Response {
         return entity;
     }
 
+    protected void setEntity(Object entity) {
+        this.entity = entity;
+    }
+
     public InputStream getEntityStream() {
         return entityStream;
     }

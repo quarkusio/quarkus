@@ -38,7 +38,6 @@
 
         <!-- Versions -->
         <assertj.version>3.17.2</assertj.version>
-        <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jackson.version>2.11.2</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
@@ -69,11 +68,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.eclipsesource.minimal-json</groupId>
-                <artifactId>minimal-json</artifactId>
-                <version>${eclipse-minimal-json.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
-import org.jboss.logging.Logger;
-
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -14,17 +12,20 @@ import io.vertx.ext.web.RoutingContext;
  * Reference: https://github.com/eclipse-vertx/vert.x/issues/3579
  */
 public class VertxMeterFilter implements Handler<RoutingContext> {
-    private static final Logger log = Logger.getLogger(VertxMeterFilter.class);
-
     @Override
-    public void handle(RoutingContext event) {
+    public void handle(RoutingContext routingContext) {
         final Context context = Vertx.currentContext();
-        log.debugf("Handling event %s with context %s", event, context);
-
         RequestMetric requestMetric = RequestMetric.retrieveRequestMetric(context);
+
         if (requestMetric != null) {
-            requestMetric.routingContext = event;
+            requestMetric.routingContext = routingContext;
+
+            // remember if we can skip path munging --> @see VertxMeterBinderContainerFilter
+            if (requestMetric.pathMatched) {
+                routingContext.put(RequestMetric.HTTP_REQUEST_PATH_MATCHED, true);
+            }
         }
-        event.next();
+        routingContext.next();
     }
+
 }

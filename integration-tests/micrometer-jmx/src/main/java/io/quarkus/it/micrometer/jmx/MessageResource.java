@@ -4,14 +4,15 @@ import java.lang.management.ManagementFactory;
 import java.util.Set;
 
 import javax.management.*;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.quarkus.vertx.web.Param;
+import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.RouteBase;
+import io.vertx.core.http.HttpMethod;
 
-@Path("/message")
+@RouteBase(path = "/message")
 public class MessageResource {
 
     private final MeterRegistry registry;
@@ -21,27 +22,24 @@ public class MessageResource {
         this.registry = registry;
     }
 
-    @GET
+    @Route(path = "ping", methods = HttpMethod.GET)
     public String message() {
         CompositeMeterRegistry compositeMeterRegistry = (CompositeMeterRegistry) registry;
         Set<MeterRegistry> subRegistries = compositeMeterRegistry.getRegistries();
         return subRegistries.iterator().next().getClass().getName();
     }
 
-    @GET
-    @Path("fail")
+    @Route(path = "fail", methods = HttpMethod.GET)
     public String fail() {
         throw new RuntimeException("Failed on purpose");
     }
 
-    @GET
-    @Path("item/{id}")
-    public String item(@PathParam("id") String id) {
+    @Route(path = "item/:id", methods = HttpMethod.GET)
+    public String item(@Param("id") String id) {
         return "return message with id " + id;
     }
 
-    @GET
-    @Path("mbeans")
+    @Route(path = "mbeans", methods = HttpMethod.GET)
     public String metrics() throws IntrospectionException, InstanceNotFoundException, ReflectionException {
         Set<ObjectName> mbeans = mBeanServer.queryNames(null, null);
         StringBuilder sb = new StringBuilder();

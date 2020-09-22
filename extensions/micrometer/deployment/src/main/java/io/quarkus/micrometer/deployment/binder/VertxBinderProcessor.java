@@ -5,6 +5,9 @@ import java.util.function.BooleanSupplier;
 import javax.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -31,18 +34,26 @@ public class VertxBinderProcessor {
         }
     }
 
+    @BuildStep(onlyIf = { VertxBinderEnabled.class })
+    ResteasyJaxrsProviderBuildItem enableResteasySupport(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (!capabilities.isPresent(Capability.RESTEASY)) {
+            return null;
+        }
+
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(VertxMeterBinderContainerFilter.class)
+                .setUnremovable().build());
+
+        return new ResteasyJaxrsProviderBuildItem(VertxMeterBinderContainerFilter.class.getName());
+    }
+
     @BuildStep(onlyIf = VertxBinderEnabled.class)
     AdditionalBeanBuildItem createVertxAdapters() {
         // Add Vertx meter adapters
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(VertxMeterBinderAdapter.class)
-                .addBeanClass(VertxMeterBinderContainerFilter.class)
                 .setUnremovable().build();
-    }
-
-    @BuildStep(onlyIf = VertxBinderEnabled.class)
-    ResteasyJaxrsProviderBuildItem createVertxFilters() {
-        return new ResteasyJaxrsProviderBuildItem(VertxMeterBinderContainerFilter.class.getName());
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)

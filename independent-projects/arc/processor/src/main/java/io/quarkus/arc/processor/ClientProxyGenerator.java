@@ -10,6 +10,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.Mockable;
+import io.quarkus.arc.processor.BeanGenerator.ProviderType;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -85,9 +86,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
 
-        Type providerType = bean.getProviderType();
+        ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
-        String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String targetPackage = getPackageName(bean);
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
@@ -103,9 +103,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         if (Modifier.isInterface(providerClass.flags())) {
             isInterface = true;
-            interfaces.add(providerTypeName);
+            interfaces.add(providerType.className());
         } else {
-            superClass = providerTypeName;
+            superClass = providerType.className();
         }
         if (mockable) {
             interfaces.add(Mockable.class.getName());
@@ -133,8 +133,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         createConstructor(clientProxy, beanClassName, superClass, beanField.getFieldDescriptor(),
                 contextField != null ? contextField.getFieldDescriptor() : null);
-        implementDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor(), bean);
-        implementGetContextualInstance(clientProxy, providerTypeName);
+        implementDelegate(clientProxy, providerType, beanField.getFieldDescriptor(), bean);
+        implementGetContextualInstance(clientProxy, providerType);
         implementGetBean(clientProxy, beanField.getFieldDescriptor());
         if (mockable) {
             implementMockMethods(clientProxy);
@@ -188,7 +188,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             ResultHandle delegate = forward
                     .invokeVirtualMethod(
                             MethodDescriptor.ofMethod(generatedName, DELEGATE_METHOD_NAME,
-                                    DescriptorUtils.typeToString(providerType)),
+                                    providerType.descriptorName()),
                             forward.getThis());
             ResultHandle ret;
 
@@ -221,7 +221,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             } else {
                 // make sure we do not use the original method descriptor as it could point to
                 // a default interface method containing class: make sure we invoke it on the provider type.
-                MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName,
+                MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerType.className(),
                         originalMethodDescriptor.getName(),
                         originalMethodDescriptor.getReturnType(),
                         originalMethodDescriptor.getParameterTypes());
@@ -266,15 +266,15 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.returnValue(null);
     }
 
-    void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField, BeanInfo bean) {
-        MethodCreator creator = clientProxy.getMethodCreator(DELEGATE_METHOD_NAME, providerTypeName)
+    void implementDelegate(ClassCreator clientProxy, ProviderType providerType, FieldDescriptor beanField, BeanInfo bean) {
+        MethodCreator creator = clientProxy.getMethodCreator(DELEGATE_METHOD_NAME, providerType.descriptorName())
                 .setModifiers(Modifier.PRIVATE);
         if (mockable) {
             //if mockable and mocked just return the mock
             ResultHandle mock = creator.readInstanceField(
                     FieldDescriptor.of(clientProxy.getClassName(), MOCK_FIELD, Object.class.getName()), creator.getThis());
             BytecodeCreator falseBranch = creator.ifNull(mock).falseBranch();
-            falseBranch.returnValue(falseBranch.checkCast(mock, providerTypeName));
+            falseBranch.returnValue(falseBranch.checkCast(mock, providerType.className()));
         }
 
         ResultHandle beanHandle = creator.readInstanceField(beanField, creator.getThis());
@@ -313,12 +313,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.returnValue(ret);
     }
 
-    void implementGetContextualInstance(ClassCreator clientProxy, String providerTypeName) {
+    void implementGetContextualInstance(ClassCreator clientProxy, ProviderType providerType) {
         MethodCreator creator = clientProxy.getMethodCreator(GET_CONTEXTUAL_INSTANCE_METHOD_NAME, Object.class)
                 .setModifiers(Modifier.PUBLIC);
         creator.returnValue(
                 creator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(clientProxy.getClassName(), DELEGATE_METHOD_NAME, providerTypeName),
+                        MethodDescriptor.ofMethod(clientProxy.getClassName(), DELEGATE_METHOD_NAME,
+                                providerType.descriptorName()),
                         creator.getThis()));
     }
 

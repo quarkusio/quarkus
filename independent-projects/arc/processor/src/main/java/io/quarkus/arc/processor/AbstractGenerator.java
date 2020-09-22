@@ -89,8 +89,8 @@ abstract class AbstractGenerator {
             }
         }
         String packageName = DotNames.packageName(providerTypeName);
-        if (packageName.isEmpty() || packageName.startsWith("java.")) {
-            // It is not possible to place a class in a JDK package or in default package
+        if (packageName.startsWith("java.")) {
+            // It is not possible to place a class in a JDK package
             packageName = DEFAULT_PACKAGE;
         }
         return packageName;

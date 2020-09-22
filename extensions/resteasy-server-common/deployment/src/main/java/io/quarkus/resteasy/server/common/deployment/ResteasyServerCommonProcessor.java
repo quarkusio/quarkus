@@ -139,14 +139,15 @@ public class ResteasyServerCommonProcessor {
         /**
          * Whether or not detailed JAX-RS metrics should be enabled if the smallrye-metrics
          * extension is present.
-         * 
+         *
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
-         * Metrics: Optional REST metrics</a>
+         * Metrics: Optional REST metrics</a>.
+         *
+         * Deprecated. Use {@code quarkus.smallrye-metrics.jaxrs.enabled}.
          */
         @ConfigItem(name = "metrics.enabled", defaultValue = "false")
         public boolean metricsEnabled;
-
     }
 
     @BuildStep

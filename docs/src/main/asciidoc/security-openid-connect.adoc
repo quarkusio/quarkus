@@ -329,6 +329,13 @@ export access_token=$(\
  )
 ----
 
+[[user-info]]
+== User Info
+
+Set `quarkus.oidc.user-info-required=true` if a UserInfo JSON object from the OIDC userinfo endpoint has to be requested.
+A request will be sent to the OpenId Provider UserInfo endpont and  an `io.quarkus.oidc.UserInfo` (a simple `javax.json.JsonObject` wrapper) object will be created.
+`io.quarkus.oidc.UserInfo` can be either injected or accessed as a SecurityIdentity `userinfo` attribute.
+
 == Token Claims And SecurityIdentity Roles
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
@@ -340,6 +347,8 @@ SecurityIdentity roles can be mapped from the verified JWT access tokens as foll
   This check supports the tokens issued by Keycloak
 
 If the token is opaque (binary) then a `scope` property from the remote token introspection response will be used.
+
+If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented link:security#security-identity-customization[here].
 

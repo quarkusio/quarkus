@@ -150,7 +150,7 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant/tenant-d/api/user")
                 .then()
                 .statusCode(200)
-                .body(equalTo("tenant-d:alice"));
+                .body(equalTo("tenant-d:alice.alice"));
 
         // should give a 401 given that access token from issuer b can not access tenant c
         RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))

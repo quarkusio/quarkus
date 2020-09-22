@@ -185,10 +185,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TokenCredential tokenCred,
             JsonObject tokenJson, JsonObject userInfo) {
         JsonObject rolesJson = tokenJson;
-        if (tokenCred instanceof IdTokenCredential && resolvedContext.oidcConfig.roles.source.isPresent()) {
+        if (resolvedContext.oidcConfig.roles.source.isPresent()) {
             if (resolvedContext.oidcConfig.roles.source.get() == Source.userinfo) {
                 rolesJson = userInfo;
-            } else if (resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken) {
+            } else if (tokenCred instanceof IdTokenCredential
+                    && resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken) {
                 AccessToken result = (AccessToken) vertxContext.get("code_flow_access_token_result");
                 rolesJson = result.accessToken();
                 if (rolesJson == null) {
@@ -256,7 +257,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 new Consumer<UniEmitter<? super JsonObject>>() {
                     @Override
                     public void accept(UniEmitter<? super JsonObject> uniEmitter) {
-                        tokenImpl.principal().put("access_token", opaqueAccessToken);
+                        if (opaqueAccessToken != null) {
+                            tokenImpl.principal().put("access_token", opaqueAccessToken);
+                        }
                         tokenImpl.userInfo(new Handler<AsyncResult<JsonObject>>() {
                             @Override
                             public void handle(AsyncResult<JsonObject> event) {

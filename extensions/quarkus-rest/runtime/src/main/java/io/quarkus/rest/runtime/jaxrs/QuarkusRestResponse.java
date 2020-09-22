@@ -35,9 +35,9 @@ public class QuarkusRestResponse extends Response {
     String reasonPhrase;
     Object entity;
     MultivaluedMap<String, Object> headers;
+    InputStream entityStream;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
-    private InputStream entityStream;
 
     @Override
     public int getStatus() {
@@ -71,6 +71,14 @@ public class QuarkusRestResponse extends Response {
     @Override
     public Object getEntity() {
         return entity;
+    }
+
+    public InputStream getEntityStream() {
+        return entityStream;
+    }
+
+    public void setEntityStream(InputStream entityStream) {
+        this.entityStream = entityStream;
     }
 
     @Override

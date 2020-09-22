@@ -29,7 +29,6 @@ import io.quarkus.rest.api.WebClientApplicationException;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
-import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -230,9 +229,10 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 }
             }
         }
-        QuarkusRestResponseBuilder builder = new QuarkusRestResponseBuilder();
+        QuarkusRestClientResponseBuilder builder = new QuarkusRestClientResponseBuilder();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
+        builder.serializers(serialisers);
         if (existingEntity != null) {
             builder.entity(existingEntity);
         } else {
@@ -245,8 +245,22 @@ public class InvocationState implements Handler<HttpClientResponse> {
                         mediaType)) {
                     InputStream in = responseContext.getEntityStream();
                     try {
-                        builder.entity(((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
-                                null, mediaType, responseContext.getHeaders(), in));
+                        Object entity = ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
+                                null, mediaType, responseContext.getHeaders(), in);
+                        builder.entity(entity);
+
+                        // because we convert the bytes into the response type eagerly (as opposed to RESTEasy for example which does it on demand)
+                        // what we are doing here is making the data available for re-consumption which is needed when the Response is used
+                        // to read any entity of some specific class (the TCK does this extensively)
+                        if (in instanceof ByteArrayInputStream) {
+                            try {
+                                in.reset();
+                                builder.entityStream(in);
+                            } catch (IOException e) {
+                                // ignore as it just means that the input stream won't be available for re-consumption
+                            }
+                        }
+
                     } catch (IOException e) {
                         result.completeExceptionally(e);
                     }

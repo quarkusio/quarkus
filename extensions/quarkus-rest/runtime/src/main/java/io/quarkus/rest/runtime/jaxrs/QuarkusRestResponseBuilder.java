@@ -81,9 +81,33 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     MultivaluedMap<String, Object> metadata = new CaseInsensitiveMap<>();
     Annotation[] entityAnnotations;
 
+    public int getStatus() {
+        return status;
+    }
+
+    public String getReasonPhrase() {
+        return reasonPhrase;
+    }
+
+    public Object getEntity() {
+        return entity;
+    }
+
+    public Annotation[] getEntityAnnotations() {
+        return entityAnnotations;
+    }
+
     @Override
     public QuarkusRestResponse build() {
-        QuarkusRestResponse response = new QuarkusRestResponse();
+        return populateResponse(new QuarkusRestResponse());
+    }
+
+    /**
+     * Populates a response with the standard data
+     * 
+     * @return The given response
+     */
+    public <T extends QuarkusRestResponse> T populateResponse(T response) {
         response.entity = entity;
         if ((entity == null) && (status == -1)) {
             response.status = 204; // spec says that when no status is set and the entity is null, we need to return 204
@@ -343,7 +367,6 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         metadata.putSingle(HttpHeaderNames.EXPIRES, getDateFormatRFC822().format(expires));
         return this;
     }
-
     // spec
 
     public Response.ResponseBuilder allow(String... methods) {

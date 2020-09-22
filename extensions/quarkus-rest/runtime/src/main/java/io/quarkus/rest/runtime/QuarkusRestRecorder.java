@@ -44,6 +44,7 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.parameters.AsyncResponseExtractor;
+import io.quarkus.rest.runtime.core.parameters.BeanParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.BodyParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ContextParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.CookieParamExtractor;
@@ -66,6 +67,7 @@ import io.quarkus.rest.runtime.handlers.InterceptorHandler;
 import io.quarkus.rest.runtime.handlers.InvocationHandler;
 import io.quarkus.rest.runtime.handlers.MediaTypeMapper;
 import io.quarkus.rest.runtime.handlers.MultiResponseHandler;
+import io.quarkus.rest.runtime.handlers.ParameterFieldHandler;
 import io.quarkus.rest.runtime.handlers.ParameterHandler;
 import io.quarkus.rest.runtime.handlers.PerRequestInstanceHandler;
 import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
@@ -256,7 +258,7 @@ public class QuarkusRestRecorder {
                         nameReaderInterceptorsMap,
                         nameWriterInterceptorsMap, globalInterceptorHandler, clazz,
                         resourceLocatorHandler, method,
-                        true, classPathTemplate, dynamicEntityWriter);
+                        true, classPathTemplate, dynamicEntityWriter, beanContainer);
 
                 buildMethodMapper(templates, method, runtimeResource);
             }
@@ -315,7 +317,7 @@ public class QuarkusRestRecorder {
                         nameReaderInterceptorsMap,
                         nameWriterInterceptorsMap, globalInterceptorHandler,
                         clazz, resourceLocatorHandler, method,
-                        false, classTemplate, dynamicEntityWriter);
+                        false, classTemplate, dynamicEntityWriter, beanContainer);
 
                 buildMethodMapper(perClassMappers, method, runtimeResource);
             }
@@ -560,7 +562,7 @@ public class QuarkusRestRecorder {
             InterceptorHandler globalInterceptorHandler,
             ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
-            DynamicEntityWriter dynamicEntityWriter) {
+            DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
@@ -662,11 +664,13 @@ public class QuarkusRestRecorder {
             }
         }
 
+        // NOTE: it's important to inject in the right order, because we also inject bean param members, and those must
+        // be injected _after_ the bean param instance is injected
         for (InjectableField field : clazz.getInjectableFields()) {
             boolean single = field.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, field.parameterType, field.type,
                     field.parameterName,
-                    single);
+                    single, beanContainer);
             Class<?> setter = loadClass(field.getAccessorClass());
             try {
                 handlers.add(new FieldInjectionHandler((BiConsumer<Object, Object>) setter.newInstance(),
@@ -682,6 +686,7 @@ public class QuarkusRestRecorder {
         }
         // some parameters need the body to be read
         MethodParameter[] parameters = method.getParameters();
+        // FIXME: this could come from fields or beanparams too
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             if (param.parameterType == ParameterType.FORM) {
@@ -696,9 +701,24 @@ public class QuarkusRestRecorder {
             MethodParameter param = parameters[i];
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
-                    single);
+                    single, beanContainer);
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
                     param.converter == null ? null : param.converter.get()));
+            // now inject fields of the parameter
+            for (InjectableField field : param.getInjectableFields()) {
+                single = field.isSingle();
+                extractor = parameterExtractor(pathParameterIndexes, field.parameterType, field.type,
+                        field.parameterName,
+                        single, beanContainer);
+                Class<?> setter = loadClass(field.getAccessorClass());
+                try {
+                    handlers.add(new ParameterFieldHandler(i, (BiConsumer<Object, Object>) setter.newInstance(),
+                            field.getDefaultValue(), extractor, field.converter == null ? null : field.converter.get()));
+                } catch (InstantiationException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
@@ -825,7 +845,7 @@ public class QuarkusRestRecorder {
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
             String name,
-            boolean single) {
+            boolean single, BeanContainer beanContainer) {
         ParameterExtractor extractor;
         switch (type) {
             case HEADER:
@@ -854,6 +874,9 @@ public class QuarkusRestRecorder {
                 break;
             case MATRIX:
                 extractor = new MatrixParamExtractor(name, single);
+                break;
+            case BEAN:
+                extractor = new BeanParamExtractor(factory(javaType, beanContainer));
                 break;
             default:
                 extractor = new QueryParamExtractor(name, single);

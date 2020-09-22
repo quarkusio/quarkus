@@ -11,9 +11,9 @@ import java.util.function.Predicate;
 
 import javax.annotation.Priority;
 import javax.enterprise.inject.Vetoed;
-import javax.json.JsonObject;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.ConstrainedTo;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
@@ -53,6 +53,7 @@ public final class QuarkusRestDotNames {
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     public static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     public static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
+    public static final DotName BEAN_PARAM = DotName.createSimple(BeanParam.class.getName());
     public static final DotName PATH_PARAM = DotName.createSimple(PathParam.class.getName());
     public static final DotName QUERY_PARAM = DotName.createSimple(QueryParam.class.getName());
     public static final DotName HEADER_PARAM = DotName.createSimple(HeaderParam.class.getName());

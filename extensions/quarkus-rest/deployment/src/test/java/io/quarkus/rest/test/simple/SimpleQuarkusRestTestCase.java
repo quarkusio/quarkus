@@ -37,7 +37,8 @@ public class SimpleQuarkusRestTestCase {
                                     TestFeature.class, TestDynamicFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
                                     QueryParamResource.class, HeaderParamResource.class,
-                                    TestWriter.class, TestClass.class);
+                                    TestWriter.class, TestClass.class,
+                                    SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class);
                 }
             });
 
@@ -365,5 +366,25 @@ public class SimpleQuarkusRestTestCase {
     public void testCustomHttpMethodAnnotation() {
         RestAssured.request("TRACE", "/simple/trace")
                 .then().statusCode(200);
+    }
+
+    @Test
+    public void simpleFieldInjection() {
+        RestAssured
+                .with()
+                .header("header", "one-header")
+                .queryParam("query", "one-query")
+                .get("/injection/field")
+                .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/field, "
+                        + "beanParam.query=one-query, beanParam.header=one-header, "
+                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header"));
+        RestAssured
+                .with()
+                .header("header", "one-header")
+                .queryParam("query", "one-query")
+                .get("/injection/param")
+                .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/param, "
+                        + "beanParam.query=one-query, beanParam.header=one-header, "
+                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header"));
     }
 }

@@ -10,5 +10,6 @@ public enum ParameterType {
     MATRIX,
     CONTEXT,
     ASYNC_RESPONSE,
-    COOKIE
+    COOKIE,
+    BEAN
 }

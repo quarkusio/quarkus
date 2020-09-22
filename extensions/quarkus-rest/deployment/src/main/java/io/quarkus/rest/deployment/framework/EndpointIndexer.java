@@ -1,5 +1,6 @@
 package io.quarkus.rest.deployment.framework;
 
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BEAN_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BOOLEAN;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME;
@@ -43,10 +44,12 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -179,8 +182,9 @@ public class EndpointIndexer {
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
 
-            handleFieldInjection(clazz, classInfo, classInfo, index, generatedClassBuildItemBuildProducer, existingConverters,
-                    additionalReaders);
+            handleFieldInjection(clazz, clazz.getInjectableFields(),
+                    classInfo, classInfo, index, generatedClassBuildItemBuildProducer, existingConverters,
+                    additionalReaders, new ArrayDeque<FieldInfo>(0), false);
 
             return clazz;
         } catch (Exception e) {
@@ -194,11 +198,14 @@ public class EndpointIndexer {
         }
     }
 
-    private static void handleFieldInjection(ResourceClass clazz, ClassInfo currentClassInfo,
+    private static void handleFieldInjection(ResourceClass clazz, List<InjectableField> injectableFields,
+            ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             Map<String, String> existingConverters,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders,
+            Deque<FieldInfo> fields,
+            boolean forParameter) {
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
@@ -210,20 +217,57 @@ public class EndpointIndexer {
             ParameterExtractor result = extractor.invoke();
             if (result.getType() != null) {
                 //BODY means no annotation, so for fields not injectable
-                clazz.setPerRequestResource(true);
+                if (clazz != null) {
+                    clazz.setPerRequestResource(true);
+                }
 
-                String accessorName = currentClassInfo.name().toString() + "$$RestFieldAccessor$" + field.name();
+                String accessorName = currentClassInfo.name().toString() + "$$Rest" + (forParameter ? "Param" : "Field")
+                        + "Accessor$" + field.name();
 
+                /*
+                 * class Resource$$RestParamAccessor$query implements BiConsumer<Object,Object> {
+                 * public void accept(Object beanParam, Object value){
+                 * beanParam.otherBeanParam.queryField = value;
+                 * }
+                 * }
+                 */
+
+                /*
+                 * class Resource$$RestFieldAccessor$query implements BiConsumer<Object,Object> {
+                 * public void accept(Object endpoint, Object value){
+                 * // if we have bean params
+                 * endpoint.beanParamField.queryField = value;
+                 * // no bean param
+                 * endpoint.queryField = value;
+                 * }
+                 * }
+                 */
                 try (ClassCreator c = new ClassCreator(
                         new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), accessorName, null,
                         Object.class.getName(), BiConsumer.class.getName())) {
                     MethodCreator m = c.getMethodCreator("accept", void.class, Object.class, Object.class);
-                    m.writeInstanceField(FieldDescriptor.of(field), m.getMethodParam(0), m.getMethodParam(1));
+                    if (!fields.isEmpty()) {
+                        ResultHandle path = m.getMethodParam(0);
+                        for (FieldInfo pathToField : fields) {
+                            path = m.readInstanceField(pathToField, path);
+                        }
+                        m.writeInstanceField(FieldDescriptor.of(field), path, m.getMethodParam(1));
+                    } else {
+                        m.writeInstanceField(FieldDescriptor.of(field), m.getMethodParam(0), m.getMethodParam(1));
+                    }
                     m.returnValue(null);
                 }
-                clazz.getInjectableFields().add(new InjectableField(extractor.name, extractor.elementType, extractor.type,
+                injectableFields.add(new InjectableField(extractor.name, extractor.elementType, extractor.type,
                         extractor.single, extractor.converter, extractor.defaultValue, accessorName));
-
+            }
+            if (result.getType() == ParameterType.BEAN) {
+                // also inject fields of the bean
+                ClassInfo beanClassInfo = index.getClassByName(DotName.createSimple(result.getElementType()));
+                fields.addLast(field);
+                handleFieldInjection(clazz, injectableFields, beanClassInfo, actualEndpointInfo, index,
+                        generatedClassBuildItemBuildProducer,
+                        existingConverters, additionalReaders, fields, forParameter);
+                fields.removeLast();
             }
         }
 
@@ -231,8 +275,9 @@ public class EndpointIndexer {
         if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                handleFieldInjection(clazz, superClass, actualEndpointInfo, index, generatedClassBuildItemBuildProducer,
-                        existingConverters, additionalReaders);
+                handleFieldInjection(clazz, injectableFields, superClass, actualEndpointInfo, index,
+                        generatedClassBuildItemBuildProducer,
+                        existingConverters, additionalReaders, fields, forParameter);
             }
         }
     }
@@ -298,7 +343,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders, httpAnnotationToMethod);
+                            config, additionalReaders, httpAnnotationToMethod, existingConverters);
 
                     ret.add(method);
                 }
@@ -324,7 +369,7 @@ public class EndpointIndexer {
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders, httpAnnotationToMethod);
+                            existingConverters, config, additionalReaders, httpAnnotationToMethod, existingConverters);
                     ret.add(method);
                 }
             }
@@ -356,7 +401,7 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Map<String, String> existingConverters) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -394,6 +439,15 @@ public class EndpointIndexer {
                 methodParameters[i] = new MethodParameter(name,
                         elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView), type, single,
                         converter, defaultValue);
+
+                if (type == ParameterType.BEAN) {
+                    ClassInfo beanClassInfo = indexView.getClassByName(DotName.createSimple(elementType));
+                    // FIXME: we're not marking the class as per-request
+                    handleFieldInjection(null, methodParameters[i].getInjectableFields(),
+                            beanClassInfo, actualEndpointInfo, indexView, generatedClassBuildItemBuildProducer,
+                            existingConverters,
+                            additionalReaders, new ArrayDeque<FieldInfo>(0), true);
+                }
             }
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
@@ -815,6 +869,7 @@ public class EndpointIndexer {
 
         public ParameterExtractor invoke() {
             name = null;
+            AnnotationInstance beanParam = anns.get(BEAN_PARAM);
             AnnotationInstance pathParam = anns.get(PATH_PARAM);
             AnnotationInstance queryParam = anns.get(QUERY_PARAM);
             AnnotationInstance headerParam = anns.get(HEADER_PARAM);
@@ -854,6 +909,9 @@ public class EndpointIndexer {
                 }
                 // no name required
                 type = ParameterType.CONTEXT;
+            } else if (beanParam != null) {
+                // no name required
+                type = ParameterType.BEAN;
             } else if (suspendedAnnotation != null) {
                 // no name required
                 type = ParameterType.ASYNC_RESPONSE;
@@ -904,7 +962,8 @@ public class EndpointIndexer {
                 elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
                 addReaderForType(additionalReaders, paramType);
 
-                if (type != ParameterType.CONTEXT && type != ParameterType.BODY && type != ParameterType.ASYNC_RESPONSE) {
+                if (type != ParameterType.CONTEXT && type != ParameterType.BEAN && type != ParameterType.BODY
+                        && type != ParameterType.ASYNC_RESPONSE) {
                     converter = extractConverter(elementType, indexView, generatedClassBuildItemBuildProducer,
                             existingEndpoints, errorLocation);
                 }

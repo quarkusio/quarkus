@@ -4,15 +4,10 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-enforcer-rules-smoketest</artifactId>
+        <artifactId>quarkus-enforcer-rules-smoketest-ext3-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-enforcer-rules-smoketest-ext2-parent</artifactId>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>runtime</module>
-    </modules>
+    <artifactId>quarkus-enforcer-rules-smoketest-ext3</artifactId>
 
 </project>

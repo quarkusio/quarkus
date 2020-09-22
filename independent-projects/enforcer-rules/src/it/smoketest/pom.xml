@@ -14,8 +14,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>ext1</module>
-        <module>ext2</module>
+        <module>extensions</module>
         <module>integration-tests</module>
     </modules>
 

@@ -47,6 +47,7 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
@@ -162,7 +163,7 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
+    void processInterfaces(BeanArchiveIndexBuildItem combinedIndexBuildItem,
             Capabilities capabilities,
             PackageConfig packageConfig,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,

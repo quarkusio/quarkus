@@ -1,8 +1,7 @@
 package io.quarkus.platform.descriptor.resolver.json.test;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.JsonValue;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
@@ -21,35 +20,32 @@ public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDesc
 
     @Override
     public QuarkusPlatformDescriptor load(QuarkusJsonPlatformDescriptorLoaderContext context) {
-        final JsonObject json = context.parseJson(s -> {
+        final JsonNode json = context.parseJson(s -> {
             try (InputStreamReader reader = new InputStreamReader(s, StandardCharsets.UTF_8)) {
-                return Json.parse(reader).asObject();
+                return new ObjectMapper().readTree(reader);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to parse JSON descriptor", e);
             }
         });
 
-        JsonValue jsonValue = getRequiredAttr(json, "bom");
-        final JsonObject bom = jsonValue.asObject();
-
-        jsonValue = getRequiredAttr(json, "quarkus-core-version");
-        final String quarkusVersion = jsonValue.asString();
+        final JsonNode bom = json.required("bom");
+        final String quarkusVersion = json.required("quarkus-core-version").asText();
 
         return new QuarkusPlatformDescriptor() {
 
             @Override
             public String getBomGroupId() {
-                return bom.getString("groupId", null);
+                return bom.get("groupId").asText(null);
             }
 
             @Override
             public String getBomArtifactId() {
-                return bom.getString("artifactId", null);
+                return bom.get("artifactId").asText(null);
             }
 
             @Override
             public String getBomVersion() {
-                return bom.getString("version", null);
+                return bom.get("version").asText(null);
             }
 
             @Override
@@ -87,13 +83,5 @@ public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDesc
                 return null;
             }
         };
-    }
-
-    private JsonValue getRequiredAttr(final JsonObject json, String name) {
-        final JsonValue jsonValue = json.get(name);
-        if (jsonValue == null) {
-            throw new IllegalStateException("Failed to locate '" + name + "' attribute in the JSON descriptor");
-        }
-        return jsonValue;
     }
 }

@@ -2,8 +2,8 @@ package io.quarkus.platform.descriptor.resolver.json;
 
 import static io.quarkus.platform.tools.ToolsUtils.getProperty;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
@@ -190,8 +190,8 @@ public class QuarkusJsonPlatformDescriptorResolver {
         // Resolve the Quarkus version used by the platform
         final String quarkusCoreVersion;
         try (BufferedReader reader = Files.newBufferedReader(jsonFile)) {
-            final JsonObject jsonObject = Json.parse(reader).asObject();
-            quarkusCoreVersion = jsonObject.getString("quarkus-core-version", null);
+            JsonNode node = new ObjectMapper().readTree(reader);
+            quarkusCoreVersion = node.get("quarkus-core-version").asText(null);
             if (quarkusCoreVersion == null) {
                 throw new IllegalStateException("Failed to determine the Quarkus Core version for " + jsonFile);
             }

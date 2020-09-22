@@ -25,7 +25,7 @@ public class JaxRsMetricsTestCase {
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy.metrics.enabled=true"),
+                    .addAsResource(new StringAsset("quarkus.smallrye-metrics.jaxrs.enabled=true"),
                             "application.properties")
                     .addClasses(MetricsResource.class));
 

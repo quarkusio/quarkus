@@ -202,7 +202,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         return ingestedPayload;
     }
 
-    public void setIngestedPayload(Type ingestedPayload) {
+    public void setIngestedPayloadType(Type ingestedPayload) {
         this.ingestedPayload = ingestedPayload;
     }
 

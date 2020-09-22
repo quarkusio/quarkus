@@ -77,7 +77,7 @@ public final class QuarkusMediatorConfigurationUtil {
                 acknowledgment);
         configuration.setProduction(validationOutput.getProduction());
         configuration.setConsumption(validationOutput.getConsumption());
-        configuration.setIngestedPayload(validationOutput.getIngestedPayloadType());
+        configuration.setIngestedPayloadType(validationOutput.getIngestedPayloadType());
         if (validationOutput.getUseBuilderTypes()) {
             configuration.setUseBuilderTypes(validationOutput.getUseBuilderTypes());
         } else {

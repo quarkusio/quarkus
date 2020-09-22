@@ -436,9 +436,11 @@ transaction, but roll it back once the test method is complete to revert any dat
 
 Alternatively or additionally to an interceptor, you can enrich *all* your `@QuarkusTest` classes by implementing the following callback interfaces:
 
-* `io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback`
+* `io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestBeforeEachCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
+
+WARNING: `io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback` has been deprecated in favor of `io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback` and will be removed in future releases of Quarkus
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 

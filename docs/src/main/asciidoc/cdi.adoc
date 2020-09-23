@@ -109,7 +109,7 @@ Intializers may accept multiple parameters and don't have to follow the JavaBean
 @ApplicationScoped
 public class Translator {
 
-    private final TranslatorHelper helper
+    private final TranslatorHelper helper;
 
     Translator(TranslatorHelper helper) { <1>
        this.helper = helper;
@@ -341,9 +341,9 @@ public class LoggingInterceptor {
    Logger logger;
 
    @AroundInvoke <5>
-   Objec logInvocation(InvocationContext context) {
+   Object logInvocation(InvocationContext context) {
       // ...log before
-      Objec ret = context.proceed(); <6>
+      Object ret = context.proceed(); <6>
       // ...log after
       return ret;
    }
@@ -377,7 +377,7 @@ class TaskCompleted {
 class ComplicatedService {
 
    @Inject
-   Event<Task> event; <1>
+   Event<TaskCompleted> event; <1>
 
    void doSomething() {
       // ...

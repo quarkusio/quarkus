@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,8 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Collection<String> getPropertyNames() {
-        return properties.keySet();
+        // TCK says the property names need to be immutable
+        return Collections.unmodifiableSet(properties.keySet());
     }
 
     @Override

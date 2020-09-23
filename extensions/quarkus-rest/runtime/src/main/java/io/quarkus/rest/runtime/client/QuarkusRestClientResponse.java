@@ -40,6 +40,9 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         if (hasEntity() && entityType.isInstance(getEntity())) {
             return (T) getEntity();
         }
+        if (hasEntity() && entityType.equals(String.class)) {
+            return (T) getEntity().toString();
+        }
 
         MediaType mediaType = getMediaType();
         List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType);

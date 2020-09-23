@@ -46,7 +46,8 @@ public class AbstractTreeMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), null, "pom",
+                project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
             modelResolver = new BootstrapAppModelResolver(

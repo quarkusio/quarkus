@@ -9,12 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Priority;
+import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.RuntimeDelegate;
+
+import io.quarkus.rest.runtime.util.MultivaluedTreeMap;
 
 public class QuarkusRestConfiguration implements Configuration {
 
@@ -22,8 +27,9 @@ public class QuarkusRestConfiguration implements Configuration {
     private final Map<String, Object> properties = new HashMap<>();
     private final Map<Class<?>, Object> allInstances = new HashMap<>();
     private final List<Feature> enabledFeatures = new ArrayList<>();
-    private final List<ClientRequestFilter> requestFilters = new ArrayList<>();
-    private final List<ClientResponseFilter> responseFilters = new ArrayList<>();
+    private final MultivaluedMap<Integer, ClientRequestFilter> requestFilters = new MultivaluedTreeMap<>();
+    private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters = new MultivaluedTreeMap<>(
+            Collections.reverseOrder());
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -121,7 +127,7 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public void register(Class<?> componentClass, int priority) {
         try {
-            register(componentClass.newInstance());
+            register(componentClass.getDeclaredConstructor().newInstance());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -136,15 +142,21 @@ public class QuarkusRestConfiguration implements Configuration {
     }
 
     public void register(Object component) {
+        register(component, (Integer) null);
+    }
+
+    private void register(Object component, Integer priority) {
         allInstances.put(component.getClass(), component);
         if (component instanceof Feature) {
             enabledFeatures.add((Feature) component);
         }
         if (component instanceof ClientRequestFilter) {
-            requestFilters.add((ClientRequestFilter) component);
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            requestFilters.add(effectivePriority, (ClientRequestFilter) component);
         }
         if (component instanceof ClientResponseFilter) {
-            responseFilters.add((ClientResponseFilter) component);
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            responseFilters.add(effectivePriority, (ClientResponseFilter) component);
         }
     }
 
@@ -158,14 +170,37 @@ public class QuarkusRestConfiguration implements Configuration {
     }
 
     public void register(Object component, int priority) {
-        register(component);
+        register(component, Integer.valueOf(priority));
     }
 
     public List<ClientRequestFilter> getRequestFilters() {
-        return requestFilters;
+        if (requestFilters.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ClientRequestFilter> result = new ArrayList<>(requestFilters.size() * 2);
+        for (List<ClientRequestFilter> requestFilters : requestFilters.values()) {
+            result.addAll(requestFilters);
+        }
+        return result;
     }
 
     public List<ClientResponseFilter> getResponseFilters() {
-        return responseFilters;
+        if (responseFilters.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ClientResponseFilter> result = new ArrayList<>(responseFilters.size() * 2);
+        for (List<ClientResponseFilter> responseFilters : responseFilters.values()) {
+            result.addAll(responseFilters);
+        }
+        return result;
+    }
+
+    // TODO: we could generate some kind of index at build time in order to obtain these values without using the annotation
+    private int determinePriority(Object object) {
+        Priority priority = object.getClass().getDeclaredAnnotation(Priority.class);
+        if (priority == null) {
+            return Priorities.USER;
+        }
+        return priority.value();
     }
 }

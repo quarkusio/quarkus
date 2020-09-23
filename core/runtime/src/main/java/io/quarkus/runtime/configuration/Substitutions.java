@@ -94,4 +94,21 @@ final class Substitutions {
             return null;
         }
     }
+
+    @TargetClass(className = "io.smallrye.config.ConfigMappingClass")
+    static final class Target_ConfigMappingClass {
+        @Alias
+        static ClassValue<Target_ConfigMappingClass> cv = null;
+
+        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
+        @Substitute
+        public static Target_ConfigMappingClass getConfigurationClass(Class<?> classType) {
+            Assert.checkNotNullParam("classType", classType);
+            try {
+                return cv.get(classType);
+            } catch (NullPointerException e) {
+                return null;
+            }
+        }
+    }
 }

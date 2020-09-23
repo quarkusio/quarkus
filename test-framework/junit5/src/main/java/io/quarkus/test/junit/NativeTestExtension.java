@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.platform.commons.JUnitException;
 
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.PropertyTestUtil;
@@ -68,6 +70,9 @@ public class NativeTestExtension
             TestResourceManager testResourceManager = new TestResourceManager(testClass);
             try {
                 testResourceManager.init();
+                // To properly retrieve the test.url from io.quarkus.test.common.http.TestHTTPResourceManager.getUri().
+                // This is a test run after all, so it should be fine to set the LaunchMode.TEST.
+                ProfileManager.setLaunchMode(LaunchMode.TEST);
                 Map<String, String> systemProps = testResourceManager.start();
                 NativeImageLauncher launcher = new NativeImageLauncher(testClass);
                 launcher.addSystemProperties(systemProps);

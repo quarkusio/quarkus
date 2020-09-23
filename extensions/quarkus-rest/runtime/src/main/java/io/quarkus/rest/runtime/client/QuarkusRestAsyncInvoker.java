@@ -1,10 +1,13 @@
 package io.quarkus.rest.runtime.client;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import javax.ws.rs.client.AsyncInvoker;
@@ -14,7 +17,6 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.rest.runtime.NotImplementedYet;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -62,7 +64,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> get(InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("GET", callback);
     }
 
     @Override
@@ -84,7 +86,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> put(Entity<?> entity, InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("PUT", callback);
     }
 
     @Override
@@ -106,7 +108,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> post(Entity<?> entity, InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("POST", callback);
     }
 
     @Override
@@ -128,7 +130,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> delete(InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("DELETE", callback);
     }
 
     @Override
@@ -138,7 +140,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public Future<Response> head(InvocationCallback<Response> callback) {
-        throw new NotImplementedYet();
+        return method("HEAD", callback);
     }
 
     @Override
@@ -158,7 +160,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> options(InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("OPTIONS", callback);
     }
 
     @Override
@@ -178,7 +180,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> trace(InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method("TRACE", callback);
     }
 
     @Override
@@ -198,7 +200,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> method(String name, InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        return method(name, null, callback);
     }
 
     @Override
@@ -220,7 +222,22 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, InvocationCallback<T> callback) {
-        throw new NotImplementedYet();
+        Class<?> callbackType = getInvocationCallbackType(callback);
+        CompletableFuture<T> cf = mapResponse(performRequestInternal(name, entity, new GenericType<>(callbackType)),
+                callbackType);
+
+        cf.whenComplete(new BiConsumer<T, Throwable>() {
+            @Override
+            public void accept(T t, Throwable throwable) {
+                if (throwable != null) {
+                    callback.failed(throwable);
+                } else {
+                    callback.completed(t);
+                }
+            }
+        });
+
+        return cf;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -234,6 +251,26 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
         return new InvocationState(restClient, httpClient, httpMethodName, uri,
                 requestSpec.headers, serialisers,
                 entity, responseType, registerBodyHandler);
+    }
+
+    // TODO: might need to be more advanced to handle even more complex cases
+    private <T> Class<?> getInvocationCallbackType(InvocationCallback<T> callback) {
+        Class<?> callbackType = null;
+        Type[] genericInterfaces = callback.getClass().getGenericInterfaces();
+        for (Type genericInterface : genericInterfaces) {
+            if (genericInterface instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
+                if (parameterizedType.getRawType().equals(InvocationCallback.class)) {
+                    if (parameterizedType.getActualTypeArguments().length == 1) {
+                        Type firstArg = parameterizedType.getActualTypeArguments()[0];
+                        if (firstArg instanceof Class) {
+                            callbackType = (Class<?>) firstArg;
+                        }
+                    }
+                }
+            }
+        }
+        return callbackType;
     }
 
     @SuppressWarnings("unchecked")

@@ -85,8 +85,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
             this.responseTypeSpecified = false;
         } else {
             this.responseType = responseType;
-            this.checkSuccessfulFamily = !responseType.getRawType().equals(Response.class);
-            this.responseTypeSpecified = true;
+            boolean isJaxResponse = responseType.getRawType().equals(Response.class);
+            this.checkSuccessfulFamily = !isJaxResponse;
+            this.responseTypeSpecified = !isJaxResponse;
         }
         this.registerBodyHandler = registerBodyHandler;
         this.result = new CompletableFuture<>();

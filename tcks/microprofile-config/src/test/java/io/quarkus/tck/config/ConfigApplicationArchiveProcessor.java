@@ -34,6 +34,11 @@ public class ConfigApplicationArchiveProcessor implements ApplicationArchiveProc
                         if (archiveAsset.getArchive() instanceof JavaArchive) {
                             JavaArchive libArchive = (JavaArchive) archiveAsset.getArchive();
                             libArchive.deleteClass(testClass.getName());
+                            // Remove inner classes
+                            libArchive.getContent().keySet().stream()
+                                    .filter(archivePath -> archivePath.get()
+                                            .contains(testClass.getJavaClass().getSimpleName() + "$"))
+                                    .forEach(libArchive::delete);
                         }
                     }
                 }

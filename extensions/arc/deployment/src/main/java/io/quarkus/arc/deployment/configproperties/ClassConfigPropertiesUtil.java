@@ -414,7 +414,8 @@ final class ClassConfigPropertiesUtil {
 
         for (ConfigPropertyBuildItemCandidate candidate : configPropertyBuildItemCandidates) {
             configProperties
-                    .produce(new ConfigPropertyBuildItem(candidate.getConfigPropertyName(), candidate.getConfigPropertyType()));
+                    .produce(new ConfigPropertyBuildItem(candidate.getConfigPropertyName(), candidate.getConfigPropertyType(),
+                            null));
         }
 
         return configObject;

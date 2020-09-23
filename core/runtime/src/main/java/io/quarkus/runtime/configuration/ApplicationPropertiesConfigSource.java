@@ -25,7 +25,6 @@ public abstract class ApplicationPropertiesConfigSource extends PropertiesConfig
     private static final long serialVersionUID = -4694780118527396798L;
 
     static final String APPLICATION_PROPERTIES = "application.properties";
-    static final String MP_PROPERTIES = "META-INF/microprofile-config.properties";
 
     ApplicationPropertiesConfigSource(InputStream is, int ordinal) {
         super(readProperties(is), APPLICATION_PROPERTIES, ordinal);

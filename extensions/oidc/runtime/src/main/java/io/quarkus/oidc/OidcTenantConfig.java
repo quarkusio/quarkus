@@ -661,11 +661,17 @@ public class OidcTenantConfig {
         public Map<String, String> extraParams;
 
         /**
-         * Cookie path parameter value which, if set, will be used for the session and state cookies.
+         * Cookie path parameter value which, if set, will be used for the session, state and post logout cookies.
          * It may need to be set when the redirect path has a root different to that of the original request URL.
          */
         @ConfigItem
         public Optional<String> cookiePath = Optional.empty();
+
+        /**
+         * Cookie domain parameter value which, if set, will be used for the session, state and post logout cookies.
+         */
+        @ConfigItem
+        public Optional<String> cookieDomain = Optional.empty();
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called
@@ -750,6 +756,14 @@ public class OidcTenantConfig {
 
         public void setCookiePath(String cookiePath) {
             this.cookiePath = Optional.of(cookiePath);
+        }
+
+        public Optional<String> getCookieDomain() {
+            return cookieDomain;
+        }
+
+        public void setCookieDomain(String cookieDomain) {
+            this.cookieDomain = Optional.of(cookieDomain);
         }
 
         public boolean isUserInfoRequired() {

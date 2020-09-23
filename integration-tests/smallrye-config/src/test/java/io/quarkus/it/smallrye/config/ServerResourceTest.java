@@ -46,4 +46,14 @@ class ServerResourceTest {
                 .body("host", equalTo("localhost"))
                 .body("port", equalTo(8080));
     }
+
+    @Test
+    void properties() {
+        given()
+                .get("/server/properties")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("host", equalTo("localhost"))
+                .body("port", equalTo(8080));
+    }
 }

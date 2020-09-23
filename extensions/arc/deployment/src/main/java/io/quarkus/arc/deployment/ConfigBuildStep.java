@@ -226,6 +226,25 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
+    AnnotationsTransformerBuildItem vetoMPConfigProperties() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+                return CLASS.equals(kind);
+            }
+
+            public void transform(TransformationContext context) {
+                if (context.getAnnotations().stream()
+                        .anyMatch(annotation -> annotation.name().equals(MP_CONFIG_PROPERTIES_NAME))) {
+                    context.transform()
+                            .add(DotNames.VETOED)
+                            .add(DotNames.UNREMOVABLE)
+                            .done();
+                }
+            }
+        });
+    }
+
+    @BuildStep
     void generateConfigMappings(
             CombinedIndexBuildItem combinedIndex,
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,

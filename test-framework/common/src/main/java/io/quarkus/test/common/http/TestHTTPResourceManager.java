@@ -13,6 +13,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 
 public class TestHTTPResourceManager {

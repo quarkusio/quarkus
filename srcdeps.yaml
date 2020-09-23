@@ -1,0 +1,12 @@
+configModelVersion: 3.0
+logToConsole: true
+verbosity: info
+repositories:
+  org.jboss.resteasy:
+    includes:
+    - org.jboss.resteasy
+    urls:
+    - git:https://github.com/radcortez/Resteasy
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-4.6.0-SNAPSHOT-config-patched
+    skipTests: true

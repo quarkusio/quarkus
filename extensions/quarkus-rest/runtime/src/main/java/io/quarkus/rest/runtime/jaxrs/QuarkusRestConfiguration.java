@@ -50,7 +50,7 @@ public class QuarkusRestConfiguration implements Configuration {
 
     @Override
     public Map<String, Object> getProperties() {
-        return properties;
+        return Collections.unmodifiableMap(properties);
     }
 
     @Override
@@ -125,6 +125,14 @@ public class QuarkusRestConfiguration implements Configuration {
         properties.put(name, value);
     }
 
+    public void register(Class<?> componentClass) {
+        try {
+            register(componentClass.getDeclaredConstructor().newInstance());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void register(Class<?> componentClass, int priority) {
         try {
             register(componentClass.getDeclaredConstructor().newInstance());
@@ -135,7 +143,7 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public void register(Class<?> componentClass, Class<?>... contracts) {
         try {
-            register(componentClass.newInstance());
+            register(componentClass.getDeclaredConstructor().newInstance());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

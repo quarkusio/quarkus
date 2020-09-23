@@ -191,6 +191,28 @@ In such cases a `quarkus.oidc.authentication.redirect-path` property has to be s
 
 If `quarkus.oidc.authentication.redirect-path` is set but the original request URL has to be restored after the user has been redirected back to a callback URL such as `http://localhost:8080/service/callback` then a `quarkus.oidc.authentication.restore-path-after-redirect` property has to be set to `true` which will restore the request URL such as `http://localhost:8080/service/1`, etc.
 
+[[oidc-cookies]]
+== Dealing with Cookies
+
+The OIDC adapter uses cookies to keep the session, code flow and post logout state.
+
+If you access the protected resources with overlapping or different roots, for example: 
+
+* `/index.html` and `/web-app/service`
+* `/web-app/service1` and `/web-app/service2`
+* `/web-app1/service` and `/web-app2/service` 
+
+then most likely you also need to set a `quarkus.oidc.authentication.cookie-path` property to a path value that is common to all of them, such as `/` or `/web-app`, etc.
+
+Otherwise the browser cache manager may keep request path specific cookies which in turn may lead to some difficult to diagnoze errors. For example, an authorization code flow may fail due to a missing state cookie if a user has initially accessed `/index.html` but configured a callback URI to `/web-app/callback`.
+
+If your application is deployed across multiple domains, make sure to set a `quarkus.oidc.authentication.cookie-domain` property for the session cookie be visible to all protected Quarkus services, for example, if you have 2 services deployed at:
+
+* https://whatever.wherever.company.net/
+* https://another.address.company.net/
+
+then the `quarkus.oidc.authentication.cookie-domain` property must be set to `company.net`.
+
 == Logout
 
 By default the logout is based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the ID Token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
@@ -209,6 +231,29 @@ The user will be returned to the endpoint post logout page once the logout has b
 If the `quarkus.oidc.logout.post-logout-path` is set then a `q_post_logout` cookie will be created and a matching `state` query parameter will be added to the logout redirect URI and the OpenID Connect Provider will return this `state` once the logout has been completed. It is recommended for the Quarkus `web-app` applications to check that a `state` query parameter matches the value of the `q_post_logout` cookie which can be done for example in a JAX-RS filter.
 
 Note that a cookie name will vary when using link:security-openid-connect-multitenancy[OpenID Connect Multi-Tenancy]. For example, it will be named `q_post_logout_tenant_1` for a tenant with a `tenant_1` id, etc.
+
+Here is an example of how to configure an RP initiated logout flow:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.client-id=frontend
+quarkus.oidc.application-type=web-app
+
+quarkus.oidc.tenant-logout.logout.path=/logout
+quarkus.oidc.tenant-logout.logout.post-logout-path=/postlogout
+
+# Only the authenticated users can initiate a logout:
+quarkus.http.auth.permission.authenticated.paths=/logout
+quarkus.http.auth.permission.authenticated.policy=authenticated
+
+# Logged out users should be returned to the /welcome.html site which will offer an option to re-login:
+quarkus.http.auth.permission.authenticated.paths=/welcome.html
+quarkus.http.auth.permission.authenticated.policy=permit
+----
+
+You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all of the application resources which is `/` in this example.
+See <<oidc-cookies, Dealing with Cookies>> for more information.
 
 == Accessing ID and Access Tokens
 

@@ -447,6 +447,39 @@ To test this out, do the following:
 5. Give it 5 seconds during which circuit breaker should close and you should be able to make two successful requests
    again.
 
+== Runtime configuration
+
+You can override the annotations parameters at runtime inside your `application.properties` file.
+
+If we take the retry example that we already saw:
+
+[source,java]
+----
+package org.acme;
+
+import org.eclipse.microprofile.faulttolerance.Retry;
+...
+
+public class CoffeeResource {
+    ...
+    @GET
+    @Retry(maxRetries = 4)
+    public List<Coffee> coffees() {
+        ...
+    }
+    ...
+}
+----
+
+We can override the `maxRetries` parameter with 6 retries instead of 4 by the following configuration item:
+[source,properties]
+----
+org.acme.CoffeeResource/coffees/Retry/maxRetries=6
+----
+
+NOTE: The format is `fully-qualified-class-name/method-name/annotation-name/property-name=value`.
+You can also configure a property for all the annotation via `annotation-name/property-name=value`.
+
 == Conclusion
 
 MicroProfile Fault Tolerance allows to improve resiliency of your application, without having an impact on the complexity

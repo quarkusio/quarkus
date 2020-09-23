@@ -566,7 +566,7 @@ To include those, make sure you invoke `mvn dependency:sources` first.
 This step is required in order to pull the sources for these dependencies,
 and get them included in the source cache.
 
-The location of source cache is `target/sources-cache` folder.
+The location of source cache is `target/{project.name}-{project.version}-native-image-source-jar/sources` folder.
 
 [[configuration-reference]]
 == Configuring the Native Executable

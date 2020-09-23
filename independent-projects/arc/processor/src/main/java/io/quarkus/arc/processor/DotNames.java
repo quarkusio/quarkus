@@ -4,6 +4,7 @@ import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.impl.ComputingCache;
 import java.lang.annotation.Repeatable;
 import java.util.Optional;
@@ -103,6 +104,7 @@ public final class DotNames {
     public static final DotName INITIALIZED = create(Initialized.class);
     public static final DotName TRANSIENT_REFERENCE = create(TransientReference.class);
     public static final DotName INVOCATION_CONTEXT = create(InvocationContext.class);
+    public static final DotName UNREMOVABLE = create(Unremovable.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

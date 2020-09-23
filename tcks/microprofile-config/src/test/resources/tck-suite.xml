@@ -1,28 +1,8 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-
-<suite name="microprofile-config-TCK" verbose="2" configfailurepolicy="continue" >
-
-    <test name="microprofile-config 1.2 TCK">
+<suite name="microprofile-config-TCK" verbose="2" configfailurepolicy="continue">
+    <test name="microprofile-config 2.0 TCK">
         <packages>
-            <package name="org.eclipse.microprofile.config.tck.*">
-            </package>
+            <package name="org.eclipse.microprofile.config.tck.*"/>
         </packages>
-
-        <!-- TCK and spec dispute: https://github.com/eclipse/microprofile-config/pull/407 -->
-        <classes>
-            <class name="org.eclipse.microprofile.config.tck.ConfigProviderTest">
-                <methods>
-                    <exclude name="testEnvironmentConfigSource"/>
-                </methods>
-            </class>
-            <class name="org.eclipse.microprofile.config.tck.EmptyValuesTest">
-                <methods>
-                    <exclude name="testEmptyStringPropertyFromConfigFile"/>
-                    <exclude name="testEmptyStringProgrammaticLookup"/>
-                    <exclude name="testEmptyStringValues"/>
-                </methods>
-            </class>
-        </classes>
     </test>
-
 </suite>

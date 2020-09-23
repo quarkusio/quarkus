@@ -2,6 +2,7 @@ package io.quarkus.deployment.configuration;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -21,6 +22,10 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
 
     public Map<String, String> getProperties() {
         return Collections.emptyMap();
+    }
+
+    public Set<String> getPropertyNames() {
+        return Collections.emptySet();
     }
 
     public String getValue(final String propertyName) {

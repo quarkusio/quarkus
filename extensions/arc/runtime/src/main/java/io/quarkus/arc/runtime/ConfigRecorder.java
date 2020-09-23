@@ -1,7 +1,6 @@
 package io.quarkus.arc.runtime;
 
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.DeploymentException;
@@ -11,7 +10,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.config.ConfigMappings;
+import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.inject.ConfigProducerUtil;
 
 /**
  * @author Martin Kouba
@@ -19,37 +20,36 @@ import io.smallrye.config.SmallRyeConfig;
 @Recorder
 public class ConfigRecorder {
 
-    public void validateConfigProperties(Map<String, Set<String>> properties) {
+    public void validateConfigProperties(Set<ConfigValidationMetadata> properties) {
         Config config = ConfigProvider.getConfig();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = ConfigRecorder.class.getClassLoader();
         }
-        for (Entry<String, Set<String>> entry : properties.entrySet()) {
-            Set<String> propertyTypes = entry.getValue();
-            for (String propertyType : propertyTypes) {
-                Class<?> propertyClass = load(propertyType, cl);
-                // For parameterized types and arrays, we only check if the property config exists without trying to convert it
-                if (propertyClass.isArray() || propertyClass.getTypeParameters().length > 0) {
-                    propertyClass = String.class;
-                }
-                try {
-                    if (!config.getOptionalValue(entry.getKey(), propertyClass).isPresent()) {
-                        throw new DeploymentException(
-                                "No config value of type " + entry.getValue() + " exists for: " + entry.getKey());
-                    }
-                } catch (IllegalArgumentException e) {
-                    throw new DeploymentException(
-                            "Failed to load config value of type " + entry.getValue() + " for: " + entry.getKey(), e);
-                }
+
+        for (ConfigValidationMetadata property : properties) {
+            Class<?> propertyClass = load(property.getType(), cl);
+            // For parameterized types and arrays, we only check if the property config exists without trying to convert it
+            if (propertyClass.isArray() || propertyClass.getTypeParameters().length > 0) {
+                propertyClass = String.class;
+            }
+
+            try {
+                ConfigProducerUtil.getValue(property.getName(), propertyClass, property.getDefaultValue(), config);
+            } catch (Exception e) {
+                throw new DeploymentException(
+                        "Failed to load config value of type " + propertyClass + " for: " + property.getName(), e);
             }
         }
     }
 
-    public void registerConfigMappings(final Set<ConfigMappings.ConfigMappingWithPrefix> configMappingsWithPrefix)
-            throws Exception {
-        SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        ConfigMappings.registerConfigMappings(config, configMappingsWithPrefix);
+    public void registerConfigMappings(final Set<ConfigMappings.ConfigMappingWithPrefix> configMappingsWithPrefix) {
+        try {
+            SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+            ConfigMappings.registerConfigMappings(config, configMappingsWithPrefix);
+        } catch (ConfigValidationException e) {
+            throw new DeploymentException(e.getMessage(), e);
+        }
     }
 
     private Class<?> load(String className, ClassLoader cl) {
@@ -81,4 +81,61 @@ public class ConfigRecorder {
         }
     }
 
+    public static class ConfigValidationMetadata {
+        private String name;
+        private String type;
+        private String defaultValue;
+
+        public ConfigValidationMetadata() {
+        }
+
+        public ConfigValidationMetadata(final String name, final String type, final String defaultValue) {
+            this.name = name;
+            this.type = type;
+            this.defaultValue = defaultValue;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(final String name) {
+            this.name = name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(final String type) {
+            this.type = type;
+        }
+
+        public String getDefaultValue() {
+            return defaultValue;
+        }
+
+        public void setDefaultValue(final String defaultValue) {
+            this.defaultValue = defaultValue;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final ConfigValidationMetadata that = (ConfigValidationMetadata) o;
+            return name.equals(that.name) &&
+                    type.equals(that.type) &&
+                    Objects.equals(defaultValue, that.defaultValue);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, type, defaultValue);
+        }
+    }
 }

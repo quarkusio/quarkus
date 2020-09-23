@@ -19,7 +19,7 @@ import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUI
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
-import static io.quarkus.kubernetes.deployment.ResourceNameUtil.*;
+import static io.quarkus.kubernetes.deployment.ResourceNameUtil.getResourceName;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.mergeList;
@@ -97,6 +97,9 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
+import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.logger.NoopLogger;
 import io.dekorate.processor.SimpleFileReader;
 import io.dekorate.processor.SimpleFileWriter;
@@ -109,6 +112,7 @@ import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.config.S2iBuildConfigFluent;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.utils.Annotations;
+import io.dekorate.utils.Labels;
 import io.dekorate.utils.Maps;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
@@ -347,7 +351,9 @@ class KubernetesProcessor {
             applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
                     determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
 
-            applyKnativeConfig(session, project, getResourceName(knativeConfig, applicationInfo), knativeConfig);
+            applyVanillaKubernetesSpecificConfig(session, kubernetesConfig);
+            applyOpenshiftSpecificConfig(session, openshiftConfig);
+            applyKnativeSpecificConfig(session, getResourceName(knativeConfig, applicationInfo), knativeConfig);
 
             if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
                 handleNonS2IOpenshift(containerImage, session);
@@ -476,9 +482,6 @@ class KubernetesProcessor {
      */
     private void applyConfig(Session session, Project project, String target, String name, PlatformConfiguration config,
             ZonedDateTime now, ImagePullPolicy imagePullPolicy) {
-        if (OPENSHIFT.equals(target)) {
-            session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
-        }
 
         if (config.getNamespace().isPresent()) {
             session.resources().decorate(target, new AddNamespaceDecorator(config.getNamespace().get()));
@@ -579,7 +582,27 @@ class KubernetesProcessor {
         }
     }
 
-    private void applyKnativeConfig(Session session, Project project, String name, KnativeConfig config) {
+    // apply Openshift specific configuration
+    private void applyVanillaKubernetesSpecificConfig(Session session, KubernetesConfig kubernetesConfig) {
+        if (!kubernetesConfig.addVersionToLabelSelectors) {
+            session.resources().decorate(KUBERNETES, new RemoveLabelDecorator(Labels.VERSION));
+            session.resources().decorate(KUBERNETES, new RemoveFromSelectorDecorator(Labels.VERSION));
+            session.resources().decorate(KUBERNETES, new RemoveFromMatchingLabelsDecorator(Labels.VERSION));
+        }
+    }
+
+    // apply Openshift specific configuration
+    private void applyOpenshiftSpecificConfig(Session session, OpenshiftConfig openshiftConfig) {
+        session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
+
+        if (!openshiftConfig.addVersionToLabelSelectors) {
+            session.resources().decorate(OPENSHIFT, new RemoveLabelDecorator(Labels.VERSION));
+            session.resources().decorate(OPENSHIFT, new RemoveFromSelectorDecorator(Labels.VERSION));
+        }
+    }
+
+    // apply Knative specific configuration
+    private void applyKnativeSpecificConfig(Session session, String name, KnativeConfig config) {
         if (config.clusterLocal) {
             session.resources().decorate(KNATIVE, new AddLabelDecorator(name,
                     new LabelBuilder()

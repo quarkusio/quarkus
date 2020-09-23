@@ -1,6 +1,8 @@
 package io.quarkus.bootstrap.utils;
 
 import static io.quarkus.bootstrap.util.QuarkusModelHelper.DEVMODE_REQUIRED_TASKS;
+import static io.quarkus.bootstrap.util.QuarkusModelHelper.ENABLE_JAR_PACKAGING;
+import static io.quarkus.bootstrap.util.QuarkusModelHelper.TEST_REQUIRED_TASKS;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.QuarkusGradleModelFactory;
@@ -9,6 +11,7 @@ import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Helper class used to expose build tool used by the project
@@ -82,13 +85,18 @@ public class BuildToolHelper {
         return null;
     }
 
-    public static QuarkusModel enableGradleAppModel(Path projectRoot, String mode, String... tasks)
+    public static QuarkusModel enableGradleAppModelForTest(Path projectRoot) throws IOException, AppModelResolverException {
+        // We enable jar packaging since we want test-fixtures as jars
+        return enableGradleAppModel(projectRoot, "TEST", ENABLE_JAR_PACKAGING, TEST_REQUIRED_TASKS);
+    }
+
+    public static QuarkusModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)
             throws IOException, AppModelResolverException {
         if (isMavenProject(projectRoot)) {
             return null;
         }
         final QuarkusModel model = QuarkusGradleModelFactory.create(getBuildFile(projectRoot, BuildTool.GRADLE).toFile(),
-                mode, tasks);
+                mode, jvmArgs, tasks);
         QuarkusModelHelper.exportModel(model);
         return model;
     }

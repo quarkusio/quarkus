@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
@@ -59,7 +58,6 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.runner.Timing;
-import io.quarkus.bootstrap.util.QuarkusModelHelper;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
@@ -134,9 +132,6 @@ public class QuarkusTestExtension
                     rootBuilder.add(testResourcesLocation);
                 }
             }
-            if (Files.exists(testClassLocation.getParent().resolve("testFixtures"))) {
-                rootBuilder.add(testClassLocation.getParent().resolve("testFixtures"));
-            }
 
             originalCl = Thread.currentThread().getContextClassLoader();
             Map<String, String> sysPropRestore = new HashMap<>();
@@ -196,7 +191,7 @@ public class QuarkusTestExtension
 
             // If gradle project running directly with IDE
             if (System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL) == null) {
-                BuildToolHelper.enableGradleAppModel(projectRoot, "TEST", QuarkusModelHelper.TEST_REQUIRED_TASKS);
+                BuildToolHelper.enableGradleAppModelForTest(projectRoot);
             }
 
             runnerBuilder.setApplicationRoot(rootBuilder.build());

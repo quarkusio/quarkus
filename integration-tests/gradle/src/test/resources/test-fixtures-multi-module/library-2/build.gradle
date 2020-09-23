@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'java-test-fixtures'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    testFixturesImplementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    testFixturesImplementation 'io.quarkus:quarkus-junit5'
+
+    // Library-1 has to be dependency as implementation and test fixture
+    testFixturesImplementation(project(':library-1'))
+    testFixturesImplementation(testFixtures(project(':library-1')))
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

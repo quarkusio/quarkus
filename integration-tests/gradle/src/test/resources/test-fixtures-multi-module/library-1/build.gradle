@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id 'java-test-fixtures'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation(project(":static-init-library"))
+    testFixturesImplementation(project(":static-init-library"))
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}

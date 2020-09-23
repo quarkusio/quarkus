@@ -1,0 +1,9 @@
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+allprojects {
+    group 'my-groupId'
+    version 'my-version'
+}

@@ -1,8 +1,12 @@
 package io.quarkus.vault;
 
+import java.io.File;
 import java.util.OptionalInt;
 
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.Indexer;
+import org.jboss.jandex.JarIndexer;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
@@ -10,7 +14,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
@@ -32,13 +35,18 @@ public class VaultProcessor {
     void build(
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<FeatureBuildItem> feature,
-            CombinedIndexBuildItem combinedIndexBuildItem,
             SslNativeConfigBuildItem sslNativeConfig,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) throws Exception {
 
         feature.produce(new FeatureBuildItem(Feature.VAULT));
 
-        final String[] modelClasses = combinedIndexBuildItem.getIndex()
+        // Manually index the runtime module because we need to find all model classes in it
+        File runtimeJar = new File(VaultModel.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Indexer indexer = new Indexer();
+        JarIndexer.createJarIndex(runtimeJar, indexer, false, false, false);
+        Index runtimeModuleIndex = indexer.complete();
+
+        final String[] modelClasses = runtimeModuleIndex
                 .getAllKnownImplementors(DotName.createSimple(VaultModel.class.getName()))
                 .stream()
                 .map(c -> c.name().toString())

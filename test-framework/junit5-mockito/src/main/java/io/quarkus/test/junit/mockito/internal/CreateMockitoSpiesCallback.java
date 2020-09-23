@@ -5,13 +5,13 @@ import java.lang.reflect.Field;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.runtime.ClientProxyUnwrapper;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
+import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectSpy;
 
-public class CreateMockitoSpiesCallback implements QuarkusTestBeforeAllCallback {
+public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCallback {
 
     @Override
-    public void beforeAll(Object testInstance) {
+    public void afterConstruct(Object testInstance) {
         Class<?> current = testInstance.getClass();
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {

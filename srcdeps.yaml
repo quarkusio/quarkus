@@ -1,0 +1,28 @@
+configModelVersion: 3.0
+logToConsole: true
+verbosity: info
+repositories:
+  org.eclipse.microprofile.config:
+    includes:
+    - org.eclipse.microprofile.config
+    urls:
+    - git:https://github.com/eclipse/microprofile-config
+    buildVersionPattern: 2.0
+    buildRef: tag-2.0
+    skipTests: true
+  io.smallrye.config:
+    includes:
+    - io.smallrye.config
+    urls:
+    - git:https://github.com/smallrye/smallrye-config
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-mpconfig20
+    skipTests: true
+  org.jboss.resteasy:
+    includes:
+    - org.jboss.resteasy
+    urls:
+    - git:https://github.com/radcortez/Resteasy
+    buildVersionPattern: .*-SNAPSHOT
+    buildRef: branch-4.6.0-SNAPSHOT-config-patched
+    skipTests: true

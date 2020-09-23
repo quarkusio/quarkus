@@ -5,6 +5,7 @@ import static java.util.Collections.singletonList;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -31,8 +32,8 @@ public class ConfigurableSource implements ConfigSourceFactory {
         }
 
         @Override
-        public Map<String, String> getProperties() {
-            return values;
+        public Set<String> getPropertyNames() {
+            return values.keySet();
         }
 
         @Override

@@ -13,25 +13,20 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 
 public class TestHTTPResourceManager {
 
     public static String getUri() {
-        try {
-            Config config = ConfigProvider.getConfig();
-            String value = config.getValue("test.url", String.class);
-            if (value.equals(TestHTTPConfigSourceProvider.TEST_URL_VALUE)) {
-                //massive hack for dev mode tests, dev mode has not started yet
-                //so we don't have any way to load this correctly from config
-                return "http://" + config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost") + ":"
-                        + config.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
-            }
-            return value;
-        } catch (IllegalStateException e) {
-            //massive hack for dev mode tests, dev mode has not started yet
-            //so we don't have any way to load this correctly from config
-            return "http://localhost:8080";
+        Config config = ConfigProvider.getConfig();
+        if (LaunchMode.current().equals(LaunchMode.TEST)) {
+            return config.getValue(TestHTTPConfigSourceProvider.TEST_URL_KEY, String.class);
+        } else {
+            return "http://" +
+                    config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost") +
+                    ":" +
+                    config.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         }
     }
 

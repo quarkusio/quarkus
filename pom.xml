@@ -90,6 +90,10 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>microprofile-config-staging</id>
+            <url>https://oss.sonatype.org/content/repositories/orgeclipsemicroprofile-1375/</url>
+        </repository>
     </repositories>
 
     <distributionManagement>

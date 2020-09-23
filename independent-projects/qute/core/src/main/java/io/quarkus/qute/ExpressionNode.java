@@ -41,6 +41,11 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
         return origin;
     }
 
+    @Override
+    public boolean isConstant() {
+        return expression.isLiteral();
+    }
+
     Engine getEngine() {
         return engine;
     }

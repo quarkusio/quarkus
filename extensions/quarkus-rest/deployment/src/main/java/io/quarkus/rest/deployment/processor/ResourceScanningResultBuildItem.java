@@ -1,6 +1,7 @@
 package io.quarkus.rest.deployment.processor;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -15,15 +16,18 @@ final class ResourceScanningResultBuildItem extends SimpleBuildItem {
     final Map<DotName, ClassInfo> possibleSubResources;
     final Map<DotName, String> pathInterfaces;
     final Map<DotName, MethodInfo> resourcesThatNeedCustomProducer;
+    final Set<String> beanParams;
 
     public ResourceScanningResultBuildItem(Map<DotName, ClassInfo> scannedResources, Map<DotName, String> scannedResourcePaths,
             Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
-            Map<DotName, MethodInfo> resourcesThatNeedCustomProducer) {
+            Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
+            Set<String> beanParams) {
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;
         this.possibleSubResources = possibleSubResources;
         this.pathInterfaces = pathInterfaces;
         this.resourcesThatNeedCustomProducer = resourcesThatNeedCustomProducer;
+        this.beanParams = beanParams;
     }
 
     public Map<DotName, ClassInfo> getScannedResources() {
@@ -44,5 +48,9 @@ final class ResourceScanningResultBuildItem extends SimpleBuildItem {
 
     public Map<DotName, MethodInfo> getResourcesThatNeedCustomProducer() {
         return resourcesThatNeedCustomProducer;
+    }
+
+    public Set<String> getBeanParams() {
+        return beanParams;
     }
 }

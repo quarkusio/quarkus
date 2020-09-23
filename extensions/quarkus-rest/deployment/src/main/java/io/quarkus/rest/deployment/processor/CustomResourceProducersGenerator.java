@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;
@@ -19,6 +20,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -37,6 +39,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 final class CustomResourceProducersGenerator {
+
+    private static final DotName DOTNAME_REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getSimpleName());
 
     private CustomResourceProducersGenerator() {
     }
@@ -91,7 +95,9 @@ final class CustomResourceProducersGenerator {
      *  </pre></code>
      */
     public static void generate(Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer) {
+            Set<String> beanParamsThatNeedCustomProducer,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer);
         try (ClassCreator c = new ClassCreator(classOutput, "io.quarkus.rest.cdi.ResourceWithJaxRsCtorParamsProducer", null,
                 Object.class.getName())) {
@@ -253,9 +259,17 @@ final class CustomResourceProducersGenerator {
                         ctorParamHandles.add(resultHandle);
                     }
 
+                    // FIXME: this doesn't actually support injection in the resource instance
                     m.returnValue(m.newInstance(ctor, ctorParamHandles.toArray(new ResultHandle[0])));
                 }
             }
+            // FIXME: support constructors for bean params too
+            additionalBeanBuildItemBuildProducer
+                    .produce(AdditionalBeanBuildItem.builder().addBeanClasses(beanParamsThatNeedCustomProducer)
+                            // FIXME: we should add this, but for that we also need to make the resource class request-scoped
+                            //                                                         .setDefaultScope(DOTNAME_REQUEST_SCOPED)
+                            //                                                         .setUnremovable()
+                            .build());
         }
     }
 

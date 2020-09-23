@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Request;
@@ -28,6 +29,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestHttpHeaders;
@@ -43,7 +45,7 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
-public class QuarkusRestRequestContext implements Runnable, Closeable {
+public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRestInjectionContext {
     private static final Logger log = Logger.getLogger(QuarkusRestRequestContext.class);
     public static final Object[] EMPTY_ARRAY = new Object[0];
     private final QuarkusRestDeployment deployment;
@@ -721,4 +723,43 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
         }
     }
 
+    @Override
+    public String getHeader(String name) {
+        return context.request().getHeader(name);
+    }
+
+    @Override
+    public String getQueryParameter(String name) {
+        return context.queryParams().get(name);
+    }
+
+    @Override
+    public String getMatrixParameter(String name) {
+        for (PathSegment i : getPathSegments()) {
+            String res = i.getMatrixParameters().getFirst(name);
+            if (res != null) {
+                return res;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public String getCookieParameter(String name) {
+        Cookie cookie = getHttpHeaders().getCookies().get(name);
+        return cookie != null ? cookie.getValue() : null;
+    }
+
+    @Override
+    public String getFormParameter(String name) {
+        return getContext().request().getFormAttribute(name);
+    }
+
+    @Override
+    public String getPathParameter(String name) {
+        // this is a slower version than getPathParam, but we can't actually bake path indices inside
+        // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have different
+        // indices
+        return getPathParam(this.target.getPathParameterIndexes().get(name));
+    }
 }

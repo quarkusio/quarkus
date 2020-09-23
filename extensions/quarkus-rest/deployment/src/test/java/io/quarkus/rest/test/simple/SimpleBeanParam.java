@@ -10,6 +10,15 @@ public class SimpleBeanParam {
     @QueryParam("query")
     String query;
 
+    @QueryParam("query")
+    private String privateQuery;
+
+    @QueryParam("query")
+    protected String protectedQuery;
+
+    @QueryParam("query")
+    public String publicQuery;
+
     @HeaderParam("header")
     String header;
 

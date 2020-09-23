@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.handlers;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.injection.QuarkusRestInjectionTarget;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -21,6 +22,7 @@ public class PerRequestInstanceHandler implements RestHandler {
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
         BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance.getInstance());
+        ((QuarkusRestInjectionTarget) instance.getInstance()).__quarkus_rest_inject(requestContext);
         requestContext.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
             public void handle(AsyncResult<Void> event) {

@@ -8,23 +8,13 @@ import io.vertx.core.http.Cookie;
 public class CookieParamExtractor implements ParameterExtractor {
 
     private final String name;
-    private final boolean single;
 
-    public CookieParamExtractor(String name, boolean single) {
+    public CookieParamExtractor(String name) {
         this.name = name;
-        this.single = single;
     }
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        Cookie cookie = context.getContext().cookieMap().get(name);
-        if (cookie == null) {
-            return null;
-        }
-        if (single) {
-            return cookie.getValue();
-        } else {
-            return Collections.singletonList(cookie.getValue());
-        }
+        return context.getCookieParameter(name);
     }
 }

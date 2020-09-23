@@ -44,12 +44,10 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +55,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -82,11 +79,11 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -97,7 +94,6 @@ import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
-import io.quarkus.rest.runtime.model.InjectableField;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -160,14 +156,16 @@ public class EndpointIndexer {
     }
 
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                    httpAnnotationToMethod);
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
+                    recorder, existingConverters, config, additionalReaders,
+                    httpAnnotationToMethod, beanParams);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -182,9 +180,10 @@ public class EndpointIndexer {
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
 
-            handleFieldInjection(clazz, clazz.getInjectableFields(),
-                    classInfo, classInfo, index, generatedClassBuildItemBuildProducer, existingConverters,
-                    additionalReaders, new ArrayDeque<FieldInfo>(0), false);
+            handleFieldInjection(clazz,
+                    classInfo, classInfo, index, generatedClassBuildItemBuildProducer,
+                    bytecodeTransformerBuildItemBuildProducer, existingConverters,
+                    additionalReaders, beanParams);
 
             return clazz;
         } catch (Exception e) {
@@ -198,14 +197,15 @@ public class EndpointIndexer {
         }
     }
 
-    private static void handleFieldInjection(ResourceClass clazz, List<InjectableField> injectableFields,
+    private static void handleFieldInjection(ResourceClass clazz,
             ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
-            Deque<FieldInfo> fields,
-            boolean forParameter) {
+            Set<String> beanParams) {
+        Map<FieldInfo, ParameterExtractor> fieldExtractors = new HashMap<>();
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
             for (AnnotationInstance i : field.annotations()) {
@@ -220,76 +220,50 @@ public class EndpointIndexer {
                 if (clazz != null) {
                     clazz.setPerRequestResource(true);
                 }
-
-                String accessorName = currentClassInfo.name().toString() + "$$Rest" + (forParameter ? "Param" : "Field")
-                        + "Accessor$" + field.name();
-
-                /*
-                 * class Resource$$RestParamAccessor$query implements BiConsumer<Object,Object> {
-                 * public void accept(Object beanParam, Object value){
-                 * beanParam.otherBeanParam.queryField = value;
-                 * }
-                 * }
-                 */
-
-                /*
-                 * class Resource$$RestFieldAccessor$query implements BiConsumer<Object,Object> {
-                 * public void accept(Object endpoint, Object value){
-                 * // if we have bean params
-                 * endpoint.beanParamField.queryField = value;
-                 * // no bean param
-                 * endpoint.queryField = value;
-                 * }
-                 * }
-                 */
-                try (ClassCreator c = new ClassCreator(
-                        new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), accessorName, null,
-                        Object.class.getName(), BiConsumer.class.getName())) {
-                    MethodCreator m = c.getMethodCreator("accept", void.class, Object.class, Object.class);
-                    if (!fields.isEmpty()) {
-                        ResultHandle path = m.getMethodParam(0);
-                        for (FieldInfo pathToField : fields) {
-                            path = m.readInstanceField(pathToField, path);
-                        }
-                        m.writeInstanceField(FieldDescriptor.of(field), path, m.getMethodParam(1));
-                    } else {
-                        m.writeInstanceField(FieldDescriptor.of(field), m.getMethodParam(0), m.getMethodParam(1));
-                    }
-                    m.returnValue(null);
-                }
-                injectableFields.add(new InjectableField(extractor.name, extractor.elementType, extractor.type,
-                        extractor.single, extractor.converter, extractor.defaultValue, accessorName));
+                fieldExtractors.put(field, extractor);
             }
             if (result.getType() == ParameterType.BEAN) {
-                // also inject fields of the bean
-                ClassInfo beanClassInfo = index.getClassByName(DotName.createSimple(result.getElementType()));
-                fields.addLast(field);
-                handleFieldInjection(clazz, injectableFields, beanClassInfo, actualEndpointInfo, index,
-                        generatedClassBuildItemBuildProducer,
-                        existingConverters, additionalReaders, fields, forParameter);
-                fields.removeLast();
+                // transform the bean param
+                if (beanParams.add(extractor.getElementType())) {
+                    // FIXME: pretty sure this doesn't work with generics
+                    ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
+                    handleFieldInjection(clazz, beanParamClassInfo, actualEndpointInfo, index,
+                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                            existingConverters, additionalReaders, beanParams);
+                }
             }
         }
 
+        // FIXME: handle injectable supertypes
+        if (!fieldExtractors.isEmpty()) {
+            bytecodeTransformerBuildProducer.produce(new BytecodeTransformerBuildItem(currentClassInfo.name().toString(),
+                    new ClassInjectorTransformer(fieldExtractors)));
+        }
+
+        // FIXME: avoid transforming a supertype twice
         DotName superClassName = currentClassInfo.superName();
         if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                handleFieldInjection(clazz, injectableFields, superClass, actualEndpointInfo, index,
+                handleFieldInjection(clazz, superClass, actualEndpointInfo, index,
                         generatedClassBuildItemBuildProducer,
-                        existingConverters, additionalReaders, fields, forParameter);
+                        bytecodeTransformerBuildProducer,
+                        existingConverters, additionalReaders, beanParams);
             }
         }
     }
 
     public static RestClientInterface createClientProxy(IndexView index, ClassInfo classInfo,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
+            QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                    httpAnnotationToMethod);
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                    recorder, existingConverters, config, additionalReaders,
+                    httpAnnotationToMethod, beanParams);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -313,9 +287,11 @@ public class EndpointIndexer {
 
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, 
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
+            QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
-            Map<DotName, String> httpAnnotationToMethod) {
+            Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -340,10 +316,10 @@ public class EndpointIndexer {
                         methodPath = "/";
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            generatedClassBuildItemBuildProducer,
+                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders, httpAnnotationToMethod, existingConverters);
+                            config, additionalReaders, httpAnnotationToMethod, beanParams);
 
                     ret.add(method);
                 }
@@ -367,9 +343,9 @@ public class EndpointIndexer {
                         }
                     }
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
-                            generatedClassBuildItemBuildProducer,
+                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders, httpAnnotationToMethod, existingConverters);
+                            existingConverters, config, additionalReaders, httpAnnotationToMethod, beanParams);
                     ret.add(method);
                 }
             }
@@ -380,8 +356,9 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                        httpAnnotationToMethod));
+                        generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                        recorder, existingConverters, config, additionalReaders,
+                        httpAnnotationToMethod, beanParams));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -389,19 +366,22 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
-                        httpAnnotationToMethod));
+                        generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                        recorder, existingConverters, config, additionalReaders,
+                        httpAnnotationToMethod, beanParams));
             }
         }
         return ret;
     }
 
     private static ResourceMethod createResourceMethod(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
+            QuarkusRestRecorder recorder,
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
-            IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Map<String, String> existingConverters) {
+            IndexView indexView, Map<String, String> existingConverters, QuarkusRestConfig config,
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -423,7 +403,7 @@ public class EndpointIndexer {
                 String errorLocation = "method " + info + " on class " + info.declaringClass();
 
                 ParameterExtractor parameterExtractor = new ParameterExtractor(currentClassInfo, actualEndpointInfo,
-                        generatedClassBuildItemBuildProducer, indexView, existingEndpoints, additionalReaders, suspended, sse,
+                        generatedClassBuildItemBuildProducer, indexView, existingConverters, additionalReaders, suspended, sse,
                         anns, paramType, errorLocation, false).invoke();
                 suspended |= parameterExtractor.isSuspended();
                 sse |= parameterExtractor.isSse();
@@ -441,12 +421,14 @@ public class EndpointIndexer {
                         converter, defaultValue);
 
                 if (type == ParameterType.BEAN) {
-                    ClassInfo beanClassInfo = indexView.getClassByName(DotName.createSimple(elementType));
-                    // FIXME: we're not marking the class as per-request
-                    handleFieldInjection(null, methodParameters[i].getInjectableFields(),
-                            beanClassInfo, actualEndpointInfo, indexView, generatedClassBuildItemBuildProducer,
-                            existingConverters,
-                            additionalReaders, new ArrayDeque<FieldInfo>(0), true);
+                    // transform the bean param
+                    if (beanParams.add(elementType)) {
+                        // FIXME: pretty sure this doesn't work with generics
+                        ClassInfo beanParamClassInfo = indexView.getClassByName(paramType.name());
+                        handleFieldInjection(null, beanParamClassInfo, actualEndpointInfo, indexView,
+                                generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                                existingConverters, additionalReaders, beanParams);
+                    }
                 }
             }
 
@@ -797,7 +779,7 @@ public class EndpointIndexer {
         }
     }
 
-    private static class ParameterExtractor {
+    static class ParameterExtractor {
         private ClassInfo currentClassInfo;
         private ClassInfo actualEndpointInfo;
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
@@ -885,7 +867,7 @@ public class EndpointIndexer {
             }
             if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam, cookieParam)) {
                 throw new RuntimeException(
-                        "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
+                        "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @CookieParam, @BeanParam, @Context on "
                                 + errorLocation);
             } else if (pathParam != null) {
                 name = pathParam.value().asString();
@@ -899,6 +881,9 @@ public class EndpointIndexer {
             } else if (headerParam != null) {
                 name = headerParam.value().asString();
                 type = ParameterType.HEADER;
+            } else if (cookieParam != null) {
+                name = cookieParam.value().asString();
+                type = ParameterType.COOKIE;
             } else if (formParam != null) {
                 name = formParam.value().asString();
                 type = ParameterType.FORM;

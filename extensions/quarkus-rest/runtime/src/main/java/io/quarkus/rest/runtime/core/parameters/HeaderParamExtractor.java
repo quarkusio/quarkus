@@ -17,7 +17,7 @@ public class HeaderParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
         if (single) {
-            return context.getContext().request().getHeader(name);
+            return context.getHeader(name);
         } else {
             List<String> all = context.getContext().request().headers().getAll(name);
             if (all.isEmpty()) {

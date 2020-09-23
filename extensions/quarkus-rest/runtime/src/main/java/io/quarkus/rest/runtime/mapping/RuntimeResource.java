@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.mapping;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
@@ -26,12 +27,14 @@ public class RuntimeResource {
     private final boolean blocking;
     private final Class<?> resourceClass;
     private final LazyMethod lazyMethod;
+    private final Map<String, Integer> pathParameterIndexes;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             MediaType consumes,
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod) {
+            Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
+            Map<String, Integer> pathParameterIndexes) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.classPath = classPath;
@@ -46,6 +49,7 @@ public class RuntimeResource {
         this.blocking = blocking;
         this.resourceClass = resourceClass;
         this.lazyMethod = lazyMethod;
+        this.pathParameterIndexes = pathParameterIndexes;
     }
 
     public RestHandler[] getHandlerChain() {
@@ -107,6 +111,10 @@ public class RuntimeResource {
      */
     public URITemplate getClassPath() {
         return classPath;
+    }
+
+    public Map<String, Integer> getPathParameterIndexes() {
+        return pathParameterIndexes;
     }
 
     @Override

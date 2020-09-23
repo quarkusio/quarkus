@@ -376,15 +376,15 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("query", "one-query")
                 .get("/injection/field")
                 .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/field, "
-                        + "beanParam.query=one-query, beanParam.header=one-header, "
-                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header"));
+                        + "beanParam.query=one-query, beanParam.header=one-header, beanParam.uriInfo.path=/injection/field, "
+                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header, beanParam.otherBeanParam.uriInfo.path=/injection/field"));
         RestAssured
                 .with()
                 .header("header", "one-header")
                 .queryParam("query", "one-query")
                 .get("/injection/param")
                 .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/param, "
-                        + "beanParam.query=one-query, beanParam.header=one-header, "
-                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header"));
+                        + "beanParam.query=one-query, beanParam.header=one-header, beanParam.uriInfo.path=/injection/param, "
+                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header, beanParam.otherBeanParam.uriInfo.path=/injection/param"));
     }
 }

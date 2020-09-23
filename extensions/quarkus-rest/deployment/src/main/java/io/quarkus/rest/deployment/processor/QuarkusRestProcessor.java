@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
@@ -55,6 +57,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -136,7 +139,8 @@ public class QuarkusRestProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         additionalBeanBuildItemBuildProducer
                 .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class).build());
-        return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()));
+        return new AutoInjectAnnotationBuildItem(DotName.createSimple(Context.class.getName()),
+                DotName.createSimple(BeanParam.class.getName()));
 
     }
 
@@ -161,6 +165,29 @@ public class QuarkusRestProcessor {
         Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
+        Set<String> beanParams = new HashSet<>();
+
+        for (AnnotationInstance beanParamAnnotation : index.getAnnotations(QuarkusRestDotNames.BEAN_PARAM)) {
+            AnnotationTarget target = beanParamAnnotation.target();
+            // FIXME: this isn't right wrt generics
+            switch (target.kind()) {
+                case FIELD:
+                    beanParams.add(target.asField().type().toString());
+                    break;
+                case METHOD:
+                    Type setterParamType = target.asMethod().parameters().get(0);
+                    beanParams.add(setterParamType.toString());
+                    break;
+                case METHOD_PARAMETER:
+                    MethodInfo method = target.asMethodParameter().method();
+                    int paramIndex = target.asMethodParameter().position();
+                    Type paramType = method.parameters().get(paramIndex);
+                    beanParams.add(paramType.toString());
+                    break;
+                default:
+                    break;
+            }
+        }
 
         for (AnnotationInstance annotation : allPaths) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
@@ -199,20 +226,25 @@ public class QuarkusRestProcessor {
         }
 
         resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(scannedResources,
-                scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer));
+                scannedResourcePaths, possibleSubResources, pathInterfaces, resourcesThatNeedCustomProducer, beanParams));
     }
 
     @BuildStep
     void generateCustomProducer(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer) {
+            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         if (!resourceScanningResultBuildItem.isPresent()) {
             return;
         }
 
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = resourceScanningResultBuildItem.get()
                 .getResourcesThatNeedCustomProducer();
-        if (!resourcesThatNeedCustomProducer.isEmpty()) {
-            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer, generatedBeanBuildItemBuildProducer);
+        Set<String> beanParams = resourceScanningResultBuildItem.get()
+                .getBeanParams();
+        if (!resourcesThatNeedCustomProducer.isEmpty() || !beanParams.isEmpty()) {
+            CustomResourceProducersGenerator.generate(resourcesThatNeedCustomProducer, beanParams,
+                    generatedBeanBuildItemBuildProducer,
+                    additionalBeanBuildItemBuildProducer);
         }
     }
 
@@ -223,6 +255,7 @@ public class QuarkusRestProcessor {
             QuarkusRestConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
             QuarkusRestRecorder recorder,
             RecorderContext recorderContext,
             ShutdownContextBuildItem shutdownContext,
@@ -275,10 +308,12 @@ public class QuarkusRestProcessor {
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
         AdditionalReaders additionalReaders = new AdditionalReaders();
+        Set<String> beanParams = new HashSet<>();
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod);
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, 
+                    bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
+                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -290,8 +325,8 @@ public class QuarkusRestProcessor {
             //these interfaces can also be clients
             //so we generate client proxies for them
             RestClientInterface clientProxy = EndpointIndexer.createClientProxy(index, clazz,
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    i.getValue(), config, additionalReaders, httpAnnotationToMethod);
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
+                    i.getValue(), config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (clientProxy != null) {
                 clientDefinitions.add(clientProxy);
             }
@@ -318,8 +353,9 @@ public class QuarkusRestProcessor {
             }
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod);
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, 
+                    bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
+                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }

@@ -26,13 +26,12 @@ public class FieldInjectedResource {
     @Path("field")
     @GET
     public String field() {
-        // FIXME: because SimpleBeanParam is not a bean, there's no @Context injection in it, we should fix this
         return "query=" + query + ", header=" + header + ", uriInfo.path=" + uriInfo.getPath()
-                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header//+", beanParam.uriInfo.path="+beanParam.uriInfo.getPath()
+                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header
+                + ", beanParam.uriInfo.path=" + beanParam.uriInfo.getPath()
                 + ", beanParam.otherBeanParam.query=" + beanParam.otherBeanParam.query + ", beanParam.otherBeanParam.header="
                 + beanParam.otherBeanParam.header
-        //+", beanParam.otherBeanParam.uriInfo.path="+beanParam.otherBeanParam.uriInfo.getPath()
-        ;
+                + ", beanParam.otherBeanParam.uriInfo.path=" + beanParam.otherBeanParam.uriInfo.getPath();
     }
 
     @Path("param")
@@ -41,12 +40,11 @@ public class FieldInjectedResource {
             @HeaderParam("header") String header,
             @Context UriInfo uriInfo,
             @BeanParam SimpleBeanParam beanParam) {
-        // FIXME: because SimpleBeanParam is not a bean, there's no @Context injection in it, we should fix this
         return "query=" + query + ", header=" + header + ", uriInfo.path=" + uriInfo.getPath()
-                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header//+", beanParam.uriInfo.path="+beanParam.uriInfo.getPath()
+                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header
+                + ", beanParam.uriInfo.path=" + beanParam.uriInfo.getPath()
                 + ", beanParam.otherBeanParam.query=" + beanParam.otherBeanParam.query + ", beanParam.otherBeanParam.header="
                 + beanParam.otherBeanParam.header
-        //+", beanParam.otherBeanParam.uriInfo.path="+beanParam.otherBeanParam.uriInfo.getPath()
-        ;
+                + ", beanParam.otherBeanParam.uriInfo.path=" + beanParam.otherBeanParam.uriInfo.getPath();
     }
 }

@@ -14,7 +14,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -60,14 +59,12 @@ import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.rest.runtime.handlers.BlockingHandler;
 import io.quarkus.rest.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.runtime.handlers.CompletionStageResponseHandler;
-import io.quarkus.rest.runtime.handlers.FieldInjectionHandler;
 import io.quarkus.rest.runtime.handlers.InputHandler;
 import io.quarkus.rest.runtime.handlers.InstanceHandler;
 import io.quarkus.rest.runtime.handlers.InterceptorHandler;
 import io.quarkus.rest.runtime.handlers.InvocationHandler;
 import io.quarkus.rest.runtime.handlers.MediaTypeMapper;
 import io.quarkus.rest.runtime.handlers.MultiResponseHandler;
-import io.quarkus.rest.runtime.handlers.ParameterFieldHandler;
 import io.quarkus.rest.runtime.handlers.ParameterHandler;
 import io.quarkus.rest.runtime.handlers.PerRequestInstanceHandler;
 import io.quarkus.rest.runtime.handlers.QuarkusRestInitialHandler;
@@ -90,7 +87,6 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceMethod;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
-import io.quarkus.rest.runtime.model.InjectableField;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -536,7 +532,7 @@ public class QuarkusRestRecorder {
                     //we could add another layer of indirection, however this is not a common case
                     //so we don't want to add any extra latency into the common case
                     RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, null, null, null,
-                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null);
+                            new RestHandler[] { mapper }, null, new Class[0], null, false, null, null, null);
                     result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
                 }
             }
@@ -664,22 +660,6 @@ public class QuarkusRestRecorder {
             }
         }
 
-        // NOTE: it's important to inject in the right order, because we also inject bean param members, and those must
-        // be injected _after_ the bean param instance is injected
-        for (InjectableField field : clazz.getInjectableFields()) {
-            boolean single = field.isSingle();
-            ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, field.parameterType, field.type,
-                    field.parameterName,
-                    single, beanContainer);
-            Class<?> setter = loadClass(field.getAccessorClass());
-            try {
-                handlers.add(new FieldInjectionHandler((BiConsumer<Object, Object>) setter.newInstance(),
-                        field.getDefaultValue(), extractor, field.converter == null ? null : field.converter.get()));
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
             parameterTypes[i] = loadClass(method.getParameters()[i].declaredType);
@@ -704,21 +684,6 @@ public class QuarkusRestRecorder {
                     single, beanContainer);
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
                     param.converter == null ? null : param.converter.get()));
-            // now inject fields of the parameter
-            for (InjectableField field : param.getInjectableFields()) {
-                single = field.isSingle();
-                extractor = parameterExtractor(pathParameterIndexes, field.parameterType, field.type,
-                        field.parameterName,
-                        single, beanContainer);
-                Class<?> setter = loadClass(field.getAccessorClass());
-                try {
-                    handlers.add(new ParameterFieldHandler(i, (BiConsumer<Object, Object>) setter.newInstance(),
-                            field.getDefaultValue(), extractor, field.converter == null ? null : field.converter.get()));
-                } catch (InstantiationException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
@@ -840,7 +805,8 @@ public class QuarkusRestRecorder {
                 consumesMediaType, invoker,
                 clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
-                new LazyMethod(method.getName(), resourceClass, parameterTypes));
+                new LazyMethod(method.getName(), resourceClass, parameterTypes),
+                pathParameterIndexes);
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
@@ -850,6 +816,9 @@ public class QuarkusRestRecorder {
         switch (type) {
             case HEADER:
                 extractor = new HeaderParamExtractor(name, single);
+                break;
+            case COOKIE:
+                extractor = new CookieParamExtractor(name);
                 break;
             case FORM:
                 extractor = new FormParamExtractor(name, single);

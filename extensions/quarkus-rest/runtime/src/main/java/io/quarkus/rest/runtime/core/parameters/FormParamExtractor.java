@@ -17,7 +17,7 @@ public class FormParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
         if (single) {
-            return context.getContext().request().getFormAttribute(name);
+            return context.getFormParameter(name);
         } else {
             List<String> values = context.getContext().request().formAttributes().getAll(name);
             if (values.isEmpty()) {

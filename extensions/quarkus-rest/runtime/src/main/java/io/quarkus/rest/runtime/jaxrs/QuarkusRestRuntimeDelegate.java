@@ -50,6 +50,9 @@ public class QuarkusRestRuntimeDelegate extends RuntimeDelegate {
 
     @Override
     public <T> HeaderDelegate<T> createHeaderDelegate(Class<T> type) throws IllegalArgumentException {
+        if (type == null) {
+            throw new IllegalArgumentException("type cannot be null");
+        }
         if (type.equals(MediaType.class)) {
             return (HeaderDelegate<T>) MediaTypeHeaderDelegate.INSTANCE;
         } else if (type.equals(Date.class)) {

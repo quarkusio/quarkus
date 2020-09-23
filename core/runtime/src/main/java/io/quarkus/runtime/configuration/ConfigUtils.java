@@ -1,5 +1,8 @@
 package io.quarkus.runtime.configuration;
 
+import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
+import static io.smallrye.config.SmallRyeConfigBuilder.WEB_INF_MICROPROFILE_CONFIG_PROPERTIES;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +34,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
+import io.smallrye.config.ProfileConfigSourceInterceptor;
+import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -69,22 +74,18 @@ public final class ConfigUtils {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
-        builder.withSources(inFileSystem, inJar, mpConfig, new DotEnvConfigSource());
-        builder.withProfile(ProfileManager.getActiveProfile());
+        builder.withSources(inFileSystem, inJar, new DotEnvConfigSource());
+        builder.withDefaultValue(ProfileConfigSourceInterceptor.SMALLRYE_PROFILE, ProfileManager.getActiveProfile());
         builder.addDefaultInterceptors();
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (runTime) {
             builder.addDefaultSources();
         } else {
             final List<ConfigSource> sources = new ArrayList<>();
-            sources.addAll(
-                    new QuarkusPropertiesConfigSourceProvider("META-INF/microprofile-config.properties", true, classLoader)
-                            .getConfigSources(classLoader));
-            // required by spec...
-            sources.addAll(
-                    new QuarkusPropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
-                            classLoader).getConfigSources(classLoader));
+            sources.addAll(new PropertiesConfigSourceProvider(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader)
+                    .getConfigSources(classLoader));
+            sources.addAll(new PropertiesConfigSourceProvider(WEB_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader)
+                    .getConfigSources(classLoader));
             sources.add(new EnvConfigSource());
             sources.add(new SysPropConfigSource());
             builder.withSources(sources);
@@ -138,6 +139,10 @@ public final class ConfigUtils {
 
         public Map<String, String> getProperties() {
             return Collections.emptyMap();
+        }
+
+        public Set<String> getPropertyNames() {
+            return Collections.emptySet();
         }
 
         public String getValue(final String propertyName) {
@@ -211,6 +216,11 @@ public final class ConfigUtils {
                 }
             }
             return output;
+        }
+
+        @Override
+        public Set<String> getPropertyNames() {
+            return getProperties().keySet();
         }
 
         public String getValue(final String propertyName) {

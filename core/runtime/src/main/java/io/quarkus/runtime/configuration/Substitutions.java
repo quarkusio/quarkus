@@ -9,6 +9,7 @@ import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.threadlocal.FastThreadLocalFactory;
 import com.oracle.svm.core.threadlocal.FastThreadLocalInt;
 
@@ -86,6 +87,42 @@ final class Substitutions {
             } catch (NullPointerException e) {
                 return null;
             }
+        }
+
+        // This should not be called, but we substitute it anyway to make sure we remove any references to ASM classes.
+        @Substitute
+        public byte[] getClassBytes() {
+            return null;
+        }
+    }
+
+    @TargetClass(className = "io.smallrye.config.ConfigMappingClass")
+    static final class Target_ConfigMappingClass {
+        @Alias
+        static ClassValue<Target_ConfigMappingClass> cv = null;
+
+        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
+        @Substitute
+        public static Target_ConfigMappingClass getConfigurationClass(Class<?> classType) {
+            Assert.checkNotNullParam("classType", classType);
+            try {
+                return cv.get(classType);
+            } catch (NullPointerException e) {
+                return null;
+            }
+        }
+
+        @Alias
+        private Class<?> classType;
+        @Alias
+        private String interfaceName;
+
+        @Substitute
+        @TargetElement(name = TargetElement.CONSTRUCTOR_NAME)
+        public Target_ConfigMappingClass(final Class<?> classType) {
+            this.classType = classType;
+            this.interfaceName = classType.getPackage().getName() + "." + classType.getSimpleName()
+                    + classType.getName().hashCode() + "I";
         }
 
         // This should not be called, but we substitute it anyway to make sure we remove any references to ASM classes.

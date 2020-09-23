@@ -259,6 +259,18 @@ Person createPerson(@Body Person person, @Param("id") Optional<String> primaryKe
 }
 ----
 
+A failure handler can declare a single method parameter whose type extends `Throwable`. 
+The type of the parameter is used to match the result of `RoutingContext#failure()`.
+
+.Failure Handler Example
+[source,java]
+----
+@Route(type = HandlerType.FAILURE)
+void unsupported(UnsupportedOperationException e, HttpServerResponse response) {
+  response.setStatusCode(501).end(e.getMessage());
+}
+----
+
 === Returning Unis
 
 In a reactive route, you can return a `Uni` directly:

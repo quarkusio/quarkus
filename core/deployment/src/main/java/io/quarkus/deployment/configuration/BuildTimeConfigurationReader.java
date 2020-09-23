@@ -674,7 +674,7 @@ public final class BuildTimeConfigurationReader {
                         throw toError(e);
                     }
                 } else {
-                    converter = config.getConverter(leaf.getLeafType());
+                    converter = config.requireConverter(leaf.getLeafType());
                 }
             } else if (valueType instanceof LowerBoundCheckOf) {
                 // todo: add in bounds checker

@@ -29,4 +29,14 @@ class ServerResourceTest {
                 .body("log.rotate", equalTo(true))
                 .body("log.pattern", equalTo("COMMON"));
     }
+
+    @Test
+    void properties() {
+        given()
+                .get("/server/properties")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("host", equalTo("localhost"))
+                .body("port", equalTo(8080));
+    }
 }

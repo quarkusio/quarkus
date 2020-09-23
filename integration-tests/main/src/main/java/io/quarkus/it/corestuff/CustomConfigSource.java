@@ -2,6 +2,7 @@ package io.quarkus.it.corestuff;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -11,6 +12,10 @@ public final class CustomConfigSource implements ConfigSource {
 
     public Map<String, String> getProperties() {
         return THE_MAP;
+    }
+
+    public Set<String> getPropertyNames() {
+        return THE_MAP.keySet();
     }
 
     public String getValue(final String propertyName) {

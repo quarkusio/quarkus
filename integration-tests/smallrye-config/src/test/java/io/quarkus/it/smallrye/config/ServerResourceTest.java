@@ -36,4 +36,14 @@ class ServerResourceTest {
                 .body("log.pattern", equalTo("COMMON"))
                 .body("log.period", equalTo("P1D"));
     }
+
+    @Test
+    void properties() {
+        given()
+                .get("/server/properties")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("host", equalTo("localhost"))
+                .body("port", equalTo(8080));
+    }
 }

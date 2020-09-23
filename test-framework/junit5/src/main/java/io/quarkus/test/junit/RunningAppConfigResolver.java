@@ -4,9 +4,11 @@ import java.util.Collections;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.Converter;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 
@@ -38,6 +40,21 @@ class RunningAppConfigResolver extends ConfigProviderResolver {
             @Override
             public Iterable<ConfigSource> getConfigSources() {
                 return Collections.emptyList();
+            }
+
+            @Override
+            public ConfigValue getConfigValue(final String propertyName) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T> Optional<Converter<T>> getConverter(final Class<T> forType) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public <T> T unwrap(final Class<T> type) {
+                throw new UnsupportedOperationException();
             }
         };
     }

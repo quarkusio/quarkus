@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Configuration;
@@ -13,6 +12,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriBuilder;
@@ -25,28 +25,20 @@ public class QuarkusRestWebTarget implements WebTarget {
     private final QuarkusRestConfiguration configuration;
     private final Serialisers serialisers;
     private final ClientProxies clientProxies;
+    private final GenericTypeMapping genericTypeMapping;
     private boolean chunked = false;
     private final QuarkusRestClient restClient;
 
-    public QuarkusRestWebTarget(QuarkusRestClient restClient, UriBuilder uriBuilder, HttpClient client, Serialisers serialisers,
-            ClientProxies clientProxies) {
-        this.restClient = restClient;
-        this.uriBuilder = uriBuilder;
-        this.client = client;
-        this.serialisers = serialisers;
-        this.clientProxies = clientProxies;
-        configuration = new QuarkusRestConfiguration(RuntimeType.CLIENT);
-    }
-
     public QuarkusRestWebTarget(QuarkusRestClient restClient, HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration,
-            Serialisers serialisers, ClientProxies clientProxies) {
+            Serialisers serialisers, ClientProxies clientProxies, GenericTypeMapping genericTypeMapping) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;
         this.configuration = configuration;
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
+        this.genericTypeMapping = genericTypeMapping;
     }
 
     /**
@@ -272,7 +264,8 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestWebTarget newInstance(HttpClient client, UriBuilder uriBuilder,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestWebTarget(restClient, client, uriBuilder, configuration, serialisers, clientProxies);
+        return new QuarkusRestWebTarget(restClient, client, uriBuilder, configuration, serialisers, clientProxies,
+                genericTypeMapping);
     }
 
     @Override
@@ -307,7 +300,8 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     protected QuarkusRestInvocationBuilder createQuarkusRestInvocationBuilder(HttpClient client, UriBuilder uri,
             QuarkusRestConfiguration configuration) {
-        return new QuarkusRestInvocationBuilder(uri.build(), restClient, client, this, configuration, serialisers);
+        return new QuarkusRestInvocationBuilder(uri.build(), restClient, client, this, configuration, serialisers,
+                genericTypeMapping);
     }
 
     @Override

@@ -37,6 +37,7 @@ import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.DynamicFeatures;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
@@ -169,7 +170,7 @@ public class QuarkusRestRecorder {
             ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
-            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations) {
+            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations, GenericTypeMapping genericTypeMapping) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
@@ -299,7 +300,7 @@ public class QuarkusRestRecorder {
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter, createClientImpls(clientImplementations),
-                vertxConfig.rootPath);
+                vertxConfig.rootPath, genericTypeMapping);
 
         currentDeployment = deployment;
 
@@ -807,5 +808,10 @@ public class QuarkusRestRecorder {
     public void registerReader(Serialisers serialisers, String entityClassName,
             ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);
+    }
+
+    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping, String invocationHandlerClass,
+            String resolvedType) {
+        genericTypeMapping.addInvocationCallback(loadClass(invocationHandlerClass), loadClass(resolvedType));
     }
 }

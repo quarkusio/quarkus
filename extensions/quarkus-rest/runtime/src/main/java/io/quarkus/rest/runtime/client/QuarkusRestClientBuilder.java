@@ -14,6 +14,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
 
 import io.quarkus.rest.runtime.QuarkusRestRecorder;
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
@@ -84,10 +85,12 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
         QuarkusRestDeployment currentDeployment = QuarkusRestRecorder.getCurrentDeployment();
         if (currentDeployment == null) {
             return new QuarkusRestClient(configuration, new Serialisers(),
-                    new ClientProxies(Collections.emptyMap()), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
+                    new ClientProxies(Collections.emptyMap()), new GenericTypeMapping(), hostnameVerifier, sslContext,
+                    VertxCoreRecorder.getVertx());
         } else {
             return new QuarkusRestClient(configuration, currentDeployment.getSerialisers(),
-                    currentDeployment.getClientProxies(), hostnameVerifier, sslContext, VertxCoreRecorder.getVertx());
+                    currentDeployment.getClientProxies(), currentDeployment.getGenericTypeMapping(), hostnameVerifier,
+                    sslContext, VertxCoreRecorder.getVertx());
         }
     }
 

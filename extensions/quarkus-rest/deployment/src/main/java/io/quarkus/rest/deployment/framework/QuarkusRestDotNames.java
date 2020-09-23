@@ -23,6 +23,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.DynamicFeature;
@@ -79,6 +80,8 @@ public final class QuarkusRestDotNames {
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
     public static final DotName VETOED = DotName.createSimple(Vetoed.class.getName());
+
+    public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 
     public static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
     public static final DotName SUSPENDED = DotName.createSimple(Suspended.class.getName());

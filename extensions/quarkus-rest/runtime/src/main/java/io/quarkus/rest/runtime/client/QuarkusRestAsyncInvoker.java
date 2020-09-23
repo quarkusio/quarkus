@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.client;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.HashMap;
@@ -17,7 +16,9 @@ import javax.ws.rs.client.InvocationCallback;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.util.Types;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 
@@ -28,17 +29,19 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     final HttpClient httpClient;
     final URI uri;
     final Serialisers serialisers;
+    final GenericTypeMapping genericTypeMapping;
     final RequestSpec requestSpec;
     final Map<String, Object> properties;
     final QuarkusRestClient restClient;
 
     public QuarkusRestAsyncInvoker(QuarkusRestClient restClient, HttpClient httpClient, URI uri, Serialisers serialisers,
-            RequestSpec requestSpec,
+            GenericTypeMapping genericTypeMapping, RequestSpec requestSpec,
             Map<String, Object> properties) {
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.uri = uri;
         this.serialisers = serialisers;
+        this.genericTypeMapping = genericTypeMapping;
         this.requestSpec = new RequestSpec(requestSpec);
         this.properties = new HashMap<>(properties);
     }
@@ -222,9 +225,8 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, InvocationCallback<T> callback) {
-        Class<?> callbackType = getInvocationCallbackType(callback);
-        CompletableFuture<T> cf = mapResponse(performRequestInternal(name, entity, new GenericType<>(callbackType)),
-                callbackType);
+        GenericType<Object> genericType = new GenericType<>(getInvocationCallbackType(callback));
+        CompletableFuture<T> cf = mapResponse(performRequestInternal(name, entity, genericType), genericType.getRawType());
 
         cf.whenComplete(new BiConsumer<T, Throwable>() {
             @Override
@@ -253,24 +255,17 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
                 entity, responseType, registerBodyHandler);
     }
 
-    // TODO: might need to be more advanced to handle even more complex cases
-    private <T> Class<?> getInvocationCallbackType(InvocationCallback<T> callback) {
-        Class<?> callbackType = null;
-        Type[] genericInterfaces = callback.getClass().getGenericInterfaces();
-        for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
-                if (parameterizedType.getRawType().equals(InvocationCallback.class)) {
-                    if (parameterizedType.getActualTypeArguments().length == 1) {
-                        Type firstArg = parameterizedType.getActualTypeArguments()[0];
-                        if (firstArg instanceof Class) {
-                            callbackType = (Class<?>) firstArg;
-                        }
-                    }
-                }
-            }
+    private <T> Type getInvocationCallbackType(InvocationCallback<T> callback) {
+        Class<?> knownFromBuildTime = genericTypeMapping.forInvocationCallback(callback.getClass());
+        if (knownFromBuildTime != null) {
+            return knownFromBuildTime;
         }
-        return callbackType;
+
+        Type[] typeInfo = Types.getActualTypeArgumentsOfAnInterface(callback.getClass(), InvocationCallback.class);
+        if (typeInfo.length == 1) {
+            return typeInfo[0];
+        }
+        return null;
     }
 
     @SuppressWarnings("unchecked")

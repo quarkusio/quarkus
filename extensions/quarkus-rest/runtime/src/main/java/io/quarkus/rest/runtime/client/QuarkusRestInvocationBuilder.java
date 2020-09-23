@@ -18,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.vertx.core.http.HttpClient;
@@ -31,17 +32,19 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     final RequestSpec requestSpec;
     final Map<String, Object> properties = new HashMap<>();
     final QuarkusRestClient restClient;
+    final GenericTypeMapping genericTypeMapping;
 
     public QuarkusRestInvocationBuilder(URI uri, QuarkusRestClient restClient, HttpClient httpClient,
             QuarkusRestWebTarget target,
             QuarkusRestConfiguration configuration,
-            Serialisers serialisers) {
+            Serialisers serialisers, GenericTypeMapping genericTypeMapping) {
         this.uri = uri;
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.target = target;
         this.requestSpec = new RequestSpec(configuration);
         this.serialisers = serialisers;
+        this.genericTypeMapping = genericTypeMapping;
     }
 
     @Override
@@ -76,7 +79,8 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public QuarkusRestAsyncInvoker async() {
-        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, requestSpec, properties);
+        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, genericTypeMapping, requestSpec,
+                properties);
     }
 
     @Override
@@ -147,7 +151,8 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, requestSpec, properties);
+        return new QuarkusRestAsyncInvoker(restClient, httpClient, uri, serialisers, genericTypeMapping, requestSpec,
+                properties);
     }
 
     @Override

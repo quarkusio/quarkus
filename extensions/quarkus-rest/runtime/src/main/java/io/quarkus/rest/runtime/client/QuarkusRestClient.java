@@ -14,6 +14,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.vertx.core.Vertx;
@@ -27,16 +28,18 @@ public class QuarkusRestClient implements Client {
     final QuarkusRestConfiguration configuration;
     final Serialisers serialisers;
     final ClientProxies clientProxies;
+    final GenericTypeMapping genericTypeMapping;
     final HostnameVerifier hostnameVerifier;
     final SSLContext sslContext;
     private boolean isClosed;
 
     public QuarkusRestClient(QuarkusRestConfiguration configuration, Serialisers serialisers, ClientProxies clientProxies,
-            HostnameVerifier hostnameVerifier,
+            GenericTypeMapping genericTypeMapping, HostnameVerifier hostnameVerifier,
             SSLContext sslContext, Supplier<Vertx> vertx) {
         this.configuration = configuration != null ? configuration : new QuarkusRestConfiguration(RuntimeType.CLIENT);
         this.serialisers = serialisers;
         this.clientProxies = clientProxies;
+        this.genericTypeMapping = genericTypeMapping;
         this.hostnameVerifier = hostnameVerifier;
         this.sslContext = sslContext;
         if (vertx != null) {
@@ -70,7 +73,7 @@ public class QuarkusRestClient implements Client {
         abortIfClosed();
         Objects.requireNonNull(uri);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies);
+                serialisers, clientProxies, genericTypeMapping);
     }
 
     @Override
@@ -78,7 +81,7 @@ public class QuarkusRestClient implements Client {
         abortIfClosed();
         Objects.requireNonNull(uri);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies);
+                serialisers, clientProxies, genericTypeMapping);
     }
 
     @Override
@@ -86,7 +89,7 @@ public class QuarkusRestClient implements Client {
         abortIfClosed();
         Objects.requireNonNull(uriBuilder);
         return new QuarkusRestWebTarget(this, httpClient, uriBuilder, new QuarkusRestConfiguration(configuration), serialisers,
-                clientProxies);
+                clientProxies, genericTypeMapping);
     }
 
     @Override
@@ -95,7 +98,7 @@ public class QuarkusRestClient implements Client {
         Objects.requireNonNull(link);
         return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromLink(link),
                 new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies);
+                serialisers, clientProxies, genericTypeMapping);
     }
 
     @Override

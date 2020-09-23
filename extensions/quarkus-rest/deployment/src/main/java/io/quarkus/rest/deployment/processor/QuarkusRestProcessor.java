@@ -67,6 +67,7 @@ import io.quarkus.rest.runtime.core.ContextResolvers;
 import io.quarkus.rest.runtime.core.DynamicFeatures;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
+import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.injection.ContextProducers;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -226,6 +227,8 @@ public class QuarkusRestProcessor {
                 .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
         Collection<ClassInfo> dynamicFeatures = index
                 .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
+        Collection<ClassInfo> invocationCallbacks = index
+                .getAllKnownImplementors(QuarkusRestDotNames.INVOCATION_CALLBACK);
 
         Map<DotName, ClassInfo> scannedResources = resourceScanningResultBuildItem.get().getScannedResources();
         Map<DotName, String> scannedResourcePaths = resourceScanningResultBuildItem.get().getScannedResourcePaths();
@@ -409,6 +412,18 @@ public class QuarkusRestProcessor {
             }
         }
 
+        GenericTypeMapping genericTypeMapping = new GenericTypeMapping();
+        for (ClassInfo invocationCallback : invocationCallbacks) {
+            try {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(invocationCallback.name(),
+                        QuarkusRestDotNames.INVOCATION_CALLBACK, index);
+                recorder.registerInvocationHandlerGenericType(genericTypeMapping, invocationCallback.name().toString(),
+                        typeParameters.get(0).name().toString());
+            } catch (Exception ignored) {
+
+            }
+        }
+
         // built-ins
         //        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
         //                false);
@@ -452,7 +467,8 @@ public class QuarkusRestProcessor {
         return new FilterBuildItem(
                 recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
                         serialisers, resourceClasses, subResourceClasses,
-                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, clientImplementations),
+                        beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, clientImplementations,
+                        genericTypeMapping),
                 10);
     }
 

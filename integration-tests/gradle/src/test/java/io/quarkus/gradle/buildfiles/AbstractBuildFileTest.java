@@ -1,4 +1,4 @@
-package io.quarkus.gradle;
+package io.quarkus.gradle.buildfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;

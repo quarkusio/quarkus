@@ -1,5 +1,13 @@
 package io.quarkus.rest.deployment.processor;
 
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DELETE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.GET;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEAD;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.OPTIONS;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -97,6 +105,18 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestProcessor {
+
+    private static Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = new HashMap<>();
+    static {
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(GET, "GET");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(POST, "POST");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(HEAD, "HEAD");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PUT, "PUT");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(DELETE, "DELETE");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(PATCH, "PATCH");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(OPTIONS, "OPTIONS");
+        BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
+    }
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
@@ -235,6 +255,15 @@ public class QuarkusRestProcessor {
         Map<DotName, ClassInfo> possibleSubResources = resourceScanningResultBuildItem.get().getPossibleSubResources();
         Map<DotName, String> pathInterfaces = resourceScanningResultBuildItem.get().getPathInterfaces();
 
+        Map<DotName, String> httpAnnotationToMethod = new HashMap<>(BUILTIN_HTTP_ANNOTATIONS_TO_METHOD);
+        Collection<AnnotationInstance> httpMethodInstances = index.getAnnotations(QuarkusRestDotNames.HTTP_METHOD);
+        for (AnnotationInstance httpMethodInstance : httpMethodInstances) {
+            if (httpMethodInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
+                continue;
+            }
+            httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
+        }
+
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
@@ -242,7 +271,7 @@ public class QuarkusRestProcessor {
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders);
+                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -255,7 +284,7 @@ public class QuarkusRestProcessor {
             //so we generate client proxies for them
             RestClientInterface clientProxy = EndpointIndexer.createClientProxy(index, clazz,
                     generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    i.getValue(), config, additionalReaders);
+                    i.getValue(), config, additionalReaders, httpAnnotationToMethod);
             if (clientProxy != null) {
                 clientDefinitions.add(clientProxy);
             }
@@ -265,9 +294,8 @@ public class QuarkusRestProcessor {
 
         //now index possible sub resources. These are all classes that have method annotations
         //that are not annotated @Path
-        //TODO custom method annotations
         Deque<ClassInfo> toScan = new ArrayDeque<>();
-        for (DotName methodAnnotation : QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS) {
+        for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
             for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                 MethodInfo method = instance.target().asMethod();
                 ClassInfo classInfo = method.declaringClass();
@@ -284,7 +312,7 @@ public class QuarkusRestProcessor {
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
                     beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders);
+                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }

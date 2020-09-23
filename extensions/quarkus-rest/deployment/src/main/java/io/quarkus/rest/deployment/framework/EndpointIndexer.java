@@ -7,16 +7,12 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CHARACTER
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONTEXT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DEFAULT_VALUE;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DELETE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DOUBLE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FLOAT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FORM_PARAM;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.GET;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEAD;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEADER_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INPUT_STREAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INTEGER;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JAXRS_METHOD_ANNOTATIONS;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
@@ -25,11 +21,8 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MULTI_VALUED_MAP;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.OPTIONS;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH_PARAM;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_BOOLEAN;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_CHAR;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_DOUBLE;
@@ -37,7 +30,6 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_INTEGER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRODUCES;
-import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.QUERY_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SET;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.SORTED_SET;
@@ -166,11 +158,12 @@ public class EndpointIndexer {
     public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                    httpAnnotationToMethod);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -246,10 +239,11 @@ public class EndpointIndexer {
     public static RestClientInterface createClientProxy(IndexView index, ClassInfo classInfo,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
-                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders);
+                    generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                    httpAnnotationToMethod);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -274,13 +268,14 @@ public class EndpointIndexer {
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, QuarkusRestRecorder recorder,
-            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders) {
+            Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
+            Map<DotName, String> httpAnnotationToMethod) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
         Set<String> classNameBindings = nameBindingNames(currentClassInfo, index);
 
-        for (DotName httpMethod : JAXRS_METHOD_ANNOTATIONS) {
+        for (DotName httpMethod : httpAnnotationToMethod.keySet()) {
             List<AnnotationInstance> foundMethods = currentClassInfo.annotations().get(httpMethod);
             if (foundMethods != null) {
                 for (AnnotationInstance annotation : foundMethods) {
@@ -302,7 +297,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders);
+                            config, additionalReaders, httpAnnotationToMethod);
 
                     ret.add(method);
                 }
@@ -328,7 +323,7 @@ public class EndpointIndexer {
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders);
+                            existingConverters, config, additionalReaders, httpAnnotationToMethod);
                     ret.add(method);
                 }
             }
@@ -339,7 +334,8 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                        httpAnnotationToMethod));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -347,7 +343,8 @@ public class EndpointIndexer {
             ClassInfo superClass = index.getClassByName(i);
             if (superClass != null) {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
-                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders));
+                        generatedClassBuildItemBuildProducer, recorder, existingConverters, config, additionalReaders,
+                        httpAnnotationToMethod));
             }
         }
         return ret;
@@ -358,7 +355,7 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingEndpoints, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -411,7 +408,7 @@ public class EndpointIndexer {
             }
 
             ResourceMethod method = new ResourceMethod()
-                    .setHttpMethod(annotationToMethod(httpMethod))
+                    .setHttpMethod(httpMethod == null ? null : httpAnnotationToMethod.get(httpMethod))
                     .setPath(methodPath)
                     .setConsumes(consumes)
                     .setProduces(produces)
@@ -677,33 +674,6 @@ public class EndpointIndexer {
             return originalStrings;
         }
 
-    }
-
-    private static String annotationToMethod(DotName httpMethod) {
-        if (httpMethod == null) {
-            return null; //resource locators
-        }
-        if (httpMethod.equals(GET)) {
-            return "GET";
-        } else if (httpMethod.equals(POST)) {
-            return "POST";
-        } else if (httpMethod.equals(HEAD)) {
-            return "HEAD";
-        } else if (httpMethod.equals(PUT)) {
-            return "PUT";
-        } else if (httpMethod.equals(DELETE)) {
-            return "DELETE";
-        } else if (httpMethod.equals(PATCH)) {
-            return "PATCH";
-        } else if (httpMethod.equals(OPTIONS)) {
-            return "OPTIONS";
-        }
-        throw new IllegalStateException("Unknown HTTP method annotation " + httpMethod);
-    }
-
-    public static String readStringValue(AnnotationInstance annotation, String defaultValue) {
-        String val = readStringValue(annotation);
-        return val == null ? defaultValue : val;
     }
 
     public static String readStringValue(AnnotationInstance annotationInstance) {

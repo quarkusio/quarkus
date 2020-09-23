@@ -61,6 +61,7 @@ public final class QuarkusRestDotNames {
     public static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
     public static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
     public static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
+    public static final DotName HTTP_METHOD = DotName.createSimple(javax.ws.rs.HttpMethod.class.getName());
     public static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
     public static final DotName PATH = DotName.createSimple(Path.class.getName());
     public static final DotName FEATURE = DotName.createSimple(Feature.class.getName());

@@ -23,7 +23,7 @@ public class SimpleQuarkusRestTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SimpleQuarkusRestResource.class, Person.class,
+                            .addClasses(TRACE.class, SimpleQuarkusRestResource.class, Person.class,
                                     TestRequestFilter.class, TestRequestFilterWithHighPriority.class,
                                     TestRequestFilterWithHighestPriority.class, ResourceInfoInjectingFilter.class,
                                     Foo.class, Bar.class,
@@ -359,5 +359,11 @@ public class SimpleQuarkusRestTestCase {
     public void testPrimitiveBody() {
         RestAssured.with().body("true").contentType("text/plain").post("/simple/bool")
                 .then().statusCode(200).contentType("text/plain").body(Matchers.equalTo("true"));
+    }
+
+    @Test
+    public void testCustomHttpMethodAnnotation() {
+        RestAssured.request("TRACE", "/simple/trace")
+                .then().statusCode(200);
     }
 }

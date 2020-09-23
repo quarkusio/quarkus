@@ -368,4 +368,10 @@ public class SimpleQuarkusRestResource {
     public boolean bool(boolean bool) {
         return bool;
     }
+
+    @Path("/trace")
+    @TRACE
+    public Response trace() {
+        return Response.status(Response.Status.OK).build();
+    }
 }

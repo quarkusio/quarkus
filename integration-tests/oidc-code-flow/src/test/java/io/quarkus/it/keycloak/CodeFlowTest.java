@@ -145,6 +145,9 @@ public class CodeFlowTest {
             assertEquals("/", sessionCookie.getPath());
             assertEquals("localhost", sessionCookie.getDomain());
 
+            assertNotNull(getSessionAtCookie(webClient, null));
+            assertNotNull(getSessionRtCookie(webClient, null));
+
             webClient.getOptions().setRedirectEnabled(false);
             webClient.getCache().clear();
 
@@ -157,6 +160,8 @@ public class CodeFlowTest {
                                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
                             assertEquals(302, webResponse.getStatusCode());
                             assertNull(getSessionCookie(webClient, null));
+                            assertNull(getSessionAtCookie(webClient, null));
+                            assertNull(getSessionRtCookie(webClient, null));
                             return true;
                         }
                     });
@@ -180,10 +185,14 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
             assertTrue(page.asText().contains("Tenant Logout"));
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
+            assertNotNull(getSessionAtCookie(webClient, "tenant-logout"));
+            assertNotNull(getSessionRtCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
             assertTrue(page.asText().contains("You were logged out"));
             assertNull(getSessionCookie(webClient, "tenant-logout"));
+            assertNull(getSessionAtCookie(webClient, "tenant-logout"));
+            assertNull(getSessionRtCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertEquals("Log in to logout-realm", page.getTitleText());
@@ -194,8 +203,13 @@ public class CodeFlowTest {
             assertTrue(page.asText().contains("Tenant Logout"));
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-logout");
-            assertNotNull(sessionCookie);
             String idToken = getIdToken(sessionCookie);
+
+            Cookie sessionAtCookie = getSessionAtCookie(webClient, "tenant-logout");
+            String accessToken = getAccessToken(sessionAtCookie);
+
+            Cookie sessionRtCookie = getSessionRtCookie(webClient, "tenant-logout");
+            String refreshToken = getRefreshToken(sessionRtCookie);
 
             //wait now so that we reach the refresh timeout
             await().atMost(10, TimeUnit.SECONDS)
@@ -209,8 +223,11 @@ public class CodeFlowTest {
                             assertEquals(200, webResponse.getStatusCode());
                             // Should not redirect to OP but silently refresh token
                             Cookie newSessionCookie = getSessionCookie(webClient, "tenant-logout");
-                            assertNotNull(newSessionCookie);
-                            return !idToken.equals(getIdToken(newSessionCookie));
+                            Cookie newSessionAtCookie = getSessionAtCookie(webClient, "tenant-logout");
+                            Cookie newSessionRtCookie = getSessionRtCookie(webClient, "tenant-logout");
+                            return !idToken.equals(getIdToken(newSessionCookie))
+                                    && !accessToken.equals(getAccessToken(newSessionAtCookie))
+                                    && !refreshToken.equals(getRefreshToken(newSessionRtCookie));
                         }
                     });
 
@@ -218,6 +235,8 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertTrue(page.asText().contains("Tenant Logout"));
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
+            assertNotNull(getSessionAtCookie(webClient, "tenant-logout"));
+            assertNotNull(getSessionRtCookie(webClient, "tenant-logout"));
 
             //wait now so that we reach the refresh timeout
             await().atMost(20, TimeUnit.SECONDS)
@@ -233,6 +252,8 @@ public class CodeFlowTest {
 
                             if (statusCode == 302) {
                                 assertNull(getSessionCookie(webClient, "tenant-logout"));
+                                assertNull(getSessionAtCookie(webClient, "tenant-logout"));
+                                assertNull(getSessionRtCookie(webClient, "tenant-logout"));
                                 return true;
                             }
 
@@ -244,6 +265,8 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertNull(getSessionCookie(webClient, "tenant-logout"));
+            assertNull(getSessionAtCookie(webClient, "tenant-logout"));
+            assertNull(getSessionRtCookie(webClient, "tenant-logout"));
             assertEquals("Log in to logout-realm", page.getTitleText());
             webClient.getCookieManager().clearCookies();
         }
@@ -261,8 +284,13 @@ public class CodeFlowTest {
             assertTrue(page.asText().contains("Tenant AutoRefresh"));
 
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
-            assertNotNull(sessionCookie);
             String idToken = getIdToken(sessionCookie);
+
+            Cookie sessionAtCookie = getSessionAtCookie(webClient, "tenant-autorefresh");
+            String accessToken = getAccessToken(sessionAtCookie);
+
+            Cookie sessionRtCookie = getSessionRtCookie(webClient, "tenant-autorefresh");
+            String refreshToken = getRefreshToken(sessionRtCookie);
 
             //wait now so that we reach the refresh timeout
             await().atMost(5, TimeUnit.SECONDS)
@@ -278,8 +306,11 @@ public class CodeFlowTest {
                             assertTrue(webResponse.getContentAsString().contains("Tenant AutoRefresh"));
                             // Should not redirect to OP but silently refresh token
                             Cookie newSessionCookie = getSessionCookie(webClient, "tenant-autorefresh");
-                            assertNotNull(newSessionCookie);
-                            return !idToken.equals(getIdToken(newSessionCookie));
+                            Cookie newSessionAtCookie = getSessionAtCookie(webClient, "tenant-autorefresh");
+                            Cookie newSessionRtCookie = getSessionRtCookie(webClient, "tenant-autorefresh");
+                            return !idToken.equals(getIdToken(newSessionCookie))
+                                    && !accessToken.equals(getAccessToken(newSessionAtCookie))
+                                    && !refreshToken.equals(getRefreshToken(newSessionRtCookie));
                         }
                     });
             webClient.getCookieManager().clearCookies();
@@ -418,6 +449,12 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, "tenant-2");
             assertNotNull(sessionCookie);
             assertEquals("/web-app2", sessionCookie.getPath());
+            Cookie sessionAtCookie = getSessionAtCookie(webClient, "tenant-2");
+            assertNotNull(sessionAtCookie);
+            assertEquals("/web-app2", sessionAtCookie.getPath());
+            Cookie sessionRtCookie = getSessionRtCookie(webClient, "tenant-2");
+            assertNotNull(sessionRtCookie);
+            assertEquals("/web-app2", sessionRtCookie.getPath());
 
             Thread.sleep(5000);
             webClient.getOptions().setRedirectEnabled(false);
@@ -425,6 +462,8 @@ public class CodeFlowTest {
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/web-app2/name").toURL()));
             assertEquals(302, webResponse.getStatusCode());
             assertNull(getSessionCookie(webClient, "tenant-2"));
+            assertNull(getSessionAtCookie(webClient, "tenant-2"));
+            assertNull(getSessionRtCookie(webClient, "tenant-2"));
 
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/web-app2/name");
@@ -617,7 +656,23 @@ public class CodeFlowTest {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "" : "_" + tenantId));
     }
 
+    private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_at_session" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
+    private Cookie getSessionRtCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_rt_session" + (tenantId == null ? "" : "_" + tenantId));
+    }
+
     private String getIdToken(Cookie sessionCookie) {
-        return sessionCookie.getValue().split("\\|")[0];
+        return sessionCookie.getValue();
+    }
+
+    private String getAccessToken(Cookie atCookie) {
+        return atCookie.getValue();
+    }
+
+    private String getRefreshToken(Cookie rtCookie) {
+        return rtCookie.getValue();
     }
 }

@@ -235,7 +235,9 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 == Using injection
 
 Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
-You can learn more about it in the link:cdi-reference[Contexts and Dependency Injection guide].
+If you're new to CDI then we recommend you to read the link:cdi[Introduction to CDI] guide.
+
+Quarkus only implements a subset of the CDI features and comes with non-standard features and specific APIS, you can learn more about it in the link:cdi-reference[Contexts and Dependency Injection guide].
 
 ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 

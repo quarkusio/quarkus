@@ -5,7 +5,6 @@ import javax.inject.Inject;
 import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -16,7 +15,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.test.VaultTestExtension;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/11879")
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class VaultKv1ITCase {

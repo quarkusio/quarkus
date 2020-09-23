@@ -101,7 +101,12 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 QuarkusRestClientResponseContext context = new QuarkusRestClientResponseContext(
                         requestContext.abortedWith.getStatus(), requestContext.abortedWith.getStatusInfo().getReasonPhrase(),
                         requestContext.abortedWith.getStringHeaders());
-                ensureResponseAndRunFilters(context, requestContext.abortedWith.getEntity());
+                Object abortedWithEntity = requestContext.abortedWith.getEntity();
+                if ((abortedWithEntity instanceof String)) {
+                    // TODO: probably need to do this for other types as well, but it isn't clear how we would convert the object into bytes, serialization maybe?
+                    context.setData(((String) abortedWithEntity).getBytes());
+                }
+                ensureResponseAndRunFilters(context, abortedWithEntity);
             } else {
                 HttpClientRequest httpClientRequest = createRequest();
                 Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest);

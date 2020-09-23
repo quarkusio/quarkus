@@ -97,6 +97,9 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
+import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
+import io.dekorate.kubernetes.decorator.RemoveLabelDecorator;
 import io.dekorate.logger.NoopLogger;
 import io.dekorate.processor.SimpleFileReader;
 import io.dekorate.processor.SimpleFileWriter;
@@ -582,8 +585,9 @@ class KubernetesProcessor {
     // apply Openshift specific configuration
     private void applyVanillaKubernetesSpecificConfig(Session session, KubernetesConfig kubernetesConfig) {
         if (!kubernetesConfig.addVersionToLabelSelectors) {
-            session.resources().decorate(KUBERNETES, new DeploymentRemoveLabelSelectorDecorator(Labels.VERSION));
-            session.resources().decorate(KUBERNETES, new ServiceRemoveLabelSelectorDecorator(Labels.VERSION));
+            session.resources().decorate(KUBERNETES, new RemoveLabelDecorator(Labels.VERSION));
+            session.resources().decorate(KUBERNETES, new RemoveFromSelectorDecorator(Labels.VERSION));
+            session.resources().decorate(KUBERNETES, new RemoveFromMatchingLabelsDecorator(Labels.VERSION));
         }
     }
 
@@ -592,9 +596,8 @@ class KubernetesProcessor {
         session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
 
         if (!openshiftConfig.addVersionToLabelSelectors) {
-            session.resources().decorate(OPENSHIFT,
-                    new DeploymentConfigRemoveLabelSelectorDecorator(Labels.VERSION));
-            session.resources().decorate(OPENSHIFT, new ServiceRemoveLabelSelectorDecorator(Labels.VERSION));
+            session.resources().decorate(OPENSHIFT, new RemoveLabelDecorator(Labels.VERSION));
+            session.resources().decorate(OPENSHIFT, new RemoveFromSelectorDecorator(Labels.VERSION));
         }
     }
 

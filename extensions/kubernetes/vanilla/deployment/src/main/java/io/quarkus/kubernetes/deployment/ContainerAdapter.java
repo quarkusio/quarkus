@@ -5,8 +5,10 @@ import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.kubernetes.config.Env;
 import io.dekorate.kubernetes.config.Mount;
 import io.dekorate.kubernetes.config.Port;
+import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
+import io.dekorate.kubernetes.decorator.AddPortDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.utils.Images;
@@ -36,7 +38,7 @@ public class ContainerAdapter {
         }
         for (Port port : container.getPorts()) {
             // this was changed to use our patched port decorator
-            builder.accept(new AddContainerPortDecorator(port));
+            builder.accept(new AddPortDecorator(port));
         }
         for (Mount mount : container.getMounts()) {
             builder.accept(new AddMountDecorator(mount));

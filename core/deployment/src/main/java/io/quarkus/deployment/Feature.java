@@ -12,6 +12,7 @@ public enum Feature {
     AGROAL,
     AMAZON_DYNAMODB,
     AMAZON_LAMBDA,
+    AMAZON_IAM,
     AMAZON_S3,
     AMAZON_SNS,
     AMAZON_SQS,

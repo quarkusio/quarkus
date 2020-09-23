@@ -18,7 +18,7 @@
         <bouncycastle.fips.version>1.0.2</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.11</bouncycastle.tls.fips.version>
         <jandex.version>2.2.3.Final</jandex.version>
-        <resteasy.version>4.5.9.Final</resteasy.version>
+        <resteasy.version>4.6.0.Final</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.2.3</opentracing-web-servlet-filter.version>
@@ -33,7 +33,7 @@
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <micrometer.version>1.6.5</micrometer.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <google-auth.version>0.22.0</google-auth.version>
-        <microprofile-config-api.version>1.4</microprofile-config-api.version>
+        <microprofile-config-api.version>2.0</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>1.3.3</microprofile-opentracing-api.version>
@@ -41,7 +41,7 @@
         <microprofile-rest-client.version>1.4.1</microprofile-rest-client.version>
         <microprofile-jwt.version>1.1.1</microprofile-jwt.version>
         <smallrye-common.version>1.6.0</smallrye-common.version>
-        <smallrye-config.version>1.12.0</smallrye-config.version>
+        <smallrye-config.version>2.2.0</smallrye-config.version>
         <smallrye-health.version>2.2.6</smallrye-health.version>
         <smallrye-metrics.version>2.4.6</smallrye-metrics.version>
         <smallrye-open-api.version>2.0.26</smallrye-open-api.version>

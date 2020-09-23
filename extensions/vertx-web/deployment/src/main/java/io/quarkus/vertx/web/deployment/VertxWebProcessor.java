@@ -93,6 +93,7 @@ import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
+import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RouteMatcher;
@@ -120,6 +121,7 @@ class VertxWebProcessor {
     private static final String VALUE_CONSUMES = "consumes";
     private static final String VALUE_METHODS = "methods";
     private static final String VALUE_ORDER = "order";
+    private static final String VALUE_TYPE = "type";
     private static final String SLASH = "/";
 
     private static final List<ParameterInjector> PARAM_INJECTORS = initParamInjectors();
@@ -142,6 +144,7 @@ class VertxWebProcessor {
 
     @BuildStep
     void validateBeanDeployment(
+            BeanArchiveIndexBuildItem beanArchive,
             ValidationPhaseBuildItem validationPhase,
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
@@ -160,15 +163,17 @@ class VertxWebProcessor {
                 AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method,
                         io.quarkus.vertx.web.deployment.DotNames.ROUTE);
                 if (routeAnnotation != null) {
-                    validateRouteMethod(bean, method, transformedAnnotations);
+                    validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), routeAnnotation);
                     routes.add(routeAnnotation);
                 }
                 if (routes.isEmpty()) {
                     AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method,
                             io.quarkus.vertx.web.deployment.DotNames.ROUTES);
                     if (routesAnnotation != null) {
-                        validateRouteMethod(bean, method, transformedAnnotations);
-                        Collections.addAll(routes, routesAnnotation.value().asNestedArray());
+                        for (AnnotationInstance annotation : routesAnnotation.value().asNestedArray()) {
+                            validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), annotation);
+                            routes.add(annotation);
+                        }
                     }
                 }
                 if (!routes.isEmpty()) {
@@ -303,22 +308,7 @@ class VertxWebProcessor {
                     consumes = baseConsumes;
                 }
 
-                if (routeHandler == null) {
-                    String handlerClass = generateHandler(
-                            new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null)),
-                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
-                            routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
-                            validatorAvailable);
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
-                    routeHandler = recorder.createHandler(handlerClass);
-                    routeHandlers.put(routeString, routeHandler);
-                }
-
-                RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
-                matchers.put(matcher, businessMethod.getMethod());
-                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
-                        bodyHandler.getHandler());
-                AnnotationValue typeValue = route.value("type");
+                AnnotationValue typeValue = route.value(VALUE_TYPE);
                 HandlerType handlerType = HandlerType.NORMAL;
                 if (typeValue != null) {
                     String typeString = typeValue.asEnum();
@@ -336,6 +326,24 @@ class VertxWebProcessor {
                             throw new IllegalStateException("Unknown type " + typeString);
                     }
                 }
+
+                if (routeHandler == null) {
+                    String handlerClass = generateHandler(
+                            new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null),
+                                    handlerType),
+                            businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
+                            routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
+                            validatorAvailable, index);
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+                    routeHandler = recorder.createHandler(handlerClass);
+                    routeHandlers.put(routeString, routeHandler);
+                }
+
+                RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
+                matchers.put(matcher, businessMethod.getMethod());
+                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
+                        bodyHandler.getHandler());
+
                 routeProducer.produce(new RouteBuildItem(routeFunction, routeHandler, handlerType));
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
@@ -355,9 +363,9 @@ class VertxWebProcessor {
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(
-                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null)),
+                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), HandlerType.NORMAL),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
-                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable);
+                    filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable, index);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
             AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
@@ -410,7 +418,7 @@ class VertxWebProcessor {
     }
 
     private void validateRouteMethod(BeanInfo bean, MethodInfo method,
-            TransformedAnnotationsBuildItem transformedAnnotations) {
+            TransformedAnnotationsBuildItem transformedAnnotations, IndexView index, AnnotationInstance routeAnnotation) {
         List<Type> params = method.parameters();
         if (params.isEmpty()) {
             if (method.returnType().kind() == Kind.VOID && params.isEmpty()) {
@@ -419,6 +427,10 @@ class VertxWebProcessor {
                         method, bean));
             }
         } else {
+            AnnotationValue typeValue = routeAnnotation.value(VALUE_TYPE);
+            Route.HandlerType handlerType = typeValue == null ? Route.HandlerType.NORMAL
+                    : Route.HandlerType.from(typeValue.asEnum());
+
             if ((method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.UNI)
                     || method.returnType().name().equals(io.quarkus.vertx.web.deployment.DotNames.MULTI))
                     && method.returnType().kind() == Kind.CLASS) {
@@ -428,11 +440,12 @@ class VertxWebProcessor {
                                 method, bean));
             }
             int idx = 0;
+            int failureParams = 0;
             for (Type paramType : params) {
                 Set<AnnotationInstance> paramAnnotations = Annotations
                         .getParameterAnnotations(transformedAnnotations, method,
                                 idx);
-                List<ParameterInjector> injectors = getMatchingInjectors(paramType, paramAnnotations);
+                List<ParameterInjector> injectors = getMatchingInjectors(paramType, paramAnnotations, index);
                 if (injectors.isEmpty()) {
                     throw new IllegalStateException(String.format(
                             "No parameter injector found for parameter %s of route method %s declared on %s", idx,
@@ -445,7 +458,24 @@ class VertxWebProcessor {
                             idx,
                             method, bean));
                 }
+                ParameterInjector injector = injectors.get(0);
+                if (injector.getTargetHandlerType() != null
+                        && !injector.getTargetHandlerType().equals(handlerType)) {
+                    throw new IllegalStateException(String.format(
+                            "HandlerType.%s is not legal for parameter %s of route method %s declared on %s",
+                            injector.getTargetHandlerType(), idx, method, bean));
+                }
+
+                if (Route.HandlerType.FAILURE == handlerType && isThrowable(paramType, index)) {
+                    failureParams++;
+                }
                 idx++;
+            }
+
+            if (failureParams > 1) {
+                throw new IllegalStateException(String.format(
+                        "A failure handler may only define one failure parameter - route method %s declared on %s",
+                        method, bean));
             }
         }
     }
@@ -453,7 +483,7 @@ class VertxWebProcessor {
     private String generateHandler(HandlerDescriptor desc, BeanInfo bean, MethodInfo method, ClassOutput classOutput,
             TransformedAnnotationsBuildItem transformedAnnotations, String hashSuffix,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces,
-            boolean validatorAvailable) {
+            boolean validatorAvailable, IndexView index) {
 
         if (desc.requireValidation() && !validatorAvailable) {
             throw new IllegalStateException(
@@ -503,8 +533,7 @@ class VertxWebProcessor {
 
         implementConstructor(bean, invokerCreator, beanField, contextField, containerField, validatorField);
         implementInvoke(desc, bean, method, invokerCreator, beanField, contextField, containerField, validatorField,
-                transformedAnnotations,
-                reflectiveHierarchy, defaultProduces);
+                transformedAnnotations, reflectiveHierarchy, defaultProduces, index);
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
@@ -546,7 +575,7 @@ class VertxWebProcessor {
     void implementInvoke(HandlerDescriptor descriptor, BeanInfo bean, MethodInfo method, ClassCreator invokerCreator,
             FieldCreator beanField, FieldCreator contextField, FieldCreator containerField, FieldCreator validatorField,
             TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces) {
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy, String defaultProduces, IndexView index) {
         // The descriptor is: void invoke(RoutingContext rc)
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, RoutingContext.class);
         ResultHandle beanHandle = invoke.readInstanceField(beanField.getFieldDescriptor(), invoke.getThis());
@@ -601,7 +630,7 @@ class VertxWebProcessor {
             Set<AnnotationInstance> paramAnnotations = Annotations
                     .getParameterAnnotations(transformedAnnotations, method, idx);
             // At this point we can be sure that a matching injector is available
-            paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations).get(0)
+            paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations, index).get(0)
                     .getResultHandle(method, paramType,
                             paramAnnotations, routingContext, invoke, idx, reflectiveHierarchy);
             parameterTypes[idx] = paramType.name().toString();
@@ -615,6 +644,24 @@ class VertxWebProcessor {
         // the business method can override this manually if required
         invoke.invokeStaticMethod(Methods.ROUTE_HANDLERS_SET_CONTENT_TYPE, routingContext,
                 defaultProduces == null ? invoke.loadNull() : invoke.load(defaultProduces));
+
+        // For failure handlers attempt to match the failure type
+        if (descriptor.getHandlerType() == HandlerType.FAILURE) {
+            Type failureType = getFailureType(parameters, index);
+            if (failureType != null) {
+                ResultHandle failure = invoke.invokeInterfaceMethod(Methods.FAILURE, routingContext);
+                BytecodeCreator failureIsNull = invoke.ifNull(failure).trueBranch();
+                failureIsNull.invokeInterfaceMethod(Methods.NEXT, routingContext);
+                failureIsNull.returnValue(null);
+                ResultHandle failureClass = invoke.invokeVirtualMethod(Methods.GET_CLASS, failure);
+                BytecodeCreator failureTypeIsNotAssignable = invoke
+                        .ifFalse(invoke.invokeVirtualMethod(Methods.IS_ASSIGNABLE_FROM,
+                                invoke.loadClass(failureType.name().toString()), failureClass))
+                        .trueBranch();
+                failureTypeIsNotAssignable.invokeInterfaceMethod(Methods.NEXT, routingContext);
+                failureTypeIsNotAssignable.returnValue(null);
+            }
+        }
 
         // Invoke the business method handler
         AssignableResultHandle res;
@@ -707,6 +754,29 @@ class VertxWebProcessor {
                     beanInstanceHandle, creationlContextHandle);
         }
         invoke.returnValue(null);
+    }
+
+    private Type getFailureType(List<Type> parameters, IndexView index) {
+        for (Type paramType : parameters) {
+            if (isThrowable(paramType, index)) {
+                return paramType;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isThrowable(Type paramType, IndexView index) {
+        ClassInfo aClass = index.getClassByName(paramType.name());
+        while (aClass != null) {
+            if (aClass.superName() == null) {
+                break;
+            }
+            if (DotNames.EXCEPTION.equals(aClass.superName()) || DotNames.THROWABLE.equals(aClass.superName())) {
+                return true;
+            }
+            aClass = index.getClassByName(aClass.superName());
+        }
+        return false;
     }
 
     private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays
@@ -1013,10 +1083,11 @@ class VertxWebProcessor {
         return true;
     }
 
-    private List<ParameterInjector> getMatchingInjectors(Type paramType, Set<AnnotationInstance> paramAnnotations) {
+    private List<ParameterInjector> getMatchingInjectors(Type paramType, Set<AnnotationInstance> paramAnnotations,
+            IndexView index) {
         List<ParameterInjector> injectors = new ArrayList<>();
         for (ParameterInjector injector : PARAM_INJECTORS) {
-            if (injector.matches(paramType, paramAnnotations)) {
+            if (injector.matches(paramType, paramAnnotations, index)) {
                 injectors.add(injector);
             }
         }
@@ -1261,6 +1332,23 @@ class VertxWebProcessor {
                             }
                         }).build());
 
+        // Add injector for failures
+        injectors.add(ParameterInjector.builder().targetHandlerType(Route.HandlerType.FAILURE)
+                .match(new TriPredicate<Type, Set<AnnotationInstance>, IndexView>() {
+                    @Override
+                    public boolean test(Type paramType, Set<AnnotationInstance> paramAnnotations, IndexView index) {
+                        return isThrowable(paramType, index) && !Annotations.contains(paramAnnotations, DotNames.BODY);
+                    }
+                }).resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType,
+                            Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke.invokeInterfaceMethod(Methods.FAILURE, routingContext);
+                    }
+                }).build());
+
         return injectors;
     }
 
@@ -1278,66 +1366,81 @@ class VertxWebProcessor {
             return new Builder();
         }
 
-        final List<Type> matchTypes;
-        final List<Type> skipTypes;
-        final List<DotName> requiredAnnotationNames;
+        final TriPredicate<Type, Set<AnnotationInstance>, IndexView> predicate;
         final ResultHandleProvider provider;
+        final Route.HandlerType targetHandlerType;
 
         ParameterInjector(ParameterInjector.Builder builder) {
-            this.matchTypes = builder.matchTypes;
-            this.skipTypes = builder.skipTypes;
-            this.requiredAnnotationNames = builder.requiredAnnotationNames;
+            if (builder.predicate != null) {
+                this.predicate = builder.predicate;
+            } else {
+                this.predicate = new TriPredicate<Type, Set<AnnotationInstance>, IndexView>() {
+                    final List<Type> matchTypes = builder.matchTypes;
+                    final List<Type> skipTypes = builder.skipTypes;
+                    final List<DotName> requiredAnnotationNames = builder.requiredAnnotationNames;
+
+                    @Override
+                    public boolean test(Type paramType, Set<AnnotationInstance> paramAnnotations, IndexView index) {
+                        // First iterate over all types that should be skipped
+                        if (skipTypes != null) {
+                            for (Type skipType : skipTypes) {
+                                if (skipType.kind() != paramType.kind()) {
+                                    continue;
+                                }
+                                if (skipType.kind() == Kind.CLASS && skipType.name().equals(paramType.name())) {
+                                    return false;
+                                }
+                                if (skipType.kind() == Kind.PARAMETERIZED_TYPE && skipType.name().equals(paramType.name())
+                                        && skipType.asParameterizedType().arguments()
+                                                .equals(paramType.asParameterizedType().arguments())) {
+                                    return false;
+                                }
+                            }
+                        }
+                        // Match any of the specified types
+                        if (matchTypes != null) {
+                            boolean matches = false;
+                            for (Type matchType : matchTypes) {
+                                if (matchType.kind() != paramType.kind()) {
+                                    continue;
+                                }
+                                if (matchType.kind() == Kind.CLASS && matchType.name().equals(paramType.name())) {
+                                    matches = true;
+                                    break;
+                                }
+                                if (matchType.kind() == Kind.PARAMETERIZED_TYPE && matchType.name().equals(paramType.name())
+                                        && matchType.asParameterizedType().arguments()
+                                                .equals(paramType.asParameterizedType().arguments())) {
+                                    matches = true;
+                                    break;
+                                }
+                            }
+                            if (!matches) {
+                                return false;
+                            }
+                        }
+                        // Find required annotations if specified
+                        if (!requiredAnnotationNames.isEmpty()) {
+                            for (DotName annotationName : requiredAnnotationNames) {
+                                if (!Annotations.contains(paramAnnotations, annotationName)) {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    }
+                };
+            }
             this.provider = builder.provider;
+            this.targetHandlerType = builder.targetHandlerType;
         }
 
-        boolean matches(Type paramType, Set<AnnotationInstance> paramAnnotations) {
-            // First iterate over all types that should be skipped
-            if (skipTypes != null) {
-                for (Type skipType : skipTypes) {
-                    if (skipType.kind() != paramType.kind()) {
-                        continue;
-                    }
-                    if (skipType.kind() == Kind.CLASS && skipType.name().equals(paramType.name())) {
-                        return false;
-                    }
-                    if (skipType.kind() == Kind.PARAMETERIZED_TYPE && skipType.name().equals(paramType.name())
-                            && skipType.asParameterizedType().arguments()
-                                    .equals(paramType.asParameterizedType().arguments())) {
-                        return false;
-                    }
-                }
-            }
-            // Match any of the specified types
-            if (matchTypes != null) {
-                boolean matches = false;
-                for (Type matchType : matchTypes) {
-                    if (matchType.kind() != paramType.kind()) {
-                        continue;
-                    }
-                    if (matchType.kind() == Kind.CLASS && matchType.name().equals(paramType.name())) {
-                        matches = true;
-                        break;
-                    }
-                    if (matchType.kind() == Kind.PARAMETERIZED_TYPE && matchType.name().equals(paramType.name())
-                            && matchType.asParameterizedType().arguments()
-                                    .equals(paramType.asParameterizedType().arguments())) {
-                        matches = true;
-                        break;
-                    }
-                }
-                if (!matches) {
-                    return false;
-                }
-            }
-            // Find required annotations if specified
-            if (!requiredAnnotationNames.isEmpty()) {
-                for (DotName annotationName : requiredAnnotationNames) {
-                    if (!Annotations.contains(paramAnnotations, annotationName)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
+        boolean matches(Type paramType, Set<AnnotationInstance> paramAnnotations, IndexView index) {
+            return predicate.test(paramType, paramAnnotations, index);
+        }
+
+        Route.HandlerType getTargetHandlerType() {
+            return targetHandlerType;
         }
 
         ResultHandle getResultHandle(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
@@ -1346,20 +1449,15 @@ class VertxWebProcessor {
             return provider.get(method, paramType, annotations, routingContext, invoke, position, reflectiveHierarchy);
         }
 
-        @Override
-        public String toString() {
-            String builder = "ParameterInjector [matchTypes=" + matchTypes + ", skipTypes=" + skipTypes
-                    + ", requiredAnnotationNames="
-                    + requiredAnnotationNames + "]";
-            return builder;
-        }
-
         static class Builder {
 
+            // An injector could provide either a custom predicate or match/skip types and required annotations 
+            TriPredicate<Type, Set<AnnotationInstance>, IndexView> predicate;
             List<Type> matchTypes;
             List<Type> skipTypes;
             List<DotName> requiredAnnotationNames = Collections.emptyList();
             ResultHandleProvider provider;
+            Route.HandlerType targetHandlerType;
 
             Builder matchType(DotName className) {
                 return matchType(Type.create(className, Kind.CLASS));
@@ -1395,6 +1493,16 @@ class VertxWebProcessor {
                 return this;
             }
 
+            Builder match(TriPredicate<Type, Set<AnnotationInstance>, IndexView> predicate) {
+                this.predicate = predicate;
+                return this;
+            }
+
+            Builder targetHandlerType(Route.HandlerType handlerType) {
+                this.targetHandlerType = handlerType;
+                return this;
+            }
+
             ParameterInjector build() {
                 return new ParameterInjector(this);
             }
@@ -1408,6 +1516,13 @@ class VertxWebProcessor {
         ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                 ResultHandle routingContext, MethodCreator invoke, int position,
                 BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy);
+
+    }
+
+    @FunctionalInterface
+    interface TriPredicate<A, B, C> {
+
+        boolean test(A a, B b, C c);
 
     }
 

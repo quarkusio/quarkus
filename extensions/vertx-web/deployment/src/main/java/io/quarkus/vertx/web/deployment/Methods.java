@@ -71,12 +71,14 @@ class Methods {
             .ofMethod(HttpServerRequest.class, "params", MultiMap.class);
     static final MethodDescriptor REQUEST_HEADERS = MethodDescriptor
             .ofMethod(HttpServerRequest.class, "headers", MultiMap.class);
-
     static final MethodDescriptor RESPONSE = MethodDescriptor
             .ofMethod(RoutingContext.class, "response", HttpServerResponse.class);
-
     static final MethodDescriptor FAIL = MethodDescriptor
             .ofMethod(RoutingContext.class, "fail", Void.TYPE, Throwable.class);
+    static final MethodDescriptor FAILURE = MethodDescriptor
+            .ofMethod(RoutingContext.class, "failure", Throwable.class);
+    static final MethodDescriptor NEXT = MethodDescriptor
+            .ofMethod(RoutingContext.class, "next", void.class);
 
     static final MethodDescriptor UNI_SUBSCRIBE = MethodDescriptor.ofMethod(Uni.class, "subscribe", UniSubscribe.class);
     static final MethodDescriptor UNI_SUBSCRIBE_WITH = MethodDescriptor
@@ -190,6 +192,10 @@ class Methods {
             .ofMethod("javax.validation.Validator", "validate", "java.util.Set",
                     Object.class, Class[].class);
     static final MethodDescriptor SET_IS_EMPTY = MethodDescriptor.ofMethod(Set.class, "isEmpty", Boolean.TYPE);
+
+    static final MethodDescriptor IS_ASSIGNABLE_FROM = MethodDescriptor.ofMethod(Class.class, "isAssignableFrom",
+            boolean.class, Class.class);
+    static final MethodDescriptor GET_CLASS = MethodDescriptor.ofMethod(Object.class, "getClass", Class.class);
 
     private Methods() {
         // Avoid direct instantiation

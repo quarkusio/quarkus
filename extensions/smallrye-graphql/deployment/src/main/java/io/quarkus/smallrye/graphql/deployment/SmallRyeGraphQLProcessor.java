@@ -14,6 +14,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -48,6 +49,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.IoUtil;
@@ -164,19 +166,16 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void activateMetrics(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig smallRyeGraphQLConfig,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
-            if (capabilities.isPresent(Capability.METRICS)) {
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricsRegistryImpl")));
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricRegistries")));
+            if (metricsCapability.isPresent()) {
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
-                LOG.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
-                        "dependency is not present.");
+                LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics " +
+                        "extension is not present. SmallRye GraphQL Metrics will be disabled.");
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
             }
         } else {

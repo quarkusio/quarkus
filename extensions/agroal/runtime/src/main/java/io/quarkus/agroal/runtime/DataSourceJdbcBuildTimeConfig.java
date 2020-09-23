@@ -29,8 +29,8 @@ public class DataSourceJdbcBuildTimeConfig {
     public TransactionIntegration transactions = TransactionIntegration.ENABLED;
 
     /**
-     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if the
-     * smallrye-metrics extension is active.
+     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if
+     * a metrics extension is active.
      */
     @ConfigItem
     public Optional<Boolean> enableMetrics = Optional.empty();

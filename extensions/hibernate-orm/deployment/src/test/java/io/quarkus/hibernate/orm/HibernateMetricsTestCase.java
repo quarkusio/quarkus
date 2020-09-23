@@ -23,7 +23,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Smoke test for metrics exposed by the smallrye-metrics extension and computed from Hibernate statistics objects.
+ * Smoke test for metrics exposed by a metrics extension and computed from Hibernate statistics objects.
  */
 public class HibernateMetricsTestCase {
 

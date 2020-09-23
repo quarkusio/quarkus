@@ -35,7 +35,7 @@ public class DataSourcesBuildTimeConfig {
     public boolean healthEnabled;
 
     /**
-     * Whether or not datasource metrics are published in case the smallrye-metrics extension is present.
+     * Whether or not datasource metrics are published in case a metrics extension is present.
      * <p>
      * This is a global setting and is not specific to a datasource.
      * <p>

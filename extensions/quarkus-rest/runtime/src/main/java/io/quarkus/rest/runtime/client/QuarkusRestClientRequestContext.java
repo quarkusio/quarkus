@@ -114,7 +114,11 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
-        return invocationState.requestHeaders.getAcceptableMediaTypes();
+        List<MediaType> acceptableMediaTypes = invocationState.requestHeaders.getAcceptableMediaTypes();
+        if (acceptableMediaTypes.isEmpty()) {
+            return Collections.singletonList(MediaType.WILDCARD_TYPE);
+        }
+        return acceptableMediaTypes;
     }
 
     @Override

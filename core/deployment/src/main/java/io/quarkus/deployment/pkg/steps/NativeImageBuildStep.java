@@ -90,6 +90,7 @@ public class NativeImageBuildStep {
             final Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
+            copySourcesToSourceCache(outputTargetBuildItem);
         }
 
         Path runnerJar = nativeImageSourceJarBuildItem.getPath();
@@ -276,14 +277,6 @@ public class NativeImageBuildStep {
             if (nativeConfig.debug.enabled) {
                 if (graalVMVersion.isMandrel() || graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_1)) {
                     command.add("-g");
-
-                    final Path javaSourcesPath = Paths.get("..", "..", "src", "main", "java");
-                    if (outputDir.resolve(javaSourcesPath).toFile().exists()) {
-                        command.add("-H:DebugInfoSourceSearchPath=" + javaSourcesPath.toString());
-                    }
-
-                    final Path sourcesCachePath = outputDir.getParent().resolve("sources-cache");
-                    command.add("-H:DebugInfoSourceCacheRoot=" + sourcesCachePath.toString());
                 }
             }
             if (nativeConfig.debugBuildProcess) {
@@ -440,6 +433,33 @@ public class NativeImageBuildStep {
         final File[] jarSources = libDir.toFile()
                 .listFiles((file, name) -> name.endsWith("-sources.jar"));
         Stream.of(Objects.requireNonNull(jarSources)).forEach(File::delete);
+    }
+
+    private static void copySourcesToSourceCache(OutputTargetBuildItem outputTargetBuildItem) {
+        Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
+                .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
+
+        final Path targetSrc = targetDirectory.resolve(Paths.get("sources", "src"));
+        final File targetSrcFile = targetSrc.toFile();
+        if (!targetSrcFile.exists())
+            targetSrcFile.mkdirs();
+
+        final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
+                Paths.get("..", "src", "main", "java"));
+
+        try {
+            Files.walk(javaSourcesPath).forEach(path -> {
+                Path targetPath = Paths.get(targetSrc.toString(),
+                        path.toString().substring(javaSourcesPath.toString().length()));
+                try {
+                    Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Unable to copy from " + path + " to " + targetPath, e);
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to walk path " + javaSourcesPath, e);
+        }
     }
 
     private void handleAdditionalProperties(NativeConfig nativeConfig, List<String> command, boolean isContainerBuild,

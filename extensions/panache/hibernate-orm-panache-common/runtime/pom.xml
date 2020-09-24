@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-orm-panache-common</artifactId>
     <name>Quarkus - Hibernate ORM with Panache - Common - Runtime</name>
-    <description>Simplify your persistence code for Hibernate ORM via the active record or the repository pattern</description>
+    <description>Hibernate ORM with Panache Common module</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

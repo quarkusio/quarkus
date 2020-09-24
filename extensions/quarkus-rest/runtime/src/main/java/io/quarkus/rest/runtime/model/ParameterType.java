@@ -9,5 +9,6 @@ public enum ParameterType {
     BODY,
     MATRIX,
     CONTEXT,
-    ASYNC_RESPONSE
+    ASYNC_RESPONSE,
+    COOKIE
 }

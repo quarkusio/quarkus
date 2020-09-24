@@ -44,6 +44,7 @@ import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.parameters.AsyncResponseExtractor;
 import io.quarkus.rest.runtime.core.parameters.BodyParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ContextParamExtractor;
+import io.quarkus.rest.runtime.core.parameters.CookieParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.FormParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.HeaderParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.MatrixParamExtractor;
@@ -534,7 +535,7 @@ public class QuarkusRestRecorder {
 
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterTypes[i] = loadClass(method.getParameters()[i].type);
+            parameterTypes[i] = loadClass(method.getParameters()[i].declaredType);
         }
         // some parameters need the body to be read
         MethodParameter[] parameters = method.getParameters();
@@ -701,6 +702,9 @@ public class QuarkusRestRecorder {
                 break;
             case QUERY:
                 extractor = new QueryParamExtractor(name, single);
+                break;
+            case COOKIE:
+                extractor = new CookieParamExtractor(name, single);
                 break;
             case BODY:
                 extractor = new BodyParamExtractor();

@@ -6,6 +6,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BYTE_ARRA
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CHARACTER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONSUMES;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.CONTEXT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.COOKIE_PARAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DEFAULT_VALUE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.DOUBLE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.FLOAT;
@@ -391,7 +392,8 @@ public class EndpointIndexer {
                     defaultValue = "0";
                 }
                 methodParameters[i] = new MethodParameter(name,
-                        elementType, type, single, converter, defaultValue);
+                        elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView), type, single,
+                        converter, defaultValue);
             }
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
@@ -819,13 +821,14 @@ public class EndpointIndexer {
             AnnotationInstance formParam = anns.get(FORM_PARAM);
             AnnotationInstance contextParam = anns.get(CONTEXT);
             AnnotationInstance matrixParam = anns.get(MATRIX_PARAM);
+            AnnotationInstance cookieParam = anns.get(COOKIE_PARAM);
             AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
             AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
             defaultValue = null;
             if (defaultValueAnnotation != null) {
                 defaultValue = defaultValueAnnotation.value().asString();
             }
-            if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam)) {
+            if (moreThanOne(pathParam, queryParam, headerParam, formParam, contextParam, cookieParam)) {
                 throw new RuntimeException(
                         "Cannot have more than one of @PathParam, @QueryParam, @HeaderParam, @FormParam, @Context on "
                                 + errorLocation);
@@ -835,6 +838,9 @@ public class EndpointIndexer {
             } else if (queryParam != null) {
                 name = queryParam.value().asString();
                 type = ParameterType.QUERY;
+            } else if (cookieParam != null) {
+                name = cookieParam.value().asString();
+                type = ParameterType.COOKIE;
             } else if (headerParam != null) {
                 name = headerParam.value().asString();
                 type = ParameterType.HEADER;

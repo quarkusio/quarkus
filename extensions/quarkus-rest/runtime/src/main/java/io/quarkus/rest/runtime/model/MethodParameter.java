@@ -7,6 +7,12 @@ import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 public class MethodParameter {
     public String name;
     public String type;
+    /**
+     * Generally this will be the same as type, unless the parameter is a
+     * collection, in which case 'type' will be the element type and this
+     * will be the collection type
+     */
+    public String declaredType;
     public ParameterType parameterType;
     private boolean single;
     public Supplier<ParameterConverter> converter;
@@ -15,7 +21,7 @@ public class MethodParameter {
     public MethodParameter() {
     }
 
-    public MethodParameter(String name, String type, ParameterType parameterType, boolean single,
+    public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
             Supplier<ParameterConverter> converter, String defaultValue) {
         this.name = name;
         this.type = type;
@@ -23,6 +29,7 @@ public class MethodParameter {
         this.parameterType = parameterType;
         this.single = single;
         this.defaultValue = defaultValue;
+        this.declaredType = declaredType;
     }
 
     public String getName() {
@@ -73,6 +80,15 @@ public class MethodParameter {
 
     public MethodParameter setSingle(boolean single) {
         this.single = single;
+        return this;
+    }
+
+    public String getDeclaredType() {
+        return declaredType;
+    }
+
+    public MethodParameter setDeclaredType(String declaredType) {
+        this.declaredType = declaredType;
         return this;
     }
 

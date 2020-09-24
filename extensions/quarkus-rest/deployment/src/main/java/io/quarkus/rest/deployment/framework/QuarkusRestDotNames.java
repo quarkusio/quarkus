@@ -14,6 +14,7 @@ import javax.enterprise.inject.Vetoed;
 import javax.json.JsonObject;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
@@ -54,6 +55,7 @@ public final class QuarkusRestDotNames {
     public static final DotName HEADER_PARAM = DotName.createSimple(HeaderParam.class.getName());
     public static final DotName FORM_PARAM = DotName.createSimple(FormParam.class.getName());
     public static final DotName MATRIX_PARAM = DotName.createSimple(MatrixParam.class.getName());
+    public static final DotName COOKIE_PARAM = DotName.createSimple(CookieParam.class.getName());
     public static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
     public static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
     public static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());

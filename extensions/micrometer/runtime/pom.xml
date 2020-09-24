@@ -36,6 +36,13 @@
             <artifactId>micrometer-core</artifactId>
         </dependency>
 
+        <!-- Needed for the JSON meter registry -->
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>jakarta.json</artifactId>
+        </dependency>
+
+
         <!-- Registry providers (optional) -->
 
         <dependency>

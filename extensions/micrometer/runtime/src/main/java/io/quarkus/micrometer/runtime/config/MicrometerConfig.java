@@ -118,6 +118,7 @@ public final class MicrometerConfig {
         public JmxConfig jmx;
         public PrometheusConfig prometheus;
         public StackdriverConfig stackdriver;
+        public JsonConfig json;
     }
 
     public static interface CapabilityEnabled {

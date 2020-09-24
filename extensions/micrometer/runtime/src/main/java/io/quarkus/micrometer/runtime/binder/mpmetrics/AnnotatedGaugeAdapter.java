@@ -52,7 +52,7 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
         public GaugeAdapterImpl register(MetricDescriptor id, MeterRegistry registry) {
             this.id = id;
             if (gauge == null || metadata.cleanDirtyMetadata()) {
-                gauge = io.micrometer.core.instrument.Gauge.builder(metadata.name, this::getValue)
+                gauge = io.micrometer.core.instrument.Gauge.builder(metadata.name, this, g -> g.getValue().doubleValue())
                         .description(metadata.description())
                         .tags(id.tags())
                         .baseUnit(metadata.unit())

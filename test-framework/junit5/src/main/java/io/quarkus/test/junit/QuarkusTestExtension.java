@@ -263,6 +263,10 @@ public class QuarkusTestExtension
                             }
                             tm.close();
                         }
+                        try {
+                            TestClassIndexer.removeIndex(requiredTestClass);
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             };

@@ -19,6 +19,8 @@ import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
 
@@ -114,6 +116,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
     private QuarkusRestAsyncResponse asyncResponse;
     private QuarkusRestSseEventSink sseEventSink;
     private List<PathSegment> pathSegments;
+    private ReaderInterceptor[] readerInterceptors;
+    private WriterInterceptor[] writerInterceptors;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
@@ -583,6 +587,24 @@ public class QuarkusRestRequestContext implements Runnable, Closeable {
             throw new RuntimeException("Async can only be started once");
         }
         this.asyncResponse = asyncResponse;
+        return this;
+    }
+
+    public ReaderInterceptor[] getReaderInterceptors() {
+        return readerInterceptors;
+    }
+
+    public QuarkusRestRequestContext setReaderInterceptors(ReaderInterceptor[] readerInterceptors) {
+        this.readerInterceptors = readerInterceptors;
+        return this;
+    }
+
+    public WriterInterceptor[] getWriterInterceptors() {
+        return writerInterceptors;
+    }
+
+    public QuarkusRestRequestContext setWriterInterceptors(WriterInterceptor[] writerInterceptors) {
+        this.writerInterceptors = writerInterceptors;
         return this;
     }
 

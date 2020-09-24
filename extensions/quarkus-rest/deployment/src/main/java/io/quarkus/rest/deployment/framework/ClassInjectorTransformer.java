@@ -101,13 +101,11 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                                 INJECT_METHOD_DESCRIPTOR, true);
                         break;
                     case ASYNC_RESPONSE:
-                        // FIXME
-                        break;
                     case BODY:
-                        // FIXME
+                        // spec says not supported
                         break;
                     case CONTEXT:
-                        // FIXME
+                        // already set by CDI
                         break;
                     case FORM:
                         injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
@@ -149,6 +147,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
              * entity; if the field or property is annotated with @HeaderParam or @CookieParam then an implementation
              * MUST generate an instance of BadRequestException (400 status) that wraps the thrown exception and
              * no entity.
+             * 3.3.2 Parameters
+             * Exceptions thrown during construction of @FormParam annotated parameter values are treated the same as if
+             * the parameter were annotated with @HeaderParam.
              */
             Label tryStart, tryEnd = null, tryWebAppHandler = null, tryHandler = null;
             switch (extractor.getType()) {
@@ -157,6 +158,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 case PATH:
                 case HEADER:
                 case COOKIE:
+                case FORM:
                     tryStart = new Label();
                     tryEnd = new Label();
                     tryWebAppHandler = new Label();
@@ -214,6 +216,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         break;
                     case HEADER:
                     case COOKIE:
+                    case FORM:
                         exceptionBinaryName = BAD_REQUEST_EXCEPTION_BINARY_NAME;
                         break;
                     default:

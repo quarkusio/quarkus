@@ -71,10 +71,14 @@ public class ParameterHandler implements RestHandler {
              * entity; if the field or property is annotated with @HeaderParam or @CookieParam then an implementation
              * MUST generate an instance of BadRequestException (400 status) that wraps the thrown exception and
              * no entity.
+             * 3.3.2 Parameters
+             * Exceptions thrown during construction of @FormParam annotated parameter values are treated the same as if
+             * the parameter were annotated with @HeaderParam.
              */
             switch (parameterType) {
                 case COOKIE:
                 case HEADER:
+                case FORM:
                     try {
                         result = converter.convert(result);
                     } catch (WebApplicationException x) {

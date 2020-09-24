@@ -65,39 +65,39 @@ public class TestResourceManager implements Closeable {
     public Map<String, String> start() {
         started = true;
         Map<String, String> ret = new ConcurrentHashMap<>();
-
-        ExecutorService executor = newExecutor();
-        List<Future> startFutures = new ArrayList<>();
-        for (TestResourceEntry entry : parallelTestResourceEntries) {
-            Future startFuture = executor.submit(() -> {
-                try {
-                    Map<String, String> start = entry.getTestResource().start();
-                    if (start != null) {
-                        ret.putAll(start);
+        try (ExecutorService executor = newExecutor(parallelTestResourceEntries.size() + 1)) {
+            List<Future> startFutures = new ArrayList<>();
+            for (TestResourceEntry entry : parallelTestResourceEntries) {
+                Future startFuture = executor.submit(() -> {
+                    try {
+                        Map<String, String> start = entry.getTestResource().start();
+                        if (start != null) {
+                            ret.putAll(start);
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
+                });
+                startFutures.add(startFuture);
+
+            }
+
+            Future sequentialStartFuture = executor.submit(() -> {
+                for (TestResourceEntry entry : sequentialTestResourceEntries) {
+                    try {
+                        Map<String, String> start = entry.getTestResource().start();
+                        if (start != null) {
+                            ret.putAll(start);
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
+                    }
                 }
             });
-            startFutures.add(startFuture);
+            startFutures.add(sequentialStartFuture);
 
+            waitForAllFutures(startFutures);
         }
-
-        Future sequentialStartFuture = executor.submit(() -> {
-            for (TestResourceEntry entry : sequentialTestResourceEntries) {
-                try {
-                    Map<String, String> start = entry.getTestResource().start();
-                    if (start != null) {
-                        ret.putAll(start);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException("Unable to start Quarkus test resource " + entry.getTestResource(), e);
-                }
-            }
-        });
-        startFutures.add(sequentialStartFuture);
-
-        waitForAllFutures(startFutures);
 
         oldSystemProps = new HashMap<>();
         for (Map.Entry<String, String> i : ret.entrySet()) {
@@ -109,6 +109,7 @@ public class TestResourceManager implements Closeable {
             }
         }
         return ret;
+
     }
 
     private void waitForAllFutures(List<Future> startFutures) {
@@ -121,8 +122,8 @@ public class TestResourceManager implements Closeable {
         }
     }
 
-    private ExecutorService newExecutor() {
-        return Executors.newWorkStealingPool();
+    private ExecutorService newExecutor(int poolSize) {
+        return Executors.newFixedThreadPool(poolSize);
     }
 
     public void inject(Object testInstance) {
@@ -185,7 +186,6 @@ public class TestResourceManager implements Closeable {
 
     private Set<TestResourceClassEntry> initSequentialTestResources(Set<TestResourceClassEntry> uniqueEntries) {
         Set<TestResourceClassEntry> remainingUniqueEntries = new HashSet<>(uniqueEntries);
-        Set<TestResourceEntry> testResourceEntries = new HashSet<>();
         for (TestResourceClassEntry entry : uniqueEntries) {
             if (!entry.isParallel()) {
                 TestResourceEntry testResourceEntry = buildTestResourceEntry(entry);

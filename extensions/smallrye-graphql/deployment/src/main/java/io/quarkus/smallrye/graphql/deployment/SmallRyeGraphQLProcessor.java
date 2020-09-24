@@ -19,6 +19,10 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbBuilder;
+import javax.json.bind.JsonbConfig;
+
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
@@ -71,6 +75,7 @@ import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.EventingService;
@@ -79,8 +84,7 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Processor for SmallRye GraphQL.
- * We scan all annotations and build the model during build.
+ * Processor for SmallRye GraphQL. We scan all annotations and build the model during build.
  */
 public class SmallRyeGraphQLProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeGraphQLProcessor.class);
@@ -112,10 +116,8 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
-        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(GraphQLConfig.class)
-                .addBeanClass(GraphQLProducer.class)
-                .setUnremovable().build());
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder().addBeanClass(GraphQLConfig.class)
+                .addBeanClass(GraphQLProducer.class).setUnremovable().build());
     }
 
     @BuildStep
@@ -134,26 +136,32 @@ public class SmallRyeGraphQLProcessor {
 
         // Eventing Service (We use the one from the CDI Module)
         String eventingService = SPI_PATH + EventingService.class.getName();
-        Set<String> eventingServiceImplementations = ServiceUtil.classNamesNamedIn(
-                Thread.currentThread().getContextClassLoader(),
-                eventingService);
+        Set<String> eventingServiceImplementations = ServiceUtil
+                .classNamesNamedIn(Thread.currentThread().getContextClassLoader(), eventingService);
         for (String eventingServiceImplementation : eventingServiceImplementations) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem(EventingService.class.getName(), eventingServiceImplementation));
+            serviceProvider
+                    .produce(new ServiceProviderBuildItem(EventingService.class.getName(), eventingServiceImplementation));
         }
     }
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void buildExecutionService(
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer,
-            SmallRyeGraphQLRecorder recorder,
+    void buildExecutionService(BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer, SmallRyeGraphQLRecorder recorder,
             BeanContainerBuildItem beanContainer,
             CombinedIndexBuildItem combinedIndex) {
 
         IndexView index = combinedIndex.getIndex();
+
         Schema schema = SchemaBuilder.build(index);
+
+        if (LOG.isDebugEnabled())
+            LOG.debugv("Raw Schema {0}", toString(schema));
+
+        cleanupSchema(schema);
+
+        if (LOG.isDebugEnabled())
+            LOG.debugv("Cleaned Schema {0}", toString(schema));
 
         recorder.createExecutionService(beanContainer.getValue(), schema);
 
@@ -164,18 +172,66 @@ public class SmallRyeGraphQLProcessor {
         reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, getGraphQLJavaClasses()));
     }
 
+    private String toString(Schema schema) {
+
+        JsonbConfig config = new JsonbConfig().withFormatting(true);
+
+        Jsonb jsonb = JsonbBuilder.create(config);
+        return jsonb.toJson(schema);
+    }
+
+    /**
+     * Cleanup unnecessary data from the schema before recording it. Clearing
+     * <code>Reference#parametrizedTypeArguments</code> patches /quarkusio/quarkus#12230
+     * 
+     * @param schema to clean up
+     */
+    private void cleanupSchema(Schema schema) {
+
+        schema.getQueries().stream().forEach(t -> cleanupReference(t.getReference()));
+        schema.getMutations().stream().forEach(t -> cleanupReference(t.getReference()));
+        schema.getTypes().values().stream().forEach(t -> cleanupReferenceInType(t));
+        schema.getInputs().values().stream().forEach(t -> cleanupReferenceInInputType(t));
+        schema.getInterfaces().values().stream().forEach(t -> cleanupReferenceInInterfaceType(t));
+        schema.getEnums().values().stream().forEach(t -> cleanupReference(t));
+    }
+
+    private void cleanupReference(Reference r) {
+        if (r != null && r.getParametrizedTypeArguments() != null) {
+            r.getParametrizedTypeArguments().clear();
+        }
+    }
+
+    private void cleanupReferenceInType(Type r) {
+        cleanupReference(r);
+        cleanupFields(r.getFields());
+    }
+
+    private void cleanupReferenceInInputType(InputType r) {
+        cleanupReference(r);
+        cleanupFields(r.getFields());
+    }
+
+    private void cleanupReferenceInInterfaceType(InterfaceType r) {
+        cleanupReference(r);
+        cleanupFields(r.getFields());
+    }
+
+    private void cleanupFields(Map<String, Field> fm) {
+        if (fm != null)
+            fm.values().stream().forEach(t -> cleanupReference(t.getReference()));
+    }
+
     @BuildStep
-    void activateMetrics(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
-            SmallRyeGraphQLConfig smallRyeGraphQLConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+    void activateMetrics(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            SmallRyeGraphQLConfig smallRyeGraphQLConfig, BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
             if (metricsCapability.isPresent()) {
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
-                LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics " +
-                        "extension is not present. SmallRye GraphQL Metrics will be disabled.");
+                LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics "
+                        + "extension is not present. SmallRye GraphQL Metrics will be disabled.");
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
             }
         } else {
@@ -191,21 +247,19 @@ public class SmallRyeGraphQLProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void buildEndpoints(
-            BuildProducer<RouteBuildItem> routeProducer,
+    void buildEndpoints(BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
-            LaunchModeBuildItem launchMode,
-            SmallRyeGraphQLRecorder recorder,
-            ShutdownContextBuildItem shutdownContext,
-            BeanContainerBuildItem beanContainerBuildItem // don't remove this - makes sure beanContainer is initialized
+            LaunchModeBuildItem launchMode, SmallRyeGraphQLRecorder recorder,
+            ShutdownContextBuildItem shutdownContext, BeanContainerBuildItem beanContainerBuildItem // don't remove this
+                                                                                                                                                                                                                                                                                                                                        // - makes sure
+                                                                                                                                                                                                                                                                                                                                        // beanContainer is
+                                                                                                                                                                                                                                                                                                                                        // initialized
     ) {
 
         /*
-         * <em>Ugly Hack</em>
-         * In dev mode, we pass a classloader to use in the CDI Loader.
-         * This hack is required because using the TCCL would get an outdated version - the initial one.
-         * This is because the worker thread on which the handler is called captures the TCCL at creation time
-         * and does not allow updating it.
+         * <em>Ugly Hack</em> In dev mode, we pass a classloader to use in the CDI Loader. This hack is required because
+         * using the TCCL would get an outdated version - the initial one. This is because the worker thread on which
+         * the handler is called captures the TCCL at creation time and does not allow updating it.
          *
          * In non dev mode, the TCCL is used.
          */
@@ -226,13 +280,11 @@ public class SmallRyeGraphQLProcessor {
         routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPath, executionHandler, HandlerType.BLOCKING));
 
         Handler<RoutingContext> schemaHandler = recorder.schemaHandler();
-        routeProducer.produce(
-                new RouteBuildItem(quarkusConfig.rootPath + SCHEMA_PATH, schemaHandler, HandlerType.BLOCKING));
+        routeProducer.produce(new RouteBuildItem(quarkusConfig.rootPath + SCHEMA_PATH, schemaHandler, HandlerType.BLOCKING));
     }
 
     @BuildStep
-    void openTracingIntegration(Capabilities capabilities,
-            BuildProducer<SystemPropertyBuildItem> properties) {
+    void openTracingIntegration(Capabilities capabilities, BuildProducer<SystemPropertyBuildItem> properties) {
         // if there is an opentracing tracer available, enable tracing within SmallRye GraphQL
         if (capabilities.isPresent(Capability.OPENTRACING)) {
             properties.produce(new SystemPropertyBuildItem("smallrye.graphql.tracing.enabled", "true"));
@@ -251,11 +303,13 @@ public class SmallRyeGraphQLProcessor {
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
 
+        LOG.infov("classes: {0}", classes);
+
         return classes.toArray(new String[] {});
     }
 
-    private Class[] getGraphQLJavaClasses() {
-        Set<Class> classes = new HashSet<>();
+    private Class<?>[] getGraphQLJavaClasses() {
+        Set<Class<?>> classes = new HashSet<>();
         classes.add(graphql.schema.FieldCoordinates.class);
         classes.add(graphql.schema.GraphQLArgument.class);
         classes.add(graphql.schema.GraphQLCodeRegistry.class);
@@ -325,16 +379,12 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerGraphQLUiServletExtension(
-            BuildProducer<RouteBuildItem> routeProducer,
+    void registerGraphQLUiServletExtension(BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceProducer,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageDisplayableEndpointProducer,
-            SmallRyeGraphQLRecorder recorder,
-            LaunchModeBuildItem launchMode,
-            LiveReloadBuildItem liveReload,
-            HttpRootPathBuildItem httpRootPath,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
+            SmallRyeGraphQLRecorder recorder, LaunchModeBuildItem launchMode, LiveReloadBuildItem liveReload,
+            HttpRootPathBuildItem httpRootPath, CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
 
         if (!quarkusConfig.ui.enable) {
             return;
@@ -383,9 +433,9 @@ public class SmallRyeGraphQLProcessor {
                     .produce(new NotFoundPageDisplayableEndpointBuildItem(quarkusConfig.ui.rootPath + "/"));
         } else if (quarkusConfig.ui.alwaysInclude) {
             AppArtifact artifact = getGraphQLUiArtifact(curateOutcomeBuildItem);
-            //we are including in a production artifact
-            //just stick the files in the generated output
-            //we could do this for dev mode as well but then we need to extract them every time
+            // we are including in a production artifact
+            // just stick the files in the generated output
+            // we could do this for dev mode as well but then we need to extract them every time
             for (Path p : artifact.getPaths()) {
                 File artifactFile = p.toFile();
                 try (JarFile jarFile = new JarFile(artifactFile)) {
@@ -411,11 +461,9 @@ public class SmallRyeGraphQLProcessor {
 
                                 String fileName = GRAPHQL_UI_FINAL_DESTINATION + "/" + filename;
 
-                                generatedResourceProducer
-                                        .produce(new GeneratedResourceBuildItem(fileName, content));
+                                generatedResourceProducer.produce(new GeneratedResourceBuildItem(fileName, content));
 
-                                nativeImageResourceProducer
-                                        .produce(new NativeImageResourceBuildItem(fileName));
+                                nativeImageResourceProducer.produce(new NativeImageResourceBuildItem(fileName));
 
                             }
                         }
@@ -423,8 +471,8 @@ public class SmallRyeGraphQLProcessor {
                 }
             }
 
-            Handler<RoutingContext> handler = recorder
-                    .uiHandler(GRAPHQL_UI_FINAL_DESTINATION, httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
+            Handler<RoutingContext> handler = recorder.uiHandler(GRAPHQL_UI_FINAL_DESTINATION,
+                    httpRootPath.adjustPath(quarkusConfig.ui.rootPath));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath, handler));
             routeProducer.produce(new RouteBuildItem(quarkusConfig.ui.rootPath + "/*", handler));
         }

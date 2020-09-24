@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MultivaluedMap;
@@ -92,6 +91,7 @@ import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.parameters.converters.GeneratedParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -412,7 +412,7 @@ public class EndpointIndexer {
                 ParameterType type = parameterExtractor.getType();
                 String elementType = parameterExtractor.getElementType();
                 boolean single = parameterExtractor.isSingle();
-                Supplier<ParameterConverter> converter = parameterExtractor.getConverter();
+                ParameterConverterSupplier converter = parameterExtractor.getConverter();
                 if (defaultValue == null && paramType.kind() == Type.Kind.PRIMITIVE) {
                     defaultValue = "0";
                 }
@@ -563,7 +563,7 @@ public class EndpointIndexer {
         return annotation;
     }
 
-    private static Supplier<ParameterConverter> extractConverter(String elementType, IndexView indexView,
+    private static ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             Map<String, String> existingConverters, String errorLocation) {
         if (elementType.equals(String.class.getName())) {
@@ -796,7 +796,7 @@ public class EndpointIndexer {
         private ParameterType type;
         private String elementType;
         private boolean single;
-        private Supplier<ParameterConverter> converter;
+        private ParameterConverterSupplier converter;
         private final boolean field;
 
         public ParameterExtractor(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
@@ -845,7 +845,7 @@ public class EndpointIndexer {
             return single;
         }
 
-        public Supplier<ParameterConverter> getConverter() {
+        public ParameterConverterSupplier getConverter() {
             return converter;
         }
 

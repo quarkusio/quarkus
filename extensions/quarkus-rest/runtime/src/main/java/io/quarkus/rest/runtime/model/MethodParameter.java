@@ -1,8 +1,6 @@
 package io.quarkus.rest.runtime.model;
 
-import java.util.function.Supplier;
-
-import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
 
 public class MethodParameter {
     public String name;
@@ -15,14 +13,14 @@ public class MethodParameter {
     public String declaredType;
     public ParameterType parameterType;
     private boolean single;
-    public Supplier<ParameterConverter> converter;
+    public ParameterConverterSupplier converter;
     private String defaultValue;
 
     public MethodParameter() {
     }
 
     public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
-            Supplier<ParameterConverter> converter, String defaultValue) {
+                           ParameterConverterSupplier converter, String defaultValue) {
         this.name = name;
         this.type = type;
         this.converter = converter;
@@ -56,11 +54,11 @@ public class MethodParameter {
         this.parameterType = parameterType;
     }
 
-    public Supplier<ParameterConverter> getConverter() {
+    public ParameterConverterSupplier getConverter() {
         return converter;
     }
 
-    public MethodParameter setConverter(Supplier<ParameterConverter> converter) {
+    public MethodParameter setConverter(ParameterConverterSupplier converter) {
         this.converter = converter;
         return this;
     }

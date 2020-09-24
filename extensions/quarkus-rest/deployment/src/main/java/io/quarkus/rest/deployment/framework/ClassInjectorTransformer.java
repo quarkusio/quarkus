@@ -5,16 +5,25 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.Type.Kind;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.rest.deployment.framework.EndpointIndexer.ParameterExtractor;
+import io.quarkus.rest.runtime.core.parameters.converters.DelegatingParameterConverterSupplier;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionTarget;
 
 public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+    private static final String PARAMETER_CONVERTER_BINARY_NAME = ParameterConverter.class.getName()
+            .replace('.', '/');
+    private static final String PARAMETER_CONVERTER_DESCRIPTOR = "L" + PARAMETER_CONVERTER_BINARY_NAME + ";";
 
     private static final String QUARKUS_REST_INJECTION_TARGET_BINARY_NAME = QuarkusRestInjectionTarget.class.getName()
             .replace('.', '/');
@@ -92,22 +101,22 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         // FIXME
                         break;
                     case FORM:
-                        getParameter(injectMethod, "getFormParameter", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
                         break;
                     case HEADER:
-                        getParameter(injectMethod, "getHeader", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
                         break;
                     case MATRIX:
-                        getParameter(injectMethod, "getMatrixParameter", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
                         break;
                     case COOKIE:
-                        getParameter(injectMethod, "getCookieParameter", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
                         break;
                     case PATH:
-                        getParameter(injectMethod, "getPathParameter", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
                         break;
                     case QUERY:
-                        getParameter(injectMethod, "getQueryParameter", fieldInfo, extractor);
+                        getParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
                         break;
                     default:
                         break;
@@ -121,20 +130,102 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             super.visitEnd();
         }
 
-        private void getParameter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
-                ParameterExtractor extractor) {
-            // this (for the put field)
+        private void getParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
+                ParameterExtractor extractor, boolean extraSingleParameter) {
+            ParameterConverterSupplier converter = extractor.getConverter();
+            // push the parameter value
+            getParameter(injectMethod, methodName, extractor, extraSingleParameter);
+            Label valueWasNull = new Label();
+            // dup to test it
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitJumpInsn(Opcodes.IFNULL, valueWasNull);
+            // do we need converters?
+            if (converter instanceof DelegatingParameterConverterSupplier) {
+                // must first instantiate the delegate if there is one
+                ParameterConverterSupplier delegate = ((DelegatingParameterConverterSupplier) converter).getDelegate();
+                if (delegate != null) {
+                    String delegateBinaryName = delegate.getClassName().replace('.', '/');
+                    injectMethod.visitTypeInsn(Opcodes.NEW, delegateBinaryName);
+                    injectMethod.visitInsn(Opcodes.DUP);
+                    injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegateBinaryName, "<init>",
+                            "()V", false);
+                } else {
+                    // no delegate
+                    injectMethod.visitInsn(Opcodes.ACONST_NULL);
+                }
+                // now call the static method on the delegator
+                String delegatorBinaryName = converter.getClassName().replace('.', '/');
+                injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, delegatorBinaryName, "convert",
+                        "(Ljava/lang/Object;" + PARAMETER_CONVERTER_DESCRIPTOR + ")Ljava/lang/Object;", false);
+                // now we got ourselves a converted value
+            } else if (converter != null) {
+                // instantiate our converter
+                String converterBinaryName = converter.getClassName().replace('.', '/');
+                injectMethod.visitTypeInsn(Opcodes.NEW, converterBinaryName);
+                injectMethod.visitInsn(Opcodes.DUP);
+                injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, converterBinaryName, "<init>",
+                        "()V", false);
+                // at this point we have [val, converter] and we need to reverse that order
+                injectMethod.visitInsn(Opcodes.SWAP);
+                // now call the convert method on the converter
+                injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, PARAMETER_CONVERTER_BINARY_NAME, "convert",
+                        "(Ljava/lang/Object;)Ljava/lang/Object;", true);
+                // now we got ourselves a converted value
+            }
+            // inject this (for the put field) before the injected value
             injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
+            injectMethod.visitInsn(Opcodes.SWAP);
+            if (fieldInfo.type().kind() == Kind.PRIMITIVE) {
+                // this already does the right checkcast
+                AsmUtil.unboxIfRequired(injectMethod, fieldInfo.type());
+            } else {
+                // FIXME: this is totally wrong wrt. generics
+                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, fieldInfo.type().name().toString('/'));
+            }
+            // store our param field
+            injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
+                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
+            Label endLabel = new Label();
+            injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
+
+            // if the value was null, we don't set it
+            injectMethod.visitLabel(valueWasNull);
+            // we have a null value for the object we wanted to inject on the stack
+            injectMethod.visitInsn(Opcodes.POP);
+
+            // really done
+            injectMethod.visitLabel(endLabel);
+        }
+
+        private void getParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,
+                boolean extraSingleParameter) {
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
             // name param
             injectMethod.visitLdcInsn(extractor.getName());
-            // call getQueryParameter on the ctx
+            String methodSignature;
+            if (extraSingleParameter) {
+                // single param
+                injectMethod.visitLdcInsn(extractor.isSingle());
+                methodSignature = "(Ljava/lang/String;Z)Ljava/lang/Object;";
+            } else {
+                methodSignature = "(Ljava/lang/String;)Ljava/lang/String;";
+            }
+            // call methodName on the ctx
             injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_CONTEXT_BINARY_NAME, methodName,
-                    "(Ljava/lang/String;)Ljava/lang/String;", true);
-            // store our param field
-            injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
-                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
+                    methodSignature, true);
+            // deal with default value
+            if (extractor.getDefaultValue() != null) {
+                // dup to test it
+                injectMethod.visitInsn(Opcodes.DUP);
+                Label wasNonNullTarget = new Label();
+                injectMethod.visitJumpInsn(Opcodes.IFNONNULL, wasNonNullTarget);
+                // it was null, so let's eat the null value on the stack
+                injectMethod.visitInsn(Opcodes.POP);
+                // replace it with the default value
+                injectMethod.visitLdcInsn(extractor.getDefaultValue());
+                injectMethod.visitLabel(wasNonNullTarget);
+            }
         }
     }
 }

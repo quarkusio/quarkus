@@ -1,8 +1,6 @@
 package io.quarkus.rest.runtime.core.parameters.converters;
 
-import java.util.function.Supplier;
-
-public class GeneratedParameterConverter implements Supplier<ParameterConverter> {
+public class GeneratedParameterConverter implements ParameterConverterSupplier {
 
     private String className;
 
@@ -16,6 +14,7 @@ public class GeneratedParameterConverter implements Supplier<ParameterConverter>
         }
     }
 
+    @Override
     public String getClassName() {
         return className;
     }

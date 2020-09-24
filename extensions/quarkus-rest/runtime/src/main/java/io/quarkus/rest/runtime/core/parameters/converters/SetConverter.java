@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class SetConverter implements ParameterConverter {
 
@@ -16,6 +15,10 @@ public class SetConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
+        return convert(parameter, delegate);
+    }
+
+    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             Set<Object> ret = new HashSet<>();
             List<String> values = (List<String>) parameter;
@@ -36,14 +39,19 @@ public class SetConverter implements ParameterConverter {
         }
     }
 
-    public static class SetSupplier implements Supplier<ParameterConverter> {
-        private Supplier<ParameterConverter> delegate;
+    public static class SetSupplier implements DelegatingParameterConverterSupplier {
+        private ParameterConverterSupplier delegate;
 
         public SetSupplier() {
         }
 
-        public SetSupplier(Supplier<ParameterConverter> delegate) {
+        public SetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
+        }
+
+        @Override
+        public String getClassName() {
+            return SetConverter.class.getName();
         }
 
         @Override
@@ -51,11 +59,11 @@ public class SetConverter implements ParameterConverter {
             return delegate == null ? new SetConverter(null) : new SetConverter(delegate.get());
         }
 
-        public Supplier<ParameterConverter> getDelegate() {
+        public ParameterConverterSupplier getDelegate() {
             return delegate;
         }
 
-        public SetSupplier setDelegate(Supplier<ParameterConverter> delegate) {
+        public SetSupplier setDelegate(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
             return this;
         }

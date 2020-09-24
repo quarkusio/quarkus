@@ -3,7 +3,6 @@ package io.quarkus.rest.runtime.core.parameters.converters;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 public class ListConverter implements ParameterConverter {
 
@@ -15,6 +14,10 @@ public class ListConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
+        return convert(parameter, delegate);
+    }
+
+    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             if (delegate == null) {
                 return parameter;
@@ -38,13 +41,13 @@ public class ListConverter implements ParameterConverter {
         return delegate;
     }
 
-    public static class ListSupplier implements Supplier<ParameterConverter> {
-        private Supplier<ParameterConverter> delegate;
+    public static class ListSupplier implements DelegatingParameterConverterSupplier {
+        private ParameterConverterSupplier delegate;
 
         public ListSupplier() {
         }
 
-        public ListSupplier(Supplier<ParameterConverter> delegate) {
+        public ListSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }
 
@@ -53,11 +56,17 @@ public class ListConverter implements ParameterConverter {
             return delegate == null ? new ListConverter(null) : new ListConverter(delegate.get());
         }
 
-        public Supplier<ParameterConverter> getDelegate() {
+        @Override
+        public String getClassName() {
+            return ListConverter.class.getName();
+        }
+
+        @Override
+        public ParameterConverterSupplier getDelegate() {
             return delegate;
         }
 
-        public ListSupplier setDelegate(Supplier<ParameterConverter> delegate) {
+        public ListSupplier setDelegate(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
             return this;
         }

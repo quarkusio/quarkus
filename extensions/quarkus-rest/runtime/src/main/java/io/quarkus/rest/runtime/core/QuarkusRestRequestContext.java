@@ -724,24 +724,43 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     }
 
     @Override
-    public String getHeader(String name) {
-        return context.request().getHeader(name);
-    }
-
-    @Override
-    public String getQueryParameter(String name) {
-        return context.queryParams().get(name);
-    }
-
-    @Override
-    public String getMatrixParameter(String name) {
-        for (PathSegment i : getPathSegments()) {
-            String res = i.getMatrixParameters().getFirst(name);
-            if (res != null) {
-                return res;
-            }
+    public Object getHeader(String name, boolean single) {
+        if (single)
+            return context.request().getHeader(name);
+        List<String> all = getContext().request().headers().getAll(name);
+        if (all.isEmpty()) {
+            return null;
         }
-        return null;
+        return all;
+    }
+
+    @Override
+    public Object getQueryParameter(String name, boolean single) {
+        if (single)
+            return context.queryParams().get(name);
+        return context.queryParam(name);
+    }
+
+    @Override
+    public Object getMatrixParameter(String name, boolean single) {
+        if (single) {
+            for (PathSegment i : getPathSegments()) {
+                String res = i.getMatrixParameters().getFirst(name);
+                if (res != null) {
+                    return res;
+                }
+            }
+            return null;
+        } else {
+            List<String> ret = new ArrayList<>();
+            for (PathSegment i : getPathSegments()) {
+                List<String> res = i.getMatrixParameters().get(name);
+                if (res != null) {
+                    ret.addAll(res);
+                }
+            }
+            return ret.isEmpty() ? null : ret;
+        }
     }
 
     @Override
@@ -751,8 +770,14 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     }
 
     @Override
-    public String getFormParameter(String name) {
-        return getContext().request().getFormAttribute(name);
+    public Object getFormParameter(String name, boolean single) {
+        if (single)
+            return getContext().request().getFormAttribute(name);
+        List<String> values = getContext().request().formAttributes().getAll(name);
+        if (values.isEmpty()) {
+            return null;
+        }
+        return values;
     }
 
     @Override

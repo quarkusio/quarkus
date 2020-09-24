@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Supplier;
 
 public class SortedSetConverter implements ParameterConverter {
 
@@ -16,6 +15,10 @@ public class SortedSetConverter implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
+        return convert(parameter, delegate);
+    }
+
+    public static Object convert(Object parameter, ParameterConverter delegate) {
         if (parameter instanceof List) {
             SortedSet<Object> ret = new TreeSet<>();
             List<String> values = (List<String>) parameter;
@@ -28,7 +31,7 @@ public class SortedSetConverter implements ParameterConverter {
             }
             return ret;
         } else if (parameter == null) {
-            return Collections.emptySet();
+            return Collections.emptySortedSet();
         } else if (delegate != null) {
             SortedSet<Object> ret = new TreeSet<>();
             ret.add(delegate.convert(parameter));
@@ -40,13 +43,13 @@ public class SortedSetConverter implements ParameterConverter {
         }
     }
 
-    public static class SortedSetSupplier implements Supplier<ParameterConverter> {
-        private Supplier<ParameterConverter> delegate;
+    public static class SortedSetSupplier implements DelegatingParameterConverterSupplier {
+        private ParameterConverterSupplier delegate;
 
         public SortedSetSupplier() {
         }
 
-        public SortedSetSupplier(Supplier<ParameterConverter> delegate) {
+        public SortedSetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }
 
@@ -55,13 +58,18 @@ public class SortedSetConverter implements ParameterConverter {
             return delegate == null ? new SortedSetConverter(null) : new SortedSetConverter(delegate.get());
         }
 
-        public Supplier<ParameterConverter> getDelegate() {
+        public ParameterConverterSupplier getDelegate() {
             return delegate;
         }
 
-        public SortedSetSupplier setDelegate(Supplier<ParameterConverter> delegate) {
+        public SortedSetSupplier setDelegate(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
             return this;
+        }
+
+        @Override
+        public String getClassName() {
+            return SortedSetConverter.class.getName();
         }
     }
 

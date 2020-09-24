@@ -38,7 +38,8 @@ public class SimpleQuarkusRestTestCase {
                                     SubResource.class, RootAResource.class, RootBResource.class,
                                     QueryParamResource.class, HeaderParamResource.class,
                                     TestWriter.class, TestClass.class,
-                                    SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class);
+                                    SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
+                                    ParameterWithFromString.class);
                 }
             });
 
@@ -374,17 +375,19 @@ public class SimpleQuarkusRestTestCase {
                 .with()
                 .header("header", "one-header")
                 .queryParam("query", "one-query")
+                .queryParam("queryList", "one")
+                .queryParam("queryList", "two")
+                .queryParam("int", "666")
                 .get("/injection/field")
-                .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/field, "
-                        + "beanParam.query=one-query, beanParam.header=one-header, beanParam.uriInfo.path=/injection/field, "
-                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header, beanParam.otherBeanParam.uriInfo.path=/injection/field"));
+                .then().body(Matchers.equalTo("OK"));
         RestAssured
                 .with()
                 .header("header", "one-header")
                 .queryParam("query", "one-query")
+                .queryParam("queryList", "one")
+                .queryParam("queryList", "two")
+                .queryParam("int", "666")
                 .get("/injection/param")
-                .then().body(Matchers.equalTo("query=one-query, header=one-header, uriInfo.path=/injection/param, "
-                        + "beanParam.query=one-query, beanParam.header=one-header, beanParam.uriInfo.path=/injection/param, "
-                        + "beanParam.otherBeanParam.query=one-query, beanParam.otherBeanParam.header=one-header, beanParam.otherBeanParam.uriInfo.path=/injection/param"));
+                .then().body(Matchers.equalTo("OK"));
     }
 }

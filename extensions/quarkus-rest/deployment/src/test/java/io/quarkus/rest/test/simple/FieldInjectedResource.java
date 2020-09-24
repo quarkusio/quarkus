@@ -8,6 +8,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
+import org.junit.jupiter.api.Assertions;
+
 @Path("injection")
 public class FieldInjectedResource {
 
@@ -26,12 +28,17 @@ public class FieldInjectedResource {
     @Path("field")
     @GET
     public String field() {
-        return "query=" + query + ", header=" + header + ", uriInfo.path=" + uriInfo.getPath()
-                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header
-                + ", beanParam.uriInfo.path=" + beanParam.uriInfo.getPath()
-                + ", beanParam.otherBeanParam.query=" + beanParam.otherBeanParam.query + ", beanParam.otherBeanParam.header="
-                + beanParam.otherBeanParam.header
-                + ", beanParam.otherBeanParam.uriInfo.path=" + beanParam.otherBeanParam.uriInfo.getPath();
+        checkInjections("/injection/field", query, header, uriInfo, beanParam);
+        return "OK";
+    }
+
+    private void checkInjections(String path, String query, String header, UriInfo uriInfo, SimpleBeanParam beanParam) {
+        Assertions.assertEquals("one-query", query);
+        Assertions.assertEquals("one-header", header);
+        Assertions.assertNotNull(uriInfo);
+        Assertions.assertEquals(path, uriInfo.getPath());
+        Assertions.assertNotNull(beanParam);
+        beanParam.check(path);
     }
 
     @Path("param")
@@ -40,11 +47,7 @@ public class FieldInjectedResource {
             @HeaderParam("header") String header,
             @Context UriInfo uriInfo,
             @BeanParam SimpleBeanParam beanParam) {
-        return "query=" + query + ", header=" + header + ", uriInfo.path=" + uriInfo.getPath()
-                + ", beanParam.query=" + beanParam.query + ", beanParam.header=" + beanParam.header
-                + ", beanParam.uriInfo.path=" + beanParam.uriInfo.getPath()
-                + ", beanParam.otherBeanParam.query=" + beanParam.otherBeanParam.query + ", beanParam.otherBeanParam.header="
-                + beanParam.otherBeanParam.header
-                + ", beanParam.otherBeanParam.uriInfo.path=" + beanParam.otherBeanParam.uriInfo.getPath();
+        checkInjections("/injection/param", query, header, uriInfo, beanParam);
+        return "OK";
     }
 }

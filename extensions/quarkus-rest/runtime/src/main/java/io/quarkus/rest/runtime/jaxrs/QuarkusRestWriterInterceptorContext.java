@@ -64,7 +64,7 @@ public class QuarkusRestWriterInterceptorContext implements WriterInterceptorCon
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);
-            if (done) {
+            if (!done) {
                 //TODO: how to handle
                 context.setResult(Response.fromResponse(context.getResponse()).replaceAll(headers).build());
                 Serialisers.encodeResponseHeaders(context);

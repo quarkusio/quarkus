@@ -418,6 +418,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (auth.cookiePath.isPresent()) {
             cookie.setPath(auth.getCookiePath().get());
         }
+        if (auth.cookieDomain.isPresent()) {
+            cookie.setDomain(auth.getCookieDomain().get());
+        }
         context.response().addCookie(cookie);
         return cookie;
     }
@@ -447,6 +450,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             Authentication auth = configContext.oidcConfig.getAuthentication();
             if (auth.cookiePath.isPresent()) {
                 cookie.setPath(auth.cookiePath.get());
+            }
+            if (auth.cookieDomain.isPresent()) {
+                cookie.setDomain(auth.cookieDomain.get());
             }
         }
     }

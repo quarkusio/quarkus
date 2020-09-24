@@ -80,6 +80,7 @@ import io.dekorate.kubernetes.decorator.AddConfigMapDataDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapResourceProvidingDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -547,6 +548,10 @@ class KubernetesProcessor {
 
         config.getSidecars().entrySet().forEach(e -> {
             session.resources().decorate(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)));
+        });
+
+        config.getHostAliases().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddHostAliasesDecorator(name, HostAliasConverter.convert(e)));
         });
 
         // The presence of optional is causing issues in OCP 3.11, so we better remove them.

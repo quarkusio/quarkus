@@ -441,6 +441,29 @@ quarkus.kubernetes.readiness-probe.initial-delay=20s
 quarkus.kubernetes.readiness-probe.period=45s
 ----
 
+=== Add hostAliases
+To add entries to a Pod's `/etc/hosts` file (more information can be found in https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/[Kubernetes documentation]), just apply the following configuration:
+
+[source]
+----
+quarkus.kubernetes.hostaliases."10.0.0.0".hostnames=foo.com,bar.org
+----
+
+This would generate the following `hostAliases` section in the `deployment` definition:
+
+[source,yaml]
+----
+kind: Deployment
+spec:
+  template:
+    spec:
+      hostAliases:
+      - hostnames:
+        - foo.com
+        - bar.org
+        ip: 10.0.0.0
+----
+
 === Using the Kubernetes client
 
 Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:
@@ -513,7 +536,7 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
 | quarkus.kubernetes.part-of                         | String                                    |             |
-| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             | 
+| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
 | quarkus.kubernetes.labels                          | Map                                       |             |
 | quarkus.kubernetes.annotations                     | Map                                       |             |
 | quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |
@@ -540,6 +563,7 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.sidecars                        | Map<String, Container>                    |             |
 | quarkus.kubernetes.expose                          | boolean                                   |             | false
 | quarkus.kubernetes.headless                        | boolean                                   |             | false
+| quarkus.kubernetes.hostaliases                     | Map<String, HostAlias>                    |             |
 |====
 
 Properties that use non-standard types, can be referenced by expanding the property.
@@ -564,9 +588,9 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property  | Type   | Description | Default Value
 | value     | String |             |
-| secret    | String |             |              
-| configmap | String |             |              
-| field     | String |             |              
+| secret    | String |             |
+| configmap | String |             |
+| field     | String |             |
 |====
 
 .Probe
@@ -574,7 +598,7 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property              | Type     | Description | Default Value
 | http-action-path      | String   |             |
 | exec-action           | String   |             |
-| tcp-socket-action     | String   |             |              
+| tcp-socket-action     | String   |             |
 | initial-delay         | Duration |             |             0
 | period                | Duration |             |           30s
 | timeout               | Duration |             |           10s
@@ -594,16 +618,21 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property          | Type                                    | Description | Default Value
 | image             | String                                  |             |
 | env-vars          | Env[]                                   |             |
-| working-dir       | String                                  |             |                                          
+| working-dir       | String                                  |             |
 | command           | String[]                                |             |
 | arguments         | String[]                                |             |
 | ports             | Port[]                                  |             |
 | mounts            | Mount[]                                 |             |
-| image-pull-policy | ImagePullPolicy                         |             | Always                             
-| liveness-probe    | Probe                                   |             |                                          
-| readiness-probe   | Probe                                   |             |                                          
+| image-pull-policy | ImagePullPolicy                         |             | Always
+| liveness-probe    | Probe                                   |             |
+| readiness-probe   | Probe                                   |             |
 |====
 
+.HostAlias
+|====
+| Property    | Type     | Description       | Default Value
+| hostnames   | String[] | list of hostnames |
+|====
 
 ==== Mounts and Volumes
 
@@ -611,8 +640,8 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property  | Type    | Description | Default Value
 | path      | String  |             |
-| sub-path  | String  |             |               
-| read-only | boolean |             | false         
+| sub-path  | String  |             |
+| read-only | boolean |             | false
 |====
 
 .ConfigMapVolume
@@ -636,11 +665,11 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property     | Type    | Description | Default Value
 | disk-name    | String  |             |
-| disk-uri     | String  |             |               
+| disk-uri     | String  |             |
 | kind         | String  |             | Managed
-| caching-mode | String  |             | ReadWrite     
-| fs-type      | String  |             | ext4          
-| read-only    | boolean |             | false         
+| caching-mode | String  |             | ReadWrite
+| fs-type      | String  |             | ext4
+| read-only    | boolean |             | false
 |====
 
 .AwsElasticBlockStoreVolume
@@ -648,8 +677,8 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 | Property    | Type    | Description | Default Value
 | volume-id   | String  |             |
 | partition   | int     |             |
-| fs-type     | String  |             | ext4          
-| read-only   | boolean |             | false         
+| fs-type     | String  |             | ext4
+| read-only   | boolean |             | false
 |====
 
 .GitRepoVolume
@@ -664,15 +693,15 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 |====
 | Property    | Type    | Description | Default Value
 | claim-name  | String  |             |
-| read-only   | boolean |             | false        
+| read-only   | boolean |             | false
 |====
 
 .AzureFileVolume
 |====
 | Property    | Type    | Description | Default Value
 | share-name  | String  |             |
-| secret-name | String  |             |              
-| read-only   | boolean |             | false        
+| secret-name | String  |             |
+| read-only   | boolean |             | false
 |====
 
 [#openshift]
@@ -752,7 +781,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 [#knative]
 === Knative
-    
+
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
 
 [source]

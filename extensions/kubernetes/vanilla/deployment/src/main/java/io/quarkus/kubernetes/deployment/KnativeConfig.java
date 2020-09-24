@@ -191,6 +191,12 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     Map<String, ContainerConfig> containers;
 
+    /**
+     * The host aliases
+     */
+    @ConfigItem
+    Map<String, HostAliasConfig> hostAliases;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -307,6 +313,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Map<String, ContainerConfig> getSidecars() {
         return containers;
+    }
+
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
     }
 
     /**

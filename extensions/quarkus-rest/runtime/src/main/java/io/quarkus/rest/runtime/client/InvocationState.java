@@ -122,7 +122,12 @@ public class InvocationState implements Handler<HttpClientResponse> {
                         result.completeExceptionally(event);
                     }
                 });
-                httpClientRequest.end(actualEntity);
+                if (actualEntity == QuarkusRestAsyncInvoker.EMPTY_BUFFER) {
+                    httpClientRequest.end();
+                } else {
+                    httpClientRequest.end(actualEntity);
+                }
+
             }
         } catch (Throwable e) {
             result.completeExceptionally(e);

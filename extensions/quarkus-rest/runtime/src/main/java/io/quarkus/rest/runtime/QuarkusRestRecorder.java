@@ -733,7 +733,7 @@ public class QuarkusRestRecorder {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                     } else {
                         List<ResourceWriter> buildTimeWriters = serialisers.findBuildTimeWriters(rawNonAsyncReturnType,
-                                method.getProduces());
+                                RuntimeType.SERVER, method.getProduces());
                         if (buildTimeWriters == null) {
                             //if this is null this means that the type cannot be resolved at build time
                             //this happens when the method returns a generic type (e.g. Object), so there

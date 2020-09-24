@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import javax.ws.rs.NotSupportedException;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -36,15 +37,15 @@ public class RequestDeserializeHandler implements RestHandler {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
         }
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, requestType);
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, requestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {
             throw new NotSupportedException();
         }
         InputStream in = requestContext.getInputStream();
         for (MessageBodyReader<?> reader : readers) {
             //TODO: proper params
-            if (reader.isReadable(type, type, requestContext.getAnnotations(), mediaType)) {
-                Object result = reader.readFrom((Class) type, type, null, mediaType,
+            if (reader.isReadable(type, type, requestContext.getAnnotations(), requestType)) {
+                Object result = reader.readFrom((Class) type, type, null, requestType,
                         requestContext.getHttpHeaders().getRequestHeaders(), in);
                 requestContext.setRequestEntity(result);
                 requestContext.resume();

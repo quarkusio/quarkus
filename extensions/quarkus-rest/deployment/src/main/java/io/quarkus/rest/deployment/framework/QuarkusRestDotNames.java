@@ -13,6 +13,7 @@ import javax.annotation.Priority;
 import javax.enterprise.inject.Vetoed;
 import javax.json.JsonObject;
 import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
@@ -84,6 +85,7 @@ public final class QuarkusRestDotNames {
     public static final DotName WRITER_INTERCEPTOR = DotName.createSimple(WriterInterceptor.class.getName());
     public static final DotName READER_INTERCEPTOR = DotName.createSimple(ReaderInterceptor.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
+    public static final DotName CONSTRAINED_TO = DotName.createSimple(ConstrainedTo.class.getName());
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());
     public static final DotName VETOED = DotName.createSimple(Vetoed.class.getName());

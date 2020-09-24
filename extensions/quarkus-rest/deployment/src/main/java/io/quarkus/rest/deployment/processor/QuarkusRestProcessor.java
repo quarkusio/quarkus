@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
@@ -467,6 +468,10 @@ public class QuarkusRestProcessor {
                         index);
                 writer.setFactory(recorder.factory(writerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
+                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                if (constrainedToInstance != null) {
+                    writer.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
+                }
                 recorder.registerWriter(serialisers, typeParameters.get(0).name().toString(), writer);
             }
         }
@@ -478,6 +483,10 @@ public class QuarkusRestProcessor {
                 ResourceReader reader = new ResourceReader();
                 reader.setFactory(recorder.factory(readerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
+                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(QuarkusRestDotNames.CONSTRAINED_TO);
+                if (constrainedToInstance != null) {
+                    reader.setConstraint(RuntimeType.valueOf(constrainedToInstance.value().asEnum()));
+                }
                 recorder.registerReader(serialisers, typeParameters.get(0).name().toString(), reader);
             }
         }

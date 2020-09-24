@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
@@ -151,7 +152,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
             GenericType<T> responseType, MediaType mediaType, MultivaluedMap<String, Object> metadata)
             throws IOException {
         List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
-                mediaType);
+                mediaType, RuntimeType.CLIENT);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
                     mediaType)) {
@@ -195,7 +196,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
             } else {
                 entityType = entityClass = entityObject.getClass();
             }
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType());
+            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType(),
+                    RuntimeType.CLIENT);
             for (MessageBodyWriter writer : writers) {
                 if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -248,7 +250,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
             if (responseTypeSpecified) { // this case means that a specific response type was requested
                 MediaType mediaType = responseContext.getMediaType();
                 List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
-                        mediaType);
+                        mediaType, RuntimeType.CLIENT);
                 boolean done = false;
                 for (MessageBodyReader<?> reader : readers) {
                     if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,

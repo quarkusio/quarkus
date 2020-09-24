@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -55,7 +56,8 @@ public class StreamingUtil {
         MediaType mediaType = context.getProducesMediaType();
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
-        MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers.findWriters(entityClass, mediaType)
+        MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
+                .findWriters(entityClass, mediaType, RuntimeType.SERVER)
                 .toArray(Serialisers.NO_WRITER);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;

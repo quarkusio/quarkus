@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
@@ -13,6 +14,7 @@ public class ResourceReader {
 
     private BeanFactory<MessageBodyReader<?>> factory;
     private List<String> mediaTypeStrings = new ArrayList<>();
+    private RuntimeType constraint;
     private volatile List<MediaType> mediaTypes;
     private volatile MessageBodyReader<?> instance;
 
@@ -30,6 +32,15 @@ public class ResourceReader {
 
     public ResourceReader setMediaTypeStrings(List<String> mediaTypeStrings) {
         this.mediaTypeStrings = mediaTypeStrings;
+        return this;
+    }
+
+    public RuntimeType getConstraint() {
+        return constraint;
+    }
+
+    public ResourceReader setConstraint(RuntimeType constraint) {
+        this.constraint = constraint;
         return this;
     }
 
@@ -57,6 +68,16 @@ public class ResourceReader {
             }
         }
         return mediaTypes;
+    }
+
+    public boolean matchesRuntimeType(RuntimeType runtimeType) {
+        if (runtimeType == null) {
+            return true;
+        }
+        if (constraint == null) {
+            return true;
+        }
+        return runtimeType == constraint;
     }
 
 }

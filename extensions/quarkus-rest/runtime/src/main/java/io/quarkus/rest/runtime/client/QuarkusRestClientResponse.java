@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -45,7 +46,7 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         }
 
         MediaType mediaType = getMediaType();
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType);
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
                 Object entity;

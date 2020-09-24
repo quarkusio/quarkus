@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -139,6 +140,10 @@ public class Serialisers {
     }
 
     public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType) {
+        return findReaders(entityType, mediaType, null);
+    }
+
+    public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Class<?> klass = entityType;
@@ -146,6 +151,9 @@ public class Serialisers {
             List<ResourceReader> goodTypeReaders = readers.get(klass);
             if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
                 for (ResourceReader goodTypeReader : goodTypeReaders) {
+                    if (!goodTypeReader.matchesRuntimeType(runtimeType)) {
+                        continue;
+                    }
                     MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
                     if (match != null || mediaType == null) {
                         ret.add(goodTypeReader.getInstance());
@@ -167,15 +175,15 @@ public class Serialisers {
         readers.add(entityClass, reader);
     }
 
-    public List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, String... produces) {
+    public List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, String... produces) {
         List<MediaType> type = new ArrayList<>();
         for (String i : produces) {
             type.add(MediaType.valueOf(i));
         }
-        return findBuildTimeWriters(entityType, type);
+        return findBuildTimeWriters(entityType, runtimeType, type);
     }
 
-    public List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, List<MediaType> produces) {
+    private List<ResourceWriter> findBuildTimeWriters(Class<?> entityType, RuntimeType runtimeType, List<MediaType> produces) {
         if (Response.class.isAssignableFrom(entityType)) {
             return Collections.emptyList();
         }
@@ -206,6 +214,9 @@ public class Serialisers {
             List<ResourceWriter> goodTypeWriters = writers.get(klass);
             if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
                 for (ResourceWriter goodTypeWriter : goodTypeWriters) {
+                    if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
+                        continue;
+                    }
                     if (produces == null || produces.isEmpty()) {
                         ret.add(goodTypeWriter);
                     } else {
@@ -232,6 +243,10 @@ public class Serialisers {
     }
 
     public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType) {
+        return findWriters(entityType, resolvedMediaType, null);
+    }
+
+    public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         List<MessageBodyWriter<?>> ret = new ArrayList<>();
         Class<?> klass = entityType;
@@ -239,6 +254,9 @@ public class Serialisers {
             List<ResourceWriter> goodTypeWriters = writers.get(klass);
             if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
                 for (ResourceWriter goodTypeWriter : goodTypeWriters) {
+                    if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
+                        continue;
+                    }
                     MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.mediaTypes());
                     if (match != null) {
                         ret.add(goodTypeWriter.getInstance());

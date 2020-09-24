@@ -2,6 +2,7 @@ package io.quarkus.rest.runtime.headers;
 
 import java.util.List;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -46,7 +47,7 @@ public class VariableProducesHandler implements RestHandler {
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
                     .build());
         }
-        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res);
+        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res, RuntimeType.SERVER);
         if (writers == null || writers.isEmpty()) {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())

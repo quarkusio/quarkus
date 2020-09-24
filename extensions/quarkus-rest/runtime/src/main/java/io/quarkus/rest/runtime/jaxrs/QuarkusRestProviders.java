@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -37,7 +38,7 @@ public class QuarkusRestProviders implements Providers {
     @Override
     public <T> MessageBodyWriter<T> getMessageBodyWriter(Class<T> type, Type genericType, Annotation[] annotations,
             MediaType mediaType) {
-        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(type, mediaType);
+        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(type, mediaType, RuntimeType.SERVER);
         for (MessageBodyWriter<?> writer : writers) {
             if (writer.isWriteable(type, genericType, annotations, mediaType)) {
                 return (MessageBodyWriter<T>) writer;

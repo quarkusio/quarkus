@@ -65,7 +65,8 @@ public class TestResourceManager implements Closeable {
     public Map<String, String> start() {
         started = true;
         Map<String, String> ret = new ConcurrentHashMap<>();
-        try (ExecutorService executor = newExecutor(parallelTestResourceEntries.size() + 1)) {
+        ExecutorService executor = newExecutor(parallelTestResourceEntries.size() + 1);
+        try {
             List<Future> startFutures = new ArrayList<>();
             for (TestResourceEntry entry : parallelTestResourceEntries) {
                 Future startFuture = executor.submit(() -> {
@@ -97,17 +98,20 @@ public class TestResourceManager implements Closeable {
             startFutures.add(sequentialStartFuture);
 
             waitForAllFutures(startFutures);
+
+            oldSystemProps = new HashMap<>();
+            for (Map.Entry<String, String> i : ret.entrySet()) {
+                oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
+                if (i.getValue() == null) {
+                    System.clearProperty(i.getKey());
+                } else {
+                    System.setProperty(i.getKey(), i.getValue());
+                }
+            }
+        } finally {
+            executor.shutdown();
         }
 
-        oldSystemProps = new HashMap<>();
-        for (Map.Entry<String, String> i : ret.entrySet()) {
-            oldSystemProps.put(i.getKey(), System.getProperty(i.getKey()));
-            if (i.getValue() == null) {
-                System.clearProperty(i.getKey());
-            } else {
-                System.setProperty(i.getKey(), i.getValue());
-            }
-        }
         return ret;
 
     }

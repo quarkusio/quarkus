@@ -13,3 +13,4 @@ language:
           package-uberjar: ./gradlew quarkusBuild --uber-jar
           package-native: ./gradlew build -Dquarkus.package.type=native
           package-native-container: ./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+          build-ci: ./gradlew build

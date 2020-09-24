@@ -1,5 +1,7 @@
 package io.quarkus.gradle.builder;
 
+import static io.quarkus.bootstrap.resolver.model.impl.ArtifactCoordsImpl.TYPE_JAR;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -22,6 +24,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
@@ -31,9 +34,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
-import org.gradle.api.plugins.JavaTestFixturesPlugin;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.internal.component.external.model.TestFixturesSupport;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -128,14 +129,6 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 project.getVersion().toString());
         final SourceSet mainSourceSet = QuarkusGradleUtils.getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         final SourceSetImpl modelSourceSet = convert(mainSourceSet);
-
-        // If the project exposes test fixtures, we must add them as source directory
-        if (mode.equals(LaunchMode.TEST) && project.getPlugins().hasPlugin(JavaTestFixturesPlugin.class)) {
-            final SourceSet fixtureSourceSet = QuarkusGradleUtils.getSourceSet(project,
-                    TestFixturesSupport.TEST_FIXTURE_SOURCESET_NAME);
-            modelSourceSet.addSourceDirectories(fixtureSourceSet.getOutput().getClassesDirs().getFiles());
-        }
-
         return new WorkspaceModuleImpl(appArtifactCoords, project.getProjectDir().getAbsoluteFile(),
                 project.getBuildDir().getAbsoluteFile(), getSourceSourceSet(mainSourceSet), modelSourceSet);
     }
@@ -162,25 +155,30 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             Map<ArtifactCoords, Dependency> appDependencies, Set<org.gradle.api.artifacts.Dependency> extensionDeps,
             Set<ArtifactCoords> visited) {
         for (ResolvedDependency d : dependencies) {
-            ArtifactCoords key = new ArtifactCoordsImpl(d.getModuleGroup(), d.getModuleName(), "");
-            if (!visited.add(key)) {
-                continue;
-            }
-
-            Dependency appDep = appDependencies.get(key);
-            if (appDep == null) {
-                continue;
-            }
-            final org.gradle.api.artifacts.Dependency deploymentArtifact = getDeploymentArtifact(appDep);
-
             boolean addChildExtension = true;
-            if (deploymentArtifact != null && addChildExtension) {
-                extensionDeps.add(deploymentArtifact);
-                addChildExtension = false;
-            }
+            boolean wasDependencyVisited = false;
+            for (ResolvedArtifact artifact : d.getModuleArtifacts()) {
+                ModuleVersionIdentifier moduleIdentifier = artifact.getModuleVersion().getId();
+                ArtifactCoords key = toAppDependenciesKey(moduleIdentifier.getGroup(), moduleIdentifier.getName(),
+                        artifact.getClassifier());
+                if (!visited.add(key)) {
+                    continue;
+                }
 
+                Dependency appDep = appDependencies.get(key);
+                if (appDep == null) {
+                    continue;
+                }
+
+                wasDependencyVisited = true;
+                final org.gradle.api.artifacts.Dependency deploymentArtifact = getDeploymentArtifact(appDep);
+                if (deploymentArtifact != null) {
+                    extensionDeps.add(deploymentArtifact);
+                    addChildExtension = false;
+                }
+            }
             final Set<ResolvedDependency> resolvedChildren = d.getChildren();
-            if (addChildExtension && !resolvedChildren.isEmpty()) {
+            if (wasDependencyVisited && addChildExtension && !resolvedChildren.isEmpty()) {
                 collectFirstMetDeploymentDeps(resolvedChildren, appDependencies, extensionDeps, visited);
             }
         }
@@ -260,7 +258,7 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
             } else {
                 dep.addPath(a.getFile());
             }
-            appDependencies.put((ArtifactCoords) new ArtifactCoordsImpl(dep.getGroupId(), dep.getName(), ""), dep);
+            appDependencies.put(toAppDependenciesKey(dep.getGroupId(), dep.getName(), dep.getClassifier()), dep);
             if (artifactFiles != null) {
                 artifactFiles.add(a.getFile());
             }
@@ -288,8 +286,8 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
                 }
                 // hash could be a better way to represent the version
                 final String version = String.valueOf(f.lastModified());
-                final ArtifactCoords key = new ArtifactCoordsImpl(group, name, "");
-                final DependencyImpl dep = new DependencyImpl(name, group, version, "copmile", type, null);
+                final ArtifactCoords key = toAppDependenciesKey(group, name, "");
+                final DependencyImpl dep = new DependencyImpl(name, group, version, "compile", type, null);
                 dep.addPath(f);
                 appDependencies.put(key, dep);
             }
@@ -369,4 +367,11 @@ public class QuarkusModelBuilder implements ParameterizedToolingModelBuilder<Mod
         return new DependencyImpl(split[1], split[0], split.length > 2 ? split[2] : null,
                 "compile", a.getType(), a.getClassifier());
     }
+
+    private static ArtifactCoords toAppDependenciesKey(String groupId, String artifactId, String classifier) {
+        // Default classifier is empty string and not null value, lets keep it that way
+        classifier = classifier == null ? "" : classifier;
+        return new ArtifactCoordsImpl(groupId, artifactId, classifier, "", TYPE_JAR);
+    }
+
 }

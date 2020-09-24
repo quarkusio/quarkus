@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,7 +103,9 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private MediaType producesMediaType;
     private MediaType consumesMediaType;
 
-    private Annotation[] annotations;
+    private Annotation[] methodAnnotations;
+    private Annotation[] additionalAnnotations; // can be added by entity annotations or response filters
+    private Annotation[] allAnnotations;
     private Type genericReturnType;
 
     /**
@@ -550,19 +553,42 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return this;
     }
 
-    public Annotation[] getAnnotations() {
-        if (annotations == null) {
+    public Annotation[] getAllAnnotations() {
+        if (allAnnotations == null) {
+            Annotation[] methodAnnotations = getMethodAnnotations();
+            if ((additionalAnnotations == null) || (additionalAnnotations.length == 0)) {
+                allAnnotations = methodAnnotations;
+            } else {
+                List<Annotation> list = new ArrayList<>(methodAnnotations.length + additionalAnnotations.length);
+                list.addAll(Arrays.asList(methodAnnotations));
+                list.addAll(Arrays.asList(additionalAnnotations));
+                allAnnotations = list.toArray(new Annotation[0]);
+            }
+        }
+        return allAnnotations;
+    }
+
+    public Annotation[] getMethodAnnotations() {
+        if (methodAnnotations == null) {
             if (target == null) {
                 return null;
             }
             return target.getLazyMethod().getAnnotations();
         }
-        return annotations;
+        return methodAnnotations;
     }
 
-    public QuarkusRestRequestContext setAnnotations(Annotation[] annotations) {
-        this.annotations = annotations;
+    public QuarkusRestRequestContext setMethodAnnotations(Annotation[] methodAnnotations) {
+        this.methodAnnotations = methodAnnotations;
         return this;
+    }
+
+    public Annotation[] getAdditionalAnnotations() {
+        return additionalAnnotations;
+    }
+
+    public void setAdditionalAnnotations(Annotation[] additionalAnnotations) {
+        this.additionalAnnotations = additionalAnnotations;
     }
 
     public Type getGenericReturnType() {

@@ -97,6 +97,10 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         return entityAnnotations;
     }
 
+    public void setEntityAnnotations(Annotation[] entityAnnotations) {
+        this.entityAnnotations = entityAnnotations;
+    }
+
     @Override
     public QuarkusRestResponse build() {
         return populateResponse(new QuarkusRestResponse());
@@ -119,6 +123,7 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         response.reasonPhrase = reasonPhrase;
         response.headers = new CaseInsensitiveMap<>();
         response.headers.putAll(metadata);
+        response.entityAnnotations = entityAnnotations;
         return response;
     }
 

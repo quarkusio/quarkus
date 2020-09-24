@@ -7,6 +7,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 
 /**
  * Our job is to turn endpoint return types into Response instances
@@ -46,6 +47,13 @@ public class ResponseHandler implements RestHandler {
                     requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficent
                 response = Response.fromResponse((Response) result);
+                if ((result instanceof QuarkusRestResponse)) {
+                    // needed in order to preserve entity annotations
+                    QuarkusRestResponse quarkusRestResponse = (QuarkusRestResponse) result;
+                    if (quarkusRestResponse.getEntityAnnotations() != null) {
+                        requestContext.setAdditionalAnnotations(quarkusRestResponse.getEntityAnnotations());
+                    }
+                }
             }
         } else {
             if (result instanceof GenericEntity) {

@@ -38,6 +38,7 @@ public class QuarkusRestResponse extends Response {
     InputStream entityStream;
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
+    Annotation[] entityAnnotations;
 
     @Override
     public int getStatus() {
@@ -324,6 +325,10 @@ public class QuarkusRestResponse extends Response {
             sb.append(s);
         }
         return sb.toString();
+    }
+
+    public Annotation[] getEntityAnnotations() {
+        return entityAnnotations;
     }
 
     private static class LinkHeaders {

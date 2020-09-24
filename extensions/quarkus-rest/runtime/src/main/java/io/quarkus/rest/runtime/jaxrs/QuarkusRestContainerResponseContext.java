@@ -169,14 +169,14 @@ public class QuarkusRestContainerResponseContext implements ContainerResponseCon
             entity = ((GenericEntity<?>) entity).getEntity();
         }
         context.setProducesMediaType(mediaType);
-        context.setAnnotations(annotations);
+        context.setAdditionalAnnotations(annotations);
         Response.ResponseBuilder resp = Response.fromResponse(context.getResponse()).entity(entity);
         context.setResult(resp.build());
     }
 
     @Override
     public Annotation[] getEntityAnnotations() {
-        return context.getAnnotations();
+        return context.getAllAnnotations();
     }
 
     @Override

@@ -9,7 +9,6 @@ import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInterceptor;
-import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider;
 import io.quarkus.arc.impl.InitializedInterceptor;
@@ -1396,7 +1395,7 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 // We cannot use injectionPoint.getRequiredType() because it might be a resolved parameterize type and we could get NoSuchFieldError
                 tryBlock.writeInstanceField(
-                        FieldDescriptor.of(providerType.className(), injectedField.name(),
+                        FieldDescriptor.of(injectedField.declaringClass().name().toString(), injectedField.name(),
                                 DescriptorUtils.typeToString(injectionPoint.getTarget().asField().type())),
                         instanceHandle, referenceHandle);
             }

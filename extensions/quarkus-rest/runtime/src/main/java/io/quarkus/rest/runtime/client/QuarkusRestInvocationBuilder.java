@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -171,8 +173,16 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
     private <T> T unwrap(CompletableFuture<T> c) {
         try {
             return c.get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof ProcessingException) {
+                throw (ProcessingException) e.getCause();
+            }
+            if (e.getCause() instanceof WebApplicationException) {
+                throw (WebApplicationException) e.getCause();
+            }
+            throw new RuntimeException(e.getCause());
         }
     }
 

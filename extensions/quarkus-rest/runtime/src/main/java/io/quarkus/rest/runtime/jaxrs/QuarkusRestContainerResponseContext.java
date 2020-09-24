@@ -24,7 +24,7 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
 public class QuarkusRestContainerResponseContext implements ContainerResponseContext {
 
-    private QuarkusRestRequestContext context;
+    private final QuarkusRestRequestContext context;
 
     public QuarkusRestContainerResponseContext(QuarkusRestRequestContext requestContext) {
         this.context = requestContext;
@@ -37,7 +37,7 @@ public class QuarkusRestContainerResponseContext implements ContainerResponseCon
 
     @Override
     public void setStatus(int code) {
-        context.getContext().response().setStatusCode(code);
+        context.setResult(Response.fromResponse(context.getResponse()).status(code).build());
     }
 
     @Override
@@ -47,8 +47,7 @@ public class QuarkusRestContainerResponseContext implements ContainerResponseCon
 
     @Override
     public void setStatusInfo(StatusType statusInfo) {
-        // TODO Auto-generated method stub
-
+        context.setResult(Response.fromResponse(context.getResponse()).status(statusInfo).build());
     }
 
     @Override

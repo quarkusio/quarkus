@@ -313,7 +313,17 @@ public class QuarkusRestResponse extends Response {
 
     @Override
     public String getHeaderString(String name) {
-        return getStringHeaders().getFirst(name);
+        if (!getStringHeaders().containsKey(name)) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String s : getStringHeaders().get(name)) {
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(s);
+        }
+        return sb.toString();
     }
 
     private static class LinkHeaders {

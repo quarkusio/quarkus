@@ -4,6 +4,7 @@ import java.util.function.BiConsumer;
 
 import javax.ws.rs.WebApplicationException;
 
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
@@ -60,7 +61,11 @@ public class FieldInjectionHandler implements RestHandler {
             if (converter != null && result != null) {
                 result = converter.convert(result);
             }
-            setter.accept(requestContext.getEndpointInstance(), result);
+            Object endpointInstance = requestContext.getEndpointInstance();
+            if (endpointInstance instanceof ClientProxy) {
+                endpointInstance = ((ClientProxy) endpointInstance).arc_contextualInstance();
+            }
+            setter.accept(endpointInstance, result);
             if (needsResume) {
                 requestContext.resume();
             }

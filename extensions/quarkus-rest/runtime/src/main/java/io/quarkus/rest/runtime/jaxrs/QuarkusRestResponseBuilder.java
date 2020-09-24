@@ -232,22 +232,30 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
             return this;
         }
         if (!location.isAbsolute()) {
-            // FIXME: this leaks server stuff onto the client
-            CurrentVertxRequest cur = CDI.current().select(CurrentVertxRequest.class).get();
-            HttpServerRequest req = cur.getCurrent().request();
+            CDI<Object> cdi = null;
             try {
-                String host = req.host();
-                int port = -1;
-                int index = host.indexOf(":");
-                if (index > -1) {
-                    port = Integer.parseInt(host.substring(index + 1));
-                    host = host.substring(0, index);
+                cdi = CDI.current();
+            } catch (IllegalStateException ignored) {
+
+            }
+            if (cdi != null) {
+                // FIXME: this leaks server stuff onto the client
+                CurrentVertxRequest cur = cdi.select(CurrentVertxRequest.class).get();
+                HttpServerRequest req = cur.getCurrent().request();
+                try {
+                    String host = req.host();
+                    int port = -1;
+                    int index = host.indexOf(":");
+                    if (index > -1) {
+                        port = Integer.parseInt(host.substring(index + 1));
+                        host = host.substring(0, index);
+                    }
+                    location = new URI(req.scheme(), null, host, port,
+                            location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
+                            location.getQuery(), null);
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
                 }
-                location = new URI(req.scheme(), null, host, port,
-                        location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
-                        location.getQuery(), null);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
             }
         }
         metadata.putSingle(HttpHeaderNames.LOCATION, location);
@@ -261,22 +269,30 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
             return this;
         }
         if (!location.isAbsolute()) {
-            // FIXME: this leaks server stuff onto the client
-            CurrentVertxRequest cur = CDI.current().select(CurrentVertxRequest.class).get();
-            HttpServerRequest req = cur.getCurrent().request();
+            CDI<Object> cdi = null;
             try {
-                String host = req.host();
-                int port = -1;
-                int index = host.indexOf(":");
-                if (index > -1) {
-                    port = Integer.parseInt(host.substring(index + 1));
-                    host = host.substring(0, index);
+                cdi = CDI.current();
+            } catch (IllegalStateException ignored) {
+
+            }
+            if (cdi != null) {
+                // FIXME: this leaks server stuff onto the client
+                CurrentVertxRequest cur = CDI.current().select(CurrentVertxRequest.class).get();
+                HttpServerRequest req = cur.getCurrent().request();
+                try {
+                    String host = req.host();
+                    int port = -1;
+                    int index = host.indexOf(":");
+                    if (index > -1) {
+                        port = Integer.parseInt(host.substring(index + 1));
+                        host = host.substring(0, index);
+                    }
+                    location = new URI(req.scheme(), null, host, port,
+                            location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
+                            location.getQuery(), null);
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
                 }
-                location = new URI(req.scheme(), null, host, port,
-                        location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
-                        location.getQuery(), null);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
             }
         }
         metadata.putSingle(HttpHeaderNames.CONTENT_LOCATION, location);

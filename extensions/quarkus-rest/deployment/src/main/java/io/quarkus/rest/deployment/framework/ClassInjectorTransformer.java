@@ -4,6 +4,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type.Kind;
 import org.objectweb.asm.ClassVisitor;
@@ -20,6 +24,11 @@ import io.quarkus.rest.runtime.injection.QuarkusRestInjectionContext;
 import io.quarkus.rest.runtime.injection.QuarkusRestInjectionTarget;
 
 public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+    private static final String WEB_APPLICATION_EXCEPTION_BINARY_NAME = WebApplicationException.class.getName().replace('.',
+            '/');
+    private static final String NOT_FOUND_EXCEPTION_BINARY_NAME = NotFoundException.class.getName().replace('.', '/');
+    private static final String BAD_REQUEST_EXCEPTION_BINARY_NAME = BadRequestException.class.getName().replace('.', '/');
 
     private static final String PARAMETER_CONVERTER_BINARY_NAME = ParameterConverter.class.getName()
             .replace('.', '/');
@@ -101,22 +110,22 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         // FIXME
                         break;
                     case FORM:
-                        getParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
                         break;
                     case HEADER:
-                        getParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
                         break;
                     case MATRIX:
-                        getParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
                         break;
                     case COOKIE:
-                        getParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
+                        injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
                         break;
                     case PATH:
-                        getParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
+                        injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
                         break;
                     case QUERY:
-                        getParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
                         break;
                     default:
                         break;
@@ -130,15 +139,105 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             super.visitEnd();
         }
 
-        private void getParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
+        private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
                 ParameterExtractor extractor, boolean extraSingleParameter) {
-            ParameterConverterSupplier converter = extractor.getConverter();
+            // spec says: 
+            /*
+             * 3.2 Fields and Bean Properties
+             * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation
+             * MUST generate an instance of NotFoundException (404 status) that wraps the thrown exception and no
+             * entity; if the field or property is annotated with @HeaderParam or @CookieParam then an implementation
+             * MUST generate an instance of BadRequestException (400 status) that wraps the thrown exception and
+             * no entity.
+             */
+            Label tryStart, tryEnd = null, tryWebAppHandler = null, tryHandler = null;
+            switch (extractor.getType()) {
+                case MATRIX:
+                case QUERY:
+                case PATH:
+                case HEADER:
+                case COOKIE:
+                    tryStart = new Label();
+                    tryEnd = new Label();
+                    tryWebAppHandler = new Label();
+                    tryHandler = new Label();
+                    injectMethod.visitTryCatchBlock(tryStart, tryEnd, tryWebAppHandler, WEB_APPLICATION_EXCEPTION_BINARY_NAME);
+                    injectMethod.visitTryCatchBlock(tryStart, tryEnd, tryHandler, "java/lang/Throwable");
+                    injectMethod.visitLabel(tryStart);
+                    break;
+            }
             // push the parameter value
-            getParameter(injectMethod, methodName, extractor, extraSingleParameter);
+            loadParameter(injectMethod, methodName, extractor, extraSingleParameter);
             Label valueWasNull = new Label();
             // dup to test it
             injectMethod.visitInsn(Opcodes.DUP);
             injectMethod.visitJumpInsn(Opcodes.IFNULL, valueWasNull);
+            convertParameter(injectMethod, extractor);
+            // inject this (for the put field) before the injected value
+            injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
+            injectMethod.visitInsn(Opcodes.SWAP);
+            if (fieldInfo.type().kind() == Kind.PRIMITIVE) {
+                // this already does the right checkcast
+                AsmUtil.unboxIfRequired(injectMethod, fieldInfo.type());
+            } else {
+                // FIXME: this is totally wrong wrt. generics
+                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, fieldInfo.type().name().toString('/'));
+            }
+            // store our param field
+            injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
+                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
+            Label endLabel = new Label();
+            injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
+
+            // if the value was null, we don't set it
+            injectMethod.visitLabel(valueWasNull);
+            // we have a null value for the object we wanted to inject on the stack
+            injectMethod.visitInsn(Opcodes.POP);
+
+            if (tryEnd != null) {
+                // skip the catch block
+                injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
+                injectMethod.visitLabel(tryEnd);
+                // start the web app catch block
+                injectMethod.visitLabel(tryWebAppHandler);
+                // exception is on the stack, just throw it
+                injectMethod.visitInsn(Opcodes.ATHROW);
+                // start the catch block
+                injectMethod.visitLabel(tryHandler);
+
+                String exceptionBinaryName;
+                switch (extractor.getType()) {
+                    case MATRIX:
+                    case QUERY:
+                    case PATH:
+                        exceptionBinaryName = NOT_FOUND_EXCEPTION_BINARY_NAME;
+                        break;
+                    case HEADER:
+                    case COOKIE:
+                        exceptionBinaryName = BAD_REQUEST_EXCEPTION_BINARY_NAME;
+                        break;
+                    default:
+                        throw new IllegalStateException(
+                                "Should not have been trying to catch exceptions for parameter of type " + extractor.getType());
+                }
+                // [x]
+                injectMethod.visitTypeInsn(Opcodes.NEW, exceptionBinaryName);
+                // [x, instance]
+                injectMethod.visitInsn(Opcodes.DUP_X1);
+                // [instance, x, instance]
+                injectMethod.visitInsn(Opcodes.SWAP);
+                // [instance, instance, x]
+                injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, exceptionBinaryName, "<init>", "(Ljava/lang/Throwable;)V",
+                        false);
+                injectMethod.visitInsn(Opcodes.ATHROW);
+            }
+
+            // really done
+            injectMethod.visitLabel(endLabel);
+        }
+
+        private void convertParameter(MethodVisitor injectMethod, ParameterExtractor extractor) {
+            ParameterConverterSupplier converter = extractor.getConverter();
             // do we need converters?
             if (converter instanceof DelegatingParameterConverterSupplier) {
                 // must first instantiate the delegate if there is one
@@ -172,32 +271,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         "(Ljava/lang/Object;)Ljava/lang/Object;", true);
                 // now we got ourselves a converted value
             }
-            // inject this (for the put field) before the injected value
-            injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
-            injectMethod.visitInsn(Opcodes.SWAP);
-            if (fieldInfo.type().kind() == Kind.PRIMITIVE) {
-                // this already does the right checkcast
-                AsmUtil.unboxIfRequired(injectMethod, fieldInfo.type());
-            } else {
-                // FIXME: this is totally wrong wrt. generics
-                injectMethod.visitTypeInsn(Opcodes.CHECKCAST, fieldInfo.type().name().toString('/'));
-            }
-            // store our param field
-            injectMethod.visitFieldInsn(Opcodes.PUTFIELD, thisName, fieldInfo.name(),
-                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
-            Label endLabel = new Label();
-            injectMethod.visitJumpInsn(Opcodes.GOTO, endLabel);
-
-            // if the value was null, we don't set it
-            injectMethod.visitLabel(valueWasNull);
-            // we have a null value for the object we wanted to inject on the stack
-            injectMethod.visitInsn(Opcodes.POP);
-
-            // really done
-            injectMethod.visitLabel(endLabel);
         }
 
-        private void getParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,
+        private void loadParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,
                 boolean extraSingleParameter) {
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);

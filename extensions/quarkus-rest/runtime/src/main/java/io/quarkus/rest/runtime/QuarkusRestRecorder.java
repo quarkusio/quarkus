@@ -683,7 +683,7 @@ public class QuarkusRestRecorder {
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
                     single, beanContainer);
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
-                    param.converter == null ? null : param.converter.get()));
+                    param.converter == null ? null : param.converter.get(), param.parameterType));
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));
@@ -834,9 +834,6 @@ public class QuarkusRestRecorder {
                 break;
             case QUERY:
                 extractor = new QueryParamExtractor(name, single);
-                break;
-            case COOKIE:
-                extractor = new CookieParamExtractor(name, single);
                 break;
             case BODY:
                 extractor = new BodyParamExtractor();

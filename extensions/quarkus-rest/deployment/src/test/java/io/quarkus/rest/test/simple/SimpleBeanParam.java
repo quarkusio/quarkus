@@ -5,7 +5,9 @@ import java.util.List;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
@@ -76,11 +78,17 @@ public class SimpleBeanParam {
     }
 
     void inject(QuarkusRestInjectionContext ctx) {
-        Object param = ctx.getQueryParameter("query", true);
-        if (param == null)
-            param = "default-value";
-        if (param != null)
-            parameterWithFromString = (ParameterWithFromString) new MyConverter().convert(param);
+        try {
+            Object param = ctx.getQueryParameter("query", true);
+            if (param == null)
+                param = "default-value";
+            if (param != null)
+                parameterWithFromString = (ParameterWithFromString) new MyConverter().convert(param);
+        } catch (WebApplicationException x) {
+            throw x;
+        } catch (Throwable x) {
+            throw new NotFoundException(x);
+        }
     }
 
     public void check(String path) {

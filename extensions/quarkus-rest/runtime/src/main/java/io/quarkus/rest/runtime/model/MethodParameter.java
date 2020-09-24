@@ -20,7 +20,7 @@ public class MethodParameter {
     }
 
     public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
-                           ParameterConverterSupplier converter, String defaultValue) {
+            ParameterConverterSupplier converter, String defaultValue) {
         this.name = name;
         this.type = type;
         this.converter = converter;

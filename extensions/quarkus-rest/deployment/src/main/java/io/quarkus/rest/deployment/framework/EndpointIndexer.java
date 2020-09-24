@@ -287,7 +287,7 @@ public class EndpointIndexer {
 
     private static List<ResourceMethod> createEndpoints(IndexView index, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, Set<String> seenMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer, 
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,

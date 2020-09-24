@@ -23,8 +23,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
@@ -311,7 +311,7 @@ public class QuarkusRestProcessor {
         Set<String> beanParams = new HashSet<>();
         for (ClassInfo i : scannedResources.values()) {
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, 
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer,
                     bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
                     scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (endpoints != null) {
@@ -325,7 +325,8 @@ public class QuarkusRestProcessor {
             //these interfaces can also be clients
             //so we generate client proxies for them
             RestClientInterface clientProxy = EndpointIndexer.createClientProxy(index, clazz,
-                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer, recorder,
+                    existingConverters,
                     i.getValue(), config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (clientProxy != null) {
                 clientDefinitions.add(clientProxy);
@@ -353,7 +354,7 @@ public class QuarkusRestProcessor {
             }
             possibleSubResources.put(classInfo.name(), classInfo);
             ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer, 
+                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer,
                     bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
                     scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, beanParams);
             if (endpoints != null) {

@@ -2,11 +2,15 @@ package io.quarkus.rest.runtime.handlers;
 
 import java.util.function.BiConsumer;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
+import io.quarkus.rest.runtime.model.ParameterType;
+import io.quarkus.rest.runtime.util.QuarkusRestUtil;
 
 public class ParameterHandler implements RestHandler {
 
@@ -14,12 +18,15 @@ public class ParameterHandler implements RestHandler {
     private final String defaultValue;
     private final ParameterExtractor extractor;
     private final ParameterConverter converter;
+    private final ParameterType parameterType;
 
-    public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter) {
+    public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter,
+            ParameterType parameterType) {
         this.index = index;
         this.defaultValue = defaultValue;
         this.extractor = extractor;
         this.converter = converter;
+        this.parameterType = parameterType;
     }
 
     @Override
@@ -35,7 +42,6 @@ public class ParameterHandler implements RestHandler {
                             requestContext.resume(throwable);
                         } else {
                             handleResult(o, requestContext, true);
-                            requestContext.resume();
                         }
                     }
                 });
@@ -52,30 +58,62 @@ public class ParameterHandler implements RestHandler {
     }
 
     private void handleResult(Object result, QuarkusRestRequestContext requestContext, boolean needsResume) {
-        try {
-            if (result == null) {
-                result = defaultValue;
+        if (result == null) {
+            result = defaultValue;
+        }
+        Throwable toThrow = null;
+        if (converter != null && result != null) {
+            // spec says: 
+            /*
+             * 3.2 Fields and Bean Properties
+             * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation
+             * MUST generate an instance of NotFoundException (404 status) that wraps the thrown exception and no
+             * entity; if the field or property is annotated with @HeaderParam or @CookieParam then an implementation
+             * MUST generate an instance of BadRequestException (400 status) that wraps the thrown exception and
+             * no entity.
+             */
+            switch (parameterType) {
+                case COOKIE:
+                case HEADER:
+                    try {
+                        result = converter.convert(result);
+                    } catch (WebApplicationException x) {
+                        toThrow = x;
+                    } catch (Throwable x) {
+                        toThrow = new BadRequestException(x);
+                    }
+                    break;
+                case MATRIX:
+                case PATH:
+                case QUERY:
+                    try {
+                        result = converter.convert(result);
+                    } catch (WebApplicationException x) {
+                        toThrow = x;
+                    } catch (Throwable x) {
+                        toThrow = new NotFoundException(x);
+                    }
+                    break;
+                default:
+                    try {
+                        result = converter.convert(result);
+                    } catch (Throwable x) {
+                        toThrow = x;
+                    }
+                    break;
             }
-            if (converter != null && result != null) {
-                result = converter.convert(result);
-            }
+        }
+        if (toThrow == null) {
             requestContext.getParameters()[index] = result;
-            if (needsResume) {
+        }
+        if (needsResume) {
+            if (toThrow == null) {
                 requestContext.resume();
-            }
-
-        } catch (Exception e) {
-            WebApplicationException toThrow;
-            if (e instanceof WebApplicationException) {
-                toThrow = (WebApplicationException) e;
             } else {
-                toThrow = new WebApplicationException(e, 400);
-            }
-            if (needsResume) {
                 requestContext.resume(toThrow);
-            } else {
-                throw toThrow;
             }
+        } else if (toThrow != null) {
+            throw QuarkusRestUtil.sneakyThrow(toThrow);
         }
     }
 }

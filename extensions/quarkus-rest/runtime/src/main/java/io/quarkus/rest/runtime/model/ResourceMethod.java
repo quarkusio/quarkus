@@ -55,6 +55,8 @@ public class ResourceMethod {
 
     private boolean isSse;
 
+    private boolean isFormParamRequired;
+
     public boolean isResourceLocator() {
         return httpMethod == null;
     }
@@ -173,6 +175,15 @@ public class ResourceMethod {
 
     public ResourceMethod setSse(boolean isSse) {
         this.isSse = isSse;
+        return this;
+    }
+
+    public boolean isFormParamRequired() {
+        return isFormParamRequired;
+    }
+
+    public ResourceMethod setFormParamRequired(boolean isFormParamRequired) {
+        this.isFormParamRequired = isFormParamRequired;
         return this;
     }
 }

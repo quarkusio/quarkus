@@ -94,6 +94,8 @@ import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
+import io.quarkus.rest.runtime.model.BeanParamInfo;
+import io.quarkus.rest.runtime.model.FormContainer;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -159,7 +161,8 @@ public class EndpointIndexer {
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
+            Map<String, BeanParamInfo> beanParams) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
@@ -180,10 +183,18 @@ public class EndpointIndexer {
             }
             clazz.setFactory(recorder.factory(clazz.getClassName(), beanContainer));
 
-            handleFieldInjection(clazz,
+            scanInjectableBean(clazz, clazz,
                     classInfo, classInfo, index, generatedClassBuildItemBuildProducer,
                     bytecodeTransformerBuildItemBuildProducer, existingConverters,
                     additionalReaders, beanParams);
+
+            // at this point we've scanned the class and its bean infos, which can have form params
+            if (clazz.isFormParamRequired()) {
+                // we must propagate this to all our methods, regardless of what they thought they required
+                for (ResourceMethod method : methods) {
+                    method.setFormParamRequired(true);
+                }
+            }
 
             return clazz;
         } catch (Exception e) {
@@ -197,14 +208,14 @@ public class EndpointIndexer {
         }
     }
 
-    private static void handleFieldInjection(ResourceClass clazz,
-            ClassInfo currentClassInfo,
+    private static void scanInjectableBean(ResourceClass clazz,
+            FormContainer formContainer, ClassInfo currentClassInfo,
             ClassInfo actualEndpointInfo, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             Map<String, String> existingConverters,
             AdditionalReaders additionalReaders,
-            Set<String> beanParams) {
+            Map<String, BeanParamInfo> beanParams) {
         Map<FieldInfo, ParameterExtractor> fieldExtractors = new HashMap<>();
         for (FieldInfo field : currentClassInfo.fields()) {
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
@@ -224,13 +235,16 @@ public class EndpointIndexer {
             }
             if (result.getType() == ParameterType.BEAN) {
                 // transform the bean param
-                if (beanParams.add(extractor.getElementType())) {
-                    // FIXME: pretty sure this doesn't work with generics
-                    ClassInfo beanParamClassInfo = index.getClassByName(field.type().name());
-                    handleFieldInjection(clazz, beanParamClassInfo, actualEndpointInfo, index,
-                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                            existingConverters, additionalReaders, beanParams);
+                BeanParamInfo beanParam = collectBeanParam(clazz, extractor.getElementType(), field.type(), actualEndpointInfo,
+                        index,
+                        generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                        existingConverters, additionalReaders, beanParams);
+                // propagate to this container
+                if (beanParam.isFormParamRequired()) {
+                    formContainer.setFormParamRequired(true);
                 }
+            } else if (result.getType() == ParameterType.FORM) {
+                formContainer.setFormParamRequired(true);
             }
         }
 
@@ -245,7 +259,7 @@ public class EndpointIndexer {
         if (superClassName != null && !superClassName.equals(DotNames.OBJECT)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                handleFieldInjection(clazz, superClass, actualEndpointInfo, index,
+                scanInjectableBean(clazz, formContainer, superClass, actualEndpointInfo, index,
                         generatedClassBuildItemBuildProducer,
                         bytecodeTransformerBuildProducer,
                         existingConverters, additionalReaders, beanParams);
@@ -258,7 +272,8 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
+            Map<String, BeanParamInfo> beanParams) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
                     generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
@@ -291,7 +306,7 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
-            Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
+            Map<DotName, String> httpAnnotationToMethod, Map<String, BeanParamInfo> beanParams) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -381,7 +396,8 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingConverters, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod, Set<String> beanParams) {
+            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
+            Map<String, BeanParamInfo> beanParams) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
             MethodParameter[] methodParameters = new MethodParameter[info.parameters()
@@ -397,6 +413,7 @@ public class EndpointIndexer {
             String[] consumes = extractProducesConsumesValues(info.annotation(CONSUMES), classConsumes);
             boolean suspended = false;
             boolean sse = false;
+            boolean formParamRequired = false;
             for (int i = 0; i < methodParameters.length; ++i) {
                 Map<DotName, AnnotationInstance> anns = parameterAnnotations[i];
                 Type paramType = info.parameters().get(i);
@@ -422,13 +439,15 @@ public class EndpointIndexer {
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
-                    if (beanParams.add(elementType)) {
-                        // FIXME: pretty sure this doesn't work with generics
-                        ClassInfo beanParamClassInfo = indexView.getClassByName(paramType.name());
-                        handleFieldInjection(null, beanParamClassInfo, actualEndpointInfo, indexView,
-                                generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
-                                existingConverters, additionalReaders, beanParams);
+                    BeanParamInfo beanParam = collectBeanParam(null, elementType, paramType,
+                            actualEndpointInfo, indexView,
+                            generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                            existingConverters, additionalReaders, beanParams);
+                    if (beanParam.isFormParamRequired()) {
+                        formParamRequired = true;
                     }
+                } else if (type == ParameterType.FORM) {
+                    formParamRequired = true;
                 }
             }
 
@@ -455,6 +474,7 @@ public class EndpointIndexer {
                     .setBlocking(blocking)
                     .setSuspended(suspended)
                     .setSse(sse)
+                    .setFormParamRequired(formParamRequired)
                     .setParameters(methodParameters)
                     .setSimpleReturnType(toClassName(info.returnType(), currentClassInfo, actualEndpointInfo, indexView))
                     // FIXME: resolved arguments ?
@@ -529,6 +549,26 @@ public class EndpointIndexer {
         } catch (Exception e) {
             throw new RuntimeException("Failed to process method " + info.declaringClass().name() + "#" + info.toString(), e);
         }
+    }
+
+    private static BeanParamInfo collectBeanParam(ResourceClass clazz, String elementType, Type paramType,
+            ClassInfo actualEndpointInfo,
+            IndexView indexView,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
+            Map<String, String> existingConverters, AdditionalReaders additionalReaders,
+            Map<String, BeanParamInfo> beanParams) {
+        BeanParamInfo beanParamInfo = beanParams.get(elementType);
+        if (beanParamInfo == null) {
+            // FIXME: pretty sure this doesn't work with generics
+            ClassInfo beanParamClassInfo = indexView.getClassByName(paramType.name());
+            beanParamInfo = new BeanParamInfo();
+            beanParams.put(elementType, beanParamInfo);
+            scanInjectableBean(clazz, beanParamInfo, beanParamClassInfo, actualEndpointInfo, indexView,
+                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
+                    existingConverters, additionalReaders, beanParams);
+        }
+        return beanParamInfo;
     }
 
     private static void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
@@ -881,9 +921,6 @@ public class EndpointIndexer {
             } else if (headerParam != null) {
                 name = headerParam.value().asString();
                 type = ParameterType.HEADER;
-            } else if (cookieParam != null) {
-                name = cookieParam.value().asString();
-                type = ParameterType.COOKIE;
             } else if (formParam != null) {
                 name = formParam.value().asString();
                 type = ParameterType.FORM;

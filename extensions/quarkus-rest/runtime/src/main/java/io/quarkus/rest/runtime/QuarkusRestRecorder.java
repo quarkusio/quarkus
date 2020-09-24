@@ -651,6 +651,29 @@ public class QuarkusRestRecorder {
             handlers.add(new ResourceRequestInterceptorHandler(filtersToUse, false));
         }
 
+        Class<?>[] parameterTypes = new Class[method.getParameters().length];
+        for (int i = 0; i < method.getParameters().length; ++i) {
+            parameterTypes[i] = loadClass(method.getParameters()[i].declaredType);
+        }
+        // some parameters need the body to be read
+        MethodParameter[] parameters = method.getParameters();
+        // form params can be everywhere (field, beanparam, param)
+        if (method.isFormParamRequired()) {
+            handlers.add(new ReadBodyHandler());
+        } else {
+            // body can only be in a parameter
+            for (int i = 0; i < parameters.length; i++) {
+                MethodParameter param = parameters[i];
+                if (param.parameterType == ParameterType.BODY) {
+                    handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
+                    handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
+                    break;
+                }
+            }
+        }
+
+        // given that we may inject form params in the endpoint we need to make sure we read the body before
+        // we create/inject our endpoint
         EndpointInvoker invoker = method.getInvoker().get();
         if (!locatableResource) {
             if (clazz.isPerRequestResource()) {
@@ -660,23 +683,6 @@ public class QuarkusRestRecorder {
             }
         }
 
-        Class<?>[] parameterTypes = new Class[method.getParameters().length];
-        for (int i = 0; i < method.getParameters().length; ++i) {
-            parameterTypes[i] = loadClass(method.getParameters()[i].declaredType);
-        }
-        // some parameters need the body to be read
-        MethodParameter[] parameters = method.getParameters();
-        // FIXME: this could come from fields or beanparams too
-        for (int i = 0; i < parameters.length; i++) {
-            MethodParameter param = parameters[i];
-            if (param.parameterType == ParameterType.FORM) {
-                handlers.add(new ReadBodyHandler());
-                break;
-            } else if (param.parameterType == ParameterType.BODY) {
-                handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
-                handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
-            }
-        }
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             boolean single = param.isSingle();

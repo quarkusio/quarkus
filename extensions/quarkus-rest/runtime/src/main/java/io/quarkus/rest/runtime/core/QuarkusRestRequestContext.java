@@ -785,6 +785,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         // this is a slower version than getPathParam, but we can't actually bake path indices inside
         // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have different
         // indices
-        return getPathParam(this.target.getPathParameterIndexes().get(name));
+        Integer index = this.target.getPathParameterIndexes().get(name);
+        // It's possible to inject a path param that's not defined, return null in this case
+        return index != null ? getPathParam(index) : null;
     }
 }

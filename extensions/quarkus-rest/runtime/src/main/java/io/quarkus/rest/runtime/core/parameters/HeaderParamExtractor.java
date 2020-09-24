@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.core.parameters;
 
+import java.util.List;
+
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
 public class HeaderParamExtractor implements ParameterExtractor {
@@ -17,7 +19,11 @@ public class HeaderParamExtractor implements ParameterExtractor {
         if (single) {
             return context.getContext().request().getHeader(name);
         } else {
-            return context.getContext().request().headers().getAll(name);
+            List<String> all = context.getContext().request().headers().getAll(name);
+            if (all.isEmpty()) {
+                return null;
+            }
+            return all;
         }
     }
 }

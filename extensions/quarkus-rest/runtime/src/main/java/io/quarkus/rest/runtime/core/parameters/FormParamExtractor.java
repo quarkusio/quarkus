@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.core.parameters;
 
+import java.util.List;
+
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 
 public class FormParamExtractor implements ParameterExtractor {
@@ -17,7 +19,11 @@ public class FormParamExtractor implements ParameterExtractor {
         if (single) {
             return context.getContext().request().getFormAttribute(name);
         } else {
-            return context.getContext().request().formAttributes().getAll(name);
+            List<String> values = context.getContext().request().formAttributes().getAll(name);
+            if (values.isEmpty()) {
+                return null;
+            }
+            return values;
         }
     }
 }

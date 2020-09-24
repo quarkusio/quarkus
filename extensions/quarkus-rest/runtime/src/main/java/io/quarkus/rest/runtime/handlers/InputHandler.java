@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -38,6 +39,11 @@ public class InputHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext context) throws Exception {
+        // in some cases, with sub-resource locators, it's possible we've already read the entity
+        if (context.getInputStream() != EmptyInputStream.INSTANCE) {
+            // let's not read it twice
+            return;
+        }
         if (context.getContext().request().method().equals(HttpMethod.GET) ||
                 context.getContext().request().method().equals(HttpMethod.HEAD)) {
             return;

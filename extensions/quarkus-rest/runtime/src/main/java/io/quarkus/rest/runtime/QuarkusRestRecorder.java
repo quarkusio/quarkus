@@ -657,19 +657,26 @@ public class QuarkusRestRecorder {
         }
         // some parameters need the body to be read
         MethodParameter[] parameters = method.getParameters();
+        // body can only be in a parameter
+        MethodParameter bodyParameter = null;
+        for (int i = 0; i < parameters.length; i++) {
+            MethodParameter param = parameters[i];
+            if (param.parameterType == ParameterType.BODY) {
+                bodyParameter = param;
+                break;
+            }
+        }
         // form params can be everywhere (field, beanparam, param)
         if (method.isFormParamRequired()) {
-            handlers.add(new ReadBodyHandler());
+            // read the body as multipart in one go
+            handlers.add(new ReadBodyHandler(bodyParameter != null));
         } else {
-            // body can only be in a parameter
-            for (int i = 0; i < parameters.length; i++) {
-                MethodParameter param = parameters[i];
-                if (param.parameterType == ParameterType.BODY) {
-                    handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
-                    handlers.add(new RequestDeserializeHandler(loadClass(param.type), consumesMediaType, serialisers));
-                    break;
-                }
-            }
+            // allow the body to be read by chunks
+            handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
+        }
+        // if we need the body, let's deserialise it
+        if (bodyParameter != null) {
+            handlers.add(new RequestDeserializeHandler(loadClass(bodyParameter.type), consumesMediaType, serialisers));
         }
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before

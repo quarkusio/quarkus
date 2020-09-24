@@ -1,5 +1,6 @@
 package io.quarkus.devtools.commands.handlers;
 
+import static io.quarkus.devtools.commands.CreateProject.CODESTARTS;
 import static io.quarkus.devtools.commands.CreateProject.CODESTARTS_ENABLED;
 import static io.quarkus.devtools.commands.CreateProject.NO_BUILDTOOL_WRAPPER;
 import static io.quarkus.devtools.commands.CreateProject.NO_DOCKERFILES;
@@ -32,6 +33,7 @@ import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,6 +80,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                         .addExtensions(extensionsToAdd)
                         .buildTool(invocation.getQuarkusProject().getBuildTool())
+                        .addCodestarts(invocation.getValue(CODESTARTS, new HashSet<>()))
                         .noExamples(invocation.getValue(NO_EXAMPLES, false))
                         .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
                         .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))

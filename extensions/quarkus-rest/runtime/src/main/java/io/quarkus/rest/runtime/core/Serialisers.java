@@ -24,9 +24,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.model.ResourceReader;
 import io.quarkus.rest.runtime.model.ResourceWriter;
@@ -90,7 +92,8 @@ public class Serialisers {
         //note that GenericEntity is not a factor here. It should have already been unwrapped
 
         Response response = context.getResponse();
-        if (writer instanceof QuarkusRestMessageBodyWriter) {
+        WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
+        if (writer instanceof QuarkusRestMessageBodyWriter && writerInterceptors == null) {
             QuarkusRestMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestMessageBodyWriter<Object>) writer;
             RuntimeResource target = context.getTarget();
             Serialisers.encodeResponseHeaders(context);
@@ -110,16 +113,29 @@ public class Serialisers {
                 if (mediaType != null) {
                     context.setProducesMediaType(mediaType);
                 }
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
-                        context.getAnnotations(), response.getMediaType(), response.getHeaders(), baos);
-                Serialisers.encodeResponseHeaders(context);
-                context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
+                if (writerInterceptors == null) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    writer.writeTo(entity, entity.getClass(), context.getGenericReturnType(),
+                            context.getAnnotations(), response.getMediaType(), response.getHeaders(), baos);
+                    Serialisers.encodeResponseHeaders(context);
+                    context.getContext().response().end(Buffer.buffer(baos.toByteArray()));
+                } else {
+                    runWriterInterceptors(context, entity, writer, response, writerInterceptors);
+                }
                 return true;
             } else {
                 return false;
             }
         }
+    }
+
+    public static void runWriterInterceptors(QuarkusRestRequestContext context, Object entity, MessageBodyWriter writer,
+            Response response, WriterInterceptor[] writerInterceptor) throws IOException {
+        QuarkusRestWriterInterceptorContext wc = new QuarkusRestWriterInterceptorContext(context, writerInterceptor, writer,
+                context.getAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
+                response.getHeaders());
+        wc.proceed();
+
     }
 
     public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType) {

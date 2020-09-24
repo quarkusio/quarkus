@@ -233,6 +233,7 @@ public class QuarkusRestRecorder {
                     writers[idx++] = i;
                 }
             }
+            globalInterceptorHandler = new InterceptorHandler(writers, readers);
 
         }
 

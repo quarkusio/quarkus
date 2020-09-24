@@ -88,9 +88,11 @@ import io.quarkus.rest.runtime.model.ResourceFeature;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.ResourceReader;
+import io.quarkus.rest.runtime.model.ResourceReaderInterceptor;
 import io.quarkus.rest.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
+import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
@@ -235,6 +237,10 @@ public class QuarkusRestProcessor {
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_REQUEST_FILTER);
         Collection<ClassInfo> containerResponseFilters = index
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTAINER_RESPONSE_FILTER);
+        Collection<ClassInfo> readerInterceptors = index
+                .getAllKnownImplementors(QuarkusRestDotNames.READER_INTERCEPTOR);
+        Collection<ClassInfo> writerInterceptors = index
+                .getAllKnownImplementors(QuarkusRestDotNames.WRITER_INTERCEPTOR);
         Collection<ClassInfo> exceptionMappers = index
                 .getAllKnownImplementors(QuarkusRestDotNames.EXCEPTION_MAPPER);
         Collection<ClassInfo> writers = index
@@ -357,6 +363,42 @@ public class QuarkusRestProcessor {
                 } else {
                     interceptor.setNameBindingNames(nameBindingNames);
                     interceptors.addNameResponseInterceptor(interceptor);
+                }
+                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    interceptor.setPriority(priorityInstance.value().asInt());
+                }
+            }
+        }
+        for (ClassInfo filterClass : writerInterceptors) {
+            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
+                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                if (nameBindingNames.isEmpty()) {
+                    interceptors.addGlobalWriterInterceptor(interceptor);
+                } else {
+                    interceptor.setNameBindingNames(nameBindingNames);
+                    interceptors.addNameWriterInterceptor(interceptor);
+                }
+                AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    interceptor.setPriority(priorityInstance.value().asInt());
+                }
+            }
+        }
+        for (ClassInfo filterClass : readerInterceptors) {
+            if (filterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
+                interceptor.setFactory(recorder.factory(filterClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                if (nameBindingNames.isEmpty()) {
+                    interceptors.addGlobalReaderInterceptor(interceptor);
+                } else {
+                    interceptor.setNameBindingNames(nameBindingNames);
+                    interceptors.addNameReaderInterceptor(interceptor);
                 }
                 AnnotationInstance priorityInstance = filterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
                 if (priorityInstance != null) {

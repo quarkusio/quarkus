@@ -38,6 +38,8 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
@@ -79,6 +81,8 @@ public final class QuarkusRestDotNames {
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());
     public static final DotName CONTEXT_RESOLVER = DotName.createSimple(ContextResolver.class.getName());
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
+    public static final DotName WRITER_INTERCEPTOR = DotName.createSimple(WriterInterceptor.class.getName());
+    public static final DotName READER_INTERCEPTOR = DotName.createSimple(ReaderInterceptor.class.getName());
     public static final DotName MESSAGE_BODY_READER = DotName.createSimple(MessageBodyReader.class.getName());
     public static final DotName DEFAULT_VALUE = DotName.createSimple(DefaultValue.class.getName());
     public static final DotName NAME_BINDING = DotName.createSimple(NameBinding.class.getName());

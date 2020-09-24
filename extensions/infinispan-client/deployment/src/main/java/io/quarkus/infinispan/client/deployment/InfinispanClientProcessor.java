@@ -59,7 +59,7 @@ class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
 
     private static final String META_INF = "META-INF";
-    private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "/hotrod-client.properties";
+    private static final String HOTROD_CLIENT_PROPERTIES = META_INF + File.separator + "hotrod-client.properties";
     private static final String PROTO_EXTENSION = ".proto";
 
     /**

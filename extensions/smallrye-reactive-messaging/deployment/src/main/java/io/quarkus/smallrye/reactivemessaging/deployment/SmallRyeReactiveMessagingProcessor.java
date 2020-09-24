@@ -42,8 +42,6 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,6 +50,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -59,6 +58,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
@@ -282,11 +282,14 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     public void enableMetrics(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            Capabilities capabilities, ReactiveMessagingConfiguration configuration) {
-        boolean isMetricEnabled = capabilities.isPresent(Capability.METRICS) && configuration.metricsEnabled;
-        if (!isMetricEnabled) {
-            LOGGER.debug("Metric is disabled - vetoing the MetricDecorator");
-            // We veto the Metric Decorator
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
+            ReactiveMessagingConfiguration configuration) {
+        boolean isMetricEnabled = metricsCapability.isPresent() && configuration.metricsEnabled;
+        boolean useMicrometer = isMetricEnabled && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER);
+        if (!isMetricEnabled || useMicrometer) {
+            LOGGER.debug("Metrics Enabled: " + isMetricEnabled + "; Using Micrometer: " + useMicrometer);
+
+            // Remove the MetricDecorator that requires the MP Metrics API
             AnnotationsTransformerBuildItem veto = new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
                 @Override
                 public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -295,9 +298,10 @@ public class SmallRyeReactiveMessagingProcessor {
 
                 @Override
                 public void transform(AnnotationsTransformer.TransformationContext ctx) {
-                    if (ctx.isClass() && ctx.getTarget().asClass().name().equals(
-                            ReactiveMessagingDotNames.METRIC_DECORATOR)) {
-                        ctx.transform().add(Vetoed.class).done();
+                    if (ctx.getTarget().asClass().name().equals(ReactiveMessagingDotNames.METRIC_DECORATOR)) {
+                        ctx.transform()
+                                .removeAll()
+                                .add(Vetoed.class).done();
                     }
                 }
             });

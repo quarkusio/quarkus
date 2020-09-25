@@ -26,7 +26,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
@@ -71,6 +70,7 @@ import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.EventingService;
@@ -168,7 +168,6 @@ public class SmallRyeGraphQLProcessor {
     void activateMetrics(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig smallRyeGraphQLConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<SystemPropertyBuildItem> systemProperties) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
             if (metricsCapability.isPresent()) {
@@ -281,9 +280,9 @@ public class SmallRyeGraphQLProcessor {
         for (Operation operation : operations) {
             classes.add(operation.getClassName());
             for (Argument argument : operation.getArguments()) {
-                classes.add(argument.getReference().getClassName());
+                classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
-            classes.add(operation.getReference().getClassName());
+            classes.addAll(getAllReferenceClasses(operation.getReference()));
         }
         return classes;
     }
@@ -318,7 +317,20 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getFieldClassNames(Map<String, Field> fields) {
         Set<String> classes = new HashSet<>();
         for (Field field : fields.values()) {
-            classes.add(field.getReference().getClassName());
+            classes.addAll(getAllReferenceClasses(field.getReference()));
+        }
+        return classes;
+    }
+
+    private Set<String> getAllReferenceClasses(Reference reference) {
+        Set<String> classes = new HashSet<>();
+        classes.add(reference.getClassName());
+        if (reference.getParametrizedTypeArguments() != null && !reference.getParametrizedTypeArguments().isEmpty()) {
+
+            Collection<Reference> parametrized = reference.getParametrizedTypeArguments().values();
+            for (Reference r : parametrized) {
+                classes.addAll(getAllReferenceClasses(r));
+            }
         }
         return classes;
     }

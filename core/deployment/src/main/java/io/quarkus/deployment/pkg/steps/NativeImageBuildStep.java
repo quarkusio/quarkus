@@ -104,52 +104,12 @@ public class NativeImageBuildStep {
         String noPIE = "";
 
         boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
-        if (isContainerBuild) {
-            nativeImage = setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
-
-        } else {
-            if (SystemUtils.IS_OS_LINUX) {
-                noPIE = detectNoPIE();
-            }
-
-            Optional<String> graal = nativeConfig.graalvmHome;
-            File java = nativeConfig.javaHome;
-            if (graal.isPresent()) {
-                env.put(GRAALVM_HOME, graal.get());
-            }
-            if (java == null) {
-                // try system property first - it will be the JAVA_HOME used by the current JVM
-                String home = System.getProperty(JAVA_HOME_SYS);
-                if (home == null) {
-                    // No luck, somewhat a odd JVM not enforcing this property
-                    // try with the JAVA_HOME environment variable
-                    home = env.get(JAVA_HOME_ENV);
-                }
-
-                if (home != null) {
-                    java = new File(home);
-                }
-            }
-            nativeImage = getNativeImageExecutable(graal, java, env, nativeConfig, processInheritIODisabled, outputDir);
+        if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
+            noPIE = detectNoPIE();
         }
 
-        final GraalVM.Version graalVMVersion;
-
-        try {
-            List<String> versionCommand = new ArrayList<>(nativeImage);
-            versionCommand.add("--version");
-
-            Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
-                    .redirectErrorStream(true)
-                    .start();
-            versionProcess.waitFor();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                graalVMVersion = GraalVM.Version.of(reader.lines());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get GraalVM version", e);
-        }
+        nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir, env);
+        final GraalVM.Version graalVMVersion = GraalVM.Version.ofBinary(nativeImage);
 
         if (graalVMVersion.isDetected()) {
             checkGraalVMVersion(graalVMVersion);
@@ -345,6 +305,35 @@ public class NativeImageBuildStep {
             if (nativeConfig.debug.enabled) {
                 removeJarSourcesFromLib(outputTargetBuildItem);
             }
+        }
+    }
+
+    private static List<String> getNativeImage(NativeConfig nativeConfig,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Path outputDir, Map<String, String> env) {
+        boolean isContainerBuild = nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild;
+        if (isContainerBuild) {
+            return setupContainerBuild(nativeConfig, processInheritIODisabled, outputDir);
+        } else {
+            Optional<String> graal = nativeConfig.graalvmHome;
+            File java = nativeConfig.javaHome;
+            if (graal.isPresent()) {
+                env.put(GRAALVM_HOME, graal.get());
+            }
+            if (java == null) {
+                // try system property first - it will be the JAVA_HOME used by the current JVM
+                String home = System.getProperty(JAVA_HOME_SYS);
+                if (home == null) {
+                    // No luck, somewhat a odd JVM not enforcing this property
+                    // try with the JAVA_HOME environment variable
+                    home = env.get(JAVA_HOME_ENV);
+                }
+
+                if (home != null) {
+                    java = new File(home);
+                }
+            }
+            return getNativeImageExecutable(graal, java, env, nativeConfig, processInheritIODisabled, outputDir);
         }
     }
 
@@ -666,8 +655,17 @@ public class NativeImageBuildStep {
 
     //https://github.com/quarkusio/quarkus/issues/11573
     //https://github.com/oracle/graal/issues/1610
-    @BuildStep
-    List<RuntimeReinitializedClassBuildItem> graalVmWorkaround() {
+    List<RuntimeReinitializedClassBuildItem> graalVmWorkaround(NativeConfig nativeConfig,
+            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+        Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
+        HashMap<String, String> env = new HashMap<>(System.getenv());
+        List<String> nativeImage = getNativeImage(nativeConfig, processInheritIODisabled, outputDir, env);
+        GraalVM.Version version = GraalVM.Version.ofBinary(nativeImage);
+        if (version.isNewerThan(GraalVM.Version.VERSION_20_2)) {
+            // https://github.com/oracle/graal/issues/2841
+            return Collections.emptyList();
+        }
         return Arrays.asList(new RuntimeReinitializedClassBuildItem(ThreadLocalRandom.class.getName()),
                 new RuntimeReinitializedClassBuildItem("java.lang.Math$RandomNumberGeneratorHolder"));
     }
@@ -761,6 +759,26 @@ public class NativeImageBuildStep {
                 }
 
                 return UNVERSIONED;
+            }
+
+            private static Version ofBinary(List<String> nativeImage) {
+                final Version graalVMVersion;
+                try {
+                    List<String> versionCommand = new ArrayList<>(nativeImage);
+                    versionCommand.add("--version");
+
+                    Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
+                            .redirectErrorStream(true)
+                            .start();
+                    versionProcess.waitFor();
+                    try (BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
+                        graalVMVersion = of(reader.lines());
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to get GraalVM version", e);
+                }
+                return graalVMVersion;
             }
 
             private static boolean isSnapshot(String s) {

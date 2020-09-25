@@ -174,6 +174,13 @@ public final class OidcUtils {
             throw new AuthenticationFailedException(e);
         }
         builder.setPrincipal(jwtPrincipal);
+        setSecurityIdentityRoles(builder, config, rolesJson);
+        setSecurityIdentityUserInfo(builder, userInfo);
+        return builder.build();
+    }
+
+    public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
+            JsonObject rolesJson) {
         try {
             String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
             for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
@@ -182,8 +189,6 @@ public final class OidcUtils {
         } catch (Exception e) {
             throw new ForbiddenException(e);
         }
-        setSecurityIdentityUserInfo(builder, userInfo);
-        return builder.build();
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {

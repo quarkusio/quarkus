@@ -38,7 +38,7 @@ public class TenantResource {
             throw new OIDCException("Wrong tenant");
         }
         String name = getNameServiceType();
-        if ("tenant-d".equals(tenant)) {
+        if ("tenant-d".equals(tenant) || "tenant-b-no-discovery".equals(tenant)) {
             UserInfo userInfo = getUserInfo();
             name = name + "." + userInfo.getString("preferred_username");
         }
@@ -46,10 +46,17 @@ public class TenantResource {
     }
 
     @GET
+    @RolesAllowed("user")
+    @Path("no-discovery")
+    public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
+        return userNameService(tenant);
+    }
+
+    @GET
     @Path("webapp")
     @RolesAllowed("user")
     public String userNameWebApp(@PathParam("tenant") String tenant) {
-        if (!tenant.equals("tenant-web-app")) {
+        if (!tenant.equals("tenant-web-app") && !tenant.equals("tenant-web-app-no-discovery")) {
             throw new OIDCException("Wrong tenant");
         }
         UserInfo userInfo = getUserInfo();
@@ -57,6 +64,13 @@ public class TenantResource {
             throw new OIDCException("Groups expected");
         }
         return tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+    }
+
+    @GET
+    @Path("webapp-no-discovery")
+    @RolesAllowed("user")
+    public String userNameWebAppNoDiscovery(@PathParam("tenant") String tenant) {
+        return userNameWebApp(tenant);
     }
 
     private UserInfo getUserInfo() {

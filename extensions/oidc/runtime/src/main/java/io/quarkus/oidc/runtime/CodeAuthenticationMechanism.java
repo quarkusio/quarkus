@@ -302,19 +302,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
                         uniEmitter.fail(new AuthenticationCompletionException(userAsyncResult.cause()));
                     } else {
-                        final AccessToken result = AccessToken.class.cast(userAsyncResult.result());
-
-                        context.put("access_token", result.opaqueAccessToken());
-                        authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
+                        final AccessToken authResult = AccessToken.class.cast(userAsyncResult.result());
+                        final String opaqueIdToken = authResult.opaqueIdToken();
+                        final String opaqueAccessToken = authResult.opaqueAccessToken();
+                        final String opaqueRefreshToken = authResult.opaqueRefreshToken();
+                        context.put("access_token", opaqueAccessToken);
+                        authenticate(identityProviderManager, new IdTokenCredential(opaqueIdToken, context))
                                 .subscribe().with(new Consumer<SecurityIdentity>() {
                                     @Override
                                     public void accept(SecurityIdentity identity) {
-                                        if (!result.idToken().containsKey("exp") || !result.idToken().containsKey("iat")) {
-                                            LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
-                                            uniEmitter.fail(new AuthenticationCompletionException());
-                                        }
-                                        processSuccessfulAuthentication(context, configContext, result,
-                                                result.opaqueRefreshToken(), identity);
+                                        processSuccessfulAuthentication(context, configContext, authResult.idToken(),
+                                                opaqueIdToken, opaqueAccessToken, opaqueRefreshToken, identity);
 
                                         if (configContext.oidcConfig.authentication.isRemoveRedirectParameters()
                                                 && context.request().query() != null) {
@@ -326,8 +324,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debugf("Final redirect URI: %s", finalRedirectUri);
                                             uniEmitter.fail(new AuthenticationRedirectException(finalRedirectUri));
                                         } else {
-                                            uniEmitter.complete(augmentIdentity(identity, result.opaqueAccessToken(),
-                                                    result.opaqueRefreshToken(), context));
+                                            uniEmitter.complete(augmentIdentity(identity, opaqueAccessToken,
+                                                    opaqueRefreshToken, context));
                                         }
                                     }
                                 }, new Consumer<Throwable>() {
@@ -359,15 +357,28 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .sign(key);
     }
 
-    private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
-            AccessToken result, String refreshToken, SecurityIdentity securityIdentity) {
+    private void processSuccessfulAuthentication(RoutingContext context,
+            TenantConfigContext configContext,
+            JsonObject idToken,
+            String opaqueIdToken,
+            String opaqueAccessToken,
+            String opaqueRefreshToken,
+            SecurityIdentity securityIdentity) {
         removeCookie(context, configContext, getSessionCookieName(configContext));
 
-        String cookieValue = result.opaqueIdToken() + COOKIE_DELIM
-                + result.opaqueAccessToken() + COOKIE_DELIM
-                + refreshToken;
+        String cookieValue = opaqueIdToken + COOKIE_DELIM
+                + opaqueAccessToken + COOKIE_DELIM
+                + opaqueRefreshToken;
 
-        long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
+        if (idToken == null) {
+            // it can be null if Vert.x did the remote introspection of the ID token
+            idToken = OidcUtils.decodeJwtContent(opaqueIdToken);
+        }
+        if (!idToken.containsKey("exp") || !idToken.containsKey("iat")) {
+            LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
+            throw new AuthenticationCompletionException();
+        }
+        long maxAge = idToken.getLong("exp") - idToken.getLong("iat");
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
             maxAge += configContext.oidcConfig.token.lifespanGrace.getAsInt();
         }
@@ -483,24 +494,26 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public void handle(AsyncResult<Void> result) {
                         if (result.succeeded()) {
+                            final String opaqueIdToken = token.opaqueIdToken();
+                            final String opaqueAccessToken = token.opaqueAccessToken();
+                            final String opaqueRefreshToken = token.opaqueRefreshToken();
                             context.put("access_token", token.opaqueAccessToken());
                             authenticate(identityProviderManager,
                                     new IdTokenCredential(token.opaqueIdToken(), context))
                                             .subscribe().with(new Consumer<SecurityIdentity>() {
                                                 @Override
                                                 public void accept(SecurityIdentity identity) {
-                                                    // the refresh token might not have been send in the response again
-                                                    String refresh = token.opaqueRefreshToken() != null
-                                                            ? token.opaqueRefreshToken()
+                                                    // the refresh token might not have been sent in the response again
+                                                    String refresh = opaqueRefreshToken != null
+                                                            ? opaqueRefreshToken
                                                             : refreshToken;
                                                     // after a successful refresh, rebuild the identity and update the cookie
-                                                    processSuccessfulAuthentication(context, configContext, token, refresh,
-                                                            identity);
+                                                    processSuccessfulAuthentication(context, configContext, token.idToken(),
+                                                            opaqueIdToken, opaqueAccessToken, refresh, identity);
                                                     // update the token so that blocking threads get the latest one
                                                     emitter.complete(
-                                                            augmentIdentity(identity, token.opaqueAccessToken(),
-                                                                    token.opaqueRefreshToken(),
-                                                                    context));
+                                                            augmentIdentity(identity, opaqueAccessToken,
+                                                                    refresh, context));
                                                 }
                                             }, new Consumer<Throwable>() {
                                                 @Override

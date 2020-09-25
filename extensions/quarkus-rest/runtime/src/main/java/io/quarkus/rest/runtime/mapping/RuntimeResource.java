@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.mapping;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
@@ -17,7 +18,7 @@ public class RuntimeResource {
     private final URITemplate path;
     private final URITemplate classPath;
     private final ServerMediaType produces;
-    private final MediaType consumes;
+    private final List<MediaType> consumes;
     private final EndpointInvoker invoker;
     private final BeanFactory<Object> endpointFactory;
     private final RestHandler[] handlerChain;
@@ -30,7 +31,7 @@ public class RuntimeResource {
     private final Map<String, Integer> pathParameterIndexes;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
-            MediaType consumes,
+            List<MediaType> consumes,
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, RestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes,
             Type returnType, boolean blocking, Class<?> resourceClass, LazyMethod lazyMethod,
@@ -80,7 +81,7 @@ public class RuntimeResource {
         return produces;
     }
 
-    public MediaType getConsumes() {
+    public List<MediaType> getConsumes() {
         return consumes;
     }
 

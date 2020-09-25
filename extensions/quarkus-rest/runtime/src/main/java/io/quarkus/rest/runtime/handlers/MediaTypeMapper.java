@@ -32,10 +32,8 @@ public class MediaTypeMapper implements RestHandler {
         resourcesByConsumes = new HashMap<>();
         consumesTypes = new ArrayList<>();
         for (RuntimeResource runtimeResource : runtimeResources) {
-            MediaType consumesMT = runtimeResource.getConsumes();
-            if (consumesMT == null) {
-                consumesMT = MediaType.WILDCARD_TYPE;
-            }
+            MediaType consumesMT = runtimeResource.getConsumes().isEmpty() ? MediaType.WILDCARD_TYPE
+                    : runtimeResource.getConsumes().get(0);
             if (!resourcesByConsumes.containsKey(consumesMT)) {
                 consumesTypes.add(consumesMT);
                 resourcesByConsumes.put(consumesMT, new Holder());

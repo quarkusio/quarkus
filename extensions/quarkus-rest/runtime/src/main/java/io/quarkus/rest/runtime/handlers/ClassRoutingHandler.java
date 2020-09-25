@@ -76,11 +76,11 @@ public class ClassRoutingHandler implements RestHandler {
         }
 
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
-        if (target.value.getConsumes() != null) {
+        if (!target.value.getConsumes().isEmpty()) {
             String contentType = requestContext.getContext().request().headers().get(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
                 if (MediaTypeHelper.getBestMatch(
-                        Collections.singletonList(target.value.getConsumes()),
+                        target.value.getConsumes(),
                         Collections.singletonList(MediaType.valueOf(contentType))) == null) {
                     throw new NotSupportedException();
                 }

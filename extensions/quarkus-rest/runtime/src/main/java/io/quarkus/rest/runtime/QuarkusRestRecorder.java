@@ -536,7 +536,8 @@ public class QuarkusRestRecorder {
                     //now we just create a fake RuntimeResource
                     //we could add another layer of indirection, however this is not a common case
                     //so we don't want to add any extra latency into the common case
-                    RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, null, null, null,
+                    RuntimeResource fake = new RuntimeResource(i.getKey(), entry.getKey(), null, null, Collections.emptyList(),
+                            null, null,
                             new RestHandler[] { mapper }, null, new Class[0], null, false, null, null, null);
                     result.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
                 }
@@ -569,7 +570,15 @@ public class QuarkusRestRecorder {
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<RestHandler> handlers = new ArrayList<>();
-        MediaType consumesMediaType = method.getConsumes() == null ? null : MediaType.valueOf(method.getConsumes()[0]);
+        List<MediaType> consumesMediaTypes;
+        if (method.getConsumes() == null) {
+            consumesMediaTypes = Collections.emptyList();
+        } else {
+            consumesMediaTypes = new ArrayList<>(method.getConsumes().length);
+            for (String s : method.getConsumes()) {
+                consumesMediaTypes.add(MediaType.valueOf(s));
+            }
+        }
 
         //setup reader and writer interceptors first
         if (method.getNameBindingNames().isEmpty() && nameReaderInterceptorsMap.isEmpty()
@@ -685,7 +694,8 @@ public class QuarkusRestRecorder {
         }
         // if we need the body, let's deserialise it
         if (bodyParameter != null) {
-            handlers.add(new RequestDeserializeHandler(loadClass(bodyParameter.type), consumesMediaType, serialisers));
+            handlers.add(new RequestDeserializeHandler(loadClass(bodyParameter.type),
+                    consumesMediaTypes.isEmpty() ? null : consumesMediaTypes.get(0), serialisers));
         }
 
         // given that we may inject form params in the endpoint we need to make sure we read the body before
@@ -833,7 +843,7 @@ public class QuarkusRestRecorder {
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
-                consumesMediaType, invoker,
+                consumesMediaTypes, invoker,
                 clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 new LazyMethod(method.getName(), resourceClass, parameterTypes),

@@ -32,7 +32,7 @@ public class FieldInjectedResource {
         return "OK";
     }
 
-    private void checkInjections(String path, String query, String header, UriInfo uriInfo, SimpleBeanParam beanParam) {
+    protected void checkInjections(String path, String query, String header, UriInfo uriInfo, SimpleBeanParam beanParam) {
         Assertions.assertEquals("one-query", query);
         Assertions.assertEquals("one-header", header);
         Assertions.assertNotNull(uriInfo);

@@ -5,7 +5,7 @@ import java.util.List;
 
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
-public class ResourceClass implements FormContainer {
+public class ResourceClass {
 
     /**
      * The class name of the resource class
@@ -70,12 +70,10 @@ public class ResourceClass implements FormContainer {
         this.perRequestResource = perRequestResource;
     }
 
-    @Override
     public boolean isFormParamRequired() {
         return isFormParamRequired;
     }
 
-    @Override
     public ResourceClass setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
         return this;

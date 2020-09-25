@@ -39,7 +39,8 @@ public class SimpleQuarkusRestTestCase {
                                     QueryParamResource.class, HeaderParamResource.class,
                                     TestWriter.class, TestClass.class,
                                     SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
-                                    ParameterWithFromString.class);
+                                    ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
+                                    BeanParamSuperClass.class);
                 }
             });
 
@@ -388,6 +389,28 @@ public class SimpleQuarkusRestTestCase {
                 .queryParam("queryList", "two")
                 .queryParam("int", "666")
                 .get("/injection/param")
+                .then().body(Matchers.equalTo("OK"));
+    }
+
+    @Test
+    public void fieldInjectionWithSubClasses() {
+        RestAssured
+                .with()
+                .header("header", "one-header")
+                .queryParam("query", "one-query")
+                .queryParam("queryList", "one")
+                .queryParam("queryList", "two")
+                .queryParam("int", "666")
+                .get("/injection-subclass/field2")
+                .then().body(Matchers.equalTo("OK"));
+        RestAssured
+                .with()
+                .header("header", "one-header")
+                .queryParam("query", "one-query")
+                .queryParam("queryList", "one")
+                .queryParam("queryList", "two")
+                .queryParam("int", "666")
+                .get("/injection-subclass/param2")
                 .then().body(Matchers.equalTo("OK"));
     }
 }

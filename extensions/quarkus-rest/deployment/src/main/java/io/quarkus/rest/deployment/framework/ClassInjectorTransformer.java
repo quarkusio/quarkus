@@ -45,14 +45,16 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
     private static final String INJECT_METHOD_DESCRIPTOR = "(" + QUARKUS_REST_INJECTION_CONTEXT_DESCRIPTOR + ")V";
 
     private final Map<FieldInfo, ParameterExtractor> fieldExtractors;
+    private final boolean superTypeIsInjectable;
 
-    public ClassInjectorTransformer(Map<FieldInfo, ParameterExtractor> fieldExtractors) {
+    public ClassInjectorTransformer(Map<FieldInfo, ParameterExtractor> fieldExtractors, boolean superTypeIsInjectable) {
         this.fieldExtractors = fieldExtractors;
+        this.superTypeIsInjectable = superTypeIsInjectable;
     }
 
     @Override
     public ClassVisitor apply(String classname, ClassVisitor visitor) {
-        return new ClassInjectorVisitor(Opcodes.ASM8, visitor, fieldExtractors);
+        return new ClassInjectorVisitor(Opcodes.ASM8, visitor, fieldExtractors, superTypeIsInjectable);
     }
 
     static class ClassInjectorVisitor extends ClassVisitor {
@@ -60,21 +62,20 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         private Map<FieldInfo, ParameterExtractor> fieldExtractors;
         private String thisName;
         private boolean implementInterface = true;
+        private boolean superTypeIsInjectable;
+        private String superTypeName;
 
-        public ClassInjectorVisitor(int api, ClassVisitor classVisitor, Map<FieldInfo, ParameterExtractor> fieldExtractors) {
+        public ClassInjectorVisitor(int api, ClassVisitor classVisitor, Map<FieldInfo, ParameterExtractor> fieldExtractors,
+                boolean superTypeIsInjectable) {
             super(api, classVisitor);
             this.fieldExtractors = fieldExtractors;
+            this.superTypeIsInjectable = superTypeIsInjectable;
         }
 
         @Override
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-            for (String iface : interfaces) {
-                if (QUARKUS_REST_INJECTION_TARGET_BINARY_NAME.equals(iface)) {
-                    implementInterface = false;
-                    break;
-                }
-            }
-            if (implementInterface) {
+            // if our supertype is already injectable we don't have to implement it again
+            if (!superTypeIsInjectable) {
                 String[] newInterfaces = new String[interfaces.length + 1];
                 newInterfaces[0] = QUARKUS_REST_INJECTION_TARGET_BINARY_NAME;
                 System.arraycopy(interfaces, 0, newInterfaces, 1, interfaces.length);
@@ -82,6 +83,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             } else {
                 super.visit(version, access, name, signature, superName, interfaces);
             }
+            superTypeName = superName;
             thisName = name;
         }
 
@@ -89,63 +91,70 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         public void visitEnd() {
             // FIXME: handle setters
             // FIXME: handle multi fields
-            // FIXME: handle converters
-            if (implementInterface) {
-                MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC, INJECT_METHOD_NAME, INJECT_METHOD_DESCRIPTOR, null,
-                        null);
-                injectMethod.visitParameter("ctx", 0 /* modifiers */);
-                injectMethod.visitCode();
-                for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
-                    FieldInfo fieldInfo = entry.getKey();
-                    ParameterExtractor extractor = entry.getValue();
-                    switch (extractor.getType()) {
-                        case BEAN:
-                            // this
-                            injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
-                            // our bean param field
-                            injectMethod.visitFieldInsn(Opcodes.GETFIELD, thisName, fieldInfo.name(),
-                                    AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
-                            // ctx param
-                            injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
-                            // call inject on our bean param field
-                            injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_TARGET_BINARY_NAME,
-                                    INJECT_METHOD_NAME,
-                                    INJECT_METHOD_DESCRIPTOR, true);
-                            break;
-                        case ASYNC_RESPONSE:
-                        case BODY:
-                            // spec says not supported
-                            break;
-                        case CONTEXT:
-                            // already set by CDI
-                            break;
-                        case FORM:
-                            injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
-                            break;
-                        case HEADER:
-                            injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
-                            break;
-                        case MATRIX:
-                            injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
-                            break;
-                        case COOKIE:
-                            injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
-                            break;
-                        case PATH:
-                            injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
-                            break;
-                        case QUERY:
-                            injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
-                            break;
-                        default:
-                            break;
-
-                    }
-                }
-                injectMethod.visitInsn(Opcodes.RETURN);
-                injectMethod.visitEnd();
-                injectMethod.visitMaxs(0, 0);
+            MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC, INJECT_METHOD_NAME, INJECT_METHOD_DESCRIPTOR, null,
+                    null);
+            injectMethod.visitParameter("ctx", 0 /* modifiers */);
+            injectMethod.visitCode();
+            if (superTypeIsInjectable) {
+                // this
+                injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
+                // ctx param
+                injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                // call inject on our bean param field
+                injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, superTypeName,
+                        INJECT_METHOD_NAME,
+                        INJECT_METHOD_DESCRIPTOR, true);
             }
+            for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
+                FieldInfo fieldInfo = entry.getKey();
+                ParameterExtractor extractor = entry.getValue();
+                switch (extractor.getType()) {
+                    case BEAN:
+                        // this
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
+                        // our bean param field
+                        injectMethod.visitFieldInsn(Opcodes.GETFIELD, thisName, fieldInfo.name(),
+                                AsmUtil.getDescriptor(fieldInfo.type(), name -> null));
+                        // ctx param
+                        injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
+                        // call inject on our bean param field
+                        injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, QUARKUS_REST_INJECTION_TARGET_BINARY_NAME,
+                                INJECT_METHOD_NAME,
+                                INJECT_METHOD_DESCRIPTOR, true);
+                        break;
+                    case ASYNC_RESPONSE:
+                    case BODY:
+                        // spec says not supported
+                        break;
+                    case CONTEXT:
+                        // already set by CDI
+                        break;
+                    case FORM:
+                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
+                        break;
+                    case HEADER:
+                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
+                        break;
+                    case MATRIX:
+                        injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
+                        break;
+                    case COOKIE:
+                        injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
+                        break;
+                    case PATH:
+                        injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
+                        break;
+                    case QUERY:
+                        injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
+                        break;
+                    default:
+                        break;
+
+                }
+            }
+            injectMethod.visitInsn(Opcodes.RETURN);
+            injectMethod.visitEnd();
+            injectMethod.visitMaxs(0, 0);
 
             super.visitEnd();
         }

@@ -1,7 +1,8 @@
 package io.quarkus.rest.runtime.model;
 
-public class BeanParamInfo implements FormContainer {
-    boolean isFormParamRequired;
+public class BeanParamInfo implements InjectableBean {
+    private boolean isFormParamRequired;
+    private boolean isInjectionRequired;
 
     @Override
     public boolean isFormParamRequired() {
@@ -9,8 +10,19 @@ public class BeanParamInfo implements FormContainer {
     }
 
     @Override
-    public FormContainer setFormParamRequired(boolean isFormParamRequired) {
+    public InjectableBean setFormParamRequired(boolean isFormParamRequired) {
         this.isFormParamRequired = isFormParamRequired;
+        return this;
+    }
+
+    @Override
+    public boolean isInjectionRequired() {
+        return isInjectionRequired;
+    }
+
+    @Override
+    public InjectableBean setInjectionRequired(boolean isInjectionRequired) {
+        this.isInjectionRequired = isInjectionRequired;
         return this;
     }
 }

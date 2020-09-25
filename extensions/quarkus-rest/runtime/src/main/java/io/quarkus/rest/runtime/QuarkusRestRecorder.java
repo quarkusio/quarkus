@@ -679,7 +679,7 @@ public class QuarkusRestRecorder {
         if (method.isFormParamRequired()) {
             // read the body as multipart in one go
             handlers.add(new ReadBodyHandler(bodyParameter != null));
-        } else {
+        } else if (bodyParameter != null) {
             // allow the body to be read by chunks
             handlers.add(new InputHandler(quarkusRestConfig.inputBufferSize.asLongValue(), EXECUTOR_SUPPLIER));
         }

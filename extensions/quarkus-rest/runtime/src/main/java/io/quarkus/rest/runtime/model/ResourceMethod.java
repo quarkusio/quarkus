@@ -186,4 +186,11 @@ public class ResourceMethod {
         this.isFormParamRequired = isFormParamRequired;
         return this;
     }
+
+    @Override
+    public String toString() {
+        if (httpMethod != null)
+            return httpMethod + " " + path;
+        return "Sub-resource locator for " + path;
+    }
 }

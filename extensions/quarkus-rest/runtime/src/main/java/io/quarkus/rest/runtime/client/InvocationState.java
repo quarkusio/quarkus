@@ -55,6 +55,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
     private final QuarkusRestClient restClient;
     private final Serialisers serialisers;
     final ClientRequestHeaders requestHeaders;
+    private final QuarkusRestConfiguration configuration;
     private final boolean registerBodyHandler;
     // will be used to check if we need to throw a WebApplicationException
     // see Javadoc of javax.ws.rs.client.Invocation or javax.ws.rs.client.SyncInvoker
@@ -71,13 +72,14 @@ public class InvocationState implements Handler<HttpClientResponse> {
 
     public InvocationState(QuarkusRestClient restClient,
             HttpClient httpClient, String httpMethod, URI uri,
-            ClientRequestHeaders requestHeaders, Serialisers serialisers,
+            QuarkusRestConfiguration configuration, ClientRequestHeaders requestHeaders, Serialisers serialisers,
             Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler) {
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.httpMethod = httpMethod;
         this.uri = uri;
         this.requestHeaders = requestHeaders;
+        this.configuration = configuration;
         this.serialisers = serialisers;
         this.entity = entity;
         if (responseType == null) {
@@ -135,10 +137,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
     }
 
     private void runRequestFilters() {
-        QuarkusRestConfiguration configuration = restClient.getConfiguration();
         List<ClientRequestFilter> filters = configuration.getRequestFilters();
         if (!filters.isEmpty()) {
-            requestContext = new QuarkusRestClientRequestContext(this, restClient);
+            requestContext = new QuarkusRestClientRequestContext(this, restClient, configuration);
 
             for (ClientRequestFilter filter : filters) {
                 try {
@@ -231,10 +232,10 @@ public class InvocationState implements Handler<HttpClientResponse> {
             throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
         }
 
-        List<ClientResponseFilter> filters = restClient.getConfiguration().getResponseFilters();
+        List<ClientResponseFilter> filters = configuration.getResponseFilters();
         if (!filters.isEmpty()) {
             if (requestContext == null)
-                requestContext = new QuarkusRestClientRequestContext(this, restClient);
+                requestContext = new QuarkusRestClientRequestContext(this, restClient, configuration);
             // FIXME: pretty sure we'll have to mark it as immutable in this phase, but the spec is not verbose about this
             // the server does it.
             for (ClientResponseFilter filter : filters) {

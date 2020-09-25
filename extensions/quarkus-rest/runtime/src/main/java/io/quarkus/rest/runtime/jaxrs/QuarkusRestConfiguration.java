@@ -24,22 +24,43 @@ import io.quarkus.rest.runtime.util.MultivaluedTreeMap;
 public class QuarkusRestConfiguration implements Configuration {
 
     private final RuntimeType runtimeType;
-    private final Map<String, Object> properties = new HashMap<>();
-    private final Map<Class<?>, Object> allInstances = new HashMap<>();
-    private final List<Feature> enabledFeatures = new ArrayList<>();
-    private final MultivaluedMap<Integer, ClientRequestFilter> requestFilters = new MultivaluedTreeMap<>();
-    private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters = new MultivaluedTreeMap<>(
-            Collections.reverseOrder());
+    private final Map<String, Object> properties;
+    private final Map<Class<?>, Object> allInstances;
+    private final List<Feature> enabledFeatures;
+    private final MultivaluedMap<Integer, ClientRequestFilter> requestFilters;
+    private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters;
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
+        this.properties = new HashMap<>();
+        this.allInstances = new HashMap<>();
+        this.enabledFeatures = new ArrayList<>();
+        this.requestFilters = new MultivaluedTreeMap<>();
+        this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
     }
 
     public QuarkusRestConfiguration(Configuration configuration) {
         this.runtimeType = configuration.getRuntimeType();
-        this.properties.putAll(configuration.getProperties());
-        for (Object i : configuration.getInstances()) {
-            register(i);
+        this.properties = new HashMap<>(configuration.getProperties());
+        if (configuration instanceof QuarkusRestConfiguration) {
+            // we want to preserve all the registration metadata
+            QuarkusRestConfiguration quarkusRestConfiguration = (QuarkusRestConfiguration) configuration;
+            this.enabledFeatures = new ArrayList<>(quarkusRestConfiguration.enabledFeatures);
+            this.allInstances = new HashMap<>(quarkusRestConfiguration.allInstances);
+            this.requestFilters = new MultivaluedTreeMap<>();
+            this.requestFilters.putAll(quarkusRestConfiguration.requestFilters);
+            this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.responseFilters.putAll(quarkusRestConfiguration.responseFilters);
+        } else {
+            this.allInstances = new HashMap<>();
+            this.enabledFeatures = new ArrayList<>();
+            this.requestFilters = new MultivaluedTreeMap<>();
+            this.responseFilters = new MultivaluedTreeMap<>(
+                    Collections.reverseOrder());
+            // this is the best we can do - we don't have any of the metadata associated with the registration
+            for (Object i : configuration.getInstances()) {
+                register(i);
+            }
         }
     }
 
@@ -135,7 +156,7 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public void register(Class<?> componentClass, int priority) {
         try {
-            register(componentClass.getDeclaredConstructor().newInstance());
+            register(componentClass.getDeclaredConstructor().newInstance(), priority);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

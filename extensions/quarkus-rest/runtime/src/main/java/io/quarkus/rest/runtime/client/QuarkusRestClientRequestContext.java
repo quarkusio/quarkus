@@ -24,18 +24,22 @@ import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.NotImplementedYet;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     private final Map<String, Object> properties = new HashMap<>();
     private final Client client;
+    private final QuarkusRestConfiguration configuration;
     private OutputStream entityStream;
     private InvocationState invocationState;
     Response abortedWith;
 
-    public QuarkusRestClientRequestContext(InvocationState invocationState, QuarkusRestClient client) {
-        this.client = client;
+    public QuarkusRestClientRequestContext(InvocationState invocationState, QuarkusRestClient client,
+            QuarkusRestConfiguration configuration) {
         this.invocationState = invocationState;
+        this.client = client;
+        this.configuration = configuration;
     }
 
     @Override
@@ -207,7 +211,7 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Configuration getConfiguration() {
-        return client.getConfiguration();
+        return configuration;
     }
 
     @Override

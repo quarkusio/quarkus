@@ -251,7 +251,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
     InvocationState performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<?> responseType,
             boolean registerBodyHandler) {
         return new InvocationState(restClient, httpClient, httpMethodName, uri,
-                requestSpec.headers, serialisers,
+                requestSpec.configuration, requestSpec.headers, serialisers,
                 entity, responseType, registerBodyHandler);
     }
 

@@ -59,20 +59,29 @@ public class ClassRoutingHandler implements RestHandler {
         String remaining = getRemaining(requestContext);
         RequestMapper.RequestMatch<RuntimeResource> target = mapper.map(remaining);
         if (target == null) {
-            // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
-            for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : mappers.entrySet()) {
-                if (entry.getKey() == null) {
-                    continue;
-                }
-                if (entry.getKey().equals(requestContext.getMethod())) {
-                    continue;
-                }
-                if (entry.getValue().map(remaining) != null) {
-                    throw new NotAllowedException(
-                            new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+            if (requestContext.getMethod().equals(HttpMethod.HEAD.name())) {
+                mapper = mappers.get(HttpMethod.GET.name());
+                if (mapper != null) {
+                    target = mapper.map(remaining);
                 }
             }
-            throw new NotFoundException();
+
+            if (target == null) {
+                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+                for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : mappers.entrySet()) {
+                    if (entry.getKey() == null) {
+                        continue;
+                    }
+                    if (entry.getKey().equals(requestContext.getMethod())) {
+                        continue;
+                    }
+                    if (entry.getValue().map(remaining) != null) {
+                        throw new NotAllowedException(
+                                new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                    }
+                }
+                throw new NotFoundException();
+            }
         }
 
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes

@@ -2,7 +2,6 @@ package io.quarkus.rest.deployment.framework;
 
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -123,9 +122,6 @@ public final class QuarkusRestDotNames {
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(javax.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(javax.json.JsonArray.class.getName());
     public static final DotName JSONP_JSON_STRUCTURE = DotName.createSimple(javax.json.JsonStructure.class.getName());
-
-    public static final List<DotName> JAXRS_METHOD_ANNOTATIONS = Collections
-            .unmodifiableList(Arrays.asList(GET, POST, HEAD, DELETE, PUT, PATCH, OPTIONS));
 
     // TODO: add Path, Cookie and Matrix param handling
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(

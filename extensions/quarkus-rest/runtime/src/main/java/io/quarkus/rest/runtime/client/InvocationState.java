@@ -23,6 +23,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -32,6 +33,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
@@ -183,14 +185,22 @@ public class InvocationState implements Handler<HttpClientResponse> {
     private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest)
             throws IOException {
         MultivaluedMap<String, String> headerMap = requestHeaders.asMap();
+        MultiMap vertxHttpHeaders = httpClientRequest.headers();
         for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
-            httpClientRequest.headers().add(entry.getKey(), entry.getValue());
-        }
-        if (entity != null && entity.getMediaType() != null) {
-            httpClientRequest.headers().set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
+            vertxHttpHeaders.add(entry.getKey(), entry.getValue());
         }
         Buffer actualEntity = QuarkusRestAsyncInvoker.EMPTY_BUFFER;
         if (entity != null) {
+            if (entity.getMediaType() != null) {
+                vertxHttpHeaders.set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
+            }
+            if (entity.getVariant() != null) {
+                Variant v = entity.getVariant();
+                vertxHttpHeaders.set(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
+                vertxHttpHeaders.set(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
+                vertxHttpHeaders.set(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
+            }
+
             Object entityObject = entity.getEntity();
             Class<?> entityClass;
             Type entityType;

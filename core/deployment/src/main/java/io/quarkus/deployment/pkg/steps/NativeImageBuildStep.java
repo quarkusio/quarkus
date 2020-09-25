@@ -321,6 +321,15 @@ public class NativeImageBuildStep {
             Path finalPath = outputTargetBuildItem.getOutputDirectory().resolve(executableName);
             IoUtils.copy(generatedImage, finalPath);
             Files.delete(generatedImage);
+            if (nativeConfig.debug.enabled) {
+                if (graalVMVersion.isMandrel() || graalVMVersion.isNewerThan(GraalVM.Version.VERSION_20_1)) {
+                    final String sources = "sources";
+                    final Path generatedSources = outputDir.resolve(sources);
+                    final Path finalSources = outputTargetBuildItem.getOutputDirectory().resolve(sources);
+                    IoUtils.copy(generatedSources, finalSources);
+                    IoUtils.recursiveDelete(generatedSources);
+                }
+            }
             System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
 
             if (objcopyExists(env)) {

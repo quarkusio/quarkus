@@ -772,17 +772,15 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     public Object getHeader(String name, boolean single) {
         if (single)
             return context.request().getHeader(name);
-        List<String> all = getContext().request().headers().getAll(name);
-        if (all.isEmpty()) {
-            return null;
-        }
-        return all;
+        // empty collections must not be turned to null
+        return getContext().request().headers().getAll(name);
     }
 
     @Override
     public Object getQueryParameter(String name, boolean single) {
         if (single)
             return context.queryParams().get(name);
+        // empty collections must not be turned to null
         return context.queryParam(name);
     }
 
@@ -804,7 +802,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
                     ret.addAll(res);
                 }
             }
-            return ret.isEmpty() ? null : ret;
+            // empty collections must not be turned to null
+            return ret;
         }
     }
 
@@ -818,11 +817,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     public Object getFormParameter(String name, boolean single) {
         if (single)
             return getContext().request().getFormAttribute(name);
-        List<String> values = getContext().request().formAttributes().getAll(name);
-        if (values.isEmpty()) {
-            return null;
-        }
-        return values;
+        // empty collections must not be turned to null
+        return getContext().request().formAttributes().getAll(name);
     }
 
     @Override

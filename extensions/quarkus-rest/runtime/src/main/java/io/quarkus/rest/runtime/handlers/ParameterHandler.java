@@ -1,5 +1,6 @@
 package io.quarkus.rest.runtime.handlers;
 
+import java.util.Collection;
 import java.util.function.BiConsumer;
 
 import javax.ws.rs.BadRequestException;
@@ -19,14 +20,16 @@ public class ParameterHandler implements RestHandler {
     private final ParameterExtractor extractor;
     private final ParameterConverter converter;
     private final ParameterType parameterType;
+    private final boolean isCollection;
 
     public ParameterHandler(int index, String defaultValue, ParameterExtractor extractor, ParameterConverter converter,
-            ParameterType parameterType) {
+            ParameterType parameterType, boolean isCollection) {
         this.index = index;
         this.defaultValue = defaultValue;
         this.extractor = extractor;
         this.converter = converter;
         this.parameterType = parameterType;
+        this.isCollection = isCollection;
     }
 
     @Override
@@ -58,7 +61,9 @@ public class ParameterHandler implements RestHandler {
     }
 
     private void handleResult(Object result, QuarkusRestRequestContext requestContext, boolean needsResume) {
-        if (result == null) {
+        // empty collections should still get their default value
+        if (defaultValue != null
+                && (result == null || (isCollection && ((Collection) result).isEmpty()))) {
             result = defaultValue;
         }
         Throwable toThrow = null;

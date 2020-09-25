@@ -15,12 +15,13 @@ public class MethodParameter {
     private boolean single;
     public ParameterConverterSupplier converter;
     private String defaultValue;
+    private boolean isObtainedAsCollection;
 
     public MethodParameter() {
     }
 
     public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
-            ParameterConverterSupplier converter, String defaultValue) {
+            ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection) {
         this.name = name;
         this.type = type;
         this.converter = converter;
@@ -28,6 +29,7 @@ public class MethodParameter {
         this.single = single;
         this.defaultValue = defaultValue;
         this.declaredType = declaredType;
+        this.isObtainedAsCollection = isObtainedAsCollection;
     }
 
     public String getName() {
@@ -87,6 +89,15 @@ public class MethodParameter {
 
     public MethodParameter setDeclaredType(String declaredType) {
         this.declaredType = declaredType;
+        return this;
+    }
+
+    public boolean isObtainedAsCollection() {
+        return isObtainedAsCollection;
+    }
+
+    public MethodParameter setObtainedAsCollection(boolean isObtainedAsCollection) {
+        this.isObtainedAsCollection = isObtainedAsCollection;
         return this;
     }
 

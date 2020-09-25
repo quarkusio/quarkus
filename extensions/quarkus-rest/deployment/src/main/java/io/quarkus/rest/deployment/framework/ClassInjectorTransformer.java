@@ -311,8 +311,22 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 // dup to test it
                 injectMethod.visitInsn(Opcodes.DUP);
                 Label wasNonNullTarget = new Label();
-                injectMethod.visitJumpInsn(Opcodes.IFNONNULL, wasNonNullTarget);
-                // it was null, so let's eat the null value on the stack
+                Label setDefaultValueTarget = new Label();
+                injectMethod.visitJumpInsn(Opcodes.IFNULL, setDefaultValueTarget);
+                // it's not null, do we allow empty values?
+                // only if this supports multiple values
+                if (extractor.isObtainedAsCollection()) {
+                    // dup to test it
+                    injectMethod.visitInsn(Opcodes.DUP);
+                    // check if it's not an empty collection
+                    injectMethod.visitTypeInsn(Opcodes.CHECKCAST, "java/util/Collection");
+                    injectMethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, "java/util/Collection", "isEmpty",
+                            "()Z", true);
+                    injectMethod.visitJumpInsn(Opcodes.IFNE, setDefaultValueTarget);
+                }
+                injectMethod.visitJumpInsn(Opcodes.GOTO, wasNonNullTarget);
+                injectMethod.visitLabel(setDefaultValueTarget);
+                // it was null or empty, so let's eat the null value on the stack
                 injectMethod.visitInsn(Opcodes.POP);
                 // replace it with the default value
                 injectMethod.visitLdcInsn(extractor.getDefaultValue());

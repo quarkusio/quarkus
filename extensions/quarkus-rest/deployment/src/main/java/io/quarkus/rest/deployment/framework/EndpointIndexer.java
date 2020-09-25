@@ -435,7 +435,7 @@ public class EndpointIndexer {
                 }
                 methodParameters[i] = new MethodParameter(name,
                         elementType, toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView), type, single,
-                        converter, defaultValue);
+                        converter, defaultValue, parameterExtractor.isObtainedAsCollection());
 
                 if (type == ParameterType.BEAN) {
                     // transform the bean param
@@ -855,6 +855,14 @@ public class EndpointIndexer {
             this.paramType = paramType;
             this.errorLocation = errorLocation;
             this.field = field;
+        }
+
+        public boolean isObtainedAsCollection() {
+            return !single
+                    && (type == ParameterType.HEADER
+                            || type == ParameterType.MATRIX
+                            || type == ParameterType.FORM
+                            || type == ParameterType.QUERY);
         }
 
         public boolean isSuspended() {

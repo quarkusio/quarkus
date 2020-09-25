@@ -715,7 +715,8 @@ public class QuarkusRestRecorder {
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
                     single, beanContainer);
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
-                    param.converter == null ? null : param.converter.get(), param.parameterType));
+                    param.converter == null ? null : param.converter.get(), param.parameterType,
+                    param.isObtainedAsCollection()));
         }
         if (method.isBlocking()) {
             handlers.add(new BlockingHandler(EXECUTOR_SUPPLIER));

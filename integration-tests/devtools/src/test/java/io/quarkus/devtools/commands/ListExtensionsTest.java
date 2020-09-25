@@ -4,16 +4,14 @@ import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toMap;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Map;
@@ -172,11 +170,19 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     @Test
-    void testListExtensionsWithoutAPomFile() throws IOException {
+    void testListExtensionsWithoutAPomFile() throws Exception {
         final Path tempDirectory = Files.createTempDirectory("proj");
         final QuarkusProject project = QuarkusProject.maven(tempDirectory, getPlatformDescriptor());
-        assertThatExceptionOfType(UncheckedIOException.class).isThrownBy(() -> readByKey(project))
-                .withRootCauseInstanceOf(NoSuchFileException.class);
+        final Map<AppArtifactKey, AppArtifactCoords> installed = readByKey(project);
+        assertTrue(installed.isEmpty());
+        assertFalse(project.getPlatformDescriptor().getExtensions().isEmpty());
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
+            new ListExtensions(project, MessageWriter.info(printStream)).execute();
+        }
+        final String output = baos.toString("UTF-8");
+        Assertions.assertTrue(output.contains("Current Quarkus extensions available:"));
     }
 
     private void addExtensions(QuarkusProject quarkusProject, String... extensions) throws Exception {

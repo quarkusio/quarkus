@@ -568,6 +568,10 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return allAnnotations;
     }
 
+    public void setAllAnnotations(Annotation[] annotations) {
+        this.allAnnotations = annotations;
+    }
+
     public Annotation[] getMethodAnnotations() {
         if (methodAnnotations == null) {
             if (target == null) {

@@ -223,3 +223,5 @@ The Foo Example shows...
 - Write the config in `src/main/resources/application.yml`.
 It is going to be merged with the other codestarts config and automatically converted to the selected config type (yaml or properties).
 - you can add languages independently
+- It is much easier to create a new Quarkus project in a separate directory: write code and tests,
+make sure the build passes, then copy needed files to `codestarts/` directory.

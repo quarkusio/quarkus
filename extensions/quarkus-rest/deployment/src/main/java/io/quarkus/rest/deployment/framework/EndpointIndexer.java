@@ -902,6 +902,7 @@ public class EndpointIndexer {
             AnnotationInstance defaultValueAnnotation = anns.get(DEFAULT_VALUE);
             AnnotationInstance suspendedAnnotation = anns.get(SUSPENDED);
             defaultValue = null;
+            boolean convertable = false;
             if (defaultValueAnnotation != null) {
                 defaultValue = defaultValueAnnotation.value().asString();
             }
@@ -912,18 +913,23 @@ public class EndpointIndexer {
             } else if (pathParam != null) {
                 name = pathParam.value().asString();
                 type = ParameterType.PATH;
+                convertable = true;
             } else if (queryParam != null) {
                 name = queryParam.value().asString();
                 type = ParameterType.QUERY;
+                convertable = true;
             } else if (cookieParam != null) {
                 name = cookieParam.value().asString();
                 type = ParameterType.COOKIE;
+                convertable = true;
             } else if (headerParam != null) {
                 name = headerParam.value().asString();
                 type = ParameterType.HEADER;
+                convertable = true;
             } else if (formParam != null) {
                 name = formParam.value().asString();
                 type = ParameterType.FORM;
+                convertable = true;
             } else if (contextParam != null) {
                 //this is handled by CDI
                 if (field) {
@@ -942,6 +948,7 @@ public class EndpointIndexer {
                 // no name required
                 name = matrixParam.value().asString();
                 type = ParameterType.MATRIX;
+                convertable = true;
             } else {
                 //unannoated field
                 //just ignore it
@@ -952,7 +959,9 @@ public class EndpointIndexer {
             }
             single = true;
             converter = null;
+            boolean typeHandled = false;
             if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                typeHandled = true;
                 ParameterizedType pt = paramType.asParameterizedType();
                 if (pt.name().equals(LIST)) {
                     single = false;
@@ -977,10 +986,13 @@ public class EndpointIndexer {
                     single = true;
                     converter = null;
                     additionalReaders.add(FormUrlEncodedProvider.class, APPLICATION_FORM_URLENCODED, MultivaluedMap.class);
-                } else {
+                } else if (convertable) {
                     throw new RuntimeException("Invalid parameter type '" + pt + "' used on method " + errorLocation);
+                } else {
+                    typeHandled = false;
                 }
-            } else {
+            }
+            if (!typeHandled) {
                 elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, indexView);
                 addReaderForType(additionalReaders, paramType);
 

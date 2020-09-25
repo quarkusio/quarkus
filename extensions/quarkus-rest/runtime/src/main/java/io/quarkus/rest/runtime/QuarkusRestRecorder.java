@@ -56,6 +56,7 @@ import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
+import io.quarkus.rest.runtime.handlers.AbortChainHandler;
 import io.quarkus.rest.runtime.handlers.BlockingHandler;
 import io.quarkus.rest.runtime.handlers.ClassRoutingHandler;
 import io.quarkus.rest.runtime.handlers.CompletionStageResponseHandler;
@@ -132,6 +133,7 @@ public class QuarkusRestRecorder {
     private static final LinkedHashMap<ResourceResponseInterceptor, ContainerResponseFilter> EMPTY_INTERCEPTOR_RESPONSE_MAP = new LinkedHashMap<>();
     private static final LinkedHashMap<ResourceReaderInterceptor, ReaderInterceptor> EMPTY_INTERCEPTOR_READER_MAP = new LinkedHashMap<>();
     private static final LinkedHashMap<ResourceWriterInterceptor, WriterInterceptor> EMPTY_INTERCEPTOR_WRITER_MAP = new LinkedHashMap<>();
+    public static final RestHandler[] EMPTY_REST_HANDLER_ARRAY = new RestHandler[0];
 
     private static volatile QuarkusRestDeployment currentDeployment;
 
@@ -348,7 +350,8 @@ public class QuarkusRestRecorder {
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
-                abortHandlingChain.toArray(new RestHandler[0]), dynamicEntityWriter, createClientImpls(clientImplementations),
+                abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
+                createClientImpls(clientImplementations),
                 vertxConfig.rootPath, genericTypeMapping);
 
         currentDeployment = deployment;
@@ -451,6 +454,7 @@ public class QuarkusRestRecorder {
 
         LinkedHashMap<ResourceReaderInterceptor, ReaderInterceptor> result = new LinkedHashMap<>();
         List<BeanFactory.BeanInstance<ReaderInterceptor>> responseBeanInstances = new ArrayList<>(interceptors.size());
+        Collections.sort(interceptors);
         for (ResourceReaderInterceptor interceptor : interceptors) {
             BeanFactory.BeanInstance<ReaderInterceptor> beanInstance = interceptor.getFactory().createInstance();
             responseBeanInstances.add(beanInstance);
@@ -468,6 +472,7 @@ public class QuarkusRestRecorder {
         if (interceptors.isEmpty()) {
             return EMPTY_INTERCEPTOR_WRITER_MAP;
         }
+        Collections.sort(interceptors);
 
         LinkedHashMap<ResourceWriterInterceptor, WriterInterceptor> result = new LinkedHashMap<>();
         List<BeanFactory.BeanInstance<WriterInterceptor>> responseBeanInstances = new ArrayList<>(interceptors.size());
@@ -560,6 +565,7 @@ public class QuarkusRestRecorder {
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
             DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
+        List<RestHandler> abortHandlingChain = new ArrayList<>();
 
         Map<String, Integer> pathParameterIndexes = buildParamIndexMap(classPathTemplate, methodPathTemplate);
         List<RestHandler> handlers = new ArrayList<>();
@@ -612,6 +618,9 @@ public class QuarkusRestRecorder {
             }
             handlers.add(new InterceptorHandler(writers, readers));
         }
+        //at this point the handler chain only has interceptors
+        //which we also want in the abort handler chain
+        abortHandlingChain.addAll(handlers);
 
         // according to the spec, global request filters apply everywhere
         // and named request filters only apply to methods with exactly matching "qualifiers"
@@ -765,6 +774,10 @@ public class QuarkusRestRecorder {
             }
         }
 
+        //the response filter handlers, they need to be added to both the abort and
+        //normal chains. At the moment this only has one handler added to it but
+        //in future there will be one per filter
+        List<RestHandler> responseFilterHandlers = new ArrayList<>();
         if (method.isSse()) {
             handlers.add(new SseResponseWriterHandler());
         } else {
@@ -773,10 +786,10 @@ public class QuarkusRestRecorder {
             // according to the spec, global request filters apply everywhere
             // and named request filters only apply to methods with exactly matching "qualifiers"
             if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-                handlers.add(globalResponseInterceptorHandler);
+                responseFilterHandlers.add(globalResponseInterceptorHandler);
             } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
                 // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-                handlers.add(globalResponseInterceptorHandler);
+                responseFilterHandlers.add(globalResponseInterceptorHandler);
             } else {
                 List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
                         globalResponseInterceptorsMap.size() + nameResponseInterceptorsMap.size()
@@ -805,18 +818,23 @@ public class QuarkusRestRecorder {
                     }
                     filtersToUse.add(properMap.get(interceptor));
                 }
-                handlers.add(new ResourceResponseInterceptorHandler(filtersToUse));
+                responseFilterHandlers.add(new ResourceResponseInterceptorHandler(filtersToUse));
             }
-
+            handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
+        abortHandlingChain.addAll(responseFilterHandlers);
+
+        abortHandlingChain.add(new ResponseHandler());
+        abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
+        handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaType, invoker,
-                clazz.getFactory(), handlers.toArray(new RestHandler[0]), method.getName(), parameterTypes,
+                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterTypes,
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 new LazyMethod(method.getName(), resourceClass, parameterTypes),
                 pathParameterIndexes);

@@ -41,7 +41,7 @@ public class QuarkusRestInitialHandler implements Handler<RoutingContext>, RestH
     public void handle(RoutingContext event) {
         QuarkusRestRequestContext rq = new QuarkusRestRequestContext(deployment, providers, event, requestContext,
                 currentVertxRequest,
-                initialChain);
+                initialChain, deployment.getAbortHandlerChain());
         rq.run();
     }
 

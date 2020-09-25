@@ -10,9 +10,11 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.ReaderInterceptor;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestReaderInterceptorContext;
 
 public class RequestDeserializeHandler implements RestHandler {
 
@@ -45,8 +47,15 @@ public class RequestDeserializeHandler implements RestHandler {
         for (MessageBodyReader<?> reader : readers) {
             //TODO: proper params
             if (reader.isReadable(type, type, requestContext.getMethodAnnotations(), requestType)) {
-                Object result = reader.readFrom((Class) type, type, null, requestType,
-                        requestContext.getHttpHeaders().getRequestHeaders(), in);
+                Object result;
+                ReaderInterceptor[] interceptors = requestContext.getReaderInterceptors();
+                if (interceptors == null) {
+                    result = reader.readFrom((Class) type, type, null, requestType,
+                            requestContext.getHttpHeaders().getRequestHeaders(), in);
+                } else {
+                    result = new QuarkusRestReaderInterceptorContext(requestContext, requestContext.getMethodAnnotations(),
+                            type, type, requestType, reader, in, interceptors).proceed();
+                }
                 requestContext.setRequestEntity(result);
                 requestContext.resume();
                 return;

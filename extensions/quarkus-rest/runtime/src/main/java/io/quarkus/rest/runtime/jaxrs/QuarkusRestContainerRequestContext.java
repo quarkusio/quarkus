@@ -186,7 +186,7 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
     public void abortWith(Response response) {
         assertNotResponse();
         context.setResult(response);
-        context.restart(context.getDeployment().getAbortHandlerChain());
+        context.restart(context.getAbortHandlerChain());
         aborted = true;
     }
 

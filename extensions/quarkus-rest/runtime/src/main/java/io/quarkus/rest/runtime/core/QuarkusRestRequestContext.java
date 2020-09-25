@@ -61,6 +61,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private Object[] parameters;
     private RuntimeResource target;
     private RestHandler[] handlers;
+    private RestHandler[] abortHandlerChain;
 
     /**
      * The parameter values extracted from the path.
@@ -126,13 +127,14 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
-            CurrentVertxRequest currentVertxRequest, RestHandler... handlerChain) {
+            CurrentVertxRequest currentVertxRequest, RestHandler[] handlerChain, RestHandler[] abortHandlerChain) {
         this.deployment = deployment;
         this.providers = providers;
         this.context = context;
         this.requestContext = requestContext;
         this.currentVertxRequest = currentVertxRequest;
         this.handlers = handlerChain;
+        this.abortHandlerChain = abortHandlerChain;
         this.parameters = EMPTY_ARRAY;
     }
 
@@ -220,12 +222,12 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
                         }
                     }
                 } catch (Throwable t) {
-                    if (handlers == deployment.getAbortHandlerChain()) {
+                    if (handlers == abortHandlerChain) {
                         handleException(t);
                         return;
                     } else {
                         invokeExceptionMapper(t);
-                        restart(deployment.getAbortHandlerChain());
+                        restart(abortHandlerChain);
                     }
                 }
             }
@@ -463,6 +465,10 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     }
 
     public void setProperty(String name, Object object) {
+        if (object == null) {
+            removeProperty(name);
+            return;
+        }
         if (properties == null) {
             properties = new HashMap<>();
         }
@@ -700,6 +706,15 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     public void setSseEventSink(QuarkusRestSseEventSink sseEventSink) {
         this.sseEventSink = sseEventSink;
+    }
+
+    public RestHandler[] getAbortHandlerChain() {
+        return abortHandlerChain;
+    }
+
+    public QuarkusRestRequestContext setAbortHandlerChain(RestHandler[] abortHandlerChain) {
+        this.abortHandlerChain = abortHandlerChain;
+        return this;
     }
 
     /**

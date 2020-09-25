@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Collection;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -20,19 +19,15 @@ import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.vertx.core.buffer.Buffer;
 
-public class QuarkusRestWriterInterceptorContext implements WriterInterceptorContext {
+public class QuarkusRestWriterInterceptorContext extends QuarkusRestAbstractInterceptorContext
+        implements WriterInterceptorContext {
 
     private final ByteArrayOutputStream baos = new ByteArrayOutputStream(); //TODO: real bloocking IO
-    private final QuarkusRestRequestContext context;
     private final WriterInterceptor[] interceptors;
     private final MessageBodyWriter writer;
-    private Annotation[] annotations;
-    private Class<?> type;
-    private Type genericType;
+    private final MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
     private OutputStream outputStream = baos;
     private Object entity;
-    private MediaType mediaType;
-    private final MultivaluedMap<String, Object> headers;
 
     boolean done = false;
     private int index = 0;
@@ -40,15 +35,10 @@ public class QuarkusRestWriterInterceptorContext implements WriterInterceptorCon
     public QuarkusRestWriterInterceptorContext(QuarkusRestRequestContext context, WriterInterceptor[] interceptors,
             MessageBodyWriter<?> writer, Annotation[] annotations, Class<?> type, Type genericType, Object entity,
             MediaType mediaType, MultivaluedMap<String, Object> headers) {
-        this.context = context;
+        super(context, annotations, type, genericType, mediaType);
         this.interceptors = interceptors;
         this.writer = writer;
-        this.annotations = annotations;
-        this.type = type;
-        this.genericType = genericType;
         this.entity = entity;
-        this.mediaType = mediaType;
-        this.headers = new CaseInsensitiveMap<>();
         this.headers.putAll(headers);
     }
 
@@ -94,68 +84,7 @@ public class QuarkusRestWriterInterceptorContext implements WriterInterceptorCon
         outputStream = os;
     }
 
-    @Override
     public MultivaluedMap<String, Object> getHeaders() {
         return headers;
-    }
-
-    @Override
-    public Object getProperty(String name) {
-        return context.getProperty(name);
-    }
-
-    @Override
-    public Collection<String> getPropertyNames() {
-        return context.getPropertyNames();
-    }
-
-    @Override
-    public void setProperty(String name, Object object) {
-        context.setProperty(name, object);
-    }
-
-    @Override
-    public void removeProperty(String name) {
-        context.removeProperty(name);
-    }
-
-    @Override
-    public Annotation[] getAnnotations() {
-        return annotations;
-    }
-
-    @Override
-    public void setAnnotations(Annotation[] annotations) {
-        this.annotations = annotations;
-    }
-
-    @Override
-    public Class<?> getType() {
-        return type;
-    }
-
-    @Override
-    public void setType(Class<?> type) {
-        this.type = type;
-    }
-
-    @Override
-    public Type getGenericType() {
-        return genericType;
-    }
-
-    @Override
-    public void setGenericType(Type genericType) {
-        this.genericType = genericType;
-    }
-
-    @Override
-    public MediaType getMediaType() {
-        return mediaType;
-    }
-
-    @Override
-    public void setMediaType(MediaType mediaType) {
-        this.mediaType = mediaType;
     }
 }

@@ -130,6 +130,9 @@ public class MavenBuildFile extends BuildFile {
     }
 
     private Model initModel() throws IOException {
+        if (!hasProjectFile(BuildTool.MAVEN.getDependenciesFile())) {
+            return null;
+        }
         byte[] content = readProjectFile(BuildTool.MAVEN.getDependenciesFile());
         return MojoUtils.readPom(new ByteArrayInputStream(content));
     }

@@ -2,6 +2,7 @@ package io.quarkus.maven;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,11 +65,20 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         validateParameters();
 
         final MessageWriter log = new MojoMessageWriter(getLog());
-        final Path projectDirPath = project.getBasedir().toPath();
-        final BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDirPath);
+        final Path projectDirPath = baseDir();
+        BuildTool buildTool = QuarkusProject.resolveExistingProjectBuildTool(projectDirPath);
+        if (buildTool == null) {
+            // it's not Gradle and the pom.xml not found, so we assume there is not project at all
+            buildTool = BuildTool.MAVEN;
+        }
         final QuarkusPlatformDescriptor platformDescriptor = resolvePlatformDescriptor(log);
 
-        doExecute(QuarkusProject.of(project.getBasedir().toPath(), platformDescriptor, buildTool), log);
+        doExecute(QuarkusProject.of(baseDir(), platformDescriptor, buildTool), log);
+    }
+
+    protected Path baseDir() {
+        return project == null || project.getBasedir() == null ? Paths.get("").normalize().toAbsolutePath()
+                : project.getBasedir().toPath();
     }
 
     private QuarkusPlatformDescriptor resolvePlatformDescriptor(final MessageWriter log) throws MojoExecutionException {

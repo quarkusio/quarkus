@@ -36,6 +36,7 @@ public class CreateProject {
     public static final String NO_DOCKERFILES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-dockerfiles");
     public static final String NO_BUILDTOOL_WRAPPER = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-buildtool-wrapper");
     public static final String NO_EXAMPLES = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "no-examples");
+    public static final String CODESTARTS = ToolsUtils.dotJoin(ToolsConstants.QUARKUS, NAME, "codestarts");
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
@@ -102,6 +103,11 @@ public class CreateProject {
             setValue(IS_SPRING, true);
         }
         setValue(EXTENSIONS, extensions);
+        return this;
+    }
+
+    public CreateProject codestarts(Set<String> codestarts) {
+        setValue(CODESTARTS, codestarts);
         return this;
     }
 

@@ -66,6 +66,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Map<String, ContainerConfig> getSidecars();
 
+    Map<String, HostAliasConfig> getHostAliases();
+
     default boolean isExpose() {
         return false;
     }

@@ -56,6 +56,10 @@ public class KubernetesWithApplicationPropertiesTest {
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    // ensure that the version is not part of the selector labels
+                    assertThat(deploymentSpec.getSelector()).isNotNull().satisfies(labelSelector -> {
+                        assertThat(labelSelector.getMatchLabels()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
+                    });
                     assertThat(deploymentSpec.getReplicas()).isEqualTo(3);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
@@ -89,6 +93,7 @@ public class KubernetesWithApplicationPropertiesTest {
 
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
+                    assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
                     assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
                         assertThat(p.getPort()).isEqualTo(9090);
                     });

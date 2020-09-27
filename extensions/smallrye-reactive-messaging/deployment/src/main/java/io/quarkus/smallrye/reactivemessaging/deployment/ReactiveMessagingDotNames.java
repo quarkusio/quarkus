@@ -11,7 +11,6 @@ import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
-import io.smallrye.reactive.messaging.metrics.MetricDecorator;
 
 public final class ReactiveMessagingDotNames {
 
@@ -30,7 +29,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName MERGE = DotName.createSimple(Merge.class.getName());
     static final DotName BROADCAST = DotName.createSimple(Broadcast.class.getName());
 
-    static final DotName METRIC_DECORATOR = DotName.createSimple(MetricDecorator.class.getName());
+    // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
+    static final DotName METRIC_DECORATOR = DotName.createSimple("io.smallrye.reactive.messaging.metrics.MetricDecorator");
 
     // Used to detect REST endpoints and JAX-RS provider
     public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");

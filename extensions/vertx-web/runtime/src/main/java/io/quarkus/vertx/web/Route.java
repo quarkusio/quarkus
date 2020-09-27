@@ -151,11 +151,32 @@ public @interface Route {
          */
         BLOCKING,
         /**
-         * A failure handler.
-         *
+         * A failure handler can declare a single method parameter whose type extends {@link Throwable}. The type of the
+         * parameter is used to match the result of {@link RoutingContext#failure()}.
+         * 
+         * <pre>
+         * <code>
+         *  class Routes {
+         *     {@literal @Route(type = HandlerType.FAILURE)}
+         *     void unsupported(UnsupportedOperationException e, HttpServerResponse response) {
+         *        response.setStatusCode(501).end(e.getMessage());
+         *     }
+         *  }
+         *  </code>
+         * </pre>
+         * 
          * @see io.vertx.ext.web.Route#failureHandler(Handler)
          */
-        FAILURE
+        FAILURE;
+
+        public static HandlerType from(String value) {
+            for (HandlerType handlerType : values()) {
+                if (handlerType.toString().equals(value)) {
+                    return handlerType;
+                }
+            }
+            return null;
+        }
 
     }
 

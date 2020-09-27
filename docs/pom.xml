@@ -58,7 +58,7 @@
             <plugin>
                 <groupId>dev.jbang</groupId>
                 <artifactId>jbang-maven-plugin</artifactId>
-                <version>0.0.4</version>
+                <version>0.0.5</version>
                 <executions>
                     <execution>
                         <id>generate-build-item-doc</id>

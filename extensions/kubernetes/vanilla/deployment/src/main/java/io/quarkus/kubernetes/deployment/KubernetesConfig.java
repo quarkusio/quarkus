@@ -214,10 +214,22 @@ public class KubernetesConfig implements PlatformConfiguration {
     Optional<List<String>> deploymentTarget;
 
     /**
+     * The host aliases
+     */
+    @ConfigItem(name = "hostaliases")
+    Map<String, HostAliasConfig> hostAliases;
+
+    /**
      * If true, a Kubernetes Ingress will be created
      */
     @ConfigItem
     boolean expose;
+
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -373,6 +385,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Map<String, ContainerConfig> getSidecars() {
         return sidecars;
+    }
+
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
     }
 
     @Override

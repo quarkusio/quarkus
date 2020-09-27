@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ public class QuarkusModelHelper {
     public final static String SERIALIZED_QUARKUS_MODEL = "quarkus-internal.serialized-quarkus-model.path";
     public final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
     public final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses" };
+    public final static List<String> ENABLE_JAR_PACKAGING = Collections
+            .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public static void exportModel(QuarkusModel model) throws AppModelResolverException, IOException {
         Path serializedModel = QuarkusModelHelper

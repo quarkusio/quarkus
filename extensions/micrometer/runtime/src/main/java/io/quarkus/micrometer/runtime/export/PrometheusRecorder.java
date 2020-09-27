@@ -2,7 +2,6 @@ package io.quarkus.micrometer.runtime.export;
 
 import java.util.function.Function;
 
-import io.prometheus.client.exporter.common.TextFormat;
 import io.quarkus.micrometer.runtime.export.handlers.PrometheusHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.ext.web.Route;
@@ -24,7 +23,7 @@ public class PrometheusRecorder {
         return new Function<Router, Route>() {
             @Override
             public Route apply(Router router) {
-                return router.route(path).produces(TextFormat.CONTENT_TYPE_004);
+                return router.route(path).order(1).produces("text/plain");
             }
         };
     }

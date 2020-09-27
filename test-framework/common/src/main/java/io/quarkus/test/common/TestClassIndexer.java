@@ -106,4 +106,15 @@ public final class TestClassIndexer {
             }
         });
     }
+
+    public static void removeIndex(Class<?> requiredTestClass) {
+        Path indexPath = indexPath(requiredTestClass);
+        if (Files.exists(indexPath)) {
+            try {
+                Files.delete(indexPath);
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to delete file index", e);
+            }
+        }
+    }
 }

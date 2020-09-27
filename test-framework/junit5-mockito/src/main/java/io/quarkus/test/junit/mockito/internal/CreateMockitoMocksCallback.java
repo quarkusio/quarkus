@@ -12,13 +12,13 @@ import org.mockito.Mockito;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.test.junit.callback.QuarkusTestBeforeAllCallback;
+import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectMock;
 
-public class CreateMockitoMocksCallback implements QuarkusTestBeforeAllCallback {
+public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCallback {
 
     @Override
-    public void beforeAll(Object testInstance) {
+    public void afterConstruct(Object testInstance) {
         Class<?> current = testInstance.getClass();
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {

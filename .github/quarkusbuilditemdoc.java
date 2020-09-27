@@ -55,6 +55,7 @@ class quarkusbuilditemdoc implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         if (outputFile != null) {
+            Files.createDirectories(outputFile.getParent());
             out = new PrintStream(Files.newOutputStream(outputFile));
         }
         final Multimap<String, Pair<Path, JavaClassSource>> multimap = collect();

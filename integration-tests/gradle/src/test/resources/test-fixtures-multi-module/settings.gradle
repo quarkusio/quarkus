@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+include ':application', ':library-1', ':library-2', ':static-init-library'
+
+rootProject.name='io.quarkus.reproducer'
+

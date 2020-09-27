@@ -39,7 +39,7 @@ public final class SectionBlock {
      */
     List<TemplateNode> nodes;
 
-    SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
+    public SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
             Map<String, Expression> expressions,
             List<TemplateNode> nodes) {
         this.origin = origin;
@@ -71,17 +71,52 @@ public final class SectionBlock {
         return builder.toString();
     }
 
-    void removeNodes(Set<TemplateNode> nodesToRemove) {
-        ImmutableList.Builder<TemplateNode> builder = ImmutableList.builder();
+    void optimizeNodes(Set<TemplateNode> nodesToRemove) {
+        List<TemplateNode> effectiveNodes = new ArrayList<>();
         for (TemplateNode node : nodes) {
             if (node instanceof SectionNode) {
-                builder.add(node);
-                ((SectionNode) node).removeNodes(nodesToRemove);
-            } else if (!nodesToRemove.contains(node)) {
-                builder.add(node);
+                effectiveNodes.add(node);
+                ((SectionNode) node).optimizeNodes(nodesToRemove);
+            } else if (node != Parser.COMMENT_NODE && !(node instanceof ParameterDeclarationNode)
+                    && (nodesToRemove.isEmpty() || !nodesToRemove.contains(node))) {
+                // Ignore comments, param declarations and nodes for removal
+                effectiveNodes.add(node);
             }
         }
-        nodes = builder.build();
+        // Collapse adjacent text and line separator nodes
+        List<TemplateNode> finalNodes = new ArrayList<>();
+        List<TextNode> group = null;
+        for (TemplateNode node : effectiveNodes) {
+            if (node instanceof TextNode) {
+                if (group == null) {
+                    group = new ArrayList<>();
+                }
+                group.add((TextNode) node);
+            } else {
+                if (group != null) {
+                    collapseGroup(group, finalNodes);
+                    group = null;
+                }
+                finalNodes.add(node);
+            }
+        }
+        if (group != null) {
+            collapseGroup(group, finalNodes);
+        }
+        nodes = ImmutableList.copyOf(finalNodes);
+    }
+
+    private void collapseGroup(List<TextNode> group, List<TemplateNode> finalNodes) {
+        if (group.size() > 1) {
+            // Collapse the group...
+            StringBuilder val = new StringBuilder();
+            for (TextNode textNode : group) {
+                val.append(textNode.getValue());
+            }
+            finalNodes.add(new TextNode(val.toString(), group.get(0).getOrigin()));
+        } else {
+            finalNodes.add(group.get(0));
+        }
     }
 
     static SectionBlock.Builder builder(String id, Function<String, Expression> expressionFunc,

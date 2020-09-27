@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-google-cloud-functions-http</artifactId>
     <name>Quarkus - HTTP Google Cloud Functions - Runtime</name>
-    <description>Write Google Cloud functions</description>
+    <description>Write Google Cloud functions with HTTP endpoints</description>
 
     <dependencies>
         <dependency>
@@ -26,6 +26,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.google.cloud.functions</groupId>

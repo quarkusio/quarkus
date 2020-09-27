@@ -134,6 +134,19 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleWrapperTestBase {
     }
 
     @Test
+    public void canDetectUpToDateTests() throws Exception {
+        createProject(SourceType.JAVA);
+
+        BuildResult firstBuild = runGradleWrapper(projectRoot, "test");
+
+        assertThat(firstBuild.getTasks().get(":test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+
+        BuildResult secondBuild = runGradleWrapper(projectRoot, "test");
+
+        assertThat(secondBuild.getTasks().get(":test")).isEqualTo(BuildResult.UPTODATE_OUTCOME);
+    }
+
+    @Test
     public void canDetectSystemPropertyChangeWhenBuilding() throws Exception {
         createProject(SourceType.JAVA);
 

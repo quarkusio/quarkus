@@ -201,7 +201,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * Sidecar containers
-     * 
+     *
      * @deprecated Use the {@code sidecars} property instead
      */
     @ConfigItem
@@ -215,10 +215,22 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, ContainerConfig> sidecars;
 
     /**
+     * The host aliases
+     */
+    @ConfigItem
+    Map<String, HostAliasConfig> hostAliases;
+
+    /**
      * If true, an Openshift Route will be created
      */
     @ConfigItem
     boolean expose;
+
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and DeploymentConfig
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -327,6 +339,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Map<String, AzureDiskVolumeConfig> getAzureDiskVolumes() {
         return azureDiskVolumes;
+    }
+
+    public Map<String, HostAliasConfig> getHostAliases() {
+        return hostAliases;
     }
 
     public Map<String, ContainerConfig> getInitContainers() {

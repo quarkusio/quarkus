@@ -28,6 +28,11 @@ public class TextNode implements TemplateNode, ResultNode {
         return origin;
     }
 
+    @Override
+    public boolean isConstant() {
+        return true;
+    }
+
     public String getValue() {
         return value;
     }

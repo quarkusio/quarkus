@@ -12,7 +12,7 @@
     <artifactId>quarkus-jdbc-db2</artifactId>
     <name>Quarkus - JDBC - DB2 - Runtime</name>
 	<description>Connect to the DB2 database via JDBC</description>
-	
+
     <dependencies>
         <dependency>
             <groupId>com.ibm.db2</groupId>
@@ -30,6 +30,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

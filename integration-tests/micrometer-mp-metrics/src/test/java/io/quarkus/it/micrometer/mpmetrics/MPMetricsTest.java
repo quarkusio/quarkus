@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -96,4 +97,20 @@ class MPMetricsTest {
                 .body(containsString(
                         "io_quarkus_it_micrometer_mpmetrics_InjectedInstance_notPrime_total{scope=\"application\",}"));
     }
+
+    @Test
+    @Order(7)
+    void validateJsonOutput() {
+        given()
+                .header("Accept", "application/json")
+                .when().get("/metrics")
+                .then()
+                .log().body()
+                .statusCode(200)
+                .body("'io.quarkus.it.micrometer.mpmetrics.CountedInstance.countPrimes;scope=application'",
+                        Matchers.equalTo(2.0f))
+                .body("'highestPrimeNumberSoFar'",
+                        Matchers.equalTo(887.0f));
+    }
+
 }

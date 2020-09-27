@@ -33,6 +33,7 @@
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Add the health extension as optional as we will produce the health check only if it's included -->

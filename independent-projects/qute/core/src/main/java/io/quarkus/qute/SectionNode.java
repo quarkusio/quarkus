@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -38,9 +39,9 @@ class SectionNode implements TemplateNode {
         return origin;
     }
 
-    void removeNodes(Set<TemplateNode> nodes) {
+    void optimizeNodes(Set<TemplateNode> nodes) {
         for (SectionBlock block : blocks) {
-            block.removeNodes(nodes);
+            block.optimizeNodes(nodes);
         }
     }
 
@@ -126,20 +127,34 @@ class SectionNode implements TemplateNode {
             }
             CompletableFuture<ResultNode> result = new CompletableFuture<ResultNode>();
             @SuppressWarnings("unchecked")
-            CompletableFuture<ResultNode>[] results = new CompletableFuture[block.nodes.size()];
+            CompletableFuture<ResultNode>[] allResults = new CompletableFuture[block.nodes.size()];
+            List<CompletableFuture<ResultNode>> asyncResults = new LinkedList<>();
             int idx = 0;
             for (TemplateNode node : block.nodes) {
-                results[idx++] = node.resolve(context).toCompletableFuture();
+                CompletableFuture<ResultNode> nodeResult = node.resolve(context).toCompletableFuture();
+                allResults[idx++] = nodeResult;
+                if (!node.isConstant()) {
+                    asyncResults.add(nodeResult);
+                }
             }
-            CompletableFuture
-                    .allOf(results)
-                    .whenComplete((v, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(new MultiResultNode(results));
-                        }
-                    });
+            if (asyncResults.isEmpty()) {
+                result.complete(new MultiResultNode(allResults));
+            } else {
+                CompletionStage<?> cs;
+                if (asyncResults.size() == 1) {
+                    cs = asyncResults.get(0);
+                } else {
+                    cs = CompletableFuture
+                            .allOf(asyncResults.toArray(Futures.EMPTY_RESULTS));
+                }
+                cs.whenComplete((v, t) -> {
+                    if (t != null) {
+                        result.completeExceptionally(t);
+                    } else {
+                        result.complete(new MultiResultNode(allResults));
+                    }
+                });
+            }
             return result;
         }
 

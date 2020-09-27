@@ -178,6 +178,7 @@
 
         <!-- Logging -->
         <module>logging-json</module>
+        <module>logging-json-structured</module>
         <module>logging-sentry</module>
         <module>logging-gelf</module>
 

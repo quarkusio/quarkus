@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless Quarkus
+Globals:
+  Api:
+    BinaryMediaTypes:
+      - "*/*"
+
+Parameters:
+  Tracing:
+    Type: String
+    AllowedValues:
+      - Active
+      - PassThrough
+    Default: PassThrough
+
+Resources:
+  Fn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: not.used.in.provided.runtime
+      Runtime: provided
+      CodeUri: ../../../target/function.zip
+      FunctionName: !Ref AWS::StackName
+      MemorySize: 128
+      Policies: AWSLambdaBasicExecutionRole
+      Timeout: 15
+      Tracing: !Ref Tracing
+      Environment:
+        Variables:
+          DISABLE_SIGNAL_HANDLERS: true

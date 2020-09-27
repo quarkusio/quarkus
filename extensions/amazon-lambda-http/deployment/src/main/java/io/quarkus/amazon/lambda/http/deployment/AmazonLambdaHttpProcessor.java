@@ -63,21 +63,4 @@ public class AmazonLambdaHttpProcessor {
         systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp"));
     }
 
-    @BuildStep
-    public void generateScripts(OutputTargetBuildItem target,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) throws Exception {
-        String lambdaName = LambdaUtil.artifactToLambda(target.getBaseName());
-
-        String output = LambdaUtil.copyResource("lambda/bootstrap-example.sh");
-        LambdaUtil.writeFile(target, "bootstrap-example.sh", output);
-
-        output = LambdaUtil.copyResource("http/sam.jvm.yaml")
-                .replace("${lambdaName}", lambdaName);
-        LambdaUtil.writeFile(target, "sam.jvm.yaml", output);
-
-        output = LambdaUtil.copyResource("http/sam.native.yaml")
-                .replace("${lambdaName}", lambdaName);
-        LambdaUtil.writeFile(target, "sam.native.yaml", output);
-    }
-
 }

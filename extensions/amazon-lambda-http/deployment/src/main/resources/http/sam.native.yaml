@@ -7,16 +7,25 @@
       BinaryMediaTypes:
         - "*/*"
 
+  Parameters:
+    Tracing:
+      Type: String
+      AllowedValues:
+        - PassThrough
+        - Active
+      Default: PassThrough
+
   Resources:
     ${lambdaName}Native:
       Type: AWS::Serverless::Function
       Properties:
         Handler: not.used.in.provided.runtimei
         Runtime: provided
-        CodeUri: function.zip
+        CodeUri: ../../../target/function.zip
         MemorySize: 128
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
+        Tracing: !Ref Tracing
         Environment:
           Variables:
             DISABLE_SIGNAL_HANDLERS: true

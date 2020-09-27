@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'bootstrap template'
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+
+
+Outputs:
+  Bucket:
+    Value: !Ref Bucket

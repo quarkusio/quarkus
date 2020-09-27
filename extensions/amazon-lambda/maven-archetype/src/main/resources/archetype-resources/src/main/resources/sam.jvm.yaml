@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless Quarkus
+Globals:
+  Api:
+    EndpointConfiguration: REGIONAL
+    BinaryMediaTypes:
+      - "*/*"
+
+Parameters:
+  Tracing:
+    Type: String
+    AllowedValues:
+      - Active
+      - PassThrough
+    Default: PassThrough
+
+Resources:
+  Fn:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+      Runtime: java11
+      CodeUri: ../../../target/function.zip
+      FunctionName: !Ref AWS::StackName
+      MemorySize: 256
+      Timeout: 15
+      Tracing: !Ref Tracing
+      Policies: AWSLambdaBasicExecutionRole

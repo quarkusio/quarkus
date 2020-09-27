@@ -1,22 +1,31 @@
   AWSTemplateFormatVersion: '2010-09-09'
   Transform: AWS::Serverless-2016-10-31
-  Description: AWS Serverless Quarkus HTTP - ${artifactId}
+  Description: AWS Serverless Quarkus HTTP
   Globals:
     Api:
       EndpointConfiguration: REGIONAL
       BinaryMediaTypes:
         - "*/*"
 
+  Parameters:
+    Tracing:
+      Type: String
+      AllowedValues:
+        - PassThrough
+        - Active
+      Default: PassThrough
+
   Resources:
-    ${lambdaName}:
+    Fn:
       Type: AWS::Serverless::Function
       Properties:
         Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
         Runtime: java11
-        CodeUri: function.zip
+        CodeUri: ../../../target/function.zip
         MemorySize: 512
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
+        Tracing: !Ref Tracing
         Events:
           GetResource:
             Type: Api
@@ -25,8 +34,8 @@
               Method: any
 
   Outputs:
-    ${lambdaName}Api:
+    Api:
       Description: URL for application
       Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
       Export:
-        Name: ${lambdaName}Api
+        Name: Api

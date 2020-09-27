@@ -18,6 +18,9 @@
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+        <bootstrap.stack.name>quarkus-lambda-bootstrap</bootstrap.stack.name>
+        <stack.jvm.name>\${project.artifactId}</stack.jvm.name>
+        <stack.native.name>\${project.artifactId}-native</stack.native.name>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -34,6 +37,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda</artifactId>
+            <version>999-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -73,6 +77,238 @@
                         <maven.home>\${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>src/main/resources/application.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@bootstrap -->
+                        <id>bootstrap</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>aws</executable>
+                            <arguments>
+                                <argument>cloudformation</argument>
+                                <argument>deploy</argument>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>--capabilities</argument>
+                                <argument>CAPABILITY_NAMED_IAM</argument>
+                                <argument>--stack-name</argument>
+                                <argument>${bootstrap.stack.name}</argument>
+                                <argument>--no-fail-on-empty-changeset</argument>
+                                <argument>--template-file</argument>
+                                <argument>src/main/resources/bootstrap-template.yaml</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@bootstrap-output -->
+                        <id>bootstrap-output</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>aws</executable>
+                            <arguments>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>cloudformation</argument>
+                                <argument>describe-stacks</argument>
+                                <argument>--stack-name</argument>
+                                <argument>${bootstrap.stack.name}</argument>
+                                <argument>--query</argument>
+                                <argument>Stacks[0].Outputs</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@deploy -->
+                        <id>deploy</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>sam</executable>
+                            <arguments>
+                                <argument>deploy</argument>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>--capabilities</argument>
+                                <argument>CAPABILITY_NAMED_IAM</argument>
+                                <argument>--stack-name</argument>
+                                <argument>\${stack.jvm.name}</argument>
+                                <argument>--no-fail-on-empty-changeset</argument>
+                                <argument>--template-file</argument>
+                                <argument>\${quarkus.lambda.sam.jvm.template}</argument>
+                                <argument>--s3-bucket</argument>
+                                <argument>${quarkus.lambda.deployment-bucket}</argument>
+                                <argument>--parameter-overrides</argument>
+                                <argument>Tracing=\${quarkus.lambda.tracing}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@deploy-native -->
+                        <id>deploy-native</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>sam</executable>
+                            <arguments>
+                                <argument>deploy</argument>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>--capabilities</argument>
+                                <argument>CAPABILITY_NAMED_IAM</argument>
+                                <argument>--stack-name</argument>
+                                <argument>\${stack.native.name}</argument>
+                                <argument>--no-fail-on-empty-changeset</argument>
+                                <argument>--template-file</argument>
+                                <argument>\${quarkus.lambda.sam.native.template}</argument>
+                                <argument>--s3-bucket</argument>
+                                <argument>${quarkus.lambda.deployment-bucket}</argument>
+                                <argument>--parameter-overrides</argument>
+                                <argument>Tracing=\${quarkus.lambda.tracing}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@invoke-local -->
+                        <id>invoke-local</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>sam</executable>
+                            <arguments>
+                                <argument>local</argument>
+                                <argument>invoke</argument>
+                                <argument>--template-file</argument>
+                                <argument>\${quarkus.lambda.sam.jvm.template}</argument>
+                                <argument>--event</argument>
+                                <argument>\${quarkus.lambda.payload.file}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@invoke-local-native -->
+                        <id>invoke-local-native</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>sam</executable>
+                            <arguments>
+                                <argument>local</argument>
+                                <argument>invoke</argument>
+                                <argument>--template-file</argument>
+                                <argument>\${quarkus.lambda.sam.native.template}</argument>
+                                <argument>--event</argument>
+                                <argument>\${quarkus.lambda.payload.file}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@invoke-remote -->
+                        <id>invoke-remote</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>src/main/resources/manage.sh</executable>
+                            <arguments>
+                                <argument>invoke</argument>
+                                <argument>\${stack.jvm.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@invoke-remote-native -->
+                        <id>invoke-remote-native</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>src/main/resources/manage.sh</executable>
+                            <arguments>
+                                <argument>invoke</argument>
+                                <argument>\${stack.native.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@delete -->
+                        <id>delete</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>aws</executable>
+                            <arguments>
+                                <argument>cloudformation</argument>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>delete-stack</argument>
+                                <argument>--stack-name</argument>
+                                <argument>${stack.jvm.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <!-- Run: mvn initialize exec:exec@delete-native -->
+                        <id>delete-native</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>aws</executable>
+                            <arguments>
+                                <argument>cloudformation</argument>
+                                <argument>--profile</argument>
+                                <argument>${quarkus.lambda.aws.cli.profile}</argument>
+                                <argument>--region</argument>
+                                <argument>${quarkus.lambda.aws.region}</argument>
+                                <argument>delete-stack</argument>
+                                <argument>--stack-name</argument>
+                                <argument>${stack.native.name}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

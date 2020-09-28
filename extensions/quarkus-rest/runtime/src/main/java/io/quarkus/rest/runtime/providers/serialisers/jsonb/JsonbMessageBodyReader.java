@@ -40,6 +40,7 @@ public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        return json.fromJson(entityStream, genericType);
+        Type runtimeType = genericType != null ? genericType : type;
+        return json.fromJson(entityStream, runtimeType);
     }
 }

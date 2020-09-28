@@ -1,6 +1,8 @@
 package io.quarkus.rest.runtime.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -47,12 +49,16 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
 
         MediaType mediaType = getMediaType();
         List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
+        InputStream entityStream = getEntityStream();
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
                 Object entity;
                 try {
+                    if (entityStream instanceof ByteArrayInputStream) {
+                        ((ByteArrayInputStream) entityStream).reset();
+                    }
                     entity = ((MessageBodyReader) reader).readFrom(entityType, genericType,
-                            annotations, mediaType, getStringHeaders(), getEntityStream());
+                            annotations, mediaType, getStringHeaders(), entityStream);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

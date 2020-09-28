@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +75,9 @@ public class Serialisers {
                     if (forClass != null) {
                         writers.addAll(forClass);
                     }
-                    interfaces.addAll(Arrays.asList(iface.getInterfaces()));
+                    for (Class<?> i : iface.getInterfaces()) {
+                        interfaces.add(i);
+                    }
                 }
                 c = c.getSuperclass();
             }
@@ -146,25 +149,49 @@ public class Serialisers {
     public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
+        Deque<Class<?>> toProcess = new LinkedList<>();
         Class<?> klass = entityType;
         do {
-            List<ResourceReader> goodTypeReaders = readers.get(klass);
-            if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
-                for (ResourceReader goodTypeReader : goodTypeReaders) {
-                    if (!goodTypeReader.matchesRuntimeType(runtimeType)) {
-                        continue;
-                    }
-                    MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
-                    if (match != null || mediaType == null) {
-                        ret.add(goodTypeReader.getInstance());
+            for (Class<?> i : klass.getInterfaces()) {
+                toProcess.add(i);
+            }
+            if (klass == Object.class || klass.getSuperclass() == null) {
+                //spec extension, look for interfaces as well
+                //we match interfaces before Object
+                Set<Class<?>> seen = new HashSet<>(toProcess);
+                while (!toProcess.isEmpty()) {
+                    Class<?> iface = toProcess.poll();
+                    List<ResourceReader> goodTypeReaders = readers.get(iface);
+                    readerLookup(mediaType, runtimeType, mt, ret, goodTypeReaders);
+                    for (Class<?> i : iface.getInterfaces()) {
+                        if (!seen.contains(i)) {
+                            seen.add(i);
+                            toProcess.add(i);
+                        }
                     }
                 }
             }
-            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
+            List<ResourceReader> goodTypeReaders = readers.get(klass);
+            readerLookup(mediaType, runtimeType, mt, ret, goodTypeReaders);
             klass = klass.getSuperclass();
         } while (klass != null);
 
         return ret;
+    }
+
+    private void readerLookup(MediaType mediaType, RuntimeType runtimeType, List<MediaType> mt, List<MessageBodyReader<?>> ret,
+            List<ResourceReader> goodTypeReaders) {
+        if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
+            for (ResourceReader goodTypeReader : goodTypeReaders) {
+                if (!goodTypeReader.matchesRuntimeType(runtimeType)) {
+                    continue;
+                }
+                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeReader.mediaTypes());
+                if (match != null || mediaType == null) {
+                    ret.add(goodTypeReader.getInstance());
+                }
+            }
+        }
     }
 
     public <T> void addWriter(Class<T> entityClass, ResourceWriter writer) {
@@ -249,25 +276,48 @@ public class Serialisers {
     public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         List<MessageBodyWriter<?>> ret = new ArrayList<>();
+        List<MessageBodyWriter<?>> objectMatched = new ArrayList<>();
         Class<?> klass = entityType;
+        Deque<Class<?>> toProcess = new LinkedList<>();
         do {
-            List<ResourceWriter> goodTypeWriters = writers.get(klass);
-            if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
-                for (ResourceWriter goodTypeWriter : goodTypeWriters) {
-                    if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
-                        continue;
-                    }
-                    MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.mediaTypes());
-                    if (match != null) {
-                        ret.add(goodTypeWriter.getInstance());
+            if (klass == Object.class) {
+                //spec extension, look for interfaces as well
+                //we match interfaces before Object
+                Set<Class<?>> seen = new HashSet<>(toProcess);
+                while (!toProcess.isEmpty()) {
+                    Class<?> iface = toProcess.poll();
+                    List<ResourceWriter> goodTypeWriters = writers.get(iface);
+                    writerLookup(runtimeType, mt, ret, goodTypeWriters);
+                    for (Class<?> i : iface.getInterfaces()) {
+                        if (!seen.contains(i)) {
+                            seen.add(i);
+                            toProcess.add(i);
+                        }
                     }
                 }
             }
-            // FIXME: spec mentions superclasses, but surely interfaces are involved too?
+            List<ResourceWriter> goodTypeWriters = writers.get(klass);
+            writerLookup(runtimeType, mt, ret, goodTypeWriters);
+            toProcess.addAll(Arrays.asList(klass.getInterfaces()));
             klass = klass.getSuperclass();
         } while (klass != null);
 
         return ret;
+    }
+
+    private void writerLookup(RuntimeType runtimeType, List<MediaType> mt, List<MessageBodyWriter<?>> ret,
+            List<ResourceWriter> goodTypeWriters) {
+        if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
+            for (ResourceWriter goodTypeWriter : goodTypeWriters) {
+                if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
+                    continue;
+                }
+                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.mediaTypes());
+                if (match != null) {
+                    ret.add(goodTypeWriter.getInstance());
+                }
+            }
+        }
     }
 
     public NoMediaTypeResult findWriterNoMediaType(QuarkusRestRequestContext requestContext, Object entity) {

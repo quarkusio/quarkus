@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import javax.json.JsonValue;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
@@ -102,6 +103,7 @@ import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.JsonpMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
@@ -546,6 +548,8 @@ public class QuarkusRestProcessor {
         //                false);
         registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class, beanContainerBuildItem.getValue(),
                 MediaType.APPLICATION_JSON);
+        registerWriter(recorder, serialisers, JsonValue.class, JsonpMessageBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.APPLICATION_JSON);
         registerWriter(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN);
         registerWriter(recorder, serialisers, Number.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
@@ -574,7 +578,7 @@ public class QuarkusRestProcessor {
         //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
-        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
+        registerReader(recorder, serialisers, JsonValue.class, JsonpMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD);
         for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),

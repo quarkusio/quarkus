@@ -79,6 +79,10 @@
   title: "(?i).*metrics.*"
   description: "(?i).*metrics.*"
   notify: [jmartisk]
+- labels: [area/metrics]
+  title: "(?i).*micrometer.*"
+  description: "(?i).*micrometer.*"
+  notify: [ebullient]
 - labels: [area/health, area/smallrye]
   title: "(?i).*health.*"
   description: "(?i).*health.*"

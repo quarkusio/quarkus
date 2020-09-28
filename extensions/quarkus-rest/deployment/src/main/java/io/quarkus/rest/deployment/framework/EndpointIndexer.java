@@ -105,9 +105,7 @@ import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler
 import io.quarkus.rest.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
-import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonArrayReader;
-import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonObjectReader;
-import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonStructureReader;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonValueHandler;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -579,11 +577,11 @@ public class EndpointIndexer {
         } else if (dotName.equals(INPUT_STREAM)) {
             additionalReaders.add(InputStreamMessageBodyReader.class, WILDCARD, InputStream.class);
         } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalReaders.add(JsonObjectReader.class, APPLICATION_JSON, javax.json.JsonObject.class);
+            additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalReaders.add(JsonArrayReader.class, APPLICATION_JSON, javax.json.JsonArray.class);
+            additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
-            additionalReaders.add(JsonStructureReader.class, APPLICATION_JSON, javax.json.JsonStructure.class);
+            additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
         } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
             additionalReaders.add(DefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType));
         }

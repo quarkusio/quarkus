@@ -103,7 +103,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 // call inject on our bean param field
                 injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, superTypeName,
                         INJECT_METHOD_NAME,
-                        INJECT_METHOD_DESCRIPTOR, true);
+                        INJECT_METHOD_DESCRIPTOR, false);
             }
             for (Entry<FieldInfo, ParameterExtractor> entry : fieldExtractors.entrySet()) {
                 FieldInfo fieldInfo = entry.getKey();

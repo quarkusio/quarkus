@@ -67,7 +67,7 @@ public class WithKubernetesClientTest {
         });
 
         assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client:view");
+            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client-view");
         });
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.rest.deployment.framework;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -118,10 +119,14 @@ public final class QuarkusRestDotNames {
     public static final DotName STRING = DotName.createSimple(String.class.getName());
     public static final DotName BYTE_ARRAY_DOT_NAME = DotName.createSimple(byte[].class.getName());
     public static final DotName INPUT_STREAM = DotName.createSimple(InputStream.class.getName());
+    public static final DotName OUTPUT_STREAM = DotName.createSimple(OutputStream.class.getName());
 
     public static final DotName JSONP_JSON_OBJECT = DotName.createSimple(javax.json.JsonObject.class.getName());
     public static final DotName JSONP_JSON_ARRAY = DotName.createSimple(javax.json.JsonArray.class.getName());
     public static final DotName JSONP_JSON_STRUCTURE = DotName.createSimple(javax.json.JsonStructure.class.getName());
+    public static final DotName JSONP_JSON_NUMBER = DotName.createSimple(javax.json.JsonNumber.class.getName());
+    public static final DotName JSONP_JSON_VALUE = DotName.createSimple(javax.json.JsonValue.class.getName());
+    public static final DotName JSONP_JSON_STRING = DotName.createSimple(javax.json.JsonString.class.getName());
 
     // TODO: add Path, Cookie and Matrix param handling
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(

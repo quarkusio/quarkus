@@ -16,8 +16,11 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.HEADER_PA
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INPUT_STREAM;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.INTEGER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_ARRAY;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_NUMBER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_OBJECT;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_STRUCTURE;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.JSONP_JSON_VALUE;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LIST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.LONG;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MATRIX_PARAM;
@@ -160,13 +163,13 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer, QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
             AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
-            Map<String, InjectableBean> injectableBeans) {
+            Map<String, InjectableBean> injectableBeans, AdditionalWriters additionalWriters) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
                     generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer,
                     recorder, existingConverters, config, additionalReaders,
-                    httpAnnotationToMethod, injectableBeans);
+                    additionalWriters, injectableBeans, httpAnnotationToMethod);
             ResourceClass clazz = new ResourceClass();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -290,13 +293,13 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, String path, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
-            Map<String, InjectableBean> injectableBeans) {
+            AdditionalWriters additionalWriters, Map<DotName, String> httpAnnotationToMethod,
+            Map<String, InjectableBean> injectableBeans, AdditionalReaders additionalReaders) {
         try {
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
                     generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                     recorder, existingConverters, config, additionalReaders,
-                    httpAnnotationToMethod, injectableBeans);
+                    additionalWriters, injectableBeans, httpAnnotationToMethod);
             RestClientInterface clazz = new RestClientInterface();
             clazz.getMethods().addAll(methods);
             clazz.setClassName(classInfo.name().toString());
@@ -324,7 +327,8 @@ public class EndpointIndexer {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer,
             QuarkusRestRecorder recorder,
             Map<String, String> existingConverters, QuarkusRestConfig config, AdditionalReaders additionalReaders,
-            Map<DotName, String> httpAnnotationToMethod, Map<String, InjectableBean> injectableBeans) {
+            AdditionalWriters additionalWriters, Map<String, InjectableBean> injectableBeans,
+            Map<DotName, String> httpAnnotationToMethod) {
         List<ResourceMethod> ret = new ArrayList<>();
         String[] classProduces = extractProducesConsumesValues(currentClassInfo.classAnnotation(PRODUCES));
         String[] classConsumes = extractProducesConsumesValues(currentClassInfo.classAnnotation(CONSUMES));
@@ -352,7 +356,7 @@ public class EndpointIndexer {
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, httpMethod, info, methodPath, index,
                             existingConverters,
-                            config, additionalReaders, httpAnnotationToMethod, injectableBeans);
+                            config, additionalReaders, additionalWriters, httpAnnotationToMethod, injectableBeans);
 
                     ret.add(method);
                 }
@@ -378,7 +382,8 @@ public class EndpointIndexer {
                     ResourceMethod method = createResourceMethod(currentClassInfo, actualEndpointInfo,
                             generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                             recorder, classProduces, classConsumes, classNameBindings, null, info, methodPath, index,
-                            existingConverters, config, additionalReaders, httpAnnotationToMethod, injectableBeans);
+                            existingConverters, config, additionalReaders, additionalWriters, httpAnnotationToMethod,
+                            injectableBeans);
                     ret.add(method);
                 }
             }
@@ -391,7 +396,7 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        httpAnnotationToMethod, injectableBeans));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod));
             }
         }
         List<DotName> interfaces = currentClassInfo.interfaceNames();
@@ -401,7 +406,7 @@ public class EndpointIndexer {
                 ret.addAll(createEndpoints(index, superClass, actualEndpointInfo, seenMethods,
                         generatedClassBuildItemBuildProducer, bytecodeTransformerBuildProducer,
                         recorder, existingConverters, config, additionalReaders,
-                        httpAnnotationToMethod, injectableBeans));
+                        additionalWriters, injectableBeans, httpAnnotationToMethod));
             }
         }
         return ret;
@@ -414,7 +419,8 @@ public class EndpointIndexer {
             String[] classProduces, String[] classConsumes, Set<String> classNameBindings, DotName httpMethod, MethodInfo info,
             String methodPath,
             IndexView indexView, Map<String, String> existingConverters, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
+            AdditionalReaders additionalReaders, AdditionalWriters additionalWriters,
+            Map<DotName, String> httpAnnotationToMethod,
             Map<String, InjectableBean> injectableBeans) {
         try {
             Map<DotName, AnnotationInstance>[] parameterAnnotations = new Map[info.parameters().size()];
@@ -469,6 +475,7 @@ public class EndpointIndexer {
                     formParamRequired = true;
                 }
             }
+            addWriterForType(additionalWriters, info.returnType());
 
             String[] produces = extractProducesConsumesValues(info.annotation(PRODUCES), classProduces);
             Set<String> nameBindingNames = nameBindingNames(info, indexView, classNameBindings);
@@ -570,17 +577,31 @@ public class EndpointIndexer {
         }
     }
 
+    private static void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
+        DotName dotName = paramType.name();
+        if (dotName.equals(JSONP_JSON_OBJECT)
+                || dotName.equals(JSONP_JSON_ARRAY)
+                || dotName.equals(JSONP_JSON_STRUCTURE)
+                || dotName.equals(JSONP_JSON_STRUCTURE)
+                || dotName.equals(JSONP_JSON_NUMBER)
+                || dotName.equals(JSONP_JSON_VALUE)
+                || dotName.equals(JSONP_JSON_STRING)) {
+            additionalWriters.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+        }
+    }
+
     private static void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
         DotName dotName = paramType.name();
         if (dotName.equals(BYTE_ARRAY_DOT_NAME)) {
             additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
         } else if (dotName.equals(INPUT_STREAM)) {
             additionalReaders.add(InputStreamMessageBodyReader.class, WILDCARD, InputStream.class);
-        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
-            additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
-        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
-            additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
-        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
+        } else if (dotName.equals(JSONP_JSON_OBJECT)
+                || dotName.equals(JSONP_JSON_ARRAY)
+                || dotName.equals(JSONP_JSON_STRUCTURE)
+                || dotName.equals(JSONP_JSON_NUMBER)
+                || dotName.equals(JSONP_JSON_VALUE)
+                || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
         } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
             additionalReaders.add(DefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType));

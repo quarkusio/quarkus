@@ -303,10 +303,10 @@ Create a `security-jwt-quickstart/src/main/resources/application.properties` wit
 [source, properties]
 ----
 mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
-mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
+mp.jwt.verify.issuer=https://quarkus.io/guides/security-jwt #<2>
 ----
 <1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
-<2> We are setting the issuer to the URL string `https://quarkus.io/using-jwt-rbac`.
+<2> We are setting the issuer to the URL string `https://quarkus.io/guides/security-jwt`.
  
 === Adding a Public Key
 

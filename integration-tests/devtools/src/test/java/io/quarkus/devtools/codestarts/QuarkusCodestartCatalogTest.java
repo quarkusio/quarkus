@@ -55,16 +55,16 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .noDockerfiles()
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/project/quarkus");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/buildtool/maven");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/config/properties");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/language/java");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getName)
+                .isEqualTo("quarkus");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getName)
+                .isEqualTo("maven");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getName)
+                .isEqualTo("config-properties");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
+                .isEqualTo("java");
         assertThat(projectDefinition.getBaseCodestarts()).hasSize(4);
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
                 .isEmpty();
     }
 
@@ -74,18 +74,18 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .noExamples()
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/project/quarkus");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/buildtool/maven");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/config/properties");
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/language/java");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.PROJECT)).extracting(Codestart::getName)
+                .isEqualTo("quarkus");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getName)
+                .isEqualTo("maven");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getName)
+                .isEqualTo("config-properties");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
+                .isEqualTo("java");
         assertThat(projectDefinition.getBaseCodestarts()).hasSize(4);
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("codestarts/quarkus/core/tooling/dockerfiles",
-                        "codestarts/quarkus/core/tooling/maven-wrapper");
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
+                .containsExactlyInAnyOrder("dockerfiles",
+                        "maven-wrapper");
     }
 
     @Test
@@ -94,8 +94,8 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .buildTool(BuildTool.GRADLE)
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/buildtool/gradle");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL)).extracting(Codestart::getName)
+                .isEqualTo("gradle");
     }
 
     @Test
@@ -104,8 +104,8 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/language/kotlin");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
+                .isEqualTo("kotlin");
     }
 
     @Test
@@ -114,8 +114,8 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-scala"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/language/scala");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.LANGUAGE)).extracting(Codestart::getName)
+                .isEqualTo("scala");
     }
 
     @Test
@@ -124,8 +124,8 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getResourceDir)
-                .isEqualTo("codestarts/quarkus/core/config/yaml");
+        assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG)).extracting(Codestart::getName)
+                .isEqualTo("config-yaml");
     }
 
     @Test
@@ -134,13 +134,13 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
                 .addExtension(AppArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getResourceDir)
-                .contains("codestarts/quarkus/core/config/properties");
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
+        assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getName)
+                .contains("config-properties");
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder(
-                        "codestarts/quarkus/core/tooling/dockerfiles",
-                        "codestarts/quarkus/core/tooling/maven-wrapper",
-                        "codestarts/quarkus/core/examples/resteasy-example");
+                        "dockerfiles",
+                        "maven-wrapper",
+                        "resteasy-example");
     }
 
     @Test
@@ -148,13 +148,13 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
-        assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getResourceDir)
-                .contains("codestarts/quarkus/core/config/properties");
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
+        assertThat(projectDefinition.getBaseCodestarts()).extracting(Codestart::getName)
+                .contains("config-properties");
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder(
-                        "codestarts/quarkus/core/tooling/dockerfiles",
-                        "codestarts/quarkus/core/tooling/maven-wrapper",
-                        "codestarts/quarkus/core/examples/commandmode-example");
+                        "dockerfiles",
+                        "maven-wrapper",
+                        "commandmode-example");
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {

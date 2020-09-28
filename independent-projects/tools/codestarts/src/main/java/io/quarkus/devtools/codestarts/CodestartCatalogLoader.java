@@ -9,6 +9,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.devtools.codestarts.core.CodestartSpec;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,29 +33,34 @@ public final class CodestartCatalogLoader {
     private CodestartCatalogLoader() {
     }
 
-    public static CodestartCatalog<CodestartProjectInput> loadDefaultCatalog(CodestartResourceLoader resourceLoader,
+    public static CodestartCatalog<CodestartProjectInput> loadDefaultCatalog(CodestartPathLoader pathLoader,
             String first,
             String... more)
             throws IOException {
-        final List<Codestart> codestarts = loadCodestarts(resourceLoader, first, more);
-        return new GenericCodestartCatalog<>(resourceLoader, codestarts);
+        final List<Codestart> codestarts = loadCodestarts(pathLoader, first, more);
+        return new GenericCodestartCatalog<>(codestarts);
     }
 
-    public static List<Codestart> loadCodestarts(CodestartResourceLoader resourceLoader, String first, String... more)
+    public static Collection<Codestart> loadUserDirectoryCodestarts(Path directory)
             throws IOException {
-        final List<Codestart> codestarts = new ArrayList<>(loadCodestarts(resourceLoader, first));
+        return loadCodestarts(new UserDirectoryCodestartPathLoader(directory), "");
+    }
+
+    public static List<Codestart> loadCodestarts(CodestartPathLoader pathLoader, String first, String... more)
+            throws IOException {
+        final List<Codestart> codestarts = new ArrayList<>(loadCodestarts(pathLoader, first));
         if (more != null) {
             for (String subDir : more) {
-                codestarts.addAll(loadCodestarts(resourceLoader, subDir));
+                codestarts.addAll(loadCodestarts(pathLoader, subDir));
             }
         }
         return codestarts;
     }
 
     // Visible for testing
-    static Collection<Codestart> loadCodestarts(final CodestartResourceLoader resourceLoader, final String directoryName)
+    static Collection<Codestart> loadCodestarts(final CodestartPathLoader pathLoader, final String directoryName)
             throws IOException {
-        return resourceLoader.loadResourceAsPath(directoryName,
+        return pathLoader.loadResourceAsPath(directoryName,
                 path -> {
                     try (final Stream<Path> pathStream = Files.walk(path)) {
                         return pathStream
@@ -64,7 +71,9 @@ public final class CodestartCatalogLoader {
                                         final CodestartSpec spec = readCodestartSpec(new String(Files.readAllBytes(p)));
                                         final String resourceCodestartDirectory = resourceName.replaceAll("/?codestart\\.yml",
                                                 "");
-                                        return new Codestart(resourceCodestartDirectory, spec,
+                                        return new Codestart(
+                                                new PathCodestartResourceAllocator(pathLoader, resourceCodestartDirectory),
+                                                spec,
                                                 resolveImplementedLanguages(p.getParent()));
                                     } catch (IOException e) {
                                         throw new CodestartStructureException("Failed to load codestart spec: " + resourceName,
@@ -105,5 +114,42 @@ public final class CodestartCatalogLoader {
     // Visible for testing
     static String getResourcePath(String first, String... more) {
         return Paths.get(first, more).toString().replace('\\', '/');
+    }
+
+    private static class PathCodestartResourceAllocator implements Codestart.CodestartResourceAllocator {
+
+        private final CodestartPathLoader pathLoader;
+        private final String resourceName;
+
+        public PathCodestartResourceAllocator(CodestartPathLoader pathLoader, String resourceName) {
+            this.pathLoader = pathLoader;
+            this.resourceName = resourceName;
+        }
+
+        @Override
+        public void allocate(Consumer<CodestartResource> readerConsumer) {
+            try {
+                pathLoader.loadResourceAsPath(resourceName, p -> {
+                    readerConsumer.accept(new CodestartResource.PathCodestartResource(p));
+                    return null;
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    private static class UserDirectoryCodestartPathLoader implements CodestartPathLoader {
+
+        private final Path userDir;
+
+        public UserDirectoryCodestartPathLoader(Path userDir) {
+            this.userDir = userDir;
+        }
+
+        @Override
+        public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
+            return consumer.consume(userDir.resolve(name));
+        }
     }
 }

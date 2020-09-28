@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import io.quarkus.devtools.codestarts.CodestartException;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,13 +26,13 @@ final class SmartConfigMergeCodestartFileStrategyHandler implements CodestartFil
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
 
         final String configType = getConfigType(data);
         final Map<String, Object> config = new HashMap<>();
-        for (CodestartFile codestartFile : codestartFiles) {
+        for (TargetFile codestartFile : codestartFiles) {
             final String content = codestartFile.getContent();
             if (!content.trim().isEmpty()) {
                 final Map o = YAML_MAPPER.readerFor(Map.class).readValue(content);

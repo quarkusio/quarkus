@@ -9,7 +9,6 @@ import static java.util.Objects.requireNonNull;
 import io.quarkus.devtools.codestarts.Codestart;
 import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
-import io.quarkus.devtools.codestarts.CodestartResourceLoader;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.io.IOException;
@@ -31,33 +30,24 @@ public final class DefaultCodestartProjectDefinition implements CodestartProject
 
     private final String languageName;
     private final List<Codestart> codestarts;
-    private final CodestartResourceLoader resourceLoader;
     private final CodestartProjectInput projectInput;
 
-    private DefaultCodestartProjectDefinition(CodestartResourceLoader resourceLoader,
-            CodestartProjectInput projectInput,
+    private DefaultCodestartProjectDefinition(CodestartProjectInput projectInput,
             String languageName,
             List<Codestart> codestarts) {
-        this.resourceLoader = requireNonNull(resourceLoader, "resourceLoader is required");
         this.projectInput = requireNonNull(projectInput, "codestartInput is required");
         this.languageName = requireNonNull(languageName, "languageName is required");
         this.codestarts = requireNonNull(codestarts, "codestarts is required");
     }
 
-    public static CodestartProjectDefinition of(CodestartResourceLoader resourceLoader,
-            CodestartProjectInput projectInput,
+    public static CodestartProjectDefinition of(CodestartProjectInput projectInput,
             Collection<Codestart> codestarts) {
         final String languageName = findLanguageName(codestarts);
         findRequiredCodestart(codestarts, CodestartType.PROJECT);
         final List<Codestart> sorted = codestarts.stream()
                 .sorted(PROCESSING_ORDER)
                 .collect(Collectors.toList());
-        return new DefaultCodestartProjectDefinition(resourceLoader, projectInput, languageName, sorted);
-    }
-
-    @Override
-    public CodestartResourceLoader getResourceLoader() {
-        return resourceLoader;
+        return new DefaultCodestartProjectDefinition(projectInput, languageName, sorted);
     }
 
     @Override

@@ -23,5 +23,6 @@ language:
       project:
         group-id: org.acme
         artifact-id: quarkus-project
+        version: 1.0.0-SNAPSHOT
     dependencies:
       - io.quarkus:quarkus-arc

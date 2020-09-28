@@ -1,9 +1,7 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +21,7 @@ public interface CodestartFileReader {
 
     String cleanFileName(String fileName);
 
-    Optional<String> read(Path sourceDirectory, Path relativeSourcePath, String languageName, Map<String, Object> data)
+    Optional<String> read(Source source, String languageName, Map<String, Object> data)
             throws IOException;
 
     class DefaultCodestartFileReader implements CodestartFileReader {
@@ -39,10 +37,8 @@ public interface CodestartFileReader {
         }
 
         @Override
-        public Optional<String> read(Path sourceDirectory, Path relativeSourcePath, String languageName,
-                Map<String, Object> data) throws IOException {
-            return Optional
-                    .of(new String(Files.readAllBytes(sourceDirectory.resolve(relativeSourcePath)), StandardCharsets.UTF_8));
+        public Optional<String> read(Source source, String languageName, Map<String, Object> data) throws IOException {
+            return Optional.of(source.read());
         }
     }
 }

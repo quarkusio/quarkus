@@ -1,6 +1,7 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,13 +17,13 @@ final class ReplaceCodestartFileStrategyHandler implements DefaultCodestartFileS
     }
 
     @Override
-    public void copyStaticFile(Path sourcePath, Path targetPath) throws IOException {
+    public void copyStaticFile(Source source, Path targetPath) throws IOException {
         Files.createDirectories(targetPath.getParent());
-        Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        source.copyTo(targetPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
         final Path targetPath = targetDirectory.resolve(relativePath);

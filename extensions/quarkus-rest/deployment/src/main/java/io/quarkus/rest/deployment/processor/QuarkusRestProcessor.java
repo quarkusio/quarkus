@@ -575,6 +575,12 @@ public class QuarkusRestProcessor {
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);
+
+        // the client always expects these to exist
+        additionalReaders.add(ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, byte[].class, RuntimeType.CLIENT);
+        additionalReaders.add(FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED, MultivaluedMap.class,
+                RuntimeType.CLIENT);
+
         //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);

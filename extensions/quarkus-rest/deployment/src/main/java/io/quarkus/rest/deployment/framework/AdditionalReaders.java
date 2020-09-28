@@ -1,25 +1,47 @@
 package io.quarkus.rest.deployment.framework;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.ext.MessageBodyReader;
 
 public class AdditionalReaders {
-    private final Set<Entry<?>> entries = new HashSet<>();
+    private final List<Entry<?>> entries = new ArrayList<>();
 
     public <T> void add(Class<? extends MessageBodyReader<T>> readerClass, String mediaType, Class<T> entityClass) {
-        entries.add(new Entry<>(readerClass, mediaType, entityClass));
+        add(readerClass, mediaType, entityClass, null);
     }
 
     public <T> void add(Class<? extends MessageBodyReader<T>> readerClass, String mediaType, Class<T> entityClass,
             RuntimeType constraint) {
-        entries.add(new Entry<>(readerClass, mediaType, entityClass, constraint));
+
+        Entry<T> newEntry = new Entry<>(readerClass, mediaType, entityClass, constraint);
+
+        // we first attempt to "merge" readers if we encounter the same reader needed for both client and server
+        Entry<?> matchingEntryIgnoringConstraint = null;
+        for (Entry<?> entry : entries) {
+            if (entry.matchesIgnoringConstraint(newEntry)) {
+                matchingEntryIgnoringConstraint = entry;
+                break;
+            }
+        }
+        if (matchingEntryIgnoringConstraint != null) {
+            if (matchingEntryIgnoringConstraint.constraint != newEntry.constraint) {
+                // in this case we have a MessageBodyReader that applies to both client and server so
+                // we remove the existing entity and replace it with one that has no constraint
+                entries.remove(matchingEntryIgnoringConstraint);
+                entries.add(new Entry<>(readerClass, mediaType, entityClass, null));
+            } else {
+                // nothing to do since the entries match completely
+            }
+        } else {
+            entries.add(newEntry);
+        }
     }
 
-    public Set<Entry<?>> get() {
+    public List<Entry<?>> get() {
         return entries;
     }
 
@@ -55,6 +77,11 @@ public class AdditionalReaders {
 
         public RuntimeType getConstraint() {
             return constraint;
+        }
+
+        public boolean matchesIgnoringConstraint(Entry<?> other) {
+            return readerClass.equals(other.entityClass) && entityClass.equals(other.entityClass)
+                    && mediaType.equals(other.mediaType);
         }
 
         @Override

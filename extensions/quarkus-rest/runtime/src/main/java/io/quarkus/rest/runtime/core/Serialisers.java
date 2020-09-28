@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.core;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import java.util.function.Function;
 
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
@@ -274,6 +276,8 @@ public class Serialisers {
     }
 
     public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType, RuntimeType runtimeType) {
+        // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
+        // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         List<MessageBodyWriter<?>> ret = new ArrayList<>();
         List<MessageBodyWriter<?>> objectMatched = new ArrayList<>();
@@ -402,5 +406,16 @@ public class Serialisers {
                 vertxResponse.putHeader(entry.getKey(), entry.getValue());
             }
         }
+    }
+
+    public static Buffer invokeClientWriter(Entity<?> entity, Object entityObject, Class<?> entityClass, Type entityType,
+            MultivaluedMap<String, String> headerMap, MessageBodyWriter writer) throws IOException {
+        if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
+                    entity.getMediaType(), headerMap, baos);
+            return Buffer.buffer(baos.toByteArray());
+        }
+        return null;
     }
 }

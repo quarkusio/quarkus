@@ -1,5 +1,7 @@
 package io.quarkus.rest.runtime.client;
 
+import java.io.ByteArrayInputStream;
+
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
@@ -99,7 +101,8 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
             @Override
             public void handle(Buffer buffer) {
                 try {
-                    R item = invocationState.readEntity(buffer, responseType, response.getMediaType(), response.getMetadata());
+                    ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
+                    R item = invocationState.readEntity(in, responseType, response.getMediaType(), response.getMetadata());
                     emitter.emit(item);
                 } catch (Throwable t) {
                     // FIXME: probably close the client too? watch out that it doesn't call our close handler

@@ -1,7 +1,5 @@
 package io.quarkus.rest.runtime.client;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -156,21 +154,22 @@ public class InvocationState implements Handler<HttpClientResponse> {
         }
     }
 
-    public <T> T readEntity(Buffer buffer,
-            GenericType<T> responseType, MediaType mediaType, MultivaluedMap<String, Object> metadata)
+    public <T> T readEntity(InputStream in,
+            GenericType<T> responseType, MediaType mediaType,
+            MultivaluedMap<String, Object> metadata)
             throws IOException {
         List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
                 mediaType, RuntimeType.CLIENT);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
                     mediaType)) {
-                ByteArrayInputStream in = new ByteArrayInputStream(buffer.getBytes());
                 return (T) ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
                         null, mediaType, metadata, in);
             }
         }
 
-        return (T) buffer.toString(StandardCharsets.UTF_8);
+        // FIXME: exception?
+        return null;
     }
 
     private QuarkusRestClientResponseContext initialiseResponse(HttpClientResponse vertxResponse) {
@@ -201,30 +200,33 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 vertxHttpHeaders.set(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
             }
 
-            Object entityObject = entity.getEntity();
-            Class<?> entityClass;
-            Type entityType;
-            if (entityObject instanceof GenericEntity) {
-                GenericEntity<?> genericEntity = (GenericEntity<?>) entityObject;
-                entityClass = genericEntity.getRawType();
-                entityType = genericEntity.getType();
-                entityObject = genericEntity.getEntity();
-            } else {
-                entityType = entityClass = entityObject.getClass();
-            }
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType(),
-                    RuntimeType.CLIENT);
-            for (MessageBodyWriter writer : writers) {
-                if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
-                            entity.getMediaType(), headerMap, baos);
-                    actualEntity = Buffer.buffer(baos.toByteArray());
-                    break;
-                }
-            }
+            actualEntity = writeEntity(headerMap);
         }
         return actualEntity;
+    }
+
+    private Buffer writeEntity(MultivaluedMap<String, String> headerMap) throws IOException {
+        Object entityObject = entity.getEntity();
+        Class<?> entityClass;
+        Type entityType;
+        if (entityObject instanceof GenericEntity) {
+            GenericEntity<?> genericEntity = (GenericEntity<?>) entityObject;
+            entityClass = genericEntity.getRawType();
+            entityType = genericEntity.getType();
+            entityObject = genericEntity.getEntity();
+        } else {
+            entityType = entityClass = entityObject.getClass();
+        }
+        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType(),
+                RuntimeType.CLIENT);
+        for (MessageBodyWriter<?> w : writers) {
+            Buffer ret = Serialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        // FIXME: exception?
+        return null;
     }
 
     private <T> HttpClientRequest createRequest() {
@@ -237,7 +239,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
         return httpClientRequest;
     }
 
-    private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity) {
+    private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity)
+            throws IOException {
         if (checkSuccessfulFamily && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
             throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
         }
@@ -264,29 +267,15 @@ public class InvocationState implements Handler<HttpClientResponse> {
             builder.entity(existingEntity);
         } else {
             if (responseTypeSpecified) { // this case means that a specific response type was requested
-                MediaType mediaType = responseContext.getMediaType();
-                List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
-                        mediaType, RuntimeType.CLIENT);
-                boolean done = false;
-                for (MessageBodyReader<?> reader : readers) {
-                    if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
-                            mediaType)) {
-                        InputStream in = responseContext.getEntityStream();
-                        try {
-                            @SuppressWarnings({ "unchecked", "rawtypes" })
-                            Object entity = ((MessageBodyReader) reader).readFrom(responseType.getRawType(),
-                                    responseType.getType(),
-                                    null, mediaType, responseContext.getHeaders(), in);
-                            builder.entity(entity);
-                        } catch (IOException e) {
-                            result.completeExceptionally(e);
-                        }
-                        done = true;
-                        break;
-                    }
-
-                }
-                if (!done && (responseContext.getData() != null)) {
+                Object entity = readEntity(responseContext.getEntityStream(),
+                        responseType,
+                        responseContext.getMediaType(),
+                        // FIXME: we have strings, it wants objects, perhaps there's
+                        // an Object->String conversion too many
+                        (MultivaluedMap) responseContext.getHeaders());
+                if (entity != null) {
+                    builder.entity(entity);
+                } else if (responseContext.getData() != null) {
                     builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
                 }
             } else {

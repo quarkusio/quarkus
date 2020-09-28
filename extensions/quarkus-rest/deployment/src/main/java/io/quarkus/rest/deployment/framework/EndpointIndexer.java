@@ -1,6 +1,8 @@
 package io.quarkus.rest.deployment.framework;
 
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BEAN_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BIG_DECIMAL;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BIG_INTEGER;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BLOCKING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BOOLEAN;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.BYTE_ARRAY_DOT_NAME;
@@ -47,6 +49,8 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -118,7 +122,8 @@ public class EndpointIndexer {
     private static final Map<DotName, Class<?>> supportedReaderJavaTypes;
     private static final Set<DotName> SUPPORTED_TEXT_PLAIN_READER_TYPES = Collections
             .unmodifiableSet(new HashSet<>(Arrays.asList(PRIMITIVE_INTEGER, PRIMITIVE_LONG, PRIMITIVE_FLOAT, PRIMITIVE_DOUBLE,
-                    PRIMITIVE_BOOLEAN, PRIMITIVE_CHAR, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, CHARACTER)));
+                    PRIMITIVE_BOOLEAN, PRIMITIVE_CHAR, INTEGER, LONG, FLOAT, DOUBLE, BOOLEAN, CHARACTER, BIG_DECIMAL,
+                    BIG_INTEGER)));
 
     private static final Logger log = Logger.getLogger(EndpointInvoker.class);
 
@@ -155,6 +160,8 @@ public class EndpointIndexer {
         supportedReaderJavaTps.put(LONG, Long.class);
         supportedReaderJavaTps.put(INTEGER, Integer.class);
         supportedReaderJavaTps.put(CHARACTER, Character.class);
+        supportedReaderJavaTps.put(BIG_DECIMAL, BigDecimal.class);
+        supportedReaderJavaTps.put(BIG_INTEGER, BigInteger.class);
         supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
     }
 

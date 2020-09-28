@@ -2,6 +2,8 @@ package io.quarkus.rest.deployment.framework;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -108,6 +110,8 @@ public final class QuarkusRestDotNames {
     public static final DotName DOUBLE = DotName.createSimple(Double.class.getName());
     public static final DotName BOOLEAN = DotName.createSimple(Boolean.class.getName());
     public static final DotName CHARACTER = DotName.createSimple(Character.class.getName());
+    public static final DotName BIG_DECIMAL = DotName.createSimple(BigDecimal.class.getName());
+    public static final DotName BIG_INTEGER = DotName.createSimple(BigInteger.class.getName());
 
     public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

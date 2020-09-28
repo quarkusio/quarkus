@@ -64,6 +64,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.sse.SseEventSink;
@@ -109,9 +110,10 @@ import io.quarkus.rest.runtime.model.ResourceClass;
 import io.quarkus.rest.runtime.model.ResourceMethod;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.DefaultTextPlainBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
+import io.quarkus.rest.runtime.providers.serialisers.ServerDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonValueHandler;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
@@ -611,7 +613,10 @@ public class EndpointIndexer {
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
         } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
-            additionalReaders.add(DefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType));
+            additionalReaders.add(ServerDefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType),
+                    RuntimeType.SERVER);
+            additionalReaders.add(ClientDefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType),
+                    RuntimeType.CLIENT);
         }
     }
 

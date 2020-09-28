@@ -49,12 +49,18 @@ public class RequestDeserializeHandler implements RestHandler {
             if (reader.isReadable(type, type, requestContext.getMethodAnnotations(), requestType)) {
                 Object result;
                 ReaderInterceptor[] interceptors = requestContext.getReaderInterceptors();
-                if (interceptors == null) {
-                    result = reader.readFrom((Class) type, type, null, requestType,
-                            requestContext.getHttpHeaders().getRequestHeaders(), in);
-                } else {
-                    result = new QuarkusRestReaderInterceptorContext(requestContext, requestContext.getMethodAnnotations(),
-                            type, type, requestType, reader, in, interceptors).proceed();
+                try {
+                    if (interceptors == null) {
+                        result = reader.readFrom((Class) type, type, null, requestType,
+                                requestContext.getHttpHeaders().getRequestHeaders(), in);
+                    } else {
+                        result = new QuarkusRestReaderInterceptorContext(requestContext, requestContext.getMethodAnnotations(),
+                                type, type, requestType, reader, in, interceptors).proceed();
+                    }
+                } catch (Exception e) {
+                    requestContext.restart(requestContext.getAbortHandlerChain());
+                    requestContext.resume(e);
+                    return;
                 }
                 requestContext.setRequestEntity(result);
                 requestContext.resume();

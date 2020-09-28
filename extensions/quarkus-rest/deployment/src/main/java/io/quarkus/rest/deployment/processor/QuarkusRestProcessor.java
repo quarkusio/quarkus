@@ -574,13 +574,13 @@ public class QuarkusRestProcessor {
                 beanContainerBuildItem.getValue(), MediaType.APPLICATION_FORM_URLENCODED);
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
+                MediaType.WILDCARD, null);
         //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
+                MediaType.WILDCARD, null);
         for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
-                    beanContainerBuildItem.getValue(), additionalReader.getMediaType());
+                    beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
         }
         for (AdditionalWriters.Entry<?> entry : additionalWriters.get()) {
             registerWriter(recorder, serialisers, entry.getEntityClass(), entry.getWriterClass(),
@@ -605,12 +605,13 @@ public class QuarkusRestProcessor {
     }
 
     private <T> void registerReader(QuarkusRestRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer, String mediaType) {
+            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer, String mediaType,
+            RuntimeType constraint) {
         ResourceReader reader = new ResourceReader();
         reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));
         reader.setMediaTypeStrings(Collections.singletonList(mediaType));
+        reader.setConstraint(constraint);
         recorder.registerReader(serialisers, entityClass.getName(), reader);
-
     }
 
     private List<String> getProducesMediaTypes(ClassInfo classInfo) {

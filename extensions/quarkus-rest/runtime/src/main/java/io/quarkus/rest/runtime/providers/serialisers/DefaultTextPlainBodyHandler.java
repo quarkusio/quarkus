@@ -5,12 +5,11 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.ws.rs.Consumes;
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
 
 import io.quarkus.rest.runtime.util.TypeConverter;
 
@@ -21,9 +20,7 @@ import io.quarkus.rest.runtime.util.TypeConverter;
  *          TODO: Reevaluate this as it depends on a lot of reflection for reading Java types.
  *          It should not be difficult to write handlers for these cases...
  */
-@Provider
-@Consumes("text/plain")
-public class DefaultTextPlainBodyHandler implements MessageBodyReader<Object> {
+abstract class DefaultTextPlainBodyHandler implements MessageBodyReader<Object> {
 
     public boolean isReadable(Class type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         // StringTextStar should pick up strings
@@ -33,6 +30,10 @@ public class DefaultTextPlainBodyHandler implements MessageBodyReader<Object> {
     @SuppressWarnings("unchecked")
     public Object readFrom(Class type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        return TypeConverter.getType(type, MessageReaderUtil.readString(entityStream, mediaType));
+        String input = MessageReaderUtil.readString(entityStream, mediaType);
+        validateInput(input);
+        return TypeConverter.getType(type, input);
     }
+
+    protected abstract void validateInput(String input) throws ProcessingException;
 }

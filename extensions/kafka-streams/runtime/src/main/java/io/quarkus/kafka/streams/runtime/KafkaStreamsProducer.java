@@ -189,6 +189,8 @@ public class KafkaStreamsProducer {
         // sasl
         SaslConfig sc = runtimeConfig.sasl;
         if (sc != null) {
+            setProperty(sc.mechanism, streamsProperties, SaslConfigs.SASL_MECHANISM);
+
             setProperty(sc.jaasConfig, streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
 
             setProperty(sc.clientCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);

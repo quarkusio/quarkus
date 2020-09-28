@@ -47,6 +47,7 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
             return (T) getEntity().toString();
         }
 
+        // FIXME: missing interceptors here
         MediaType mediaType = getMediaType();
         List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
         InputStream entityStream = getEntityStream();

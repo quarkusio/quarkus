@@ -1,11 +1,12 @@
 package io.quarkus.rest.runtime.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import io.quarkus.rest.api.WebClientApplicationException;
 import io.quarkus.rest.runtime.core.Serialisers;
@@ -69,11 +72,13 @@ public class InvocationState implements Handler<HttpClientResponse> {
      * Only initialised once we get the response
      */
     private HttpClientResponse vertxClientResponse;
+    // Changed by the request filter
+    Map<String, Object> properties;
 
     public InvocationState(QuarkusRestClient restClient,
             HttpClient httpClient, String httpMethod, URI uri,
             QuarkusRestConfiguration configuration, ClientRequestHeaders requestHeaders, Serialisers serialisers,
-            Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler) {
+            Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties) {
         this.restClient = restClient;
         this.httpClient = httpClient;
         this.httpMethod = httpMethod;
@@ -94,6 +99,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
         }
         this.registerBodyHandler = registerBodyHandler;
         this.result = new CompletableFuture<>();
+        // each invocation gets a new set of properties based on the JAX-RS invoker
+        this.properties = new HashMap<>(properties);
         start();
     }
 
@@ -105,12 +112,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 QuarkusRestClientResponseContext context = new QuarkusRestClientResponseContext(
                         requestContext.abortedWith.getStatus(), requestContext.abortedWith.getStatusInfo().getReasonPhrase(),
                         requestContext.abortedWith.getStringHeaders());
-                Object abortedWithEntity = requestContext.abortedWith.getEntity();
-                if ((abortedWithEntity instanceof String)) {
-                    // TODO: probably need to do this for other types as well, but it isn't clear how we would convert the object into bytes, serialization maybe?
-                    context.setData(((String) abortedWithEntity).getBytes());
-                }
-                ensureResponseAndRunFilters(context, abortedWithEntity);
+                ensureResponseAndRunFilters(context, requestContext.abortedWith);
             } else {
                 HttpClientRequest httpClientRequest = createRequest();
                 Buffer actualEntity = setRequestHeadersAndPrepareBody(httpClientRequest);
@@ -160,11 +162,17 @@ public class InvocationState implements Handler<HttpClientResponse> {
             throws IOException {
         List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
                 mediaType, RuntimeType.CLIENT);
+        // FIXME
+        Annotation[] annotations = null;
+        ReaderInterceptor[] interceptors = configuration.getReaderInterceptors().toArray(Serialisers.NO_READER_INTERCEPTOR);
         for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(responseType.getRawType(), responseType.getType(), null,
+            if (reader.isReadable(responseType.getRawType(), responseType.getType(), annotations,
                     mediaType)) {
-                return (T) ((MessageBodyReader) reader).readFrom(responseType.getRawType(), responseType.getType(),
-                        null, mediaType, metadata, in);
+                // FIXME: perhaps optimise for when we have no interceptor?
+                QuarkusRestClientReaderInterceptorContext context = new QuarkusRestClientReaderInterceptorContext(annotations,
+                        responseType.getRawType(), responseType.getType(), mediaType,
+                        properties, (MultivaluedMap) metadata, reader, in, interceptors);
+                return (T) context.proceed();
             }
         }
 
@@ -200,12 +208,14 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 vertxHttpHeaders.set(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
             }
 
-            actualEntity = writeEntity(headerMap);
+            actualEntity = writeEntity(entity, headerMap,
+                    configuration.getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
         }
         return actualEntity;
     }
 
-    private Buffer writeEntity(MultivaluedMap<String, String> headerMap) throws IOException {
+    private Buffer writeEntity(Entity<?> entity, MultivaluedMap<String, String> headerMap, WriterInterceptor[] interceptors)
+            throws IOException {
         Object entityObject = entity.getEntity();
         Class<?> entityClass;
         Type entityType;
@@ -220,7 +230,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
         List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType(),
                 RuntimeType.CLIENT);
         for (MessageBodyWriter<?> w : writers) {
-            Buffer ret = Serialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w);
+            Buffer ret = Serialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w,
+                    interceptors,
+                    properties);
             if (ret != null) {
                 return ret;
             }
@@ -239,7 +251,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
         return httpClientRequest;
     }
 
-    private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Object existingEntity)
+    private void ensureResponseAndRunFilters(QuarkusRestClientResponseContext responseContext, Response abortedWith)
             throws IOException {
         if (checkSuccessfulFamily && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
             throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
@@ -263,28 +275,45 @@ public class InvocationState implements Handler<HttpClientResponse> {
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.serializers(serialisers);
-        if (existingEntity != null) {
-            builder.entity(existingEntity);
-        } else {
-            if (responseTypeSpecified) { // this case means that a specific response type was requested
-                Object entity = readEntity(responseContext.getEntityStream(),
-                        responseType,
-                        responseContext.getMediaType(),
-                        // FIXME: we have strings, it wants objects, perhaps there's
-                        // an Object->String conversion too many
-                        (MultivaluedMap) responseContext.getHeaders());
-                if (entity != null) {
-                    builder.entity(entity);
-                } else if (responseContext.getData() != null) {
-                    builder.entity(new String(responseContext.getData(), StandardCharsets.UTF_8));
-                }
-            } else {
-                // in this case no specific response type was requested so we just prepare the stream
-                // the users of the response are meant to use readEntity
-                builder.entityStream(responseContext.getEntityStream());
+        // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
+        // so we have to write it, but without filters/interceptors
+        if (abortedWith != null) {
+            setExistingEntity(abortedWith, responseContext);
+        }
+        if (responseTypeSpecified) { // this case means that a specific response type was requested
+            Object entity = readEntity(responseContext.getEntityStream(),
+                    responseType,
+                    responseContext.getMediaType(),
+                    // FIXME: we have strings, it wants objects, perhaps there's
+                    // an Object->String conversion too many
+                    (MultivaluedMap) responseContext.getHeaders());
+            if (entity != null) {
+                builder.entity(entity);
             }
+        } else {
+            // in this case no specific response type was requested so we just prepare the stream
+            // the users of the response are meant to use readEntity
+            builder.entityStream(responseContext.getEntityStream());
         }
         result.complete(builder.build());
+    }
+
+    private void setExistingEntity(Response abortedWith, QuarkusRestClientResponseContext responseContext) throws IOException {
+        // FIXME: pass headers?
+        Object value = abortedWith.getEntity();
+        Entity entity;
+        if (value instanceof Entity) {
+            entity = (Entity) value;
+        } else {
+            MediaType mediaType = abortedWith.getMediaType();
+            if (mediaType == null) {
+                // FIXME: surely this is wrong, perhaps we can use the expected response type?
+                mediaType = MediaType.TEXT_PLAIN_TYPE;
+            }
+            entity = Entity.entity(value, mediaType);
+        }
+        Buffer buffer = writeEntity(entity, (MultivaluedMap) Serialisers.EMPTY_MULTI_MAP, Serialisers.NO_WRITER_INTERCEPTOR);
+        responseContext.setInput(new ByteArrayInputStream(buffer.getBytes()));
     }
 
     @Override
@@ -298,7 +327,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
                     @Override
                     public void handle(Buffer buffer) {
                         try {
-                            context.setData(buffer.getBytes());
+                            context.setInput(new ByteArrayInputStream(buffer.getBytes()));
                             ensureResponseAndRunFilters(context, null);
                         } catch (Throwable t) {
                             result.completeExceptionally(t);

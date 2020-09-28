@@ -28,14 +28,17 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import io.quarkus.rest.runtime.client.QuarkusRestClientWriterInterceptorContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.model.ResourceReader;
 import io.quarkus.rest.runtime.model.ResourceWriter;
+import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.vertx.core.buffer.Buffer;
@@ -51,6 +54,8 @@ public class Serialisers {
 
     public static final MessageBodyWriter<?>[] NO_WRITER = new MessageBodyWriter[0];
     public static final MessageBodyReader<?>[] NO_READER = new MessageBodyReader[0];
+    public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
+    public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
     public static final MultivaluedMap<String, Object> EMPTY_MULTI_MAP = new MultivaluedHashMap<>();
 
@@ -408,14 +413,41 @@ public class Serialisers {
         }
     }
 
+    // FIXME: pass InvocationState to wrap args?
     public static Buffer invokeClientWriter(Entity<?> entity, Object entityObject, Class<?> entityClass, Type entityType,
-            MultivaluedMap<String, String> headerMap, MessageBodyWriter writer) throws IOException {
-        if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
-                    entity.getMediaType(), headerMap, baos);
-            return Buffer.buffer(baos.toByteArray());
+            MultivaluedMap<String, String> headerMap, MessageBodyWriter writer, WriterInterceptor[] writerInterceptors,
+            Map<String, Object> properties) throws IOException {
+        if (writer instanceof QuarkusRestClientMessageBodyWriter && writerInterceptors == null) {
+            QuarkusRestClientMessageBodyWriter<Object> quarkusRestWriter = (QuarkusRestClientMessageBodyWriter<Object>) writer;
+            if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
+                return quarkusRestWriter.writeResponse(entityObject);
+            }
+        } else {
+            if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
+                if (writerInterceptors == null) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
+                            entity.getMediaType(), headerMap, baos);
+                    return Buffer.buffer(baos.toByteArray());
+                } else {
+                    return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
+                            entity.getMediaType(), headerMap, writer, writerInterceptors, properties);
+                }
+            }
         }
+
         return null;
+    }
+
+    public static Buffer runClientWriterInterceptors(Object entity, Class<?> entityClass, Type entityType,
+            Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> headers, MessageBodyWriter writer,
+            WriterInterceptor[] writerInterceptors, Map<String, Object> properties) throws IOException {
+        QuarkusRestClientWriterInterceptorContext wc = new QuarkusRestClientWriterInterceptorContext(writerInterceptors, writer,
+                annotations, entityClass, entityType, entity,
+                mediaType,
+                headers, properties);
+        wc.proceed();
+        return wc.getResult();
     }
 }

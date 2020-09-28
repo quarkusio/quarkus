@@ -33,10 +33,6 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
     private String reasonPhrase;
     private MultivaluedMap<String, String> headers;
     private InputStream input;
-    /**
-     * FIXME: allow for streaming data
-     */
-    private byte[] data;
 
     public QuarkusRestClientResponseContext(int status, String reasonPhrase, MultivaluedMap<String, String> headers) {
         this.status = status;
@@ -64,15 +60,6 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     public QuarkusRestClientResponseContext setInput(InputStream input) {
         this.input = input;
-        return this;
-    }
-
-    public byte[] getData() {
-        return data;
-    }
-
-    public QuarkusRestClientResponseContext setData(byte[] data) {
-        this.data = data;
         return this;
     }
 
@@ -246,7 +233,7 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public boolean hasEntity() {
-        return data != null;
+        return input != null;
     }
 
     @Override
@@ -254,10 +241,7 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
         if (input != null) {
             return input;
         }
-        if (data == null) {
-            return new ByteArrayInputStream(new byte[0]);
-        }
-        return input = new ByteArrayInputStream(data);
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     @Override

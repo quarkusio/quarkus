@@ -7,7 +7,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,7 +27,6 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
-    private final Map<String, Object> properties = new HashMap<>();
     private final Client client;
     private final QuarkusRestConfiguration configuration;
     private OutputStream entityStream;
@@ -44,23 +42,23 @@ public class QuarkusRestClientRequestContext implements ClientRequestContext {
 
     @Override
     public Object getProperty(String name) {
-        return properties.get(name);
+        return invocationState.properties.get(name);
     }
 
     @Override
     public Collection<String> getPropertyNames() {
         // TCK says the property names need to be immutable
-        return Collections.unmodifiableSet(properties.keySet());
+        return Collections.unmodifiableSet(invocationState.properties.keySet());
     }
 
     @Override
     public void setProperty(String name, Object object) {
-        properties.put(name, object);
+        invocationState.properties.put(name, object);
     }
 
     @Override
     public void removeProperty(String name) {
-        properties.remove(name);
+        invocationState.properties.remove(name);
     }
 
     @Override

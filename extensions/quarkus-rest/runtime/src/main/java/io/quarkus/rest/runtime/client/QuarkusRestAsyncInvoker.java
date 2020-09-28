@@ -252,7 +252,7 @@ public class QuarkusRestAsyncInvoker implements AsyncInvoker, CompletionStageRxI
             boolean registerBodyHandler) {
         return new InvocationState(restClient, httpClient, httpMethodName, uri,
                 requestSpec.configuration, requestSpec.headers, serialisers,
-                entity, responseType, registerBodyHandler);
+                entity, responseType, registerBodyHandler, properties);
     }
 
     private <T> Type getInvocationCallbackType(InvocationCallback<T> callback) {

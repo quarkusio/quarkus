@@ -17,7 +17,9 @@ import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.RuntimeDelegate;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import io.quarkus.rest.runtime.util.MultivaluedTreeMap;
 
@@ -29,6 +31,8 @@ public class QuarkusRestConfiguration implements Configuration {
     private final List<Feature> enabledFeatures;
     private final MultivaluedMap<Integer, ClientRequestFilter> requestFilters;
     private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters;
+    private final MultivaluedMap<Integer, WriterInterceptor> writerInterceptors;
+    private final MultivaluedMap<Integer, ReaderInterceptor> readerInterceptors;
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -37,6 +41,8 @@ public class QuarkusRestConfiguration implements Configuration {
         this.enabledFeatures = new ArrayList<>();
         this.requestFilters = new MultivaluedTreeMap<>();
         this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
+        this.writerInterceptors = new MultivaluedTreeMap<>();
+        this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
     }
 
     public QuarkusRestConfiguration(Configuration configuration) {
@@ -51,12 +57,18 @@ public class QuarkusRestConfiguration implements Configuration {
             this.requestFilters.putAll(quarkusRestConfiguration.requestFilters);
             this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.responseFilters.putAll(quarkusRestConfiguration.responseFilters);
+            this.writerInterceptors = new MultivaluedTreeMap<>();
+            this.writerInterceptors.putAll(quarkusRestConfiguration.writerInterceptors);
+            this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.readerInterceptors.putAll(quarkusRestConfiguration.readerInterceptors);
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
             this.requestFilters = new MultivaluedTreeMap<>();
             this.responseFilters = new MultivaluedTreeMap<>(
                     Collections.reverseOrder());
+            this.writerInterceptors = new MultivaluedTreeMap<>();
+            this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);
@@ -187,6 +199,14 @@ public class QuarkusRestConfiguration implements Configuration {
             int effectivePriority = priority != null ? priority : determinePriority(component);
             responseFilters.add(effectivePriority, (ClientResponseFilter) component);
         }
+        if (component instanceof WriterInterceptor) {
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            writerInterceptors.add(effectivePriority, (WriterInterceptor) component);
+        }
+        if (component instanceof ReaderInterceptor) {
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
+        }
     }
 
     public void register(Object component, Class<?>[] contracts) {
@@ -220,6 +240,28 @@ public class QuarkusRestConfiguration implements Configuration {
         List<ClientResponseFilter> result = new ArrayList<>(responseFilters.size() * 2);
         for (List<ClientResponseFilter> responseFilters : responseFilters.values()) {
             result.addAll(responseFilters);
+        }
+        return result;
+    }
+
+    public List<WriterInterceptor> getWriterInterceptors() {
+        if (writerInterceptors.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<WriterInterceptor> result = new ArrayList<>(writerInterceptors.size() * 2);
+        for (List<WriterInterceptor> writerInterceptors : writerInterceptors.values()) {
+            result.addAll(writerInterceptors);
+        }
+        return result;
+    }
+
+    public List<ReaderInterceptor> getReaderInterceptors() {
+        if (readerInterceptors.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<ReaderInterceptor> result = new ArrayList<>(readerInterceptors.size() * 2);
+        for (List<ReaderInterceptor> readerInterceptors : readerInterceptors.values()) {
+            result.addAll(readerInterceptors);
         }
         return result;
     }

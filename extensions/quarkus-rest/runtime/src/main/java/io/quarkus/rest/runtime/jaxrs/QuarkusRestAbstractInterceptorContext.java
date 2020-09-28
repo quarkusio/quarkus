@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.jaxrs;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Objects;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.InterceptorContext;
@@ -46,9 +47,7 @@ public abstract class QuarkusRestAbstractInterceptorContext implements Intercept
     }
 
     public void setAnnotations(Annotation[] annotations) {
-        if (annotations == null) {
-            throw new NullPointerException("parameters cannot be null");
-        }
+        Objects.requireNonNull(annotations);
         this.annotations = annotations;
     }
 

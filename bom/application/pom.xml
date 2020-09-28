@@ -155,7 +155,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
         <jgit.version>5.8.0.202006091008-r</jgit.version>
-        <flyway.version>6.5.7</flyway.version>
+        <flyway.version>7.0.0</flyway.version>
         <yasson.version>1.0.8</yasson.version>
         <liquibase.version>4.0.0</liquibase.version>
         <snakeyaml.version>1.27</snakeyaml.version>

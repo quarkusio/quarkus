@@ -99,9 +99,15 @@ public class OidcRecorder {
             return createdTenantContextFromPublicKey(options, oidcConfig);
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
             throw new ConfigurationException(
-                    "Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
+                    "'auth-server-url' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
+                            + " when the quarkus-oidc extension is enabled");
+        }
+
+        if (!oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    "'client-id' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
                             + " when the quarkus-oidc extension is enabled");
         }
 

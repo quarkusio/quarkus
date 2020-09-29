@@ -64,9 +64,9 @@ javadoc {
 }
 
 pluginBundle {
-    website = 'https://quarkus.io/' 
-    vcsUrl = 'https://github.com/quarkusio/quarkus' 
-    tags = ['quarkus', 'quarkusio', 'graalvm'] 
+    website = 'https://quarkus.io/'
+    vcsUrl = 'https://github.com/quarkusio/quarkus'
+    tags = ['quarkus', 'quarkusio', 'graalvm']
 }
 
 gradlePlugin {

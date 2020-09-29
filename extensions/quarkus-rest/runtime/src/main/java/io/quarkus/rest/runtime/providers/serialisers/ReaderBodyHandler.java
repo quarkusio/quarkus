@@ -21,11 +21,7 @@ public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBody
 
     public Reader readFrom(Class<Reader> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        String charset = mediaType.getParameters().get("charset");
-        if (charset == null)
-            return new InputStreamReader(entityStream);
-        else
-            return new InputStreamReader(entityStream, charset);
+        return new InputStreamReader(entityStream, MessageReaderUtil.charsetFromMediaType(mediaType));
     }
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

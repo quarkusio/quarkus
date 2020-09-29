@@ -1,4 +1,4 @@
-package io.quarkus.container.image.s2i.deployment;
+package io.quarkus.container.image.openshift.deployment;
 
 import java.time.Duration;
 import java.util.List;
@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class S2iConfig {
+public class OpenshiftConfig {
 
     public static final String DEFAULT_BASE_JVM_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0";
@@ -51,14 +51,14 @@ public class S2iConfig {
     /**
      * Additional JVM arguments to pass to the JVM when starting the application
      */
-    @ConfigItem(defaultValue = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
+    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0,-Djava.util.logging.manager=org.jboss.logmanager.LogManager")
     public List<String> jvmArguments;
 
     /**
      * Additional arguments to pass when starting the native application
      */
-    @ConfigItem
-    public Optional<List<String>> nativeArguments;
+    @ConfigItem(defaultValue = "-Dquarkus.http.host=0.0.0.0")
+    public List<String> nativeArguments;
 
     /**
      * The directory where the jar is added during the assemble phase.

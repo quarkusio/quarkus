@@ -66,6 +66,8 @@ public final class Capabilities extends SimpleBuildItem {
     @Deprecated
     public static final String CONTAINER_IMAGE_S2I = Capability.CONTAINER_IMAGE_S2I.getName();
     @Deprecated
+    public static final String CONTAINER_IMAGE_OPENSHIFT = Capability.CONTAINER_IMAGE_OPENSHIFT.getName();
+    @Deprecated
     public static final String HIBERNATE_ORM = Capability.HIBERNATE_ORM.getName();
     @Deprecated
     public static final String SMALLRYE_OPENTRACING = Capability.SMALLRYE_OPENTRACING.getName();

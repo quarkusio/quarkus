@@ -26,7 +26,7 @@ public class QuarkusRestProviders implements Providers {
     @Override
     public <T> MessageBodyReader<T> getMessageBodyReader(Class<T> type, Type genericType, Annotation[] annotations,
             MediaType mediaType) {
-        List<MessageBodyReader<?>> readers = deployment.getSerialisers().findReaders(type, mediaType);
+        List<MessageBodyReader<?>> readers = deployment.getSerialisers().findReaders(null, type, mediaType);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(type, genericType, annotations, mediaType)) {
                 return (MessageBodyReader<T>) reader;
@@ -38,7 +38,7 @@ public class QuarkusRestProviders implements Providers {
     @Override
     public <T> MessageBodyWriter<T> getMessageBodyWriter(Class<T> type, Type genericType, Annotation[] annotations,
             MediaType mediaType) {
-        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(type, mediaType, RuntimeType.SERVER);
+        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(null, type, mediaType, RuntimeType.SERVER);
         for (MessageBodyWriter<?> writer : writers) {
             if (writer.isWriteable(type, genericType, annotations, mediaType)) {
                 return (MessageBodyWriter<T>) writer;

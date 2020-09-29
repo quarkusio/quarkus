@@ -53,7 +53,8 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         if (entityStream == null)
             return null;
         MediaType mediaType = getMediaType();
-        List<MessageBodyReader<?>> readers = invocationState.serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
+        List<MessageBodyReader<?>> readers = invocationState.serialisers.findReaders(invocationState.configuration, entityType,
+                mediaType, RuntimeType.CLIENT);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
                 Object entity;

@@ -38,6 +38,7 @@ import io.quarkus.rest.runtime.client.QuarkusRestClientReaderInterceptorContext;
 import io.quarkus.rest.runtime.client.QuarkusRestClientWriterInterceptorContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.model.ResourceReader;
@@ -151,6 +152,7 @@ public class Serialisers {
     private final MultivaluedMap<Class<?>, ResourceReader> readers = new MultivaluedHashMap<>();
 
     public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
+    public static final List<String> WILDCARD_STRING_LIST = Collections.singletonList(MediaType.WILDCARD);
 
     public static final MessageBodyWriter<?>[] NO_WRITER = new MessageBodyWriter[0];
     public static final MessageBodyReader<?>[] NO_READER = new MessageBodyReader[0];
@@ -286,15 +288,25 @@ public class Serialisers {
         }
     }
 
-    public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType) {
-        return findReaders(entityType, mediaType, null);
+    public List<MessageBodyReader<?>> findReaders(QuarkusRestConfiguration configuration, Class<?> entityType,
+            MediaType mediaType) {
+        return findReaders(configuration, entityType, mediaType, null);
     }
 
-    public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType, RuntimeType runtimeType) {
+    public List<MessageBodyReader<?>> findReaders(QuarkusRestConfiguration configuration, Class<?> entityType,
+            MediaType mediaType, RuntimeType runtimeType) {
         List<MediaType> mt = Collections.singletonList(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
         Class<?> klass = entityType;
+        MultivaluedMap<Class<?>, ResourceReader> readers;
+        if (configuration != null && !configuration.getResourceReaders().isEmpty()) {
+            readers = new MultivaluedHashMap<>();
+            readers.putAll(this.readers);
+            readers.putAll(configuration.getResourceReaders());
+        } else {
+            readers = this.readers;
+        }
         do {
             for (Class<?> i : klass.getInterfaces()) {
                 toProcess.add(i);
@@ -413,11 +425,13 @@ public class Serialisers {
         return readers;
     }
 
-    public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType) {
-        return findWriters(entityType, resolvedMediaType, null);
+    public List<MessageBodyWriter<?>> findWriters(QuarkusRestConfiguration configuration, Class<?> entityType,
+            MediaType resolvedMediaType) {
+        return findWriters(configuration, entityType, resolvedMediaType, null);
     }
 
-    public List<MessageBodyWriter<?>> findWriters(Class<?> entityType, MediaType resolvedMediaType, RuntimeType runtimeType) {
+    public List<MessageBodyWriter<?>> findWriters(QuarkusRestConfiguration configuration, Class<?> entityType,
+            MediaType resolvedMediaType, RuntimeType runtimeType) {
         // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
@@ -425,6 +439,15 @@ public class Serialisers {
         List<MessageBodyWriter<?>> objectMatched = new ArrayList<>();
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
+        MultivaluedMap<Class<?>, ResourceWriter> writers;
+        if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
+            writers = new MultivaluedHashMap<>();
+            writers.putAll(this.writers);
+            writers.putAll(configuration.getResourceWriters());
+        } else {
+            writers = this.writers;
+        }
+
         do {
             if (klass == Object.class) {
                 //spec extension, look for interfaces as well

@@ -47,7 +47,7 @@ public class VariableProducesHandler implements RestHandler {
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
                     .build());
         }
-        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entity.getClass(), res, RuntimeType.SERVER);
+        List<MessageBodyWriter<?>> writers = serialisers.findWriters(null, entity.getClass(), res, RuntimeType.SERVER);
         if (writers == null || writers.isEmpty()) {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())

@@ -34,7 +34,7 @@ public class DynamicEntityWriter implements EntityWriter {
             context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE,
                     writerNoMediaType.getMediaType().toString());
         } else {
-            writers = serialisers.findWriters(entity.getClass(), mt, RuntimeType.SERVER).toArray(Serialisers.NO_WRITER);
+            writers = serialisers.findWriters(null, entity.getClass(), mt, RuntimeType.SERVER).toArray(Serialisers.NO_WRITER);
         }
         for (MessageBodyWriter<?> w : writers) {
             if (Serialisers.invokeWriter(context, entity, w)) {

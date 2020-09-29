@@ -39,7 +39,7 @@ public class RequestDeserializeHandler implements RestHandler {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
         }
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(type, requestType, RuntimeType.SERVER);
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, requestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {
             throw new NotSupportedException();
         }

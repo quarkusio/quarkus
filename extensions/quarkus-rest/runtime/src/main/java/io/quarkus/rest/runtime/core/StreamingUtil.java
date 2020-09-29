@@ -57,7 +57,7 @@ public class StreamingUtil {
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
-                .findWriters(entityClass, mediaType, RuntimeType.SERVER)
+                .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
                 .toArray(Serialisers.NO_WRITER);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;

@@ -1,8 +1,10 @@
 package io.quarkus.rest.runtime.util;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -164,6 +166,24 @@ public final class Types {
         } else {
             return EMPTY_TYPE_ARRAY;
         }
+    }
+
+    public static Class<?> getRawType(Type type) {
+        if (type instanceof Class)
+            return (Class<?>) type;
+        if (type instanceof ParameterizedType)
+            return getRawType(((ParameterizedType) type).getRawType());
+        if (type instanceof TypeVariable)
+            return getRawType(((TypeVariable) type).getBounds()[0]);
+        if (type instanceof WildcardType) {
+            Type[] bounds = ((WildcardType) type).getLowerBounds();
+            if (bounds.length > 0)
+                return getRawType(bounds[0]);
+            return getRawType(((WildcardType) type).getUpperBounds()[0]);
+        }
+        if (type instanceof GenericArrayType)
+            return getRawType(((GenericArrayType) type).getGenericComponentType());
+        throw new IllegalArgumentException("Unknow type: " + type);
     }
 
 }

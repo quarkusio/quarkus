@@ -58,7 +58,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
     private final QuarkusRestClient restClient;
     final Serialisers serialisers;
     final ClientRequestHeaders requestHeaders;
-    private final QuarkusRestConfiguration configuration;
+    final QuarkusRestConfiguration configuration;
     private final boolean registerBodyHandler;
     // will be used to check if we need to throw a WebApplicationException
     // see Javadoc of javax.ws.rs.client.Invocation or javax.ws.rs.client.SyncInvoker
@@ -162,7 +162,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
             throws IOException {
         if (in == null)
             return null;
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(configuration, responseType.getRawType(),
                 mediaType, RuntimeType.CLIENT);
         // FIXME
         Annotation[] annotations = null;
@@ -229,7 +229,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
         } else {
             entityType = entityClass = entityObject.getClass();
         }
-        List<MessageBodyWriter<?>> writers = serialisers.findWriters(entityClass, entity.getMediaType(),
+        List<MessageBodyWriter<?>> writers = serialisers.findWriters(configuration, entityClass, entity.getMediaType(),
                 RuntimeType.CLIENT);
         for (MessageBodyWriter<?> w : writers) {
             Buffer ret = Serialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w,

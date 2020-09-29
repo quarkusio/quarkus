@@ -1,6 +1,8 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,18 +12,28 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Priority;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.Priorities;
+import javax.ws.rs.Produces;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.RuntimeDelegate;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.core.UnmanagedBeanFactory;
+import io.quarkus.rest.runtime.model.ResourceReader;
+import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.util.MultivaluedTreeMap;
+import io.quarkus.rest.runtime.util.Types;
 
 public class QuarkusRestConfiguration implements Configuration {
 
@@ -33,6 +45,8 @@ public class QuarkusRestConfiguration implements Configuration {
     private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters;
     private final MultivaluedMap<Integer, WriterInterceptor> writerInterceptors;
     private final MultivaluedMap<Integer, ReaderInterceptor> readerInterceptors;
+    private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
+    private final MultivaluedMap<Class<?>, ResourceReader> resourceReaders;
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -43,6 +57,8 @@ public class QuarkusRestConfiguration implements Configuration {
         this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
         this.readerInterceptors = new MultivaluedTreeMap<>();
         this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+        this.resourceReaders = new MultivaluedHashMap<>();
+        this.resourceWriters = new MultivaluedHashMap<>();
     }
 
     public QuarkusRestConfiguration(Configuration configuration) {
@@ -61,6 +77,10 @@ public class QuarkusRestConfiguration implements Configuration {
             this.readerInterceptors.putAll(quarkusRestConfiguration.readerInterceptors);
             this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.writerInterceptors.putAll(quarkusRestConfiguration.writerInterceptors);
+            this.resourceReaders = new MultivaluedHashMap<>();
+            this.resourceReaders.putAll(quarkusRestConfiguration.resourceReaders);
+            this.resourceWriters = new MultivaluedHashMap<>();
+            this.resourceWriters.putAll(quarkusRestConfiguration.resourceWriters);
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
@@ -69,6 +89,8 @@ public class QuarkusRestConfiguration implements Configuration {
                     Collections.reverseOrder());
             this.readerInterceptors = new MultivaluedTreeMap<>();
             this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.resourceReaders = new MultivaluedHashMap<>();
+            this.resourceWriters = new MultivaluedHashMap<>();
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);
@@ -207,6 +229,24 @@ public class QuarkusRestConfiguration implements Configuration {
             int effectivePriority = priority != null ? priority : determinePriority(component);
             readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
         }
+        if (component instanceof MessageBodyReader) {
+            ResourceReader resourceReader = new ResourceReader();
+            resourceReader.setFactory(new UnmanagedBeanFactory(component));
+            Consumes consumes = component.getClass().getAnnotation(Consumes.class);
+            resourceReader
+                    .setMediaTypeStrings(consumes != null ? Arrays.asList(consumes.value()) : Serialisers.WILDCARD_STRING_LIST);
+            Type[] args = Types.findParameterizedTypes(component.getClass(), MessageBodyReader.class);
+            resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class, resourceReader);
+        }
+        if (component instanceof MessageBodyWriter) {
+            ResourceWriter resourceWriter = new ResourceWriter();
+            resourceWriter.setFactory(new UnmanagedBeanFactory(component));
+            Produces produces = component.getClass().getAnnotation(Produces.class);
+            resourceWriter
+                    .setMediaTypeStrings(produces != null ? Arrays.asList(produces.value()) : Serialisers.WILDCARD_STRING_LIST);
+            Type[] args = Types.findParameterizedTypes(component.getClass(), MessageBodyWriter.class);
+            resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class, resourceWriter);
+        }
     }
 
     public void register(Object component, Class<?>[] contracts) {
@@ -273,5 +313,13 @@ public class QuarkusRestConfiguration implements Configuration {
             return Priorities.USER;
         }
         return priority.value();
+    }
+
+    public MultivaluedMap<Class<?>, ResourceReader> getResourceReaders() {
+        return resourceReaders;
+    }
+
+    public MultivaluedMap<Class<?>, ResourceWriter> getResourceWriters() {
+        return resourceWriters;
     }
 }

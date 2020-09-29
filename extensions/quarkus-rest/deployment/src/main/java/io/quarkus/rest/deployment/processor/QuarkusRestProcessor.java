@@ -583,6 +583,8 @@ public class QuarkusRestProcessor {
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);
+        registerReader(recorder, serialisers, Reader.class, ReaderBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN, null);
         registerReader(recorder, serialisers, File.class, FileBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN, null);
 

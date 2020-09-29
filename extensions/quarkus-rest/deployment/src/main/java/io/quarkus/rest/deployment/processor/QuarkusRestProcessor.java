@@ -8,6 +8,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 
+import java.io.File;
 import java.io.Reader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
@@ -103,6 +104,7 @@ import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.FileBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
@@ -576,10 +578,12 @@ public class QuarkusRestProcessor {
                 beanContainerBuildItem.getValue(), MediaType.APPLICATION_FORM_URLENCODED);
         registerWriter(recorder, serialisers, Reader.class, ReaderBodyHandler.class,
                 beanContainerBuildItem.getValue(), MediaType.TEXT_PLAIN);
+        registerWriter(recorder, serialisers, File.class, FileBodyHandler.class,
+                beanContainerBuildItem.getValue(), MediaType.TEXT_PLAIN);
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);
-        registerReader(recorder, serialisers, Reader.class, ReaderBodyHandler.class, beanContainerBuildItem.getValue(),
+        registerReader(recorder, serialisers, File.class, FileBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.TEXT_PLAIN, null);
 
         // the client always expects these to exist

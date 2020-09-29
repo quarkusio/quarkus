@@ -566,6 +566,31 @@ and get them included in the source cache.
 
 The location of source cache is `target/{project.name}-{project.version}-native-image-source-jar/sources` folder.
 
+[TIP]
+====
+To load the sources in `gdb`, run:
+
+[source,shell]
+----
+directory target/{project.name}-{project.version}-native-image-source-jar
+----
+
+in the `gdb` prompt.
+
+Or start `gdb` with:
+
+[source,shell]
+----
+gdb -ex 'directory target/{project.name}-{project.version}-native-image-source-jar' target/{project.name}-{project.version}-runner
+----
+
+e.g.,
+[source,shell]
+----
+gdb -ex 'directory target/getting-started-1.0-SNAPSHOT-native-image-source-jar' target/getting-started-1.0-SNAPSHOT-runner
+----
+====
+
 [[configuration-reference]]
 == Configuring the Native Executable
 

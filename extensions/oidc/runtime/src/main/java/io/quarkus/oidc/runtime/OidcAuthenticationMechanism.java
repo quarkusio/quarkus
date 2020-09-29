@@ -33,7 +33,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (tenantContext.oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(tenantContext) ? codeAuth.authenticate(context, identityProviderManager, resolver)
+        return isWebApp(context, tenantContext) ? codeAuth.authenticate(context, identityProviderManager, resolver)
                 : bearerAuth.authenticate(context, identityProviderManager, resolver);
     }
 
@@ -43,7 +43,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (tenantContext.oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(tenantContext) ? codeAuth.getChallenge(context, resolver)
+        return isWebApp(context, tenantContext) ? codeAuth.getChallenge(context, resolver)
                 : bearerAuth.getChallenge(context, resolver);
     }
 
@@ -55,7 +55,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return tenantContext;
     }
 
-    private boolean isWebApp(TenantConfigContext tenantContext) {
+    private boolean isWebApp(RoutingContext context, TenantConfigContext tenantContext) {
+        if (OidcTenantConfig.ApplicationType.HYBRID == tenantContext.oidcConfig.applicationType) {
+            return context.request().getHeader("Authorization") == null;
+        }
         return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
     }
 

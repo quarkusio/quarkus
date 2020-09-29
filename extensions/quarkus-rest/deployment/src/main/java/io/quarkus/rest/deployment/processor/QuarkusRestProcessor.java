@@ -594,7 +594,7 @@ public class QuarkusRestProcessor {
                 RuntimeType.CLIENT);
         //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD, null);
+                MediaType.APPLICATION_JSON, null);
         for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
                     beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());

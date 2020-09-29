@@ -21,7 +21,7 @@ public class GraphQLTracingTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class)
+                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     static MockTracer mockTracer = new MockTracer();

@@ -30,7 +30,7 @@ public class OidcTenantConfig {
      * The application type, which can be one of the following values from enum {@link ApplicationType}.
      */
     @ConfigItem(defaultValue = "service")
-    public ApplicationType applicationType;
+    public ApplicationType applicationType = ApplicationType.SERVICE;
 
     /**
      * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
@@ -999,6 +999,13 @@ public class OidcTenantConfig {
          * RESTful Architectural Design. For this type of client, the Bearer Authorization method is defined as the preferred
          * method for authenticating and authorizing users.
          */
-        SERVICE
+        SERVICE,
+
+        /**
+         * A combined {@code SERVICE} and {@code WEB_APP} client.
+         * For this type of client, the Bearer Authorization method will be used if the Authorization header is set
+         * and Authorization Code Flow - if not.
+         */
+        HYBRID
     }
 }

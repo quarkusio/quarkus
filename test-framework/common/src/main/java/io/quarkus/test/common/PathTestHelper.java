@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
@@ -99,6 +101,20 @@ public final class PathTestHelper {
                 File.separator + "test-classes",
                 File.separator + "classes");
         //endregion
+
+        String mappings = System.getenv(BootstrapConstants.TEST_TO_MAIN_MAPPINGS);
+        if (mappings != null) {
+            Stream.of(mappings.split(","))
+                    .filter(s -> !s.isEmpty())
+                    .forEach(s -> {
+                        String[] entry = s.split(":");
+                        if (entry.length == 2) {
+                            TEST_TO_MAIN_DIR_FRAGMENTS.put(entry[0], entry[1]);
+                        } else {
+                            throw new IllegalStateException("Unable to parse additional test-to-main mapping: " + s);
+                        }
+                    });
+        }
     }
 
     private PathTestHelper() {

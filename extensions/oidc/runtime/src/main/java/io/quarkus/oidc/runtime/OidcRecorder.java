@@ -99,9 +99,15 @@ public class OidcRecorder {
             return createdTenantContextFromPublicKey(options, oidcConfig);
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
             throw new ConfigurationException(
-                    "Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
+                    "'auth-server-url' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
+                            + " when the quarkus-oidc extension is enabled");
+        }
+
+        if (!oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    "'client-id' is not present. Both 'auth-server-url' and 'client-id' or alternatively 'public-key' must be configured"
                             + " when the quarkus-oidc extension is enabled");
         }
 
@@ -113,7 +119,7 @@ public class OidcRecorder {
         options.setSite(authServerUrl);
 
         if (!oidcConfig.discoveryEnabled) {
-            if (ApplicationType.WEB_APP.equals(oidcConfig.applicationType)) {
+            if (oidcConfig.applicationType != ApplicationType.SERVICE) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
                     throw new OIDCException("'web-app' applications must have 'authorization-path' and 'token-path' properties "
                             + "set when the discovery is disabled.");
@@ -292,7 +298,7 @@ public class OidcRecorder {
     @SuppressWarnings("deprecation")
     private static TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options,
             OidcTenantConfig oidcConfig) {
-        if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
+        if (oidcConfig.applicationType != ApplicationType.SERVICE) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
         LOG.debug("'public-key' property for the local token verification is set,"

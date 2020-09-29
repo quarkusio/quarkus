@@ -15,6 +15,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 
 @Provider
@@ -24,9 +25,14 @@ public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
     private final Jsonb json;
 
     public JsonbMessageBodyReader() {
-        InstanceHandle<Jsonb> jsonbInstanceHandle = Arc.container().instance(Jsonb.class);
-        if (jsonbInstanceHandle.isAvailable()) {
-            this.json = jsonbInstanceHandle.get();
+        ArcContainer arcContainer = Arc.container();
+        if (arcContainer != null) {
+            InstanceHandle<Jsonb> jsonbInstanceHandle = Arc.container().instance(Jsonb.class);
+            if (jsonbInstanceHandle.isAvailable()) {
+                this.json = jsonbInstanceHandle.get();
+            } else {
+                this.json = JsonbBuilder.create();
+            }
         } else {
             this.json = JsonbBuilder.create();
         }

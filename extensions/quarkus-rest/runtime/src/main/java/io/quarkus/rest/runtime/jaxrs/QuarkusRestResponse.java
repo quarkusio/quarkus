@@ -1,7 +1,12 @@
 package io.quarkus.rest.runtime.jaxrs;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
@@ -26,9 +32,14 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.RuntimeDelegate;
 
+import io.quarkus.rest.runtime.client.QuarkusRestClientResponse;
 import io.quarkus.rest.runtime.util.DateUtil;
 import io.quarkus.rest.runtime.util.LocaleHelper;
 
+/**
+ * This is the Response class for user-created responses. The client response
+ * object has more deserialising powers in @{link {@link QuarkusRestClientResponse}.
+ */
 public class QuarkusRestResponse extends Response {
 
     int status;
@@ -39,6 +50,9 @@ public class QuarkusRestResponse extends Response {
     private QuarkusRestStatusType statusType;
     private MultivaluedHashMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
+    protected boolean consumed;
+    protected boolean closed;
+    protected boolean buffered;
 
     @Override
     public int getStatus() {
@@ -71,11 +85,18 @@ public class QuarkusRestResponse extends Response {
 
     @Override
     public Object getEntity() {
+        // The spec says that getEntity() can be called after readEntity() to obtain the same entity,
+        // but it also sort-of implies that readEntity() calls Reponse.close(), and the TCK does check
+        // that we throw if closed and non-buffered
+        checkClosed();
         return entity;
     }
 
     protected void setEntity(Object entity) {
         this.entity = entity;
+        if (entity instanceof InputStream) {
+            this.entityStream = (InputStream) entity;
+        }
     }
 
     public InputStream getEntityStream() {
@@ -86,43 +107,96 @@ public class QuarkusRestResponse extends Response {
         this.entityStream = entityStream;
     }
 
-    @Override
-    public <T> T readEntity(Class<T> entityType) {
-        // TODO Auto-generated method stub
-        return (T) entity;
+    protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
+        // TODO: we probably need better state handling
+        if (hasEntity() && entityType.isInstance(getEntity())) {
+            // Note that this works if entityType is InputStream where we return it without closing it, as per spec
+            return (T) getEntity();
+        }
+        // FIXME: does the spec really tell us to do this? sounds like a workaround for not having a string reader
+        if (hasEntity() && entityType.equals(String.class)) {
+            return (T) getEntity().toString();
+        }
+        checkClosed();
+        // Spec says to throw this
+        throw new ProcessingException(
+                "Request could not be mapped to type " + (genericType != null ? genericType : entityType));
     }
 
     @Override
+    public <T> T readEntity(Class<T> entityType) {
+        return readEntity(entityType, entityType, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
     public <T> T readEntity(GenericType<T> entityType) {
-        // TODO Auto-generated method stub
-        return null;
+        return (T) readEntity(entityType.getRawType(), entityType.getType(), null);
     }
 
     @Override
     public <T> T readEntity(Class<T> entityType, Annotation[] annotations) {
-        // TODO Auto-generated method stub
-        return null;
+        return readEntity(entityType, entityType, annotations);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T readEntity(GenericType<T> entityType, Annotation[] annotations) {
-        // TODO Auto-generated method stub
-        return null;
+        return (T) readEntity(entityType.getRawType(), entityType.getType(), annotations);
     }
 
     @Override
     public boolean hasEntity() {
+        // The TCK checks that
+        checkClosed();
         return entity != null;
     }
 
     @Override
     public boolean bufferEntity() {
-        // TODO Auto-generated method stub
+        checkClosed();
+        if (entityStream != null && !consumed) {
+            // let's not try this again, even if it fails
+            consumed = true;
+            // we're supposed to read the entire stream, but if we can rewind it there's no point so let's keep it
+            if (!entityStream.markSupported()) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int read;
+                try {
+                    while ((read = entityStream.read(buffer)) != -1) {
+                        os.write(buffer, 0, read);
+                    }
+                    entityStream.close();
+                } catch (IOException x) {
+                    throw new UncheckedIOException(x);
+                }
+                entityStream = new ByteArrayInputStream(os.toByteArray());
+            }
+            buffered = true;
+            return true;
+        }
         return false;
+    }
+
+    protected void checkClosed() {
+        // apparently the TCK says that buffered responses don't care about being closed
+        if (closed && !buffered)
+            throw new IllegalStateException("Response has been closed");
     }
 
     @Override
     public void close() {
+        if (!closed) {
+            closed = true;
+            if (entityStream != null) {
+                try {
+                    entityStream.close();
+                } catch (IOException e) {
+                    throw new ProcessingException(e);
+                }
+            }
+        }
     }
 
     @Override

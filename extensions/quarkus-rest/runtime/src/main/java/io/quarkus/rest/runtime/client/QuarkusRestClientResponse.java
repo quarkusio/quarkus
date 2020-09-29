@@ -49,9 +49,11 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
 
         // apparently we're trying to re-read it here, even if we already have an entity, as long as it's not the right
         // type
+        InputStream entityStream = getEntityStream();
+        if (entityStream == null)
+            return null;
         MediaType mediaType = getMediaType();
         List<MessageBodyReader<?>> readers = invocationState.serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
-        InputStream entityStream = getEntityStream();
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
                 Object entity;

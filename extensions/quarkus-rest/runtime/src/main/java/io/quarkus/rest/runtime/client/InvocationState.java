@@ -160,6 +160,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
             GenericType<T> responseType, MediaType mediaType,
             MultivaluedMap<String, Object> metadata)
             throws IOException {
+        if (in == null)
+            return null;
         List<MessageBodyReader<?>> readers = serialisers.findReaders(responseType.getRawType(),
                 mediaType, RuntimeType.CLIENT);
         // FIXME
@@ -256,6 +258,11 @@ public class InvocationState implements Handler<HttpClientResponse> {
         if (checkSuccessfulFamily && (responseContext.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL)) {
             throw new WebClientApplicationException("Server response status was: " + responseContext.getStatus());
         }
+        // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
+        // so we have to write it, but without filters/interceptors
+        if (abortedWith != null) {
+            setExistingEntity(abortedWith, responseContext);
+        }
 
         List<ClientResponseFilter> filters = configuration.getResponseFilters();
         if (!filters.isEmpty()) {
@@ -275,11 +282,6 @@ public class InvocationState implements Handler<HttpClientResponse> {
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
         builder.invocationState(this);
-        // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
-        // so we have to write it, but without filters/interceptors
-        if (abortedWith != null) {
-            setExistingEntity(abortedWith, responseContext);
-        }
         if (responseTypeSpecified) { // this case means that a specific response type was requested
             Object entity = readEntity(responseContext.getEntityStream(),
                     responseType,
@@ -299,8 +301,11 @@ public class InvocationState implements Handler<HttpClientResponse> {
     }
 
     private void setExistingEntity(Response abortedWith, QuarkusRestClientResponseContext responseContext) throws IOException {
-        // FIXME: pass headers?
         Object value = abortedWith.getEntity();
+        if (value == null) {
+            responseContext.setEntityStream(null);
+            return;
+        }
         Entity entity;
         if (value instanceof Entity) {
             entity = (Entity) value;
@@ -312,8 +317,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
             }
             entity = Entity.entity(value, mediaType);
         }
+        // FIXME: pass headers?
         Buffer buffer = writeEntity(entity, (MultivaluedMap) Serialisers.EMPTY_MULTI_MAP, Serialisers.NO_WRITER_INTERCEPTOR);
-        responseContext.setInput(new ByteArrayInputStream(buffer.getBytes()));
+        responseContext.setEntityStream(new ByteArrayInputStream(buffer.getBytes()));
     }
 
     @Override
@@ -327,7 +333,10 @@ public class InvocationState implements Handler<HttpClientResponse> {
                     @Override
                     public void handle(Buffer buffer) {
                         try {
-                            context.setInput(new ByteArrayInputStream(buffer.getBytes()));
+                            if (buffer.length() > 0)
+                                context.setEntityStream(new ByteArrayInputStream(buffer.getBytes()));
+                            else
+                                context.setEntityStream(null);
                             ensureResponseAndRunFilters(context, null);
                         } catch (Throwable t) {
                             result.completeExceptionally(t);

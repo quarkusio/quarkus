@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,15 +50,6 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     public QuarkusRestClientResponseContext setHeaders(MultivaluedMap<String, String> headers) {
         this.headers = headers;
-        return this;
-    }
-
-    public InputStream getInput() {
-        return input;
-    }
-
-    public QuarkusRestClientResponseContext setInput(InputStream input) {
-        this.input = input;
         return this;
     }
 
@@ -238,10 +228,7 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public InputStream getEntityStream() {
-        if (input != null) {
-            return input;
-        }
-        return new ByteArrayInputStream(new byte[0]);
+        return input;
     }
 
     @Override

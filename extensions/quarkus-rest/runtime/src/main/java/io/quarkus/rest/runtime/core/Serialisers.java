@@ -46,6 +46,7 @@ import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FileBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
@@ -102,8 +103,9 @@ public class Serialisers {
     public static BuiltinReader[] BUILTIN_READERS = new BuiltinReader[] {
             new BuiltinReader(String.class, StringMessageBodyHandler.class,
                     MediaType.WILDCARD),
+            new BuiltinReader(InputStream.class, InputStreamMessageBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.TEXT_PLAIN),
-            new BuiltinReader(File.class, FileBodyHandler.class, MediaType.TEXT_PLAIN),
+            new BuiltinReader(File.class, FileBodyHandler.class, MediaType.WILDCARD),
 
             // the client always expects these to exist
             new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, RuntimeType.CLIENT),
@@ -125,25 +127,23 @@ public class Serialisers {
             new BuiltinWriter(Boolean.class, StringMessageBodyHandler.class,
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(Character.class, StringMessageBodyHandler.class,
-
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(Object.class, StringMessageBodyHandler.class,
                     MediaType.WILDCARD),
             new BuiltinWriter(char[].class, CharArrayMessageBodyHandler.class,
-
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(byte[].class, ByteArrayMessageBodyHandler.class,
-
                     MediaType.WILDCARD),
             new BuiltinWriter(Buffer.class, VertxBufferMessageBodyWriter.class,
-
                     MediaType.WILDCARD),
             new BuiltinWriter(MultivaluedMap.class, FormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
+            new BuiltinWriter(InputStream.class, InputStreamMessageBodyHandler.class,
+                    MediaType.WILDCARD),
             new BuiltinWriter(Reader.class, ReaderBodyHandler.class,
                     MediaType.TEXT_PLAIN),
             new BuiltinWriter(File.class, FileBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
+                    MediaType.WILDCARD),
     };
 
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection 

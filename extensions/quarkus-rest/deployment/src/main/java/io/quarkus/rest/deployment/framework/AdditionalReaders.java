@@ -80,7 +80,7 @@ public class AdditionalReaders {
         }
 
         public boolean matchesIgnoringConstraint(Entry<?> other) {
-            return readerClass.equals(other.entityClass) && entityClass.equals(other.entityClass)
+            return readerClass.equals(other.readerClass) && entityClass.equals(other.entityClass)
                     && mediaType.equals(other.mediaType);
         }
 

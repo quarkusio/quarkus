@@ -25,7 +25,7 @@ public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBody
     }
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;
+        return Reader.class.isAssignableFrom(type);
     }
 
     public long getSize(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

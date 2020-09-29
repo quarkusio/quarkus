@@ -112,7 +112,7 @@ import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ClientDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
-import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyReader;
+import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ServerDefaultTextPlainBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonValueHandler;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
@@ -604,7 +604,7 @@ public class EndpointIndexer {
         if (dotName.equals(BYTE_ARRAY_DOT_NAME)) {
             additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
         } else if (dotName.equals(INPUT_STREAM)) {
-            additionalReaders.add(InputStreamMessageBodyReader.class, WILDCARD, InputStream.class);
+            additionalReaders.add(InputStreamMessageBodyHandler.class, WILDCARD, InputStream.class);
         } else if (dotName.equals(JSONP_JSON_OBJECT)
                 || dotName.equals(JSONP_JSON_ARRAY)
                 || dotName.equals(JSONP_JSON_STRUCTURE)

@@ -615,7 +615,7 @@ jobs:
       - name: Amazon Services
         run: |
           docker run --rm --publish 8000:4569 --publish 8008:4572 --publish 8009:4575 --publish 8010:4576 --publish 8011:4599 --publish 8012:4566 --name build-amazon-service-clients -e SERVICES=s3,dynamodb,sns,sqs,kms,ses -e START_WEB=0 \
-            -d localstack/localstack:0.11.1
+            -d localstack/localstack:0.11.5
         if: matrix.amazonServices
       - name: Neo4j Service
         run: |

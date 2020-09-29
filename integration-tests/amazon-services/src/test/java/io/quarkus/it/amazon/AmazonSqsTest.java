@@ -22,7 +22,7 @@ public class AmazonSqsTest {
     static {
         MESSAGES.add("Quarkus");
         MESSAGES.add("is");
-        MESSAGES.add("awsome");
+        MESSAGES.add("awesome");
     }
 
     @BeforeEach
@@ -54,6 +54,6 @@ public class AmazonSqsTest {
                 .pathParam("queueName", QUEUE_NAME)
                 .when().get("/test/sqs/{endpoint}/{queueName}")
                 .then()
-                .body(is("Quarkus is awsome"));
+                .body(is("Quarkus is awesome"));
     }
 }

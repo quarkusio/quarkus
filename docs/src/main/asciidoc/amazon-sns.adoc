@@ -43,7 +43,7 @@ The easiest way to start working with SNS is to run a local instance as a contai
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run -it --publish 8009:4575 -e SERVICES=sns -e START_WEB=0 localstack/localstack:0.11.1
+docker run -it --publish 8009:4575 -e SERVICES=sns -e START_WEB=0 localstack/localstack:0.11.5
 ----
 This starts a SNS instance that is accessible on port `8009`.
 

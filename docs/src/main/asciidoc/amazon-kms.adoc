@@ -41,7 +41,7 @@ The easiest way to start working with KMS is to run a local instance as a contai
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-kms --publish 8011:4599 -e SERVICES=kms -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-kms --publish 8011:4599 -e SERVICES=kms -e START_WEB=0 -d localstack/localstack:0.11.5
 ----
 This starts a KMS instance that is accessible on port `8011`.
 

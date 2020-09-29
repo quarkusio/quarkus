@@ -44,7 +44,7 @@ The easiest way to start working with SQS is to run a local instance as a contai
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run --rm --name local-sqs -p 8010:4576 -e SERVICES=sqs -e START_WEB=0 -d localstack/localstack:0.11.1
+docker run --rm --name local-sqs -p 8010:4576 -e SERVICES=sqs -e START_WEB=0 -d localstack/localstack:0.11.5
 ----
 This starts a SQS instance that is accessible on port `8010`.
 

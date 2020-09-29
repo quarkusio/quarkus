@@ -354,7 +354,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>localstack/localstack:0.11.1</name>
+                                    <name>localstack/localstack:0.11.5</name>
                                     <alias>aws-local-stack</alias>
                                     <run>
                                         <env>

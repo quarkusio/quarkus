@@ -162,15 +162,13 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
 
     @Override
     public SecurityContext getSecurityContext() {
-        // TODO Auto-generated method stub
-        return null;
+        return context.getSecurityContext();
     }
 
     @Override
     public void setSecurityContext(SecurityContext context) {
         assertNotResponse();
-        // TODO Auto-generated method stub
-
+        this.context.setSecurityContext(context);
     }
 
     public boolean isPreMatch() {

@@ -20,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
@@ -36,6 +37,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestContainerRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestHttpHeaders;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestProviders;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestRequest;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestSecurityContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestUriInfo;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
@@ -124,6 +126,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
+
+    private SecurityContext securityContext;
 
     public QuarkusRestRequestContext(QuarkusRestDeployment deployment, QuarkusRestProviders providers, RoutingContext context,
             ManagedContext requestContext,
@@ -829,5 +833,17 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         Integer index = this.target.getPathParameterIndexes().get(name);
         // It's possible to inject a path param that's not defined, return null in this case
         return index != null ? getPathParam(index) : null;
+    }
+
+    public SecurityContext getSecurityContext() {
+        if (securityContext == null) {
+            securityContext = new QuarkusRestSecurityContext(context);
+        }
+        return securityContext;
+    }
+
+    public QuarkusRestRequestContext setSecurityContext(SecurityContext securityContext) {
+        this.securityContext = securityContext;
+        return this;
     }
 }

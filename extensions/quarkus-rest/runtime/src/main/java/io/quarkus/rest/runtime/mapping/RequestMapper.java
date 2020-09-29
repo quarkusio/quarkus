@@ -51,9 +51,9 @@ public class RequestMapper<T> {
             return null;
         }
 
-        String[] params = new String[maxParams];
-        int paramCount = 0;
         for (RequestPath<T> potentialMatch : initialMatch.getValue()) {
+            String[] params = new String[maxParams];
+            int paramCount = 0;
             boolean matched = true;
             boolean prefixAllowed = potentialMatch.prefixTemplate;
             int matchPos = initialMatch.getMatched().length();

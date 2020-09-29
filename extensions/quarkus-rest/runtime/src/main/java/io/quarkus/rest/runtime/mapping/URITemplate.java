@@ -134,14 +134,16 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     regexAggregator.append("(?<").append(component.name).append(">[^/]+?)");
                     nameAggregator.add(component.name);
                 } else if (component.type == Type.CUSTOM_REGEX) {
-                    regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText).append(")");
+                    regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText.trim())
+                            .append(")");
                     nameAggregator.add(component.name);
                 }
             } else if (component.type == Type.CUSTOM_REGEX) {
                 it.remove();
                 regexAggregator = new StringBuilder();
                 nameAggregator = new ArrayList<>();
-                regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText).append(")");
+                regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText.trim())
+                        .append(")");
                 nameAggregator.add(component.name);
             }
         }

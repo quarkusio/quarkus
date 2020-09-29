@@ -237,17 +237,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         } catch (Throwable ex) {
             return Uni.createFrom().failure(new AuthenticationFailedException(ex));
         }
-        if (jwt.isExpired(tokenJson, auth.getConfig().getJWTOptions())) {
-            return Uni.createFrom().failure(new AuthenticationFailedException());
-        } else {
-            try {
-                return Uni.createFrom()
-                        .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext.oidcConfig, tokenJson,
-                                tokenJson,
-                                null));
-            } catch (Throwable ex) {
-                return Uni.createFrom().failure(ex);
+        try {
+            if (jwt.isExpired(tokenJson, auth.getConfig().getJWTOptions())) {
+                return Uni.createFrom().failure(new AuthenticationFailedException());
             }
+            return Uni.createFrom()
+                    .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext.oidcConfig, tokenJson,
+                            tokenJson,
+                            null));
+        } catch (Throwable ex) {
+            return Uni.createFrom().failure(new AuthenticationFailedException(ex));
         }
     }
 

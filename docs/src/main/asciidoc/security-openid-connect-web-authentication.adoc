@@ -340,14 +340,14 @@ Additionally a custom `SecurityIdentityAugmentor` can also be used to add the ro
 
 Please check if implementing SPAs the way it is suggested in the link:security-openid-connect#single-page-applications[Single Page Applications for Service Applications] section can meet your requirements.
 
-If you prefer to use SPA and `XMLHttpRequest`(XHR) with Quarkus web applications, please be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
+If you prefer to use SPA and JavaScript API such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, please be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
 
-In such cases, set the `quarkus.oidc.authentication.xhr-auto-redirect` property to `false` which will instruct Quarkus to return a `499` status code and `WWW-Authenticate` header with the `OIDC` value. The browser script also needs to be updated to set `X-Requested-With` header with the `XMLHttpRequest` value and reload the last requested page in case of `499`, for example:
+In such cases, set the `quarkus.oidc.authentication.java-script-auto-redirect` property to `false` which will instruct Quarkus to return a `499` status code and `WWW-Authenticate` header with the `OIDC` value. The browser script also needs to be updated to set `X-Requested-With` header with the `JavaScript` value and reload the last requested page in case of `499`, for example:
 
 [source,javascript]
 ----
 Future<void> callQuarkusService() async {
-    Map<String, String> headers = Map.fromEntries([MapEntry("X-Requested-With", "XMLHttpRequest")]);
+    Map<String, String> headers = Map.fromEntries([MapEntry("X-Requested-With", "JavaScript")]);
 
     await http
         .get("https://localhost:443/serviceCall")

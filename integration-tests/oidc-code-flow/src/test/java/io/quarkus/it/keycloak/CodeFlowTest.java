@@ -587,6 +587,22 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testJavaScriptRequest() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("X-Requested-With", "JavaScript");
+                webClient.getPage("http://localhost:8081/tenant-javascript");
+                fail("499 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(499, ex.getStatusCode());
+                assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testNoCodeFlowUnprotected() {
         RestAssured.when().get("/public-web-app/access")
                 .then()

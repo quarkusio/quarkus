@@ -29,6 +29,15 @@ public class FileConfig {
     String format;
 
     /**
+     * Class name for custom formatter.
+     * <p>
+     * Setting a class name here will override settings in {@code format}.
+     * The class must extend org.jboss.logmanager.ExtFormatter.
+     */
+    @ConfigItem
+    Optional<String> formatter;
+
+    /**
      * The level of logs to be written into the file.
      */
     @ConfigItem(defaultValue = "ALL")

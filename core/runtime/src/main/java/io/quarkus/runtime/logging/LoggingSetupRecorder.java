@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
@@ -305,7 +306,29 @@ public class LoggingSetupRecorder {
             handler = periodicRotatingFileHandler;
         }
 
-        final PatternFormatter formatter = new PatternFormatter(config.format);
+        // Check if formatter class is set and can be initialized.
+        Formatter formatter = null;
+        if (config.formatter.isPresent()) {
+            try {
+                Class<?> formatterClass = Class.forName(config.formatter.get(), false,
+                        Thread.currentThread().getContextClassLoader());
+                formatter = (ExtFormatter) formatterClass.getDeclaredConstructor().newInstance();
+            } catch (ClassNotFoundException notFoundException) {
+                errorManager.error(String.format("Failed to load formatter class '%s'", config.formatter.get()), null,
+                        ErrorManager.GENERIC_FAILURE);
+            } catch (ClassCastException castException) {
+                errorManager.error("Formatter class does not extend org.jboss.logmanager.ExtFormatter", null,
+                        ErrorManager.GENERIC_FAILURE);
+            } catch (Exception e) {
+                errorManager.error("Failed to initialize formatter class", e, ErrorManager.GENERIC_FAILURE);
+            }
+        }
+
+        // Use pattern if formatter class is not set, or initialization has failed
+        if (formatter == null) {
+            formatter = new PatternFormatter(config.format);
+        }
+
         handler.setFormatter(formatter);
         handler.setAppend(true);
         try {

@@ -115,6 +115,27 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testResolveTenantIdentifierWebAppNoDiscovery() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient
+                    .getPage("http://localhost:8081/tenant/tenant-web-app-no-discovery/api/user/webapp-no-discovery");
+            // State cookie is available but there must be no saved path parameter
+            // as the tenant-web-app configuration does not set a redirect-path property
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app-no-discovery"));
+            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app-no-discovery/api/user/webapp-no-discovery");
+            assertEquals("tenant-web-app-no-discovery:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testReAuthenticateWhenSwitchingTenants() throws IOException {
         try (final WebClient webClient = createWebClient()) {
             // tenant-web-app
@@ -202,6 +223,15 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant/tenant-d/api/user")
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    public void testResolveTenantConfigNoDiscovery() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "b"))
+                .when().get("/tenant/tenant-b-no-discovery/api/user/no-discovery")
+                .then()
+                .statusCode(200)
+                .body(equalTo("tenant-b-no-discovery:alice.alice"));
     }
 
     @Test

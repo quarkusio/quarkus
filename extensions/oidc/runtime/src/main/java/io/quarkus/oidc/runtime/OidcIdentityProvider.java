@@ -28,6 +28,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.AccessToken;
 import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
+import io.vertx.ext.auth.oauth2.impl.OAuth2TokenImpl;
 import io.vertx.ext.jwt.JWT;
 import io.vertx.ext.web.RoutingContext;
 
@@ -85,6 +86,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             vertxContext.put("code_flow_access_token_result",
                     verifyCodeFlowAccessToken(vertxContext, request, resolvedContext));
         }
+
+        final JsonObject userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired()
+                ? getUserInfo(vertxContext, request, resolvedContext)
+                : null;
+
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
             @Override
             public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
@@ -109,10 +115,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
                                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
                                     tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
-                                }
-                                JsonObject userInfo = null;
-                                if (resolvedContext.oidcConfig.authentication.isUserInfoRequired()) {
-                                    userInfo = getUserInfo(event.result(), (String) vertxContext.get("access_token"));
                                 }
                                 if (tokenJson != null) {
                                     OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
@@ -153,6 +155,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                         for (String role : event.result().principal().getString("scope").split(" ")) {
                                             builder.addRole(role.trim());
                                         }
+                                    }
+                                    if (userInfo != null) {
+                                        OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig, userInfo);
                                     }
                                     uniEmitter.complete(builder.build());
                                 }
@@ -251,20 +256,23 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static JsonObject getUserInfo(AccessToken tokenImpl, String opaqueAccessToken) {
+    private static JsonObject getUserInfo(RoutingContext vertxContext, TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext) {
+        OAuth2TokenImpl tokenImpl = new OAuth2TokenImpl(resolvedContext.auth, new JsonObject());
+        String accessToken = vertxContext.get("access_token");
+        if (accessToken == null) {
+            accessToken = request.getToken().getToken();
+        }
+        tokenImpl.principal().put("access_token", accessToken);
         return Uni.createFrom().emitter(
                 new Consumer<UniEmitter<? super JsonObject>>() {
                     @Override
                     public void accept(UniEmitter<? super JsonObject> uniEmitter) {
-                        if (opaqueAccessToken != null) {
-                            tokenImpl.principal().put("access_token", opaqueAccessToken);
-                        }
                         tokenImpl.userInfo(new Handler<AsyncResult<JsonObject>>() {
                             @Override
                             public void handle(AsyncResult<JsonObject> event) {
                                 if (event.failed()) {
-                                    uniEmitter.fail(event.cause());
+                                    uniEmitter.fail(new AuthenticationFailedException(event.cause()));
                                 } else {
                                     uniEmitter.complete(event.result());
                                 }

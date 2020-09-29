@@ -8,6 +8,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 
+import java.io.Reader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -103,6 +104,7 @@ import io.quarkus.rest.runtime.model.RestClientInterface;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
@@ -572,15 +574,18 @@ public class QuarkusRestProcessor {
                 MediaType.WILDCARD);
         registerWriter(recorder, serialisers, MultivaluedMap.class, FormUrlEncodedProvider.class,
                 beanContainerBuildItem.getValue(), MediaType.APPLICATION_FORM_URLENCODED);
+        registerWriter(recorder, serialisers, Reader.class, ReaderBodyHandler.class,
+                beanContainerBuildItem.getValue(), MediaType.TEXT_PLAIN);
 
         registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);
+        registerReader(recorder, serialisers, Reader.class, ReaderBodyHandler.class, beanContainerBuildItem.getValue(),
+                MediaType.TEXT_PLAIN, null);
 
         // the client always expects these to exist
         additionalReaders.add(ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, byte[].class, RuntimeType.CLIENT);
         additionalReaders.add(FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED, MultivaluedMap.class,
                 RuntimeType.CLIENT);
-
         //TODO: Do the Jsonb readers always make sense?
         registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
                 MediaType.WILDCARD, null);

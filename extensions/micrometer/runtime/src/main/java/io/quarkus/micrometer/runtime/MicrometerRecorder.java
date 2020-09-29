@@ -42,6 +42,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 public class MicrometerRecorder {
     private static final Logger log = Logger.getLogger(MicrometerRecorder.class);
     static final int TRIM_POS = "quarkus.micrometer.export.".length();
+    static final String DEFAULT_EXCEPTION_TAG_VALUE = "none";
     static MicrometerMetricsFactory factory;
 
     /* STATIC_INIT */
@@ -194,5 +195,15 @@ public class MicrometerRecorder {
         }
         log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname, (clazz != null));
         return clazz;
+    }
+
+    static String getExceptionTag(Throwable throwable) {
+        if (throwable == null) {
+            return DEFAULT_EXCEPTION_TAG_VALUE;
+        }
+        if (throwable.getCause() == null) {
+            return throwable.getClass().getSimpleName();
+        }
+        return throwable.getCause().getClass().getSimpleName();
     }
 }

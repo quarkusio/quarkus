@@ -1,7 +1,6 @@
 package io.quarkus.jackson.deployment;
 
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
-import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.Arrays;
@@ -124,13 +123,10 @@ public class JacksonProcessor {
 
         // handle the various @JsonSerialize cases
         for (AnnotationInstance serializeInstance : index.getAnnotations(JSON_SERIALIZE)) {
-            AnnotationTarget annotationTarget = serializeInstance.target();
-            if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
-                AnnotationValue usingValue = serializeInstance.value("using");
-                if (usingValue != null) {
-                    // the Deserializers are constructed internally by Jackson using a no-args constructor
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
-                }
+            AnnotationValue usingValue = serializeInstance.value("using");
+            if (usingValue != null) {
+                // the Serializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().name().toString()));
             }
         }
 

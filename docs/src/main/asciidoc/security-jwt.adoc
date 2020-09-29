@@ -303,10 +303,10 @@ Create a `security-jwt-quickstart/src/main/resources/application.properties` wit
 [source, properties]
 ----
 mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
-mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
+mp.jwt.verify.issuer=https://example.com/issuer #<2>
 ----
 <1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
-<2> We are setting the issuer to the URL string `https://quarkus.io/using-jwt-rbac`.
+<2> We are setting the issuer to the URL string `https://example.com/issuer`.
  
 === Adding a Public Key
 
@@ -357,7 +357,7 @@ public class GenerateToken {
      */
     public static void main(String[] args) {
         String token =
-           Jwt.issuer("https://quarkus.io/using-jwt-rbac") // <1>
+           Jwt.issuer("https://example.com/issuer") // <1>
              .upn("jdoe@quarkus.io") // <2>
              .groups(new HashSet<>(Arrays.asList("User", "Admin"))) // <3>
              .claim(Claims.birthdate.name(), "2001-07-13") // <4>

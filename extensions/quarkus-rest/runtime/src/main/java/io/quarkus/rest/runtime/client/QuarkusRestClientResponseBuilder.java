@@ -2,17 +2,16 @@ package io.quarkus.rest.runtime.client;
 
 import java.io.InputStream;
 
-import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponseBuilder;
 
 public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder {
 
-    Serialisers serialisers;
     InputStream entityStream;
+    InvocationState invocationState;
 
-    public QuarkusRestClientResponseBuilder serializers(Serialisers serialisers) {
-        this.serialisers = serialisers;
+    public QuarkusRestClientResponseBuilder invocationState(InvocationState invocationState) {
+        this.invocationState = invocationState;
         return this;
     }
 
@@ -25,7 +24,7 @@ public class QuarkusRestClientResponseBuilder extends QuarkusRestResponseBuilder
     public QuarkusRestResponse build() {
         QuarkusRestClientResponse response = new QuarkusRestClientResponse();
         populateResponse(response);
-        response.serialisers = serialisers;
+        response.invocationState = invocationState;
         response.setEntityStream(entityStream);
         return response;
     }

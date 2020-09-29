@@ -8,8 +8,6 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATCH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.POST;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PUT;
 
-import java.io.File;
-import java.io.Reader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -30,8 +28,6 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
@@ -84,6 +80,8 @@ import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.core.Serialisers.BuiltinReader;
+import io.quarkus.rest.runtime.core.Serialisers.BuiltinWriter;
 import io.quarkus.rest.runtime.injection.ContextProducers;
 import io.quarkus.rest.runtime.model.InjectableBean;
 import io.quarkus.rest.runtime.model.MethodParameter;
@@ -102,19 +100,9 @@ import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
 import io.quarkus.rest.runtime.model.ResourceWriter;
 import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.RestClientInterface;
-import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.FileBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
-import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
-import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
-import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
-import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.vertx.core.buffer.Buffer;
 
 public class QuarkusRestProcessor {
 
@@ -550,51 +538,18 @@ public class QuarkusRestProcessor {
         }
 
         // built-ins
-        //        registerWriter(recorder, serialisers, Object.class, JsonbMessageBodyWriter.class, beanContainerBuildItem.getValue(),
-        //                false);
-        registerWriter(recorder, serialisers, Object.class, VertxJsonMessageBodyWriter.class, beanContainerBuildItem.getValue(),
-                MediaType.APPLICATION_JSON);
-        registerWriter(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, Number.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, Boolean.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, Character.class, StringMessageBodyHandler.class,
-                beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, Object.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
-        registerWriter(recorder, serialisers, char[].class, CharArrayMessageBodyHandler.class,
-                beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, byte[].class, ByteArrayMessageBodyHandler.class,
-                beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
-        registerWriter(recorder, serialisers, Buffer.class, VertxBufferMessageBodyWriter.class,
-                beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD);
-        registerWriter(recorder, serialisers, MultivaluedMap.class, FormUrlEncodedProvider.class,
-                beanContainerBuildItem.getValue(), MediaType.APPLICATION_FORM_URLENCODED);
-        registerWriter(recorder, serialisers, Reader.class, ReaderBodyHandler.class,
-                beanContainerBuildItem.getValue(), MediaType.TEXT_PLAIN);
-        registerWriter(recorder, serialisers, File.class, FileBodyHandler.class,
-                beanContainerBuildItem.getValue(), MediaType.TEXT_PLAIN);
 
-        registerReader(recorder, serialisers, String.class, StringMessageBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.WILDCARD, null);
-        registerReader(recorder, serialisers, Reader.class, ReaderBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN, null);
-        registerReader(recorder, serialisers, File.class, FileBodyHandler.class, beanContainerBuildItem.getValue(),
-                MediaType.TEXT_PLAIN, null);
+        for (BuiltinWriter builtinWriter : Serialisers.BUILTIN_WRITERS) {
+            registerWriter(recorder, serialisers, builtinWriter.entityClass, builtinWriter.writerClass,
+                    beanContainerBuildItem.getValue(),
+                    builtinWriter.mediaType);
+        }
+        for (BuiltinReader builtinReader : Serialisers.BUILTIN_READERS) {
+            registerReader(recorder, serialisers, builtinReader.entityClass, builtinReader.readerClass,
+                    beanContainerBuildItem.getValue(),
+                    builtinReader.mediaType, builtinReader.constraint);
+        }
 
-        // the client always expects these to exist
-        additionalReaders.add(ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, byte[].class, RuntimeType.CLIENT);
-        additionalReaders.add(FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED, MultivaluedMap.class,
-                RuntimeType.CLIENT);
-        //TODO: Do the Jsonb readers always make sense?
-        registerReader(recorder, serialisers, Object.class, JsonbMessageBodyReader.class, beanContainerBuildItem.getValue(),
-                MediaType.APPLICATION_JSON, null);
         for (AdditionalReaders.Entry additionalReader : additionalReaders.get()) {
             registerReader(recorder, serialisers, additionalReader.getEntityClass(), additionalReader.getReaderClass(),
                     beanContainerBuildItem.getValue(), additionalReader.getMediaType(), additionalReader.getConstraint());
@@ -621,8 +576,8 @@ public class QuarkusRestProcessor {
         recorder.registerWriter(serialisers, entityClass.getName(), writer);
     }
 
-    private <T> void registerReader(QuarkusRestRecorder recorder, Serialisers serialisers, Class<T> entityClass,
-            Class<? extends MessageBodyReader<T>> readerClass, BeanContainer beanContainer, String mediaType,
+    private void registerReader(QuarkusRestRecorder recorder, Serialisers serialisers, Class<?> entityClass,
+            Class<? extends MessageBodyReader<?>> readerClass, BeanContainer beanContainer, String mediaType,
             RuntimeType constraint) {
         ResourceReader reader = new ResourceReader();
         reader.setFactory(recorder.factory(readerClass.getName(), beanContainer));

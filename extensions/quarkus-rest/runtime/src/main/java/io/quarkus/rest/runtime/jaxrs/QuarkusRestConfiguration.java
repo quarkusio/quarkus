@@ -41,8 +41,8 @@ public class QuarkusRestConfiguration implements Configuration {
         this.enabledFeatures = new ArrayList<>();
         this.requestFilters = new MultivaluedTreeMap<>();
         this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
-        this.writerInterceptors = new MultivaluedTreeMap<>();
-        this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+        this.readerInterceptors = new MultivaluedTreeMap<>();
+        this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
     }
 
     public QuarkusRestConfiguration(Configuration configuration) {
@@ -57,18 +57,18 @@ public class QuarkusRestConfiguration implements Configuration {
             this.requestFilters.putAll(quarkusRestConfiguration.requestFilters);
             this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.responseFilters.putAll(quarkusRestConfiguration.responseFilters);
-            this.writerInterceptors = new MultivaluedTreeMap<>();
-            this.writerInterceptors.putAll(quarkusRestConfiguration.writerInterceptors);
-            this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.readerInterceptors = new MultivaluedTreeMap<>();
             this.readerInterceptors.putAll(quarkusRestConfiguration.readerInterceptors);
+            this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.writerInterceptors.putAll(quarkusRestConfiguration.writerInterceptors);
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
             this.requestFilters = new MultivaluedTreeMap<>();
             this.responseFilters = new MultivaluedTreeMap<>(
                     Collections.reverseOrder());
-            this.writerInterceptors = new MultivaluedTreeMap<>();
-            this.readerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
+            this.readerInterceptors = new MultivaluedTreeMap<>();
+            this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);

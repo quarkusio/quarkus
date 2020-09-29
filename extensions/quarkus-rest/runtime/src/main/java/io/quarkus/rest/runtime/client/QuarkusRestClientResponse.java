@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -18,11 +17,11 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
 
 public class QuarkusRestClientResponse extends QuarkusRestResponse {
 
-    Serialisers serialisers;
+    InvocationState invocationState;
 
     @Override
     public <T> T readEntity(Class<T> entityType) {
-        return readEntity(entityType, null, null);
+        return readEntity(entityType, entityType, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -43,23 +42,27 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         if (hasEntity() && entityType.isInstance(getEntity())) {
             return (T) getEntity();
         }
+        // FIXME: does the spec really tell us to do this? sounds like a workaround for not having a string reader
         if (hasEntity() && entityType.equals(String.class)) {
             return (T) getEntity().toString();
         }
 
-        // FIXME: missing interceptors here
+        // apparently we're trying to re-read it here, even if we already have an entity, as long as it's not the right
+        // type
         MediaType mediaType = getMediaType();
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
+        List<MessageBodyReader<?>> readers = invocationState.serialisers.findReaders(entityType, mediaType, RuntimeType.CLIENT);
         InputStream entityStream = getEntityStream();
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
                 Object entity;
                 try {
-                    if (entityStream instanceof ByteArrayInputStream) {
-                        ((ByteArrayInputStream) entityStream).reset();
+                    // it's possible we already read it for a different type, so try to reset it
+                    if (entityStream.markSupported()) {
+                        entityStream.reset();
                     }
-                    entity = ((MessageBodyReader) reader).readFrom(entityType, genericType,
-                            annotations, mediaType, getStringHeaders(), entityStream);
+                    entity = Serialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
+                            invocationState.properties, getStringHeaders(), reader,
+                            entityStream, invocationState.getReaderInterceptors());
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.Configuration;
@@ -84,7 +85,9 @@ public class QuarkusRestClientBuilder extends ClientBuilder {
     public Client build() {
         QuarkusRestDeployment currentDeployment = QuarkusRestRecorder.getCurrentDeployment();
         if (currentDeployment == null) {
-            return new QuarkusRestClient(configuration, new Serialisers(),
+            Serialisers serialisers = new Serialisers();
+            serialisers.registerBuiltins(RuntimeType.CLIENT);
+            return new QuarkusRestClient(configuration, serialisers,
                     new ClientProxies(Collections.emptyMap()), new GenericTypeMapping(), hostnameVerifier, sslContext,
                     VertxCoreRecorder.getVertx());
         } else {

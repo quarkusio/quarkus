@@ -56,7 +56,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
     GenericType<?> responseType;
     private boolean responseTypeSpecified;
     private final QuarkusRestClient restClient;
-    private final Serialisers serialisers;
+    final Serialisers serialisers;
     final ClientRequestHeaders requestHeaders;
     private final QuarkusRestConfiguration configuration;
     private final boolean registerBodyHandler;
@@ -164,20 +164,20 @@ public class InvocationState implements Handler<HttpClientResponse> {
                 mediaType, RuntimeType.CLIENT);
         // FIXME
         Annotation[] annotations = null;
-        ReaderInterceptor[] interceptors = configuration.getReaderInterceptors().toArray(Serialisers.NO_READER_INTERCEPTOR);
         for (MessageBodyReader<?> reader : readers) {
             if (reader.isReadable(responseType.getRawType(), responseType.getType(), annotations,
                     mediaType)) {
-                // FIXME: perhaps optimise for when we have no interceptor?
-                QuarkusRestClientReaderInterceptorContext context = new QuarkusRestClientReaderInterceptorContext(annotations,
-                        responseType.getRawType(), responseType.getType(), mediaType,
-                        properties, (MultivaluedMap) metadata, reader, in, interceptors);
-                return (T) context.proceed();
+                return (T) Serialisers.invokeClientReader(annotations, responseType.getRawType(), responseType.getType(),
+                        mediaType, properties, metadata, reader, in, getReaderInterceptors());
             }
         }
 
         // FIXME: exception?
         return null;
+    }
+
+    ReaderInterceptor[] getReaderInterceptors() {
+        return configuration.getReaderInterceptors().toArray(Serialisers.NO_READER_INTERCEPTOR);
     }
 
     private QuarkusRestClientResponseContext initialiseResponse(HttpClientResponse vertxResponse) {
@@ -274,7 +274,7 @@ public class InvocationState implements Handler<HttpClientResponse> {
         QuarkusRestClientResponseBuilder builder = new QuarkusRestClientResponseBuilder();
         builder.status(responseContext.getStatus(), responseContext.getReasonPhrase());
         builder.setAllHeaders(responseContext.getHeaders());
-        builder.serializers(serialisers);
+        builder.invocationState(this);
         // the spec doesn't really say this, but the TCK checks that the abortWith entity ends up read
         // so we have to write it, but without filters/interceptors
         if (abortedWith != null) {

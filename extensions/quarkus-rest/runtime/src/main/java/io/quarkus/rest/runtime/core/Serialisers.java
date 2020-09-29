@@ -1,7 +1,10 @@
 package io.quarkus.rest.runtime.core;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayDeque;
@@ -31,6 +34,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
 
+import io.quarkus.rest.runtime.client.QuarkusRestClientReaderInterceptorContext;
 import io.quarkus.rest.runtime.client.QuarkusRestClientWriterInterceptorContext;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
@@ -38,6 +42,15 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.model.ResourceReader;
 import io.quarkus.rest.runtime.model.ResourceWriter;
+import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.FileBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
+import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
+import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
+import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReader;
 import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
@@ -45,6 +58,93 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 
 public class Serialisers {
+
+    public static class Builtin {
+        public final Class<?> entityClass;
+        public final String mediaType;
+        public final RuntimeType constraint;
+
+        public Builtin(Class<?> entityClass, String mediaType, RuntimeType constraint) {
+            this.entityClass = entityClass;
+            this.mediaType = mediaType;
+            this.constraint = constraint;
+        }
+    }
+
+    public static class BuiltinWriter extends Builtin {
+        public final Class<? extends MessageBodyWriter<?>> writerClass;
+
+        public BuiltinWriter(Class<?> entityClass, Class<? extends MessageBodyWriter<?>> writerClass, String mediaType) {
+            this(entityClass, writerClass, mediaType, null);
+        }
+
+        public BuiltinWriter(Class<?> entityClass, Class<? extends MessageBodyWriter<?>> writerClass, String mediaType,
+                RuntimeType constraint) {
+            super(entityClass, mediaType, constraint);
+            this.writerClass = writerClass;
+        }
+    }
+
+    public static class BuiltinReader extends Builtin {
+        public final Class<? extends MessageBodyReader<?>> readerClass;
+
+        public BuiltinReader(Class<?> entityClass, Class<? extends MessageBodyReader<?>> readerClass, String mediaType) {
+            this(entityClass, readerClass, mediaType, null);
+        }
+
+        public BuiltinReader(Class<?> entityClass, Class<? extends MessageBodyReader<?>> readerClass, String mediaType,
+                RuntimeType constraint) {
+            super(entityClass, mediaType, constraint);
+            this.readerClass = readerClass;
+        }
+    }
+
+    public static BuiltinReader[] BUILTIN_READERS = new BuiltinReader[] {
+            new BuiltinReader(String.class, StringMessageBodyHandler.class,
+                    MediaType.WILDCARD),
+            new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.TEXT_PLAIN),
+            new BuiltinReader(File.class, FileBodyHandler.class, MediaType.TEXT_PLAIN),
+
+            // the client always expects these to exist
+            new BuiltinReader(byte[].class, ByteArrayMessageBodyHandler.class, MediaType.WILDCARD, RuntimeType.CLIENT),
+            new BuiltinReader(MultivaluedMap.class, FormUrlEncodedProvider.class, MediaType.APPLICATION_FORM_URLENCODED,
+                    RuntimeType.CLIENT),
+
+            //TODO: Do the Jsonb readers always make sense?
+            new BuiltinReader(Object.class, JsonbMessageBodyReader.class,
+                    MediaType.APPLICATION_JSON),
+    };
+
+    public static BuiltinWriter[] BUILTIN_WRITERS = new BuiltinWriter[] {
+            new BuiltinWriter(Object.class, VertxJsonMessageBodyWriter.class,
+                    MediaType.APPLICATION_JSON),
+            new BuiltinWriter(String.class, StringMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(Number.class, StringMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(Boolean.class, StringMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(Character.class, StringMessageBodyHandler.class,
+
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(Object.class, StringMessageBodyHandler.class,
+                    MediaType.WILDCARD),
+            new BuiltinWriter(char[].class, CharArrayMessageBodyHandler.class,
+
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(byte[].class, ByteArrayMessageBodyHandler.class,
+
+                    MediaType.WILDCARD),
+            new BuiltinWriter(Buffer.class, VertxBufferMessageBodyWriter.class,
+
+                    MediaType.WILDCARD),
+            new BuiltinWriter(MultivaluedMap.class, FormUrlEncodedProvider.class,
+                    MediaType.APPLICATION_FORM_URLENCODED),
+            new BuiltinWriter(Reader.class, ReaderBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinWriter(File.class, FileBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+    };
 
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection 
     private final MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
@@ -147,6 +247,43 @@ public class Serialisers {
                 response.getHeaders());
         wc.proceed();
 
+    }
+
+    public void registerBuiltins(RuntimeType constraint) {
+        for (BuiltinWriter builtinWriter : BUILTIN_WRITERS) {
+            if (builtinWriter.constraint == null || builtinWriter.constraint == constraint) {
+                MessageBodyWriter<?> writer;
+                try {
+                    writer = builtinWriter.writerClass.newInstance();
+                } catch (InstantiationException | IllegalAccessException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+                ResourceWriter resourceWriter = new ResourceWriter();
+                resourceWriter.setConstraint(builtinWriter.constraint);
+                resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinWriter.mediaType));
+                // FIXME: we could still support beans
+                resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyWriter<?>>(writer));
+                addWriter(builtinWriter.entityClass, resourceWriter);
+            }
+        }
+        for (BuiltinReader builtinReader : BUILTIN_READERS) {
+            if (builtinReader.constraint == null || builtinReader.constraint == constraint) {
+                MessageBodyReader<?> reader;
+                try {
+                    reader = builtinReader.readerClass.newInstance();
+                } catch (InstantiationException | IllegalAccessException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+                ResourceReader resourceWriter = new ResourceReader();
+                resourceWriter.setConstraint(builtinReader.constraint);
+                resourceWriter.setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType));
+                // FIXME: we could still support beans
+                resourceWriter.setFactory(new UnmanagedBeanFactory<MessageBodyReader<?>>(reader));
+                addReader(builtinReader.entityClass, resourceWriter);
+            }
+        }
     }
 
     public List<MessageBodyReader<?>> findReaders(Class<?> entityType, MediaType mediaType) {
@@ -449,5 +586,16 @@ public class Serialisers {
                 headers, properties);
         wc.proceed();
         return wc.getResult();
+    }
+
+    public static Object invokeClientReader(Annotation[] annotations, Class<?> entityClass, Type entityType,
+            MediaType mediaType, Map<String, Object> properties,
+            MultivaluedMap metadata, MessageBodyReader<?> reader, InputStream in, ReaderInterceptor[] interceptors)
+            throws WebApplicationException, IOException {
+        // FIXME: perhaps optimise for when we have no interceptor?
+        QuarkusRestClientReaderInterceptorContext context = new QuarkusRestClientReaderInterceptorContext(annotations,
+                entityClass, entityType, mediaType,
+                properties, (MultivaluedMap) metadata, reader, in, interceptors);
+        return context.proceed();
     }
 }

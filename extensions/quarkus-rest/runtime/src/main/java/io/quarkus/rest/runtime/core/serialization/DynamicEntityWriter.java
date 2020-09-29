@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.core.serialization;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.RuntimeType;
@@ -26,13 +27,27 @@ public class DynamicEntityWriter implements EntityWriter {
     @Override
     public void write(QuarkusRestRequestContext context, Object entity) throws IOException {
         MediaType mt = context.getProducesMediaType();
-        MessageBodyWriter<?>[] writers;
+        MessageBodyWriter<?>[] writers = null;
         if (mt == null) {
-            Serialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity);
-            writers = writerNoMediaType.getWriters();
-            context.setProducesMediaType(writerNoMediaType.getMediaType());
-            context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE,
-                    writerNoMediaType.getMediaType().toString());
+            MediaType selectedMediaType = null;
+            if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
+                MediaType res = context.getTarget().getProduces().negotiateProduces(context.getContext().request());
+                List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), res,
+                        RuntimeType.SERVER);
+                if (!writersList.isEmpty()) {
+                    writers = writersList.toArray(new MessageBodyWriter[0]);
+                    selectedMediaType = res;
+                }
+            }
+            if (writers == null) {
+                Serialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity);
+                writers = writerNoMediaType.getWriters();
+                selectedMediaType = writerNoMediaType.getMediaType();
+            }
+            if (selectedMediaType != null) {
+                context.setProducesMediaType(selectedMediaType);
+                context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE, selectedMediaType.toString());
+            }
         } else {
             writers = serialisers.findWriters(null, entity.getClass(), mt, RuntimeType.SERVER).toArray(Serialisers.NO_WRITER);
         }

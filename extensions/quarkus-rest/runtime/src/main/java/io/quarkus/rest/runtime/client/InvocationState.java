@@ -195,24 +195,25 @@ public class InvocationState implements Handler<HttpClientResponse> {
     private <T> Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest)
             throws IOException {
         MultivaluedMap<String, String> headerMap = requestHeaders.asMap();
-        MultiMap vertxHttpHeaders = httpClientRequest.headers();
-        for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
-            vertxHttpHeaders.add(entry.getKey(), entry.getValue());
-        }
         Buffer actualEntity = QuarkusRestAsyncInvoker.EMPTY_BUFFER;
         if (entity != null) {
-            if (entity.getMediaType() != null) {
-                vertxHttpHeaders.set(HttpHeaders.CONTENT_TYPE, entity.getMediaType().toString());
-            }
+            // no need to set the entity.getMediaType, it comes from the variant
             if (entity.getVariant() != null) {
                 Variant v = entity.getVariant();
-                vertxHttpHeaders.set(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
-                vertxHttpHeaders.set(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
-                vertxHttpHeaders.set(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
+                headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
+                if (v.getLanguageString() != null)
+                    headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
+                if (v.getEncoding() != null)
+                    headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
             }
 
             actualEntity = writeEntity(entity, headerMap,
                     configuration.getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
+        }
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        MultiMap vertxHttpHeaders = httpClientRequest.headers();
+        for (Map.Entry<String, List<String>> entry : headerMap.entrySet()) {
+            vertxHttpHeaders.add(entry.getKey(), entry.getValue());
         }
         return actualEntity;
     }

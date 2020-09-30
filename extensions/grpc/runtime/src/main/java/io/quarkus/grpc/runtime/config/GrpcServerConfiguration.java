@@ -73,4 +73,10 @@ public class GrpcServerConfiguration {
      */
     @ConfigItem(defaultValue = "1")
     public int instances;
+
+    /**
+     * Configures the netty server settings.
+     */
+    @ConfigItem
+    public GrpcServerNettyConfig nettyConfig;
 }

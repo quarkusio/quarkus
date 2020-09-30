@@ -32,6 +32,7 @@ import io.grpc.ServerServiceDefinition;
 import io.quarkus.arc.Arc;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
+import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
@@ -173,6 +174,14 @@ public class GrpcServerRecorder {
                 });
     }
 
+    private void applyNettySettings(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
+        if (configuration.nettyConfig != null) {
+            GrpcServerNettyConfig config = configuration.nettyConfig;
+            config.keepAliveTime.ifPresent(duration -> builder.nettyBuilder()
+                    .keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+        }
+    }
+
     private void applyTransportSecurityConfig(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
         if (configuration.transportSecurity != null) {
             File cert = configuration.transportSecurity.certificate
@@ -266,6 +275,8 @@ public class GrpcServerRecorder {
         }
 
         applyTransportSecurityConfig(configuration, builder);
+
+        applyNettySettings(configuration, builder);
 
         boolean reflectionServiceEnabled = configuration.enableReflectionService
                 || ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;

@@ -13,12 +13,24 @@ import javax.inject.Inject;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
+import io.quarkus.runtime.annotations.RunOnWorkerThread;
 
 @ApplicationScoped
 public class GrpcContainer {
 
+    /**
+     * The list of {@link BindableService} that runs on the I/O thread.
+     */
     @Inject
     Instance<BindableService> services;
+
+    /**
+     * The list of {@link BindableService} that runs on a worker thread.
+     */
+    @Inject
+    @RunOnWorkerThread
+    Instance<BindableService> blockingServices;
+
     @Inject
     Instance<ServerInterceptor> interceptors;
     @Inject
@@ -52,7 +64,12 @@ public class GrpcContainer {
         return healthStorage;
     }
 
-    public Instance<BindableService> getServices() {
+    public Instance<BindableService> getNonBlockingServices() {
         return services;
     }
+
+    public Instance<BindableService> getBlockingServices() {
+        return blockingServices;
+    }
+
 }

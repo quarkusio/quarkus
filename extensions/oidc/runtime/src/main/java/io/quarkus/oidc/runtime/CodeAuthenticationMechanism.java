@@ -148,8 +148,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return performCodeFlow(identityProviderManager, context, resolver);
     }
 
-    private boolean isXHR(RoutingContext context) {
-        return "XMLHttpRequest".equals(context.request().getHeader("X-Requested-With"));
+    private boolean isJavaScript(RoutingContext context) {
+        String value = context.request().getHeader("X-Requested-With");
+        return "JavaScript".equals(value) || "XMLHttpRequest".equals(value);
     }
 
     // This test determines if the default behavior of returning a 302 should go forward
@@ -157,7 +158,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     // user has set the auto direct application property to false indicating that
     // the client application will manually handle the redirect to account for SPA behavior
     private boolean shouldAutoRedirect(TenantConfigContext configContext, RoutingContext context) {
-        return isXHR(context) ? configContext.oidcConfig.authentication.xhrAutoRedirect : true;
+        return isJavaScript(context)
+                ? configContext.oidcConfig.authentication.javaScriptAutoRedirect
+                        && configContext.oidcConfig.authentication.xhrAutoRedirect
+                : true;
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {

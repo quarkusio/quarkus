@@ -698,7 +698,10 @@ public class OidcTenantConfig {
          * authorization endpoints typically do not support CORS.
          * If this property is set to `false` then a status code of '499' will be returned to allow
          * the client to handle the redirect manually
+         *
+         * This property is deprecated. Please use a 'javaScriptAutoRedirect' property instead.
          */
+        @Deprecated
         @ConfigItem(defaultValue = "true")
         public boolean xhrAutoRedirect = true;
 
@@ -708,6 +711,26 @@ public class OidcTenantConfig {
 
         public void setXhrAutoredirect(boolean autoRedirect) {
             this.xhrAutoRedirect = autoRedirect;
+        }
+
+        /**
+         * If this property is set to 'true' then a normal 302 redirect response will be returned
+         * if the request was initiated via JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be
+         * (re)authenticated which may not be desirable for Single Page Applications since
+         * it automatically following the redirect may not work given that OIDC authorization endpoints typically do not support
+         * CORS.
+         * If this property is set to `false` then a status code of '499' will be returned to allow
+         * the client to handle the redirect manually
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean javaScriptAutoRedirect = true;
+
+        public boolean isJavaScriptAutoRedirect() {
+            return javaScriptAutoRedirect;
+        }
+
+        public void setJavaScriptAutoredirect(boolean autoRedirect) {
+            this.javaScriptAutoRedirect = autoRedirect;
         }
 
         public Optional<String> getRedirectPath() {

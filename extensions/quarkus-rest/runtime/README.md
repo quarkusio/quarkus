@@ -62,6 +62,8 @@
 
 - `ManagedBean`
 - `DataSource`
+- `Source`
+- `JAXB`
 
 *** Spec inconsistencies
 

@@ -33,6 +33,12 @@ public class ResourceLocatorHandler implements RestHandler {
                 throw new RuntimeException("Could not instantiate resource bean " + locatorClass
                         + " make sure it has a bean defining annotation", e);
             }
+            if (locator == null) {
+                //TODO: we should make sure ArC always picks up these classes and makes them beans
+                //but until we get a bug report about it lets not worry for now, as I don't think anyone
+                //really uses this
+                locator = locatorClass.newInstance();
+            }
         } else {
             locatorClass = locator.getClass();
         }

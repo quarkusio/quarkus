@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -405,8 +406,8 @@ public class QuteProcessor {
             }
         };
 
-        // Map implicit class -> true if methods were used
-        Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
+        // Map implicit class -> set of used members
+        Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             for (Expression expression : analysis.expressions) {
@@ -414,22 +415,35 @@ public class QuteProcessor {
                     continue;
                 }
                 validateNestedExpressions(null, new HashMap<>(), templateExtensionMethods, excludes, incorrectExpressions,
-                        expression, index, implicitClassToMethodUsed, templateIdToPathFun);
+                        expression, index, implicitClassToMembersUsed, templateIdToPathFun);
             }
         }
 
-        for (Entry<ClassInfo, Boolean> implicit : implicitClassToMethodUsed.entrySet()) {
-            implicitClasses.produce(implicit.getValue()
-                    ? new ImplicitValueResolverBuildItem(implicit.getKey(), new TemplateDataBuilder().properties(false).build())
-                    : new ImplicitValueResolverBuildItem(implicit.getKey()));
+        for (Entry<ClassInfo, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
+            implicitClasses.produce(new ImplicitValueResolverBuildItem(entry.getKey(),
+                    new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
         }
+    }
+
+    static String buildIgnorePattern(Iterable<String> names) {
+        // ^(?!\\Qbar\\P|\\Qfoo\\P).*$
+        StringBuilder ignorePattern = new StringBuilder("^(?!");
+        for (Iterator<String> iterator = names.iterator(); iterator.hasNext();) {
+            String memberName = iterator.next();
+            ignorePattern.append(Pattern.quote(memberName));
+            if (iterator.hasNext()) {
+                ignorePattern.append("|");
+            }
+        }
+        ignorePattern.append(").*$");
+        return ignorePattern.toString();
     }
 
     static void validateNestedExpressions(ClassInfo rootClazz, Map<String, Match> results,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
-            Map<ClassInfo, Boolean> implicitClassToMethodUsed, Function<String, String> templateIdToPathFun) {
+            Map<ClassInfo, Set<String>> implicitClassToMembersUsed, Function<String, String> templateIdToPathFun) {
 
         // First validate nested virtual methods
         for (Expression.Part part : expression.getParts()) {
@@ -437,7 +451,7 @@ public class QuteProcessor {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
                     if (!results.containsKey(param.toOriginalString())) {
                         validateNestedExpressions(null, results, templateExtensionMethods, excludes, incorrectExpressions,
-                                param, index, implicitClassToMethodUsed, templateIdToPathFun);
+                                param, index, implicitClassToMembersUsed, templateIdToPathFun);
                     }
                 }
             }
@@ -476,17 +490,20 @@ public class QuteProcessor {
             Info info = parts.next();
             if (match.clazz != null) {
                 // By default, we only consider properties
-                implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
+                Set<String> membersUsed = implicitClassToMembersUsed.computeIfAbsent(match.clazz, c -> new HashSet<>());
                 AnnotationTarget member = null;
                 // First try to find java members
                 if (info.isVirtualMethod()) {
                     member = findMethod(info.part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun,
                             results);
                     if (member != null) {
-                        implicitClassToMethodUsed.put(match.clazz, true);
+                        membersUsed.add(member.asMethod().name());
                     }
                 } else if (info.isProperty()) {
                     member = findProperty(info.asProperty().name, match.clazz, index);
+                    if (member != null) {
+                        membersUsed.add(member.kind() == Kind.FIELD ? member.asField().name() : member.asMethod().name());
+                    }
                 }
                 // Java member not found - try extension methods
                 if (member == null) {
@@ -654,8 +671,8 @@ public class QuteProcessor {
             Map<String, BeanInfo> namedBeans = registrationPhase.getContext().beans().withName()
                     .collect(toMap(BeanInfo::getName, Function.identity()));
 
-            // Map implicit class -> true if methods were used
-            Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
+            // Map implicit class -> set of used members
+            Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
             for (Expression expression : injectExpressions) {
                 Expression.Part firstPart = expression.getParts().get(0);
@@ -674,7 +691,7 @@ public class QuteProcessor {
                         continue;
                     }
                     validateNestedExpressions(bean.getImplClazz(), new HashMap<>(), templateExtensionMethods, excludes,
-                            incorrectExpressions, expression, index, implicitClassToMethodUsed, templateIdToPathFun);
+                            incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun);
 
                 } else {
                     // User is injecting a non-existing bean
@@ -684,11 +701,9 @@ public class QuteProcessor {
                 }
             }
 
-            for (Entry<ClassInfo, Boolean> implicit : implicitClassToMethodUsed.entrySet()) {
-                implicitClasses.produce(implicit.getValue()
-                        ? new ImplicitValueResolverBuildItem(implicit.getKey(),
-                                new TemplateDataBuilder().properties(false).build())
-                        : new ImplicitValueResolverBuildItem(implicit.getKey()));
+            for (Entry<ClassInfo, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
+                implicitClasses.produce(new ImplicitValueResolverBuildItem(entry.getKey(),
+                        new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
             }
         }
     }
@@ -734,47 +749,35 @@ public class QuteProcessor {
             }
         });
 
-        Map<DotName, ClassInfo> nameToClass = new HashMap<>();
+        ValueResolverGenerator.Builder builder = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput);
         Set<DotName> controlled = new HashSet<>();
         Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
         for (AnnotationInstance templateData : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA)) {
-            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled, nameToClass);
+            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled, builder);
         }
         for (AnnotationInstance containerInstance : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA_CONTAINER)) {
             for (AnnotationInstance templateData : containerInstance.value().asNestedArray()) {
-                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled, nameToClass);
+                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled, builder);
             }
         }
 
         for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
-            if (controlled.contains(implicit.getClazz().name())) {
-                LOGGER.debugf("Implicit value resolver build item ignored: %s is annotated with @TemplateData");
+            DotName implicitClassName = implicit.getClazz().name();
+            if (controlled.contains(implicitClassName)) {
+                LOGGER.debugf("Implicit value resolver for %s ignored: class is annotated with @TemplateData",
+                        implicitClassName);
                 continue;
             }
-            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz().name());
-            if (templateData != null) {
-                if (!templateData.equals(implicit.getTemplateData())) {
-                    throw new IllegalStateException("Multiple implicit value resolver build items produced for "
-                            + implicit.getClazz() + " and the synthetic template data is not equal");
-                }
+            if (uncontrolled.containsKey(implicitClassName)) {
+                LOGGER.debugf("Implicit value resolver for %d ignored: %s declared on %s", uncontrolled.get(implicitClassName),
+                        uncontrolled.get(implicitClassName).target());
                 continue;
             }
-            uncontrolled.put(implicit.getClazz().name(), implicit.getTemplateData());
-            nameToClass.put(implicit.getClazz().name(), implicit.getClazz());
+            builder.addClass(implicit.getClazz(), implicit.getTemplateData());
         }
 
-        ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
-                .setUncontrolled(uncontrolled)
-                .build();
-
-        // @TemplateData
-        for (DotName name : controlled) {
-            generator.generate(nameToClass.get(name));
-        }
-        // Uncontrolled classes
-        for (DotName name : uncontrolled.keySet()) {
-            generator.generate(nameToClass.get(name));
-        }
+        ValueResolverGenerator generator = builder.build();
+        generator.generate();
 
         Set<String> generatedTypes = new HashSet<>();
         generatedTypes.addAll(generator.getGeneratedTypes());
@@ -1282,18 +1285,18 @@ public class QuteProcessor {
     }
 
     private void processsTemplateData(IndexView index, AnnotationInstance templateData, AnnotationTarget annotationTarget,
-            Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, Map<DotName, ClassInfo> nameToClass) {
+            Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, ValueResolverGenerator.Builder builder) {
         AnnotationValue targetValue = templateData.value("target");
         if (targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA)) {
             ClassInfo annotationTargetClass = annotationTarget.asClass();
             controlled.add(annotationTargetClass.name());
-            nameToClass.put(annotationTargetClass.name(), annotationTargetClass);
+            builder.addClass(annotationTargetClass, templateData);
         } else {
             ClassInfo uncontrolledClass = index.getClassByName(targetValue.asClass().name());
             if (uncontrolledClass != null) {
                 uncontrolled.compute(uncontrolledClass.name(), (c, v) -> {
                     if (v == null) {
-                        nameToClass.put(uncontrolledClass.name(), uncontrolledClass);
+                        builder.addClass(uncontrolledClass, templateData);
                         return templateData;
                     }
                     if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),

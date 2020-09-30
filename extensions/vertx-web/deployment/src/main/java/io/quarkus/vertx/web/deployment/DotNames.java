@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.runtime.annotations.RunOnWorkerThread;
 import io.quarkus.vertx.web.Body;
 import io.quarkus.vertx.web.Header;
 import io.quarkus.vertx.web.Param;
@@ -49,5 +50,6 @@ final class DotNames {
     static final DotName LIST = DotName.createSimple(List.class.getName());
     static final DotName EXCEPTION = DotName.createSimple(Exception.class.getName());
     static final DotName THROWABLE = DotName.createSimple(Throwable.class.getName());
+    static final DotName RUN_ON_WORKER_THREAD = DotName.createSimple(RunOnWorkerThread.class.getName());
 
 }

@@ -327,6 +327,16 @@ class VertxWebProcessor {
                     }
                 }
 
+                if (businessMethod.getMethod().annotation(DotNames.RUN_ON_WORKER_THREAD) != null) {
+                    if (handlerType == HandlerType.NORMAL) {
+                        handlerType = HandlerType.BLOCKING;
+                    } else if (handlerType == HandlerType.FAILURE) {
+                        throw new IllegalStateException(
+                                "Invalid combination - a reactive route cannot use @RunOnWorkerThread and be of type `failure` at the same time: "
+                                        + businessMethod.getMethod().toString());
+                    }
+                }
+
                 if (routeHandler == null) {
                     String handlerClass = generateHandler(
                             new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null),

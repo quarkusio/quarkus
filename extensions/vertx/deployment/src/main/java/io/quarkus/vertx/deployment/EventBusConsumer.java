@@ -1,6 +1,11 @@
 package io.quarkus.vertx.deployment;
 
-import static io.quarkus.vertx.deployment.VertxConstants.*;
+import static io.quarkus.vertx.deployment.VertxConstants.AXLE_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.RX_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
 import java.lang.annotation.Annotation;
 import java.util.concurrent.CompletableFuture;
@@ -9,6 +14,7 @@ import java.util.function.BiConsumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -31,6 +37,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.runtime.annotations.RunOnWorkerThread;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
@@ -85,6 +92,7 @@ class EventBusConsumer {
             .ofMethod(Uni.class, "subscribeAsCompletionStage", CompletableFuture.class);
     protected static final MethodDescriptor THROWABLE_GET_MESSAGE = MethodDescriptor
             .ofMethod(Throwable.class, "getMessage", String.class);
+    protected static final DotName RUN_ON_WORKER_THREAD = DotName.createSimple(RunOnWorkerThread.class.getName());
 
     static String generateInvoker(BeanInfo bean, MethodInfo method,
             AnnotationInstance consumeEvent,
@@ -115,7 +123,8 @@ class EventBusConsumer {
         ResultHandle containerHandle = invoke.invokeStaticMethod(ARC_CONTAINER);
 
         AnnotationValue blocking = consumeEvent.value("blocking");
-        if (blocking != null && blocking.asBoolean()) {
+        boolean runOnWorkerThread = method.hasAnnotation(RUN_ON_WORKER_THREAD);
+        if ((blocking != null && blocking.asBoolean()) || runOnWorkerThread) {
             // Blocking operation must be performed on a worker thread
             ResultHandle vertxHandle = invoke
                     .invokeInterfaceMethod(INSTANCE_HANDLE_GET,

@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.annotations.RunOnWorkerThread;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
@@ -152,6 +153,18 @@ public class MessageConsumerMethodTest {
     }
 
     @Test
+    public void testBlockingConsumerUsingRunOnWorkerThread() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("worker", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertEquals(1, SimpleBean.MESSAGES.size());
+        String message = SimpleBean.MESSAGES.get(0);
+        assertTrue(message.contains("hello::true"));
+    }
+
+    @Test
     public void testPublishRx() throws InterruptedException {
         SimpleBean.MESSAGES.clear();
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
@@ -224,6 +237,13 @@ public class MessageConsumerMethodTest {
 
         @ConsumeEvent(value = "blocking", blocking = true)
         void consumeBlocking(String message) {
+            MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
+            latch.countDown();
+        }
+
+        @ConsumeEvent(value = "worker")
+        @RunOnWorkerThread
+        void consumeBlockingUsingRunOnWorkerThread(String message) {
             MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
             latch.countDown();
         }

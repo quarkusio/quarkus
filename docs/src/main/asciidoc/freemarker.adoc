@@ -1,0 +1,171 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Freemarker Templating Engine
+:extension-status: preview
+
+include::./attributes.adoc[]
+
+Freemarker is a very popular and mature templating engine. Its integration as a Quarkus extension
+provides developers ease of configuration, and offers support for native images.
+In this guide, you will learn how to easily render Freemarker templates in your application.
+
+include::./status-include.adoc[]
+
+== Hello World
+
+If you want to use Freemarker you need to add the `quarkus-freemarker` extension first.
+In your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkiverse</groupId>
+    <artifactId>quarkus-freemarker</artifactId>
+</dependency>
+----
+
+We'll start with a very simple template:
+
+.hello.ftl
+[source]
+----
+Hello ${name}! <1>
+----
+<1> `${name}` is a value expression that is evaluated when the template is rendered.
+
+Now let's inject the template in the resource class.
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+
+import freemarker.template.Template;
+import io.quarkiverse.freemarker.runtime.TemplatePath;
+
+@Path("hello")
+public class HelloResource {
+
+    @Inject
+    @TemplatePath("hello.ftl") <1>
+    Template hello;
+
+    @GET
+    @Produces(TEXT_PLAIN)
+    public String hello(@QueryParam("name") String name) throws IOException, TemplateException {
+        StringWriter stringWriter = new StringWriter();
+        hello.process(Map.of("name", name), stringWriter); <2>
+        return stringWriter.toString();
+    }
+}
+----
+<1> The `@TemplatePath` qualifier specifies the template name, found in either jar resource paths or external file paths.
+<2> `Map.of("name", name)` provides the model.
+
+If your application is running, you can request the endpoint:
+
+[source, shell]
+----
+$ curl -w "\n" http://localhost:8080/hello?name=bob
+Hello bob!
+----
+
+== Usage
+
+The application code can either directly inject a Freemarker `Template` bean as we saw above.
+In that case it must provide a `TemplatePath` qualifier annotation with the name
+of the template to select.
+
+Or it can inject a Freemarker `Configuration` bean, from which templates
+can be obtained programmatically. The `Configuration` is a `Singleton`
+`DefaultBean` that can be replaced by an application provided implementation.
+
+The default `Configuration` bean is configured from quarkus exposed
+properties. Among those, 2 are build time:
+
+ - `resource-paths` is a list of resource paths contained in the classpath (e.g.
+typically in jars of the application). Each path is traversed recursively, and
+all files get added as native resources when building a native image.
+ - `directive` is a map of _directive alias_ to _directive class name_. Each directive
+class is added as a shared variable in the `Configuration` bean.
+
+Here is an example of using a `Configuration` bean instead of a `Template` bean:
+[source,java]
+----
+    @Inject
+    Configuration configuration;
+
+    @GET
+    @Produces(TEXT_PLAIN)
+    public String hello(@QueryParam("name") String name) throws IOException, TemplateException {
+        StringWriter stringWriter = new StringWriter();
+        configuration.getTemplate(ftl).process(model, stringWriter);
+        return stringWriter.toString();
+    }
+----
+
+The rest of the configuration properties can be provided at runtime, such as
+a list of external filesystem paths where to find additional templates,
+and optional properties that can be configured on the Freemarker `Configuration` class.
+
+== Directives
+
+Freemarker can be extended using custom directives. For instance if we wanted
+to transform some text in `base64`, we could write:
+
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+public class Base64Directive implements TemplateDirectiveModel {
+    @Override
+    public void execute(Environment environment, Map map, TemplateModel[] templateModels, TemplateDirectiveBody body)
+            throws TemplateException, IOException {
+        StringWriter sw = new StringWriter();
+        body.render(sw);
+        byte[] bytes = Base64.getEncoder().encode(sw.toString().getBytes(UTF_8));
+        environment.getOut().write(new String(bytes, UTF_8));
+    }
+}
+----
+
+Then we would have to configure the application with:
+[source,properties]
+----
+quarkus.freemarker.directive.base64=org.acme.quarkus.sample.Base64Directive
+----
+
+And finally, we would use it in templates such as:
+[source]
+----
+Hello <@base64>${name}</@base64>!
+----
+
+This would be rendered as:
+[source]
+----
+Hello Ym9i!
+----
+
+== Data model
+
+Freemarker supports `Map` or `Object` based data models.
+When using objects, it is important to configure
+`quarkus.freemarker.object-wrapper-expose-fields=true` if model classes
+do not have getters.
+
+Additionnaly, they should be annotated with
+`@RegisterForReflection` to support native images.
+
+[[freemarker-configuration-reference]]
+== Freemarker Configuration Reference
+
+include::{generated-dir}/config/quarkus-freemarker.adoc[leveloffset=+1, opts=optional]

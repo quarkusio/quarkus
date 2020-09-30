@@ -34,19 +34,20 @@ public class ResponseHandler implements RestHandler {
             }
         }
         Object result = requestContext.getResult();
-        Response.ResponseBuilder response = null;
+        Response.ResponseBuilder responseBuilder;
+        boolean mediaTypeAlreadyExists = false;
         if (result instanceof Response) {
             Response existing = (Response) result;
             if (existing.getEntity() instanceof GenericEntity) {
                 GenericEntity<?> genericEntity = (GenericEntity<?>) existing.getEntity();
                 requestContext.setGenericReturnType(genericEntity.getType());
-                response = Response.fromResponse(existing).entity(genericEntity.getEntity());
+                responseBuilder = Response.fromResponse(existing).entity(genericEntity.getEntity());
             } else {
                 // TCK says to use the entity type as generic type if we return a response
                 if (existing.hasEntity())
                     requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficent
-                response = Response.fromResponse((Response) result);
+                responseBuilder = Response.fromResponse((Response) result);
                 if ((result instanceof QuarkusRestResponse)) {
                     // needed in order to preserve entity annotations
                     QuarkusRestResponse quarkusRestResponse = (QuarkusRestResponse) result;
@@ -55,23 +56,27 @@ public class ResponseHandler implements RestHandler {
                     }
                 }
             }
+            if (existing.getMediaType() != null) {
+                requestContext.setProducesMediaType(existing.getMediaType());
+                mediaTypeAlreadyExists = true;
+            }
         } else {
             if (result instanceof GenericEntity) {
                 GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                 requestContext.setGenericReturnType(genericEntity.getType());
-                response = Response.ok().entity(genericEntity.getEntity());
+                responseBuilder = Response.ok().entity(genericEntity.getEntity());
             } else if (result == null) {
                 // FIXME: custom status codes depending on method?
-                response = Response.noContent().entity(result);
+                responseBuilder = Response.noContent().entity(result);
             } else {
                 // FIXME: custom status codes depending on method?
-                response = Response.ok().entity(result);
+                responseBuilder = Response.ok().entity(result);
             }
         }
         MediaType produces = requestContext.getProducesMediaType();
-        if (produces != null) {
-            response.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+        if (!mediaTypeAlreadyExists && produces != null) {
+            responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
         }
-        requestContext.setResult(response.build());
+        requestContext.setResult(responseBuilder.build());
     }
 }

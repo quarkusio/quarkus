@@ -48,12 +48,14 @@ public class DynamicEntityWriter implements EntityWriter {
             if (selectedMediaType != null) {
                 if (MediaTypeHelper.isUnsupportedWildcardSubtype(selectedMediaType)) { // spec says the acceptable wildcard subtypes are */* or application/*
                     Serialisers.encodeResponseHeaders(context);
+                    // set the response header AFTER encodeResponseHeaders in order to override what Response has as we want this to be the final result
                     context.getContext().response().setStatusCode(Response.Status.NOT_ACCEPTABLE.getStatusCode());
                     // spec says the response doesn't have a body so we just end the response here and return
                     context.getContext().response().end();
                     return;
                 } else {
                     context.setProducesMediaType(selectedMediaType);
+                    // this will be used as the fallback if Response does NOT contain a type
                     context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE, selectedMediaType.toString());
                 }
             }

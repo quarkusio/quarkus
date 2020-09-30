@@ -29,7 +29,7 @@ public class JsonConfig {
     @ConfigItem(defaultValue = "default")
     String dateFormat;
     /**
-     * The special end-of-record delimiter to be used. By default, no delimiter is used.
+     * The special end-of-record delimiter to be used. By default, newline is used as delimiter.
      */
     @ConfigItem
     Optional<String> recordDelimiter;

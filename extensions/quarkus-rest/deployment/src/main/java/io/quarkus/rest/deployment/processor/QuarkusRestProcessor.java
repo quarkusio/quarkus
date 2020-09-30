@@ -79,6 +79,7 @@ import io.quarkus.rest.runtime.core.DynamicFeatures;
 import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
+import io.quarkus.rest.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinReader;
 import io.quarkus.rest.runtime.core.Serialisers.BuiltinWriter;
@@ -93,6 +94,7 @@ import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.runtime.model.ResourceFeature;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
 import io.quarkus.rest.runtime.model.ResourceMethod;
+import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
 import io.quarkus.rest.runtime.model.ResourceReader;
 import io.quarkus.rest.runtime.model.ResourceReaderInterceptor;
 import io.quarkus.rest.runtime.model.ResourceRequestInterceptor;
@@ -107,6 +109,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 public class QuarkusRestProcessor {
 
     private static Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = new HashMap<>();
+
     static {
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(GET, "GET");
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.put(POST, "POST");
@@ -279,6 +282,8 @@ public class QuarkusRestProcessor {
                 .getAllKnownImplementors(QuarkusRestDotNames.CONTEXT_RESOLVER);
         Collection<ClassInfo> features = index
                 .getAllKnownImplementors(QuarkusRestDotNames.FEATURE);
+        Collection<ClassInfo> paramConverterProviders = index
+                .getAllKnownImplementors(QuarkusRestDotNames.PARAM_CONVERTER_PROVIDER);
         Collection<ClassInfo> dynamicFeatures = index
                 .getAllKnownImplementors(QuarkusRestDotNames.DYNAMIC_FEATURE);
         Collection<ClassInfo> invocationCallbacks = index
@@ -298,18 +303,32 @@ public class QuarkusRestProcessor {
             httpAnnotationToMethod.put(httpMethodInstance.target().asClass().name(), httpMethodInstance.value().asString());
         }
 
+        ParamConverterProviders converterProviders = new ParamConverterProviders();
+        for (ClassInfo converterClass : paramConverterProviders) {
+            if (converterClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
+                ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
+                converter.setFactory(recorder.factory(converterClass.name().toString(),
+                        beanContainerBuildItem.getValue()));
+                converterProviders.addParamConverterProviders(converter);
+            }
+        }
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
         AdditionalReaders additionalReaders = new AdditionalReaders();
         AdditionalWriters additionalWriters = new AdditionalWriters();
         Map<String, InjectableBean> injectableBeans = new HashMap<>();
+        EndpointIndexer endpointIndexer = new EndpointIndexer.Builder()
+                .setIndex(index)
+                .setBeanContainer(beanContainerBuildItem.getValue())
+                .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
+                .setBytecodeTransformerBuildItemBuildProducer(bytecodeTransformerBuildItemBuildProducer).setRecorder(recorder)
+                .setExistingConverters(existingConverters).setScannedResourcePaths(scannedResourcePaths).setConfig(config)
+                .setAdditionalReaders(additionalReaders).setHttpAnnotationToMethod(httpAnnotationToMethod)
+                .setInjectableBeans(injectableBeans).setAdditionalWriters(additionalWriters).build();
+
         for (ClassInfo i : scannedResources.values()) {
-            ResourceClass endpoints = EndpointIndexer.createEndpoints(index, i,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer,
-                    bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, injectableBeans,
-                    additionalWriters);
+            ResourceClass endpoints = endpointIndexer.createEndpoints(i);
             if (endpoints != null) {
                 resourceClasses.add(endpoints);
             }
@@ -349,11 +368,7 @@ public class QuarkusRestProcessor {
                 continue;
             }
             possibleSubResources.put(classInfo.name(), classInfo);
-            ResourceClass endpoints = EndpointIndexer.createEndpoints(index, classInfo,
-                    beanContainerBuildItem.getValue(), generatedClassBuildItemBuildProducer,
-                    bytecodeTransformerBuildItemBuildProducer, recorder, existingConverters,
-                    scannedResourcePaths, config, additionalReaders, httpAnnotationToMethod, injectableBeans,
-                    additionalWriters);
+            ResourceClass endpoints = endpointIndexer.createEndpoints(classInfo);
             if (endpoints != null) {
                 subResourceClasses.add(endpoints);
             }
@@ -475,7 +490,7 @@ public class QuarkusRestProcessor {
                 ResourceFeature resourceFeature = new ResourceFeature();
                 resourceFeature.setFactory(recorder.factory(featureClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                recorder.registerFeature(feats, resourceFeature);
+                feats.addFeature(resourceFeature);
             }
         }
 
@@ -485,7 +500,7 @@ public class QuarkusRestProcessor {
                 ResourceDynamicFeature resourceFeature = new ResourceDynamicFeature();
                 resourceFeature.setFactory(recorder.factory(dynamicFeatureClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                recorder.registerDynamicFeature(dynamicFeats, resourceFeature);
+                dynamicFeats.addFeature(resourceFeature);
             }
         }
 

@@ -40,6 +40,7 @@ import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
@@ -72,6 +73,7 @@ public final class QuarkusRestDotNames {
     public static final DotName HTTP_METHOD = DotName.createSimple(javax.ws.rs.HttpMethod.class.getName());
     public static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
     public static final DotName PATH = DotName.createSimple(Path.class.getName());
+    public static final DotName PARAM_CONVERTER_PROVIDER = DotName.createSimple(ParamConverterProvider.class.getName());
     public static final DotName FEATURE = DotName.createSimple(Feature.class.getName());
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());

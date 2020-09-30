@@ -167,12 +167,35 @@ public class EndpointIndexer {
         supportedReaderJavaTypes = Collections.unmodifiableMap(supportedReaderJavaTps);
     }
 
-    public static ResourceClass createEndpoints(IndexView index, ClassInfo classInfo, BeanContainer beanContainer,
-            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer, QuarkusRestRecorder recorder,
-            Map<String, String> existingConverters, Map<DotName, String> scannedResourcePaths, QuarkusRestConfig config,
-            AdditionalReaders additionalReaders, Map<DotName, String> httpAnnotationToMethod,
-            Map<String, InjectableBean> injectableBeans, AdditionalWriters additionalWriters) {
+    private final IndexView index;
+    private final BeanContainer beanContainer;
+    private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
+    private final QuarkusRestRecorder recorder;
+    private final Map<String, String> existingConverters;
+    private final Map<DotName, String> scannedResourcePaths;
+    private final QuarkusRestConfig config;
+    private final AdditionalReaders additionalReaders;
+    private final Map<DotName, String> httpAnnotationToMethod;
+    private final Map<String, InjectableBean> injectableBeans;
+    private final AdditionalWriters additionalWriters;
+
+    EndpointIndexer(Builder builder) {
+        this.index = builder.index;
+        this.beanContainer = builder.beanContainer;
+        this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
+        this.bytecodeTransformerBuildItemBuildProducer = builder.bytecodeTransformerBuildItemBuildProducer;
+        this.recorder = builder.recorder;
+        this.existingConverters = builder.existingConverters;
+        this.scannedResourcePaths = builder.scannedResourcePaths;
+        this.config = builder.config;
+        this.additionalReaders = builder.additionalReaders;
+        this.httpAnnotationToMethod = builder.httpAnnotationToMethod;
+        this.injectableBeans = builder.injectableBeans;
+        this.additionalWriters = builder.additionalWriters;
+    }
+
+    public ResourceClass createEndpoints(ClassInfo classInfo) {
         try {
             String path = scannedResourcePaths.get(classInfo.name());
             List<ResourceMethod> methods = createEndpoints(index, classInfo, classInfo, new HashSet<>(),
@@ -1049,6 +1072,87 @@ public class EndpointIndexer {
                 throw new RuntimeException("Can only inject AsyncResponse on methods marked @Suspended");
             }
             return this;
+        }
+    }
+
+    public static class Builder {
+        private IndexView index;
+        private BeanContainer beanContainer;
+        private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
+        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer;
+        private QuarkusRestRecorder recorder;
+        private Map<String, String> existingConverters;
+        private Map<DotName, String> scannedResourcePaths;
+        private QuarkusRestConfig config;
+        private AdditionalReaders additionalReaders;
+        private Map<DotName, String> httpAnnotationToMethod;
+        private Map<String, InjectableBean> injectableBeans;
+        private AdditionalWriters additionalWriters;
+
+        public Builder setIndex(IndexView index) {
+            this.index = index;
+            return this;
+        }
+
+        public Builder setBeanContainer(BeanContainer beanContainer) {
+            this.beanContainer = beanContainer;
+            return this;
+        }
+
+        public Builder setGeneratedClassBuildItemBuildProducer(
+                BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer) {
+            this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
+            return this;
+        }
+
+        public Builder setBytecodeTransformerBuildItemBuildProducer(
+                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer) {
+            this.bytecodeTransformerBuildItemBuildProducer = bytecodeTransformerBuildItemBuildProducer;
+            return this;
+        }
+
+        public Builder setRecorder(QuarkusRestRecorder recorder) {
+            this.recorder = recorder;
+            return this;
+        }
+
+        public Builder setExistingConverters(Map<String, String> existingConverters) {
+            this.existingConverters = existingConverters;
+            return this;
+        }
+
+        public Builder setScannedResourcePaths(Map<DotName, String> scannedResourcePaths) {
+            this.scannedResourcePaths = scannedResourcePaths;
+            return this;
+        }
+
+        public Builder setConfig(QuarkusRestConfig config) {
+            this.config = config;
+            return this;
+        }
+
+        public Builder setAdditionalReaders(AdditionalReaders additionalReaders) {
+            this.additionalReaders = additionalReaders;
+            return this;
+        }
+
+        public Builder setHttpAnnotationToMethod(Map<DotName, String> httpAnnotationToMethod) {
+            this.httpAnnotationToMethod = httpAnnotationToMethod;
+            return this;
+        }
+
+        public Builder setInjectableBeans(Map<String, InjectableBean> injectableBeans) {
+            this.injectableBeans = injectableBeans;
+            return this;
+        }
+
+        public Builder setAdditionalWriters(AdditionalWriters additionalWriters) {
+            this.additionalWriters = additionalWriters;
+            return this;
+        }
+
+        public EndpointIndexer build() {
+            return new EndpointIndexer(this);
         }
     }
 }

@@ -26,6 +26,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.Capabilities;
@@ -54,6 +55,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
@@ -168,9 +170,13 @@ public class SmallRyeGraphQLProcessor {
     void activateMetrics(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig smallRyeGraphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
             if (metricsCapability.isPresent()) {
+                if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+                    unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
+                }
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
                 LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics " +

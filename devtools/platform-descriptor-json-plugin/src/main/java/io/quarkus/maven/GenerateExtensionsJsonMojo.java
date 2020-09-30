@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -100,6 +101,13 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
     @Component
     private MavenProjectHelper projectHelper;
 
+    /**
+     * Group ID's that we know don't contain extensions. This can speed up the process
+     * by preventing the download of artifacts that are not required.
+     */
+    @Parameter
+    private Set<String> ignoredGroupIds;
+
     public GenerateExtensionsJsonMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -135,6 +143,9 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
         String quarkusCoreVersion = null;
         for (Dependency dep : deps) {
             final Artifact artifact = dep.getArtifact();
+            if (ignoredGroupIds != null && ignoredGroupIds.contains(artifact.getGroupId())) {
+                continue;
+            }
             if (!artifact.getExtension().equals("jar")
                     || "javadoc".equals(artifact.getClassifier())
                     || "tests".equals(artifact.getClassifier())

@@ -30,6 +30,9 @@
                             <goal>generate-extensions-json</goal>
                         </goals>
                         <configuration>
+                            <ignoredGroupIds>
+                                <ignoredGroupId>software.amazon.awssdk</ignoredGroupId>
+                            </ignoredGroupIds>
                             <bomArtifactId>quarkus-bom</bomArtifactId>
                         </configuration>
                     </execution>

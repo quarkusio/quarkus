@@ -169,8 +169,14 @@ public class Serialisers {
             List<ResourceWriter> writers = new ArrayList<>();
             Set<Class<?>> seenInterfaces = new HashSet<>();
             while (c != null) {
+                //TODO: the spec doesn't seem to be totally clear about the sorting here
+                // the way the writers are sorted here takes the distance from the requested type
+                // first and foremost and then uses the rest of the criteria
+
                 List<ResourceWriter> forClass = getWriters().get(c);
                 if (forClass != null) {
+                    forClass = new ArrayList<>(forClass);
+                    forClass.sort(new ResourceWriter.ResourceWriterComparator());
                     writers.addAll(forClass);
                 }
                 Deque<Class<?>> interfaces = new ArrayDeque<>(Arrays.asList(c.getInterfaces()));
@@ -182,11 +188,11 @@ public class Serialisers {
                     seenInterfaces.add(iface);
                     forClass = getWriters().get(iface);
                     if (forClass != null) {
+                        forClass = new ArrayList<>(forClass);
+                        forClass.sort(new ResourceWriter.ResourceWriterComparator());
                         writers.addAll(forClass);
                     }
-                    for (Class<?> i : iface.getInterfaces()) {
-                        interfaces.add(i);
-                    }
+                    interfaces.addAll(Arrays.asList(iface.getInterfaces()));
                 }
                 c = c.getSuperclass();
             }

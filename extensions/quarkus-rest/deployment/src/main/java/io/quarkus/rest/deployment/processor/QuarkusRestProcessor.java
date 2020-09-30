@@ -508,6 +508,7 @@ public class QuarkusRestProcessor {
         for (ClassInfo writerClass : writers) {
             if (writerClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                 ResourceWriter writer = new ResourceWriter();
+                writer.setBuiltin(false);
                 AnnotationInstance producesAnnotation = writerClass.classAnnotation(QuarkusRestDotNames.PRODUCES);
                 if (producesAnnotation != null) {
                     writer.setMediaTypeStrings(Arrays.asList(producesAnnotation.value().asStringArray()));

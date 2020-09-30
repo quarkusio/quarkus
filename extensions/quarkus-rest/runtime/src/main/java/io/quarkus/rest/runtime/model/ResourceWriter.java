@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.model;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.ws.rs.RuntimeType;
@@ -10,6 +11,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.rest.runtime.spi.BeanFactory;
+import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 
 public class ResourceWriter {
@@ -17,6 +19,7 @@ public class ResourceWriter {
     private BeanFactory<MessageBodyWriter<?>> factory;
     private List<String> mediaTypeStrings = new ArrayList<>();
     private RuntimeType constraint;
+    private boolean builtin = true;
     private volatile List<MediaType> mediaTypes;
     private volatile ServerMediaType serverMediaType;
     private volatile MessageBodyWriter<?> instance;
@@ -45,6 +48,14 @@ public class ResourceWriter {
     public ResourceWriter setConstraint(RuntimeType constraint) {
         this.constraint = constraint;
         return this;
+    }
+
+    public boolean isBuiltin() {
+        return builtin;
+    }
+
+    public void setBuiltin(boolean builtin) {
+        this.builtin = builtin;
     }
 
     public MessageBodyWriter<?> getInstance() {
@@ -90,5 +101,43 @@ public class ResourceWriter {
             return true;
         }
         return runtimeType == constraint;
+    }
+
+    /**
+     * The comparison for now is simple:
+     * 1) Application provided writers come first
+     * 2) Then the more specific the media type, the higher the priority
+     * 3) Finally we compare the number of media types
+     */
+    public static class ResourceWriterComparator implements Comparator<ResourceWriter> {
+
+        public static final ResourceWriterComparator INSTANCE = new ResourceWriterComparator();
+
+        @Override
+        public int compare(ResourceWriter o1, ResourceWriter o2) {
+            int builtInCompare = Boolean.compare(o1.isBuiltin(), o2.isBuiltin());
+            if (builtInCompare != 0) {
+                return builtInCompare;
+            }
+
+            List<MediaType> mediaTypes1 = o1.mediaTypes();
+            List<MediaType> mediaTypes2 = o2.mediaTypes();
+            if (mediaTypes1.isEmpty() && mediaTypes2.isEmpty()) {
+                return 0;
+            }
+            if (mediaTypes1.isEmpty()) {
+                return 1;
+            }
+            if (mediaTypes2.isEmpty()) {
+                return -1;
+            }
+            int mediaTypeCompare = MediaTypeHelper.compareWeight(mediaTypes1.get(0), mediaTypes2.get(0));
+            if (mediaTypeCompare != 0) {
+                return mediaTypeCompare;
+            }
+
+            // TODO: not sure if this makes sense but was added to make the sorting more deterministic
+            return Integer.compare(mediaTypes1.size(), mediaTypes2.size());
+        }
     }
 }

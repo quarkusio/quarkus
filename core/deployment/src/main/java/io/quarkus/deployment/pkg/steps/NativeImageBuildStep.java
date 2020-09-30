@@ -670,7 +670,9 @@ public class NativeImageBuildStep {
         final List<String> command = new ArrayList<>(args.length + 1);
         command.add("objcopy");
         command.addAll(Arrays.asList(args));
-        log.infof("Execute %s", command);
+        if (log.isDebugEnabled()) {
+            log.debugf("Execute %s", String.join(" ", command));
+        }
         Process process = null;
         try {
             process = new ProcessBuilder(command).start();

@@ -55,3 +55,18 @@
         - MultivaluedMap<String,String> Form content (application/x-www-form-urlencoded).
         - StreamingOutput All media types (*/*), MessageBodyWriter only.
         - java.lang.Boolean, java.lang.Character, java.lang.Number Only
+
+** JAXRS SPEC observations
+
+*** Will not implement
+
+- `ManagedBean`
+- `DataSource`
+
+*** Spec inconsistencies
+
+- `ResponseBuilder.location(URI)` doc says relativise to request, but TCK tests relative to base
+- `ResponseBuilder.location(URI)` doc says relativise using `UriInfo` but not available for client API
+- `Response.readEntity` says entity stream should be closed, but TCK checks that the `Response` is closed instead
+- `Response.readEntity` says entity can be retrieved by call to `getEntity()` but TCK closes the `Response`, which forbids calls to `getEntity()`
+- `Response.getEntity` does not mention that the response being closed forbids getting an already read entity, but TCK checks that

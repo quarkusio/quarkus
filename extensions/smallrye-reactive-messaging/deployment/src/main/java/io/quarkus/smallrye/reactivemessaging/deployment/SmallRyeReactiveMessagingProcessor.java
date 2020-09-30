@@ -337,9 +337,15 @@ public class SmallRyeReactiveMessagingProcessor {
              */
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
-            if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
-                AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
-                String poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
+            if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)
+                    || methodInfo.hasAnnotation(ReactiveMessagingDotNames.RUN_ON_WORKER_THREAD)) {
+
+                // Just in case both annotation are used, use @Blocking value.
+                String poolName = Blocking.DEFAULT_WORKER_POOL;
+                if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
+                    AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
+                    poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
+                }
 
                 recorder.configureWorkerPool(beanContainer.getValue(), methodInfo.declaringClass().toString(),
                         methodInfo.name(), poolName);

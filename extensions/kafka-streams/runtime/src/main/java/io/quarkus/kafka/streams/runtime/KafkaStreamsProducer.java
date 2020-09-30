@@ -63,6 +63,7 @@ public class KafkaStreamsProducer {
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener) {
+        shutdown = false;
         // No producer for Topology -> nothing to do
         if (topology.isUnsatisfied()) {
             LOGGER.debug("No Topology producer; Kafka Streams will not be started");

@@ -9,7 +9,6 @@ import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,13 +36,16 @@ public class SimpleGeneratorTest {
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
                 CompletionStage.class,
                 List.class);
-        ValueResolverGenerator generator = new ValueResolverGenerator(index, classOutput, Collections.emptyMap());
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
-        generator.generate(myServiceClazz);
-        generator.generate(index.getClassByName(DotName.createSimple(PublicMyService.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(MyItem.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(String.class.getName())));
-        generator.generate(index.getClassByName(DotName.createSimple(List.class.getName())));
+        ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
+                .addClass(myServiceClazz)
+                .addClass(index.getClassByName(DotName.createSimple(PublicMyService.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(MyItem.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(String.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(List.class.getName())))
+                .build();
+
+        generator.generate();
         generatedTypes.addAll(generator.getGeneratedTypes());
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);

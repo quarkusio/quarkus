@@ -584,6 +584,10 @@ public class PriceResource {
 You often need to combine Reactive Messaging with blocking processing such as database interactions.
 For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and cannot be run on the caller thread.
 
+NOTE: Alternatively, you can use the `@RunOnWorkerThread` annotation instead of `@Blocking`.
+`@Blocking` provides more fine-grain tuning such as the worker pool to use and whether it preserves the order.
+`@RunOnWorkerThread` uses the default worker pool and preserves order.
+
 For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
 
 [source,java]

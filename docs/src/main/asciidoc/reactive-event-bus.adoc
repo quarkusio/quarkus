@@ -88,7 +88,20 @@ void consumeBlocking(String message) {
     // Something blocking
 }
 ----
+
+Alternatively, you can annotate your method with `@RunOnWorkerThread`:
+
+[source, java]
+----
+@ConsumeEvent(value = "blocking-consumer")
+@RunOnWorkerThread
+void consumeBlocking(String message) {
+    // Something blocking
+}
+----
 ====
+
+When using `@RunOnWorkerThread`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
 
 Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:
 

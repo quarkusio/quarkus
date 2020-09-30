@@ -188,6 +188,11 @@ The main differences are the following:
 * it extends the `ImplBase` from `MutinyGreeterGrpc` instead of `GreeterGrpc`
 * the signature of the method is using Mutiny types
 
+NOTE: If your service implementation logic is blocking (use blocking I/O for example), annotate your class with
+`@RunOnWorkerThread`.
+The `io.quarkus.runtime.annotations.RunOnWorkerThread` annotation instructs the framework to invoke the
+service methods on a worker thread instead of the I/O thread (event-loop).
+
 === The gRPC server
 
 The services are _served_ by a _server_.

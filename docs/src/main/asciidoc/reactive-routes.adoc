@@ -101,6 +101,20 @@ public void blocking(RoutingContext rc) {
 }
 ----
 
+[NOTE]
+====
+Alternatively, you can use `@RunOnWorkerThread` and omit the `type = Route.HandlerType.BLOCKING`:
+[source, java]
+----
+@Route(methods = HttpMethod.POST, path = "/post")
+@RunOnWorkerThread
+public void blocking(RoutingContext rc) {
+    // ...
+}
+----
+When `@RunOnWorkerThread` is used, it ignores the `type` attribute of `@Route`.
+====
+
 The `@Route` annotation is repeatable and so you can declare several routes for a single method:
 
 [source,java]
@@ -322,7 +336,7 @@ String helloSync(RoutingContext context) {
 ----
 
 Be aware, the processing must be **non-blocking** as reactive routes are invoked on the IO Thread.
-Otherwise, use the `blocking` attribute of the `@Route` annotation.
+Otherwise, use the `blocking` attribute of the `@Route` annotation or the `@RunOnWorkerThread` annotation.
 
 The method can return:
 

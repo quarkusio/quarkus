@@ -1,0 +1,11 @@
+---
+name: "Quarkus Freemarker"
+description: "Freemarker support"
+metadata:
+  keywords:
+    - "freemarker"
+    - "template"
+  guide: "https://quarkus.io/guides/freemarker"
+  categories:
+    - "miscellaneous"
+  status: "preview"

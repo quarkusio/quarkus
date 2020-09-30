@@ -183,6 +183,7 @@
 
         <!-- Templating -->
         <module>qute</module>
+        <module>freemarker</module>
 
         <!-- Command line -->
         <module>picocli</module>

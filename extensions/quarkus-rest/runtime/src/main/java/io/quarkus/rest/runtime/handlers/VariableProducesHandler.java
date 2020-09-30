@@ -1,7 +1,8 @@
-package io.quarkus.rest.runtime.headers;
+package io.quarkus.rest.runtime.handlers;
 
 import java.util.List;
 
+import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -12,7 +13,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
-import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 
 /**
@@ -46,6 +47,9 @@ public class VariableProducesHandler implements RestHandler {
             throw new WebApplicationException(Response
                     .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
                     .build());
+        }
+        if (MediaTypeHelper.isUnsupportedWildcardSubtype(res)) { // spec says the acceptable wildcard subtypes are */* or application/*
+            throw new NotAcceptableException();
         }
         List<MessageBodyWriter<?>> writers = serialisers.findWriters(null, entity.getClass(), res, RuntimeType.SERVER);
         if (writers == null || writers.isEmpty()) {

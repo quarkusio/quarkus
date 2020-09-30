@@ -12,6 +12,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
+import io.quarkus.rest.runtime.util.MediaTypeHelper;
 
 /**
  * Writer that is fully dynamic, and follows the spec defined resolution process
@@ -45,8 +46,16 @@ public class DynamicEntityWriter implements EntityWriter {
                 selectedMediaType = writerNoMediaType.getMediaType();
             }
             if (selectedMediaType != null) {
-                context.setProducesMediaType(selectedMediaType);
-                context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE, selectedMediaType.toString());
+                if (MediaTypeHelper.isUnsupportedWildcardSubtype(selectedMediaType)) { // spec says the acceptable wildcard subtypes are */* or application/*
+                    Serialisers.encodeResponseHeaders(context);
+                    context.getContext().response().setStatusCode(Response.Status.NOT_ACCEPTABLE.getStatusCode());
+                    // spec says the response doesn't have a body so we just end the response here and return
+                    context.getContext().response().end();
+                    return;
+                } else {
+                    context.setProducesMediaType(selectedMediaType);
+                    context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE, selectedMediaType.toString());
+                }
             }
         } else {
             writers = serialisers.findWriters(null, entity.getClass(), mt, RuntimeType.SERVER).toArray(Serialisers.NO_WRITER);

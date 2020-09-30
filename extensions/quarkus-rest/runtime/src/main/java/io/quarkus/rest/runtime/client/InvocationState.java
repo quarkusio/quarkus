@@ -184,8 +184,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
 
     private QuarkusRestClientResponseContext initialiseResponse(HttpClientResponse vertxResponse) {
         MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
-        for (String i : vertxResponse.headers().names()) {
-            headers.addAll(i, vertxResponse.getHeader(i));
+        MultiMap vertxHeaders = vertxResponse.headers();
+        for (String i : vertxHeaders.names()) {
+            headers.addAll(i, vertxHeaders.getAll(i));
         }
         this.vertxClientResponse = vertxResponse;
         return new QuarkusRestClientResponseContext(vertxResponse.statusCode(), vertxResponse.statusMessage(), headers);

@@ -22,16 +22,12 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
 
     InvocationState invocationState;
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({ "unchecked" })
     protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
         // TODO: we probably need better state handling
-        if (hasEntity() && entityType.isInstance(getEntity())) {
+        if (entity != null && entityType.isInstance(entity)) {
             // Note that this works if entityType is InputStream where we return it without closing it, as per spec
-            return (T) getEntity();
-        }
-        // FIXME: does the spec really tell us to do this? sounds like a workaround for not having a string reader
-        if (hasEntity() && entityType.equals(String.class)) {
-            return (T) getEntity().toString();
+            return (T) entity;
         }
 
         checkClosed();

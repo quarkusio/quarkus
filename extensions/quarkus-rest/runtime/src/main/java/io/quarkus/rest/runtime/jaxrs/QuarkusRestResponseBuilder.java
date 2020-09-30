@@ -27,6 +27,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Variant;
 
+import io.quarkus.rest.runtime.QuarkusRestRecorder;
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.quarkus.rest.runtime.util.HeaderHelper;
 import io.quarkus.rest.runtime.util.HttpHeaderNames;
@@ -255,8 +257,19 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }
+                    String prefix = "";
+                    QuarkusRestDeployment deployment = QuarkusRestRecorder.getCurrentDeployment();
+                    if (deployment != null) {
+                        prefix = deployment.getPrefix();
+                        if (!prefix.startsWith("/"))
+                            prefix = "/" + prefix;
+                        if (prefix.endsWith("/"))
+                            prefix = prefix.substring(0, prefix.length() - 1);
+                    }
+                    // Spec says relative to request, but TCK tests relative to Base URI, so we do that
                     location = new URI(req.scheme(), null, host, port,
-                            location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
+                            prefix +
+                                    (location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath()),
                             location.getQuery(), null);
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);

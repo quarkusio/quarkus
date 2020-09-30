@@ -26,13 +26,13 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.rest.runtime.client.QuarkusRestClientResponse;
+import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.quarkus.rest.runtime.util.DateUtil;
 import io.quarkus.rest.runtime.util.LocaleHelper;
 
@@ -44,11 +44,11 @@ public class QuarkusRestResponse extends Response {
 
     int status;
     String reasonPhrase;
-    Object entity;
+    protected Object entity;
     MultivaluedMap<String, Object> headers;
     InputStream entityStream;
     private QuarkusRestStatusType statusType;
-    private MultivaluedHashMap<String, String> stringHeaders;
+    private MultivaluedMap<String, String> stringHeaders;
     Annotation[] entityAnnotations;
     protected boolean consumed;
     protected boolean closed;
@@ -109,13 +109,9 @@ public class QuarkusRestResponse extends Response {
 
     protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
         // TODO: we probably need better state handling
-        if (hasEntity() && entityType.isInstance(getEntity())) {
+        if (entity != null && entityType.isInstance(entity)) {
             // Note that this works if entityType is InputStream where we return it without closing it, as per spec
-            return (T) getEntity();
-        }
-        // FIXME: does the spec really tell us to do this? sounds like a workaround for not having a string reader
-        if (hasEntity() && entityType.equals(String.class)) {
-            return (T) getEntity().toString();
+            return (T) entity;
         }
         checkClosed();
         // Spec says to throw this
@@ -149,12 +145,17 @@ public class QuarkusRestResponse extends Response {
     public boolean hasEntity() {
         // The TCK checks that
         checkClosed();
-        return entity != null;
+        // we have an entity already read, or still to be read
+        return entity != null || entityStream != null;
     }
 
     @Override
     public boolean bufferEntity() {
         checkClosed();
+        // must be idempotent
+        if (buffered) {
+            return true;
+        }
         if (entityStream != null && !consumed) {
             // let's not try this again, even if it fails
             consumed = true;
@@ -363,7 +364,8 @@ public class QuarkusRestResponse extends Response {
     public MultivaluedMap<String, String> getStringHeaders() {
         // FIXME: is this mutable?
         if (stringHeaders == null) {
-            stringHeaders = new MultivaluedHashMap<>();
+            // let's keep this map case-insensitive
+            stringHeaders = new CaseInsensitiveMap<>();
             for (Entry<String, List<Object>> entry : headers.entrySet()) {
                 List<String> stringValues = new ArrayList<>(entry.getValue().size());
                 for (Object value : entry.getValue()) {

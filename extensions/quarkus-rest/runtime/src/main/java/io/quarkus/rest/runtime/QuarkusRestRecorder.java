@@ -349,10 +349,26 @@ public class QuarkusRestRecorder {
         }
         abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
+        // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
+        // end with one
+        String prefix = vertxConfig.rootPath;
+        if (prefix != null) {
+            prefix = prefix.trim();
+            if (prefix.equals("/"))
+                prefix = "";
+            // add leading slash
+            if (!prefix.startsWith("/"))
+                prefix = "/" + prefix;
+            // remove trailing slash
+            if (prefix.endsWith("/"))
+                prefix = prefix.substring(0, prefix.length() - 1);
+        } else {
+            prefix = "";
+        }
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 createClientImpls(clientImplementations),
-                vertxConfig.rootPath, genericTypeMapping);
+                prefix, genericTypeMapping);
 
         currentDeployment = deployment;
 

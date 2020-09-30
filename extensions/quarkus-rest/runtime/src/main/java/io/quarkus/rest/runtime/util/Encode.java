@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 
 import javax.ws.rs.core.MultivaluedMap;
 
+import io.vertx.core.net.impl.URIDecoder;
+
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
@@ -210,7 +212,11 @@ public class Encode {
     private static final Pattern encodedCharsMulti = Pattern.compile("((%[a-fA-F0-9][a-fA-F0-9])+)");
 
     public static String decodePath(String path) {
-        return URLUtils.decode(path, StandardCharsets.UTF_8, false, null);
+        // FIXME: this doesn't appear to pass the TCK, because it fails to decode what it throws at it
+        // also it doesn't decode slashes (it should) and it decodes + (it should not)
+        //        return URLUtils.decode(path, StandardCharsets.UTF_8, false, null);
+        // So let's use the Vertx decoder for now
+        return URIDecoder.decodeURIComponent(path, false);
     }
 
     private static String decodeBytes(String enc, CharsetDecoder decoder) {

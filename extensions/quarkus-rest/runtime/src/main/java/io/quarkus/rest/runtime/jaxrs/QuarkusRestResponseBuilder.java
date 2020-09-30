@@ -260,11 +260,8 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
                     String prefix = "";
                     QuarkusRestDeployment deployment = QuarkusRestRecorder.getCurrentDeployment();
                     if (deployment != null) {
+                        // prefix is already sanitised
                         prefix = deployment.getPrefix();
-                        if (!prefix.startsWith("/"))
-                            prefix = "/" + prefix;
-                        if (prefix.endsWith("/"))
-                            prefix = prefix.substring(0, prefix.length() - 1);
                     }
                     // Spec says relative to request, but TCK tests relative to Base URI, so we do that
                     location = new URI(req.scheme(), null, host, port,

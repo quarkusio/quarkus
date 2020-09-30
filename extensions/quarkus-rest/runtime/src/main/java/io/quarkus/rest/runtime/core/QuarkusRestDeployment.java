@@ -52,6 +52,11 @@ public class QuarkusRestDeployment {
         return clientProxies;
     }
 
+    /**
+     * Application path prefix. Must start with "/" and not end with a "/". Cannot be null.
+     * 
+     * @return the application path prefix, or an empty string.
+     */
     public String getPrefix() {
         return prefix;
     }

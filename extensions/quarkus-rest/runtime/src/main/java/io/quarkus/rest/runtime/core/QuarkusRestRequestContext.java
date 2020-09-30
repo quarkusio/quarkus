@@ -76,6 +76,8 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
      * If there is only a single path param then it is stored directly into the field,
      * while multiple params this will be an array. This optimisation allows us to avoid
      * allocating anything in the common case that there is zero or one path param.
+     * 
+     * Note: those are decoded.
      */
     private Object pathParamValues;
 
@@ -519,11 +521,14 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return remaining;
     }
 
+    /**
+     * Returns the normalised non-decoded path excluding any prefix.
+     */
     public String getPathWithoutPrefix() {
         String path = getPath();
         if (path != null) {
             String prefix = deployment.getPrefix();
-            if (prefix != null && !prefix.isEmpty() && !prefix.equals("/")) {
+            if (!prefix.isEmpty()) {
                 // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
                 if (path.startsWith(prefix)) {
                     return path.substring(prefix.length());
@@ -533,6 +538,9 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
         return path;
     }
 
+    /**
+     * Returns the normalised non-decoded path including any prefix.
+     */
     public String getPath() {
         if (path == null) {
             return context.normalisedPath();
@@ -663,7 +671,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             //given that this method is likely to be called very infrequently it is better to have a small
             //cost here than a cost applied to every request
             int pos = classPath.stem.length();
-            String path = context.request().path();
+            String path = getPathWithoutPrefix();
             //we already know that this template matches, we just need to find the matched bit
             for (int i = 1; i < classPath.components.length; ++i) {
                 URITemplate.TemplateComponent segment = classPath.components[i];
@@ -685,6 +693,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
             }
             matchedURIs.add(new UriMatch(path.substring(1, pos), null, null));
         }
+        // FIXME: this may be better as context.normalisedPath() or getPath()
         String path = context.request().path();
         matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
                 target, endpointInstance));

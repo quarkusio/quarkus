@@ -5,12 +5,14 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.UriMatch;
 import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
@@ -18,6 +20,7 @@ import io.quarkus.rest.runtime.util.PathSegmentImpl;
 import io.quarkus.rest.runtime.util.UnmodifiableMultivaluedMap;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.net.impl.URIDecoder;
 
 /**
  * UriInfo implementation
@@ -26,6 +29,7 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     private final QuarkusRestRequestContext currentRequest;
     private MultivaluedMap<String, String> queryParams;
+    private MultivaluedMap<String, String> pathParams;
     private URI requestUri;
 
     public QuarkusRestUriInfo(QuarkusRestRequestContext currentRequest) {
@@ -34,13 +38,21 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public String getPath() {
-        return currentRequest.getContext().request().path();
+        return getPath(true);
     }
 
     @Override
     public String getPath(boolean decode) {
-        //TODO: care about the decode parameter
-        return currentRequest.getContext().request().path();
+        if (!decode)
+            throw encodedNotSupported();
+        // TCK says normalized
+        String path = URIDecoder.decodeURIComponent(currentRequest.getContext().normalisedPath(), false);
+        // the path must not contain the prefix
+        String prefix = currentRequest.getDeployment().getPrefix();
+        if (prefix.isEmpty())
+            return path;
+        // else skip the prefix
+        return path.substring(prefix.length());
     }
 
     @Override
@@ -50,6 +62,8 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public List<PathSegment> getPathSegments(boolean decode) {
+        if (!decode)
+            throw encodedNotSupported();
         return PathSegmentImpl.parseSegments(getPath(), decode);
     }
 
@@ -58,7 +72,9 @@ public class QuarkusRestUriInfo implements UriInfo {
         if (requestUri == null) {
             HttpServerRequest request = currentRequest.getContext().request();
             try {
-                requestUri = new URI(request.absoluteURI() + (request.query() == null ? "" : "?" + request.query()));
+                // TCK says normalized
+                requestUri = new URI(request.absoluteURI() + (request.query() == null ? "" : "?" + request.query()))
+                        .normalize();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -75,7 +91,8 @@ public class QuarkusRestUriInfo implements UriInfo {
     public URI getAbsolutePath() {
         HttpServerRequest request = currentRequest.getContext().request();
         try {
-            return new URI(request.absoluteURI());
+            // TCK says normalized
+            return new URI(request.absoluteURI()).normalize();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -97,8 +114,19 @@ public class QuarkusRestUriInfo implements UriInfo {
                 port = Integer.parseInt(host.substring(index + 1));
                 host = host.substring(0, index);
             }
+            QuarkusRestDeployment deployment = currentRequest.getDeployment();
+            // the TCK doesn't tell us, but Stuart and Georgios prefer dressing their base URIs with useless slashes ;)
+            String prefix = "/";
+            if (deployment != null) {
+                // prefix can be empty, but if it's not it will not end with a slash
+                prefix = deployment.getPrefix();
+                if (prefix.isEmpty())
+                    prefix = "/";
+                else
+                    prefix = prefix + "/";
+            }
             return new URI(req.scheme(), null, host, port,
-                    "/",
+                    prefix,
                     null, null);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -112,12 +140,24 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public MultivaluedMap<String, String> getPathParameters() {
-        return null;
+        return getPathParameters(true);
     }
 
     @Override
     public MultivaluedMap<String, String> getPathParameters(boolean decode) {
-        return null;
+        if (!decode)
+            throw encodedNotSupported();
+        if (pathParams == null) {
+            pathParams = new MultivaluedMapImpl<>();
+            for (Entry<String, Integer> pathParam : currentRequest.getTarget().getPathParameterIndexes().entrySet()) {
+                pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+            }
+        }
+        return new UnmodifiableMultivaluedMap<>(pathParams);
+    }
+
+    private RuntimeException encodedNotSupported() {
+        return new IllegalArgumentException("We do not support non-decoded parameters");
     }
 
     @Override
@@ -127,6 +167,8 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
+        if (!decode)
+            throw encodedNotSupported();
         if (queryParams == null) {
             queryParams = new MultivaluedMapImpl<>();
             MultiMap entries = currentRequest.getContext().queryParams();
@@ -144,6 +186,8 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public List<String> getMatchedURIs(boolean decode) {
+        if (!decode)
+            throw encodedNotSupported();
         if (currentRequest.getTarget() == null) {
             return Collections.emptyList();
         }

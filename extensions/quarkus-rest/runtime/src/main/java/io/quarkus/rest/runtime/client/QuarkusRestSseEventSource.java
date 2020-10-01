@@ -1,91 +1,51 @@
 package io.quarkus.rest.runtime.client;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.sse.InboundSseEvent;
-import javax.ws.rs.sse.SseEvent;
 import javax.ws.rs.sse.SseEventSource;
 
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.net.impl.ConnectionBase;
 
-public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer> {
+public class QuarkusRestSseEventSource implements SseEventSource, Handler<Long> {
 
-    private static final byte CR = '\r';
-    private static final byte LF = '\n';
-    private static final byte COLON = ':';
-    private static final byte SPACE = ' ';
-
-    // FIXME: support
     private TimeUnit reconnectUnit;
-    // FIXME: support
     private long reconnectDelay;
 
-    private WebTarget endpoint;
+    private QuarkusRestWebTarget webTarget;
+    // this tracks user request to open/close
     private volatile boolean isOpen;
+    // this tracks whether we have a connection open
+    private volatile boolean isInProgress;
+
     private List<Consumer<InboundSseEvent>> consumers = new ArrayList<>();
     private List<Consumer<Throwable>> errorListeners = new ArrayList<>();
     private List<Runnable> completionListeners = new ArrayList<>();
     private HttpConnection connection;
+    private SseParser sseParser;
+    private long timerId = -1;
 
-    //
-    // The following are used while parsing
-
-    /**
-     * Will be non-empty while parsing. When not parsing, may hold partial data from the last chunk received
-     */
-    private byte[] bytes;
-    /**
-     * Index in {@link #bytes} where we're parsing, or where we should resume parsing partial data if not parsing.
-     */
-    private int i;
-
-    /**
-     * Holds the current event's comment data as we read them
-     */
-    private StringBuffer commentBuffer = new StringBuffer();
-    /**
-     * Holds the current event's field name as we read a field
-     */
-    private StringBuffer nameBuffer = new StringBuffer();
-    /**
-     * Holds the current event's field value as we read a field
-     */
-    private StringBuffer valueBuffer = new StringBuffer();
-    /**
-     * True if we're at the very beginning of the data stream and could see a BOM
-     */
-    private boolean firstByte = true;
-
-    /**
-     * The event type we're reading. Defaults to "message" and changes with "event" fields
-     */
-    private String eventType;
-    /**
-     * The event data we're reading. Defaults to "" and changes with "data" fields
-     */
-    private StringBuffer dataBuffer = new StringBuffer();
-    /**
-     * The event's last id we're reading. Defaults to null and changes with "id" fields (cannot be reset)
-     */
-    private String lastEventId;
-    /**
-     * The event connect time we're reading. Defaults to -1 and changes with "retry" fields (in ms)
-     */
-    private long eventReconnectTime;
-
-    public QuarkusRestSseEventSource(WebTarget endpoint, long reconnectDelay, TimeUnit reconnectUnit) {
-        this.endpoint = endpoint;
+    public QuarkusRestSseEventSource(QuarkusRestWebTarget webTarget, long reconnectDelay, TimeUnit reconnectUnit) {
+        // tests set a null endpoint
+        Objects.requireNonNull(reconnectUnit);
+        if (reconnectDelay <= 0)
+            throw new IllegalArgumentException("Delay must be > 0: " + reconnectDelay);
+        this.webTarget = webTarget;
         this.reconnectDelay = reconnectDelay;
         this.reconnectUnit = reconnectUnit;
+        this.sseParser = new SseParser(this);
+    }
+
+    QuarkusRestWebTarget getWebTarget() {
+        return webTarget;
     }
 
     @Override
@@ -107,11 +67,19 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
     }
 
     @Override
-    public void open() {
+    public synchronized void open() {
         if (isOpen)
             return;
         isOpen = true;
-        QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) endpoint.request().rx();
+        connect();
+    }
+
+    // CALL WITH THE LOCK
+    private void connect() {
+        if (isInProgress)
+            return;
+        isInProgress = true;
+        QuarkusRestAsyncInvoker invoker = (QuarkusRestAsyncInvoker) webTarget.request().rx();
         InvocationState invocationState = invoker.performRequestInternal("GET", null, null, false);
         invocationState.getResult().handle((response, throwable) -> {
             if (throwable != null)
@@ -127,7 +95,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
     /**
      * Allows the HTTP client to register for SSE after it has made the request
      */
-    public void registerAfterRequest(HttpClientResponse vertxClientResponse) {
+    synchronized void registerAfterRequest(HttpClientResponse vertxClientResponse) {
         if (isOpen)
             throw new IllegalStateException("Was already open");
         isOpen = true;
@@ -149,7 +117,7 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
         connection.closeHandler(v -> {
             close(true);
         });
-        vertxClientResponse.handler(this);
+        vertxClientResponse.handler(sseParser);
         // FIXME: handle end of response rather than wait for end of connection
     }
 
@@ -169,278 +137,66 @@ public class QuarkusRestSseEventSource implements SseEventSource, Handler<Buffer
         return true;
     }
 
-    private void close(boolean clientClosed) {
-        isOpen = false;
-        if (clientClosed) {
-            // FIXME: should wait for stuff?
+    private synchronized void close(boolean clientClosed) {
+        if (!isOpen) {
+            return;
+        }
+        // it's possible that the client closed our connection, then we registered a reconnect timer
+        // and then the user is closing us, so we don't have a connection yet
+        if (connection != null) {
             connection.close();
         }
-        // notify completion
+        connection = null;
+        isInProgress = false;
+        if (!clientClosed) {
+            isOpen = false;
+        }
+        // notify completion before reconnecting
         for (Runnable runnable : completionListeners) {
             runnable.run();
         }
+        Vertx vertx = webTarget.getRestClient().getVertx();
+        // did we already try to reconnect?
+        if (timerId != -1) {
+            // cancel any previous timer
+            vertx.cancelTimer(timerId);
+            timerId = -1;
+        }
+        // schedule a new reconnect if the client closed us
+        if (clientClosed) {
+            timerId = vertx.setTimer(TimeUnit.MILLISECONDS.convert(reconnectDelay, reconnectUnit), this);
+        }
     }
 
-    @Override
-    public void handle(Buffer event) {
-        byte[] newBytes = event.getBytes();
-        // check if we have partial data remaining
-        if (bytes != null) {
-            // concat old and new data
-            byte[] totalBytes = new byte[bytes.length - i + newBytes.length];
-            System.arraycopy(bytes, i, totalBytes, 0, bytes.length - i);
-            System.arraycopy(newBytes, 0, totalBytes, bytes.length - i, newBytes.length);
-            bytes = totalBytes;
-        } else {
-            bytes = newBytes;
-        }
-        i = 0;
-
-        while (hasByte()) {
-            boolean lastFirstByte = firstByte;
-            nameBuffer.setLength(0);
-            valueBuffer.setLength(0);
-            commentBuffer.setLength(0);
-            dataBuffer.setLength(0);
-            // SSE spec says default is "message" but JAX-RS says null
-            eventType = null;
-            eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
-            // SSE spec says ID is persistent
-
-            int lastEventStart = i;
-            try {
-                parseEvent();
-            } catch (NeedsMoreDataException x) {
-                // save the remaining bytes for later
-                i = lastEventStart;
-                // be ready to rescan the BOM, but only if we didn't already see it in a previous event
-                firstByte = lastFirstByte;
-                return;
+    public void fireEvent(QuarkusRestInboundSseEvent event) {
+        // spec says to do this
+        if (event.isReconnectDelaySet()) {
+            // this needs to be atomic
+            synchronized (this) {
+                reconnectDelay = event.getReconnectDelay();
+                reconnectUnit = TimeUnit.MILLISECONDS;
             }
         }
-        // we ate all the data
-        bytes = null;
-    }
-
-    private void parseEvent() {
-        // optional BOM
-        if (firstByte && i == 0 && 1 < bytes.length) {
-            if (bytes[0] == (byte) 0xFE
-                    && bytes[1] == (byte) 0xFF) {
-                i = 2;
-            }
-        }
-        // comment or field
-        while (hasByte()) {
-            int c = readChar();
-            firstByte = false;
-            if (c == COLON) {
-                parseComment();
-            } else if (isNameChar(c)) {
-                parseField(c);
-            } else if (isEofWithSideEffect(c)) {
-                dispatchEvent();
-                return;
-            } else {
-                throw illegalEventException();
-            }
-        }
-    }
-
-    private void dispatchEvent() {
-        // ignore empty events
-        if (dataBuffer.length() == 0)
-            return;
-        QuarkusRestInboundSseEvent event = new QuarkusRestInboundSseEvent();
-        // SSE spec says empty string is the default, but JAX-RS says null if not specified
-        event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
-        // SSE spec says empty string is the default, but JAX-RS says null if not specified
-        event.setId(lastEventId);
-        event.setData(dataBuffer.toString());
-        // SSE spec says "message" is the default, but JAX-RS says null if not specified
-        event.setName(eventType);
-        event.setReconnectDelay(eventReconnectTime);
-        fireEvent(event);
-    }
-
-    private void fireEvent(QuarkusRestInboundSseEvent event) {
         for (Consumer<InboundSseEvent> consumer : consumers) {
             consumer.accept(event);
         }
     }
 
-    private byte peekByte() {
-        return bytes[i];
-    }
-
-    private byte readByte() {
-        if (i >= bytes.length)
-            throw new NeedsMoreDataException();
-        return bytes[i++];
-    }
-
-    private boolean hasByte() {
-        return i < bytes.length;
-    }
-
-    private void parseComment() {
-        // comment       = colon *any-char end-of-line
-        while (true) {
-            int c = readChar();
-            if (isAnyChar(c)) {
-                commentBuffer.appendCodePoint(c);
-            } else if (isEofWithSideEffect(c)) {
-                // we're done
-                return;
-            } else {
-                throw illegalEventException();
-            }
+    @Override
+    public synchronized void handle(Long event) {
+        // ignore a timeout if it's not the last one we set
+        if (timerId != event.longValue()) {
+            return;
         }
-    }
-
-    private void parseField(int c) {
-        boolean readingName = true;
-        nameBuffer.appendCodePoint(c);
-        // field         = 1*name-char [ colon [ space ] *any-char ] end-of-line
-        while (true) {
-            c = readChar();
-            if (isEofWithSideEffect(c)) {
-                // the colon is optional, so is the data, which we treat as an empty string
-                processField(nameBuffer.toString(), valueBuffer.toString());
-                nameBuffer.setLength(0);
-                valueBuffer.setLength(0);
-                // we're done
-                return;
-            }
-            if (readingName && isNameChar(c)) {
-                nameBuffer.appendCodePoint(c);
-            } else if (readingName && c == COLON) {
-                readingName = false;
-                // optional space
-                if (hasByte() && peekByte() == SPACE) {
-                    i++;
-                }
-            } else if (!readingName && isAnyChar(c)) {
-                valueBuffer.appendCodePoint(c);
-            } else {
-                throw illegalEventException();
-            }
+        // also ignore a reconnect order if the user closed this
+        if (!isOpen) {
+            return;
         }
+        connect();
     }
 
-    private void processField(String name, String value) {
-        switch (name) {
-            case "event":
-                eventType = value;
-                break;
-            case "data":
-                if (dataBuffer.length() > 0) {
-                    dataBuffer.append((char) LF);
-                }
-                dataBuffer.append(value);
-                break;
-            case "id":
-                if (value.indexOf(0) == -1) {
-                    lastEventId = value;
-                }
-                break;
-            case "retry":
-                try {
-                    eventReconnectTime = Long.parseUnsignedLong(value, 10);
-                } catch (NumberFormatException x) {
-                    // spec says to ignore it
-                }
-                break;
-            // default is to ignore the field
-        }
-    }
-
-    private boolean isEofWithSideEffect(int c) {
-        if (c == CR) {
-            // eat a LF if there's one left
-            // FIXME: if our buffer cuts here that's a bad spot
-            if (hasByte() && peekByte() == LF) {
-                i++;
-            }
-            // we're done
-            return true;
-        } else if (c == LF) {
-            // we're done
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isAnyChar(int c) {
-        return (c >= 0x0000 && c <= 0x0009)
-                || (c >= 0x000B && c <= 0x000C)
-                || (c >= 0x000E && c <= 0x10_FFFF);
-    }
-
-    private boolean isNameChar(int c) {
-        return (c >= 0x0000 && c <= 0x0009)
-                || (c >= 0x000B && c <= 0x000C)
-                || (c >= 0x000E && c <= 0x0039)
-                || (c >= 0x003B && c <= 0x10_FFFF);
-    }
-
-    private int readChar() {
-        byte b0 = readByte();
-        // single byte
-        if ((b0 & 0b1000_0000) == 0) {
-            return b0;
-        }
-        // two bytes
-        if ((b0 & 0b1110_0000) == 0b1100_0000) {
-            byte b1 = readByte();
-            if ((b1 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            return ((b0 & 0b0001_1111) << 6)
-                    | (b1 & 0b0011_1111);
-        }
-        // three bytes
-        if ((b0 & 0b1111_0000) == 0b1110_0000) {
-            byte b1 = readByte();
-            if ((b1 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            byte b2 = readByte();
-            if ((b2 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            return ((b0 & 0b0000_1111) << 12)
-                    | ((b1 & 0b0011_1111) << 6)
-                    | (b2 & 0b0011_1111);
-        }
-        // four bytes
-        if ((b0 & 0b1111_1000) == 0b1111_0000) {
-            byte b1 = readByte();
-            if ((b1 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            byte b2 = readByte();
-            if ((b2 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            byte b3 = readByte();
-            if ((b3 & 0b1100_0000) != 0b1000_0000) {
-                throw utf8Exception();
-            }
-            return ((b0 & 0b0000_0111) << 18)
-                    | ((b1 & 0b0011_1111) << 12)
-                    | ((b2 & 0b0011_1111) << 6)
-                    | (b3 & 0b0011_1111);
-        }
-        throw utf8Exception();
-    }
-
-    private IllegalStateException utf8Exception() {
-        return new IllegalStateException("Illegal UTF8 input");
-    }
-
-    private IllegalStateException illegalEventException() {
-        return new IllegalStateException("Illegal Server-Sent Event input at byte index " + i + " while parsing: "
-                + new String(bytes, StandardCharsets.UTF_8));
+    // For tests
+    public SseParser getSseParser() {
+        return sseParser;
     }
 }

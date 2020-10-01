@@ -1,5 +1,6 @@
 package io.quarkus.rest.runtime.client;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.WebTarget;
@@ -9,8 +10,9 @@ import javax.ws.rs.sse.SseEventSource.Builder;
 public class QuarkusRestSseEventSourceBuilder extends SseEventSource.Builder {
 
     private WebTarget endpoint;
-    private TimeUnit reconnectUnit;
-    private long reconnectDelay;
+    // defaults set by spec
+    private TimeUnit reconnectUnit = TimeUnit.MILLISECONDS;
+    private long reconnectDelay = 500;
 
     @Override
     protected Builder target(WebTarget endpoint) {
@@ -20,6 +22,9 @@ public class QuarkusRestSseEventSourceBuilder extends SseEventSource.Builder {
 
     @Override
     public Builder reconnectingEvery(long delay, TimeUnit unit) {
+        Objects.requireNonNull(unit);
+        if (delay <= 0)
+            throw new IllegalArgumentException("Delay must be > 0: " + delay);
         this.reconnectDelay = delay;
         this.reconnectUnit = unit;
         return this;
@@ -27,7 +32,7 @@ public class QuarkusRestSseEventSourceBuilder extends SseEventSource.Builder {
 
     @Override
     public SseEventSource build() {
-        return new QuarkusRestSseEventSource(endpoint, reconnectDelay, reconnectUnit);
+        return new QuarkusRestSseEventSource((QuarkusRestWebTarget) endpoint, reconnectDelay, reconnectUnit);
     }
 
 }

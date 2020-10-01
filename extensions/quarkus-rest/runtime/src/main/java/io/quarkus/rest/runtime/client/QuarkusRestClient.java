@@ -188,4 +188,8 @@ public class QuarkusRestClient implements Client {
         configuration.register(component, contracts);
         return this;
     }
+
+    Vertx getVertx() {
+        return vertx;
+    }
 }

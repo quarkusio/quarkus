@@ -174,8 +174,9 @@ public class InvocationState implements Handler<HttpClientResponse> {
             }
         }
 
-        // FIXME: exception?
-        return null;
+        // Spec says to throw this
+        throw new ProcessingException(
+                "Request could not be mapped to type " + responseType);
     }
 
     ReaderInterceptor[] getReaderInterceptors() {

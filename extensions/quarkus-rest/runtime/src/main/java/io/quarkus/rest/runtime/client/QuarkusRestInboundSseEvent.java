@@ -1,11 +1,24 @@
 package io.quarkus.rest.runtime.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
+
+import io.quarkus.rest.runtime.core.Serialisers;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestInboundSseEvent implements InboundSseEvent {
 
@@ -14,6 +27,13 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
     private String comment;
     private String data;
     private long reconnectDelay = SseEvent.RECONNECT_NOT_SET;
+    private Serialisers serialisers;
+    private QuarkusRestConfiguration configuration;
+
+    public QuarkusRestInboundSseEvent(QuarkusRestConfiguration configuration, Serialisers serialisers) {
+        this.configuration = configuration;
+        this.serialisers = serialisers;
+    }
 
     @Override
     public String getId() {
@@ -77,26 +97,41 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
 
     @Override
     public <T> T readData(Class<T> type) {
-        // TODO Auto-generated method stub
-        return null;
+        return readData(type, null);
     }
 
     @Override
     public <T> T readData(GenericType<T> type) {
-        // TODO Auto-generated method stub
-        return null;
+        return readData(type, null);
     }
 
     @Override
     public <T> T readData(Class<T> messageType, MediaType mediaType) {
-        // TODO Auto-generated method stub
-        return null;
+        return readData(new GenericType<T>(messageType), mediaType);
     }
 
     @Override
     public <T> T readData(GenericType<T> type, MediaType mediaType) {
-        // TODO Auto-generated method stub
-        return null;
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(configuration, type.getRawType(), mediaType,
+                RuntimeType.CLIENT);
+        // FIXME
+        Annotation[] annotations = null;
+        for (MessageBodyReader<?> reader : readers) {
+            if (reader.isReadable(type.getRawType(), type.getType(), annotations, mediaType)) {
+                InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+                try {
+                    return (T) Serialisers.invokeClientReader(annotations, type.getRawType(), type.getType(),
+                            mediaType, null, Serialisers.EMPTY_MULTI_MAP,
+                            reader, in, Serialisers.NO_READER_INTERCEPTOR);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+
+        // Spec says to throw this
+        throw new ProcessingException(
+                "Request could not be mapped to type " + type);
     }
 
     @Override

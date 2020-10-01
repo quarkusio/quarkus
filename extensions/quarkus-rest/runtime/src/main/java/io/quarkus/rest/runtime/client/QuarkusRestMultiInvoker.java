@@ -1,9 +1,9 @@
 package io.quarkus.rest.runtime.client;
 
 import java.io.ByteArrayInputStream;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -18,9 +18,9 @@ import io.vertx.core.net.impl.ConnectionBase;
 
 public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
-    private WebTarget target;
+    private QuarkusRestWebTarget target;
 
-    public QuarkusRestMultiInvoker(WebTarget target) {
+    public QuarkusRestMultiInvoker(QuarkusRestWebTarget target) {
         this.target = target;
     }
 
@@ -65,7 +65,7 @@ public class QuarkusRestMultiInvoker extends AbstractRxInvoker<Multi<?>> {
     private <R> void registerForSse(MultiEmitter<? super R> emitter, HttpClientResponse vertxResponse) {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
-        QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, 0, null);
+        QuarkusRestSseEventSource sseSource = new QuarkusRestSseEventSource(target, 500, TimeUnit.MILLISECONDS);
         // FIXME: deal with cancellation
         sseSource.register(event -> {
             // FIXME: non-String

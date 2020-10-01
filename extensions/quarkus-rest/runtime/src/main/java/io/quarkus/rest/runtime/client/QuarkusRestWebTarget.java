@@ -7,7 +7,6 @@ import java.util.Map;
 
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
@@ -77,7 +76,7 @@ public class QuarkusRestWebTarget implements WebTarget {
     }
 
     @Override
-    public Configuration getConfiguration() {
+    public QuarkusRestConfiguration getConfiguration() {
         abortIfClosed();
         return configuration;
     }
@@ -376,5 +375,13 @@ public class QuarkusRestWebTarget implements WebTarget {
 
     public <T> T proxy(Class<?> clazz) {
         return clientProxies.get(clazz, this);
+    }
+
+    QuarkusRestClient getRestClient() {
+        return restClient;
+    }
+
+    Serialisers getSerialisers() {
+        return serialisers;
     }
 }

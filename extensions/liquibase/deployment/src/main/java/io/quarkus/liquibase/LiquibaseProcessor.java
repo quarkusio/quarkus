@@ -84,6 +84,7 @@ class LiquibaseProcessor {
 
         reflective.produce(new ReflectiveClassBuildItem(true, true, true,
                 liquibase.parser.ChangeLogParserCofiguration.class.getName(),
+                liquibase.hub.HubServiceFactory.class.getName(),
                 liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
                 liquibase.configuration.GlobalConfiguration.class.getName(),
                 com.datical.liquibase.ext.config.LiquibaseProConfiguration.class.getName(),
@@ -132,7 +133,8 @@ class LiquibaseProcessor {
                 liquibase.servicelocator.ServiceLocator.class,
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.sqlgenerator.SqlGenerator.class,
-                liquibase.structure.DatabaseObject.class)
+                liquibase.structure.DatabaseObject.class,
+                liquibase.hub.HubService.class)
                 .forEach(t -> addService(services, reflective, t));
 
         // liquibase XSD
@@ -144,11 +146,13 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.10.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.9.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-3.10.xsd",
                 "www.liquibase.org/xml/ns/pro/liquibase-pro-4.0.xsd",
+                "www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd",
                 "liquibase.build.properties"));
 
         // liquibase resource bundles

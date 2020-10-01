@@ -404,19 +404,23 @@ public class Serialisers {
         do {
             List<ResourceWriter> goodTypeWriters = writers.get(klass);
             if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
+                List<ResourceWriter> mediaTypeMatchingWriters = new ArrayList<>(goodTypeWriters.size());
                 for (ResourceWriter goodTypeWriter : goodTypeWriters) {
                     if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
                         continue;
                     }
                     if (produces == null || produces.isEmpty()) {
-                        ret.add(goodTypeWriter);
+                        mediaTypeMatchingWriters.add(goodTypeWriter);
                     } else {
                         MediaType match = MediaTypeHelper.getBestMatch(produces, goodTypeWriter.modifiableMediaTypes());
                         if (match != null) {
-                            ret.add(goodTypeWriter);
+                            mediaTypeMatchingWriters.add(goodTypeWriter);
                         }
                     }
                 }
+                // we sort here because the spec mentions that the writers closer to the requested java type are tried first
+                mediaTypeMatchingWriters.sort(ResourceWriter.ResourceWriterComparator.INSTANCE);
+                ret.addAll(mediaTypeMatchingWriters);
             }
             // FIXME: spec mentions superclasses, but surely interfaces are involved too?
             klass = klass.getSuperclass();

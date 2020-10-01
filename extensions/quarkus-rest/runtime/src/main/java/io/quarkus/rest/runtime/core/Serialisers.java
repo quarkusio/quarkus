@@ -107,7 +107,7 @@ public class Serialisers {
             new BuiltinReader(String.class, StringMessageBodyHandler.class,
                     MediaType.WILDCARD),
             new BuiltinReader(InputStream.class, InputStreamMessageBodyHandler.class, MediaType.WILDCARD),
-            new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.TEXT_PLAIN),
+            new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(File.class, FileBodyHandler.class, MediaType.WILDCARD),
 
             // the client always expects these to exist
@@ -144,7 +144,7 @@ public class Serialisers {
             new BuiltinWriter(InputStream.class, InputStreamMessageBodyHandler.class,
                     MediaType.WILDCARD),
             new BuiltinWriter(Reader.class, ReaderBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
+                    MediaType.WILDCARD),
             new BuiltinWriter(File.class, FileBodyHandler.class,
                     MediaType.WILDCARD),
     };

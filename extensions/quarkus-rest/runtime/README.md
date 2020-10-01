@@ -59,6 +59,7 @@
 ** TODO later list
 
 - XML?
+- Optim: do not register handlers for return types Uni/Multi/CompletionStage if the static return type doesn't allow it (unless it's Response)
 - Optim: we currently instantiate every param converter every time we need to convert a param if it's a 
   field (including beanparam), we could store these in extra static fields on the resource/beanparam that
   we initialise at static init. 

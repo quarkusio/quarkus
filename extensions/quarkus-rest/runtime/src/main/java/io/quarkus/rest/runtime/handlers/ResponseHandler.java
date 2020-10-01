@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.handlers;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -19,19 +18,7 @@ public class ResponseHandler implements RestHandler {
         Throwable error = requestContext.getThrowable();
         if (error != null) {
             requestContext.setThrowable(null);
-
-            boolean needsMapping = true;
-            // according to the spec, when the exception is a WebApplicationException and it has an entity, no exception mapping takes place
-            if (error instanceof WebApplicationException) {
-                Response webApplicationExceptionResponse = ((WebApplicationException) error).getResponse();
-                if ((webApplicationExceptionResponse != null) && webApplicationExceptionResponse.hasEntity()) {
-                    requestContext.setResult(webApplicationExceptionResponse);
-                    needsMapping = false;
-                }
-            }
-            if (needsMapping) {
-                requestContext.setResult(requestContext.getDeployment().getExceptionMapping().mapException(error));
-            }
+            requestContext.setResult(requestContext.getDeployment().getExceptionMapping().mapException(error));
         }
         Object result = requestContext.getResult();
         Response.ResponseBuilder responseBuilder;

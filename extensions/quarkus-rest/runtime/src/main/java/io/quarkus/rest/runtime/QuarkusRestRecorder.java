@@ -1,5 +1,6 @@
 package io.quarkus.rest.runtime;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,7 @@ import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.Features;
 import io.quarkus.rest.runtime.core.GenericTypeMapping;
 import io.quarkus.rest.runtime.core.LazyMethod;
+import io.quarkus.rest.runtime.core.ParamConverterProviders;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.parameters.AsyncResponseExtractor;
@@ -50,9 +52,12 @@ import io.quarkus.rest.runtime.core.parameters.CookieParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.FormParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.HeaderParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.MatrixParamExtractor;
+import io.quarkus.rest.runtime.core.parameters.NullParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.ParameterExtractor;
 import io.quarkus.rest.runtime.core.parameters.PathParamExtractor;
 import io.quarkus.rest.runtime.core.parameters.QueryParamExtractor;
+import io.quarkus.rest.runtime.core.parameters.converters.InitRequiredParameterConverter;
+import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.FixedEntityWriterArray;
@@ -178,7 +183,8 @@ public class QuarkusRestRecorder {
             ContextResolvers ctxResolvers, Features features, DynamicFeatures dynamicFeatures, Serialisers serialisers,
             List<ResourceClass> resourceClasses, List<ResourceClass> locatableResourceClasses, BeanContainer beanContainer,
             ShutdownContext shutdownContext, QuarkusRestConfig quarkusRestConfig, HttpBuildTimeConfig vertxConfig,
-            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations, GenericTypeMapping genericTypeMapping) {
+            Map<String, RuntimeValue<Function<WebTarget, ?>>> clientImplementations, GenericTypeMapping genericTypeMapping,
+            ParamConverterProviders paramConverterProviders) {
         DynamicEntityWriter dynamicEntityWriter = new DynamicEntityWriter(serialisers);
 
         QuarkusRestConfiguration quarkusRestConfiguration = configureFeatures(features, interceptors, exceptionMapping,
@@ -256,7 +262,7 @@ public class QuarkusRestRecorder {
                         nameReaderInterceptorsMap,
                         nameWriterInterceptorsMap, globalInterceptorHandler, clazz,
                         resourceLocatorHandler, method,
-                        true, classPathTemplate, dynamicEntityWriter, beanContainer);
+                        true, classPathTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
 
                 buildMethodMapper(templates, method, runtimeResource);
             }
@@ -315,7 +321,7 @@ public class QuarkusRestRecorder {
                         nameReaderInterceptorsMap,
                         nameWriterInterceptorsMap, globalInterceptorHandler,
                         clazz, resourceLocatorHandler, method,
-                        false, classTemplate, dynamicEntityWriter, beanContainer);
+                        false, classTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
 
                 buildMethodMapper(perClassMappers, method, runtimeResource);
             }
@@ -368,7 +374,7 @@ public class QuarkusRestRecorder {
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 createClientImpls(clientImplementations),
-                prefix, genericTypeMapping);
+                prefix, genericTypeMapping, paramConverterProviders);
 
         currentDeployment = deployment;
 
@@ -563,6 +569,10 @@ public class QuarkusRestRecorder {
         return mappersByMethod;
     }
 
+    public QuarkusRestRecorder() {
+        super();
+    }
+
     public RuntimeResource buildResourceMethod(Serialisers serialisers,
             QuarkusRestConfig quarkusRestConfig,
             Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
@@ -580,7 +590,8 @@ public class QuarkusRestRecorder {
             InterceptorHandler globalInterceptorHandler,
             ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
-            DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer) {
+            DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer,
+            ParamConverterProviders paramConverterProviders) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), false);
         List<RestHandler> abortHandlingChain = new ArrayList<>();
 
@@ -725,13 +736,22 @@ public class QuarkusRestRecorder {
             }
         }
 
+        Map<Integer, InitRequiredParameterConverter> converters = new HashMap<>();
         for (int i = 0; i < parameters.length; i++) {
             MethodParameter param = parameters[i];
             boolean single = param.isSingle();
             ParameterExtractor extractor = parameterExtractor(pathParameterIndexes, param.parameterType, param.type, param.name,
                     single, beanContainer);
+            ParameterConverter converter = null;
+            if (param.converter != null) {
+                converter = param.converter.get();
+                if (converter instanceof InitRequiredParameterConverter) {
+                    converters.put(i, (InitRequiredParameterConverter) converter);
+                }
+            }
+
             handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
-                    param.converter == null ? null : param.converter.get(), param.parameterType,
+                    converter, param.parameterType,
                     param.isObtainedAsCollection()));
         }
         if (method.isBlocking()) {
@@ -858,7 +878,7 @@ public class QuarkusRestRecorder {
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
         Class<Object> resourceClass = loadClass(clazz.getClassName());
-        return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
+        RuntimeResource runtimeResource = new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
@@ -866,6 +886,13 @@ public class QuarkusRestRecorder {
                 nonAsyncReturnType, method.isBlocking(), resourceClass,
                 new LazyMethod(method.getName(), resourceClass, parameterTypes),
                 pathParameterIndexes);
+        for (Map.Entry<Integer, InitRequiredParameterConverter> i : converters.entrySet()) {
+            Method javaMethod = runtimeResource.getLazyMethod().getMethod();
+            i.getValue().init(paramConverterProviders, javaMethod.getParameterTypes()[i.getKey()],
+                    javaMethod.getGenericParameterTypes()[i.getKey()],
+                    javaMethod.getParameterAnnotations()[i.getKey()]);
+        }
+        return runtimeResource;
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,
@@ -883,7 +910,12 @@ public class QuarkusRestRecorder {
                 extractor = new FormParamExtractor(name, single);
                 break;
             case PATH:
-                extractor = new PathParamExtractor(pathParameterIndexes.get(name));
+                Integer index = pathParameterIndexes.get(name);
+                if (index == null) {
+                    extractor = new NullParamExtractor();
+                } else {
+                    extractor = new PathParamExtractor(index);
+                }
                 break;
             case CONTEXT:
                 extractor = new ContextParamExtractor(javaType);

@@ -196,7 +196,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             // dup to test it
             injectMethod.visitInsn(Opcodes.DUP);
             injectMethod.visitJumpInsn(Opcodes.IFNULL, valueWasNull);
-            convertParameter(injectMethod, extractor);
+            convertParameter(injectMethod, extractor, fieldInfo);
             // inject this (for the put field) before the injected value
             injectMethod.visitIntInsn(Opcodes.ALOAD, 0);
             injectMethod.visitInsn(Opcodes.SWAP);
@@ -261,7 +261,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             injectMethod.visitLabel(endLabel);
         }
 
-        private void convertParameter(MethodVisitor injectMethod, ParameterExtractor extractor) {
+        private void convertParameter(MethodVisitor injectMethod, ParameterExtractor extractor, FieldInfo fieldInfo) {
             ParameterConverterSupplier converter = extractor.getConverter();
             // do we need converters?
             if (converter instanceof DelegatingParameterConverterSupplier) {
@@ -273,6 +273,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     injectMethod.visitInsn(Opcodes.DUP);
                     injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, delegateBinaryName, "<init>",
                             "()V", false);
+                    handlePotentialInit(injectMethod, fieldInfo);
                 } else {
                     // no delegate
                     injectMethod.visitInsn(Opcodes.ACONST_NULL);
@@ -289,6 +290,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 injectMethod.visitInsn(Opcodes.DUP);
                 injectMethod.visitMethodInsn(Opcodes.INVOKESPECIAL, converterBinaryName, "<init>",
                         "()V", false);
+                handlePotentialInit(injectMethod, fieldInfo);
                 // at this point we have [val, converter] and we need to reverse that order
                 injectMethod.visitInsn(Opcodes.SWAP);
                 // now call the convert method on the converter
@@ -296,6 +298,22 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         "(Ljava/lang/Object;)Ljava/lang/Object;", true);
                 // now we got ourselves a converted value
             }
+        }
+
+        private void handlePotentialInit(MethodVisitor injectMethod, FieldInfo fieldInfo) {
+            //check if init is required
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitTypeInsn(Opcodes.INSTANCEOF,
+                    "io/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter");
+            Label skipInit = new Label();
+            injectMethod.visitJumpInsn(Opcodes.IFEQ, skipInit);
+            injectMethod.visitInsn(Opcodes.DUP);
+            injectMethod.visitLdcInsn(fieldInfo.name());
+            injectMethod.visitLdcInsn(fieldInfo.declaringClass().name().toString());
+            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC,
+                    "io/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter", "handleFieldInit",
+                    "(Lio/quarkus/rest/runtime/core/parameters/converters/InitRequiredParameterConverter;Ljava/lang/String;Ljava/lang/String;)V");
+            injectMethod.visitLabel(skipInit);
         }
 
         private void loadParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,

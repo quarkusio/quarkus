@@ -339,10 +339,9 @@ public class QuarkusRestProcessor {
             ClassInfo clazz = index.getClassByName(i.getKey());
             //these interfaces can also be clients
             //so we generate client proxies for them
-            RestClientInterface clientProxy = EndpointIndexer.createClientProxy(index, clazz,
-                    generatedClassBuildItemBuildProducer, bytecodeTransformerBuildItemBuildProducer, recorder,
-                    existingConverters,
-                    i.getValue(), config, additionalWriters, httpAnnotationToMethod, injectableBeans, additionalReaders);
+            RestClientInterface clientProxy = endpointIndexer.createClientProxy(clazz,
+                    bytecodeTransformerBuildItemBuildProducer,
+                    i.getValue());
             if (clientProxy != null) {
                 clientDefinitions.add(clientProxy);
             }
@@ -388,7 +387,7 @@ public class QuarkusRestProcessor {
                 if (interceptor.isPreMatching()) {
                     interceptors.addResourcePreMatchInterceptor(interceptor);
                 } else {
-                    Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                    Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                     if (nameBindingNames.isEmpty()) {
                         interceptors.addGlobalRequestInterceptor(interceptor);
                     } else {
@@ -407,7 +406,7 @@ public class QuarkusRestProcessor {
                 ResourceResponseInterceptor interceptor = new ResourceResponseInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                 if (nameBindingNames.isEmpty()) {
                     interceptors.addGlobalResponseInterceptor(interceptor);
                 } else {
@@ -425,7 +424,7 @@ public class QuarkusRestProcessor {
                 ResourceWriterInterceptor interceptor = new ResourceWriterInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                 if (nameBindingNames.isEmpty()) {
                     interceptors.addGlobalWriterInterceptor(interceptor);
                 } else {
@@ -443,7 +442,7 @@ public class QuarkusRestProcessor {
                 ResourceReaderInterceptor interceptor = new ResourceReaderInterceptor();
                 interceptor.setFactory(recorder.factory(filterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                Set<String> nameBindingNames = EndpointIndexer.nameBindingNames(filterClass, index);
+                Set<String> nameBindingNames = endpointIndexer.nameBindingNames(filterClass);
                 if (nameBindingNames.isEmpty()) {
                     interceptors.addGlobalReaderInterceptor(interceptor);
                 } else {
@@ -579,7 +578,7 @@ public class QuarkusRestProcessor {
                 recorder.handler(interceptors.sort(), exceptionMapping, ctxResolvers, feats, dynamicFeats,
                         serialisers, resourceClasses, subResourceClasses,
                         beanContainerBuildItem.getValue(), shutdownContext, config, vertxConfig, clientImplementations,
-                        genericTypeMapping),
+                        genericTypeMapping, converterProviders),
                 10);
     }
 

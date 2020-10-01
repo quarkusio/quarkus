@@ -9,9 +9,11 @@ import org.jboss.jandex.*;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.*;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
@@ -60,6 +62,45 @@ public class MicroprofileMetricsProcessor {
                 .addBeanClass(MetricDotNames.TIMED_INTERCEPTOR.toString())
                 .addBeanClass(MetricDotNames.MP_METRICS_REGISTRY_PRODUCER.toString())
                 .build();
+    }
+
+    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    void logWarningForMpMetricsUsage(CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            BuildProducer<BeanConfiguratorBuildItem> errors) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        boolean mpMetricsPresent = false;
+
+        // Find usage of MP Metrics annotations
+        for (DotName annotation : MetricDotNames.individualMetrics) {
+            if (index.getAnnotations(annotation).size() > 0) {
+                mpMetricsPresent = true;
+                break;
+            }
+        }
+
+        if (!mpMetricsPresent) {
+            if (index.getAnnotations(MetricDotNames.METRIC_ANNOTATION).size() > 0) {
+                mpMetricsPresent = true;
+            }
+        }
+
+        if (!mpMetricsPresent) {
+            for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext()
+                    .get(BuildExtension.Key.INJECTION_POINTS)) {
+                if (injectionPoint.getRequiredType().name().equals(MetricDotNames.METRIC_REGISTRY)) {
+                    mpMetricsPresent = true;
+                    break;
+                }
+            }
+        }
+
+        if (mpMetricsPresent) {
+            log.warn("This application uses the MP Metrics API. " +
+                    "The micrometer extension currently provides a compatibility layer that supports the MP Metrics API, " +
+                    "but metric names and recorded values will be different. " +
+                    "Note that the MP Metrics compatibility layer will move to a different extension in the future.");
+        }
     }
 
     /**

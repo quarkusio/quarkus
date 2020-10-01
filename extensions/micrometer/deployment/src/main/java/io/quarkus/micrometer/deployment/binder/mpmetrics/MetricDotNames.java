@@ -36,6 +36,8 @@ public class MetricDotNames {
             SIMPLY_TIMED_ANNOTATION,
             TIMED_ANNOTATION));
 
+    static final DotName METRIC_REGISTRY = DotName.createSimple("org.eclipse.microprofile.metrics.MetricRegistry");
+
     static final DotName METRIC_ANNOTATION = DotName
             .createSimple("org.eclipse.microprofile.metrics.annotation.Metric");
     static final DotName ANNOTATED_GAUGE_ADAPTER = DotName

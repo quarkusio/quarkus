@@ -63,7 +63,7 @@ String message;
 ----
 
 NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty` or just `@ConfigProperty`.
-The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
+The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config].
 
 Edit the `org.acme.config.GreetingResource`, and introduce the following configuration properties:
 
@@ -264,7 +264,7 @@ When using a regular class annotated with `@ConfigProperties` the class doesn't 
 Having simple public non-final fields is valid as well.
 
 Furthermore, the configuration classes support nested object configuration. Suppose there was a need to have an extra layer
-of greeting configuration named `hidden` that would contain a few fields. This could be achieved like so:
+of greeting configuration named `content` that would contain a few fields. This could be achieved like so:
 
 [source,java]
 ----
@@ -274,9 +274,9 @@ public class GreetingConfiguration {
     public String message;
     public String suffix = "!";
     public Optional<String> name;
-    public HiddenConfig hidden; <1>
+    public ContentConfig content; <1>
 
-    public static class HiddenConfig {
+    public static class ContentConfig {
         public Integer prizeAmount;
         public List<String> recipients;
     }
@@ -290,8 +290,8 @@ Setting the properties would occur in the normal manner, for example in `applica
 ----
 greeting.message = hello
 greeting.name = quarkus
-greeting.hidden.prize-amount=10
-greeting.hidden.recipients=Jane,John
+greeting.content.prize-amount=10
+greeting.content.recipients=Jane,John
 ----
 
 Furthermore, classes annotated with `@ConfigProperties` can be annotated with Bean Validation annotations similar to the following example:
@@ -367,7 +367,7 @@ In the previous examples using `quarkus.message` instead of `greeting.message` w
 
 === List of all configuration properties
 
-All the Quarkus configuration properties are link:all-config[documented and searcheable].
+All the Quarkus configuration properties are link:all-config[documented and searchable].
 
 === Generating configuration for your application
 
@@ -801,7 +801,7 @@ However, structured formats like YAML naively only support a subset of the possi
 For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
 One property is the prefix of another, so it may not be immediately evident how to specify both keys in your YAML configuration.
 
-This is solved by using a null key (normally represented by `~`) for any YAML property which is a prefix of another one.  Here's an example:
+This is solved by using a `null` key (normally represented by `~`) for any YAML property which is a prefix of another one.  Here's an example:
 
 .An example YAML configuration resolving prefix-related key name conflicts
 [source,yaml]
@@ -813,7 +813,7 @@ quarkus:
       methods: GET,PUT,POST
 ----
 
-In general, null YAML keys are not included in assembly of the configuration property name, allowing them to be used to
+In general, `null` YAML keys are not included in assembly of the configuration property name, allowing them to be used to
 any level for disambiguating configuration keys.
 
 == More info on how to configure

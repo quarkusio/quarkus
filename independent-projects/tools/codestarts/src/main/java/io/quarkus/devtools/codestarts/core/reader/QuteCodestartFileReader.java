@@ -1,6 +1,7 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
 import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ResultMapper;
@@ -11,11 +12,10 @@ import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.Variant;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.StringReader;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.io.FilenameUtils;
 
 final class QuteCodestartFileReader implements CodestartFileReader {
 
@@ -32,59 +32,54 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         return fileName.replace(FLAG, "");
     }
 
-    public Optional<String> read(Path sourceDirectory, Path relativeSourcePath, String languageName, Map<String, Object> data)
+    @Override
+    public Optional<String> read(Source source, String languageName, Map<String, Object> data)
             throws IOException {
-        if (relativeSourcePath.getFileName().toString().contains(INCLUDE_QUTE_FLAG)) {
+        if (FilenameUtils.getName(source.path()).contains(INCLUDE_QUTE_FLAG)) {
             return Optional.empty();
         }
-        return Optional.of(readQuteFile(sourceDirectory, relativeSourcePath, languageName, data));
+        return Optional.of(readQuteFile(source, languageName, data));
     }
 
-    public static String readQuteFile(Path sourceDirectory, Path relativeSourcePath, String languageName,
-            Map<String, Object> data) throws IOException {
-        final Path sourcePath = sourceDirectory.resolve(relativeSourcePath);
-        final String content = new String(Files.readAllBytes(sourcePath), StandardCharsets.UTF_8);
+    public static String readQuteFile(Source source, String languageName, Map<String, Object> data) {
+        final String content = source.read();
         final Engine engine = Engine.builder().addDefaults()
                 .addResultMapper(new MissingValueMapper())
                 .removeStandaloneLines(true)
-                .addLocator(id -> findIncludeTemplate(sourceDirectory, languageName, id).map(IncludeTemplateLocation::new))
+                .addLocator(
+                        id -> findIncludeTemplate(source, languageName, id)
+                                .map(IncludeTemplateLocation::new))
                 .build();
         try {
             return engine.parse(content).render(data);
         } catch (TemplateException e) {
-            throw new CodestartException("Error while rendering template: " + sourcePath.toString(), e);
+            throw new CodestartException("Error while rendering template: " + source.absolutePath(), e);
         }
     }
 
-    private static Optional<Path> findIncludeTemplate(Path sourceDirectory, String languageName, String name) {
-        final Path codestartPath = sourceDirectory.getParent();
+    private static Optional<Source> findIncludeTemplate(Source source, String languageName, String name) {
         final String includeFileName = name + INCLUDE_QUTE_FLAG;
-        final Path languageIncludeTemplate = codestartPath.resolve(languageName + "/" + includeFileName);
-        if (Files.isRegularFile(languageIncludeTemplate)) {
-            return Optional.of(languageIncludeTemplate);
+        final Optional<Source> languageIncludeSource = source.getCodestartResource().getSource(languageName, includeFileName);
+        if (languageIncludeSource.isPresent()) {
+            return languageIncludeSource;
         }
-        final Path baseIncludeTemplate = codestartPath.resolve("base/" + includeFileName);
-        if (Files.isRegularFile(baseIncludeTemplate)) {
-            return Optional.of(baseIncludeTemplate);
+        final Optional<Source> baseIncludeSource = source.getCodestartResource().getSource("base", includeFileName);
+        if (baseIncludeSource.isPresent()) {
+            return baseIncludeSource;
         }
         return Optional.empty();
     }
 
     private static class IncludeTemplateLocation implements TemplateLocator.TemplateLocation {
+        private final Source source;
 
-        private final Path path;
-
-        private IncludeTemplateLocation(Path path) {
-            this.path = path;
+        public IncludeTemplateLocation(Source source) {
+            this.source = source;
         }
 
         @Override
         public Reader read() {
-            try {
-                return Files.newBufferedReader(path);
-            } catch (IOException e) {
-                return null;
-            }
+            return new StringReader(source.read());
         }
 
         @Override

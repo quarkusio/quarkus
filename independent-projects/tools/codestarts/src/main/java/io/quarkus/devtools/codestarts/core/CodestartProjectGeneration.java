@@ -40,7 +40,7 @@ final class CodestartProjectGeneration {
 
         log.debug("file strategies: %s", strategies);
 
-        CodestartProcessor processor = new CodestartProcessor(log, projectDefinition.getResourceLoader(),
+        CodestartProcessor processor = new CodestartProcessor(log,
                 languageName, targetDirectory, strategies, data);
         processor.checkTargetDir();
         for (Codestart codestart : projectDefinition.getCodestarts()) {

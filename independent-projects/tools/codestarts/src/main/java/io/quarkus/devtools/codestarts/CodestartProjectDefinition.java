@@ -8,8 +8,6 @@ import java.util.Optional;
 
 public interface CodestartProjectDefinition {
 
-    CodestartResourceLoader getResourceLoader();
-
     void generate(Path targetDirectory) throws IOException;
 
     List<Codestart> getCodestarts();

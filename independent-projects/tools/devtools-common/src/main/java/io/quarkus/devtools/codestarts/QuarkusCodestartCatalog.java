@@ -7,6 +7,7 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,19 +44,31 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         COMMANDMODE_EXAMPLE
     }
 
-    private QuarkusCodestartCatalog(CodestartResourceLoader resourceLoader,
-            Collection<Codestart> codestarts,
+    private QuarkusCodestartCatalog(Collection<Codestart> codestarts,
             Map<AppArtifactKey, String> extensionCodestartMapping) {
-        super(resourceLoader, codestarts);
+        super(codestarts);
         this.extensionCodestartMapping = extensionCodestartMapping;
     }
 
     public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptor(QuarkusPlatformDescriptor platformDescriptor)
             throws IOException {
-        final CodestartResourceLoader resourceLoader = resourceLoader(platformDescriptor);
-        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(resourceLoader, QUARKUS_CODESTARTS_DIR);
+        final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
+        final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR);
         final Map<AppArtifactKey, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
-        return new QuarkusCodestartCatalog(resourceLoader, codestarts, extensionCodestartMapping);
+        return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
+    }
+
+    public static QuarkusCodestartCatalog fromQuarkusPlatformDescriptorAndDirectories(
+            QuarkusPlatformDescriptor platformDescriptor, Collection<Path> directories)
+            throws IOException {
+        final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
+        final ArrayList<Codestart> codestarts = new ArrayList<>(
+                CodestartCatalogLoader.loadCodestarts(pathLoader, QUARKUS_CODESTARTS_DIR));
+        for (Path directory : directories) {
+            codestarts.addAll(CodestartCatalogLoader.loadUserDirectoryCodestarts(directory));
+        }
+        final Map<AppArtifactKey, String> extensionCodestartMapping = buildCodestartMapping(platformDescriptor.getExtensions());
+        return new QuarkusCodestartCatalog(codestarts, extensionCodestartMapping);
     }
 
     @Override
@@ -124,7 +137,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestarts;
     }
 
-    public static CodestartResourceLoader resourceLoader(QuarkusPlatformDescriptor platformDescr) {
+    public static CodestartPathLoader platformPathLoader(QuarkusPlatformDescriptor platformDescr) {
         return new QuarkusPlatformCodestartResourceLoader(platformDescr);
     }
 
@@ -132,7 +145,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return codestart.getType() == CodestartType.CODE && codestart.getSpec().getTags().contains(Tag.EXAMPLE.getKey());
     }
 
-    private static class QuarkusPlatformCodestartResourceLoader implements CodestartResourceLoader {
+    private static class QuarkusPlatformCodestartResourceLoader implements CodestartPathLoader {
         private QuarkusPlatformDescriptor platformDescr;
 
         QuarkusPlatformCodestartResourceLoader(QuarkusPlatformDescriptor platformDescr) {
@@ -140,7 +153,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         }
 
         @Override
-        public <T> T loadResourceAsPath(String name, Consumer<T> consumer) throws IOException {
+        public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
             return platformDescr.loadResourceAsPath(name, consumer::consume);
         }
     };
@@ -157,4 +170,5 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .collect(Collectors.toMap(e -> new AppArtifactKey(e.getGroupId(), e.getArtifactId(), e.getClassifier(),
                         e.getType() == null ? "jar" : e.getType()), Extension::getCodestart));
     }
+
 }

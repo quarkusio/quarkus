@@ -72,6 +72,7 @@ public class MediaTypeNegotiationServerQualityTest {
     @Path("/foo")
     public static class FakeResource {
         @GET
+        @Path("/fake")
         public String fake() {
             return "";
         }

@@ -24,7 +24,9 @@ public class RequestMapperTestCase {
         Assertions.assertEquals("/id/{param}", result.value);
         Assertions.assertEquals("34", result.pathParamValues[0]);
         result = mapper.map("/id/34/");
-        Assertions.assertNull(result);
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals("/id/{param}", result.value);
+        Assertions.assertEquals("34", result.pathParamValues[0]);
         result = mapper.map("/bar/34");
         Assertions.assertEquals("/bar/{p1}", result.value);
         Assertions.assertEquals("34", result.pathParamValues[0]);

@@ -99,6 +99,10 @@ public class RequestMapper<T> {
                 params[paramCount] = null;
             }
             boolean fullMatch = matchPos == pathLength;
+            if (!prefixAllowed && !fullMatch) {
+                //according to the spec every template ends with (/.*)?
+                prefixAllowed = path.charAt(matchPos) == '/';
+            }
             if (matched && (fullMatch || prefixAllowed)) {
                 String remaining;
                 if (fullMatch) {

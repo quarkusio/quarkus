@@ -56,6 +56,13 @@
         - StreamingOutput All media types (*/*), MessageBodyWriter only.
         - java.lang.Boolean, java.lang.Character, java.lang.Number Only
 
+** TODO later list
+
+- XML?
+- Optim: we currently instantiate every param converter every time we need to convert a param if it's a 
+  field (including beanparam), we could store these in extra static fields on the resource/beanparam that
+  we initialise at static init. 
+
 ** JAXRS SPEC observations
 
 *** Will not implement

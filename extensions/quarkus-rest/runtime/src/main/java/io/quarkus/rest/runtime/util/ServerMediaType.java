@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.util;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,10 +14,11 @@ import io.vertx.core.http.HttpServerRequest;
 
 /**
  * A representation of a server side media type.
+ *
+ * TODO: There is a good chance that this class has taken on too many responsibilities so we
+ * might want to look into breaking out some pieces
  */
 public class ServerMediaType {
-
-    public static final ServerMediaType EMPTY = new ServerMediaType(new String[0], StandardCharsets.UTF_8.name());
 
     private final MediaType[] sortedMediaTypes;
     private final MediaType[] sortedOriginalMediaTypes;
@@ -29,6 +29,10 @@ public class ServerMediaType {
     }
 
     public ServerMediaType(List<MediaType> mediaTypes, String charset) {
+        this(mediaTypes, charset, false);
+    }
+
+    public ServerMediaType(List<MediaType> mediaTypes, String charset, boolean deprioritizeWildcards) {
         if (mediaTypes.isEmpty()) {
             this.sortedOriginalMediaTypes = new MediaType[] { MediaType.WILDCARD_TYPE };
         } else {
@@ -38,6 +42,23 @@ public class ServerMediaType {
         Arrays.sort(sortedOriginalMediaTypes, new Comparator<MediaType>() {
             @Override
             public int compare(MediaType m1, MediaType m2) {
+                if (deprioritizeWildcards) {
+                    if (m1.isWildcardType() && !m2.isWildcardType()) {
+                        return 1;
+                    }
+                    if (!m1.isWildcardType() && m2.isWildcardType()) {
+                        return -1;
+                    }
+                    if (!m1.isWildcardType() && !m2.isWildcardType()) {
+                        if (m1.isWildcardSubtype() && !m2.isWildcardSubtype()) {
+                            return 1;
+                        }
+                        if (!m1.isWildcardSubtype() && m2.isWildcardSubtype()) {
+                            return -1;
+                        }
+                    }
+                }
+
                 String qs1s = m1.getParameters().get("qs");
                 String qs2s = m2.getParameters().get("qs");
                 if (qs1s == null && qs2s == null) {

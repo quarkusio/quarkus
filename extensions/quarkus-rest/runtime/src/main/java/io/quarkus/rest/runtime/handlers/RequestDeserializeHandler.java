@@ -38,6 +38,8 @@ public class RequestDeserializeHandler implements RestHandler {
             } catch (Exception e) {
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
+        } else if (requestType == null) {
+            requestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, requestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {

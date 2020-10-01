@@ -19,9 +19,10 @@ language:
         cmd:
           dev: gradle quarkusDev
           package: gradle quarkusBuild
-          package-uberjar:  gradle quarkusBuild --uber-jar
+          package-uberjar: gradle quarkusBuild --uber-jar
           package-native: gradle build -Dquarkus.package.type=native
           package-native-container: gradle build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+          build-ci: gradle build
   kotlin:
     dependencies:
       - org.jetbrains.kotlin:kotlin-stdlib-jdk8

@@ -25,6 +25,7 @@ language:
         cmd:
           dev: mvn compile quarkus:dev
           package: mvn package
-          package-uberjar:  mvn package -PuberJar
+          package-uberjar: mvn package -PuberJar
           package-native: mvn package -Pnative
           package-native-container: mvn package -Pnative -Dquarkus.native.container-build=true
+          build-ci: mvn verify -B

@@ -58,7 +58,8 @@ public class DynamicEntityWriter implements EntityWriter {
             }
             // try to find a Writer based on the entity type
             if (writers == null) {
-                Serialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity);
+                Serialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity,
+                        RuntimeType.SERVER);
                 writers = writerNoMediaType.getWriters();
                 selectedMediaType = writerNoMediaType.getMediaType();
             }

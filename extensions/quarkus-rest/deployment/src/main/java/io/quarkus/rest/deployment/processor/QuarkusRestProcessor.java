@@ -530,6 +530,7 @@ public class QuarkusRestProcessor {
                         QuarkusRestDotNames.MESSAGE_BODY_READER,
                         index);
                 ResourceReader reader = new ResourceReader();
+                reader.setBuiltin(false);
                 reader.setFactory(recorder.factory(readerClass.name().toString(),
                         beanContainerBuildItem.getValue()));
                 AnnotationInstance consumesAnnotation = readerClass.classAnnotation(QuarkusRestDotNames.CONSUMES);

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Priority;
+import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.Produces;
@@ -230,22 +231,34 @@ public class QuarkusRestConfiguration implements Configuration {
             readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
         }
         if (component instanceof MessageBodyReader) {
-            ResourceReader resourceReader = new ResourceReader();
-            resourceReader.setFactory(new UnmanagedBeanFactory(component));
-            Consumes consumes = component.getClass().getAnnotation(Consumes.class);
-            resourceReader
-                    .setMediaTypeStrings(consumes != null ? Arrays.asList(consumes.value()) : Serialisers.WILDCARD_STRING_LIST);
-            Type[] args = Types.findParameterizedTypes(component.getClass(), MessageBodyReader.class);
-            resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class, resourceReader);
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceReader resourceReader = new ResourceReader();
+                resourceReader.setFactory(new UnmanagedBeanFactory(component));
+                Consumes consumes = componentClass.getAnnotation(Consumes.class);
+                resourceReader
+                        .setMediaTypeStrings(
+                                consumes != null ? Arrays.asList(consumes.value()) : Serialisers.WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
+                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceReader);
+            }
         }
         if (component instanceof MessageBodyWriter) {
-            ResourceWriter resourceWriter = new ResourceWriter();
-            resourceWriter.setFactory(new UnmanagedBeanFactory(component));
-            Produces produces = component.getClass().getAnnotation(Produces.class);
-            resourceWriter
-                    .setMediaTypeStrings(produces != null ? Arrays.asList(produces.value()) : Serialisers.WILDCARD_STRING_LIST);
-            Type[] args = Types.findParameterizedTypes(component.getClass(), MessageBodyWriter.class);
-            resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class, resourceWriter);
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceWriter resourceWriter = new ResourceWriter();
+                resourceWriter.setFactory(new UnmanagedBeanFactory(component));
+                Produces produces = componentClass.getAnnotation(Produces.class);
+                resourceWriter
+                        .setMediaTypeStrings(
+                                produces != null ? Arrays.asList(produces.value()) : Serialisers.WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
+                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceWriter);
+            }
         }
     }
 

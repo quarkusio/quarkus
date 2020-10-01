@@ -1,9 +1,13 @@
 package io.quarkus.rest.runtime.core.parameters;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Request;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Providers;
 import javax.ws.rs.sse.Sse;
@@ -11,6 +15,7 @@ import javax.ws.rs.sse.SseEventSink;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestAsyncResponse;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceContext;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSse;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestSseEventSink;
 import io.vertx.core.http.HttpServerRequest;
@@ -62,6 +67,15 @@ public class ContextParamExtractor implements ParameterExtractor {
         }
         if (type.equals(ResourceInfo.class.getName())) {
             return context.getTarget().getLazyMethod();
+        }
+        if (type.equals(Application.class.getName())) {
+            return CDI.current().select(Application.class).get();
+        }
+        if (type.equals(SecurityContext.class.getName())) {
+            return context.getSecurityContext();
+        }
+        if (type.equals(ResourceContext.class.getName())) {
+            return QuarkusRestResourceContext.INSTANCE;
         }
         // FIXME: move to build time
         throw new IllegalStateException("Unsupported contextual type: " + type);

@@ -374,7 +374,7 @@ public class QuarkusRestRecorder {
         QuarkusRestDeployment deployment = new QuarkusRestDeployment(exceptionMapping, ctxResolvers, serialisers,
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 createClientImpls(clientImplementations),
-                prefix, genericTypeMapping, paramConverterProviders);
+                prefix, genericTypeMapping, paramConverterProviders, quarkusRestConfiguration);
 
         currentDeployment = deployment;
 

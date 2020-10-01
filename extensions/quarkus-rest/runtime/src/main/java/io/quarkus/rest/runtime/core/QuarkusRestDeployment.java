@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.core;
 import io.quarkus.rest.runtime.client.ClientProxies;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
 import io.quarkus.rest.runtime.handlers.RestHandler;
+import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 
 public class QuarkusRestDeployment {
     private final ExceptionMapping exceptionMapping;
@@ -14,11 +15,13 @@ public class QuarkusRestDeployment {
     private final String prefix;
     private final GenericTypeMapping genericTypeMapping;
     private final ParamConverterProviders paramConverterProviders;
+    private final QuarkusRestConfiguration configuration;
 
     public QuarkusRestDeployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers, Serialisers serialisers,
             RestHandler[] abortHandlerChain,
             EntityWriter dynamicEntityWriter, ClientProxies clientProxies, String prefix,
-            GenericTypeMapping genericTypeMapping, ParamConverterProviders paramConverterProviders) {
+            GenericTypeMapping genericTypeMapping, ParamConverterProviders paramConverterProviders,
+            QuarkusRestConfiguration configuration) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -28,6 +31,11 @@ public class QuarkusRestDeployment {
         this.prefix = prefix;
         this.genericTypeMapping = genericTypeMapping;
         this.paramConverterProviders = paramConverterProviders;
+        this.configuration = configuration;
+    }
+
+    public QuarkusRestConfiguration getConfiguration() {
+        return configuration;
     }
 
     public ExceptionMapping getExceptionMapping() {

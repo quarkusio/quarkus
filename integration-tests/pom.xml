@@ -111,6 +111,7 @@
         <module>elytron-security-jdbc</module>
         <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>
+        <module>smallrye-config</module>
         <module>smallrye-context-propagation</module>
         <module>smallrye-metrics</module>
         <module>smallrye-graphql</module>

@@ -49,8 +49,8 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
-import io.smallrye.config.ConfigMappingObjectLoader;
 import io.smallrye.config.ConfigMappings.ConfigMappingWithPrefix;
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -203,26 +203,27 @@ public class ConfigBuildStep {
                 continue;
             }
 
-            ClassInfo classInfo = target.asClass();
+            Class<?> type = toClass(target.asClass());
             String prefix = Optional.ofNullable(instance.value("prefix")).map(AnnotationValue::asString).orElse("");
 
-            ConfigMappingMetadata configMappingMetadata = ConfigMappingObjectLoader
-                    .getConfigMappingMetadata(toClass(classInfo));
+            List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(type);
+            configMappingsMetadata.forEach(mappingMetadata -> {
+                generatedClasses.produce(
+                        new GeneratedClassBuildItem(true, mappingMetadata.getClassName(), mappingMetadata.getClassBytes()));
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods(true).build());
+                reflectiveClasses
+                        .produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).constructors(true).build());
+            });
 
-            generatedClasses.produce(new GeneratedClassBuildItem(true, configMappingMetadata.getClassName(),
-                    configMappingMetadata.getClassBytes()));
-            reflectiveClasses
-                    .produce(new ReflectiveClassBuildItem(true, false, configMappingMetadata.getInterfaceType()));
-            reflectiveClasses
-                    .produce(new ReflectiveClassBuildItem(true, false, false, configMappingMetadata.getClassName()));
-            configMappings.produce(new ConfigMappingBuildItem(toClass(classInfo), prefix));
+            configMappings.produce(new ConfigMappingBuildItem(type, prefix));
 
             beanConfigurators.produce(new BeanConfiguratorBuildItem(
                     beanRegistrationPhase.getContext()
-                            .configure(configMappingMetadata.getInterfaceType())
-                            .types(configMappingMetadata.getInterfaceType())
+                            .configure(type)
+                            .types(type)
                             .creator(ConfigMappingCreator.class)
-                            .param("interfaceType", configMappingMetadata.getInterfaceType())));
+                            .param("type", type)));
         }
     }
 

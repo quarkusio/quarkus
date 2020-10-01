@@ -49,7 +49,7 @@ public class ConfigRecorder {
     public void registerConfigMappings(final Set<ConfigMappings.ConfigMappingWithPrefix> configMappingsWithPrefix)
             throws Exception {
         SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        config.getConfigMappings().registerConfigMappings(config, configMappingsWithPrefix);
+        ConfigMappings.registerConfigMappings(config, configMappingsWithPrefix);
     }
 
     private Class<?> load(String className, ClassLoader cl) {

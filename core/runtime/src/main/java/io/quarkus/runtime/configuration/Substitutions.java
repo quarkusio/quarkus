@@ -54,10 +54,10 @@ final class Substitutions {
         }
     }
 
-    @TargetClass(className = "io.smallrye.config.ConfigMappingObjectLoader")
-    static final class Target_ConfigMappingObjectLoader {
+    @TargetClass(className = "io.smallrye.config.ConfigMappingLoader")
+    static final class Target_ConfigMappingLoader {
         @Substitute
-        static Class<?> createMappingObjectClass(final String className, final byte[] bytes) {
+        static Class<?> loadClass(final String className, final byte[] classBytes) {
             return null;
         }
     }

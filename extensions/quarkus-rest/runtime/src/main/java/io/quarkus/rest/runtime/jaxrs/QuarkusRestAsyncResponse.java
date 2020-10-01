@@ -50,6 +50,9 @@ public class QuarkusRestAsyncResponse implements AsyncResponse {
 
     @Override
     public boolean cancel() {
+        if (cancelled) {
+            return true;
+        }
         if (!suspended) {
             return false;
         }
@@ -63,6 +66,13 @@ public class QuarkusRestAsyncResponse implements AsyncResponse {
 
     @Override
     public boolean cancel(int retryAfter) {
+        return internalCancel(retryAfter);
+    }
+
+    private boolean internalCancel(Object retryAfter) {
+        if (cancelled) {
+            return true;
+        }
         if (!suspended) {
             return false;
         }
@@ -76,7 +86,7 @@ public class QuarkusRestAsyncResponse implements AsyncResponse {
 
     @Override
     public boolean cancel(Date retryAfter) {
-        return cancel((int) ((retryAfter.getTime() - System.currentTimeMillis()) / 1000));
+        return internalCancel(retryAfter);
     }
 
     @Override

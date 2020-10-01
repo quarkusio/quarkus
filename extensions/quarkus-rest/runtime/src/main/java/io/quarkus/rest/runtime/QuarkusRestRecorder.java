@@ -827,6 +827,7 @@ public class QuarkusRestRecorder {
         List<RestHandler> responseFilterHandlers = new ArrayList<>();
         if (method.isSse()) {
             handlers.add(new SseResponseWriterHandler());
+            abortHandlingChain.add(new ResponseHandler());
         } else {
             handlers.add(new ResponseHandler());
 
@@ -870,9 +871,9 @@ public class QuarkusRestRecorder {
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
+        abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.addAll(responseFilterHandlers);
 
-        abortHandlingChain.add(new ResponseHandler());
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
         handlers.add(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 

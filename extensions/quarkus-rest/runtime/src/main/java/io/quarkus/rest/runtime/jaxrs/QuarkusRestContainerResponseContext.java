@@ -142,7 +142,11 @@ public class QuarkusRestContainerResponseContext implements ContainerResponseCon
 
     @Override
     public Class<?> getEntityClass() {
-        return getEntity().getClass();
+        Object entity = getEntity();
+        if (entity == null) {
+            return null;
+        }
+        return entity.getClass();
     }
 
     @Override

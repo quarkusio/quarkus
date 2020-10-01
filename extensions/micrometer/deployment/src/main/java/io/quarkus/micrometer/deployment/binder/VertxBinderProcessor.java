@@ -34,6 +34,9 @@ public class VertxBinderProcessor {
         }
     }
 
+    // avoid imports due to related deps not being there
+    static final String VERTX_CONTAINER_FILTER_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderContainerFilter";
+
     @BuildStep(onlyIf = { VertxBinderEnabled.class })
     ResteasyJaxrsProviderBuildItem enableResteasySupport(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -45,7 +48,7 @@ public class VertxBinderProcessor {
                 .addBeanClass(VertxMeterBinderContainerFilter.class)
                 .setUnremovable().build());
 
-        return new ResteasyJaxrsProviderBuildItem(VertxMeterBinderContainerFilter.class.getName());
+        return new ResteasyJaxrsProviderBuildItem(VERTX_CONTAINER_FILTER_CLASS_NAME);
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)

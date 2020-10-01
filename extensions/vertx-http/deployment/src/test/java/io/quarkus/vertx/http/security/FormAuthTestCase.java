@@ -18,6 +18,7 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
+import io.restassured.matcher.RestAssuredMatchers;
 
 public class FormAuthTestCase {
 
@@ -60,7 +61,8 @@ public class FormAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", containsString("/admin"));
+                .cookie("quarkus-redirect-location",
+                        RestAssuredMatchers.detailedCookie().value(containsString("/admin")).secured(false));
 
         RestAssured
                 .given()
@@ -74,7 +76,8 @@ public class FormAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin"))
-                .cookie("quarkus-credential", notNullValue());
+                .cookie("quarkus-credential",
+                        RestAssuredMatchers.detailedCookie().value(notNullValue()).secured(false));
 
         RestAssured
                 .given()

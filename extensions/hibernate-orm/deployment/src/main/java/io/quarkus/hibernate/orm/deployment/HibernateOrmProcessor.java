@@ -811,7 +811,10 @@ public final class HibernateOrmProcessor {
         // Logging
         if (persistenceUnitConfig.log.sql) {
             descriptor.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
-            descriptor.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+
+            if (persistenceUnitConfig.log.formatSql) {
+                descriptor.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+            }
         }
 
         if (persistenceUnitConfig.log.jdbcWarnings.isPresent()) {

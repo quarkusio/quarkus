@@ -4,6 +4,8 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
@@ -28,7 +31,6 @@ import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
-import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
@@ -45,6 +47,7 @@ import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
+import org.eclipse.aether.version.Version;
 
 /**
  *
@@ -52,36 +55,18 @@ import org.eclipse.aether.version.InvalidVersionSpecificationException;
  */
 public class MavenArtifactResolver {
 
+    private static final String SECONDARY_LOCAL_REPO_PROP = "io.quarkus.maven.secondary-local-repo";
+
     public static class Builder extends BootstrapMavenContextConfig<Builder> {
 
-        private boolean reTryFailedResolutionsAgainstDefaultLocalRepo;
+        private Path secondaryLocalRepo;
 
         private Builder() {
             super();
         }
 
-        /**
-         * In case custom local repository location is configured using {@link #setRepoHome(Path)},
-         * this method can be used to enable artifact resolutions that failed for the configured
-         * custom local repository to be re-tried against the default user local repository before
-         * failing.
-         * <p>
-         * NOTE: the default behavior is <b>not</b> to use the default user local repository as the fallback one.
-         *
-         * @param value true if the failed resolution requests should be re-tried against the default
-         *        user local repo before failing
-         *
-         * @return this builder instance
-         */
-        public Builder setReTryFailedResolutionsAgainstDefaultLocalRepo(boolean value) {
-            this.reTryFailedResolutionsAgainstDefaultLocalRepo = value;
-            return this;
-        }
-
-        public Builder setRepoHome(Path home) {
-            if (home != null) {
-                setLocalRepository(home.toString());
-            }
+        public Builder setSecondaryLocalRepo(Path secondaryLocalRepo) {
+            this.secondaryLocalRepo = secondaryLocalRepo;
             return this;
         }
 
@@ -106,10 +91,14 @@ public class MavenArtifactResolver {
         this.repoSystem = context.getRepositorySystem();
 
         final RepositorySystemSession session = context.getRepositorySystemSession();
-        if (builder.localRepo != null && builder.reTryFailedResolutionsAgainstDefaultLocalRepo) {
+        final String secondaryRepo = PropertyUtils.getProperty(SECONDARY_LOCAL_REPO_PROP);
+        if (secondaryRepo != null) {
+            builder.secondaryLocalRepo = Paths.get(secondaryRepo);
+        }
+        if (builder.secondaryLocalRepo != null) {
             localRepoManager = new MavenLocalRepositoryManager(
-                    repoSystem.newLocalRepositoryManager(session, new LocalRepository(builder.localRepo)),
-                    Paths.get(context.getLocalRepo()));
+                    session.getLocalRepositoryManager(),
+                    builder.secondaryLocalRepo);
             this.repoSession = new DefaultRepositorySystemSession(session).setLocalRepositoryManager(localRepoManager);
         } else {
             this.repoSession = session;
@@ -217,6 +206,26 @@ public class MavenArtifactResolver {
         } catch (VersionRangeResolutionException ex) {
             throw new BootstrapMavenException("Failed to resolve version range for " + artifact, ex);
         }
+    }
+
+    public String getLatestVersionFromRange(Artifact artifact, String range) throws AppModelResolverException {
+        return getLatest(resolveVersionRange(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getClassifier(), artifact.getExtension(), range)));
+    }
+
+    private String getLatest(final VersionRangeResult rangeResult) {
+        final List<Version> versions = rangeResult.getVersions();
+        if (versions.isEmpty()) {
+            return null;
+        }
+        Version next = versions.get(0);
+        for (int i = 1; i < versions.size(); ++i) {
+            final Version candidate = versions.get(i);
+            if (candidate.compareTo(next) > 0) {
+                next = candidate;
+            }
+        }
+        return next.toString();
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {

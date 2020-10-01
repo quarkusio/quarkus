@@ -12,6 +12,10 @@ public class AppArtifact extends AppArtifactCoords implements Serializable {
 
     protected PathsCollection paths;
 
+    public AppArtifact(AppArtifactCoords coords) {
+        this(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(), coords.getVersion());
+    }
+
     public AppArtifact(String groupId, String artifactId, String version) {
         super(groupId, artifactId, version);
     }

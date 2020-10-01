@@ -11,7 +11,7 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
-public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGradleWrapperTestBase {
+public class AddExtensionToModuleInMultiModuleKtsProjectTest extends QuarkusGradleDevToolsTestBase {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 

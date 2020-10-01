@@ -42,7 +42,7 @@ public abstract class TreeMojoTestBase {
 
         mvnResolver = MavenArtifactResolver.builder()
                 .setOffline(true)
-                .setRepoHome(repoHome)
+                .setLocalRepository(repoHome.toString())
                 .setRemoteRepositories(Collections.emptyList())
                 .build();
 

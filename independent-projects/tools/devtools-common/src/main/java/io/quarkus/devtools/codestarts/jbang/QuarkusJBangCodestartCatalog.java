@@ -7,7 +7,7 @@ import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
 import io.quarkus.devtools.codestarts.CodestartPathLoader;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,9 +47,9 @@ public final class QuarkusJBangCodestartCatalog extends GenericCodestartCatalog<
         super(codestarts);
     }
 
-    public static QuarkusJBangCodestartCatalog fromQuarkusPlatformDescriptor(QuarkusPlatformDescriptor platformDescriptor)
+    public static QuarkusJBangCodestartCatalog fromResourceLoader(ResourceLoader resourceLoader)
             throws IOException {
-        final CodestartPathLoader pathLoader = platformPathLoader(platformDescriptor);
+        final CodestartPathLoader pathLoader = platformPathLoader(resourceLoader);
         final Collection<Codestart> codestarts = CodestartCatalogLoader.loadCodestarts(pathLoader,
                 QUARKUS_JBANG_CODESTARTS_DIR);
         return new QuarkusJBangCodestartCatalog(codestarts);

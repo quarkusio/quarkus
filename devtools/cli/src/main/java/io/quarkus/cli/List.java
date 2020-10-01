@@ -5,11 +5,11 @@ import java.util.ArrayList;
 
 import io.quarkus.cli.core.BaseSubCommand;
 import io.quarkus.cli.core.BuildsystemCommand;
+import io.quarkus.cli.core.QuarkusCliVersion;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "list", usageHelpAutoWidth = true, sortOptions = false, mixinStandardHelpOptions = false, description = "List installed (default) or installable extensions.")
@@ -37,6 +37,10 @@ public class List extends BaseSubCommand implements BuildsystemCommand {
                 "--full" }, order = 6, description = "Display concise format and version related columns.")
         boolean full = false;
 
+        @CommandLine.Option(names = {
+                "--origins" }, order = 7, description = "Display extensions including their platform origins.")
+        boolean origins = false;
+
     }
 
     @Override
@@ -59,6 +63,8 @@ public class List extends BaseSubCommand implements BuildsystemCommand {
             formatString = "concise";
         else if (format.full)
             formatString = "full";
+        else if (format.origins)
+            formatString = "origins";
         return formatString;
     }
 
@@ -82,14 +88,13 @@ public class List extends BaseSubCommand implements BuildsystemCommand {
         // we do not have to spawn process for maven
         try {
 
-            new ListExtensions(QuarkusProject.resolveExistingProject(projectDirectory,
-                    QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor()))
-                            .fromCli(true)
-                            .all(false)
-                            .installed(!installable)
-                            .format(getFormatString())
-                            .search(searchPattern)
-                            .execute();
+            new ListExtensions(QuarkusProjectHelper.getProject(projectDirectory, QuarkusCliVersion.version()))
+                    .fromCli(true)
+                    .all(false)
+                    .installed(!installable)
+                    .format(getFormatString())
+                    .search(searchPattern)
+                    .execute();
         } catch (QuarkusCommandException e) {
             if (parent.showErrors)
                 e.printStackTrace(err());

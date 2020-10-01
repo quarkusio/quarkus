@@ -2,10 +2,8 @@ package io.quarkus.maven;
 
 import static java.util.stream.Collectors.toSet;
 
-import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +15,6 @@ import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.registry.DefaultExtensionRegistry;
 
 /**
  * Allow adding an extension to an existing pom.xml file.
@@ -39,12 +36,6 @@ public class AddExtensionMojo extends QuarkusProjectMojoBase {
      */
     @Parameter(property = "extension")
     String extension;
-
-    /**
-     * The URL where the registry is.
-     */
-    @Parameter(property = "registry", alias = "quarkus.extension.registry")
-    List<URL> registries;
 
     @Override
     protected void validateParameters() throws MojoExecutionException {
@@ -69,9 +60,6 @@ public class AddExtensionMojo extends QuarkusProjectMojoBase {
         try {
             AddExtensions addExtensions = new AddExtensions(quarkusProject)
                     .extensions(ext.stream().map(String::trim).collect(toSet()));
-            if (registries != null && !registries.isEmpty()) {
-                addExtensions.extensionRegistry(DefaultExtensionRegistry.fromURLs(registries));
-            }
             final QuarkusCommandOutcome outcome = addExtensions.execute();
             if (!outcome.isSuccess()) {
                 throw new MojoExecutionException("Unable to add extensions");

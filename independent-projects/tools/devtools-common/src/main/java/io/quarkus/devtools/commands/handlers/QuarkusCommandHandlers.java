@@ -5,15 +5,16 @@ import static io.quarkus.devtools.project.extensions.Extensions.toCoords;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.SelectionResult;
 import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -35,7 +36,7 @@ final class QuarkusCommandHandlers {
             } else if (countColons > 1) {
                 builder.add(AppArtifactCoords.fromString(query));
             } else {
-                Collection<Extension> extensions = invocation.getPlatformDescriptor().getExtensions();
+                Collection<Extension> extensions = invocation.getExtensionsCatalog().getExtensions();
                 SelectionResult result = select(query, extensions, false);
                 if (result.matches()) {
                     final Set<AppArtifactCoords> withStrippedVersion = result.getExtensions().stream().map(Extensions::toCoords)
@@ -46,7 +47,7 @@ final class QuarkusCommandHandlers {
                     StringBuilder sb = new StringBuilder();
                     // We have 3 cases, we can still have a single candidate, but the match is on label
                     // or we have several candidates, or none
-                    Set<Extension> candidates = result.getExtensions();
+                    Collection<Extension> candidates = result.getExtensions();
                     if (candidates.isEmpty()) {
                         // No matches at all.
                         invocation.log().error("Cannot find a dependency matching '" + query + "', maybe a typo?");
@@ -71,77 +72,73 @@ final class QuarkusCommandHandlers {
      * Selection algorithm.
      *
      * @param query the query
-     * @param allPlatformExtensions the list of all platform extensions
+     * @param allExtensions the list of all platform extensions
      * @param labelLookup whether or not the query must be tested against the labels of the extensions. Should
      *        be {@code false} by default.
      * @return the list of matching candidates and whether or not a match has been found.
      */
-    static SelectionResult select(final String query, final Collection<Extension> allPlatformExtensions,
+    static SelectionResult select(final String query, final Collection<Extension> allExtensions,
             final boolean labelLookup) {
         String q = query.trim().toLowerCase();
 
-        // Try exact matches
-        Set<Extension> matchesNameOrArtifactId = allPlatformExtensions.stream()
-                .filter(extension -> extension.getName().equalsIgnoreCase(q) || matchesArtifactId(extension.getArtifactId(), q))
-                .collect(Collectors.toSet());
-        if (matchesNameOrArtifactId.size() == 1) {
-            return new SelectionResult(matchesNameOrArtifactId, true);
+        final Map<ArtifactKey, Extension> matches = new LinkedHashMap<>();
+
+        if (!isExpression(q)) {
+            // Try exact matches
+            allExtensions.stream()
+                    .filter(extension -> extension.getName().equalsIgnoreCase(q)
+                            || matchesArtifactId(extension.getArtifact().getArtifactId(), q))
+                    .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
+            if (matches.size() == 1) {
+                return new SelectionResult(matches.values(), true);
+            }
+
+            final List<Extension> listedExtensions = getListedExtensions(allExtensions);
+
+            // Try short names
+            listedExtensions.stream().filter(extension -> matchesShortName(extension, q))
+                    .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
+            if (matches.size() == 1) {
+                return new SelectionResult(matches.values(), true);
+            }
+
+            // Partial matches on name, artifactId and short names
+            listedExtensions.stream()
+                    .filter(extension -> extension.getName().toLowerCase().contains(q)
+                            || extension.getArtifact().getArtifactId().toLowerCase().contains(q)
+                            || extension.getShortName().toLowerCase().contains(q))
+                    .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
+            // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
+            // consider it as a match.
+            if (matches.size() == 1) {
+                return new SelectionResult(matches.values(), true);
+            }
+
+            // find by labels
+            if (labelLookup) {
+                listedExtensions.stream()
+                        .filter(extension -> extension.labelsForMatching().contains(q))
+                        .forEach(e -> matches.put(e.getArtifact().getKey(), e));
+            }
+            return new SelectionResult(matches.values(), false);
         }
-
-        final List<Extension> listedPlatformExtensions = allPlatformExtensions.stream()
-                .filter(e -> !e.isUnlisted()).collect(Collectors.toList());
-
-        // Try short names
-        Set<Extension> matchesShortName = listedPlatformExtensions.stream().filter(extension -> matchesShortName(extension, q))
-                .collect(Collectors.toSet());
-
-        if (matchesShortName.size() == 1 && matchesNameOrArtifactId.isEmpty()) {
-            return new SelectionResult(matchesShortName, true);
-        }
-
-        // Partial matches on name, artifactId and short names
-        Set<Extension> partialMatches = listedPlatformExtensions.stream()
-                .filter(extension -> extension.getName().toLowerCase().contains(q)
-                        || extension.getArtifactId().toLowerCase().contains(q)
-                        || extension.getShortName().toLowerCase().contains(q))
-                .collect(Collectors.toSet());
-        // Even if we have a single partial match, if the name, artifactId and short names are ambiguous, so not
-        // consider it as a match.
-        if (partialMatches.size() == 1 && matchesNameOrArtifactId.isEmpty() && matchesShortName.isEmpty()) {
-            return new SelectionResult(partialMatches, true);
-        }
-
-        // find by labels
-        List<Extension> matchesLabels;
-        if (labelLookup) {
-            matchesLabels = listedPlatformExtensions.stream()
-                    .filter(extension -> extension.labelsForMatching().contains(q)).collect(Collectors.toList());
-        } else {
-            matchesLabels = Collections.emptyList();
-        }
-
+        final List<Extension> listedExtensions = getListedExtensions(allExtensions);
         // find by pattern
-        Set<Extension> matchesPatterns;
         Pattern pattern = toRegex(q);
         if (pattern != null) {
-            matchesPatterns = listedPlatformExtensions.stream()
+            listedExtensions.stream()
                     .filter(extension -> pattern.matcher(extension.getName().toLowerCase()).matches()
-                            || pattern.matcher(extension.getArtifactId().toLowerCase()).matches()
+                            || pattern.matcher(extension.getArtifact().getArtifactId().toLowerCase()).matches()
                             || pattern.matcher(extension.getShortName().toLowerCase()).matches()
                             || matchLabels(pattern, extension.getKeywords()))
-                    .collect(Collectors.toSet());
-            return new SelectionResult(matchesPatterns, true);
-        } else {
-            matchesPatterns = Collections.emptySet();
+                    .forEach(e -> matches.putIfAbsent(e.getArtifact().getKey(), e));
         }
+        return new SelectionResult(matches.values(), !matches.isEmpty());
+    }
 
-        Set<Extension> candidates = new LinkedHashSet<>();
-        candidates.addAll(matchesNameOrArtifactId);
-        candidates.addAll(matchesShortName);
-        candidates.addAll(partialMatches);
-        candidates.addAll(matchesLabels);
-        candidates.addAll(matchesPatterns);
-        return new SelectionResult(candidates, false);
+    private static List<Extension> getListedExtensions(final Collection<Extension> allExtensions) {
+        return allExtensions.stream()
+                .filter(e -> !e.isUnlisted()).collect(Collectors.toList());
     }
 
     private static boolean matchLabels(Pattern pattern, List<String> labels) {
@@ -166,11 +163,8 @@ final class QuarkusCommandHandlers {
     }
 
     private static String wildcardToRegex(String wildcard) {
-        if (wildcard == null || wildcard.isEmpty()) {
-            return null;
-        }
         // don't try with file match char in pattern
-        if (!(wildcard.contains("*") || wildcard.contains("?"))) {
+        if (!isExpression(wildcard)) {
             return null;
         }
         StringBuffer s = new StringBuffer(wildcard.length());
@@ -208,6 +202,10 @@ final class QuarkusCommandHandlers {
         }
         s.append(".*$");
         return (s.toString());
+    }
+
+    private static boolean isExpression(String s) {
+        return s == null || s.isEmpty() ? false : s.contains("*") || s.contains("?");
     }
 
     private static boolean matchesShortName(Extension extension, String q) {

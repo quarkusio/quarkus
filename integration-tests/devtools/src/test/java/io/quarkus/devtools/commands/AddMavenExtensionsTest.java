@@ -12,6 +12,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -21,8 +22,8 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
     protected Model createProject() throws IOException, QuarkusCommandException {
         final File pom = getProjectPath().resolve("pom.xml").toFile();
         SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
-        new CreateProject(getProjectPath(), getPlatformDescriptor())
-                .buildTool(BuildTool.MAVEN)
+        final QuarkusProject project = getQuarkusProject();
+        new CreateProject(project)
                 .groupId("org.acme")
                 .artifactId("add-maven-extension-test")
                 .version("0.0.1-SNAPSHOT")
@@ -51,6 +52,6 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
     }
 
     private QuarkusProject getQuarkusProject() {
-        return QuarkusProject.maven(getProjectPath(), getPlatformDescriptor());
+        return QuarkusProjectHelper.getProject(getProjectPath(), BuildTool.MAVEN);
     }
 }

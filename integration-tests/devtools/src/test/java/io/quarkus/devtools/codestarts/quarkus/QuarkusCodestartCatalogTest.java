@@ -162,7 +162,7 @@ class QuarkusCodestartCatalogTest extends PlatformAwareTestBase {
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {
-        return QuarkusCodestartCatalog.fromQuarkusPlatformDescriptor(getPlatformDescriptor());
+        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoader());
     }
 
 }

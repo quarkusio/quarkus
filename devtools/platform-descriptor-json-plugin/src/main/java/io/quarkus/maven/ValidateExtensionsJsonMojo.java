@@ -29,11 +29,11 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
+import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 
 /**
  * This goal validates a given JSON descriptor.
@@ -101,17 +101,29 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to initialize maven artifact resolver", e);
         }
 
-        final QuarkusPlatformDescriptor descriptor = QuarkusJsonPlatformDescriptorResolver.newInstance()
-                .setArtifactResolver(new BootstrapAppModelResolver(mvn))
-                .resolveFromJson(jsonGroupId, jsonArtifactId, jsonVersion, jsonVersion);
+        final Artifact artifact = new DefaultArtifact(jsonGroupId, jsonArtifactId, jsonVersion, "json", jsonVersion);
+        final Path jsonPath;
+        try {
+            jsonPath = mvn.resolve(artifact).getArtifact().getFile().toPath();
+        } catch (BootstrapMavenException e) {
+            throw new MojoExecutionException("Failed to resolve platform descriptor " + artifact, e);
+        }
 
-        final DefaultArtifact bomArtifact = new DefaultArtifact(descriptor.getBomGroupId(),
-                descriptor.getBomArtifactId(), null, "pom", descriptor.getBomVersion());
+        JsonExtensionCatalog catalog;
+        try {
+            catalog = JsonCatalogMapperHelper.deserialize(jsonPath, JsonExtensionCatalog.class);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to deserialize extension catalog " + jsonPath, e);
+        }
+        final ArtifactCoords bomCoords = catalog.getBom();
+
+        final DefaultArtifact bomArtifact = new DefaultArtifact(bomCoords.getGroupId(),
+                bomCoords.getArtifactId(), bomCoords.getClassifier(), bomCoords.getType(), bomCoords.getVersion());
         final Map<String, Artifact> bomExtensions = collectBomExtensions(mvn, bomArtifact);
 
         List<Extension> missingFromBom = Collections.emptyList();
-        for (Extension ext : descriptor.getExtensions()) {
-            if (bomExtensions.remove(ext.getGroupId() + ":" + ext.getArtifactId()) == null) {
+        for (Extension ext : catalog.getExtensions()) {
+            if (bomExtensions.remove(ext.getArtifact().getGroupId() + ":" + ext.getArtifact().getArtifactId()) == null) {
                 if (missingFromBom.isEmpty()) {
                     missingFromBom = new ArrayList<>();
                 }
@@ -134,8 +146,7 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
             getLog().error("Extensions from " + jsonGroupId + ":" + jsonArtifactId + ":" + jsonVersion + " missing from "
                     + bomArtifact);
             for (Extension e : missingFromBom) {
-                getLog().error("- " + e.getGroupId() + ":" + e.getArtifactId() + ":" + e.getClassifier() + ":" + e.getType()
-                        + ":" + e.getVersion());
+                getLog().error("- " + e.getArtifact());
             }
         }
         throw new MojoExecutionException("Extensions referenced in " + bomArtifact + " and included in " + jsonGroupId + ":"

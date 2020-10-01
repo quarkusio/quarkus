@@ -15,14 +15,14 @@ import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
 
     private final Project project;
 
-    public GradleProjectBuildFile(Project project, QuarkusPlatformDescriptor platformDescriptor) {
-        super(project.getProjectDir().toPath(), platformDescriptor,
+    public GradleProjectBuildFile(Project project, ExtensionCatalog catalog) {
+        super(project.getProjectDir().toPath(), catalog,
                 project.getParent() != null ? project.getRootProject().getProjectDir().toPath()
                         : project.getProjectDir().toPath());
         this.project = project;

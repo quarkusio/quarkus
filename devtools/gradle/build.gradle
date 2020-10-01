@@ -27,17 +27,12 @@ repositories {
     mavenCentral()
 }
 
-configurations.all {
-    exclude group: 'io.quarkus', module: 'quarkus-bootstrap-maven-resolver'
-}
-
 dependencies {
     api gradleApi()
 
     implementation "io.quarkus:quarkus-bootstrap-core:${version}"
     implementation "io.quarkus:quarkus-devtools-common:${version}"
     implementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
-    implementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
     implementation "io.quarkus:quarkus-core-deployment:${version}"
 
     testImplementation 'org.mockito:mockito-core:3.8.0'

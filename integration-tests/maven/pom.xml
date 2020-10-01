@@ -63,10 +63,6 @@
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
-            <testResource>
-                <directory>src/it</directory>
-                <filtering>true</filtering>
-            </testResource>
         </testResources>
         <plugins>
             <plugin>

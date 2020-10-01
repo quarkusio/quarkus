@@ -160,7 +160,9 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(true);
+        enableDevToolsTestConfig(params);
         request.setProperties(params);
+
         getEnv().forEach(request::addShellEnvironment);
         PrintStreamLogger logger = getPrintStreamLogger("create-codestart.log");
         invoker.setLogger(logger);

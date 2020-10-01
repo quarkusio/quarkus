@@ -17,10 +17,11 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.test.RegistryClientTestHelper;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
 import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class SetupVerifier {
 
@@ -111,11 +112,16 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        final String quarkusVersion = getPlatformDescriptor().getQuarkusVersion();
+        final String quarkusVersion = getPlatformDescriptor().getQuarkusCoreVersion();
         assertEquals(quarkusVersion, projectProps.getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME));
     }
 
-    private static QuarkusPlatformDescriptor getPlatformDescriptor() {
-        return QuarkusJsonPlatformDescriptorResolver.newInstance().resolveBundled();
+    private static ExtensionCatalog getPlatformDescriptor() throws Exception {
+        RegistryClientTestHelper.enableRegistryClientTestConfig();
+        try {
+            return QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+        } finally {
+            RegistryClientTestHelper.disableRegistryClientTestConfig();
+        }
     }
 }

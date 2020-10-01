@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
-public class AddExtensionToSingleModuleKtsProjectTest extends QuarkusGradleWrapperTestBase {
+public class AddExtensionToSingleModuleKtsProjectTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void testAddAndRemoveExtension() throws IOException, URISyntaxException, InterruptedException {

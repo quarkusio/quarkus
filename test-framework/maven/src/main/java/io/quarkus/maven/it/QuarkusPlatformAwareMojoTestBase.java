@@ -2,25 +2,32 @@ package io.quarkus.maven.it;
 
 import java.util.Properties;
 
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
 
-    private QuarkusPlatformDescriptor platformDescr;
+    private ExtensionCatalog catalog;
     private Properties quarkusProps;
 
-    protected QuarkusPlatformDescriptor getPlatformDescriptor() {
-        return platformDescr == null ? platformDescr = QuarkusJsonPlatformDescriptorResolver.newInstance().resolveBundled()
-                : platformDescr;
+    private ExtensionCatalog getPlatformDescriptor() {
+        if (catalog == null) {
+            enableDevToolsTestConfig(System.getProperties());
+            try {
+                catalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog();
+            } catch (RegistryResolutionException e) {
+                throw new RuntimeException("Failed to resolve the extensions catalog", e);
+            } finally {
+                disableDevToolsTestConfig(System.getProperties());
+            }
+        }
+        return catalog;
     }
 
     private Properties getQuarkusProperties() {
-        if (quarkusProps == null) {
-            quarkusProps = ToolsUtils.readQuarkusProperties(getPlatformDescriptor());
-        }
-        return quarkusProps;
+        return quarkusProps == null ? quarkusProps = ToolsUtils.readQuarkusProperties(getPlatformDescriptor()) : quarkusProps;
     }
 
     protected String getMavenPluginGroupId() {
@@ -40,14 +47,14 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
     }
 
     protected String getBomGroupId() {
-        return getPlatformDescriptor().getBomGroupId();
+        return getPlatformDescriptor().getBom().getGroupId();
     }
 
     protected String getBomArtifactId() {
-        return getPlatformDescriptor().getBomArtifactId();
+        return getPlatformDescriptor().getBom().getArtifactId();
     }
 
     protected String getBomVersion() {
-        return getPlatformDescriptor().getBomVersion();
+        return getPlatformDescriptor().getBom().getVersion();
     }
 }

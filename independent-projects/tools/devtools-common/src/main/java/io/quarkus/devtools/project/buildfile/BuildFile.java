@@ -1,15 +1,16 @@
 package io.quarkus.devtools.project.buildfile;
 
-import static io.quarkus.devtools.project.extensions.Extensions.findInList;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.dependencies.Extension;
 import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -17,17 +18,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class BuildFile implements ExtensionManager {
 
     private final Path projectDirPath;
-    private final QuarkusPlatformDescriptor platformDescriptor;
+    private final ExtensionCatalog catalog;
 
-    public BuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
+    public BuildFile(final Path projectDirPath, ExtensionCatalog catalog) {
         this.projectDirPath = requireNonNull(projectDirPath, "projectPath is required");
-        this.platformDescriptor = requireNonNull(platformDescriptor, "platformDescriptor is required");
+        this.catalog = requireNonNull(catalog, "catalog is required");
     }
 
     @Override
@@ -127,16 +130,24 @@ public abstract class BuildFile implements ExtensionManager {
     }
 
     private boolean isQuarkusExtension(final AppArtifactKey key) {
-        // This will not always be true as the platform descriptor does not contain the list of all available extensions
-        return isDefinedInRegistry(platformDescriptor.getExtensions(), key);
+        if (catalog != null) {
+            return findInList(catalog.getExtensions(), key).isPresent();
+        }
+        return isDefinedInRegistry(catalog.getExtensions(), key);
     }
 
     private Set<AppArtifactKey> getDependenciesKeys() throws IOException {
         return getDependencies().stream().map(AppArtifactCoords::getKey).collect(Collectors.toSet());
     }
 
-    public static boolean isDefinedInRegistry(List<Extension> registry, final AppArtifactKey key) {
-        return findInList(registry, key).isPresent();
+    public static boolean isDefinedInRegistry(Collection<Extension> registry, final AppArtifactKey key) {
+        return Extensions.findInList(registry, key).isPresent();
+    }
+
+    private static Optional<io.quarkus.registry.catalog.Extension> findInList(
+            Collection<io.quarkus.registry.catalog.Extension> list, final AppArtifactKey key) {
+        ArtifactKey k = new ArtifactKey(key.getGroupId(), key.getArtifactId(), key.getClassifier(), key.getType());
+        return list.stream().filter(e -> Objects.equals(e.getArtifact().getKey(), k)).findFirst();
     }
 
 }

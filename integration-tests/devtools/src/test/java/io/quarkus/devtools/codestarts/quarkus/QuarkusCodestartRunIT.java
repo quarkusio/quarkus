@@ -1,7 +1,5 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKey.*;
-import static io.quarkus.platform.tools.ToolsUtils.readQuarkusProperties;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,7 +10,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,9 +32,6 @@ import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.QuarkusDataKe
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.WrapperRunner;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.platform.tools.ToolsUtils;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class QuarkusCodestartRunIT extends PlatformAwareTestBase {
@@ -52,6 +46,10 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     @BeforeAll
     static void setUp() throws IOException {
         SnapshotTesting.deleteTestDirectory(testDirPath.toFile());
+    }
+
+    private Map<String, Object> getTestInputData(final Map<String, Object> override) {
+        return getTestInputData(getExtensionsCatalog(), override);
     }
 
     @Test
@@ -172,41 +170,6 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
         assertThat(result).isZero();
     }
 
-    private Map<String, Object> getTestInputData() {
-        return getTestInputData(null);
-    }
-
-    private Map<String, Object> getTestInputData(final Map<String, Object> override) {
-        return getTestInputData(getPlatformDescriptor(), override);
-    }
-
-    private static Map<String, Object> getTestInputData(final QuarkusPlatformDescriptor descriptor,
-            final Map<String, Object> override) {
-        final HashMap<String, Object> data = new HashMap<>();
-        final Properties quarkusProp = readQuarkusProperties(descriptor);
-        data.put(PROJECT_GROUP_ID.key(), "org.test");
-        data.put(PROJECT_ARTIFACT_ID.key(), "test-codestart");
-        data.put(PROJECT_VERSION.key(), "1.0.0-codestart");
-        data.put(BOM_GROUP_ID.key(), descriptor.getBomGroupId());
-        data.put(BOM_ARTIFACT_ID.key(), descriptor.getBomArtifactId());
-        data.put(BOM_VERSION.key(), descriptor.getBomVersion());
-        data.put(QUARKUS_VERSION.key(), descriptor.getQuarkusVersion());
-        data.put(QUARKUS_MAVEN_PLUGIN_GROUP_ID.key(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
-        data.put(QUARKUS_MAVEN_PLUGIN_ARTIFACT_ID.key(), ToolsUtils.getMavenPluginArtifactId(quarkusProp));
-        data.put(QUARKUS_MAVEN_PLUGIN_VERSION.key(), ToolsUtils.getMavenPluginVersion(quarkusProp));
-        data.put(QUARKUS_GRADLE_PLUGIN_ID.key(), ToolsUtils.getMavenPluginGroupId(quarkusProp));
-        data.put(QUARKUS_GRADLE_PLUGIN_VERSION.key(), ToolsUtils.getGradlePluginVersion(quarkusProp));
-        data.put(JAVA_VERSION.key(), System.getProperty("java.specification.version"));
-        data.put(KOTLIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_KOTLIN_VERSION));
-        data.put(SCALA_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_VERSION));
-        data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_PLUGIN_VERSION));
-        data.put(MAVEN_COMPILER_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_COMPILER_PLUGIN_VERSION));
-        data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION));
-        if (override != null)
-            data.putAll(override);
-        return data;
-    }
-
     private String genName(String buildtool, String language, List<String> codestarts) {
         String name = "project-" + buildtool + "-" + language;
         if (codestarts.isEmpty()) {
@@ -220,7 +183,7 @@ class QuarkusCodestartRunIT extends PlatformAwareTestBase {
     }
 
     private QuarkusCodestartCatalog getCatalog() throws IOException {
-        return QuarkusCodestartCatalog.fromQuarkusPlatformDescriptor(getPlatformDescriptor());
+        return QuarkusCodestartCatalog.fromExtensionsCatalog(getExtensionsCatalog(), getCodestartsResourceLoader());
     }
 
     private List<String> getRunTogetherExamples() throws IOException {

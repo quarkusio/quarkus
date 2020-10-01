@@ -10,13 +10,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-public class ListExtensionsTest extends QuarkusGradleWrapperTestBase {
+public class ListExtensionsTest extends QuarkusGradleDevToolsTestBase {
 
     @Test
     public void testListExtensionsWork() throws IOException, URISyntaxException, InterruptedException {
 
         final File projectDir = getProjectDir("list-extension-single-module");
-        runGradleWrapper(projectDir, ":listExtension");
+        runGradleWrapper(projectDir, ":listExtensions");
 
         List<String> outputLogLines = listExtensions(projectDir, ":listExtension");
 

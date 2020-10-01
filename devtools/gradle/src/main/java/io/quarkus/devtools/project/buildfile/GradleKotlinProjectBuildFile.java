@@ -4,15 +4,15 @@ import org.gradle.api.Project;
 
 import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class GradleKotlinProjectBuildFile extends GradleProjectBuildFile {
 
     static final String BUILD_GRADLE_PATH = "build.gradle.kts";
     static final String SETTINGS_GRADLE_PATH = "settings.gradle.kts";
 
-    public GradleKotlinProjectBuildFile(Project project, QuarkusPlatformDescriptor platformDescriptor) {
-        super(project, platformDescriptor);
+    public GradleKotlinProjectBuildFile(Project project, ExtensionCatalog catalog) {
+        super(project, catalog);
     }
 
     @Override

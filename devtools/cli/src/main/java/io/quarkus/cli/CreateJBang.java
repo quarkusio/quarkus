@@ -5,8 +5,9 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.core.BaseSubCommand;
+import io.quarkus.cli.core.QuarkusCliVersion;
 import io.quarkus.devtools.commands.CreateJBangProject;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "create-jbang", sortOptions = false, usageHelpAutoWidth = true, mixinStandardHelpOptions = false, description = "Create a new quarkus jbang project.")
@@ -35,13 +36,12 @@ public class CreateJBang extends BaseSubCommand implements Callable<Integer> {
                 return CommandLine.ExitCode.SOFTWARE;
             }
 
-            boolean status = new CreateJBangProject(projectRoot.getAbsoluteFile().toPath(),
-                    QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
+            boolean status = new CreateJBangProject(
+                    QuarkusProjectHelper.getProject(projectRoot.getAbsoluteFile().toPath(), QuarkusCliVersion.version()))
                             .extensions(extensions)
                             .setValue("noJBangWrapper", noJBangWrapper)
                             .execute()
                             .isSuccess();
-
             if (status) {
                 out().println("JBang project created.");
                 parent.setProjectDirectory(projectRoot.toPath().toAbsolutePath());

@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import io.quarkus.cli.QuarkusCli;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.utilities.OS;
 import picocli.CommandLine;
 
@@ -173,9 +174,9 @@ public class ExecuteUtil {
             return SOFTWARE;
         }
         String[] newArgs = args;
-        if (System.getProperties().containsKey("maven.repo.local")) {
-            newArgs = prependArray("-Dmaven.repo.local=" + System.getProperty("maven.repo.local"), newArgs);
-        }
+        newArgs = propagatePropertyIfSet("maven.repo.local", newArgs);
+        newArgs = propagatePropertyIfSet(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, newArgs);
+        newArgs = propagatePropertyIfSet("io.quarkus.maven.secondary-local-repo", newArgs);
         if (cli.isShowErrors()) {
             newArgs = prependArray("--full-stacktrace", newArgs);
         }
@@ -187,6 +188,11 @@ public class ExecuteUtil {
         } else {
             return executeGradle(projectPath, cli, args);
         }
+    }
+
+    private static String[] propagatePropertyIfSet(String name, String[] newArgs) {
+        final String value = System.getProperty(name);
+        return value == null ? newArgs : prependArray("-D" + name + "=" + value, newArgs);
     }
 
     public static int executeMavenTarget(File projectPath, QuarkusCli cli, String... args) throws Exception {

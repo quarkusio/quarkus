@@ -7,7 +7,7 @@ import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,8 +30,8 @@ public class MavenBuildFile extends BuildFile {
 
     private final AtomicReference<Model> modelRef = new AtomicReference<>();
 
-    public MavenBuildFile(final Path projectDirPath, final QuarkusPlatformDescriptor platformDescriptor) {
-        super(projectDirPath, platformDescriptor);
+    public MavenBuildFile(final Path projectDirPath, ExtensionCatalog catalog) {
+        super(projectDirPath, catalog);
     }
 
     @Override

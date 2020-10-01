@@ -20,6 +20,27 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/resources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/src/main/resources</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
                 <version>${project.version}</version>
@@ -27,7 +48,8 @@
                     <execution>
                         <phase>${pluginPhase}</phase>
                         <goals>
-                            <goal>generate-extensions-json</goal>
+                            <!-- goal>generate-extensions-json</goal -->
+                            <goal>generate-platform-descriptor-json</goal>
                         </goals>
                         <configuration>
                             <ignoredGroupIds>
@@ -35,6 +57,7 @@
                             </ignoredGroupIds>
                             <bomArtifactId>quarkus-bom</bomArtifactId>
                             <resolveDependencyManagement>true</resolveDependencyManagement>
+                            <overridesFile>${basedir}/target/resources/catalog-overrides.json</overridesFile>
                         </configuration>
                     </execution>
                 </executions>

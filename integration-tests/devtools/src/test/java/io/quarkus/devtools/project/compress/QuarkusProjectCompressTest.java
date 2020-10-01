@@ -22,6 +22,9 @@ import io.quarkus.devtools.PlatformAwareTestBase;
 import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusProjectCompressTest extends PlatformAwareTestBase {
@@ -82,7 +85,8 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
 
     private Path createProject(Path testDir) throws QuarkusCommandException, IOException {
         final Path projectPath = testDir.resolve("project");
-        final QuarkusCommandOutcome result = new CreateProject(projectPath, getPlatformDescriptor())
+        final QuarkusProject project = QuarkusProjectHelper.getProject(projectPath, BuildTool.MAVEN);
+        final QuarkusCommandOutcome result = new CreateProject(project)
                 .groupId("org.acme")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT")

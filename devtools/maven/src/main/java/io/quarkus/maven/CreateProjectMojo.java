@@ -1,31 +1,21 @@
 package io.quarkus.maven;
 
 import static org.fusesource.jansi.Ansi.ansi;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.groupId;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.name;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.execution.DefaultMavenExecutionRequest;
-import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -35,10 +25,8 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
-import org.apache.maven.settings.Proxy;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -47,13 +35,21 @@ import org.fusesource.jansi.Ansi;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.codegen.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.platform.tools.maven.MojoMessageWriter;
+import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.Platform;
+import io.quarkus.registry.catalog.PlatformCatalog;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -77,9 +73,6 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Parameter(property = "projectVersion")
     private String projectVersion;
-
-    @Parameter(property = "legacyCodegen", defaultValue = "false")
-    private boolean legacyCodegen;
 
     /**
      * When true, do not include any example code in the generated Quarkus project.
@@ -195,6 +188,15 @@ public class CreateProjectMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
 
+        // We detect the Maven version during the project generation to indicate the user immediately that the installed
+        // version may not be supported.
+        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+        try {
+            Files.createDirectories(outputDirectory.toPath());
+        } catch (IOException e) {
+            throw new MojoExecutionException("Could not create directory " + outputDirectory, e);
+        }
+
         final MavenArtifactResolver mvn;
         try {
             mvn = MavenArtifactResolver.builder()
@@ -206,17 +208,14 @@ public class CreateProjectMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
-        final QuarkusPlatformDescriptor platform = CreateUtils.resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion,
-                mvn, getLog());
+        final MojoMessageWriter log = new MojoMessageWriter(getLog());
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver(mvn, log);
 
-        // We detect the Maven version during the project generation to indicate the user immediately that the installed
-        // version may not be supported.
-        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        try {
-            Files.createDirectories(outputDirectory.toPath());
-        } catch (IOException e) {
-            throw new MojoExecutionException("Could not create directory " + outputDirectory, e);
-        }
+        final ExtensionCatalog catalog = resolveExtensionsCatalog(
+                StringUtils.defaultIfBlank(bomGroupId, null),
+                StringUtils.defaultIfBlank(bomArtifactId, null),
+                StringUtils.defaultIfBlank(bomVersion, null),
+                catalogResolver, mvn, log);
 
         File projectRoot = outputDirectory;
         File pom = project != null ? project.getFile() : null;
@@ -272,8 +271,9 @@ public class CreateProjectMojo extends AbstractMojo {
             final SourceType sourceType = CreateProject.determineSourceType(extensions);
             sanitizeOptions(sourceType);
 
-            final CreateProject createProject = new CreateProject(projectDirPath, platform)
-                    .buildTool(buildToolEnum)
+            QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
+                    QuarkusProjectHelper.getResourceLoader(catalog, mvn), log, buildToolEnum);
+            final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
@@ -282,7 +282,6 @@ public class CreateProjectMojo extends AbstractMojo {
                     .packageName(packageName)
                     .extensions(extensions)
                     .overrideExamples(examples)
-                    .legacyCodegen(legacyCodegen)
                     .noExamples(noExamples);
             if (path != null) {
                 createProject.setValue("path", path);
@@ -304,14 +303,6 @@ public class CreateProjectMojo extends AbstractMojo {
                 MojoUtils.write(parentPomModel, pom);
                 MojoUtils.write(subModulePomModel, subModulePomFile);
             }
-            if (legacyCodegen) {
-                File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-                if (BuildTool.MAVEN.equals(buildToolEnum)) {
-                    createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
-                } else if (BuildTool.GRADLE.equals(buildToolEnum) || BuildTool.GRADLE_KOTLIN_DSL.equals(buildToolEnum)) {
-                    createGradleWrapper(platform, projectDirPath);
-                }
-            }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);
         }
@@ -323,80 +314,70 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-    private void createGradleWrapper(QuarkusPlatformDescriptor platform, Path projectDirPath) {
-        try {
-            Files.createDirectories(projectDirPath.resolve("gradle/wrapper"));
+    static ExtensionCatalog resolveExtensionsCatalog(String groupId, String artifactId, String version,
+            ExtensionCatalogResolver catalogResolver, MavenArtifactResolver artifactResolver, MessageWriter log)
+            throws MojoExecutionException {
 
-            for (String filename : CreateUtils.GRADLE_WRAPPER_FILES) {
-                byte[] fileContent = platform.loadResource(CreateUtils.GRADLE_WRAPPER_PATH + '/' + filename,
-                        is -> {
-                            byte[] buffer = new byte[is.available()];
-                            is.read(buffer);
-                            return buffer;
-                        });
-                final Path destination = projectDirPath.resolve(filename);
-                Files.write(destination, fileContent);
+        if (!catalogResolver.hasRegistries()) {
+            // TODO: this should normally result in an error, however for the time being
+            // until we get the registry service up and running this will allow
+            // a fall back to the legacy way of resolving the default platform catalog directly
+            return ToolsUtils.resolvePlatformDescriptorDirectly(groupId, artifactId,
+                    version == null ? CreateUtils.resolvePluginInfo(CreateUtils.class).getVersion() : version, artifactResolver,
+                    log);
+        }
+
+        try {
+            if (groupId == null && artifactId == null && version == null) {
+                return catalogResolver.resolveExtensionCatalog();
             }
-
-            projectDirPath.resolve("gradlew").toFile().setExecutable(true);
-            projectDirPath.resolve("gradlew.bat").toFile().setExecutable(true);
-        } catch (IOException e) {
-            getLog().error("Unable to copy Gradle wrapper from platform descriptor", e);
-        }
-    }
-
-    private void createMavenWrapper(File createdPomFile, Properties props) {
-        try {
-            // we need to modify the maven environment used by the wrapper plugin since the project could have been
-            // created in a directory other than the current
-            MavenProject newProject = projectBuilder.build(
-                    createdPomFile, new DefaultProjectBuildingRequest(session.getProjectBuildingRequest())).getProject();
-
-            MavenExecutionRequest newExecutionRequest = DefaultMavenExecutionRequest.copy(session.getRequest());
-            newExecutionRequest.setBaseDirectory(createdPomFile.getParentFile());
-
-            MavenSession newSession = new MavenSession(session.getContainer(), session.getRepositorySession(),
-                    newExecutionRequest, session.getResult());
-            newSession.setCurrentProject(newProject);
-
-            setProxySystemPropertiesFromSession();
-
-            executeMojo(
-                    plugin(
-                            groupId("io.takari"),
-                            artifactId("maven"),
-                            version(ToolsUtils.getMavenWrapperVersion(props))),
-                    goal("wrapper"),
-                    configuration(
-                            element(name("maven"), ToolsUtils.getProposedMavenVersion(props))),
-                    executionEnvironment(
-                            newProject,
-                            newSession,
-                            pluginManager));
-        } catch (Exception e) {
-            // no reason to fail if the wrapper could not be created
-            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project", e);
-        }
-    }
-
-    private void setProxySystemPropertiesFromSession() {
-        List<Proxy> proxiesFromSession = session.getRequest().getProxies();
-        // - takari maven uses https to download the maven wrapper
-        // - don't do anything if proxy system property is already set
-        if (!proxiesFromSession.isEmpty() && System.getProperty("https.proxyHost") == null) {
-
-            // use the first active proxy for setting the system properties
-            proxiesFromSession.stream()
-                    .filter(Proxy::isActive)
-                    .findFirst()
-                    .ifPresent(proxy -> {
-                        // note: a http proxy _is_ usable as https.proxyHost
-                        System.setProperty("https.proxyHost", proxy.getHost());
-                        System.setProperty("https.proxyPort", String.valueOf(proxy.getPort()));
-                        if (proxy.getNonProxyHosts() != null) {
-                            System.setProperty("http.nonProxyHosts", proxy.getNonProxyHosts());
-                        }
-                    });
+            final PlatformCatalog platformsCatalog = catalogResolver.resolvePlatformCatalog();
+            if (platformsCatalog == null) {
+                throw new MojoExecutionException(
+                        "No platforms are available. Please make sure your .quarkus/config.yaml configuration includes proper extensions registry configuration");
+            }
+            ArtifactCoords matchedBom = null;
+            List<ArtifactCoords> matchedBoms = null;
+            for (Platform p : platformsCatalog.getPlatforms()) {
+                final ArtifactCoords bom = p.getBom();
+                if (version != null && !bom.getVersion().equals(version)) {
+                    continue;
+                }
+                if (artifactId != null && !bom.getArtifactId().equals(artifactId)) {
+                    continue;
+                }
+                if (groupId != null && !bom.getGroupId().equals(groupId)) {
+                    continue;
+                }
+                if (matchedBom != null) {
+                    if (matchedBoms == null) {
+                        matchedBoms = new ArrayList<>();
+                        matchedBoms.add(matchedBom);
+                    }
+                    matchedBoms.add(bom);
+                } else {
+                    matchedBom = bom;
+                }
+            }
+            if (matchedBoms != null) {
+                StringWriter buf = new StringWriter();
+                buf.append("Multiple platforms were matching the requested platform BOM coordinates ");
+                buf.append(groupId == null ? "*" : groupId).append(':');
+                buf.append(artifactId == null ? "*" : artifactId).append(':');
+                buf.append(version == null ? "*" : version).append(": ");
+                try (BufferedWriter writer = new BufferedWriter(buf)) {
+                    for (ArtifactCoords bom : matchedBoms) {
+                        writer.newLine();
+                        writer.append("- ").append(bom.toString());
+                    }
+                } catch (IOException e) {
+                    //
+                }
+                throw new MojoExecutionException(buf.toString());
+            }
+            return catalogResolver.resolveExtensionCatalog(Arrays.asList(matchedBom));
+        } catch (RegistryResolutionException e) {
+            throw new MojoExecutionException("Failed to resolve the extensions catalog", e);
         }
     }
 
@@ -434,38 +415,18 @@ public class CreateProjectMojo extends AbstractMojo {
                         DEFAULT_VERSION);
             }
 
-            if (legacyCodegen) {
-                if (StringUtils.isBlank(className)) {
-                    // Ask the user if he want to create a resource
-                    String answer = prompter.promptWithDefaultValue("Do you want to create a REST resource? (y/n)", "no");
-                    if (isTrueOrYes(answer)) {
-                        String defaultResourceName = projectGroupId.replace("-", ".")
-                                .replace("_", ".") + ".HelloResource";
-                        className = prompter.promptWithDefaultValue("Set the resource classname", defaultResourceName);
-                        if (StringUtils.isBlank(path)) {
-                            path = prompter.promptWithDefaultValue("Set the resource path ",
-                                    CreateUtils.getDerivedPath(className));
-                        }
-                    } else {
-                        className = null;
-                        path = null;
-                    }
+            if (examples.isEmpty()) {
+                if (extensions.isEmpty()) {
+                    extensions = Arrays
+                            .stream(prompter
+                                    .promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
+                                            DEFAULT_EXTENSIONS)
+                                    .split(","))
+                            .map(String::trim).filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
                 }
-            } else {
-                if (examples.isEmpty()) {
-                    if (extensions.isEmpty()) {
-                        extensions = Arrays
-                                .stream(prompter
-                                        .promptWithDefaultValue("What extensions do you wish to add (comma separated list)",
-                                                DEFAULT_EXTENSIONS)
-                                        .split(","))
-                                .map(String::trim).filter(StringUtils::isNotEmpty)
-                                .collect(Collectors.toSet());
-                    }
-                    String answer = prompter.promptWithDefaultValue(
-                            "Do you want example code to get started (yes), or just an empty project (no)", "yes");
-                    noExamples = answer.startsWith("n");
-                }
+                String answer = prompter.promptWithDefaultValue(
+                        "Do you want example code to get started (yes), or just an empty project (no)", "yes");
+                noExamples = answer.startsWith("n");
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
@@ -476,14 +437,6 @@ public class CreateProjectMojo extends AbstractMojo {
         // Must be called before user input
         return projectArtifactId != null;
 
-    }
-
-    private boolean isTrueOrYes(String answer) {
-        if (answer == null) {
-            return false;
-        }
-        String content = answer.trim().toLowerCase();
-        return "true".equalsIgnoreCase(content) || "yes".equalsIgnoreCase(content) || "y".equalsIgnoreCase(content);
     }
 
     private void sanitizeOptions(SourceType sourceType) {
@@ -529,5 +482,4 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info("========================================================================================");
         getLog().info("");
     }
-
 }

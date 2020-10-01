@@ -36,6 +36,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -105,6 +106,7 @@ public final class QuarkusRestDotNames {
     public static final DotName SET = DotName.createSimple(Set.class.getName());
     public static final DotName SORTED_SET = DotName.createSimple(SortedSet.class.getName());
     public static final DotName MULTI_VALUED_MAP = DotName.createSimple(MultivaluedMap.class.getName());
+    public static final DotName PATH_SEGMENT = DotName.createSimple(PathSegment.class.getName());
 
     public static final DotName INTEGER = DotName.createSimple(Integer.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());

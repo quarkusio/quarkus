@@ -30,6 +30,7 @@ import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.MULTI_VAL
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.NAME_BINDING;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH_PARAM;
+import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PATH_SEGMENT;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_BOOLEAN;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_CHAR;
 import static io.quarkus.rest.deployment.framework.QuarkusRestDotNames.PRIMITIVE_DOUBLE;
@@ -100,6 +101,7 @@ import io.quarkus.rest.runtime.core.parameters.converters.GeneratedParameterConv
 import io.quarkus.rest.runtime.core.parameters.converters.ListConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.ParameterConverterSupplier;
+import io.quarkus.rest.runtime.core.parameters.converters.PathSegmentParamConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.RuntimeResolvedConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SetConverter;
 import io.quarkus.rest.runtime.core.parameters.converters.SortedSetConverter;
@@ -981,6 +983,11 @@ public class EndpointIndexer {
                 } else {
                     typeHandled = false;
                 }
+            } else if ((paramType.name().equals(PATH_SEGMENT)) && (type == ParameterType.PATH)) {
+                elementType = paramType.name().toString();
+                single = true;
+                converter = new PathSegmentParamConverter.Supplier();
+                typeHandled = true;
             }
             if (!typeHandled) {
                 elementType = toClassName(paramType, currentClassInfo, actualEndpointInfo, index);

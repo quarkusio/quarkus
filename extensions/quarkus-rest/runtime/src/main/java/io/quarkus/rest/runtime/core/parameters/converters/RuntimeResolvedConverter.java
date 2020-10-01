@@ -35,17 +35,6 @@ public class RuntimeResolvedConverter implements InitRequiredParameterConverter 
 
     public static class Supplier implements ParameterConverterSupplier {
 
-        int index;
-
-        public int getIndex() {
-            return index;
-        }
-
-        public Supplier setIndex(int index) {
-            this.index = index;
-            return this;
-        }
-
         @Override
         public String getClassName() {
             return RuntimeResolvedConverter.class.getName();

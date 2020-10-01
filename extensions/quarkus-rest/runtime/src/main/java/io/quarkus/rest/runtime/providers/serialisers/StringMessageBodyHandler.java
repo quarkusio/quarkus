@@ -1,6 +1,5 @@
 package io.quarkus.rest.runtime.providers.serialisers;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,7 +19,8 @@ import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.http.HttpServerResponse;
 
 @Provider
-public class StringMessageBodyHandler implements QuarkusRestMessageBodyWriter<Object>, MessageBodyReader<String> {
+public class StringMessageBodyHandler extends PrimitiveBodyHandler
+        implements QuarkusRestMessageBodyWriter<Object>, MessageBodyReader<String> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -54,12 +54,6 @@ public class StringMessageBodyHandler implements QuarkusRestMessageBodyWriter<Ob
     @Override
     public String readFrom(Class<String> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024]; //TODO: fix, needs a pure vert.x async read model
-        int r;
-        while ((r = entityStream.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+        return super.readFrom(entityStream);
     }
 }

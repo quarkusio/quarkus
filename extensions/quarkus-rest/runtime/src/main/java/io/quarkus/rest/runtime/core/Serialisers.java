@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,12 +45,22 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestWriterInterceptorContext;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.model.ResourceReader;
 import io.quarkus.rest.runtime.model.ResourceWriter;
+import io.quarkus.rest.runtime.providers.serialisers.BigDecimalMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.BigIntegerMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.BooleanMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ByteArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.ByteMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.CharArrayMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.CharacterMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.DoubleMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FileBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.FloatMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.IntegerMessageBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.LongMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ReaderBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.ShortMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.StringMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.VertxBufferMessageBodyWriter;
 import io.quarkus.rest.runtime.providers.serialisers.VertxJsonMessageBodyWriter;
@@ -106,6 +118,26 @@ public class Serialisers {
     public static BuiltinReader[] BUILTIN_READERS = new BuiltinReader[] {
             new BuiltinReader(String.class, StringMessageBodyHandler.class,
                     MediaType.WILDCARD),
+            new BuiltinReader(Boolean.class, BooleanMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Character.class, CharacterMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Byte.class, ByteMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Short.class, ShortMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Integer.class, IntegerMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Long.class, LongMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Float.class, FloatMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(Double.class, DoubleMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(BigInteger.class, BigIntegerMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
+            new BuiltinReader(BigDecimal.class, BigDecimalMessageBodyHandler.class,
+                    MediaType.TEXT_PLAIN),
             new BuiltinReader(InputStream.class, InputStreamMessageBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(Reader.class, ReaderBodyHandler.class, MediaType.WILDCARD),
             new BuiltinReader(File.class, FileBodyHandler.class, MediaType.WILDCARD),

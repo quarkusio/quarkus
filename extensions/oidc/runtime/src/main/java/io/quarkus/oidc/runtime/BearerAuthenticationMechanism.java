@@ -18,8 +18,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             null, null);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager,
-            DefaultTenantConfigResolver resolver) {
+            IdentityProviderManager identityProviderManager) {
         String token = extractBearerToken(context, resolver.resolve(context, false).oidcConfig);
 
         // if a bearer token is provided try to authenticate
@@ -29,7 +28,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return Uni.createFrom().nullItem();
     }
 
-    public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
         return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
     }
 

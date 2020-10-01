@@ -23,6 +23,10 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-logout";
         }
 
+        if (path.contains("tenant-listener")) {
+            return "tenant-listener";
+        }
+
         if (path.contains("tenant-autorefresh")) {
             return "tenant-autorefresh";
         }

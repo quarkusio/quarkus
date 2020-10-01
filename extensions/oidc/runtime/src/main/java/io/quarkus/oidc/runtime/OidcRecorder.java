@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
@@ -332,5 +333,10 @@ public class OidcRecorder {
             jsonOptions.put("password", proxyConfig.password.get());
         }
         return Optional.of(new ProxyOptions(jsonOptions));
+    }
+
+    public void setSecurityEventObserved(boolean isSecurityEventObserved) {
+        DefaultTenantConfigResolver bean = Arc.container().instance(DefaultTenantConfigResolver.class).get();
+        bean.setSecurityEventObserved(isSecurityEventObserved);
     }
 }

@@ -108,7 +108,22 @@ public class ProtectedResource {
         if (!accessTokenCredential.getRefreshToken().getToken().equals(refreshToken.getToken())) {
             throw new OIDCException("Refresh token values are not equal");
         }
-        return refreshToken.getToken() != null && !refreshToken.getToken().isEmpty() ? "RT injected" : "no refresh";
+        if (refreshToken.getToken() != null && !refreshToken.getToken().isEmpty()) {
+            String message = "RT injected";
+            String listenerMessage = idTokenCredential.getRoutingContext().get("listener-message");
+            if (listenerMessage != null) {
+                message += ("(" + listenerMessage + ")");
+            }
+            return message;
+        } else {
+            return "no refresh";
+        }
+    }
+
+    @GET
+    @Path("refresh/tenant-listener")
+    public String refreshTenantListener() {
+        return refresh();
     }
 
     @GET

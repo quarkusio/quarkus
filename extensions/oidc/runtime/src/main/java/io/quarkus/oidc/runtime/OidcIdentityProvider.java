@@ -47,6 +47,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             AuthenticationRequestContext context) {
         OidcTokenCredential credential = (OidcTokenCredential) request.getToken();
         RoutingContext vertxContext = credential.getRoutingContext();
+        vertxContext.put(AuthenticationRequestContext.class.getName(), context);
         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<SecurityIdentity> get() {
@@ -159,6 +160,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     if (userInfo != null) {
                                         OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig, userInfo);
                                     }
+                                    OidcUtils.setBlockinApiAttribute(builder, vertxContext);
+                                    OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
                                     uniEmitter.complete(builder.build());
                                 }
                             }

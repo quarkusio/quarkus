@@ -82,6 +82,16 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
+    @Order(6)
+    void testAllTheThings() {
+        given()
+                .when().get("/all-the-things")
+                .then()
+                .statusCode(200)
+                .body(containsString("OK"));
+    }
+
+    @Test
     @Order(10)
     void testPrometheusScrapeEndpoint() {
         given()
@@ -120,6 +130,40 @@ class PrometheusMetricsRegistryTest {
                         "hibernate_entities_inserts_total{entityManagerFactory=\"<default>\",env=\"test\",registry=\"prometheus\",} 3.0"))
                 .body(containsString(
                         "hibernate_flushes_total{entityManagerFactory=\"<default>\",env=\"test\",registry=\"prometheus\",} 2.0"))
+
+                // Annotated counters
+                .body(not(containsString("metric_none")))
+                .body(containsString(
+                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                .body(containsString(
+                        "metric_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",extra=\"tag\",method=\"countAllInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                .body(containsString(
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                .body(containsString(
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",method=\"emptyMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                .body(not(containsString("async_none")))
+                .body(containsString(
+                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                .body(containsString(
+                        "async_all_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",extra=\"tag\",method=\"countAllAsyncInvocations\",registry=\"prometheus\",result=\"success\",} 1.0"))
+                .body(containsString(
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"failure\",} 1.0"))
+                .body(containsString(
+                        "method_counted_total{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",method=\"emptyAsyncMetricName\",registry=\"prometheus\",result=\"success\",} 1.0"))
+
+                // Annotated Timers
+                .body(containsString(
+                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",extra=\"tag\",method=\"call\",registry=\"prometheus\",} 1.0"))
+                .body(containsString(
+                        "call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",extra=\"tag\",method=\"call\",registry=\"prometheus\",}"))
+                .body(containsString(
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"RuntimeException\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
+                .body(containsString(
+                        "async_call_seconds_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",exception=\"none\",extra=\"tag\",method=\"asyncCall\",registry=\"prometheus\",} 1.0"))
+                .body(containsString(
+                        "longCall_seconds_active_count{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",extra=\"tag\",method=\"longCall\",registry=\"prometheus\",}"))
+                .body(containsString(
+                        "async_longCall_seconds_duration_sum{class=\"io.quarkus.it.micrometer.prometheus.AnnotatedResource\",env=\"test\",extra=\"tag\",method=\"longAsyncCall\",registry=\"prometheus\",} 0.0"))
 
                 // this was defined by a tag to a non-matching registry, and should not be found
                 .body(not(containsString("class-should-not-match")))

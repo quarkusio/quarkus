@@ -48,6 +48,9 @@ public class ResourceLocatorHandler implements RestHandler {
         }
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
         if (mapper == null) {
+            mapper = target.get(null); //another layer of resource locators maybe
+        }
+        if (mapper == null) {
             throw new WebApplicationException(Response.status(HttpResponseStatus.METHOD_NOT_ALLOWED.code()).build());
         }
         RequestMapper.RequestMatch<RuntimeResource> res = mapper

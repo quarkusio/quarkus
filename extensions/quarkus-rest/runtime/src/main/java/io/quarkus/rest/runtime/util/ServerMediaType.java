@@ -2,14 +2,15 @@ package io.quarkus.rest.runtime.util;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -69,27 +70,32 @@ public class ServerMediaType {
     }
 
     public MediaType negotiateProduces(HttpServerRequest request) {
+        return negotiateProduces(request, this.hardCoded, NegotiateFallbackStrategy.SERVER);
+    }
+
+    public MediaType negotiateProduces(HttpServerRequest request, MediaType hardCoded,
+            NegotiateFallbackStrategy negotiateFallbackStrategy) {
         if (hardCoded != null) {
             //technically we should negotiate here, and check if we need to return a 416
             //but for performance reasons we ignore this
             return hardCoded;
         }
-        String accept = request.getHeader(HttpHeaderNames.ACCEPT);
+        String acceptStr = request.getHeader(HttpHeaders.ACCEPT);
         MediaType selected = null;
-        if (accept != null) {
+        List<MediaType> parsedAccepted = Collections.emptyList();
+        if (acceptStr != null) {
             //TODO: this can be optimised
-            List<MediaType> parsed = MediaTypeHelper.parseHeader(accept);
-            MediaTypeHelper.sortByWeight(parsed);
+            parsedAccepted = MediaTypeHelper.parseHeader(acceptStr);
+            MediaTypeHelper.sortByWeight(parsedAccepted);
             String currentClientQ = null;
             int currentServerIndex = Integer.MAX_VALUE;
-            if (!parsed.isEmpty()) {
-                for (int i = 0; i < parsed.size(); i++) {
-                    MediaType desire = parsed.get(i);
+            if (!parsedAccepted.isEmpty()) {
+                for (MediaType desired : parsedAccepted) {
                     if (selected != null) {
                         //this is to enable server side q values to take effect
                         //the client side is sorted by q, if we have already picked one and the q is
                         //different then we can return the current one
-                        if (!Objects.equals(desire.getParameters().get("q"), currentClientQ)) {
+                        if (!Objects.equals(desired.getParameters().get("q"), currentClientQ)) {
                             if (selected.equals(MediaType.WILDCARD_TYPE)) {
                                 return MediaType.APPLICATION_OCTET_STREAM_TYPE;
                             }
@@ -98,15 +104,15 @@ public class ServerMediaType {
                     }
                     for (int j = 0; j < sortedMediaTypes.length; j++) {
                         MediaType provide = sortedMediaTypes[j];
-                        if (provide.isCompatible(desire)) {
+                        if (provide.isCompatible(desired)) {
                             if (selected == null || j < currentServerIndex) {
-                                if (desire.isWildcardType()) {
+                                if (desired.isWildcardType()) {
                                     selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
                                 } else {
-                                    selected = desire;
+                                    selected = desired;
                                 }
                                 currentServerIndex = j;
-                                currentClientQ = desire.getParameters().get("q");
+                                currentClientQ = desired.getParameters().get("q");
                             }
                         }
                     }
@@ -114,7 +120,12 @@ public class ServerMediaType {
             }
         }
         if (selected == null) {
-            selected = sortedMediaTypes[0];
+            if ((negotiateFallbackStrategy == NegotiateFallbackStrategy.CLIENT) && (!parsedAccepted.isEmpty())) {
+                selected = parsedAccepted.get(0);
+            } else {
+                selected = sortedMediaTypes[0];
+            }
+
         }
         if (selected.equals(MediaType.WILDCARD_TYPE)) {
             return MediaType.APPLICATION_OCTET_STREAM_TYPE;
@@ -128,5 +139,10 @@ public class ServerMediaType {
 
     public MediaType[] getSortedOriginalMediaTypes() {
         return sortedOriginalMediaTypes;
+    }
+
+    public enum NegotiateFallbackStrategy {
+        SERVER,
+        CLIENT
     }
 }

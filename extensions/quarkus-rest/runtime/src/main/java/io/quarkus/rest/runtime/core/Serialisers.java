@@ -56,7 +56,9 @@ import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReade
 import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
+import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
 public class Serialisers {
@@ -388,7 +390,7 @@ public class Serialisers {
                     return null;
                 } else {
                     for (ResourceWriter writer : entry.getValue()) {
-                        MediaType match = MediaTypeHelper.getBestMatch(produces, writer.mediaTypes());
+                        MediaType match = MediaTypeHelper.getBestMatch(produces, writer.modifiableMediaTypes());
                         if (match != null) {
                             return null;
                         }
@@ -409,7 +411,7 @@ public class Serialisers {
                     if (produces == null || produces.isEmpty()) {
                         ret.add(goodTypeWriter);
                     } else {
-                        MediaType match = MediaTypeHelper.getBestMatch(produces, goodTypeWriter.mediaTypes());
+                        MediaType match = MediaTypeHelper.getBestMatch(produces, goodTypeWriter.modifiableMediaTypes());
                         if (match != null) {
                             ret.add(goodTypeWriter);
                         }
@@ -442,7 +444,6 @@ public class Serialisers {
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         List<MessageBodyWriter<?>> ret = new ArrayList<>();
-        List<MessageBodyWriter<?>> objectMatched = new ArrayList<>();
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
         MultivaluedMap<Class<?>, ResourceWriter> writers;
@@ -480,6 +481,70 @@ public class Serialisers {
         return ret;
     }
 
+    /**
+     * Find the best matching writer based on the 'Accept' HTTP header
+     * This is probably more complex than it needs to be, but some RESTEasy tests show that the response type
+     * is influenced by the provider's weight of the media types
+     */
+    public BestMatchingServerWriterResult findBestMatchingServerWriter(QuarkusRestConfiguration configuration,
+            Class<?> entityType, HttpServerRequest request) {
+        // TODO: refactor to have use common code from findWriters
+        Class<?> klass = entityType;
+        Deque<Class<?>> toProcess = new LinkedList<>();
+        MultivaluedMap<Class<?>, ResourceWriter> writers;
+        if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
+            writers = new MultivaluedHashMap<>();
+            writers.putAll(this.writers);
+            writers.putAll(configuration.getResourceWriters());
+        } else {
+            writers = this.writers;
+        }
+
+        BestMatchingServerWriterResult result = new BestMatchingServerWriterResult();
+        do {
+            if (klass == Object.class) {
+                //spec extension, look for interfaces as well
+                //we match interfaces before Object
+                Set<Class<?>> seen = new HashSet<>(toProcess);
+                while (!toProcess.isEmpty()) {
+                    Class<?> iface = toProcess.poll();
+                    List<ResourceWriter> matchingWritersByType = writers.get(iface);
+                    serverResourceWriterLookup(request, matchingWritersByType, result);
+                    for (Class<?> i : iface.getInterfaces()) {
+                        if (!seen.contains(i)) {
+                            seen.add(i);
+                            toProcess.add(i);
+                        }
+                    }
+                }
+            }
+            List<ResourceWriter> matchingWritersByType = writers.get(klass);
+            MediaType lookupResult = serverResourceWriterLookup(request, matchingWritersByType, result);
+            toProcess.addAll(Arrays.asList(klass.getInterfaces()));
+            klass = klass.getSuperclass();
+        } while (klass != null);
+
+        return result;
+    }
+
+    private MediaType serverResourceWriterLookup(HttpServerRequest request,
+            List<ResourceWriter> candidates, BestMatchingServerWriterResult result) {
+        if (candidates == null) {
+            return null;
+        }
+        for (ResourceWriter resourceWriter : candidates) {
+            if (!resourceWriter.matchesRuntimeType(RuntimeType.SERVER)) {
+                continue;
+            }
+            MediaType bestMediaType = resourceWriter.serverMediaType().negotiateProduces(request, null,
+                    ServerMediaType.NegotiateFallbackStrategy.CLIENT);
+            if (bestMediaType != null) {
+                result.add(resourceWriter.getInstance(), bestMediaType);
+            }
+        }
+        return null;
+    }
+
     private void writerLookup(RuntimeType runtimeType, List<MediaType> mt, List<MessageBodyWriter<?>> ret,
             List<ResourceWriter> goodTypeWriters) {
         if (goodTypeWriters != null && !goodTypeWriters.isEmpty()) {
@@ -487,7 +552,7 @@ public class Serialisers {
                 if (!goodTypeWriter.matchesRuntimeType(runtimeType)) {
                     continue;
                 }
-                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.mediaTypes());
+                MediaType match = MediaTypeHelper.getBestMatch(mt, goodTypeWriter.modifiableMediaTypes());
                 if (match != null) {
                     ret.add(goodTypeWriter.getInstance());
                 }
@@ -559,6 +624,47 @@ public class Serialisers {
 
         public EntityWriter getEntityWriter() {
             return entityWriter;
+        }
+    }
+
+    public static class BestMatchingServerWriterResult {
+        final List<Entry> entries = new ArrayList<>();
+
+        void add(MessageBodyWriter<?> writer, MediaType mediaType) {
+            entries.add(new Entry(writer, mediaType));
+        }
+
+        public boolean isEmpty() {
+            return entries.isEmpty();
+        }
+
+        public List<MessageBodyWriter<?>> getMessageBodyWriters() {
+            if (isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<MessageBodyWriter<?>> result = new ArrayList<>(entries.size());
+            for (Entry entry : entries) {
+                result.add(entry.writer);
+            }
+            return result;
+        }
+
+        public MediaType getSelectedMediaType() {
+            if (isEmpty()) {
+                return null;
+            }
+            return entries.get(0).mediaType;
+        }
+
+        private static class Entry {
+            final MessageBodyWriter<?> writer;
+            final MediaType mediaType;
+
+            public Entry(MessageBodyWriter<?> writer, MediaType mediaType) {
+                this.writer = writer;
+                this.mediaType = mediaType;
+            }
         }
     }
 

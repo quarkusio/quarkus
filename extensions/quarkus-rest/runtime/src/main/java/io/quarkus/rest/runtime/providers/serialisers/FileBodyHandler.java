@@ -91,7 +91,7 @@ public class FileBodyHandler implements MessageBodyReader<File>, QuarkusRestMess
 
     @Override
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
-        return false;
+        return File.class.isAssignableFrom(type);
     }
 
     @Override

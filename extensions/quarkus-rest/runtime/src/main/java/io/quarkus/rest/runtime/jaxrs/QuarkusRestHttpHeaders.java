@@ -147,6 +147,14 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
 
     @Override
     public List<MediaType> getAcceptableMediaTypes() {
+        List<MediaType> modifiableAcceptableMediaTypes = getModifiableAcceptableMediaTypes();
+        if (modifiableAcceptableMediaTypes.size() > 1) {
+            return Collections.unmodifiableList(modifiableAcceptableMediaTypes);
+        }
+        return modifiableAcceptableMediaTypes;
+    }
+
+    public List<MediaType> getModifiableAcceptableMediaTypes() {
         List<String> vals = requestHeaders.get(ACCEPT);
         if (vals == null || vals.isEmpty()) {
             return Collections.singletonList(MediaType.WILDCARD_TYPE);
@@ -160,7 +168,7 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
                 }
             }
             MediaTypeHelper.sortByWeight(list);
-            return Collections.unmodifiableList(list);
+            return list;
         }
     }
 

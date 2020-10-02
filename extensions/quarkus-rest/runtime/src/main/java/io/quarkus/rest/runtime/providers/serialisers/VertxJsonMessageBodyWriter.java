@@ -22,7 +22,7 @@ public class VertxJsonMessageBodyWriter implements QuarkusRestMessageBodyWriter<
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return true;
+        return !String.class.equals(type);
     }
 
     @Override

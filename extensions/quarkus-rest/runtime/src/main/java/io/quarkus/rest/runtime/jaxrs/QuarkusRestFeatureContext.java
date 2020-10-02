@@ -15,6 +15,8 @@ import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.WriterInterceptor;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.rest.runtime.core.ArcBeanFactory;
@@ -22,8 +24,10 @@ import io.quarkus.rest.runtime.core.ExceptionMapping;
 import io.quarkus.rest.runtime.core.UnmanagedBeanFactory;
 import io.quarkus.rest.runtime.model.ResourceExceptionMapper;
 import io.quarkus.rest.runtime.model.ResourceInterceptors;
+import io.quarkus.rest.runtime.model.ResourceReaderInterceptor;
 import io.quarkus.rest.runtime.model.ResourceRequestInterceptor;
 import io.quarkus.rest.runtime.model.ResourceResponseInterceptor;
+import io.quarkus.rest.runtime.model.ResourceWriterInterceptor;
 import io.quarkus.rest.runtime.model.SettableResourceInterceptor;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
@@ -128,6 +132,10 @@ public class QuarkusRestFeatureContext implements FeatureContext {
             registerFilters(componentClass, beanFactory, priority);
             filtersNeedSorting = true;
         }
+        if (isInterceptor(componentClass)) {
+            registerInterceptors(componentClass, beanFactory, priority);
+            filtersNeedSorting = true;
+        }
 
         //TODO: log warning if nothing was done
     }
@@ -162,6 +170,36 @@ public class QuarkusRestFeatureContext implements FeatureContext {
                 interceptors.addGlobalResponseInterceptor(responseInterceptor);
             } else {
                 interceptors.addNameResponseInterceptor(responseInterceptor);
+            }
+        }
+    }
+
+    protected boolean isInterceptor(Class<?> componentClass) {
+        return ReaderInterceptor.class.isAssignableFrom(componentClass)
+                || WriterInterceptor.class.isAssignableFrom(componentClass);
+    }
+
+    protected void registerInterceptors(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority) {
+        boolean isReader = ReaderInterceptor.class.isAssignableFrom(componentClass);
+        boolean isWriter = WriterInterceptor.class.isAssignableFrom(componentClass);
+        if (isReader) {
+            ResourceReaderInterceptor resourceReaderInterceptor = new ResourceReaderInterceptor();
+            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
+                    resourceReaderInterceptor);
+            if (nameBindings.isEmpty()) {
+                interceptors.addGlobalReaderInterceptor(resourceReaderInterceptor);
+            } else {
+                interceptors.addNameReaderInterceptor(resourceReaderInterceptor);
+            }
+        }
+        if (isWriter) {
+            ResourceWriterInterceptor resourceWriterInterceptor = new ResourceWriterInterceptor();
+            Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
+                    resourceWriterInterceptor);
+            if (nameBindings.isEmpty()) {
+                interceptors.addGlobalWriterInterceptor(resourceWriterInterceptor);
+            } else {
+                interceptors.addNameWriterInterceptor(resourceWriterInterceptor);
             }
         }
     }

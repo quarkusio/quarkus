@@ -19,8 +19,8 @@ public class QuarkusRestDynamicFeatureContext extends QuarkusRestFeatureContext 
 
     @Override
     protected boolean isAllowed(Class<?> componentClass) {
-        // For the time being we only support filters
-        return isFilter(componentClass);
+        // For the time being we only support filters and interceptors
+        return isFilter(componentClass) || isInterceptor(componentClass);
     }
 
     @SuppressWarnings("unchecked")

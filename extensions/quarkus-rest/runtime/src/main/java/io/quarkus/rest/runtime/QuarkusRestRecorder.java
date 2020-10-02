@@ -261,7 +261,8 @@ public class QuarkusRestRecorder {
                         globalReaderInterceptorsMap,
                         globalWriterInterceptorsMap,
                         nameReaderInterceptorsMap,
-                        nameWriterInterceptorsMap, globalInterceptorHandler, clazz,
+                        nameWriterInterceptorsMap, globalInterceptorHandler, Collections.emptyMap(), Collections.emptyMap(),
+                        clazz,
                         resourceLocatorHandler, method,
                         true, classPathTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
 
@@ -287,6 +288,10 @@ public class QuarkusRestRecorder {
                         .emptyMap();
                 Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap = Collections
                         .emptyMap();
+                Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap = Collections
+                        .emptyMap();
+                Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap = Collections
+                        .emptyMap();
 
                 if (dynamicFeaturesExist) {
                     // we'll basically just use this as a way to capture the registering of filters
@@ -309,6 +314,14 @@ public class QuarkusRestRecorder {
                         methodSpecificResponseInterceptorsMap = createContainerResponseFilterInstances(
                                 dynamicallyConfiguredInterceptors.getGlobalResponseInterceptors(), shutdownContext);
                     }
+                    if (!dynamicallyConfiguredInterceptors.getGlobalResourceReaderInterceptors().isEmpty()) {
+                        methodSpecificReaderInterceptorsMap = createReaderInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getGlobalResourceReaderInterceptors(), shutdownContext);
+                    }
+                    if (!dynamicallyConfiguredInterceptors.getGlobalResourceWriterInterceptors().isEmpty()) {
+                        methodSpecificWriterInterceptorsMap = createWriterInterceptorInstances(
+                                dynamicallyConfiguredInterceptors.getGlobalResourceWriterInterceptors(), shutdownContext);
+                    }
                 }
 
                 RuntimeResource runtimeResource = buildResourceMethod(serialisers, quarkusRestConfig,
@@ -321,6 +334,7 @@ public class QuarkusRestRecorder {
                         globalWriterInterceptorsMap,
                         nameReaderInterceptorsMap,
                         nameWriterInterceptorsMap, globalInterceptorHandler,
+                        methodSpecificReaderInterceptorsMap, methodSpecificWriterInterceptorsMap,
                         clazz, resourceLocatorHandler, method,
                         false, classTemplate, dynamicEntityWriter, beanContainer, paramConverterProviders);
 
@@ -592,7 +606,9 @@ public class QuarkusRestRecorder {
             Map<ResourceReaderInterceptor, ReaderInterceptor> nameReaderInterceptorsMap,
             Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap,
             InterceptorHandler globalInterceptorHandler,
-            ResourceClass clazz, ResourceLocatorHandler resourceLocatorHandler,
+            Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
+            Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap, ResourceClass clazz,
+            ResourceLocatorHandler resourceLocatorHandler,
             ResourceMethod method, boolean locatableResource, URITemplate classPathTemplate,
             DynamicEntityWriter dynamicEntityWriter, BeanContainer beanContainer,
             ParamConverterProviders paramConverterProviders) {
@@ -612,95 +628,15 @@ public class QuarkusRestRecorder {
         }
 
         //setup reader and writer interceptors first
-        if (method.getNameBindingNames().isEmpty() && nameReaderInterceptorsMap.isEmpty()
-                && nameWriterInterceptorsMap.isEmpty()) {
-            if (globalInterceptorHandler != null) {
-                handlers.add(globalInterceptorHandler);
-            }
-        } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()) {
-            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            if (globalInterceptorHandler != null) {
-                handlers.add(globalInterceptorHandler);
-            }
-        } else {
-            TreeMap<ResourceReaderInterceptor, ReaderInterceptor> readerInterceptorsToUse = new TreeMap<>(
-                    HasPriority.TreeMapComparator.INSTANCE);
-            readerInterceptorsToUse.putAll(globalReaderInterceptorsMap);
-
-            TreeMap<ResourceWriterInterceptor, WriterInterceptor> writerInterceptorsToUse = new TreeMap<>(
-                    HasPriority.TreeMapComparator.INSTANCE);
-            writerInterceptorsToUse.putAll(globalWriterInterceptorsMap);
-            for (ResourceReaderInterceptor nameInterceptor : nameReaderInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    readerInterceptorsToUse.put(nameInterceptor, nameReaderInterceptorsMap.get(nameInterceptor));
-                }
-            }
-            for (ResourceWriterInterceptor nameInterceptor : nameWriterInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    writerInterceptorsToUse.put(nameInterceptor, nameWriterInterceptorsMap.get(nameInterceptor));
-                }
-            }
-            WriterInterceptor[] writers = null;
-            ReaderInterceptor[] readers = null;
-            if (!readerInterceptorsToUse.isEmpty()) {
-                readers = new ReaderInterceptor[readerInterceptorsToUse.size()];
-                int idx = 0;
-                for (ReaderInterceptor i : readerInterceptorsToUse.values()) {
-                    readers[idx++] = i;
-                }
-            }
-            if (!writerInterceptorsToUse.isEmpty()) {
-                writers = new WriterInterceptor[writerInterceptorsToUse.size()];
-                int idx = 0;
-                for (WriterInterceptor i : writerInterceptorsToUse.values()) {
-                    writers[idx++] = i;
-                }
-            }
-            handlers.add(new InterceptorHandler(writers, readers));
-        }
+        setupInterceptorHandler(globalReaderInterceptorsMap, globalWriterInterceptorsMap, nameReaderInterceptorsMap,
+                nameWriterInterceptorsMap, globalInterceptorHandler, methodSpecificReaderInterceptorsMap,
+                methodSpecificWriterInterceptorsMap, method, handlers);
         //at this point the handler chain only has interceptors
         //which we also want in the abort handler chain
         abortHandlingChain.addAll(handlers);
 
-        // according to the spec, global request filters apply everywhere
-        // and named request filters only apply to methods with exactly matching "qualifiers"
-        if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            handlers.add(globalRequestInterceptorsHandler);
-        } else if (nameRequestInterceptorsMap.isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
-            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-            handlers.add(globalRequestInterceptorsHandler);
-        } else {
-            List<ResourceRequestInterceptor> interceptorsToUse = new ArrayList<>(
-                    globalRequestInterceptorsMap.size() + nameRequestInterceptorsMap.size()
-                            + methodSpecificRequestInterceptorsMap.size());
-            interceptorsToUse.addAll(globalRequestInterceptorsMap.keySet());
-            interceptorsToUse.addAll(methodSpecificRequestInterceptorsMap.keySet());
-            for (ResourceRequestInterceptor nameInterceptor : nameRequestInterceptorsMap.keySet()) {
-                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                    interceptorsToUse.add(nameInterceptor);
-                }
-            }
-            // since we have now mixed global, name and method specific interceptors, we need to sort
-            Collections.sort(interceptorsToUse);
-            List<ContainerRequestFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
-            for (ResourceRequestInterceptor interceptor : interceptorsToUse) {
-                Map<ResourceRequestInterceptor, ContainerRequestFilter> properMap;
-                if (interceptor.getNameBindingNames().isEmpty()) {
-                    if (methodSpecificRequestInterceptorsMap.containsKey(interceptor)) {
-                        properMap = methodSpecificRequestInterceptorsMap;
-                    } else {
-                        properMap = globalRequestInterceptorsMap;
-                    }
-                } else {
-                    properMap = nameRequestInterceptorsMap;
-                }
-                filtersToUse.add(properMap.get(interceptor));
-            }
-            handlers.add(new ResourceRequestInterceptorHandler(filtersToUse, false));
-        }
+        setupRequestFilterHandler(globalRequestInterceptorsMap, globalRequestInterceptorsHandler, nameRequestInterceptorsMap,
+                methodSpecificRequestInterceptorsMap, method, handlers);
 
         Class<?>[] parameterTypes = new Class[method.getParameters().length];
         for (int i = 0; i < method.getParameters().length; ++i) {
@@ -837,43 +773,8 @@ public class QuarkusRestRecorder {
         } else {
             handlers.add(new ResponseHandler());
 
-            // according to the spec, global request filters apply everywhere
-            // and named request filters only apply to methods with exactly matching "qualifiers"
-            if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-                responseFilterHandlers.add(globalResponseInterceptorHandler);
-            } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
-                // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-                responseFilterHandlers.add(globalResponseInterceptorHandler);
-            } else {
-                List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
-                        globalResponseInterceptorsMap.size() + nameResponseInterceptorsMap.size()
-                                + methodSpecificResponseInterceptorsMap.size());
-                interceptorsToUse.addAll(globalResponseInterceptorsMap.keySet());
-                interceptorsToUse.addAll(methodSpecificResponseInterceptorsMap.keySet());
-                for (ResourceResponseInterceptor nameInterceptor : nameResponseInterceptorsMap.keySet()) {
-                    // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
-                    if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
-                        interceptorsToUse.add(nameInterceptor);
-                    }
-                }
-                // since we have now mixed global, name and method specific interceptors, we need to sort
-                Collections.sort(interceptorsToUse);
-                List<ContainerResponseFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
-                for (ResourceResponseInterceptor interceptor : interceptorsToUse) {
-                    Map<ResourceResponseInterceptor, ContainerResponseFilter> properMap;
-                    if (interceptor.getNameBindingNames().isEmpty()) {
-                        if (methodSpecificResponseInterceptorsMap.containsKey(interceptor)) {
-                            properMap = methodSpecificResponseInterceptorsMap;
-                        } else {
-                            properMap = globalResponseInterceptorsMap;
-                        }
-                    } else {
-                        properMap = nameResponseInterceptorsMap;
-                    }
-                    filtersToUse.add(properMap.get(interceptor));
-                }
-                responseFilterHandlers.add(new ResourceResponseInterceptorHandler(filtersToUse));
-            }
+            setupResponseFilterHandler(globalResponseInterceptorsMap, globalResponseInterceptorHandler,
+                    nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap, method, responseFilterHandlers);
             handlers.addAll(responseFilterHandlers);
             handlers.add(new ResponseWriterHandler(dynamicEntityWriter));
         }
@@ -899,6 +800,157 @@ public class QuarkusRestRecorder {
                     javaMethod.getParameterAnnotations()[i.getKey()]);
         }
         return runtimeResource;
+    }
+
+    private void setupInterceptorHandler(Map<ResourceReaderInterceptor, ReaderInterceptor> globalReaderInterceptorsMap,
+            Map<ResourceWriterInterceptor, WriterInterceptor> globalWriterInterceptorsMap,
+            Map<ResourceReaderInterceptor, ReaderInterceptor> nameReaderInterceptorsMap,
+            Map<ResourceWriterInterceptor, WriterInterceptor> nameWriterInterceptorsMap,
+            InterceptorHandler globalInterceptorHandler,
+            Map<ResourceReaderInterceptor, ReaderInterceptor> methodSpecificReaderInterceptorsMap,
+            Map<ResourceWriterInterceptor, WriterInterceptor> methodSpecificWriterInterceptorsMap, ResourceMethod method,
+            List<RestHandler> handlers) {
+        if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
+                && methodSpecificWriterInterceptorsMap.isEmpty()) {
+            if (globalInterceptorHandler != null) {
+                handlers.add(globalInterceptorHandler);
+            }
+        } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()
+                && methodSpecificReaderInterceptorsMap.isEmpty() && methodSpecificWriterInterceptorsMap.isEmpty()) {
+            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
+            if (globalInterceptorHandler != null) {
+                handlers.add(globalInterceptorHandler);
+            }
+        } else {
+            TreeMap<ResourceReaderInterceptor, ReaderInterceptor> readerInterceptorsToUse = new TreeMap<>(
+                    HasPriority.TreeMapComparator.INSTANCE);
+            readerInterceptorsToUse.putAll(globalReaderInterceptorsMap);
+            readerInterceptorsToUse.putAll(methodSpecificReaderInterceptorsMap);
+            for (ResourceReaderInterceptor nameInterceptor : nameReaderInterceptorsMap.keySet()) {
+                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
+                    readerInterceptorsToUse.put(nameInterceptor, nameReaderInterceptorsMap.get(nameInterceptor));
+                }
+            }
+
+            TreeMap<ResourceWriterInterceptor, WriterInterceptor> writerInterceptorsToUse = new TreeMap<>(
+                    HasPriority.TreeMapComparator.INSTANCE);
+            writerInterceptorsToUse.putAll(globalWriterInterceptorsMap);
+            writerInterceptorsToUse.putAll(methodSpecificWriterInterceptorsMap);
+            for (ResourceWriterInterceptor nameInterceptor : nameWriterInterceptorsMap.keySet()) {
+                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
+                    writerInterceptorsToUse.put(nameInterceptor, nameWriterInterceptorsMap.get(nameInterceptor));
+                }
+            }
+            WriterInterceptor[] writers = null;
+            ReaderInterceptor[] readers = null;
+            if (!readerInterceptorsToUse.isEmpty()) {
+                readers = new ReaderInterceptor[readerInterceptorsToUse.size()];
+                int idx = 0;
+                for (ReaderInterceptor i : readerInterceptorsToUse.values()) {
+                    readers[idx++] = i;
+                }
+            }
+            if (!writerInterceptorsToUse.isEmpty()) {
+                writers = new WriterInterceptor[writerInterceptorsToUse.size()];
+                int idx = 0;
+                for (WriterInterceptor i : writerInterceptorsToUse.values()) {
+                    writers[idx++] = i;
+                }
+            }
+            handlers.add(new InterceptorHandler(writers, readers));
+        }
+    }
+
+    private void setupRequestFilterHandler(Map<ResourceRequestInterceptor, ContainerRequestFilter> globalRequestInterceptorsMap,
+            ResourceRequestInterceptorHandler globalRequestInterceptorsHandler,
+            Map<ResourceRequestInterceptor, ContainerRequestFilter> nameRequestInterceptorsMap,
+            Map<ResourceRequestInterceptor, ContainerRequestFilter> methodSpecificRequestInterceptorsMap, ResourceMethod method,
+            List<RestHandler> handlers) {
+        // according to the spec, global request filters apply everywhere
+        // and named request filters only apply to methods with exactly matching "qualifiers"
+        if (method.getNameBindingNames().isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
+            handlers.add(globalRequestInterceptorsHandler);
+        } else if (nameRequestInterceptorsMap.isEmpty() && methodSpecificRequestInterceptorsMap.isEmpty()) {
+            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
+            handlers.add(globalRequestInterceptorsHandler);
+        } else {
+            // TODO: refactor to use the TreeMap procedure used above for interceptors
+            List<ResourceRequestInterceptor> interceptorsToUse = new ArrayList<>(
+                    globalRequestInterceptorsMap.size() + nameRequestInterceptorsMap.size()
+                            + methodSpecificRequestInterceptorsMap.size());
+            interceptorsToUse.addAll(globalRequestInterceptorsMap.keySet());
+            interceptorsToUse.addAll(methodSpecificRequestInterceptorsMap.keySet());
+            for (ResourceRequestInterceptor nameInterceptor : nameRequestInterceptorsMap.keySet()) {
+                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
+                    interceptorsToUse.add(nameInterceptor);
+                }
+            }
+            // since we have now mixed global, name and method specific interceptors, we need to sort
+            Collections.sort(interceptorsToUse);
+            List<ContainerRequestFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
+            for (ResourceRequestInterceptor interceptor : interceptorsToUse) {
+                Map<ResourceRequestInterceptor, ContainerRequestFilter> properMap;
+                if (interceptor.getNameBindingNames().isEmpty()) {
+                    if (methodSpecificRequestInterceptorsMap.containsKey(interceptor)) {
+                        properMap = methodSpecificRequestInterceptorsMap;
+                    } else {
+                        properMap = globalRequestInterceptorsMap;
+                    }
+                } else {
+                    properMap = nameRequestInterceptorsMap;
+                }
+                filtersToUse.add(properMap.get(interceptor));
+            }
+            handlers.add(new ResourceRequestInterceptorHandler(filtersToUse, false));
+        }
+    }
+
+    private void setupResponseFilterHandler(
+            Map<ResourceResponseInterceptor, ContainerResponseFilter> globalResponseInterceptorsMap,
+            ResourceResponseInterceptorHandler globalResponseInterceptorHandler,
+            Map<ResourceResponseInterceptor, ContainerResponseFilter> nameResponseInterceptorsMap,
+            Map<ResourceResponseInterceptor, ContainerResponseFilter> methodSpecificResponseInterceptorsMap,
+            ResourceMethod method, List<RestHandler> responseFilterHandlers) {
+        // according to the spec, global request filters apply everywhere
+        // and named request filters only apply to methods with exactly matching "qualifiers"
+        if (method.getNameBindingNames().isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
+            responseFilterHandlers.add(globalResponseInterceptorHandler);
+        } else if (nameResponseInterceptorsMap.isEmpty() && methodSpecificResponseInterceptorsMap.isEmpty()) {
+            // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
+            responseFilterHandlers.add(globalResponseInterceptorHandler);
+        } else {
+            List<ResourceResponseInterceptor> interceptorsToUse = new ArrayList<>(
+                    globalResponseInterceptorsMap.size() + nameResponseInterceptorsMap.size()
+                            + methodSpecificResponseInterceptorsMap.size());
+            interceptorsToUse.addAll(globalResponseInterceptorsMap.keySet());
+            interceptorsToUse.addAll(methodSpecificResponseInterceptorsMap.keySet());
+            for (ResourceResponseInterceptor nameInterceptor : nameResponseInterceptorsMap.keySet()) {
+                // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+                if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
+                    interceptorsToUse.add(nameInterceptor);
+                }
+            }
+            // since we have now mixed global, name and method specific interceptors, we need to sort
+            Collections.sort(interceptorsToUse);
+            List<ContainerResponseFilter> filtersToUse = new ArrayList<>(interceptorsToUse.size());
+            for (ResourceResponseInterceptor interceptor : interceptorsToUse) {
+                Map<ResourceResponseInterceptor, ContainerResponseFilter> properMap;
+                if (interceptor.getNameBindingNames().isEmpty()) {
+                    if (methodSpecificResponseInterceptorsMap.containsKey(interceptor)) {
+                        properMap = methodSpecificResponseInterceptorsMap;
+                    } else {
+                        properMap = globalResponseInterceptorsMap;
+                    }
+                } else {
+                    properMap = nameResponseInterceptorsMap;
+                }
+                filtersToUse.add(properMap.get(interceptor));
+            }
+            responseFilterHandlers.add(new ResourceResponseInterceptorHandler(filtersToUse));
+        }
     }
 
     public ParameterExtractor parameterExtractor(Map<String, Integer> pathParameterIndexes, ParameterType type, String javaType,

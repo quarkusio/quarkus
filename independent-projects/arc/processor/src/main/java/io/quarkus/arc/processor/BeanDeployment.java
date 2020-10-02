@@ -199,12 +199,15 @@ public class BeanDeployment {
         for (ContextRegistrar contextRegistrar : contextRegistrars) {
             contextRegistrar.register(registrationContext);
         }
+        return registrationContext;
+    }
+
+    void registerScopes() {
         if (buildContext != null) {
             List<ScopeInfo> allScopes = Arrays.stream(BuiltinScope.values()).map(i -> i.getInfo()).collect(Collectors.toList());
             allScopes.addAll(customContexts.keySet());
             buildContext.putInternal(Key.SCOPES.asString(), Collections.unmodifiableList(allScopes));
         }
-        return registrationContext;
     }
 
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {

@@ -1078,15 +1078,17 @@ If your extension attempts to retrieve metadata that wasn't yet produced, `null`
 Here is a summary of which extensions can access which metadata:
 
 * `AnnotationsTransformer`
-** Shouldn't rely on any metadata as this is one of the first CDI extensions invoked
+** Shouldn't rely on any metadata as it could be used at any time in any phase of the bootstrap
 * `ContextRegistrar`
-** Has access to `ANNOTATION_STORE`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `InjectionPointsTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `ObserverTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `BeanRegistrar`
-** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS` (class-based beans only), `OBSERVERS` (class-based observers only), `INJECTION_POINTS`
+* `ObserverRegistrar`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`, `OBSERVERS` (class-based observers only), `INJECTION_POINTS`
 * `BeanDeploymentValidator`
 ** Has access to all build metadata
 

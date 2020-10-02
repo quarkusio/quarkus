@@ -39,9 +39,10 @@ public class InputHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext context) throws Exception {
-        // in some cases, with sub-resource locators, it's possible we've already read the entity
+        // in some cases, with sub-resource locators or via request filters, 
+        // it's possible we've already read the entity
         if (context.getInputStream() != EmptyInputStream.INSTANCE) {
-            // let's not read it twice
+            // let's not set it twice
             return;
         }
         if (context.getContext().request().method().equals(HttpMethod.GET) ||

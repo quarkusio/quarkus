@@ -46,7 +46,7 @@ public class QuarkusRestUriInfo implements UriInfo {
         if (!decode)
             throw encodedNotSupported();
         // TCK says normalized
-        String path = URIDecoder.decodeURIComponent(currentRequest.getContext().normalisedPath(), false);
+        String path = URIDecoder.decodeURIComponent(currentRequest.getPath(), false);
         // the path must not contain the prefix
         String prefix = currentRequest.getDeployment().getPrefix();
         if (prefix.isEmpty())
@@ -73,7 +73,7 @@ public class QuarkusRestUriInfo implements UriInfo {
             HttpServerRequest request = currentRequest.getContext().request();
             try {
                 // TCK says normalized
-                requestUri = new URI(request.absoluteURI() + (request.query() == null ? "" : "?" + request.query()))
+                requestUri = new URI(currentRequest.getAbsoluteURI() + (request.query() == null ? "" : "?" + request.query()))
                         .normalize();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
@@ -89,10 +89,9 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public URI getAbsolutePath() {
-        HttpServerRequest request = currentRequest.getContext().request();
         try {
             // TCK says normalized
-            return new URI(request.absoluteURI()).normalize();
+            return new URI(currentRequest.getAbsoluteURI()).normalize();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -105,15 +104,7 @@ public class QuarkusRestUriInfo implements UriInfo {
 
     @Override
     public URI getBaseUri() {
-        HttpServerRequest req = currentRequest.getContext().request();
         try {
-            String host = req.host();
-            int port = -1;
-            int index = host.indexOf(":");
-            if (index > -1) {
-                port = Integer.parseInt(host.substring(index + 1));
-                host = host.substring(0, index);
-            }
             QuarkusRestDeployment deployment = currentRequest.getDeployment();
             // the TCK doesn't tell us, but Stuart and Georgios prefer dressing their base URIs with useless slashes ;)
             String prefix = "/";
@@ -125,7 +116,7 @@ public class QuarkusRestUriInfo implements UriInfo {
                 else
                     prefix = prefix + "/";
             }
-            return new URI(req.scheme(), null, host, port,
+            return new URI(currentRequest.getScheme(), currentRequest.getAuthority(),
                     prefix,
                     null, null);
         } catch (URISyntaxException e) {

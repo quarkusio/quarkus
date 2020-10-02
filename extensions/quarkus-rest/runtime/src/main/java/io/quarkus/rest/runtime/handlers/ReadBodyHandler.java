@@ -3,6 +3,7 @@ package io.quarkus.rest.runtime.handlers;
 import java.io.ByteArrayInputStream;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.util.EmptyInputStream;
 import io.vertx.core.http.HttpServerRequest;
 
 public class ReadBodyHandler implements RestHandler {
@@ -21,6 +22,12 @@ public class ReadBodyHandler implements RestHandler {
 
     @Override
     public void handle(QuarkusRestRequestContext requestContext) throws Exception {
+        // in some cases, with sub-resource locators or via request filters, 
+        // it's possible we've already read the entity
+        if (requestContext.getInputStream() != EmptyInputStream.INSTANCE) {
+            // let's not set it twice
+            return;
+        }
         HttpServerRequest vertxRequest = requestContext.getContext().request();
         if (vertxRequest.isEnded()) {
             if (alsoSetInputStream) {

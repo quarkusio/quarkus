@@ -18,7 +18,6 @@ import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
-import io.quarkus.rest.runtime.util.EmptyInputStream;
 
 public class QuarkusRestContainerRequestContext implements ContainerRequestContext {
 
@@ -58,16 +57,13 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
 
     @Override
     public void setRequestUri(URI requestUri) {
-        assertPreMatch();
-        //TODO: this implementation is not complete
-        context.setPath(requestUri.getPath());
+        setRequestUri(getUriInfo().getBaseUri(), requestUri);
     }
 
     @Override
     public void setRequestUri(URI baseUri, URI requestUri) {
         assertPreMatch();
-        //TODO: this implementation is not complete
-        context.setPath(requestUri.getPath());
+        context.setRequestUri(baseUri.resolve(requestUri));
     }
 
     @Override
@@ -145,8 +141,10 @@ public class QuarkusRestContainerRequestContext implements ContainerRequestConte
 
     @Override
     public boolean hasEntity() {
-        //TODO: this could be better
-        return !(context.getInputStream() instanceof EmptyInputStream);
+        // we haven't set the input stream because this runs before the input handlers
+        // so we just can't know, but RESTEasy does this, I suspect just to get the TCK to
+        // be happy, so that's enough for us too
+        return getMediaType() != null;
     }
 
     @Override

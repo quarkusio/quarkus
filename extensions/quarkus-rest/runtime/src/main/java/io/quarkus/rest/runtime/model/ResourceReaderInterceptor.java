@@ -9,7 +9,7 @@ import javax.ws.rs.ext.ReaderInterceptor;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
 public class ResourceReaderInterceptor
-        implements Comparable<ResourceReaderInterceptor>, SettableResourceInterceptor<ReaderInterceptor> {
+        implements Comparable<ResourceReaderInterceptor>, SettableResourceInterceptor<ReaderInterceptor>, HasPriority {
 
     private BeanFactory<ReaderInterceptor> factory;
     private boolean preMatching;

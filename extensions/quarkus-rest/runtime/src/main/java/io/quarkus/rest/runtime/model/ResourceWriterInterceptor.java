@@ -9,7 +9,7 @@ import javax.ws.rs.ext.WriterInterceptor;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
 public class ResourceWriterInterceptor
-        implements Comparable<ResourceWriterInterceptor>, SettableResourceInterceptor<WriterInterceptor> {
+        implements Comparable<ResourceWriterInterceptor>, SettableResourceInterceptor<WriterInterceptor>, HasPriority {
 
     private BeanFactory<WriterInterceptor> factory;
     private Integer priority = Priorities.USER; // default priority as defined by spec

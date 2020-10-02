@@ -9,7 +9,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import io.quarkus.rest.runtime.spi.BeanFactory;
 
 public class ResourceRequestInterceptor
-        implements Comparable<ResourceRequestInterceptor>, SettableResourceInterceptor<ContainerRequestFilter> {
+        implements Comparable<ResourceRequestInterceptor>, SettableResourceInterceptor<ContainerRequestFilter>, HasPriority {
 
     private BeanFactory<ContainerRequestFilter> factory;
     private boolean preMatching;

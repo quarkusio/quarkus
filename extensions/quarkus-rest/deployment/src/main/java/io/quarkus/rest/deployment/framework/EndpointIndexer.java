@@ -671,11 +671,12 @@ public class EndpointIndexer {
         return nameBindingNames(instanceDotNames(classInfo.classAnnotations()));
     }
 
-    private Set<String> nameBindingNames(MethodInfo methodInfo, Set<String> defaultValue) {
+    private Set<String> nameBindingNames(MethodInfo methodInfo, Set<String> forClass) {
         Set<String> fromMethod = nameBindingNames(instanceDotNames(methodInfo.annotations()));
         if (fromMethod.isEmpty()) {
-            return defaultValue;
+            return forClass;
         }
+        fromMethod.addAll(forClass);
         return fromMethod;
     }
 

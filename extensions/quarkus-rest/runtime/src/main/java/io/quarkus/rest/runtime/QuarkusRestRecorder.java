@@ -93,6 +93,7 @@ import io.quarkus.rest.runtime.jaxrs.QuarkusRestResourceMethod;
 import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.mapping.URITemplate;
+import io.quarkus.rest.runtime.model.HasPriority;
 import io.quarkus.rest.runtime.model.MethodParameter;
 import io.quarkus.rest.runtime.model.ParameterType;
 import io.quarkus.rest.runtime.model.ResourceClass;
@@ -622,10 +623,12 @@ public class QuarkusRestRecorder {
                 handlers.add(globalInterceptorHandler);
             }
         } else {
-            TreeMap<ResourceReaderInterceptor, ReaderInterceptor> readerInterceptorsToUse = new TreeMap<>();
+            TreeMap<ResourceReaderInterceptor, ReaderInterceptor> readerInterceptorsToUse = new TreeMap<>(
+                    HasPriority.TreeMapComparator.INSTANCE);
             readerInterceptorsToUse.putAll(globalReaderInterceptorsMap);
 
-            TreeMap<ResourceWriterInterceptor, WriterInterceptor> writerInterceptorsToUse = new TreeMap<>();
+            TreeMap<ResourceWriterInterceptor, WriterInterceptor> writerInterceptorsToUse = new TreeMap<>(
+                    HasPriority.TreeMapComparator.INSTANCE);
             writerInterceptorsToUse.putAll(globalWriterInterceptorsMap);
             for (ResourceReaderInterceptor nameInterceptor : nameReaderInterceptorsMap.keySet()) {
                 // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has

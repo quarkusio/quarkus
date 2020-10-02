@@ -15,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.CollectionDefaultValueResource;
 import io.quarkus.rest.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
@@ -63,7 +62,7 @@ public class CollectionDefaultValueTest {
     @DisplayName("Test Empty")
     public void testEmpty() throws Exception {
         Response response = client.target(generateURL("/collection")).request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         response.close();
     }
 }

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.ClassLevelMediaTypeResource;
 import io.quarkus.rest.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
@@ -54,7 +53,7 @@ public class ClassLevelMediaTypeTest {
         System.err.println(base.getClass());
         try {
             Response response = base.request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
             Assertions.assertEquals(response.getHeaderString("Content-Type"), "application/json");
         } catch (Exception e) {

@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -31,7 +32,7 @@ public class MediaTypeHelper {
                     float rtn = Float.valueOf(val);
                     if (rtn > 1.0F)
                         throw new WebApplicationException("Media type q greated than 1" + type.toString(),
-                                HttpResponseCodes.SC_BAD_REQUEST);
+                                Response.Status.BAD_REQUEST);
                     return rtn;
                 }
             } catch (NumberFormatException e) {

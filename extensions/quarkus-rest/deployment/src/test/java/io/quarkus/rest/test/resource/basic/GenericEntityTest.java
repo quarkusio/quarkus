@@ -16,7 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.GenericEntityDoubleWriter;
 import io.quarkus.rest.test.resource.basic.resource.GenericEntityResource;
 import io.quarkus.rest.test.resource.basic.resource.GenericEntitytFloatWriter;
@@ -70,7 +69,7 @@ public class GenericEntityTest {
         WebTarget base = client.target(generateURL("/doubles"));
         try {
             Response response = base.request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
             Assertions.assertEquals("45.0D 50.0D ", body, "The response doesn't contain the expected entity");
         } catch (Exception e) {
@@ -88,7 +87,7 @@ public class GenericEntityTest {
         WebTarget base = client.target(generateURL("/floats"));
         try {
             Response response = base.request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
             Assertions.assertEquals("45.0F 50.0F ", body, "The response doesn't contain the expected entity");
         } catch (Exception e) {

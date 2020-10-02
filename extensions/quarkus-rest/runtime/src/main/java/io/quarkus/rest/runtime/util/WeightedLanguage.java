@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.headers.HeaderParameterParser;
 
@@ -88,12 +89,12 @@ public class WeightedLanguage implements Comparable<WeightedLanguage> {
                 float rtn = Float.valueOf(val);
                 if (rtn > 1.0F)
                     throw new WebApplicationException("q value cannot be greater than one: " + (lang.toString()),
-                            HttpResponseCodes.SC_BAD_REQUEST);
+                            Response.Status.BAD_REQUEST);
                 return rtn;
             }
         } catch (NumberFormatException e) {
             throw new WebApplicationException("media type weighted language q must be a float: " + (lang.toString()),
-                    HttpResponseCodes.SC_BAD_REQUEST);
+                    Response.Status.BAD_REQUEST);
         }
         return 1.0f;
     }

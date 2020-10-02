@@ -19,7 +19,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.UriInfoEncodedQueryResource;
 import io.quarkus.rest.test.resource.basic.resource.UriInfoEncodedTemplateResource;
 import io.quarkus.rest.test.resource.basic.resource.UriInfoEscapedMatrParamResource;
@@ -148,7 +147,7 @@ public class UriInfoTest {
     private static void basicTest(String path, String testName) throws Exception {
         Response response = client.target(PortProviderUtil.generateURL("/" + testName + path)).request().get();
         try {
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         } finally {
             response.close();
         }

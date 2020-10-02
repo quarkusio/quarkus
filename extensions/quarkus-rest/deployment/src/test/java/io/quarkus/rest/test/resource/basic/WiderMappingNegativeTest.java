@@ -15,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.WiderMappingDefaultOptions;
 import io.quarkus.rest.test.resource.basic.resource.WiderMappingResource;
 import io.quarkus.rest.test.simple.PortProviderUtil;
@@ -65,7 +64,7 @@ public class WiderMappingNegativeTest {
     @DisplayName("Test Options")
     public void testOptions() {
         Response response = client.target(generateURL("/hello/int")).request().options();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertNotEquals(response.readEntity(String.class), "hello");
         response.close();
     }

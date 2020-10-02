@@ -16,7 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.InheritenceParentResource;
 import io.quarkus.rest.test.resource.basic.resource.InheritenceParentResourceImpl;
 import io.quarkus.rest.test.simple.PortProviderUtil;
@@ -65,7 +64,7 @@ public class InheritanceTest {
         Builder builder = client.target(generateURL("/InheritanceTest")).request();
         builder.header("Accept", "text/plain");
         Response response = builder.get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(response.readEntity(String.class), "First");
     }
 }

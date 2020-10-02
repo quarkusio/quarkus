@@ -22,8 +22,8 @@ import javax.ws.rs.ext.Provider;
 
 import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
+import io.quarkus.rest.runtime.headers.HeaderUtil;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
-import io.quarkus.rest.runtime.util.NoContent;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -46,7 +46,7 @@ public class FileBodyHandler implements MessageBodyReader<File>, QuarkusRestMess
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         File downloadedFile = File.createTempFile(PREFIX, SUFFIX);
-        if (NoContent.isContentLengthZero(httpHeaders)) {
+        if (HeaderUtil.isContentLengthZero(httpHeaders)) {
             return downloadedFile;
         }
 

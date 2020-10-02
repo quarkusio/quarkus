@@ -16,10 +16,10 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import io.quarkus.rest.runtime.headers.HeaderUtil;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.HeaderHelper;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.WeightedLanguage;
 
@@ -125,11 +125,11 @@ public class ClientRequestHeaders {
     }
 
     public void allow(String... methods) {
-        HeaderHelper.setAllow(this.headers, methods);
+        HeaderUtil.setAllow(this.headers, methods);
     }
 
     public void allow(Set<String> methods) {
-        HeaderHelper.setAllow(headers, methods);
+        HeaderUtil.setAllow(headers, methods);
     }
 
     public void cacheControl(CacheControl cacheControl) {

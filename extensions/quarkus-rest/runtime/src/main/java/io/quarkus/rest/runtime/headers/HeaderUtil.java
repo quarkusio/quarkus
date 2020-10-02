@@ -169,4 +169,54 @@ public class HeaderUtil {
         return sb.toString();
     }
 
+    @SuppressWarnings(value = "unchecked")
+    public static void setAllow(MultivaluedMap headers, String[] methods) {
+        if (methods == null) {
+            headers.remove("Allow");
+            return;
+        }
+        StringBuilder builder = new StringBuilder();
+        boolean isFirst = true;
+        for (String l : methods) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                builder.append(", ");
+            }
+            builder.append(l);
+        }
+        headers.putSingle("Allow", builder.toString());
+    }
+
+    @SuppressWarnings(value = "unchecked")
+    public static void setAllow(MultivaluedMap headers, Set<String> methods) {
+        if (methods == null) {
+            headers.remove("Allow");
+            return;
+        }
+        StringBuilder builder = new StringBuilder();
+        boolean isFirst = true;
+        for (String l : methods) {
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                builder.append(", ");
+            }
+            builder.append(l);
+        }
+        headers.putSingle("Allow", builder.toString());
+    }
+
+    public static boolean isContentLengthZero(MultivaluedMap httpHeaders) {
+        if (httpHeaders == null)
+            return false;
+        @SuppressWarnings(value = "unchecked")
+        String contentLength = (String) httpHeaders.getFirst(HttpHeaders.CONTENT_LENGTH);
+        if (contentLength != null) {
+            long length = Long.parseLong(contentLength);
+            if (length == 0)
+                return true;
+        }
+        return false;
+    }
 }

@@ -14,7 +14,6 @@ import javax.ws.rs.core.Variant;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.request.ServerDrivenNegotiation;
 import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 
 public class QuarkusRestRequest implements Request {
 
@@ -74,7 +73,7 @@ public class QuarkusRestRequest implements Request {
         }
         if (match)
             return null;
-        return Response.status(HttpResponseCodes.SC_PRECONDITION_FAILED).tag(eTag);
+        return Response.status(Response.Status.PRECONDITION_FAILED).tag(eTag);
 
     }
 
@@ -91,7 +90,7 @@ public class QuarkusRestRequest implements Request {
                 return Response.notModified(eTag);
             }
 
-            return Response.status(HttpResponseCodes.SC_PRECONDITION_FAILED).tag(eTag);
+            return Response.status(Response.Status.PRECONDITION_FAILED).tag(eTag);
         }
         return null;
     }
@@ -134,7 +133,7 @@ public class QuarkusRestRequest implements Request {
         if (date.getTime() >= lastModified.getTime()) {
             return null;
         }
-        return Response.status(HttpResponseCodes.SC_PRECONDITION_FAILED).lastModified(lastModified);
+        return Response.status(Response.Status.PRECONDITION_FAILED).lastModified(lastModified);
 
     }
 
@@ -188,7 +187,7 @@ public class QuarkusRestRequest implements Request {
             return null;
         }
 
-        return Response.status(HttpResponseCodes.SC_PRECONDITION_FAILED);
+        return Response.status(Response.Status.PRECONDITION_FAILED);
     }
 
 }

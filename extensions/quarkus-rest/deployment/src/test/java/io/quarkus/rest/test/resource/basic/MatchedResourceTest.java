@@ -17,7 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.MatchedResource;
 import io.quarkus.rest.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
@@ -67,13 +66,13 @@ public class MatchedResourceTest {
     public void testEmpty() throws Exception {
         WebTarget base = client.target(generateURL("/start"));
         Response response = base.request().post(Entity.text(""));
-        Assertions.assertEquals(response.getStatus(), HttpResponseCodes.SC_OK);
+        Assertions.assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         String rtn = response.readEntity(String.class);
         Assertions.assertEquals("started", rtn);
         response.close();
         base = client.target(generateURL("/start"));
         response = base.request().post(Entity.entity("<xml/>", "application/xml"));
-        Assertions.assertEquals(response.getStatus(), HttpResponseCodes.SC_OK);
+        Assertions.assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         rtn = response.readEntity(String.class);
         Assertions.assertEquals("<xml/>", rtn, "Wrong response content");
         response.close();
@@ -98,7 +97,7 @@ public class MatchedResourceTest {
     public void generalPostTest(String uri, String value) {
         WebTarget base = client.target(uri);
         Response response = base.request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(response.readEntity(String.class), value, "Wrong response content");
     }
 

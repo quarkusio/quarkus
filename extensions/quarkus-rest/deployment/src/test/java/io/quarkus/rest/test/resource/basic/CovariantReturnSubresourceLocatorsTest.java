@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.CovariantReturnSubresourceLocatorsRootProxy;
 import io.quarkus.rest.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxy;
 import io.quarkus.rest.test.resource.basic.resource.CovariantReturnSubresourceLocatorsSubProxyRootImpl;
@@ -55,7 +54,7 @@ public class CovariantReturnSubresourceLocatorsTest {
         Response response = client.target(
                 PortProviderUtil.generateURL("/path/sub/xyz", CovariantReturnSubresourceLocatorsTest.class.getSimpleName()))
                 .request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("Boo! - xyz", response.readEntity(String.class), "Wrong content of response");
         response.close();
         client.close();

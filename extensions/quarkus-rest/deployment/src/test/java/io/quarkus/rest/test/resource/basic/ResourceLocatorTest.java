@@ -19,7 +19,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResouce;
 import io.quarkus.rest.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
 import io.quarkus.rest.test.resource.basic.resource.ResourceLocatorBaseResource;
@@ -101,12 +100,12 @@ public class ResourceLocatorTest {
     public void testSubresource() throws Exception {
         {
             Response response = client.target(generateURL("/base/1/resources")).request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(ResourceLocatorSubresource.class.getName(), response.readEntity(String.class));
         }
         {
             Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2", response.readEntity(String.class));
         }
     }
@@ -119,7 +118,7 @@ public class ResourceLocatorTest {
     @DisplayName("Test Same Uri")
     public void testSameUri() throws Exception {
         Response response = client.target(generateURL("/directory/receivers/1")).request().delete();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals(ResourceLocatorDirectory.class.getName(), response.readEntity(String.class));
     }
 
@@ -132,7 +131,7 @@ public class ResourceLocatorTest {
     public void testAnnotationFreeSubresource() throws Exception {
         {
             Response response = client.target(generateURL("/collection/annotation_free_subresource")).request().get();
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(response.readEntity(String.class), "got");
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
@@ -142,7 +141,7 @@ public class ResourceLocatorTest {
         {
             Builder request = client.target(generateURL("/collection/annotation_free_subresource")).request();
             Response response = request.post(Entity.entity("hello!".getBytes(), MediaType.TEXT_PLAIN));
-            Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+            Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("posted: hello!", response.readEntity(String.class));
         }
     }

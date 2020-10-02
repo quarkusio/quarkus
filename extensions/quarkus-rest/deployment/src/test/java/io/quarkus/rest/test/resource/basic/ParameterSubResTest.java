@@ -15,7 +15,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.runtime.util.HttpResponseCodes;
 import io.quarkus.rest.test.resource.basic.resource.ApplicationScopeObject;
 import io.quarkus.rest.test.resource.basic.resource.MultiInterfaceResLocatorIntf1;
 import io.quarkus.rest.test.resource.basic.resource.MultiInterfaceResLocatorIntf2;
@@ -94,7 +93,7 @@ public class ParameterSubResTest {
     @DisplayName("Test Sub Resource")
     public void testSubResource() throws Exception {
         Response response = client.target(generateURL("/path/sub/fred")).request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("Boo! - fred", response.readEntity(String.class), "Wrong content of response");
     }
 
@@ -102,7 +101,7 @@ public class ParameterSubResTest {
     @DisplayName("Test Return Sub Resource As Class")
     public void testReturnSubResourceAsClass() throws Exception {
         Response response = client.target(generateURL("/path/subclass")).request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("resourceCounter:1,appscope:1,requestScope:1", response.readEntity(String.class),
                 "Wrong response");
         response = client.target(generateURL("/path/subclass")).request().get();
@@ -118,7 +117,7 @@ public class ParameterSubResTest {
     @DisplayName("Test Root")
     public void testRoot() throws Exception {
         Response response = client.target(generateURL("/generic/sub")).queryParam("foo", "42.0").request().get();
-        Assertions.assertEquals(HttpResponseCodes.SC_OK, response.getStatus());
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         Assertions.assertEquals("42.0", response.readEntity(String.class), "Wrong content of response");
     }
 }

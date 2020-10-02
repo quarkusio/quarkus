@@ -47,8 +47,13 @@ public class ResourceLocatorHandler implements RestHandler {
             throw new RuntimeException("Resource locator method returned object that was not a resource: " + locator);
         }
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
+        boolean hadNullMethodMapper = false;
         if (mapper == null) {
             mapper = target.get(null); //another layer of resource locators maybe
+            // we set this without checking if we matched, but we only use it after
+            // we check for a null mapper, so by the time we use it, it must have meant that
+            // we had a matcher for a null method
+            hadNullMethodMapper = true;
         }
         if (mapper == null) {
             throw new WebApplicationException(Response.status(HttpResponseStatus.METHOD_NOT_ALLOWED.code()).build());
@@ -56,6 +61,9 @@ public class ResourceLocatorHandler implements RestHandler {
         RequestMapper.RequestMatch<RuntimeResource> res = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
+            // the TCK checks for both these return statuses
+            if (hadNullMethodMapper)
+                throw new WebApplicationException(Response.status(HttpResponseStatus.METHOD_NOT_ALLOWED.code()).build());
             throw new WebApplicationException(Response.status(HttpResponseStatus.NOT_FOUND.code()).build());
         }
         requestContext.saveUriMatchState();

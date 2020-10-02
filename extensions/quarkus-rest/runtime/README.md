@@ -81,3 +81,5 @@
 - `Response.readEntity` says entity can be retrieved by call to `getEntity()` but TCK closes the `Response`, which forbids calls to `getEntity()`
 - `Response.getEntity` does not mention that the response being closed forbids getting an already read entity, but TCK checks that
 - It's crazy that if there's a client `RequestFilter` that calls `abortWith(Response)`, we have to serialise the entity to run the response filter/interceptors
+- `AbstractMultivaluedMap.putAll(MultivaluedMap)` will add the parameter's `List` values without copying, directly to the store, which means that 
+  further calls to `addAll()` will modify those lists, effectively having both maps share their mutable `List` storage. 

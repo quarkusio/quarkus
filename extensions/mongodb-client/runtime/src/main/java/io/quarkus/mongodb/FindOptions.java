@@ -33,6 +33,7 @@ public class FindOptions {
     private boolean showRecordId;
     private long maxAwaitTime;
     private TimeUnit maxAwaitTimeUnit;
+    private int batchSize;
 
     /**
      * Sets the query filter to apply to the query.
@@ -250,6 +251,23 @@ public class FindOptions {
         return this;
     }
 
+    /**
+     * Sets the number of documents to return per batch.
+     *
+     * <p>
+     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing for fine
+     * grained
+     * control over the underlying cursor.
+     * </p>
+     *
+     * @param size the batch size
+     * @return this
+     */
+    public FindOptions batchSize(int size) {
+        this.batchSize = size;
+        return this;
+    }
+
     public <T> FindPublisher<T> apply(FindPublisher<T> stream) {
         FindPublisher<T> publisher = stream;
         if (filter != null) {
@@ -305,6 +323,9 @@ public class FindOptions {
         }
         if (showRecordId) {
             publisher = publisher.showRecordId(true);
+        }
+        if (batchSize > 0) {
+            publisher.batchSize(batchSize);
         }
         return publisher;
 

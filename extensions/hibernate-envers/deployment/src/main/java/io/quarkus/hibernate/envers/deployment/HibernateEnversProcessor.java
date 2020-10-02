@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.envers.deployment;
 
+import java.util.Arrays;
+import java.util.List;
+
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -9,12 +12,20 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfig;
 import io.quarkus.hibernate.envers.HibernateEnversRecorder;
+import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 
 public final class HibernateEnversProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.HIBERNATE_ENVERS);
+    }
+
+    @BuildStep
+    List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
+        return Arrays.asList(
+                new AdditionalJpaModelBuildItem(org.hibernate.envers.DefaultRevisionEntity.class),
+                new AdditionalJpaModelBuildItem(org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity.class));
     }
 
     @BuildStep

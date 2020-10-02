@@ -69,6 +69,7 @@ import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
 import io.smallrye.graphql.schema.model.Field;
+import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
@@ -155,7 +156,8 @@ public class SmallRyeGraphQLProcessor {
             CombinedIndexBuildItem combinedIndex) {
 
         IndexView index = combinedIndex.getIndex();
-        Schema schema = SchemaBuilder.build(index);
+
+        Schema schema = SchemaBuilder.build(index, quarkusConfig.autoNameStrategy);
 
         recorder.createExecutionService(beanContainer.getValue(), schema);
 
@@ -251,7 +253,9 @@ public class SmallRyeGraphQLProcessor {
         Set<String> classes = new HashSet<>();
 
         classes.addAll(getOperationClassNames(schema.getQueries()));
+        classes.addAll(getOperationClassNames(schema.getGroupedQueries()));
         classes.addAll(getOperationClassNames(schema.getMutations()));
+        classes.addAll(getOperationClassNames(schema.getGroupedMutations()));
         classes.addAll(getTypeClassNames(schema.getTypes().values()));
         classes.addAll(getInputClassNames(schema.getInputs().values()));
         classes.addAll(getInterfaceClassNames(schema.getInterfaces().values()));
@@ -289,6 +293,15 @@ public class SmallRyeGraphQLProcessor {
                 classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
             classes.addAll(getAllReferenceClasses(operation.getReference()));
+        }
+        return classes;
+    }
+
+    private Set<String> getOperationClassNames(Map<Group, Set<Operation>> groupedOperations) {
+        Set<String> classes = new HashSet<>();
+        Collection<Set<Operation>> operations = groupedOperations.values();
+        for (Set<Operation> operationSet : operations) {
+            classes.addAll(getOperationClassNames(operationSet));
         }
         return classes;
     }

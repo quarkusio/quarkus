@@ -47,6 +47,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("generics: TestGenericsPojo_String"));
         Assertions.assertTrue(body.contains("type TestGenericsPojo_String {"));
         Assertions.assertTrue(body.contains("enum SomeEnum {"));
+        Assertions.assertTrue(body.contains("enum Number {"));
     }
 
     @Test

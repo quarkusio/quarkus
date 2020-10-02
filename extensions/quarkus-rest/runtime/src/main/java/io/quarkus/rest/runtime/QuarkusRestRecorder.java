@@ -350,6 +350,9 @@ public class QuarkusRestRecorder {
 
         List<RestHandler> abortHandlingChain = new ArrayList<>();
 
+        if (globalInterceptorHandler != null) {
+            abortHandlingChain.add(globalInterceptorHandler);
+        }
         if (!interceptors.getGlobalResponseInterceptors().isEmpty()) {
             abortHandlingChain.add(globalResourceResponseInterceptorHandler);
         }

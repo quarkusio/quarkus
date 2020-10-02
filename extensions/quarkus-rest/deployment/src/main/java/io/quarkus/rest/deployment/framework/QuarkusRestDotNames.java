@@ -19,6 +19,7 @@ import javax.ws.rs.ConstrainedTo;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.MatrixParam;
@@ -141,6 +142,7 @@ public final class QuarkusRestDotNames {
             Arrays.asList(QUERY_PARAM, HEADER_PARAM));
 
     public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
+    public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
     private static class IgnoreForReflectionPredicate implements Predicate<DotName> {
 

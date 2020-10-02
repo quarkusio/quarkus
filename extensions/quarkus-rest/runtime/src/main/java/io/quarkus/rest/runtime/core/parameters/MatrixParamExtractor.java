@@ -14,7 +14,7 @@ public class MatrixParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        return context.getMatrixParameter(name, single);
+        return context.getMatrixParameter(name, single, false);
     }
 
 }

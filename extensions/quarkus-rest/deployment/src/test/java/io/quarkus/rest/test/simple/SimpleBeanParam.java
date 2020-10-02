@@ -79,7 +79,7 @@ public class SimpleBeanParam {
 
     void inject(QuarkusRestInjectionContext ctx) {
         try {
-            Object param = ctx.getQueryParameter("query", true);
+            Object param = ctx.getQueryParameter("query", true, false);
             if (param == null)
                 param = "default-value";
             if (param != null)

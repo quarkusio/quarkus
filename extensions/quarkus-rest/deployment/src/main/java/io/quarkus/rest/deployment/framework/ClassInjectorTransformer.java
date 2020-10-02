@@ -130,22 +130,27 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         // already set by CDI
                         break;
                     case FORM:
-                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, false,
+                                false);
                         break;
                     case HEADER:
-                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false);
                         break;
                     case MATRIX:
-                        injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getMatrixParameter", fieldInfo, extractor, true, true,
+                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
                         break;
                     case COOKIE:
-                        injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false);
+                        injectParameterWithConverter(injectMethod, "getCookieParameter", fieldInfo, extractor, false, false,
+                                false);
                         break;
                     case PATH:
-                        injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false);
+                        injectParameterWithConverter(injectMethod, "getPathParameter", fieldInfo, extractor, false, true,
+                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
                         break;
                     case QUERY:
-                        injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true);
+                        injectParameterWithConverter(injectMethod, "getQueryParameter", fieldInfo, extractor, true, true,
+                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
                         break;
                     default:
                         break;
@@ -160,7 +165,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         private void injectParameterWithConverter(MethodVisitor injectMethod, String methodName, FieldInfo fieldInfo,
-                ParameterExtractor extractor, boolean extraSingleParameter) {
+                ParameterExtractor extractor, boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
             // spec says: 
             /*
              * 3.2 Fields and Bean Properties
@@ -191,7 +196,7 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                     break;
             }
             // push the parameter value
-            loadParameter(injectMethod, methodName, extractor, extraSingleParameter);
+            loadParameter(injectMethod, methodName, extractor, extraSingleParameter, extraEncodedParam, encoded);
             Label valueWasNull = new Label();
             // dup to test it
             injectMethod.visitInsn(Opcodes.DUP);
@@ -317,13 +322,20 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
         }
 
         private void loadParameter(MethodVisitor injectMethod, String methodName, ParameterExtractor extractor,
-                boolean extraSingleParameter) {
+                boolean extraSingleParameter, boolean extraEncodedParam, boolean encoded) {
             // ctx param
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
             // name param
             injectMethod.visitLdcInsn(extractor.getName());
             String methodSignature;
-            if (extraSingleParameter) {
+            if (extraEncodedParam && extraSingleParameter) {
+                injectMethod.visitLdcInsn(extractor.isSingle());
+                injectMethod.visitLdcInsn(encoded);
+                methodSignature = "(Ljava/lang/String;ZZ)Ljava/lang/Object;";
+            } else if (extraEncodedParam) {
+                injectMethod.visitLdcInsn(encoded);
+                methodSignature = "(Ljava/lang/String;Z)Ljava/lang/String;";
+            } else if (extraSingleParameter) {
                 // single param
                 injectMethod.visitLdcInsn(extractor.isSingle());
                 methodSignature = "(Ljava/lang/String;Z)Ljava/lang/Object;";

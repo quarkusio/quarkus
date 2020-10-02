@@ -14,6 +14,6 @@ public class QueryParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        return context.getQueryParameter(name, single);
+        return context.getQueryParameter(name, single, false);
     }
 }

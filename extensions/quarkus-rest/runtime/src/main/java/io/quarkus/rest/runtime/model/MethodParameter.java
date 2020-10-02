@@ -12,6 +12,7 @@ public class MethodParameter {
      */
     public String declaredType;
     public ParameterType parameterType;
+    public boolean encoded;
     private boolean single;
     public ParameterConverterSupplier converter;
     private String defaultValue;
@@ -21,7 +22,7 @@ public class MethodParameter {
     }
 
     public MethodParameter(String name, String type, String declaredType, ParameterType parameterType, boolean single,
-            ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection) {
+            ParameterConverterSupplier converter, String defaultValue, boolean isObtainedAsCollection, boolean encoded) {
         this.name = name;
         this.type = type;
         this.converter = converter;
@@ -30,6 +31,7 @@ public class MethodParameter {
         this.defaultValue = defaultValue;
         this.declaredType = declaredType;
         this.isObtainedAsCollection = isObtainedAsCollection;
+        this.encoded = encoded;
     }
 
     public String getName() {

@@ -7,7 +7,8 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.json.JsonValue;
+import javax.json.JsonObject;
+import javax.json.JsonStructure;
 import javax.json.JsonWriter;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -19,15 +20,15 @@ import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.vertx.core.buffer.Buffer;
 
-public class JsonValueHandler implements MessageBodyReader<JsonValue>, QuarkusRestMessageBodyWriter<JsonValue> {
+public class JsonStructureHandler implements MessageBodyReader<JsonStructure>, QuarkusRestMessageBodyWriter<JsonStructure> {
 
     @Override
     public boolean isWriteable(Class<?> type, LazyMethod target, MediaType mediaType) {
-        return JsonValue.class.isAssignableFrom(type);
+        return JsonStructure.class.isAssignableFrom(type) && !JsonObject.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(JsonValue o, QuarkusRestRequestContext context) throws WebApplicationException {
+    public void writeResponse(JsonStructure o, QuarkusRestRequestContext context) throws WebApplicationException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponse().getMediaType())) {
             writer.write(o);
@@ -37,25 +38,25 @@ public class JsonValueHandler implements MessageBodyReader<JsonValue>, QuarkusRe
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return JsonValue.class.isAssignableFrom(type);
+        return JsonStructure.class.isAssignableFrom(type) && !JsonObject.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeTo(JsonValue jsonValue, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(JsonStructure o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
-            writer.write(jsonValue);
+            writer.write(o);
         }
     }
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return JsonValue.class.isAssignableFrom(type);
+        return JsonStructure.class.isAssignableFrom(type) && !JsonObject.class.isAssignableFrom(type);
     }
 
     @Override
-    public JsonValue readFrom(Class<JsonValue> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public JsonStructure readFrom(Class<JsonStructure> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        return JsonpUtil.reader(entityStream, mediaType).readValue();
+        return JsonpUtil.reader(entityStream, mediaType).read();
     }
 }

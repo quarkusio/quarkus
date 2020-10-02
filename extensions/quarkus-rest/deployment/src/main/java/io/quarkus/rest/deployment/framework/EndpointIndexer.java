@@ -117,6 +117,9 @@ import io.quarkus.rest.runtime.providers.serialisers.ClientDefaultTextPlainBodyH
 import io.quarkus.rest.runtime.providers.serialisers.FormUrlEncodedProvider;
 import io.quarkus.rest.runtime.providers.serialisers.InputStreamMessageBodyHandler;
 import io.quarkus.rest.runtime.providers.serialisers.ServerDefaultTextPlainBodyHandler;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonArrayHandler;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonObjectHandler;
+import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonStructureHandler;
 import io.quarkus.rest.runtime.providers.serialisers.jsonp.JsonValueHandler;
 import io.quarkus.rest.runtime.spi.EndpointInvoker;
 import io.quarkus.runtime.util.HashUtil;
@@ -609,14 +612,16 @@ public class EndpointIndexer {
 
     private static void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
         DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_OBJECT)
-                || dotName.equals(JSONP_JSON_ARRAY)
-                || dotName.equals(JSONP_JSON_STRUCTURE)
-                || dotName.equals(JSONP_JSON_STRUCTURE)
+        if (dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_NUMBER)
-                || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalWriters.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
+            additionalWriters.add(JsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
+        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
+            additionalWriters.add(JsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
+        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
+            additionalWriters.add(JsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
         }
     }
 
@@ -626,13 +631,16 @@ public class EndpointIndexer {
             additionalReaders.add(ByteArrayMessageBodyHandler.class, WILDCARD, byte[].class);
         } else if (dotName.equals(INPUT_STREAM)) {
             additionalReaders.add(InputStreamMessageBodyHandler.class, WILDCARD, InputStream.class);
-        } else if (dotName.equals(JSONP_JSON_OBJECT)
-                || dotName.equals(JSONP_JSON_ARRAY)
-                || dotName.equals(JSONP_JSON_STRUCTURE)
-                || dotName.equals(JSONP_JSON_NUMBER)
+        } else if (dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaders.add(JsonValueHandler.class, APPLICATION_JSON, javax.json.JsonValue.class);
+        } else if (dotName.equals(JSONP_JSON_ARRAY)) {
+            additionalReaders.add(JsonArrayHandler.class, APPLICATION_JSON, javax.json.JsonArray.class);
+        } else if (dotName.equals(JSONP_JSON_OBJECT)) {
+            additionalReaders.add(JsonObjectHandler.class, APPLICATION_JSON, javax.json.JsonObject.class);
+        } else if (dotName.equals(JSONP_JSON_STRUCTURE)) {
+            additionalReaders.add(JsonStructureHandler.class, APPLICATION_JSON, javax.json.JsonStructure.class);
         } else if (SUPPORTED_TEXT_PLAIN_READER_TYPES.contains(dotName)) {
             additionalReaders.add(ServerDefaultTextPlainBodyHandler.class, TEXT_PLAIN, getSupportedReaderJavaClass(paramType),
                     RuntimeType.SERVER);

@@ -21,6 +21,7 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
@@ -210,10 +211,16 @@ public class QuarkusRestConfiguration implements Configuration {
     }
 
     private void register(Object component, Integer priority) {
+        if (allInstances.containsKey(component.getClass())) {
+            return;
+        }
         boolean added = false;
         if (component instanceof Feature) {
+            Feature thisFeature = (Feature) component;
             added = true;
-            enabledFeatures.add((Feature) component);
+            if (thisFeature.configure(new ConfigFeatureContext())) {
+                enabledFeatures.add(thisFeature);
+            }
         }
         if (component instanceof ClientRequestFilter) {
             added = true;
@@ -287,11 +294,17 @@ public class QuarkusRestConfiguration implements Configuration {
         if (contracts == null || contracts.isEmpty()) {
             return;
         }
+        if (allInstances.containsKey(component.getClass())) {
+            return;
+        }
         boolean added = false;
         Integer priority = contracts.get(Feature.class);
         if (component instanceof Feature && priority != null) {
+            Feature thisFeature = (Feature) component;
             added = true;
-            enabledFeatures.add(priority, (Feature) component);
+            if (thisFeature.configure(new ConfigFeatureContext())) {
+                enabledFeatures.add(priority, (Feature) component);
+            }
         }
         priority = contracts.get(ClientRequestFilter.class);
         if (component instanceof ClientRequestFilter && priority != null) {
@@ -420,5 +433,66 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public MultivaluedMap<Class<?>, ResourceWriter> getResourceWriters() {
         return resourceWriters;
+    }
+
+    private class ConfigFeatureContext implements FeatureContext {
+        @Override
+        public Configuration getConfiguration() {
+            return QuarkusRestConfiguration.this;
+        }
+
+        @Override
+        public FeatureContext property(String name, Object value) {
+            QuarkusRestConfiguration.this.property(name, value);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Class<?> componentClass) {
+            QuarkusRestConfiguration.this.register(componentClass);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Class<?> componentClass, int priority) {
+            QuarkusRestConfiguration.this.register(componentClass, priority);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Class<?> componentClass, Class<?>... contracts) {
+            QuarkusRestConfiguration.this.register(componentClass, contracts);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+            QuarkusRestConfiguration.this.register(componentClass, contracts);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Object component) {
+            QuarkusRestConfiguration.this.register(component);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Object component, int priority) {
+            QuarkusRestConfiguration.this.register(component, priority);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Object component, Class<?>... contracts) {
+            QuarkusRestConfiguration.this.register(component, contracts);
+            return this;
+        }
+
+        @Override
+        public FeatureContext register(Object component, Map<Class<?>, Integer> contracts) {
+            QuarkusRestConfiguration.this.register(component, contracts);
+            return this;
+        }
     }
 }

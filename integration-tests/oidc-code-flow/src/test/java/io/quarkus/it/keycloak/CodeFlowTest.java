@@ -143,6 +143,7 @@ public class CodeFlowTest {
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
             assertEquals("/", sessionCookie.getPath());
+            assertEquals("localhost", sessionCookie.getDomain());
 
             webClient.getOptions().setRedirectEnabled(false);
             webClient.getCache().clear();

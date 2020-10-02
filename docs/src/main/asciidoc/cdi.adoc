@@ -109,7 +109,7 @@ Intializers may accept multiple parameters and don't have to follow the JavaBean
 @ApplicationScoped
 public class Translator {
 
-    private final TranslatorHelper helper
+    private final TranslatorHelper helper;
 
     Translator(TranslatorHelper helper) { <1>
        this.helper = helper;
@@ -287,7 +287,7 @@ No scope annotation is declared and so it's defaulted to `@Dependent`.
 
 There's more about producers. 
 You can declare qualifiers, inject dependencies into the producer methods parameters, etc. 
-You can read more about producers for example in the https://docs.jboss.org/weld/reference/latest/en-US/html/beanscdi.html#_producer_methods[Weld docs, window="_blank"].
+You can read more about producers for example in the https://docs.jboss.org/weld/reference/latest/en-US/html_single/#_producer_methods[Weld docs, window="_blank"].
 
 == _Q: OK, injection looks cool. What other services are provided?_
 
@@ -341,9 +341,9 @@ public class LoggingInterceptor {
    Logger logger;
 
    @AroundInvoke <5>
-   Objec logInvocation(InvocationContext context) {
+   Object logInvocation(InvocationContext context) {
       // ...log before
-      Objec ret = context.proceed(); <6>
+      Object ret = context.proceed(); <6>
       // ...log after
       return ret;
    }
@@ -377,7 +377,7 @@ class TaskCompleted {
 class ComplicatedService {
 
    @Inject
-   Event<Task> event; <1>
+   Event<TaskCompleted> event; <1>
 
    void doSomething() {
       // ...
@@ -399,7 +399,7 @@ class Logger {
 <2> Fire the event synchronously.
 <3> This method is notified when a `TaskCompleted` event is fired.
 
-TIP: For more info about events/observers visit https://docs.jboss.org/weld/reference/latest/en-US/html/events.html[Weld docs, window="_blank"].
+TIP: For more info about events/observers visit https://docs.jboss.org/weld/reference/latest/en-US/html/#events[Weld docs, window="_blank"].
 
 == Conclusion
 

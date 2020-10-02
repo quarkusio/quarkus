@@ -120,6 +120,9 @@ public class VertxHttpRecorder {
 
     private static volatile Handler<HttpServerRequest> rootHandler;
 
+    private static volatile int actualHttpPort = -1;
+    private static volatile int actualHttpsPort = -1;
+
     private static final Handler<HttpServerRequest> ACTUAL_ROOT = new Handler<HttpServerRequest>() {
         @Override
         public void handle(HttpServerRequest httpServerRequest) {
@@ -509,7 +512,7 @@ public class VertxHttpRecorder {
 
         if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
             serverListeningMessage += String.format(
-                    "http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort());
+                    "http://%s:%s", httpServerOptions.getHost(), actualHttpPort);
             socketCount++;
         }
 
@@ -517,7 +520,7 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage += " and ";
             }
-            serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), sslConfig.getPort());
+            serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), actualHttpsPort);
             socketCount++;
         }
 
@@ -892,6 +895,7 @@ public class VertxHttpRecorder {
                             schema = "https";
                         } else {
                             clearHttpProperty = true;
+                            actualHttpPort = actualPort;
                             schema = "http";
                         }
                         portPropertiesToRestore = new HashMap<>();
@@ -910,12 +914,16 @@ public class VertxHttpRecorder {
                                 portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
                             }
                         }
-                        // Set in HttpOptions to output the port in the Timing class
-                        options.setPort(actualPort);
+                    }
+                    if (https) {
+                        actualHttpsPort = actualPort;
+                    } else {
+                        actualHttpPort = actualPort;
                     }
                     if (remainingCount.decrementAndGet() == 0) {
                         startFuture.complete(null);
                     }
+
                 }
             });
         }

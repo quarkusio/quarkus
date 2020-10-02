@@ -27,7 +27,7 @@ public class GraphQLTest extends AbstractGraphQLTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class)
+                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -44,6 +44,8 @@ public class GraphQLTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("\"Query root\""));
         Assertions.assertTrue(body.contains("type Query {"));
         Assertions.assertTrue(body.contains("ping: TestPojo"));
+        Assertions.assertTrue(body.contains("generics: TestGenericsPojo_String"));
+        Assertions.assertTrue(body.contains("type TestGenericsPojo_String {"));
         Assertions.assertTrue(body.contains("enum SomeEnum {"));
     }
 
@@ -123,6 +125,27 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .body(CoreMatchers.containsString(
                         "{\"data\":{\"foos\":[{\"message\":\"bar\",\"randomNumber\":{\"value\":123.0},\"list\":[\"a\",\"b\",\"c\"]}]}}"));
 
+    }
+
+    @Test
+    public void testGenerics() {
+        String foosRequest = getPayload("{\n" +
+                "  generics {\n" +
+                "    message\n" +
+                "  }\n" +
+                "}");
+
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(foosRequest)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body(CoreMatchers.containsString(
+                        "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
     }
 
     @Test

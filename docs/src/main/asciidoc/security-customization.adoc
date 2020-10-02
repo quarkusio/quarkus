@@ -68,11 +68,6 @@ import java.util.function.Supplier;
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
-    public int priority() {
-        return 0;
-    }
-
-    @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         return Uni.createFrom().item(build(identity));
 
@@ -115,11 +110,6 @@ import java.util.Set;
 public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
-    public int priority() {
-        return 0;
-    }
-
-    @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         return Uni.createFrom().item(build(identity));
     }
@@ -149,6 +139,12 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
     }
 }
 ----
+
+[NOTE]
+===
+If more than one custom `SecurityIdentityAugmentor` is registered then they will be considered equal candidates and invoked in random order.
+You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
+===
 
 == Custom JAX-RS SecurityContext
 

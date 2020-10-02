@@ -10,6 +10,12 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class SaslConfig {
 
     /**
+     * SASL mechanism used for client connections
+     */
+    @ConfigItem
+    public Optional<String> mechanism;
+
+    /**
      * JAAS login context parameters for SASL connections in the format used by JAAS configuration files
      */
     @ConfigItem

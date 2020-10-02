@@ -16,12 +16,14 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
 import org.eclipse.microprofile.config.Config;
+import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
@@ -100,6 +102,9 @@ public class MicrometerRecorder {
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
+            if (!ImageInfo.inImageCode()) {
+                new JvmGcMetrics().bindTo(Metrics.globalRegistry);
+            }
         }
 
         // System

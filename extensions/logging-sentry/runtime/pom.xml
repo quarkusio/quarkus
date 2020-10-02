@@ -33,6 +33,8 @@
                 <configuration>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.sentry:sentry</parentFirstArtifact>
+                        <!-- slf4j is used in static init of io.sentry.config.Lookup so we need it in the same classloader -->
+                        <parentFirstArtifact>org.slf4j:slf4j-api</parentFirstArtifact>
                     </parentFirstArtifacts>
                 </configuration>
             </plugin>

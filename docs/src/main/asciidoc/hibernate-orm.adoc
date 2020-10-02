@@ -723,10 +723,6 @@ JPA Callbacks::
 Annotations allowing for application callbacks on entity lifecycle events defined by JPA such as `@javax.persistence.PostUpdate`, `@javax.persistence.PostLoad`, `@javax.persistence.PostPersist`, etc... are currently not processed.
 This limitation could be resolved in a future version, depending on user demand.
 
-Single instance::
-It is currently not possible to configure more than one instance of Hibernate ORM.
-This is a temporary limitation, the team is working on it - please be patient!
-
 === Other notable differences
 
 Format of `import.sql`::

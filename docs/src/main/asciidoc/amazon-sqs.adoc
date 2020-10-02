@@ -14,7 +14,7 @@ services to be available.
 SQS offers two types of message queues. Standard queues offer maximum throughput, best-effort ordering and at-least-once delivery.
 SQS FIFO queues are designed to guarantee that messages are processes exactly once, on the exact order that they were sent.
 
-You can find more information about SQS at https://aws.amazon.com/sws/[the Amazon SQS website].
+You can find more information about SQS at https://aws.amazon.com/sqs/[the Amazon SQS website].
 
 NOTE: The SQS extension is based on https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/welcome.html[AWS Java SDK 2.x].
 It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).

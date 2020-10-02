@@ -14,6 +14,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -48,11 +49,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
@@ -69,6 +72,7 @@ import io.smallrye.graphql.schema.model.Field;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.InterfaceType;
 import io.smallrye.graphql.schema.model.Operation;
+import io.smallrye.graphql.schema.model.Reference;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.spi.EventingService;
@@ -164,19 +168,19 @@ public class SmallRyeGraphQLProcessor {
 
     @BuildStep
     void activateMetrics(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             SmallRyeGraphQLConfig smallRyeGraphQLConfig,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         if (smallRyeGraphQLConfig.metricsEnabled) {
-            if (capabilities.isPresent(Capability.METRICS)) {
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricsRegistryImpl")));
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion("io.smallrye.metrics.MetricRegistries")));
+            if (metricsCapability.isPresent()) {
+                if (metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
+                    unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames("io.smallrye.metrics.MetricRegistries"));
+                }
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "true"));
             } else {
-                LOG.warn("The quarkus.smallrye-graphql.metrics.enabled property is true, but the quarkus-smallrye-metrics " +
-                        "dependency is not present.");
+                LOG.info("The quarkus.smallrye-graphql.metrics.enabled property is true, but a metrics " +
+                        "extension is not present. SmallRye GraphQL Metrics will be disabled.");
                 systemProperties.produce(new SystemPropertyBuildItem("smallrye.graphql.metrics.enabled", "false"));
             }
         } else {
@@ -282,9 +286,9 @@ public class SmallRyeGraphQLProcessor {
         for (Operation operation : operations) {
             classes.add(operation.getClassName());
             for (Argument argument : operation.getArguments()) {
-                classes.add(argument.getReference().getClassName());
+                classes.addAll(getAllReferenceClasses(argument.getReference()));
             }
-            classes.add(operation.getReference().getClassName());
+            classes.addAll(getAllReferenceClasses(operation.getReference()));
         }
         return classes;
     }
@@ -319,7 +323,20 @@ public class SmallRyeGraphQLProcessor {
     private Set<String> getFieldClassNames(Map<String, Field> fields) {
         Set<String> classes = new HashSet<>();
         for (Field field : fields.values()) {
-            classes.add(field.getReference().getClassName());
+            classes.addAll(getAllReferenceClasses(field.getReference()));
+        }
+        return classes;
+    }
+
+    private Set<String> getAllReferenceClasses(Reference reference) {
+        Set<String> classes = new HashSet<>();
+        classes.add(reference.getClassName());
+        if (reference.getParametrizedTypeArguments() != null && !reference.getParametrizedTypeArguments().isEmpty()) {
+
+            Collection<Reference> parametrized = reference.getParametrizedTypeArguments().values();
+            for (Reference r : parametrized) {
+                classes.addAll(getAllReferenceClasses(r));
+            }
         }
         return classes;
     }

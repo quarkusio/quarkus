@@ -27,8 +27,9 @@ import org.eclipse.microprofile.metrics.Timer;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.smallrye.metrics.api.FunctionGaugeSupport;
 
-class MetricRegistryAdapter extends MetricRegistry {
+class MetricRegistryAdapter extends MetricRegistry implements FunctionGaugeSupport {
 
     final Type type;
     final MeterRegistry registry;

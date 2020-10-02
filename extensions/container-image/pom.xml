@@ -15,6 +15,7 @@
     <name>Quarkus - Container Image</name>
     <packaging>pom</packaging>
     <modules>
+        <module>runtime</module>
         <module>deployment</module>
         <module>spi</module>
         <module>util</module>

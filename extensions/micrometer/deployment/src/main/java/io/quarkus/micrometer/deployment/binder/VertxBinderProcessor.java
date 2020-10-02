@@ -47,7 +47,7 @@ public class VertxBinderProcessor {
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)
     FilterBuildItem addVertxMeterFilter() {
-        return new FilterBuildItem(new VertxMeterFilter(), 10);
+        return new FilterBuildItem(new VertxMeterFilter(), Integer.MAX_VALUE);
     }
 
     @BuildStep(onlyIf = VertxBinderEnabled.class)

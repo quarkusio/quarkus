@@ -39,7 +39,7 @@ The easiest way to start working with S3 is to run a local instance as a contain
 
 [source,shell,subs="verbatim,attributes"]
 ----
-docker run -it --publish 8008:4566 -e SERVICES=s3 -e START_WEB=0 localstack/localstack
+docker run -it --publish 8008:4566 -e SERVICES=s3 -e START_WEB=0 localstack/localstack:0.11.5
 ----
 This starts a S3 instance that is accessible on port `8008`.
 

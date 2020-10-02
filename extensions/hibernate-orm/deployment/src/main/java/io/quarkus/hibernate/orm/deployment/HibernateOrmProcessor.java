@@ -95,6 +95,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -506,16 +507,17 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
+    public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             List<JdbcDataSourceBuildItem> dataSourcesConfigured,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured,
             List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
-        if (!hasEntities(jpaEntities, nonJpaModels)) {
-            return;
+        if (hasEntities(jpaEntities, nonJpaModels)) {
+            recorder.startAllPersistenceUnits(beanContainer.getValue());
         }
 
-        recorder.startAllPersistenceUnits(beanContainer.getValue());
+        return new ServiceStartBuildItem("Hibernate ORM");
+
     }
 
     @BuildStep

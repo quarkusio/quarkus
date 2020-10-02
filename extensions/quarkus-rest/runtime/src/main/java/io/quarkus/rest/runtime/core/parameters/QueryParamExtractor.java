@@ -6,14 +6,16 @@ public class QueryParamExtractor implements ParameterExtractor {
 
     private final String name;
     private final boolean single;
+    private final boolean encoded;
 
-    public QueryParamExtractor(String name, boolean single) {
+    public QueryParamExtractor(String name, boolean single, boolean encoded) {
         this.name = name;
         this.single = single;
+        this.encoded = encoded;
     }
 
     @Override
     public Object extractParameter(QuarkusRestRequestContext context) {
-        return context.getQueryParameter(name, single, false);
+        return context.getQueryParameter(name, single, encoded);
     }
 }

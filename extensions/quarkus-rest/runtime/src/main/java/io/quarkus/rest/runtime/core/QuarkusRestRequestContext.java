@@ -68,16 +68,16 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     /**
      * The parameter values extracted from the path.
-     *
+     * <p>
      * This is not a map, for two reasons. One is raw performance, as an array causes
      * less allocations and is generally faster. The other is that it is possible
      * that you can have equivalent templates with different names. This allows the
      * mapper to ignore the names, as everything is resolved in terms of indexes.
-     * 
+     * <p>
      * If there is only a single path param then it is stored directly into the field,
      * while multiple params this will be an array. This optimisation allows us to avoid
      * allocating anything in the common case that there is zero or one path param.
-     * 
+     * <p>
      * Note: those are decoded.
      */
     private Object pathParamValues;
@@ -257,7 +257,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     /**
      * Restarts handler chain processing on a chain that does not target a specific resource
-     *
+     * <p>
      * Generally used to abort processing.
      *
      * @param newHandlerChain The new handler chain
@@ -733,7 +733,7 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
 
     /**
      * Return the path segments
-     *
+     * <p>
      * This is lazily initialized
      */
     public List<PathSegment> getPathSegments() {
@@ -850,11 +850,24 @@ public class QuarkusRestRequestContext implements Runnable, Closeable, QuarkusRe
     }
 
     @Override
-    public Object getFormParameter(String name, boolean single) {
-        if (single)
-            return getContext().request().getFormAttribute(name);
-        // empty collections must not be turned to null
-        return getContext().request().formAttributes().getAll(name);
+    public Object getFormParameter(String name, boolean single, boolean encoded) {
+        if (single) {
+            String val = getContext().request().formAttributes().get(name);
+            if (encoded && val != null) {
+                val = Encode.encodeQueryParam(val);
+            }
+            return val;
+        }
+        List<String> strings = getContext().request().formAttributes().getAll(name);
+        if (encoded) {
+            List<String> newStrings = new ArrayList<>();
+            for (String i : strings) {
+                newStrings.add(Encode.encodeQueryParam(i));
+            }
+            return newStrings;
+        }
+        return strings;
+
     }
 
     @Override

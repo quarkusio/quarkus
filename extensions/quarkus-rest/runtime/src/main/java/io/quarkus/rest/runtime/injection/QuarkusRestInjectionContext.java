@@ -11,5 +11,5 @@ public interface QuarkusRestInjectionContext {
 
     public String getCookieParameter(String name);
 
-    public Object getFormParameter(String name, boolean single);
+    public Object getFormParameter(String name, boolean single, boolean encoded);
 }

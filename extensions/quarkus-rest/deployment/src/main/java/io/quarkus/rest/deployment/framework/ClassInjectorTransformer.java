@@ -130,8 +130,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                         // already set by CDI
                         break;
                     case FORM:
-                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, false,
-                                false);
+                        injectParameterWithConverter(injectMethod, "getFormParameter", fieldInfo, extractor, true, true,
+                                fieldInfo.hasAnnotation(QuarkusRestDotNames.ENCODED));
                         break;
                     case HEADER:
                         injectParameterWithConverter(injectMethod, "getHeader", fieldInfo, extractor, true, false, false);

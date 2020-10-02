@@ -27,7 +27,6 @@ import javax.ws.rs.RuntimeType;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
@@ -68,6 +67,8 @@ import io.quarkus.rest.runtime.providers.serialisers.jsonb.JsonbMessageBodyReade
 import io.quarkus.rest.runtime.spi.QuarkusRestClientMessageBodyWriter;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedMap;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -182,8 +183,8 @@ public class Serialisers {
     };
 
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection 
-    private final MultivaluedMap<Class<?>, ResourceWriter> writers = new MultivaluedHashMap<>();
-    private final MultivaluedMap<Class<?>, ResourceReader> readers = new MultivaluedHashMap<>();
+    private final QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
+    private final QuarkusMultivaluedMap<Class<?>, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
 
     public static final List<MediaType> WILDCARD_LIST = Collections.singletonList(MediaType.WILDCARD_TYPE);
     public static final List<String> WILDCARD_STRING_LIST = Collections.singletonList(MediaType.WILDCARD);
@@ -193,7 +194,7 @@ public class Serialisers {
     public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
     public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
-    public static final MultivaluedMap<String, Object> EMPTY_MULTI_MAP = new MultivaluedHashMap<>();
+    public static final MultivaluedMap<String, Object> EMPTY_MULTI_MAP = new QuarkusMultivaluedHashMap<>();
 
     private final ConcurrentMap<Class<?>, List<ResourceWriter>> noMediaTypeClassCache = new ConcurrentHashMap<>();
     private final Function<Class<?>, List<ResourceWriter>> mappingFunction = new Function<Class<?>, List<ResourceWriter>>() {
@@ -339,20 +340,11 @@ public class Serialisers {
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
         Class<?> klass = entityType;
-        MultivaluedMap<Class<?>, ResourceReader> readers;
+        QuarkusMultivaluedMap<Class<?>, ResourceReader> readers;
         if (configuration != null && !configuration.getResourceReaders().isEmpty()) {
-            readers = new MultivaluedHashMap<>();
+            readers = new QuarkusMultivaluedHashMap<>();
             readers.putAll(this.readers);
-            for (Map.Entry<Class<?>, List<ResourceReader>> entry : configuration.getResourceReaders().entrySet()) {
-                List<ResourceReader> resourceReadersOfKey = readers.get(entry.getKey());
-                if (resourceReadersOfKey == null) {
-                    readers.put(entry.getKey(), entry.getValue());
-                } else {
-                    Set<ResourceReader> resourceReadersSet = new HashSet<>(resourceReadersOfKey);
-                    resourceReadersSet.addAll(entry.getValue());
-                    readers.put(entry.getKey(), new ArrayList<>(resourceReadersSet));
-                }
-            }
+            readers.addAll(configuration.getResourceReaders());
         } else {
             readers = this.readers;
         }
@@ -494,20 +486,11 @@ public class Serialisers {
         List<MessageBodyWriter<?>> ret = new ArrayList<>();
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
-        MultivaluedMap<Class<?>, ResourceWriter> writers;
+        QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
-            writers = new MultivaluedHashMap<>();
+            writers = new QuarkusMultivaluedHashMap<>();
             writers.putAll(this.writers);
-            for (Map.Entry<Class<?>, List<ResourceWriter>> entry : configuration.getResourceWriters().entrySet()) {
-                List<ResourceWriter> resourceWritersOfKey = writers.get(entry.getKey());
-                if (resourceWritersOfKey == null) {
-                    writers.put(entry.getKey(), entry.getValue());
-                } else {
-                    Set<ResourceWriter> resourceWriterSet = new HashSet<>(resourceWritersOfKey);
-                    resourceWriterSet.addAll(entry.getValue());
-                    writers.put(entry.getKey(), new ArrayList<>(resourceWriterSet));
-                }
-            }
+            writers.addAll(configuration.getResourceWriters());
         } else {
             writers = this.writers;
         }
@@ -548,20 +531,11 @@ public class Serialisers {
         // TODO: refactor to have use common code from findWriters
         Class<?> klass = entityType;
         Deque<Class<?>> toProcess = new LinkedList<>();
-        MultivaluedMap<Class<?>, ResourceWriter> writers;
+        QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
-            writers = new MultivaluedHashMap<>();
+            writers = new QuarkusMultivaluedHashMap<>();
             writers.putAll(this.writers);
-            for (Map.Entry<Class<?>, List<ResourceWriter>> entry : configuration.getResourceWriters().entrySet()) {
-                List<ResourceWriter> resourceWritersOfKey = writers.get(entry.getKey());
-                if (resourceWritersOfKey == null) {
-                    writers.put(entry.getKey(), entry.getValue());
-                } else {
-                    Set<ResourceWriter> resourceWriterSet = new HashSet<>(resourceWritersOfKey);
-                    resourceWriterSet.addAll(entry.getValue());
-                    writers.put(entry.getKey(), new ArrayList<>(resourceWriterSet));
-                }
-            }
+            writers.addAll(configuration.getResourceWriters());
         } else {
             writers = this.writers;
         }

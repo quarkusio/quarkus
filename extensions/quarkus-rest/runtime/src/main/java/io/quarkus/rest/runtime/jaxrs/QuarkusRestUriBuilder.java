@@ -11,13 +11,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.ws.rs.Path;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriBuilderException;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.rest.runtime.util.Encode;
-import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
 import io.quarkus.rest.runtime.util.PathHelper;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -790,7 +791,7 @@ public class QuarkusRestUriBuilder extends UriBuilder {
 
             String matrixParams = path.substring(matrixIndex + 1);
             path = path.substring(0, matrixIndex);
-            MultivaluedMapImpl<String, String> map = new MultivaluedMapImpl<String, String>();
+            MultivaluedMap<String, String> map = new QuarkusMultivaluedHashMap<String, String>();
 
             String[] params = matrixParams.split(";");
             for (String param : params) {

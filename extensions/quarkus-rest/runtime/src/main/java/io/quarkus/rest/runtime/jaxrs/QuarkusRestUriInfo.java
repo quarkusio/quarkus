@@ -15,8 +15,8 @@ import javax.ws.rs.core.UriInfo;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.UriMatch;
-import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
 import io.quarkus.rest.runtime.util.PathSegmentImpl;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.rest.runtime.util.UnmodifiableMultivaluedMap;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
@@ -148,7 +148,7 @@ public class QuarkusRestUriInfo implements UriInfo {
         if (!decode)
             throw encodedNotSupported();
         if (pathParams == null) {
-            pathParams = new MultivaluedMapImpl<>();
+            pathParams = new QuarkusMultivaluedHashMap<>();
             for (Entry<String, Integer> pathParam : currentRequest.getTarget().getPathParameterIndexes().entrySet()) {
                 pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
             }
@@ -170,7 +170,7 @@ public class QuarkusRestUriInfo implements UriInfo {
         if (!decode)
             throw encodedNotSupported();
         if (queryParams == null) {
-            queryParams = new MultivaluedMapImpl<>();
+            queryParams = new QuarkusMultivaluedHashMap<>();
             MultiMap entries = currentRequest.getContext().queryParams();
             for (String i : entries.names()) {
                 queryParams.addAll(i, entries.getAll(i));

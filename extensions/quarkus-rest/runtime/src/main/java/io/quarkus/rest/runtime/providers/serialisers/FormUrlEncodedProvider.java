@@ -24,7 +24,7 @@ import io.quarkus.rest.runtime.core.LazyMethod;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.spi.QuarkusRestMessageBodyWriter;
 import io.quarkus.rest.runtime.util.Encode;
-import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -50,7 +50,7 @@ public class FormUrlEncodedProvider implements MessageBodyReader<MultivaluedMap>
     public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset) throws IOException {
         String form = MessageReaderUtil.readString(entityStream, charset);
 
-        MultivaluedMap<String, String> formData = new MultivaluedMapImpl<String, String>();
+        MultivaluedMap<String, String> formData = new QuarkusMultivaluedHashMap<String, String>();
         if ("".equals(form)) {
             return formData;
         }

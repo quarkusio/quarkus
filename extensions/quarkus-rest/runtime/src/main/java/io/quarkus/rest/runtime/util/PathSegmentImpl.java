@@ -24,7 +24,7 @@ public class PathSegmentImpl implements PathSegment {
         this.path = segment;
         int semicolon = segment.indexOf(';');
         if (semicolon >= 0) {
-            matrixParameters = new MultivaluedMapImpl<String, String>();
+            matrixParameters = new QuarkusMultivaluedHashMap<String, String>();
             hasMatrixParams = true;
             if (semicolon > 0)
                 this.path = segment.substring(0, semicolon);
@@ -71,7 +71,7 @@ public class PathSegmentImpl implements PathSegment {
 
     public MultivaluedMap<String, String> getMatrixParameters() {
         if (matrixParameters == null) {
-            matrixParameters = new MultivaluedMapImpl<String, String>();
+            matrixParameters = new QuarkusMultivaluedHashMap<String, String>();
         }
         return matrixParameters;
     }

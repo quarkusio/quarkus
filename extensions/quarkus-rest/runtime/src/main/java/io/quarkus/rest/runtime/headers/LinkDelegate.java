@@ -8,7 +8,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestLinkBuilder;
-import io.quarkus.rest.runtime.util.MultivaluedMapImpl;
+import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -33,7 +33,7 @@ public class LinkDelegate implements RuntimeDelegate.HeaderDelegate<Link> {
 
         public void parse() {
             String href = null;
-            MultivaluedMap<String, String> attributes = new MultivaluedMapImpl<String, String>();
+            MultivaluedMap<String, String> attributes = new QuarkusMultivaluedHashMap<String, String>();
             while (curr < value.length()) {
 
                 char c = value.charAt(curr);

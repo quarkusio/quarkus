@@ -9,19 +9,20 @@ import javax.ws.rs.core.MultivaluedHashMap;
 /**
  * QuarkusMultivaluedHashMap without the bug in put/putAll that leaks external mutable storage into our storage.
  */
-public class QuarkusMultivaluedHashMap<Key, Value> extends MultivaluedHashMap<Key, Value> {
+public class QuarkusMultivaluedHashMap<Key, Value> extends MultivaluedHashMap<Key, Value>
+        implements QuarkusMultivaluedMap<Key, Value> {
 
     private static final long serialVersionUID = 4136263572124588039L;
 
     @Override
     public List<Value> put(Key key, List<Value> value) {
-        if(value != null) {
+        if (value != null) {
             // this is the storage the supertype uses
             value = new LinkedList<>(value);
         }
         return super.put(key, value);
     }
-    
+
     @Override
     public void putAll(Map<? extends Key, ? extends List<Value>> m) {
         for (Entry<? extends Key, ? extends List<Value>> entry : m.entrySet()) {

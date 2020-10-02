@@ -14,7 +14,9 @@ import javax.ws.rs.core.MultivaluedMap;
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
-public class MultivaluedTreeMap<K, V> implements MultivaluedMap<K, V>, Serializable {
+public class MultivaluedTreeMap<K, V> implements QuarkusMultivaluedMap<K, V>, Serializable {
+    private static final long serialVersionUID = -5819694356897323354L;
+
     private final Map<K, List<V>> map;
 
     public MultivaluedTreeMap() {
@@ -61,13 +63,18 @@ public class MultivaluedTreeMap<K, V> implements MultivaluedMap<K, V>, Serializa
         List<V> list = this.get(key);
         if (list == null) {
             list = createValueList(key);
-            this.put(key, list);
+            // do not call the version that copies
+            map.put(key, list);
         }
         return list;
     }
 
     private List<V> createValueList(K key) {
         return new ArrayList<V>(1);
+    }
+
+    private List<V> createValueList(List<V> values) {
+        return new ArrayList<V>(values);
     }
 
     public MultivaluedTreeMap<K, V> clone() {
@@ -164,11 +171,18 @@ public class MultivaluedTreeMap<K, V> implements MultivaluedMap<K, V>, Serializa
     }
 
     public List<V> put(K key, List<V> value) {
+        if (value != null) {
+            // do not use mutable external data storage internally
+            value = createValueList(value);
+        }
         return map.put(key, value);
     }
 
     public void putAll(Map<? extends K, ? extends List<V>> t) {
-        map.putAll(t);
+        for (Entry<? extends K, ? extends List<V>> entry : t.entrySet()) {
+            // call the version that copies
+            put(entry.getKey(), entry.getValue());
+        }
     }
 
     public List<V> remove(Object key) {

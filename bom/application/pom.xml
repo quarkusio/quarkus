@@ -4597,6 +4597,11 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-azure-monitor</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
 
             <!-- Picocli -->
             <dependency>

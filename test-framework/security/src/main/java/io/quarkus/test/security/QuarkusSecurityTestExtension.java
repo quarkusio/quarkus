@@ -28,6 +28,9 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
             Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
             Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
                     Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
+                        if (s.isPrimitive()) {
+                            return s;
+                        }
                         try {
                             return cl.loadClass(s.getName());
                         } catch (ClassNotFoundException e) {

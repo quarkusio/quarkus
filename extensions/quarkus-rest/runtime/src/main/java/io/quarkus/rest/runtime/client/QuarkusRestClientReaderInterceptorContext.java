@@ -2,7 +2,6 @@ package io.quarkus.rest.runtime.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -47,6 +46,7 @@ public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstra
         this.headers.putAll(headers);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object proceed() throws IOException, WebApplicationException {
         if (index == interceptors.length) {
@@ -58,7 +58,7 @@ public class QuarkusRestClientReaderInterceptorContext extends QuarkusRestAbstra
                         return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType, headers,
                                 inputStream);
                     } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+                        throw new ProcessingException(e);
                     }
                 }
             }

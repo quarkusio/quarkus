@@ -65,7 +65,11 @@
             <artifactId>micrometer-registry-stackdriver</artifactId>
             <optional>true</optional>
         </dependency>
-
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-azure-monitor</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- test -->
 
         <dependency>

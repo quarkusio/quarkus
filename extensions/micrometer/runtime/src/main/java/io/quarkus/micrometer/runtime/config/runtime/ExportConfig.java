@@ -82,6 +82,31 @@ public class ExportConfig {
 
     // @formatter:off
     /**
+     * Azure Monitor registry configuration properties.
+     * <p>
+     * A property source for configuration of the AzureMonitor MeterRegistry,
+     *
+     * Available values:
+     *
+     * [cols=2]
+     * !===
+     * h!Property=Default
+     * h!Description
+     *
+     * !`instrumentation-key`
+     * !Define the instrumentationKey used to push data to Azure Insights Monitor
+     *
+     * !===
+     *
+     * Other micrometer configuration attributes can also be specified.
+     *
+     * @asciidoclet
+     */
+    // @formatter:on
+    @ConfigItem
+    Map<String, String> azuremonitor;
+    // @formatter:off
+    /**
      * Stackdriver registry configuration properties.
      * <p>
      * A property source for configuration of the Stackdriver MeterRegistry,

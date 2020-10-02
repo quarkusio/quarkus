@@ -38,10 +38,6 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
             entityStream = new EmptyInputStream();
         }
 
-        // Spec says to return the input stream as-is, without closing it, if that's what we want
-        if (InputStream.class.isAssignableFrom(entityType)) {
-            return (T) entityStream;
-        }
         // it's possible we already read it for a different type, so try to reset it
         try {
             if (buffered) {
@@ -53,6 +49,12 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         } catch (IOException e) {
             throw new ProcessingException(e);
         }
+
+        // Spec says to return the input stream as-is, without closing it, if that's what we want
+        if (InputStream.class.isAssignableFrom(entityType)) {
+            return (T) entityStream;
+        }
+
         MediaType mediaType = getMediaType();
         try {
             entity = Serialisers.invokeClientReader(annotations, entityType, genericType, mediaType,

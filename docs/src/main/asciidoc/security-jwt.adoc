@@ -374,7 +374,7 @@ in order for the token to be accepted as valid.
 <3> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
 <4> The `birthday` claim. It can be considered to be a sensitive claim so you may want to consider encrypting the claims, see <<generate-jwt-tokens, Generate JWT tokens with SmallRye JWT>>.
 
-Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/main/resources/META-INF/resources/privateKey.pem`:
+Note for this code to work we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`:
 
 .RSA Private Key PEM Content
 [source, text]

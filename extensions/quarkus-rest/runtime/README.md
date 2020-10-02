@@ -86,3 +86,8 @@
 - `AbstractMultivaluedMap.putAll(MultivaluedMap)` will add the parameter's `List` values without copying, directly to the store, which means that 
   further calls to `addAll()` will modify those lists, effectively having both maps share their mutable `List` storage. 
 - `MultivaluedMap` is missing `addAll(MultivaluedMap)` to complete `putAll`
+- The TCK in JAXRSClient0162 tests sending pre-serialised JSON strings as JSON, and so the JSON serialiser had to be modified to not serialise String
+  entities, but that's wrong, because it will properly serialise Boolean, Number and any Object type. Also if you deserialise a JSON string value `"foo"`
+  you will get `foo` without the quotes, whereas with this fix, if we now send a `foo` String value as JSON it will be sent raw (assumed pre-serialised)
+  so this is not regular. We should always serialise string values as JSON string values, and introduce a `SerialisedJsonString` type to mark pre-serialised
+  JSON strings. Possibly even just `RawString` to make sure no serialise will modify them.

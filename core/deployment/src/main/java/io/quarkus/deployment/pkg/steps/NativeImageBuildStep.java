@@ -87,7 +87,7 @@ public class NativeImageBuildStep {
             PackageConfig packageConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
-            final Optional<ProcessInheritIODisabled> processInheritIODisabled) {
+            Optional<ProcessInheritIODisabled> processInheritIODisabled) {
         if (nativeConfig.debug.enabled) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -125,7 +125,7 @@ public class NativeImageBuildStep {
                 cleanup.add("--server-shutdown");
                 final ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));
                 pb.directory(outputDir.toFile());
-                final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled);
+                final Process process = ProcessUtil.launchProcess(pb, processInheritIODisabled.isPresent());
                 process.waitFor();
             }
             boolean enableSslNative = false;
@@ -263,7 +263,7 @@ public class NativeImageBuildStep {
             log.info(String.join(" ", command).replace("$", "\\$"));
             CountDownLatch errorReportLatch = new CountDownLatch(1);
             final ProcessBuilder processBuilder = new ProcessBuilder(command).directory(outputDir.toFile());
-            final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);
+            final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled.isPresent());
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
                     errorReportLatch));
@@ -371,7 +371,7 @@ public class NativeImageBuildStep {
             try {
                 final ProcessBuilder pb = new ProcessBuilder(
                         Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage));
-                pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
+                pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled.isPresent());
                 pullProcess.waitFor();
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);

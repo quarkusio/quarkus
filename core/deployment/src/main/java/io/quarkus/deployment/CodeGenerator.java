@@ -26,6 +26,7 @@ public class CodeGenerator {
             AppModel appModel) throws CodeGenException {
         List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir, sourceRegistrar);
         for (CodeGenData generator : generators) {
+            generator.setRedirectIO(true);
             trigger(classLoader, generator, appModel);
         }
     }
@@ -81,12 +82,11 @@ public class CodeGenerator {
             CodeGenData data,
             AppModel appModel) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
-            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
-
             CodeGenProvider provider = data.provider;
 
             return Files.isDirectory(data.sourceDir)
-                    && provider.trigger(new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir));
+                    && provider.trigger(
+                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO));
         });
     }
 

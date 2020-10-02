@@ -21,6 +21,7 @@ import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
+import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.utilities.JavaBinFinder;
 import io.quarkus.utilities.OS;
 
@@ -77,10 +78,9 @@ public class GrpcCodeGen implements CodeGenProvider {
                             "--java_out=" + outDir));
                     command.addAll(protoFiles);
 
-                    Process process = new ProcessBuilder()
-                            .command(command)
-                            .inheritIO()
-                            .start();
+                    ProcessBuilder processBuilder = new ProcessBuilder(command);
+
+                    final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
                     int resultCode = process.waitFor();
                     if (resultCode != 0) {
                         throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +

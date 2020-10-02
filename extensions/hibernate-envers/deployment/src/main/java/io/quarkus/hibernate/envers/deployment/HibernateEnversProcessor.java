@@ -31,6 +31,8 @@ public final class HibernateEnversProcessor {
     @BuildStep
     public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.hibernate.envers.DefaultRevisionEntity"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
+                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, "org.hibernate.tuple.entity.DynamicMapEntityTuplizer"));
         reflectiveClass.produce(

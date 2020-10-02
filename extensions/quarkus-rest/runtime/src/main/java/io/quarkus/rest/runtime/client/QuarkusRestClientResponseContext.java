@@ -106,7 +106,7 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        return HeaderUtil.getCookies(headers);
+        return HeaderUtil.getNewCookies(headers);
     }
 
     @Override

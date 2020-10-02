@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.headers;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -9,7 +10,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -18,6 +21,8 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.rest.runtime.util.DateUtil;
+import io.quarkus.rest.runtime.util.MediaTypeHelper;
+import io.quarkus.rest.runtime.util.WeightedLanguage;
 
 /**
  * These work for MultivaluedMap with String and Object
@@ -121,7 +126,25 @@ public class HeaderUtil {
         return Integer.parseInt(HeaderUtil.headerToString(obj));
     }
 
-    public static Map<String, NewCookie> getCookies(MultivaluedMap<String, ? extends Object> headers) {
+    public static Map<String, Cookie> getCookies(MultivaluedMap<String, ? extends Object> headers) {
+        List list = headers.get(HttpHeaders.COOKIE);
+        if (list == null)
+            return Collections.emptyMap();
+        Map<String, Cookie> cookies = new HashMap<String, Cookie>();
+        for (Object obj : list) {
+            if (obj instanceof Cookie) {
+                Cookie cookie = (Cookie) obj;
+                cookies.put(cookie.getName(), cookie);
+            } else {
+                String str = headerToString(obj);
+                Cookie cookie = Cookie.valueOf(str);
+                cookies.put(cookie.getName(), cookie);
+            }
+        }
+        return cookies;
+    }
+
+    public static Map<String, NewCookie> getNewCookies(MultivaluedMap<String, ? extends Object> headers) {
         List<?> list = headers.get(HttpHeaders.SET_COOKIE);
         if ((list == null) || list.isEmpty()) {
             return Collections.emptyMap();
@@ -151,20 +174,20 @@ public class HeaderUtil {
         return EntityTag.valueOf(HeaderUtil.headerToString(d));
     }
 
-    public static String getHeaderString(MultivaluedMap<String, String> headers, String name) {
-        List<String> list = headers.get(name);
+    public static String getHeaderString(MultivaluedMap<String, ? extends Object> headers, String name) {
+        List<? extends Object> list = headers.get(name);
         if (list == null) {
             return null;
         }
         if (list.size() == 1) {
-            return list.get(0);
+            return headerToString(list.get(0));
         }
         StringBuilder sb = new StringBuilder();
-        for (String s : list) {
+        for (Object s : list) {
             if (sb.length() > 0) {
                 sb.append(",");
             }
-            sb.append(s);
+            sb.append(headerToString(s));
         }
         return sb.toString();
     }
@@ -218,5 +241,64 @@ public class HeaderUtil {
                 return true;
         }
         return false;
+    }
+
+    public static List<MediaType> getAcceptableMediaTypes(MultivaluedMap<String, ? extends Object> headers) {
+        List<?> accepts = headers.get(HttpHeaders.ACCEPT);
+        if (accepts == null || accepts.isEmpty()) {
+            return Collections.singletonList(MediaType.WILDCARD_TYPE);
+        }
+        List<MediaType> list = new ArrayList<MediaType>();
+        for (Object obj : accepts) {
+            if (obj instanceof MediaType) {
+                list.add((MediaType) obj);
+                continue;
+            }
+            String accept = null;
+            if (obj instanceof String) {
+                accept = (String) obj;
+            } else {
+                accept = headerToString(obj);
+            }
+            if (accept.indexOf(',') != -1) {
+                StringTokenizer tokenizer = new StringTokenizer(accept, ",");
+                while (tokenizer.hasMoreElements()) {
+                    String item = tokenizer.nextToken().trim();
+                    list.add(MediaType.valueOf(item));
+                }
+            } else {
+                list.add(MediaType.valueOf(accept.trim()));
+            }
+        }
+        MediaTypeHelper.sortByWeight(list);
+        return list;
+    }
+
+    public static List<Locale> getAcceptableLanguages(MultivaluedMap<String, ? extends Object> headers) {
+        List<?> accepts = headers.get(HttpHeaders.ACCEPT_LANGUAGE);
+        if (accepts == null || accepts.isEmpty())
+            return Collections.emptyList();
+        List<WeightedLanguage> languages = new ArrayList<WeightedLanguage>();
+        for (Object obj : accepts) {
+            if (obj instanceof Locale) {
+                languages.add(new WeightedLanguage((Locale) obj, 1.0F));
+                continue;
+            }
+            String accept = headerToString(obj);
+            if (accept.indexOf(',') != -1) {
+                StringTokenizer tokenizer = new StringTokenizer(accept, ",");
+                while (tokenizer.hasMoreElements()) {
+                    String item = tokenizer.nextToken().trim();
+                    languages.add(WeightedLanguage.parse(item));
+                }
+            } else {
+                languages.add(WeightedLanguage.parse(accept.trim()));
+            }
+        }
+        Collections.sort(languages);
+        List<Locale> list = new ArrayList<Locale>(languages.size());
+        for (WeightedLanguage language : languages)
+            list.add(language.getLocale());
+        return list;
     }
 }

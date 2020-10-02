@@ -1,25 +1,19 @@
 package io.quarkus.rest.runtime.jaxrs;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import io.quarkus.rest.runtime.headers.HeaderUtil;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
-import io.quarkus.rest.runtime.util.CookieParser;
-import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.UnmodifiableMultivaluedMap;
-import io.quarkus.rest.runtime.util.WeightedLanguage;
 import io.vertx.core.MultiMap;
 
 /**
@@ -66,20 +60,13 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
 
     @Override
     public Map<String, Cookie> getCookies() {
-        initCookies();
-        mergeCookies();
-        return Collections.unmodifiableMap(cookies);
-    }
-
-    private void initCookies() {
-        if (cookies == null) {
-            cookies = new HashMap<>();
-        }
+        return Collections.unmodifiableMap(getMutableCookies());
     }
 
     public Map<String, Cookie> getMutableCookies() {
-        initCookies();
-        mergeCookies();
+        if (cookies == null) {
+            cookies = HeaderUtil.getCookies(requestHeaders);
+        }
         return cookies;
     }
 
@@ -89,43 +76,22 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
 
     @Override
     public Date getDate() {
-        String date = requestHeaders.getFirst(DATE);
-        if (date == null)
-            return null;
-        return DateUtil.parseDate(date);
+        return HeaderUtil.getDate(requestHeaders);
     }
 
     @Override
     public String getHeaderString(String name) {
-        List<String> vals = requestHeaders.get(name);
-        if (vals == null)
-            return null;
-        StringBuilder builder = new StringBuilder();
-        boolean first = true;
-        for (String val : vals) {
-            if (first)
-                first = false;
-            else
-                builder.append(",");
-            builder.append(val);
-        }
-        return builder.toString();
+        return HeaderUtil.getHeaderString(requestHeaders, name);
     }
 
     @Override
     public Locale getLanguage() {
-        String obj = requestHeaders.getFirst(HttpHeaders.CONTENT_LANGUAGE);
-        if (obj == null)
-            return null;
-        return new Locale(obj);
+        return HeaderUtil.getLanguage(requestHeaders);
     }
 
     @Override
     public int getLength() {
-        String obj = requestHeaders.getFirst(HttpHeaders.CONTENT_LENGTH);
-        if (obj == null)
-            return -1;
-        return Integer.parseInt(obj);
+        return HeaderUtil.getLength(requestHeaders);
     }
 
     // because header string map is mutable, we only cache the parsed media type
@@ -155,53 +121,11 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
     }
 
     public List<MediaType> getModifiableAcceptableMediaTypes() {
-        List<String> vals = requestHeaders.get(ACCEPT);
-        if (vals == null || vals.isEmpty()) {
-            return Collections.singletonList(MediaType.WILDCARD_TYPE);
-        } else {
-            List<MediaType> list = new ArrayList<MediaType>();
-            for (String v : vals) {
-                StringTokenizer tokenizer = new StringTokenizer(v, ",");
-                while (tokenizer.hasMoreElements()) {
-                    String item = tokenizer.nextToken().trim();
-                    list.add(MediaType.valueOf(item));
-                }
-            }
-            MediaTypeHelper.sortByWeight(list);
-            return list;
-        }
+        return HeaderUtil.getAcceptableMediaTypes(requestHeaders);
     }
 
     @Override
     public List<Locale> getAcceptableLanguages() {
-        List<String> vals = requestHeaders.get(ACCEPT_LANGUAGE);
-        if (vals == null || vals.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<WeightedLanguage> languages = new ArrayList<WeightedLanguage>();
-        for (String v : vals) {
-            StringTokenizer tokenizer = new StringTokenizer(v, ",");
-            while (tokenizer.hasMoreElements()) {
-                String item = tokenizer.nextToken().trim();
-                languages.add(WeightedLanguage.parse(item));
-            }
-        }
-        Collections.sort(languages);
-        List<Locale> list = new ArrayList<Locale>(languages.size());
-        for (WeightedLanguage language : languages)
-            list.add(language.getLocale());
-        return Collections.unmodifiableList(list);
-    }
-
-    private void mergeCookies() {
-        List<String> cookieHeader = requestHeaders.get(HttpHeaders.COOKIE);
-        if (cookieHeader != null && !cookieHeader.isEmpty()) {
-            for (String s : cookieHeader) {
-                List<Cookie> list = CookieParser.parseCookies(s);
-                for (Cookie cookie : list) {
-                    cookies.put(cookie.getName(), cookie);
-                }
-            }
-        }
+        return HeaderUtil.getAcceptableLanguages(requestHeaders);
     }
 }

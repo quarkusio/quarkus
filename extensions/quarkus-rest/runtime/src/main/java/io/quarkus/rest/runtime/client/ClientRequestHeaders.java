@@ -1,14 +1,10 @@
 package io.quarkus.rest.runtime.client;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Cookie;
@@ -19,9 +15,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import io.quarkus.rest.runtime.headers.HeaderUtil;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestConfiguration;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
-import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.MediaTypeHelper;
-import io.quarkus.rest.runtime.util.WeightedLanguage;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -94,7 +87,7 @@ public class ClientRequestHeaders {
             } else {
                 builder.append(", ");
             }
-            builder.append(configuration.toHeaderString(l));
+            builder.append(HeaderUtil.headerToString(l));
         }
         return builder;
     }
@@ -142,138 +135,54 @@ public class ClientRequestHeaders {
             return;
         }
         if (name.equalsIgnoreCase(HttpHeaders.ACCEPT))
-            accept(configuration.toHeaderString(value));
+            accept(HeaderUtil.headerToString(value));
         else if (name.equalsIgnoreCase(HttpHeaders.ACCEPT_ENCODING))
-            acceptEncoding(configuration.toHeaderString(value));
+            acceptEncoding(HeaderUtil.headerToString(value));
         else if (name.equalsIgnoreCase(HttpHeaders.ACCEPT_LANGUAGE))
-            acceptLanguage(configuration.toHeaderString(value));
+            acceptLanguage(HeaderUtil.headerToString(value));
         else
             headers.add(name, value);
     }
 
     public Date getDate() {
-        Object d = headers.getFirst(HttpHeaders.DATE);
-        if (d == null)
-            return null;
-        if (d instanceof Date)
-            return (Date) d;
-        return DateUtil.parseDate(d.toString());
+        return HeaderUtil.getDate(headers);
     }
 
     public String getHeader(String name) {
-        List vals = headers.get(name);
-        if (vals == null)
-            return null;
-        StringBuilder builder = new StringBuilder();
-        boolean first = true;
-        for (Object val : vals) {
-            if (first)
-                first = false;
-            else
-                builder.append(",");
-            builder.append(configuration.toHeaderString(val));
-        }
-        return builder.toString();
+        return HeaderUtil.getHeaderString(headers, name);
     }
 
     public MultivaluedMap<String, String> asMap() {
         CaseInsensitiveMap<String> map = new CaseInsensitiveMap<String>();
         for (Map.Entry<String, List<Object>> entry : headers.entrySet()) {
             for (Object obj : entry.getValue()) {
-                map.add(entry.getKey(), configuration.toHeaderString(obj));
+                map.add(entry.getKey(), HeaderUtil.headerToString(obj));
             }
         }
         return map;
     }
 
     public Locale getLanguage() {
-        Object obj = headers.getFirst(HttpHeaders.CONTENT_LANGUAGE);
-        if (obj == null)
-            return null;
-        if (obj instanceof Locale)
-            return (Locale) obj;
-        return new Locale(obj.toString());
+        return HeaderUtil.getLanguage(headers);
     }
 
     public int getLength() {
-        return -1;
+        return HeaderUtil.getLength(headers);
     }
 
     public MediaType getMediaType() {
-        Object obj = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (obj == null)
-            return null;
-        if (obj instanceof MediaType)
-            return (MediaType) obj;
-        return MediaType.valueOf(configuration.toHeaderString(obj));
+        return HeaderUtil.getMediaType(headers);
     }
 
     public List<MediaType> getAcceptableMediaTypes() {
-        List<MediaType> list = new ArrayList<MediaType>();
-        List accepts = headers.get(HttpHeaders.ACCEPT);
-        if (accepts == null)
-            return list;
-        for (Object obj : accepts) {
-            if (obj instanceof MediaType) {
-                list.add((MediaType) obj);
-                continue;
-            }
-            String accept = null;
-            if (obj instanceof String) {
-                accept = (String) obj;
-            } else {
-                accept = configuration.toHeaderString(obj);
-
-            }
-            StringTokenizer tokenizer = new StringTokenizer(accept, ",");
-            while (tokenizer.hasMoreElements()) {
-                String item = tokenizer.nextToken().trim();
-                list.add(MediaType.valueOf(item));
-            }
-        }
-        MediaTypeHelper.sortByWeight(list);
-        return list;
+        return HeaderUtil.getAcceptableMediaTypes(headers);
     }
 
     public List<Locale> getAcceptableLanguages() {
-        List<Locale> list = new ArrayList<Locale>();
-        List accepts = headers.get(HttpHeaders.ACCEPT_LANGUAGE);
-        if (accepts == null)
-            return list;
-        List<WeightedLanguage> languages = new ArrayList<WeightedLanguage>();
-        for (Object obj : accepts) {
-            if (obj instanceof Locale) {
-                languages.add(new WeightedLanguage((Locale) obj, 1.0F));
-                continue;
-            }
-            String accept = configuration.toHeaderString(obj);
-            StringTokenizer tokenizer = new StringTokenizer(accept, ",");
-            while (tokenizer.hasMoreElements()) {
-                String item = tokenizer.nextToken().trim();
-                languages.add(WeightedLanguage.parse(item));
-            }
-        }
-        Collections.sort(languages);
-        for (WeightedLanguage language : languages)
-            list.add(language.getLocale());
-        return list;
+        return HeaderUtil.getAcceptableLanguages(headers);
     }
 
     public Map<String, Cookie> getCookies() {
-        Map<String, Cookie> cookies = new HashMap<String, Cookie>();
-        List list = headers.get(HttpHeaders.COOKIE);
-        if (list == null)
-            return cookies;
-        for (Object obj : list) {
-            if (obj instanceof Cookie) {
-                Cookie cookie = (Cookie) obj;
-                cookies.put(cookie.getName(), cookie);
-            } else {
-                String str = configuration.toHeaderString(obj);
-                Cookie cookie = Cookie.valueOf(str);
-                cookies.put(cookie.getName(), cookie);
-            }
-        }
-        return cookies;
+        return HeaderUtil.getCookies(headers);
     }
 }

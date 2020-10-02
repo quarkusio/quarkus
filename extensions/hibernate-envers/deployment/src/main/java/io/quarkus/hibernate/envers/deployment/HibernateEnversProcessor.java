@@ -10,7 +10,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfig;
 import io.quarkus.hibernate.envers.HibernateEnversRecorder;
 
-public final class QuarkusHibernateEnversProcessor {
+public final class HibernateEnversProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {

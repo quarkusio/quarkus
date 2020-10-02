@@ -3,6 +3,7 @@ package io.quarkus.it.tika;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -27,6 +28,17 @@ public class TikaParserTest {
     @Test
     public void testGetTextFromPdfFormat() throws Exception {
         checkText("application/pdf", "pdf");
+    }
+
+    @Test
+    public void testGetTextFromPdfFormatWithFonts() throws Exception {
+        given()
+                .when().header("Content-Type", "application/pdf")
+                .body(readQuarkusFile("americanexpress.pdf"))
+                .post("/parse/text")
+                .then()
+                .statusCode(200)
+                .body(startsWith("American express card"));
     }
 
     @Test

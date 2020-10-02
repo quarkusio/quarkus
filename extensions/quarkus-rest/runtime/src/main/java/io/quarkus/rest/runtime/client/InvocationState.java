@@ -23,7 +23,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Variant;
-import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.ReaderInterceptor;
 import javax.ws.rs.ext.WriterInterceptor;
@@ -162,21 +161,8 @@ public class InvocationState implements Handler<HttpClientResponse> {
             throws IOException {
         if (in == null)
             return null;
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(configuration, responseType.getRawType(),
-                mediaType, RuntimeType.CLIENT);
-        // FIXME
-        Annotation[] annotations = null;
-        for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(responseType.getRawType(), responseType.getType(), annotations,
-                    mediaType)) {
-                return (T) Serialisers.invokeClientReader(annotations, responseType.getRawType(), responseType.getType(),
-                        mediaType, properties, metadata, reader, in, getReaderInterceptors());
-            }
-        }
-
-        // Spec says to throw this
-        throw new ProcessingException(
-                "Request could not be mapped to type " + responseType);
+        return (T) Serialisers.invokeClientReader(null, responseType.getRawType(), responseType.getType(),
+                mediaType, properties, metadata, serialisers, in, getReaderInterceptors(), configuration);
     }
 
     ReaderInterceptor[] getReaderInterceptors() {

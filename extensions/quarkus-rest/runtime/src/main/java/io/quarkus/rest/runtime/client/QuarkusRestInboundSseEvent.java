@@ -4,16 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
 
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.sse.InboundSseEvent;
 import javax.ws.rs.sse.SseEvent;
 
@@ -112,26 +107,14 @@ public class QuarkusRestInboundSseEvent implements InboundSseEvent {
 
     @Override
     public <T> T readData(GenericType<T> type, MediaType mediaType) {
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(configuration, type.getRawType(), mediaType,
-                RuntimeType.CLIENT);
-        // FIXME
-        Annotation[] annotations = null;
-        for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(type.getRawType(), type.getType(), annotations, mediaType)) {
-                InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
-                try {
-                    return (T) Serialisers.invokeClientReader(annotations, type.getRawType(), type.getType(),
-                            mediaType, null, Serialisers.EMPTY_MULTI_MAP,
-                            reader, in, Serialisers.NO_READER_INTERCEPTOR);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
+        InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+        try {
+            return (T) Serialisers.invokeClientReader(null, type.getRawType(), type.getType(),
+                    mediaType, null, Serialisers.EMPTY_MULTI_MAP,
+                    serialisers, in, Serialisers.NO_READER_INTERCEPTOR, configuration);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-
-        // Spec says to throw this
-        throw new ProcessingException(
-                "Request could not be mapped to type " + type);
     }
 
     @Override

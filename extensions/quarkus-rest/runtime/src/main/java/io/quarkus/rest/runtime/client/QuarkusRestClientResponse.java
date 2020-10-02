@@ -4,12 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.List;
 
 import javax.ws.rs.ProcessingException;
-import javax.ws.rs.RuntimeType;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
 
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
@@ -45,36 +42,27 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         if (InputStream.class.isAssignableFrom(entityType)) {
             return (T) entityStream;
         }
-        MediaType mediaType = getMediaType();
-        List<MessageBodyReader<?>> readers = invocationState.serialisers.findReaders(invocationState.configuration, entityType,
-                mediaType, RuntimeType.CLIENT);
-        for (MessageBodyReader<?> reader : readers) {
-            if (reader.isReadable(entityType, genericType, annotations, mediaType)) {
-                Object entity;
-                try {
-                    // it's possible we already read it for a different type, so try to reset it
-                    if (buffered) {
-                        entityStream.reset();
-                    } else if (consumed) {
-                        throw new IllegalStateException(
-                                "Entity stream has already been read and is not buffered: call Reponse.bufferEntity()");
-                    }
-                    entity = Serialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
-                            invocationState.properties, getStringHeaders(), reader,
-                            entityStream, invocationState.getReaderInterceptors());
-                    consumed = true;
-                    // spec says to close ourselves
-                    close();
-                } catch (IOException e) {
-                    throw new ProcessingException(e);
-                }
-                setEntity(entity);
-                return (T) entity;
+        // it's possible we already read it for a different type, so try to reset it
+        try {
+            if (buffered) {
+                entityStream.reset();
+            } else if (consumed) {
+                throw new IllegalStateException(
+                        "Entity stream has already been read and is not buffered: call Reponse.bufferEntity()");
             }
+        } catch (IOException e) {
+            throw new ProcessingException(e);
         }
-        setEntity(null);
-        // Spec says to throw this
-        throw new ProcessingException(
-                "Request could not be mapped to type " + (genericType != null ? genericType : entityType));
+        MediaType mediaType = getMediaType();
+        try {
+            entity = Serialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
+                    invocationState.properties, getStringHeaders(), invocationState.serialisers,
+                    entityStream, invocationState.getReaderInterceptors(), invocationState.configuration);
+            consumed = true;
+            close();
+            return (T) entity;
+        } catch (IOException e) {
+            throw new ProcessingException(e);
+        }
     }
 }

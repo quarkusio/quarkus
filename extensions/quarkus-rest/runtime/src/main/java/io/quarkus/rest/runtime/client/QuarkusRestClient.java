@@ -10,6 +10,7 @@ import javax.net.ssl.SSLContext;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
@@ -70,18 +71,16 @@ public class QuarkusRestClient implements Client {
 
     @Override
     public WebTarget target(String uri) {
-        abortIfClosed();
+        // close is checked in the other target call
         Objects.requireNonNull(uri);
-        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies, genericTypeMapping);
+        return target(UriBuilder.fromUri(uri));
     }
 
     @Override
     public WebTarget target(URI uri) {
-        abortIfClosed();
+        // close is checked in the other target call
         Objects.requireNonNull(uri);
-        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromUri(uri), new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies, genericTypeMapping);
+        return target(UriBuilder.fromUri(uri));
     }
 
     @Override
@@ -94,18 +93,19 @@ public class QuarkusRestClient implements Client {
 
     @Override
     public WebTarget target(Link link) {
-        abortIfClosed();
+        // close is checked in the other target call
         Objects.requireNonNull(link);
-        return new QuarkusRestWebTarget(this, httpClient, UriBuilder.fromLink(link),
-                new QuarkusRestConfiguration(configuration),
-                serialisers, clientProxies, genericTypeMapping);
+        return target(UriBuilder.fromLink(link));
     }
 
     @Override
     public Invocation.Builder invocation(Link link) {
         abortIfClosed();
         Objects.requireNonNull(link);
-        return target(link).request();
+        Builder request = target(link).request();
+        if (link.getType() != null)
+            request.accept(link.getType());
+        return request;
     }
 
     @Override

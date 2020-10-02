@@ -14,8 +14,4 @@ public abstract class AbstractEntity<IdType extends Number> {
     public IdType getId() {
         return id;
     }
-
-    public void setId(IdType id) {
-        this.id = id;
-    }
 }

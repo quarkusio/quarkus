@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -22,9 +24,10 @@ class TestSecurityTestCase {
                 .body(is("secure"));
     }
 
-    @Test
     @TestSecurity
-    void testGetWithSecEnabled() {
+    @ParameterizedTest
+    @ValueSource(ints = 1) //https://github.com/quarkusio/quarkus/issues/12413
+    void testGetWithSecEnabled(int ignore) {
         given()
                 .when()
                 .get("/secure")

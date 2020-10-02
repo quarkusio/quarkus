@@ -63,6 +63,8 @@
 - Optim: we currently instantiate every param converter every time we need to convert a param if it's a 
   field (including beanparam), we could store these in extra static fields on the resource/beanparam that
   we initialise at static init. 
+- Optim: related to the previous one, the classes we generate for fromString/valueOf/constructor we could call directly in the inject()
+  implementations, rather than instantiate those generated classes for every request
 
 ** JAXRS SPEC observations
 
@@ -83,3 +85,4 @@
 - It's crazy that if there's a client `RequestFilter` that calls `abortWith(Response)`, we have to serialise the entity to run the response filter/interceptors
 - `AbstractMultivaluedMap.putAll(MultivaluedMap)` will add the parameter's `List` values without copying, directly to the store, which means that 
   further calls to `addAll()` will modify those lists, effectively having both maps share their mutable `List` storage. 
+- `MultivaluedMap` is missing `addAll(MultivaluedMap)` to complete `putAll`

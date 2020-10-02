@@ -137,8 +137,7 @@ public class HelloResource {
 <2> `Templates.hello()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
  
-NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template
-from your Java code and you forgot to add it, we will let you know at build time :)
+NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
 
@@ -165,9 +164,9 @@ public class GoodbyeResource {
 }
 ----
 
-=== Toplevel type-safe templates
+=== Top-level type-safe templates
 
-Naturally, if you want to declare templates at the toplevel, directly in `/src/main/resources/templates/hello.txt`, for example,
+Naturally, if you want to declare templates at the top-level, directly in `/src/main/resources/templates/hello.txt`, for example,
 you can declare them in a toplevel (non-nested) `Templates` class:
 
 .HelloResource.java

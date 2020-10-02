@@ -199,7 +199,7 @@ public class QuarkusRestConfiguration implements Configuration {
 
     public void register(Class<?> componentClass, Class<?>... contracts) {
         try {
-            register(componentClass.getDeclaredConstructor().newInstance());
+            register(componentClass.getDeclaredConstructor().newInstance(), contracts);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -210,27 +210,33 @@ public class QuarkusRestConfiguration implements Configuration {
     }
 
     private void register(Object component, Integer priority) {
-        allInstances.put(component.getClass(), component);
+        boolean added = false;
         if (component instanceof Feature) {
+            added = true;
             enabledFeatures.add((Feature) component);
         }
         if (component instanceof ClientRequestFilter) {
+            added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             requestFilters.add(effectivePriority, (ClientRequestFilter) component);
         }
         if (component instanceof ClientResponseFilter) {
+            added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             responseFilters.add(effectivePriority, (ClientResponseFilter) component);
         }
         if (component instanceof WriterInterceptor) {
+            added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             writerInterceptors.add(effectivePriority, (WriterInterceptor) component);
         }
         if (component instanceof ReaderInterceptor) {
+            added = true;
             int effectivePriority = priority != null ? priority : determinePriority(component);
             readerInterceptors.add(effectivePriority, (ReaderInterceptor) component);
         }
         if (component instanceof MessageBodyReader) {
+            added = true;
             Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
@@ -246,6 +252,7 @@ public class QuarkusRestConfiguration implements Configuration {
             }
         }
         if (component instanceof MessageBodyWriter) {
+            added = true;
             Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
@@ -260,14 +267,89 @@ public class QuarkusRestConfiguration implements Configuration {
                         resourceWriter);
             }
         }
+        if (added) {
+            allInstances.put(component.getClass(), component);
+        }
     }
 
     public void register(Object component, Class<?>[] contracts) {
-        register(component);
+        if (contracts == null || contracts.length == 0) {
+            return;
+        }
+        Map<Class<?>, Integer> priorities = new HashMap<>();
+        for (Class<?> i : contracts) {
+            priorities.put(i, determinePriority(i));
+        }
+        register(component, priorities);
     }
 
     public void register(Object component, Map<Class<?>, Integer> contracts) {
-        register(component);
+        if (contracts == null || contracts.isEmpty()) {
+            return;
+        }
+        boolean added = false;
+        Integer priority = contracts.get(Feature.class);
+        if (component instanceof Feature && priority != null) {
+            added = true;
+            enabledFeatures.add(priority, (Feature) component);
+        }
+        priority = contracts.get(ClientRequestFilter.class);
+        if (component instanceof ClientRequestFilter && priority != null) {
+            added = true;
+            requestFilters.add(priority, (ClientRequestFilter) component);
+        }
+        priority = contracts.get(ClientResponseFilter.class);
+        if (component instanceof ClientResponseFilter && priority != null) {
+            added = true;
+            responseFilters.add(priority, (ClientResponseFilter) component);
+        }
+        priority = contracts.get(WriterInterceptor.class);
+        if (component instanceof WriterInterceptor && priority != null) {
+            added = true;
+            writerInterceptors.add(priority, (WriterInterceptor) component);
+        }
+        priority = contracts.get(ReaderInterceptor.class);
+        if (component instanceof ReaderInterceptor && priority != null) {
+            added = true;
+            readerInterceptors.add(priority, (ReaderInterceptor) component);
+        }
+        priority = contracts.get(MessageBodyReader.class);
+        if (component instanceof MessageBodyReader && priority != null) {
+            added = true;
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceReader resourceReader = new ResourceReader();
+                resourceReader.setFactory(new UnmanagedBeanFactory(component));
+                Consumes consumes = componentClass.getAnnotation(Consumes.class);
+                resourceReader
+                        .setMediaTypeStrings(
+                                consumes != null ? Arrays.asList(consumes.value()) : Serialisers.WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
+                resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceReader);
+            }
+        }
+        priority = contracts.get(MessageBodyWriter.class);
+        if (component instanceof MessageBodyWriter && priority != null) {
+            added = true;
+            Class<?> componentClass = component.getClass();
+            ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
+            if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
+                ResourceWriter resourceWriter = new ResourceWriter();
+                resourceWriter.setFactory(new UnmanagedBeanFactory(component));
+                Produces produces = componentClass.getAnnotation(Produces.class);
+                resourceWriter
+                        .setMediaTypeStrings(
+                                produces != null ? Arrays.asList(produces.value()) : Serialisers.WILDCARD_STRING_LIST);
+                Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
+                resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                        resourceWriter);
+            }
+        }
+        if (added) {
+            allInstances.put(component.getClass(), component);
+        }
 
     }
 
@@ -321,7 +403,11 @@ public class QuarkusRestConfiguration implements Configuration {
 
     // TODO: we could generate some kind of index at build time in order to obtain these values without using the annotation
     private int determinePriority(Object object) {
-        Priority priority = object.getClass().getDeclaredAnnotation(Priority.class);
+        return determinePriority(object.getClass());
+    }
+
+    private int determinePriority(Class<?> object) {
+        Priority priority = object.getDeclaredAnnotation(Priority.class);
         if (priority == null) {
             return Priorities.USER;
         }

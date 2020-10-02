@@ -60,18 +60,10 @@ public class QuarkusRestHttpHeaders implements HttpHeaders {
 
     @Override
     public Map<String, Cookie> getCookies() {
-        return Collections.unmodifiableMap(getMutableCookies());
-    }
-
-    public Map<String, Cookie> getMutableCookies() {
         if (cookies == null) {
-            cookies = HeaderUtil.getCookies(requestHeaders);
+            cookies = Collections.unmodifiableMap(HeaderUtil.getCookies(requestHeaders));
         }
         return cookies;
-    }
-
-    public void setCookies(Map<String, Cookie> cookies) {
-        this.cookies = cookies;
     }
 
     @Override

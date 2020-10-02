@@ -10,6 +10,10 @@ public class CookieParser {
         if (cookieHeader == null) {
             throw new IllegalArgumentException("Cookie value was null");
         }
+        // cookie headers can be separated by "," (HTTP header separator), or ";" (Cookie separator)
+        // FIXME: the current cookie RFC doesn't mention params for cookies sent by the client
+        // doesn't mention $ as a prefix either
+        // FIXME: make this faster if we have a single cooke
         try {
             List<Cookie> cookies = new ArrayList<>();
 

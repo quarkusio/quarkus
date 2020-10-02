@@ -20,6 +20,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.ext.RuntimeDelegate;
 
+import io.quarkus.rest.runtime.util.CookieParser;
 import io.quarkus.rest.runtime.util.DateUtil;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.quarkus.rest.runtime.util.WeightedLanguage;
@@ -46,12 +47,16 @@ public class HeaderUtil {
         Set<String> allowedMethods = new HashSet<>();
         for (Object header : allowed) {
             if (header instanceof String) {
-                String[] list = ((String) header).split(",");
-                for (String str : list) {
-                    String trimmed = str.trim();
-                    if (!trimmed.isEmpty()) {
-                        allowedMethods.add(trimmed.toUpperCase());
+                String stringHeader = ((String) header);
+                if (stringHeader.indexOf(',') != -1) {
+                    for (String str : stringHeader.split(",")) {
+                        String trimmed = str.trim();
+                        if (!trimmed.isEmpty()) {
+                            allowedMethods.add(trimmed.toUpperCase());
+                        }
                     }
+                } else {
+                    allowedMethods.add(stringHeader.trim().toUpperCase());
                 }
             } else {
                 allowedMethods.add(HeaderUtil.headerToString(header).toUpperCase());
@@ -137,8 +142,9 @@ public class HeaderUtil {
                 cookies.put(cookie.getName(), cookie);
             } else {
                 String str = headerToString(obj);
-                Cookie cookie = Cookie.valueOf(str);
-                cookies.put(cookie.getName(), cookie);
+                for (Cookie cookie : CookieParser.parseCookies(str)) {
+                    cookies.put(cookie.getName(), cookie);
+                }
             }
         }
         return cookies;

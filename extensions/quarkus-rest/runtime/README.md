@@ -65,6 +65,7 @@
   we initialise at static init. 
 - Optim: related to the previous one, the classes we generate for fromString/valueOf/constructor we could call directly in the inject()
   implementations, rather than instantiate those generated classes for every request
+- Optim: CookieParser splits things without checking if a separator exists, but it's too weird to touch ATM (see spec discussion)
 
 ** JAXRS SPEC observations
 
@@ -91,3 +92,6 @@
   you will get `foo` without the quotes, whereas with this fix, if we now send a `foo` String value as JSON it will be sent raw (assumed pre-serialised)
   so this is not regular. We should always serialise string values as JSON string values, and introduce a `SerialisedJsonString` type to mark pre-serialised
   JSON strings. Possibly even just `RawString` to make sure no serialise will modify them.
+- Request Cookies are based on https://tools.ietf.org/html/rfc2109 which have the clients send cookie params to the server, using `$`-prefixed parameter names,
+  but it was obsoleted in https://tools.ietf.org/html/rfc2965 and then in https://tools.ietf.org/html/rfc6265, which does not send cookie params to the server
+  and those params are not `$`-prefixed anymore.

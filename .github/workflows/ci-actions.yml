@@ -523,7 +523,7 @@ jobs:
               virtual-http
               rest-client
           - category: Misc1
-            timeout: 65
+            timeout: 70
             test-modules: >
               maven
               jackson
@@ -533,6 +533,7 @@ jobs:
               quartz
               qute
               consul-config
+              freemarker
           - category: Misc2
             timeout: 65
             test-modules: >

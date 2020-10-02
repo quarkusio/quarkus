@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -13,7 +14,6 @@ import javax.ws.rs.core.Variant;
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.request.ServerDrivenNegotiation;
 import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.rest.runtime.util.HttpResponseCodes;
 
 public class QuarkusRestRequest implements Request {
@@ -42,13 +42,13 @@ public class QuarkusRestRequest implements Request {
 
         ServerDrivenNegotiation negotiation = new ServerDrivenNegotiation();
         MultivaluedMap<String, String> requestHeaders = requestContext.getHttpHeaders().getRequestHeaders();
-        negotiation.setAcceptHeaders(requestHeaders.get(HttpHeaderNames.ACCEPT));
-        negotiation.setAcceptCharsetHeaders(requestHeaders.get(HttpHeaderNames.ACCEPT_CHARSET));
-        negotiation.setAcceptEncodingHeaders(requestHeaders.get(HttpHeaderNames.ACCEPT_ENCODING));
-        negotiation.setAcceptLanguageHeaders(requestHeaders.get(HttpHeaderNames.ACCEPT_LANGUAGE));
+        negotiation.setAcceptHeaders(requestHeaders.get(HttpHeaders.ACCEPT));
+        negotiation.setAcceptCharsetHeaders(requestHeaders.get(HttpHeaders.ACCEPT_CHARSET));
+        negotiation.setAcceptEncodingHeaders(requestHeaders.get(HttpHeaders.ACCEPT_ENCODING));
+        negotiation.setAcceptLanguageHeaders(requestHeaders.get(HttpHeaders.ACCEPT_LANGUAGE));
 
         varyHeader = QuarkusRestResponseBuilder.createVaryHeader(variants);
-        requestContext.getContext().response().headers().set(HttpHeaderNames.VARY, varyHeader);
+        requestContext.getContext().response().headers().set(HttpHeaders.VARY, varyHeader);
         //response.getOutputHeaders().add(VARY, varyHeader);
         return negotiation.getBestMatch(variants);
     }
@@ -100,12 +100,12 @@ public class QuarkusRestRequest implements Request {
         if (eTag == null)
             throw new IllegalArgumentException("ETag was null");
         Response.ResponseBuilder builder = null;
-        List<String> ifMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaderNames.IF_MATCH);
+        List<String> ifMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaders.IF_MATCH);
         if (ifMatch != null && ifMatch.size() > 0) {
             builder = ifMatch(convertEtag(ifMatch), eTag);
         }
         if (builder == null) {
-            List<String> ifNoneMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaderNames.IF_NONE_MATCH);
+            List<String> ifNoneMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaders.IF_NONE_MATCH);
             if (ifNoneMatch != null && ifNoneMatch.size() > 0) {
                 builder = ifNoneMatch(convertEtag(ifNoneMatch), eTag);
             }
@@ -114,7 +114,7 @@ public class QuarkusRestRequest implements Request {
             builder.tag(eTag);
         }
         if (builder != null && varyHeader != null)
-            builder.header(HttpHeaderNames.VARY, varyHeader);
+            builder.header(HttpHeaders.VARY, varyHeader);
         return builder;
     }
 
@@ -143,18 +143,18 @@ public class QuarkusRestRequest implements Request {
             throw new IllegalArgumentException("Param cannot be null");
         Response.ResponseBuilder builder = null;
         MultivaluedMap<String, String> headers = requestContext.getHttpHeaders().getRequestHeaders();
-        String ifModifiedSince = headers.getFirst(HttpHeaderNames.IF_MODIFIED_SINCE);
-        if (ifModifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaderNames.IF_NONE_MATCH)))) {
+        String ifModifiedSince = headers.getFirst(HttpHeaders.IF_MODIFIED_SINCE);
+        if (ifModifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_NONE_MATCH)))) {
             builder = ifModifiedSince(ifModifiedSince, lastModified);
         }
         if (builder == null) {
-            String ifUnmodifiedSince = headers.getFirst(HttpHeaderNames.IF_UNMODIFIED_SINCE);
-            if (ifUnmodifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaderNames.IF_MATCH)))) {
+            String ifUnmodifiedSince = headers.getFirst(HttpHeaders.IF_UNMODIFIED_SINCE);
+            if (ifUnmodifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_MATCH)))) {
                 builder = ifUnmodifiedSince(ifUnmodifiedSince, lastModified);
             }
         }
         if (builder != null && varyHeader != null)
-            builder.header(HttpHeaderNames.VARY, varyHeader);
+            builder.header(HttpHeaders.VARY, varyHeader);
 
         return builder;
     }
@@ -178,12 +178,12 @@ public class QuarkusRestRequest implements Request {
             rtn.tag(eTag);
         }
         if (rtn != null && varyHeader != null)
-            rtn.header(HttpHeaderNames.VARY, varyHeader);
+            rtn.header(HttpHeaders.VARY, varyHeader);
         return rtn;
     }
 
     public Response.ResponseBuilder evaluatePreconditions() {
-        List<String> ifMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaderNames.IF_MATCH);
+        List<String> ifMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaders.IF_MATCH);
         if (ifMatch == null || ifMatch.size() == 0) {
             return null;
         }

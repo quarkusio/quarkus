@@ -9,9 +9,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -22,19 +20,17 @@ import java.util.Set;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 import io.quarkus.rest.runtime.client.QuarkusRestClientResponse;
+import io.quarkus.rest.runtime.headers.HeaderUtil;
+import io.quarkus.rest.runtime.headers.LinkHeaders;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
-import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.LocaleHelper;
 
 /**
  * This is the Response class for user-created responses. The client response
@@ -202,129 +198,47 @@ public class QuarkusRestResponse extends Response {
 
     @Override
     public MediaType getMediaType() {
-        Object first = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-        if (first instanceof String) {
-            String contentType = (String) first;
-            return MediaType.valueOf(contentType);
-        } else {
-            return (MediaType) first;
-        }
+        return HeaderUtil.getMediaType(headers);
     }
 
     @Override
     public Locale getLanguage() {
-        Object obj = headers.getFirst(HttpHeaders.CONTENT_LANGUAGE);
-        if (obj == null) {
-            return null;
-        }
-        if (obj instanceof Locale) {
-            return (Locale) obj;
-        }
-        return LocaleHelper.extractLocale(headerToString(obj));
+        return HeaderUtil.getLanguage(headers);
     }
 
     @Override
     public int getLength() {
-        Object obj = headers.getFirst(HttpHeaders.CONTENT_LENGTH);
-        if (obj == null) {
-            return -1;
-        }
-        if (obj instanceof Integer) {
-            return (Integer) obj;
-        }
-        return Integer.parseInt(headerToString(obj));
+        return HeaderUtil.getLength(headers);
     }
 
     @Override
     public Set<String> getAllowedMethods() {
-        List<Object> allowed = headers.get(HttpHeaders.ALLOW);
-        if ((allowed == null) || allowed.isEmpty()) {
-            return Collections.emptySet();
-        }
-        Set<String> allowedMethods = new HashSet<>();
-        for (Object header : allowed) {
-            if (header instanceof String) {
-                String[] list = ((String) header).split(",");
-                for (String str : list) {
-                    String trimmed = str.trim();
-                    if (!trimmed.isEmpty()) {
-                        allowedMethods.add(trimmed.toUpperCase());
-                    }
-                }
-            } else {
-                allowedMethods.add(headerToString(header).toUpperCase());
-            }
-        }
-        return allowedMethods;
+        return HeaderUtil.getAllowedMethods(headers);
     }
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        List<?> list = headers.get(HttpHeaders.SET_COOKIE);
-        if ((list == null) || list.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<String, NewCookie> cookies = new HashMap<>();
-        for (Object obj : list) {
-            if (obj instanceof NewCookie) {
-                NewCookie cookie = (NewCookie) obj;
-                cookies.put(cookie.getName(), cookie);
-            } else {
-                String str = headerToString(obj);
-                NewCookie cookie = NewCookie.valueOf(str);
-                cookies.put(cookie.getName(), cookie);
-            }
-        }
-        return cookies;
+        return HeaderUtil.getCookies(headers);
     }
 
     @Override
     public EntityTag getEntityTag() {
-        Object d = headers.getFirst(HttpHeaders.ETAG);
-        if (d == null) {
-            return null;
-        }
-        if (d instanceof EntityTag) {
-            return (EntityTag) d;
-        }
-        return EntityTag.valueOf(headerToString(d));
+        return HeaderUtil.getEntityTag(headers);
     }
 
     @Override
     public Date getDate() {
-        return firstHeaderToDate(HttpHeaders.DATE);
+        return HeaderUtil.getDate(headers);
     }
 
     @Override
     public Date getLastModified() {
-        return firstHeaderToDate(HttpHeaders.LAST_MODIFIED);
-    }
-
-    private Date firstHeaderToDate(String date) {
-        Object d = headers.getFirst(date);
-        if (d == null)
-            return null;
-        if (d instanceof Date)
-            return (Date) d;
-        return DateUtil.parseDate(d.toString());
+        return HeaderUtil.getLastModified(headers);
     }
 
     @Override
     public URI getLocation() {
-        Object uri = headers.getFirst(HttpHeaders.LOCATION);
-        if (uri == null) {
-            return null;
-        }
-        if (uri instanceof URI) {
-            return (URI) uri;
-        }
-        String str = null;
-        if (uri instanceof String) {
-            str = (String) uri;
-        } else {
-            str = headerToString(uri);
-        }
-        return URI.create(str);
+        return HeaderUtil.getLocation(headers);
     }
 
     private LinkHeaders getLinkHeaders() {
@@ -369,7 +283,7 @@ public class QuarkusRestResponse extends Response {
             for (Entry<String, List<Object>> entry : headers.entrySet()) {
                 List<String> stringValues = new ArrayList<>(entry.getValue().size());
                 for (Object value : entry.getValue()) {
-                    stringValues.add(headerToString(value));
+                    stringValues.add(HeaderUtil.headerToString(value));
                 }
                 stringHeaders.put(entry.getKey(), stringValues);
             }
@@ -378,73 +292,12 @@ public class QuarkusRestResponse extends Response {
         return stringHeaders;
     }
 
-    @SuppressWarnings("unchecked")
-    private static String headerToString(Object obj) {
-        if (obj instanceof String) {
-            return (String) obj;
-        } else {
-            // TODO: we probably want a more direct way to get the delegate instead of going through all the indirection
-            return RuntimeDelegate.getInstance().createHeaderDelegate((Class<Object>) obj.getClass()).toString(obj);
-        }
-    }
-
     @Override
     public String getHeaderString(String name) {
-        if (!getStringHeaders().containsKey(name)) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        for (String s : getStringHeaders().get(name)) {
-            if (sb.length() > 0) {
-                sb.append(",");
-            }
-            sb.append(s);
-        }
-        return sb.toString();
+        return HeaderUtil.getHeaderString(getStringHeaders(), name);
     }
 
     public Annotation[] getEntityAnnotations() {
         return entityAnnotations;
-    }
-
-    private static class LinkHeaders {
-        private final Map<String, Link> linksByRelationship = new HashMap<>();
-        private final List<Link> links = new ArrayList<>();
-
-        private LinkHeaders(MultivaluedMap<String, Object> headers) {
-            List<Object> values = headers.get("Link");
-            if (values == null) {
-                return;
-            }
-
-            for (Object val : values) {
-                if (val instanceof Link) {
-                    addLink((Link) val);
-                } else if (val instanceof String) {
-                    for (String link : ((String) val).split(",")) {
-                        addLink(Link.valueOf(link));
-                    }
-                } else {
-                    String str = QuarkusRestResponse.headerToString(val);
-                    addLink(Link.valueOf(str));
-                }
-            }
-        }
-
-        private void addLink(final Link link) {
-            links.add(link);
-            for (String rel : link.getRels()) {
-                linksByRelationship.put(rel, link);
-            }
-        }
-
-        public Link getLinkByRelationship(String rel) {
-            return linksByRelationship.get(rel);
-        }
-
-        public List<Link> getLinks() {
-            return links;
-        }
-
     }
 }

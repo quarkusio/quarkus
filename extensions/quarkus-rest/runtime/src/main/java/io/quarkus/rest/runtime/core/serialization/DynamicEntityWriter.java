@@ -12,7 +12,6 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -74,7 +73,7 @@ public class DynamicEntityWriter implements EntityWriter {
                 } else {
                     context.setProducesMediaType(selectedMediaType);
                     // this will be used as the fallback if Response does NOT contain a type
-                    context.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE, selectedMediaType.toString());
+                    context.getContext().response().headers().add(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
                 }
             }
         } else {

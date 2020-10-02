@@ -2,19 +2,14 @@ package io.quarkus.rest.runtime.client;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
 import javax.ws.rs.core.MediaType;
@@ -22,9 +17,9 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response.StatusType;
 
+import io.quarkus.rest.runtime.headers.HeaderUtil;
+import io.quarkus.rest.runtime.headers.LinkHeaders;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestStatusType;
-import io.quarkus.rest.runtime.util.DateUtil;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
 
 public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
@@ -81,144 +76,80 @@ public class QuarkusRestClientResponseContext implements ClientResponseContext {
 
     @Override
     public String getHeaderString(String name) {
-        List<String> list = headers.get(name);
-        if (list == null) {
-            return null;
-        }
-        if (list.size() == 1) {
-            return list.get(0);
-        }
-        StringBuilder sb = new StringBuilder();
-        for (String part : list) {
-            if (sb.length() > 0) {
-                sb.append(",");
-            }
-            sb.append(part);
-        }
-        return sb.toString();
+        return HeaderUtil.getHeaderString(headers, name);
     }
 
     @Override
     public Set<String> getAllowedMethods() {
-        List<String> allowed = headers.get(HttpHeaderNames.ALLOW);
-        if (allowed == null) {
-            return Collections.emptySet();
-        }
-        Set<String> result = new HashSet<>();
-        for (String header : allowed) {
-            if (header != null) {
-                String[] parts = header.split(",");
-                for (String part : parts) {
-                    if (!part.trim().isEmpty()) {
-                        result.add(part.trim().toUpperCase());
-                    }
-                }
-            }
-        }
-
-        return result;
+        return HeaderUtil.getAllowedMethods(headers);
     }
 
     @Override
     public Date getDate() {
-        String cl = headers.getFirst(HttpHeaderNames.DATE);
-        if (cl == null) {
-            return null;
-        }
-        return DateUtil.parseDate(cl);
+        return HeaderUtil.getDate(headers);
     }
 
     @Override
     public Locale getLanguage() {
-        String cl = headers.getFirst(HttpHeaderNames.CONTENT_LANGUAGE);
-        if (cl == null) {
-            return null;
-        }
-        return Locale.forLanguageTag(cl);
+        return HeaderUtil.getLanguage(headers);
     }
 
     @Override
     public int getLength() {
-        String cl = headers.getFirst(HttpHeaderNames.CONTENT_LENGTH);
-        if (cl == null) {
-            return -1;
-        }
-        return Integer.parseInt(cl);
+        return HeaderUtil.getLength(headers);
     }
 
     @Override
     public MediaType getMediaType() {
-        String cl = headers.getFirst(HttpHeaderNames.CONTENT_TYPE);
-        if (cl == null) {
-            return null;
-        }
-        return MediaType.valueOf(cl);
+        return HeaderUtil.getMediaType(headers);
     }
 
     @Override
     public Map<String, NewCookie> getCookies() {
-        List<String> cookies = headers.get(HttpHeaders.SET_COOKIE);
-        if (cookies == null) {
-            return Collections.emptyMap();
-        }
-
-        Map<String, NewCookie> result = new HashMap<String, NewCookie>();
-        for (String obj : cookies) {
-            NewCookie cookie = NewCookie.valueOf(obj);
-            result.put(cookie.getName(), cookie);
-        }
-        return result;
+        return HeaderUtil.getCookies(headers);
     }
 
     @Override
     public EntityTag getEntityTag() {
-        String cl = headers.getFirst(HttpHeaderNames.ETAG);
-        if (cl == null) {
-            return null;
-        }
-        return EntityTag.valueOf(cl);
+        return HeaderUtil.getEntityTag(headers);
     }
 
     @Override
     public Date getLastModified() {
-        String cl = headers.getFirst(HttpHeaderNames.LAST_MODIFIED);
-        if (cl == null) {
-            return null;
-        }
-        return DateUtil.parseDate(cl);
+        return HeaderUtil.getLastModified(headers);
     }
 
     @Override
     public URI getLocation() {
-        String cl = headers.getFirst(HttpHeaderNames.LOCATION);
-        if (cl == null) {
-            return null;
-        }
-        try {
-            return new URI(cl);
-        } catch (URISyntaxException e) {
-            return null;
-        }
+        return HeaderUtil.getLocation(headers);
+    }
+
+    private LinkHeaders getLinkHeaders() {
+        return new LinkHeaders((MultivaluedMap) headers);
     }
 
     @Override
     public Set<Link> getLinks() {
-        return Collections.emptySet();
+        return new HashSet<>(getLinkHeaders().getLinks());
     }
 
     @Override
     public boolean hasLink(String relation) {
-        return false;
+        return getLinkHeaders().getLinkByRelationship(relation) != null;
     }
 
     @Override
     public Link getLink(String relation) {
-        return null;
+        return getLinkHeaders().getLinkByRelationship(relation);
     }
 
     @Override
     public Builder getLinkBuilder(String relation) {
-        return null;
+        Link link = getLinkHeaders().getLinkByRelationship(relation);
+        if (link == null) {
+            return null;
+        }
+        return Link.fromLink(link);
     }
 
     @Override

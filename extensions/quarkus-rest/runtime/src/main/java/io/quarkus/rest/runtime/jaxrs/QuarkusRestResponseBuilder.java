@@ -30,7 +30,6 @@ import io.quarkus.rest.runtime.QuarkusRestRecorder;
 import io.quarkus.rest.runtime.core.QuarkusRestDeployment;
 import io.quarkus.rest.runtime.util.CaseInsensitiveMap;
 import io.quarkus.rest.runtime.util.HeaderHelper;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.rest.runtime.util.QuarkusMultivaluedHashMap;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.core.http.HttpServerRequest;
@@ -176,20 +175,20 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     @Override
     public Response.ResponseBuilder type(MediaType type) {
         if (type == null) {
-            metadata.remove(HttpHeaderNames.CONTENT_TYPE);
+            metadata.remove(HttpHeaders.CONTENT_TYPE);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.CONTENT_TYPE, type);
+        metadata.putSingle(HttpHeaders.CONTENT_TYPE, type);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder type(String type) {
         if (type == null) {
-            metadata.remove(HttpHeaderNames.CONTENT_TYPE);
+            metadata.remove(HttpHeaders.CONTENT_TYPE);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.CONTENT_TYPE, type);
+        metadata.putSingle(HttpHeaders.CONTENT_TYPE, type);
         return this;
     }
 
@@ -198,26 +197,26 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
         if (variant == null) {
             type((String) null);
             language((String) null);
-            metadata.remove(HttpHeaderNames.CONTENT_ENCODING);
+            metadata.remove(HttpHeaders.CONTENT_ENCODING);
             return this;
         }
         type(variant.getMediaType());
         language(variant.getLanguage());
         if (variant.getEncoding() != null)
-            metadata.putSingle(HttpHeaderNames.CONTENT_ENCODING, variant.getEncoding());
+            metadata.putSingle(HttpHeaders.CONTENT_ENCODING, variant.getEncoding());
         else
-            metadata.remove(HttpHeaderNames.CONTENT_ENCODING);
+            metadata.remove(HttpHeaders.CONTENT_ENCODING);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder variants(List<Variant> variants) {
         if (variants == null) {
-            metadata.remove(HttpHeaderNames.VARY);
+            metadata.remove(HttpHeaders.VARY);
             return this;
         }
         String vary = createVaryHeader(variants);
-        metadata.putSingle(HttpHeaderNames.VARY, vary);
+        metadata.putSingle(HttpHeaders.VARY, vary);
 
         return this;
     }
@@ -225,17 +224,17 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     @Override
     public Response.ResponseBuilder language(String language) {
         if (language == null) {
-            metadata.remove(HttpHeaderNames.CONTENT_LANGUAGE);
+            metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.CONTENT_LANGUAGE, language);
+        metadata.putSingle(HttpHeaders.CONTENT_LANGUAGE, language);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder location(URI location) {
         if (location == null) {
-            metadata.remove(HttpHeaderNames.LOCATION);
+            metadata.remove(HttpHeaders.LOCATION);
             return this;
         }
         if (!location.isAbsolute()) {
@@ -273,14 +272,14 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
                 }
             }
         }
-        metadata.putSingle(HttpHeaderNames.LOCATION, location);
+        metadata.putSingle(HttpHeaders.LOCATION, location);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder contentLocation(URI location) {
         if (location == null) {
-            metadata.remove(HttpHeaderNames.CONTENT_LOCATION);
+            metadata.remove(HttpHeaders.CONTENT_LOCATION);
             return this;
         }
         if (!location.isAbsolute()) {
@@ -310,24 +309,24 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
                 }
             }
         }
-        metadata.putSingle(HttpHeaderNames.CONTENT_LOCATION, location);
+        metadata.putSingle(HttpHeaders.CONTENT_LOCATION, location);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder tag(EntityTag tag) {
         if (tag == null) {
-            metadata.remove(HttpHeaderNames.ETAG);
+            metadata.remove(HttpHeaders.ETAG);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.ETAG, tag);
+        metadata.putSingle(HttpHeaders.ETAG, tag);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder tag(String tag) {
         if (tag == null) {
-            metadata.remove(HttpHeaderNames.ETAG);
+            metadata.remove(HttpHeaders.ETAG);
             return this;
         }
         return tag(new EntityTag(tag));
@@ -336,20 +335,20 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     @Override
     public Response.ResponseBuilder lastModified(Date lastModified) {
         if (lastModified == null) {
-            metadata.remove(HttpHeaderNames.LAST_MODIFIED);
+            metadata.remove(HttpHeaders.LAST_MODIFIED);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.LAST_MODIFIED, lastModified);
+        metadata.putSingle(HttpHeaders.LAST_MODIFIED, lastModified);
         return this;
     }
 
     @Override
     public Response.ResponseBuilder cacheControl(CacheControl cacheControl) {
         if (cacheControl == null) {
-            metadata.remove(HttpHeaderNames.CACHE_CONTROL);
+            metadata.remove(HttpHeaders.CACHE_CONTROL);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.CACHE_CONTROL, cacheControl);
+        metadata.putSingle(HttpHeaders.CACHE_CONTROL, cacheControl);
         return this;
     }
 
@@ -366,21 +365,21 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
     @Override
     public Response.ResponseBuilder cookie(NewCookie... cookies) {
         if (cookies == null) {
-            metadata.remove(HttpHeaderNames.SET_COOKIE);
+            metadata.remove(HttpHeaders.SET_COOKIE);
             return this;
         }
         for (NewCookie cookie : cookies) {
-            metadata.add(HttpHeaderNames.SET_COOKIE, cookie);
+            metadata.add(HttpHeaders.SET_COOKIE, cookie);
         }
         return this;
     }
 
     public Response.ResponseBuilder language(Locale language) {
         if (language == null) {
-            metadata.remove(HttpHeaderNames.CONTENT_LANGUAGE);
+            metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.CONTENT_LANGUAGE, language);
+        metadata.putSingle(HttpHeaders.CONTENT_LANGUAGE, language);
         return this;
     }
 
@@ -392,10 +391,10 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
 
     public Response.ResponseBuilder expires(Date expires) {
         if (expires == null) {
-            metadata.remove(HttpHeaderNames.EXPIRES);
+            metadata.remove(HttpHeaders.EXPIRES);
             return this;
         }
-        metadata.putSingle(HttpHeaderNames.EXPIRES, getDateFormatRFC822().format(expires));
+        metadata.putSingle(HttpHeaders.EXPIRES, getDateFormatRFC822().format(expires));
         return this;
     }
     // spec
@@ -483,18 +482,18 @@ public class QuarkusRestResponseBuilder extends ResponseBuilder {
 
         String vary = null;
         if (accept)
-            vary = HttpHeaderNames.ACCEPT;
+            vary = HttpHeaders.ACCEPT;
         if (acceptLanguage) {
             if (vary == null)
-                vary = HttpHeaderNames.ACCEPT_LANGUAGE;
+                vary = HttpHeaders.ACCEPT_LANGUAGE;
             else
-                vary += ", " + HttpHeaderNames.ACCEPT_LANGUAGE;
+                vary += ", " + HttpHeaders.ACCEPT_LANGUAGE;
         }
         if (acceptEncoding) {
             if (vary == null)
-                vary = HttpHeaderNames.ACCEPT_ENCODING;
+                vary = HttpHeaders.ACCEPT_ENCODING;
             else
-                vary += ", " + HttpHeaderNames.ACCEPT_ENCODING;
+                vary += ", " + HttpHeaders.ACCEPT_ENCODING;
         }
         return vary;
     }

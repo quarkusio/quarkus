@@ -1,12 +1,12 @@
 package io.quarkus.rest.runtime.handlers;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.rest.runtime.core.QuarkusRestRequestContext;
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.core.serialization.DynamicEntityWriter;
 import io.quarkus.rest.runtime.core.serialization.EntityWriter;
-import io.quarkus.rest.runtime.util.HttpHeaderNames;
 import io.quarkus.rest.runtime.util.ServerMediaType;
 
 /**
@@ -48,7 +48,7 @@ public class ResponseWriterHandler implements RestHandler {
                 && (requestContext.getProducesMediaType() == null)) {
             ServerMediaType serverMediaType = requestContext.getTarget().getProduces();
             if (serverMediaType.getSortedOriginalMediaTypes().length > 0) {
-                requestContext.getContext().response().headers().add(HttpHeaderNames.CONTENT_TYPE,
+                requestContext.getContext().response().headers().add(HttpHeaders.CONTENT_TYPE,
                         serverMediaType.getSortedOriginalMediaTypes()[0].toString());
             }
         }

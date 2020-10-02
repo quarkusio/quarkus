@@ -309,9 +309,15 @@ public class QuarkusRestProcessor {
                 ResourceParamConverterProvider converter = new ResourceParamConverterProvider();
                 converter.setFactory(recorder.factory(converterClass.name().toString(),
                         beanContainerBuildItem.getValue()));
+                AnnotationInstance priorityInstance = converterClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    converter.setPriority(priorityInstance.value().asInt());
+                }
                 converterProviders.addParamConverterProviders(converter);
             }
         }
+        converterProviders.sort();
+
         Map<String, String> existingConverters = new HashMap<>();
         List<ResourceClass> resourceClasses = new ArrayList<>();
         List<ResourceClass> subResourceClasses = new ArrayList<>();
@@ -457,6 +463,7 @@ public class QuarkusRestProcessor {
         }
 
         ExceptionMapping exceptionMapping = new ExceptionMapping();
+        Map<DotName, ResourceExceptionMapper<Throwable>> handledExceptionToHigherPriorityMapper = new HashMap();
         for (ClassInfo mapperClass : exceptionMappers) {
             if (mapperClass.classAnnotation(QuarkusRestDotNames.PROVIDER) != null) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
@@ -465,8 +472,23 @@ public class QuarkusRestProcessor {
                 ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>();
                 mapper.setFactory(recorder.factory(mapperClass.name().toString(),
                         beanContainerBuildItem.getValue()));
-                recorder.registerExceptionMapper(exceptionMapping, typeParameters.get(0).name().toString(), mapper);
+                AnnotationInstance priorityInstance = mapperClass.classAnnotation(QuarkusRestDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    mapper.setPriority(priorityInstance.value().asInt());
+                }
+                DotName handledExceptionDotName = typeParameters.get(0).name();
+                if (handledExceptionToHigherPriorityMapper.containsKey(handledExceptionDotName)) {
+                    if (mapper.getPriority() < handledExceptionToHigherPriorityMapper.get(handledExceptionDotName)
+                            .getPriority()) {
+                        handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
+                    }
+                } else {
+                    handledExceptionToHigherPriorityMapper.put(handledExceptionDotName, mapper);
+                }
             }
+        }
+        for (Map.Entry<DotName, ResourceExceptionMapper<Throwable>> entry : handledExceptionToHigherPriorityMapper.entrySet()) {
+            recorder.registerExceptionMapper(exceptionMapping, entry.getKey().toString(), entry.getValue());
         }
 
         ContextResolvers ctxResolvers = new ContextResolvers();

@@ -1,6 +1,7 @@
 package io.quarkus.rest.runtime.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import io.quarkus.rest.runtime.model.ResourceParamConverterProvider;
@@ -15,5 +16,9 @@ public class ParamConverterProviders {
 
     public List<ResourceParamConverterProvider> getParamConverterProviders() {
         return paramConverterProviders;
+    }
+
+    public void sort() {
+        Collections.sort(paramConverterProviders);
     }
 }

@@ -23,7 +23,7 @@ public class ByteMessageBodyHandler extends PrimitiveBodyHandler implements Mess
     public Byte readFrom(Class<Byte> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Byte.valueOf(super.readFrom(entityStream));
+        return Byte.valueOf(super.readFrom(entityStream, false));
     }
 
 }

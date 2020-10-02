@@ -24,7 +24,7 @@ public class BigIntegerMessageBodyHandler extends PrimitiveBodyHandler implement
     public BigDecimal readFrom(Class<BigDecimal> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return new BigDecimal(super.readFrom(entityStream));
+        return new BigDecimal(super.readFrom(entityStream, false));
     }
 
 }

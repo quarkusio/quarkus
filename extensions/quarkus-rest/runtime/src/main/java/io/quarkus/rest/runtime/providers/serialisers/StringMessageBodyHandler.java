@@ -54,6 +54,6 @@ public class StringMessageBodyHandler extends PrimitiveBodyHandler
     @Override
     public String readFrom(Class<String> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
-        return super.readFrom(entityStream);
+        return readFrom(entityStream, true);
     }
 }

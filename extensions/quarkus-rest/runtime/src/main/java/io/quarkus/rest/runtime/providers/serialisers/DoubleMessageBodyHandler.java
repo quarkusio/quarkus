@@ -23,7 +23,7 @@ public class DoubleMessageBodyHandler extends PrimitiveBodyHandler implements Me
     public Double readFrom(Class<Double> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Double.valueOf(super.readFrom(entityStream));
+        return Double.valueOf(super.readFrom(entityStream, false));
     }
 
 }

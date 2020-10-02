@@ -23,7 +23,7 @@ public class LongMessageBodyHandler extends PrimitiveBodyHandler implements Mess
     public Long readFrom(Class<Long> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Long.valueOf(super.readFrom(entityStream));
+        return Long.valueOf(super.readFrom(entityStream, false));
     }
 
 }

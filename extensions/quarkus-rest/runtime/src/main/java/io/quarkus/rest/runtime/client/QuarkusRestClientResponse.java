@@ -13,6 +13,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 
 import io.quarkus.rest.runtime.core.Serialisers;
 import io.quarkus.rest.runtime.jaxrs.QuarkusRestResponse;
+import io.quarkus.rest.runtime.util.EmptyInputStream;
 
 /**
  * This is the Response class client response
@@ -36,8 +37,9 @@ public class QuarkusRestClientResponse extends QuarkusRestResponse {
         // type
         // Note that this will get us the entity if it's an InputStream because setEntity checks that
         InputStream entityStream = getEntityStream();
-        if (entityStream == null)
-            return null;
+        if (entityStream == null) {
+            entityStream = new EmptyInputStream();
+        }
 
         // Spec says to return the input stream as-is, without closing it, if that's what we want
         if (InputStream.class.isAssignableFrom(entityType)) {

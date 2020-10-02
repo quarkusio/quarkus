@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import javax.ws.rs.core.NoContentException;
+
 public abstract class PrimitiveBodyHandler {
 
-    public String readFrom(InputStream entityStream) throws IOException {
+    public String readFrom(InputStream entityStream, boolean allowEmpty) throws IOException {
         byte[] bytes;
         if (entityStream instanceof ByteArrayInputStream) {
             bytes = new byte[entityStream.available()];
@@ -21,6 +23,11 @@ public abstract class PrimitiveBodyHandler {
                 out.write(buf, 0, r);
             }
             bytes = out.toByteArray();
+        }
+        if (!allowEmpty) {
+            if (bytes.length == 0) {
+                throw new NoContentException("No content");
+            }
         }
         return new String(bytes, StandardCharsets.UTF_8);
     }

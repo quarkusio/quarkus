@@ -23,7 +23,7 @@ public class FloatMessageBodyHandler extends PrimitiveBodyHandler implements Mes
     public Float readFrom(Class<Float> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Float.valueOf(super.readFrom(entityStream));
+        return Float.valueOf(super.readFrom(entityStream, false));
     }
 
 }

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -23,10 +24,10 @@ public class CharacterMessageBodyHandler extends PrimitiveBodyHandler implements
     public Character readFrom(Class<Character> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        String string = super.readFrom(entityStream);
+        String string = super.readFrom(entityStream, false);
         if (string.length() == 1)
             return string.charAt(0);
-        throw new IOException("Invalid character: " + string);
+        throw new BadRequestException("Invalid character: " + string);
     }
 
 }

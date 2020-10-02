@@ -17,6 +17,7 @@ import javax.ws.rs.ext.Provider;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.rest.runtime.util.EmptyInputStream;
 
 @Provider
 @Consumes({ "application/json", "application/*+json", "text/json" })
@@ -46,6 +47,9 @@ public class JsonbMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+        if (entityStream instanceof EmptyInputStream) {
+            return null;
+        }
         Type runtimeType = genericType != null ? genericType : type;
         return json.fromJson(entityStream, runtimeType);
     }

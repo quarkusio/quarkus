@@ -23,7 +23,7 @@ public class ShortMessageBodyHandler extends PrimitiveBodyHandler implements Mes
     public Short readFrom(Class<Short> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Short.valueOf(super.readFrom(entityStream));
+        return Short.valueOf(super.readFrom(entityStream, false));
     }
 
 }

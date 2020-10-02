@@ -23,7 +23,7 @@ public class BooleanMessageBodyHandler extends PrimitiveBodyHandler implements M
     public Boolean readFrom(Class<Boolean> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Boolean.valueOf(super.readFrom(entityStream));
+        return Boolean.valueOf(super.readFrom(entityStream, false));
     }
 
 }

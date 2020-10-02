@@ -23,7 +23,7 @@ public class IntegerMessageBodyHandler extends PrimitiveBodyHandler implements M
     public Integer readFrom(Class<Integer> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
-        return Integer.valueOf(super.readFrom(entityStream));
+        return Integer.valueOf(super.readFrom(entityStream, false));
     }
 
 }

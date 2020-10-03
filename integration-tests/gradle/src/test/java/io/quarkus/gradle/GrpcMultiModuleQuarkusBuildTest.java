@@ -16,7 +16,7 @@ public class GrpcMultiModuleQuarkusBuildTest extends QuarkusGradleWrapperTestBas
 
         final File projectDir = getProjectDir("grpc-multi-module-project");
 
-        final var buildResult = runGradleWrapper(projectDir, ":application:quarkusBuild", ":application:test");
+        runGradleWrapper(projectDir, ":application:quarkusBuild", ":application:test");
 
         final Path commonLibs = projectDir.toPath().resolve("common").resolve("build").resolve("libs");
         assertThat(commonLibs).exists();

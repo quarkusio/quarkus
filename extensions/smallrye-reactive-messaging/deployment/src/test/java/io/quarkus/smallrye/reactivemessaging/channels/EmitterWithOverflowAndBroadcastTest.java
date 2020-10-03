@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.channels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

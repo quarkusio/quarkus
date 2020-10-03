@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.channels;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -10,18 +10,14 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import io.smallrye.reactive.messaging.annotations.Broadcast;
-
 @ApplicationScoped
-public class EmitterWithBroadcastExample {
+public class EmitterExample {
 
     @Inject
     @Channel("sink")
-    @Broadcast
     Emitter<String> emitter;
 
-    private List<String> list = new CopyOnWriteArrayList<>();
-    private List<String> list2 = new CopyOnWriteArrayList<>();
+    private final List<String> list = new CopyOnWriteArrayList<>();
 
     public void run() {
         emitter.send("a");
@@ -35,17 +31,8 @@ public class EmitterWithBroadcastExample {
         list.add(s);
     }
 
-    @Incoming("sink")
-    public void consume2(String s) {
-        list2.add(s);
-    }
-
     public List<String> list() {
         return list;
-    }
-
-    public List<String> list2() {
-        return list2;
     }
 
 }

@@ -1,13 +1,9 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.ACKNOWLEDGMENT;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BROADCAST;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
-import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.*;
 
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
@@ -26,12 +22,12 @@ import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Merge;
 
-final class QuarkusMediatorConfigurationUtil {
+public final class QuarkusMediatorConfigurationUtil {
 
     private QuarkusMediatorConfigurationUtil() {
     }
 
-    static QuarkusMediatorConfiguration create(MethodInfo methodInfo, BeanInfo bean,
+    public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, BeanInfo bean,
             String generatedInvokerName, RecorderContext recorderContext, ClassLoader cl) {
 
         Class<?> returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
@@ -81,7 +77,8 @@ final class QuarkusMediatorConfigurationUtil {
                 acknowledgment);
         configuration.setProduction(validationOutput.getProduction());
         configuration.setConsumption(validationOutput.getConsumption());
-        if (validationOutput.getUseBuilderTypes() != null) {
+        configuration.setIngestedPayloadType(validationOutput.getIngestedPayloadType());
+        if (validationOutput.getUseBuilderTypes()) {
             configuration.setUseBuilderTypes(validationOutput.getUseBuilderTypes());
         } else {
             configuration.setUseBuilderTypes(false);
@@ -89,33 +86,40 @@ final class QuarkusMediatorConfigurationUtil {
 
         if (acknowledgment == null) {
             acknowledgment = mediatorConfigurationSupport.processDefaultAcknowledgement(shape,
-                    validationOutput.getConsumption());
+                    validationOutput.getConsumption(), validationOutput.getProduction());
             configuration.setAcknowledgment(acknowledgment);
         }
 
-        configuration.setMerge(mediatorConfigurationSupport.processMerge(incomingValues, () -> {
-            AnnotationInstance instance = methodInfo.annotation(MERGE);
-            if (instance != null) {
-                AnnotationValue value = instance.value();
-                if (value == null) {
-                    return Merge.Mode.MERGE; // the default value of @Merge
+        configuration.setMerge(mediatorConfigurationSupport.processMerge(incomingValues, new Supplier<Merge.Mode>() {
+            @Override
+            public Merge.Mode get() {
+                AnnotationInstance instance = methodInfo.annotation(MERGE);
+                if (instance != null) {
+                    AnnotationValue value = instance.value();
+                    if (value == null) {
+                        return Merge.Mode.MERGE; // the default value of @Merge
+                    }
+                    return Merge.Mode.valueOf(value.asEnum());
                 }
-                return Merge.Mode.valueOf(value.asEnum());
+                return null;
             }
-            return null;
         }));
 
-        configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValue, () -> {
-            AnnotationInstance instance = methodInfo.annotation(BROADCAST);
-            if (instance != null) {
-                AnnotationValue value = instance.value();
-                if (value == null) {
-                    return 0; // the default value of @Broadcast
-                }
-                return value.asInt();
-            }
-            return null;
-        }));
+        configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValue,
+                new Supplier<Integer>() {
+                    @Override
+                    public Integer get() {
+                        AnnotationInstance instance = methodInfo.annotation(BROADCAST);
+                        if (instance != null) {
+                            AnnotationValue value = instance.value();
+                            if (value == null) {
+                                return 0; // the default value of @Broadcast
+                            }
+                            return value.asInt();
+                        }
+                        return null;
+                    }
+                }));
 
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         if (blockingAnnotation != null) {
@@ -192,7 +196,7 @@ final class QuarkusMediatorConfigurationUtil {
         return methodInfo.declaringClass() + "#" + methodInfo.name();
     }
 
-    private static class ReturnTypeGenericTypeAssignable extends JandexGenericTypeAssignable {
+    public static class ReturnTypeGenericTypeAssignable extends JandexGenericTypeAssignable {
 
         public ReturnTypeGenericTypeAssignable(MethodInfo method, ClassLoader classLoader) {
             super(method.returnType(), classLoader);
@@ -223,18 +227,68 @@ final class QuarkusMediatorConfigurationUtil {
                 return Result.InvalidIndex;
             }
         }
+
+        @Override
+        public java.lang.reflect.Type getType(int index) {
+            Type t = extract(type, index);
+            if (t != null) {
+                return load(t.name().toString(), classLoader);
+            }
+            return null;
+        }
+
+        private Type extract(Type type, int index) {
+            if (type.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            } else {
+                List<Type> arguments = type.asParameterizedType().arguments();
+                if (arguments.size() >= index + 1) {
+                    Type result = arguments.get(index);
+                    if (result.kind() == Type.Kind.WILDCARD_TYPE) {
+                        return null;
+                    }
+                    return result;
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        @Override
+        public java.lang.reflect.Type getType(int index, int subIndex) {
+            Type generic = extract(type, index);
+            if (generic != null) {
+                Type t = extract(generic, subIndex);
+                if (t != null) {
+                    return load(t.name().toString(), classLoader);
+                }
+                return null;
+            } else {
+                return null;
+            }
+        }
     }
 
-    private static class AlwaysInvalidIndexGenericTypeAssignable
+    public static class AlwaysInvalidIndexGenericTypeAssignable
             implements MediatorConfigurationSupport.GenericTypeAssignable {
 
         @Override
         public Result check(Class<?> target, int index) {
             return Result.InvalidIndex;
         }
+
+        @Override
+        public java.lang.reflect.Type getType(int index) {
+            return null;
+        }
+
+        @Override
+        public java.lang.reflect.Type getType(int index, int subIndex) {
+            return null;
+        }
     }
 
-    private static class MethodParamGenericTypeAssignable extends JandexGenericTypeAssignable {
+    public static class MethodParamGenericTypeAssignable extends JandexGenericTypeAssignable {
 
         public MethodParamGenericTypeAssignable(MethodInfo method, int paramIndex, ClassLoader classLoader) {
             super(getGenericParameterType(method, paramIndex), classLoader);

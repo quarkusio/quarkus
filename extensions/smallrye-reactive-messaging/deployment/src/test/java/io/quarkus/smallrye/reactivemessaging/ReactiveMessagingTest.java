@@ -12,6 +12,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.smallrye.reactivemessaging.channels.ChannelConsumer;
+import io.quarkus.smallrye.reactivemessaging.channels.EmitterExample;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ReactiveMessagingTest {

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.channels;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

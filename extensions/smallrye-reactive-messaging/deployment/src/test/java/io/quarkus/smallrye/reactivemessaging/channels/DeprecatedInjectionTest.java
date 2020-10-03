@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.channels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,6 +11,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.smallrye.reactivemessaging.SimpleBean;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DeprecatedInjectionTest {

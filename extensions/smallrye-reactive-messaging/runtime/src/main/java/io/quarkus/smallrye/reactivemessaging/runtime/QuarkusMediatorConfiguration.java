@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +50,8 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     private boolean blockingExecutionOrdered;
 
     private String workerPoolName;
+
+    private Type ingestedPayload;
 
     public String getBeanId() {
         return beanId;
@@ -192,6 +195,15 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     @Override
     public Class<? extends Invoker> getInvokerClass() {
         return invokerClass;
+    }
+
+    @Override
+    public Type getIngestedPayloadType() {
+        return ingestedPayload;
+    }
+
+    public void setIngestedPayloadType(Type ingestedPayload) {
+        this.ingestedPayload = ingestedPayload;
     }
 
     public void setInvokerClass(Class<? extends Invoker> invokerClass) {

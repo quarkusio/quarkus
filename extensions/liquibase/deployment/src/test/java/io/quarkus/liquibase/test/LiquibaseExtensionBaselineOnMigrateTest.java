@@ -2,9 +2,11 @@ package io.quarkus.liquibase.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -22,6 +24,9 @@ public class LiquibaseExtensionBaselineOnMigrateTest {
     @Inject
     LiquibaseFactory liquibaseFactory;
 
+    @Inject
+    DataSource dataSource;
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
@@ -37,6 +42,11 @@ public class LiquibaseExtensionBaselineOnMigrateTest {
             assertNotNull(status, "Status is null");
             assertEquals(1, status.size(), "The set of changes is not null");
             assertFalse(status.get(0).getWillRun());
+
+            // make sure we have the properly named table
+            ResultSet tables = dataSource.getConnection().getMetaData()
+                    .getTables(liquibase.getDatabase().getConnection().getCatalog(), null, "MY_CUSTOM_PREFIX_%", null);
+            assertTrue(tables.next());
         }
     }
 }

@@ -64,7 +64,11 @@ public class LiquibaseFactory {
                     database.setDefaultSchemaName(config.defaultSchemaName.get());
                 }
             }
-            return new Liquibase(config.changeLog, resourceAccessor, database);
+            Liquibase liquibase = new Liquibase(config.changeLog, resourceAccessor, database);
+            if (config.params != null) {
+                config.params.forEach((k, v) -> liquibase.getChangeLogParameters().set(k, v));
+            }
+            return liquibase;
 
         } catch (Exception ex) {
             throw new IllegalStateException(ex);

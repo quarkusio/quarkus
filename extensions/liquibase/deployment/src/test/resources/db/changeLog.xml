@@ -4,8 +4,10 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
 
+    <property name="table.prefix" value="TBL_"/>
+
     <changeSet author="dev (generated)" id="id-1">
-        <createTable tableName="TEST">
+        <createTable tableName="${table.prefix}TEST">
             <column name="ID" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>

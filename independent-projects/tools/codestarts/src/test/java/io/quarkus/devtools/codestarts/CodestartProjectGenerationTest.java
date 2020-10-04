@@ -71,8 +71,8 @@ class CodestartProjectGenerationTest {
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL).getName()).isEqualTo("y");
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-properties");
 
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("codestarts/core/tooling-t");
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
+                .containsExactlyInAnyOrder("t");
 
         final Path targetDirectory = projectPath.resolve("default-project");
         projectDefinition.generate(targetDirectory);
@@ -104,8 +104,8 @@ class CodestartProjectGenerationTest {
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.BUILDTOOL).getName()).isEqualTo("maven");
         assertThat(projectDefinition.getRequiredCodestart(CodestartType.CONFIG).getName()).isEqualTo("config-yaml");
 
-        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getResourceDir)
-                .containsExactlyInAnyOrder("codestarts/core/example-with-b");
+        assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
+                .containsExactlyInAnyOrder("example-with-b");
 
         final Path targetDirectory = projectPath.resolve("specific-project");
         projectDefinition.generate(targetDirectory);

@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,9 +72,6 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
 import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
 
-/**
- *
- */
 public class SmallRyeReactiveMessagingProcessor {
 
     private static final Logger LOGGER = Logger
@@ -168,22 +166,12 @@ public class SmallRyeReactiveMessagingProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext()
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
+            Optional<AnnotationInstance> broadcast = getAnnotation(annotationStore, injectionPoint,
+                    ReactiveMessagingDotNames.BROADCAST);
 
-            Optional<AnnotationInstance> broadcast = annotationStore.getAnnotations(injectionPoint.getTarget())
-                    .stream()
-                    .filter(ai -> ReactiveMessagingDotNames.BROADCAST.equals(ai.name()))
-                    .filter(ai -> {
-                        if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
-                                .isParam()) {
-                            return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
-                        }
-                        return true;
-                    })
-                    .findAny();
-
-            // New emitter from the spec.
-            if (injectionPoint.getRequiredType().name().equals(
-                    ReactiveMessagingDotNames.EMITTER)) {
+            // New emitter from the spec, or Mutiny emitter
+            if (injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER)
+                    || injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER)) {
                 AnnotationInstance instance = injectionPoint
                         .getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
                 if (instance == null) {
@@ -193,19 +181,10 @@ public class SmallRyeReactiveMessagingProcessor {
                                             .getTargetInfo()));
                 } else {
                     String channelName = instance.value().asString();
-                    Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
-                            .stream()
-                            .filter(ai -> ReactiveMessagingDotNames.ON_OVERFLOW
-                                    .equals(ai.name()))
-                            .filter(ai -> {
-                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
-                                        .isParam()) {
-                                    return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
-                                }
-                                return true;
-                            })
-                            .findAny();
-                    createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
+                    Optional<AnnotationInstance> overflow = getAnnotation(annotationStore, injectionPoint,
+                            ReactiveMessagingDotNames.ON_OVERFLOW);
+                    createEmitter(emitters,
+                            injectionPoint, channelName, overflow, broadcast);
                 }
             }
 
@@ -221,18 +200,8 @@ public class SmallRyeReactiveMessagingProcessor {
                                             .getTargetInfo()));
                 } else {
                     String channelName = instance.value().asString();
-                    Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
-                            .stream()
-                            .filter(ai -> ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW
-                                    .equals(ai.name()))
-                            .filter(ai -> {
-                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
-                                        .isParam()) {
-                                    return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
-                                }
-                                return true;
-                            })
-                            .findAny();
+                    Optional<AnnotationInstance> overflow = getAnnotation(annotationStore, injectionPoint,
+                            ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW);
 
                     createEmitter(emitters, injectionPoint, channelName, overflow, broadcast);
                 }
@@ -240,8 +209,28 @@ public class SmallRyeReactiveMessagingProcessor {
         }
     }
 
+    private Optional<AnnotationInstance> getAnnotation(AnnotationStore annotationStore, InjectionPointInfo injectionPoint,
+            DotName onOverflowAnnotation) {
+        Collection<AnnotationInstance> annotations = annotationStore.getAnnotations(injectionPoint.getTarget());
+        for (AnnotationInstance annotation : annotations) {
+            if (onOverflowAnnotation.equals(annotation.name())) {
+                // For method parameter we must check the position
+                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                        && injectionPoint.isParam()
+                        && annotation.target().asMethodParameter().position() == injectionPoint.getPosition()) {
+                    return Optional.of(annotation);
+                } else if (annotation.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                    // For other kind, no need to check anything else
+                    return Optional.of(annotation);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private void createEmitter(BuildProducer<EmitterBuildItem> emitters, InjectionPointInfo injectionPoint,
+    private void createEmitter(BuildProducer<EmitterBuildItem> emitters,
+            InjectionPointInfo injectionPoint,
             String channelName,
             Optional<AnnotationInstance> overflow,
             Optional<AnnotationInstance> broadcast) {
@@ -265,8 +254,9 @@ public class SmallRyeReactiveMessagingProcessor {
             strategy = annotation.value().asString();
         }
 
+        boolean isMutinyEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER);
         emitters.produce(
-                EmitterBuildItem.of(channelName, strategy, bufferSize, hasBroadcast, awaitSubscribers));
+                EmitterBuildItem.of(channelName, isMutinyEmitter, strategy, bufferSize, hasBroadcast, awaitSubscribers));
     }
 
     @BuildStep

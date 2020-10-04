@@ -62,39 +62,37 @@ public class KubernetesConfigWithSecretsTest {
             });
         });
 
-        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).hasSize(2);
+        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).hasSize(2)
+                .anySatisfy(res -> {
+                    assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
+                        assertThat(roleBinding.getMetadata()).satisfies(m -> {
+                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view-secrets");
+                        });
 
-        assertThat(kubernetesList).anySatisfy(res -> {
-            assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
-                assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets:view-secrets");
+                        assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("Role");
+                        assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view-secrets");
+
+                        assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
+                            assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
+                        });
+                    });
+                })
+                .anySatisfy(res -> {
+                    assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
+                        assertThat(roleBinding.getMetadata()).satisfies(m -> {
+                            assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets-view");
+                        });
+
+                        assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
+                        assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
+
+                        assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
+                            assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+                            assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
+                        });
+                    });
                 });
-
-                assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("Role");
-                assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view-secrets");
-
-                assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
-                    assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                    assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
-                });
-            });
-        });
-
-        assertThat(kubernetesList).anySatisfy(res -> {
-            assertThat(res).isInstanceOfSatisfying(RoleBinding.class, roleBinding -> {
-                assertThat(roleBinding.getMetadata()).satisfies(m -> {
-                    assertThat(m.getName()).isEqualTo("kubernetes-config-with-secrets:view");
-                });
-
-                assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
-                assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
-
-                assertThat(roleBinding.getSubjects()).singleElement().satisfies(subject -> {
-                    assertThat(subject.getKind()).isEqualTo("ServiceAccount");
-                    assertThat(subject.getName()).isEqualTo("kubernetes-config-with-secrets");
-                });
-            });
-        });
     }
 
 }

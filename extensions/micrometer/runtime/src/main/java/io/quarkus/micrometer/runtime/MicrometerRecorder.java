@@ -16,12 +16,14 @@ import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 
 import org.eclipse.microprofile.config.Config;
+import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
@@ -42,6 +44,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 public class MicrometerRecorder {
     private static final Logger log = Logger.getLogger(MicrometerRecorder.class);
     static final int TRIM_POS = "quarkus.micrometer.export.".length();
+    static final String DEFAULT_EXCEPTION_TAG_VALUE = "none";
     static MicrometerMetricsFactory factory;
 
     /* STATIC_INIT */
@@ -100,6 +103,9 @@ public class MicrometerRecorder {
             new JvmMemoryMetrics().bindTo(Metrics.globalRegistry);
             new JvmThreadMetrics().bindTo(Metrics.globalRegistry);
             new JVMInfoBinder().bindTo(Metrics.globalRegistry);
+            if (!ImageInfo.inImageCode()) {
+                new JvmGcMetrics().bindTo(Metrics.globalRegistry);
+            }
         }
 
         // System
@@ -194,5 +200,15 @@ public class MicrometerRecorder {
         }
         log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname, (clazz != null));
         return clazz;
+    }
+
+    static String getExceptionTag(Throwable throwable) {
+        if (throwable == null) {
+            return DEFAULT_EXCEPTION_TAG_VALUE;
+        }
+        if (throwable.getCause() == null) {
+            return throwable.getClass().getSimpleName();
+        }
+        return throwable.getCause().getClass().getSimpleName();
     }
 }

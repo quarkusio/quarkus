@@ -52,7 +52,7 @@ public class SimpleTest {
 
         }).build();
 
-        Template template = engine.parse("{this.get(0)}");
+        Template template = engine.parse("{get(0)}");
         assertEquals("moon", template.render(ImmutableList.of("moon")));
     }
 

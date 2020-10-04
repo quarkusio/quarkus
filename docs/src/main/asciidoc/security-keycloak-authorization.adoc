@@ -15,6 +15,8 @@ In other words, instead of explicitly enforcing access based on some specific ac
 
 By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
 
+See the link:security-openid-connect[Using OpenID Connect to Protect Service Applications] guide for more information about `Bearer Token` authentication mechanism.
+
 If you are already familiar with Keycloak, you’ll notice that the extension is basically another adapter implementation but specific for Quarkus applications.
 Otherwise, you can find more information in the Keycloak https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[documentation].
 
@@ -180,9 +182,10 @@ The OpenID Connect extension allows you to define the adapter configuration usin
 [source,properties]
 ----
 # OIDC Configuration
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
+quarkus.oidc.auth-server-url=https://localhost:8543/auth/realms/quarkus
 quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
+quarkus.oidc.tls.verification=none
 
 # Enable Policy Enforcement
 quarkus.keycloak.policy-enforcer.enable=true
@@ -196,10 +199,10 @@ To start a Keycloak Server you can use Docker and just run the following command
 
 [source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 {keycloak-docker-image}
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 -p 8543:8443 {keycloak-docker-image}
 ----
 
-You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].
+You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth] or https://localhost:8543/auth[localhost:8543/auth].
 
 Log in as the `admin` user to access the Keycloak Administration Console.
 Username should be `admin` and password `admin`.
@@ -258,7 +261,7 @@ The application is using bearer token authorization and the first thing to do is
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
@@ -293,7 +296,7 @@ In order to access the admin endpoint you should obtain a token for the `admin` 
 [source,bash]
 ----
 export access_token=$(\
-    curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
+    curl --insecure -X POST https://localhost:8543/auth/realms/quarkus/protocol/openid-connect/token \
     --user backend-service:secret \
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \

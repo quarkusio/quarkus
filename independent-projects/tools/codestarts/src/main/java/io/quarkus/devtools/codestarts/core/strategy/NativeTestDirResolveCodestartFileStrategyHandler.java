@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
 import io.quarkus.devtools.codestarts.core.CodestartData;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,7 +16,7 @@ final class NativeTestDirResolveCodestartFileStrategyHandler implements Codestar
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
 
         final boolean isMaven = CodestartData.getBuildtool(data).filter(b -> Objects.equals(b, "maven")).isPresent();

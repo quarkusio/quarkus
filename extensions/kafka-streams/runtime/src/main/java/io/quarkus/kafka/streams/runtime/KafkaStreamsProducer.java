@@ -63,6 +63,7 @@ public class KafkaStreamsProducer {
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
             Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener) {
+        shutdown = false;
         // No producer for Topology -> nothing to do
         if (topology.isUnsatisfied()) {
             LOGGER.debug("No Topology producer; Kafka Streams will not be started");
@@ -189,6 +190,8 @@ public class KafkaStreamsProducer {
         // sasl
         SaslConfig sc = runtimeConfig.sasl;
         if (sc != null) {
+            setProperty(sc.mechanism, streamsProperties, SaslConfigs.SASL_MECHANISM);
+
             setProperty(sc.jaasConfig, streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
 
             setProperty(sc.clientCallbackHandlerClass, streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);

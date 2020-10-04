@@ -21,6 +21,7 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -174,6 +175,15 @@ public final class OidcUtils {
             throw new AuthenticationFailedException(e);
         }
         builder.setPrincipal(jwtPrincipal);
+        setSecurityIdentityRoles(builder, config, rolesJson);
+        setSecurityIdentityUserInfo(builder, userInfo);
+        setBlockinApiAttribute(builder, vertxContext);
+        setTenantIdAttribute(builder, config);
+        return builder.build();
+    }
+
+    public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
+            JsonObject rolesJson) {
         try {
             String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
             for (String role : findRoles(clientId, config.getRoles(), rolesJson)) {
@@ -182,8 +192,17 @@ public final class OidcUtils {
         } catch (Exception e) {
             throw new ForbiddenException(e);
         }
-        setSecurityIdentityUserInfo(builder, userInfo);
-        return builder.build();
+    }
+
+    public static void setBlockinApiAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext vertxContext) {
+        if (vertxContext != null) {
+            builder.addAttribute(AuthenticationRequestContext.class.getName(),
+                    vertxContext.get(AuthenticationRequestContext.class.getName()));
+        }
+    }
+
+    public static void setTenantIdAttribute(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config) {
+        builder.addAttribute("tenant-id", config.tenantId.orElse("Default"));
     }
 
     public static void setSecurityIdentityUserInfo(QuarkusSecurityIdentity.Builder builder, JsonObject userInfo) {

@@ -13,6 +13,11 @@ public class CustomTenantResolver implements TenantResolver {
         if (context.request().path().endsWith("/tenant-public-key")) {
             return "tenant-public-key";
         }
-        return context.request().path().split("/")[2];
+        String tenantId = context.request().path().split("/")[2];
+        if ("tenant-hybrid".equals(tenantId)) {
+            return context.request().getHeader("Authorization") != null ? "tenant-hybrid-service" : "tenant-hybrid-webapp";
+        }
+        return tenantId;
+
     }
 }

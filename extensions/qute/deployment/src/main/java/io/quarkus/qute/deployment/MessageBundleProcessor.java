@@ -351,8 +351,8 @@ public class MessageBundleProcessor {
 
             if (!expressions.isEmpty()) {
 
-                // Map implicit class -> true if methods were used
-                Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
+                // Map implicit class -> set of used members
+                Map<ClassInfo, Set<String>> implicitClassToMembersUsed = new HashMap<>();
 
                 for (Expression expression : expressions) {
                     // msg:hello_world(foo.name)
@@ -402,7 +402,7 @@ public class MessageBundleProcessor {
                                 Map<String, Match> results = new HashMap<>();
                                 QuteProcessor.validateNestedExpressions(defaultBundleInterface, results,
                                         templateExtensionMethods, excludes,
-                                        incorrectExpressions, expression, index, implicitClassToMethodUsed,
+                                        incorrectExpressions, expression, index, implicitClassToMembersUsed,
                                         templateIdToPathFun);
                                 Match match = results.get(param.toOriginalString());
                                 if (match != null && !Types.isAssignableFrom(match.type,
@@ -420,11 +420,9 @@ public class MessageBundleProcessor {
                     }
                 }
 
-                for (Entry<ClassInfo, Boolean> implicit : implicitClassToMethodUsed.entrySet()) {
-                    implicitClasses.produce(implicit.getValue()
-                            ? new ImplicitValueResolverBuildItem(implicit.getKey(),
-                                    new TemplateDataBuilder().properties(false).build())
-                            : new ImplicitValueResolverBuildItem(implicit.getKey()));
+                for (Entry<ClassInfo, Set<String>> e : implicitClassToMembersUsed.entrySet()) {
+                    implicitClasses.produce(new ImplicitValueResolverBuildItem(e.getKey(),
+                            new TemplateDataBuilder().addIgnore(QuteProcessor.buildIgnorePattern(e.getValue())).build()));
                 }
             }
         }

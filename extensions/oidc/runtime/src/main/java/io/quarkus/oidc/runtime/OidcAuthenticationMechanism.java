@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.Collections;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -23,8 +24,15 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Inject
     DefaultTenantConfigResolver resolver;
+
     private BearerAuthenticationMechanism bearerAuth = new BearerAuthenticationMechanism();
     private CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
+
+    @PostConstruct
+    public void init() {
+        bearerAuth.setResolver(resolver);
+        codeAuth.setResolver(resolver);
+    }
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
@@ -33,8 +41,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (tenantContext.oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(tenantContext) ? codeAuth.authenticate(context, identityProviderManager, resolver)
-                : bearerAuth.authenticate(context, identityProviderManager, resolver);
+        return isWebApp(context, tenantContext) ? codeAuth.authenticate(context, identityProviderManager)
+                : bearerAuth.authenticate(context, identityProviderManager);
     }
 
     @Override
@@ -43,8 +51,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (tenantContext.oidcConfig.tenantEnabled == false) {
             return Uni.createFrom().nullItem();
         }
-        return isWebApp(tenantContext) ? codeAuth.getChallenge(context, resolver)
-                : bearerAuth.getChallenge(context, resolver);
+        return isWebApp(context, tenantContext) ? codeAuth.getChallenge(context)
+                : bearerAuth.getChallenge(context);
     }
 
     private TenantConfigContext resolve(RoutingContext context) {
@@ -55,7 +63,10 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return tenantContext;
     }
 
-    private boolean isWebApp(TenantConfigContext tenantContext) {
+    private boolean isWebApp(RoutingContext context, TenantConfigContext tenantContext) {
+        if (OidcTenantConfig.ApplicationType.HYBRID == tenantContext.oidcConfig.applicationType) {
+            return context.request().getHeader("Authorization") == null;
+        }
         return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
     }
 

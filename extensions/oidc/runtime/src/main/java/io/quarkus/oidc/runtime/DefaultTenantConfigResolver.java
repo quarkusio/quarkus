@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Event;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
@@ -12,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -32,6 +34,11 @@ public class DefaultTenantConfigResolver {
 
     @Inject
     TenantConfigBean tenantConfigBean;
+
+    @Inject
+    Event<SecurityEvent> securityEvent;
+
+    private volatile boolean securityEventObserved;
 
     @PostConstruct
     public void verifyResolvers() {
@@ -89,6 +96,18 @@ public class DefaultTenantConfigResolver {
         return resolver != null
                 && (resolver.auth == null || resolver.oidcConfig.token.refreshExpired
                         || resolver.oidcConfig.authentication.userInfoRequired);
+    }
+
+    boolean isSecurityEventObserved() {
+        return securityEventObserved;
+    }
+
+    void setSecurityEventObserved(boolean securityEventObserved) {
+        this.securityEventObserved = securityEventObserved;
+    }
+
+    Event<SecurityEvent> getSecurityEvent() {
+        return securityEvent;
     }
 
     private TenantConfigContext getTenantConfigFromConfigResolver(RoutingContext context, boolean create) {

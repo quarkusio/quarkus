@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,13 +16,13 @@ final class AppendCodestartFileStrategyHandler implements CodestartFileStrategyH
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
         final Path targetPath = targetDirectory.resolve(relativePath);
         checkTargetDoesNotExist(targetPath);
         createDirectories(targetPath);
-        final String content = codestartFiles.stream().map(CodestartFile::getContent).collect(Collectors.joining("\n"));
+        final String content = codestartFiles.stream().map(TargetFile::getContent).collect(Collectors.joining("\n"));
         Files.write(targetPath, content.getBytes());
     }
 }

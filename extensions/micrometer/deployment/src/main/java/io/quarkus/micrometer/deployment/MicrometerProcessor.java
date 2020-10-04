@@ -14,13 +14,17 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.NamingConvention;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.*;
@@ -34,7 +38,11 @@ import io.quarkus.micrometer.runtime.ClockProvider;
 import io.quarkus.micrometer.runtime.CompositeRegistryCreator;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
 import io.quarkus.micrometer.runtime.MeterFilterConstraints;
+import io.quarkus.micrometer.runtime.MicrometerCounted;
+import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
+import io.quarkus.micrometer.runtime.MicrometerTimed;
+import io.quarkus.micrometer.runtime.MicrometerTimedInterceptor;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -44,6 +52,13 @@ public class MicrometerProcessor {
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
     private static final DotName NAMING_CONVENTION = DotName.createSimple(NamingConvention.class.getName());
+
+    private static final DotName COUNTED_ANNOTATION = DotName.createSimple(Counted.class.getName());
+    private static final DotName COUNTED_BINDING = DotName.createSimple(MicrometerCounted.class.getName());
+    private static final DotName COUNTED_INTERCEPTOR = DotName.createSimple(MicrometerCountedInterceptor.class.getName());
+    private static final DotName TIMED_ANNOTATION = DotName.createSimple(Timed.class.getName());
+    private static final DotName TIMED_BINDING = DotName.createSimple(MicrometerTimed.class.getName());
+    private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
 
     static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -77,13 +92,23 @@ public class MicrometerProcessor {
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        // Create and keep JVM/System MeterBinders
+        // Create and keep some basic Providers
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClass(ClockProvider.class)
                 .addBeanClass(CompositeRegistryCreator.class)
+                .build());
+
+        // Add annotations and associated interceptors
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(MeterFilterConstraint.class)
                 .addBeanClass(MeterFilterConstraints.class)
+                .addBeanClass(TIMED_ANNOTATION.toString())
+                .addBeanClass(TIMED_BINDING.toString())
+                .addBeanClass(TIMED_INTERCEPTOR.toString())
+                .addBeanClass(COUNTED_ANNOTATION.toString())
+                .addBeanClass(COUNTED_BINDING.toString())
+                .addBeanClass(COUNTED_INTERCEPTOR.toString())
                 .build());
 
         IndexView index = indexBuildItem.getIndex();
@@ -142,6 +167,12 @@ public class MicrometerProcessor {
     }
 
     @BuildStep(onlyIf = MicrometerEnabled.class)
+    void processAnnotatedMetrics(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers) {
+        annotationsTransformers.produce(createAnnotationTransformer(COUNTED_ANNOTATION, COUNTED_BINDING));
+        annotationsTransformers.produce(createAnnotationTransformer(TIMED_ANNOTATION, TIMED_BINDING));
+    }
+
+    @BuildStep(onlyIf = MicrometerEnabled.class)
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
@@ -190,5 +221,28 @@ public class MicrometerProcessor {
                 recorder.registerMetrics(item.getConsumer());
             }
         }
+    }
+
+    public static AnnotationInstance findAnnotation(Collection<AnnotationInstance> annotations, DotName annotationClass) {
+        for (AnnotationInstance a : annotations) {
+            if (annotationClass.equals(a.name())) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    AnnotationsTransformerBuildItem createAnnotationTransformer(DotName sourceAnnotation, DotName bindingAnnotation) {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public void transform(TransformationContext ctx) {
+                final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
+                AnnotationInstance annotation = MicrometerProcessor.findAnnotation(annotations, sourceAnnotation);
+                if (annotation == null) {
+                    return;
+                }
+                ctx.transform().add(bindingAnnotation).done();
+            }
+        });
     }
 }

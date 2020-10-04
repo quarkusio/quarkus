@@ -75,7 +75,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                         @Override
                                         public void accept(SecurityIdentity identity) {
                                             try {
-                                                loginManager.save(identity, exchange, null);
+                                                loginManager.save(identity, exchange, null, exchange.request().isSSL());
                                                 if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
                                                     handleRedirectBack(exchange);
                                                     //we  have authenticated, but we want to just redirect back to the original page
@@ -111,6 +111,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         Cookie redirect = exchange.getCookie(locationCookie);
         String location;
         if (redirect != null) {
+            redirect.setSecure(exchange.request().isSSL());
             location = redirect.getValue();
             exchange.response().addCookie(redirect.setMaxAge(0));
         } else {
@@ -122,7 +123,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     protected void storeInitialLocation(final RoutingContext exchange) {
-        exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI()).setPath("/"));
+        exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI())
+                .setPath("/").setSecure(exchange.request().isSSL()));
     }
 
     protected void servePage(final RoutingContext exchange, final String location) {
@@ -152,7 +154,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                 @Override
                 public void accept(SecurityIdentity securityIdentity) {
-                    loginManager.save(securityIdentity, context, result);
+                    loginManager.save(securityIdentity, context, result, context.request().isSSL());
                 }
             });
         }

@@ -119,6 +119,7 @@ public final class MicrometerConfig {
         public PrometheusConfig prometheus;
         public StackdriverConfig stackdriver;
         public JsonConfig json;
+        public AzureMonitorConfig azuremonitor;
     }
 
     public static interface CapabilityEnabled {

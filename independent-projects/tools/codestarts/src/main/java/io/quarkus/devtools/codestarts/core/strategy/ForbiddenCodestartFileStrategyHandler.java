@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
 import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -14,7 +14,7 @@ final class ForbiddenCodestartFileStrategyHandler implements CodestartFileStrate
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         if (codestartFiles.size() > 0) {
             throw new CodestartStructureException("This file is forbidden in the output-strategy definition: " + relativePath);

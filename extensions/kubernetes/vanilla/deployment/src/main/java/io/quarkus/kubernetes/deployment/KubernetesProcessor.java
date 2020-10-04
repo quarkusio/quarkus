@@ -97,6 +97,7 @@ import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
+import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromMatchingLabelsDecorator;
 import io.dekorate.kubernetes.decorator.RemoveFromSelectorDecorator;
@@ -115,6 +116,7 @@ import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Maps;
+import io.dekorate.utils.Strings;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -132,6 +134,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.deployment.Annotations.Prometheus;
+import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesAnnotationBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
@@ -282,6 +285,7 @@ class KubernetesProcessor {
             List<KubernetesRoleBindingBuildItem> kubernetesRoleBindings,
             List<KubernetesPortBuildItem> kubernetesPorts,
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
+            List<DecoratorBuildItem> decorators,
             Optional<BaseImageInfoBuildItem> baseImage,
             Optional<ContainerImageInfoBuildItem> containerImage,
             Optional<KubernetesCommandBuildItem> command,
@@ -356,7 +360,8 @@ class KubernetesProcessor {
             applyOpenshiftSpecificConfig(session, openshiftConfig);
             applyKnativeSpecificConfig(session, getResourceName(knativeConfig, applicationInfo), knativeConfig);
 
-            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)) {
+            if (!capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_S2I)
+                    && !capabilities.isCapabilityPresent(Capabilities.CONTAINER_IMAGE_OPENSHIFT)) {
                 handleNonS2IOpenshift(containerImage, session);
             }
 
@@ -378,6 +383,18 @@ class KubernetesProcessor {
                     command,
                     kubernetesHealthLivenessPath,
                     kubernetesHealthReadinessPath);
+
+            //We need to verify to filter out anything that doesn't extend the Decorator class.
+            //The DecoratorBuildItem is a wrapper to Object.
+            decorators.stream().filter(d -> d.matches(Decorator.class)).forEach(i -> {
+                String group = i.getGroup();
+                Decorator decorator = (Decorator) i.getDecorator();
+                if (Strings.isNullOrEmpty(group)) {
+                    session.resources().decorate(decorator);
+                } else {
+                    session.resources().decorate(group, decorator);
+                }
+            });
 
             // write the generated resources to the filesystem
             generatedResourcesMap = session.close();
@@ -447,8 +464,6 @@ class KubernetesProcessor {
             }
         });
 
-        //JAVA_APP_JAR value is not compatible with our Dockerfiles, so its causing problems
-        session.resources().decorate(OPENSHIFT, new RemoveEnvVarDecorator("JAVA_APP_JAR"));
         session.configurators().add(new Configurator<S2iBuildConfigFluent<?>>() {
             @Override
             public void visit(S2iBuildConfigFluent<?> s2i) {

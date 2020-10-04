@@ -243,7 +243,10 @@ public final class HibernateReactiveProcessor {
         // Logging
         if (persistenceUnitConfig.log.sql) {
             desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
-            desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+
+            if (persistenceUnitConfig.log.formatSql) {
+                desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+            }
         }
 
         // Statistics

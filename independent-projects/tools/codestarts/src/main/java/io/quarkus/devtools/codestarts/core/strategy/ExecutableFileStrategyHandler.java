@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
 import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,7 +17,7 @@ final class ExecutableFileStrategyHandler implements CodestartFileStrategyHandle
     }
 
     @Override
-    public void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    public void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
         final Path targetPath = targetDirectory.resolve(relativePath);

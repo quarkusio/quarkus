@@ -552,9 +552,16 @@ to solve this problem.
 
 Configuration via an application-supplied subclass of `Application` is supported, but not required.
 
+=== Only a single JAX-RS application
+
+In contrast to JAX-RS (and RESTeasy) running in a standard servlet-container, Quarkus only supports the deployment of a single JAX-RS application.
+If multiple JAX-RS `Application` classes are defined, the build will fail with the message `Multiple classes have been annotated with @ApplicationPath which is currently not supported`.
+
+If multiple JAX-RS applications are defined, the property `quarkus.resteasy.ignoreApplicationClasses=true` can be used to ignore all explicit `Application` classes. This makes all resource-classes available via the application-path as defined by `quarkus.resteasy.path` (default: `/`).
+
 === Lifecycle of Resources
 
-In Quarkus all JAX-RS resources are treated as CDI beans. 
+In Quarkus all JAX-RS resources are treated as CDI beans.
 It's possible to inject other beans via `@Inject`, bind interceptors using bindings such as `@Transactional`, define `@PostConstruct` callbacks, etc.
 
 If there is no scope annotation declared on the resource class then the scope is defaulted.

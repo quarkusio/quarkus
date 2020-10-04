@@ -139,6 +139,7 @@
         <module>micrometer-prometheus</module>
         <module>logging-json</module>
         <module>jaxp</module>
+        <module>mailer</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

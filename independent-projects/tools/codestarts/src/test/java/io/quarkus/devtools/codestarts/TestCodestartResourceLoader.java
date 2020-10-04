@@ -6,9 +6,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 
-public class TestCodestartResourceLoader implements CodestartResourceLoader {
+public class TestCodestartResourceLoader implements CodestartPathLoader {
+
     @Override
-    public <T> T loadResourceAsPath(String name, Consumer<T> consumer) throws IOException {
+    public <T> T loadResourceAsPath(String name, PathConsumer<T> consumer) throws IOException {
         return consumer.consume(getResource(name));
     }
 

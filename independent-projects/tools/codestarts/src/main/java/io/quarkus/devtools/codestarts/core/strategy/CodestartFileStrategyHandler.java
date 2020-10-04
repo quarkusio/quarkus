@@ -1,7 +1,7 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
 import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFile;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,10 +28,10 @@ public interface CodestartFileStrategyHandler {
 
     String name();
 
-    void process(Path targetDirectory, String relativePath, List<CodestartFile> codestartFiles, Map<String, Object> data)
+    void process(Path targetDirectory, String relativePath, List<TargetFile> codestartFiles, Map<String, Object> data)
             throws IOException;
 
-    default void checkNotEmptyCodestartFiles(List<CodestartFile> codestartFiles) {
+    default void checkNotEmptyCodestartFiles(List<TargetFile> codestartFiles) {
         if (codestartFiles == null || codestartFiles.isEmpty()) {
             throw new CodestartStructureException("codestartFiles must not be null or empty");
         }

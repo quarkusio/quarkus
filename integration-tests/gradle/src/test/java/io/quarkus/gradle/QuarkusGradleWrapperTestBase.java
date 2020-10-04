@@ -31,6 +31,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .command(command)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
                 .redirectOutput(logOutput)
+                .redirectError(logOutput)
                 .start();
 
         p.waitFor(5, TimeUnit.MINUTES);

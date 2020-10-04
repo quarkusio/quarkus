@@ -1422,7 +1422,7 @@ import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 
 @Localized("de") <1>
-public interface GermanAppMessages {
+public interface GermanAppMessages extends AppMessages {
 
     @Override
     @Message("Hallo {name}!") <2>

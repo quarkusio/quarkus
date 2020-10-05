@@ -19,6 +19,7 @@ import java.util.Set;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.Link.Builder;
@@ -82,9 +83,17 @@ public class QuarkusRestResponse extends Response {
     @Override
     public Object getEntity() {
         // The spec says that getEntity() can be called after readEntity() to obtain the same entity,
-        // but it also sort-of implies that readEntity() calls Reponse.close(), and the TCK does check
+        // but it also sort-of implies that readEntity() calls Response.close(), and the TCK does check
         // that we throw if closed and non-buffered
         checkClosed();
+        // this check seems very ugly, but it seems to be needed by the TCK
+        // this will likely require a better solution
+        if (entity instanceof GenericEntity) {
+            GenericEntity<?> genericEntity = (GenericEntity<?>) entity;
+            if (genericEntity.getRawType().equals(genericEntity.getType())) {
+                return ((GenericEntity<?>) entity).getEntity();
+            }
+        }
         return entity;
     }
 

@@ -19,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.client.RxInvokerProvider;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
@@ -49,6 +50,7 @@ public class QuarkusRestConfiguration implements Configuration {
     private final MultivaluedMap<Integer, ReaderInterceptor> readerInterceptors;
     private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
     private final MultivaluedMap<Class<?>, ResourceReader> resourceReaders;
+    private final MultivaluedMap<Class<?>, RxInvokerProvider<?>> rxInvokerProviders;
 
     public QuarkusRestConfiguration(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -62,6 +64,7 @@ public class QuarkusRestConfiguration implements Configuration {
         this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
         this.resourceReaders = new QuarkusMultivaluedHashMap<>();
         this.resourceWriters = new QuarkusMultivaluedHashMap<>();
+        this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
     }
 
     public QuarkusRestConfiguration(Configuration configuration) {
@@ -85,6 +88,8 @@ public class QuarkusRestConfiguration implements Configuration {
             this.resourceReaders.putAll(quarkusRestConfiguration.resourceReaders);
             this.resourceWriters = new QuarkusMultivaluedHashMap<>();
             this.resourceWriters.putAll(quarkusRestConfiguration.resourceWriters);
+            this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
+            this.rxInvokerProviders.putAll(quarkusRestConfiguration.rxInvokerProviders);
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
@@ -96,6 +101,7 @@ public class QuarkusRestConfiguration implements Configuration {
             this.writerInterceptors = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
             this.resourceWriters = new QuarkusMultivaluedHashMap<>();
+            this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);
@@ -272,6 +278,13 @@ public class QuarkusRestConfiguration implements Configuration {
                         resourceWriter);
             }
         }
+        if (component instanceof RxInvokerProvider) {
+            added = true;
+            Class<?> componentClass = component.getClass();
+            Type[] args = Types.findParameterizedTypes(componentClass, RxInvokerProvider.class);
+            rxInvokerProviders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
+                    (RxInvokerProvider<?>) component);
+        }
         if (added) {
             allInstances.put(component.getClass(), component);
         }
@@ -418,6 +431,18 @@ public class QuarkusRestConfiguration implements Configuration {
             result.addAll(readerInterceptors);
         }
         return result;
+    }
+
+    public RxInvokerProvider<?> getRxInvokerProvider(Class<?> wantedClass) {
+        List<RxInvokerProvider<?>> candidates = rxInvokerProviders.get(wantedClass);
+        if (candidates == null) {
+            return null;
+        }
+        for (RxInvokerProvider<?> invokerProvider : candidates) {
+            if (invokerProvider.isProviderFor(wantedClass))
+                return invokerProvider;
+        }
+        return null;
     }
 
     // TODO: we could generate some kind of index at build time in order to obtain these values without using the annotation

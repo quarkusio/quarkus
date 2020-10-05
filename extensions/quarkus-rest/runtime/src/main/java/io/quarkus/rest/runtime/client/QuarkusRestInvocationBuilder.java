@@ -13,6 +13,7 @@ import javax.ws.rs.client.CompletionStageRxInvoker;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.RxInvoker;
+import javax.ws.rs.client.RxInvokerProvider;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericType;
@@ -162,6 +163,12 @@ public class QuarkusRestInvocationBuilder implements Invocation.Builder {
         if (clazz == QuarkusRestMultiInvoker.class) {
             return (T) new QuarkusRestMultiInvoker(target);
         }
+        RxInvokerProvider<?> invokerProvider = requestSpec.configuration.getRxInvokerProvider(clazz);
+        if (invokerProvider != null) {
+            // FIXME: should pass the Quarkus executor here, but MP-CP or not?
+            return (T) invokerProvider.getRxInvoker(this, null);
+        }
+        // TCK says we could throw IllegalStateException, or not, it doesn't discriminate, and the spec doesn't say
         return null;
     }
 

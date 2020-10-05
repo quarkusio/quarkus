@@ -14,8 +14,7 @@ public class MicroprofileMetricsConfig implements MicrometerConfig.CapabilityEna
      * Microprofile Metrics support.
      * <p>
      * Support for Microprofile metrics will be enabled if micrometer
-     * support is enabled, and this value is true. You need to also
-     * include the microprofile api jar to your dependencies:
+     * support is enabled and the MicroProfile Metrics dependency is present:
      *
      * <pre>
      * &lt;dependency&gt;
@@ -23,6 +22,10 @@ public class MicroprofileMetricsConfig implements MicrometerConfig.CapabilityEna
      *   &lt;artifactId&gt;microprofile-metrics-api&lt;/artifactId&gt;
      * &lt;/dependency&gt;
      * </pre>
+     * <p>
+     * The micrometer extension currently provides a compatibility layer that supports the MP Metrics API,
+     * but metric names and recorded values will be different.
+     * Note that the MP Metrics compatibility layer will move to a different extension in the future.
      */
     @ConfigItem
     public Optional<Boolean> enabled;

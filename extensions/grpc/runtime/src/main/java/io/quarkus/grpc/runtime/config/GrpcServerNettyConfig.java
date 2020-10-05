@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class GrpcServerNettyConfig {
 
     /**
-     * Sets a custom keepalive time, the delay time for sending next keepalive ping.
+     * Sets a custom keep-alive duration. This configures the time before sending a `keepalive` ping when there is no read activity.
      */
     @ConfigItem
     public Optional<Duration> keepAliveTime;

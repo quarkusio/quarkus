@@ -47,6 +47,9 @@ public class PersonEntityResource {
 
     @PUT
     public Response updatePerson(PersonEntity person) {
+        if (!person.exist()) {
+            return null;
+        }
         person.update();
         return Response.accepted().build();
     }

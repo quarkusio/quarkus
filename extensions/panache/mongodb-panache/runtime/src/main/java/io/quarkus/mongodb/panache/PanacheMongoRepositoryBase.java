@@ -29,6 +29,10 @@ import io.quarkus.panache.common.impl.GenerateBridge;
 public interface PanacheMongoRepositoryBase<Entity, Id> {
     MongoOperations operations = new JavaMongoOperations();
 
+    public default boolean exist() {
+        return true;
+    }
+
     /**
      * Persist the given entity in the database.
      * This will set it's ID field if not already set.

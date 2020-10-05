@@ -658,9 +658,10 @@ For more information about Hibernate Envers, see link:https://hibernate.org/orm/
 
 [[metrics]]
 == Metrics
-The SmallRye Metrics extension is capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
-on the `/metrics` endpoint, make sure your project depends on the `quarkus-smallrye-metrics` artifact and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
-Metrics will then be available under the `vendor` scope.
+Either link:micrometer[Micrometer] or link:microprofile-metrics[SmallRye Metrics] are
+capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
+on the `/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
+When using link:microprofile-metrics[SmallRye Metrics], metrics will be available under the `vendor` scope.
 
 == Limitations and other things you should know
 

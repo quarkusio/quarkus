@@ -1495,7 +1495,11 @@ HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
 
 === Extension Metrics
 
-The `quarkus-smallrye-metrics` extension and the `quarkus-micrometer` extension provide support for collecting metrics. As a compatibility note, the `quarkus-micrometer` extension adapts the MP Metrics API to Micrometer library primitives, so the `quarkus-micrometer` extension can be enabled without breaking code that relies on the MP Metrics API. Note that the metrics emitted by Micrometer are different, see the `quarkus-micrometer` extension documentation for more information.
+The `quarkus-micrometer` extension and the `quarkus-smallrye-metrics` extension provide support for collecting metrics.
+As a compatibility note, the `quarkus-micrometer` extension adapts the MP Metrics API to Micrometer library primitives, so the `quarkus-micrometer` extension can be enabled without breaking code that relies on the MP Metrics API.
+Note that the metrics emitted by Micrometer are different, see the `quarkus-micrometer` extension documentation for more information.
+
+NOTE: The compatibility layer for MP Metrics APIs will move to a different extension in the future.
 
 There are two broad patterns that extensions can use to interact with an optional metrics extension to add their own metrics:
 

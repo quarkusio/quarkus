@@ -1250,7 +1250,7 @@ content-length: 265
 This guide has shown how you can build stream processing applications using Quarkus and the Kafka Streams APIs,
 both in JVM and native modes.
 For running your KStreams application in production, you could also add health checks and metrics for the data pipeline.
-Refer to the Quarkus guides on link:microprofile-metrics[metrics] and link:microprofile-health[health checks] to learn more.
+Refer to the Quarkus guides on link:micrometer[Micrometer], link:microprofile-metrics[MicroProfile Metrics], and link:microprofile-health[health checks] to learn more.
 
 == Configuration Reference
 

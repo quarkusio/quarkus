@@ -10,6 +10,11 @@ include::./attributes.adoc[]
 This guide demonstrates how your Quarkus application can utilize the Micrometer
 metrics library for runtime and application metrics.
 
+Apart from application-specific metrics, which are described in this guide, you may also utilize built-in metrics
+exposed by various Quarkus extensions. These are described in the guide for each particular extension that supports
+built-in metrics.
+
+IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 
 == Prerequisites
 
@@ -303,6 +308,8 @@ public MeterFilter renameApplicationMeters() {
     };
 }
 ----
+
+NOTE: The MP Metrics API compatibility layer will be moved to a different extension in the future.
 
 == Configuration Reference
 

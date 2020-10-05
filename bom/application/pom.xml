@@ -171,7 +171,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>4.10.3</kubernetes-client.version>
+        <kubernetes-client.version>4.12.0</kubernetes-client.version>
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP4</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP1</quarkus-spring-data-api.version>

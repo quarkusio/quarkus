@@ -1,7 +1,6 @@
 package io.quarkus.it.kafka;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -51,4 +50,11 @@ public class KafkaProducerTest {
                         "checks.name", containsInAnyOrder("Kafka connection health check"));
     }
 
+    @Test
+    public void metrics() throws Exception {
+        // Look for kafka producer metrics (add .log().all() to examine what they are
+        RestAssured.when().get("/metrics").then()
+                .statusCode(200)
+                .body(containsString("kafka_producer_"));
+    }
 }

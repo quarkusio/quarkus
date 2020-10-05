@@ -5,7 +5,10 @@ import java.util.Collections;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -30,11 +33,20 @@ public class KafkaConsumerManager {
         return consumer;
     }
 
+    @Inject
+    Event<Consumer<?, ?>> consumerEvent;
+
     private Consumer<Integer, String> consumer;
 
     @PostConstruct
     public void create() {
         consumer = createConsumer();
+        consumerEvent.fire(consumer);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        consumerEvent.fire(consumer);
     }
 
     public String receive() {

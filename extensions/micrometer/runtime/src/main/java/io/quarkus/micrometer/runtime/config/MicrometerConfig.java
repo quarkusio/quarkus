@@ -93,6 +93,7 @@ public final class MicrometerConfig {
     public static class BinderConfig {
         public VertxConfig vertx;
         public MicroprofileMetricsConfig mpMetrics;
+        public KafkaConfig kafka;
 
         /**
          * Micrometer JVM metrics support.

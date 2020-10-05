@@ -31,7 +31,7 @@ class Person: PanacheEntity {
 
 As you can see our entities remain simple.  There is, however, a slight difference from the Java version.  The Kotlin
 language doesn't support the notion of static methods in quite the same way as Java does.  Instead, we must use a
-[companion object](https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-objects.html#companion-objects):
+https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-objects.html#companion-objects[companion object]:
 
 [source,kotlin]
 ----

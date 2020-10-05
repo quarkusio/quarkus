@@ -23,7 +23,7 @@ public class MessageResource {
     @GET
     @Path("fail")
     public String fail() {
-        throw new RuntimeException("Failed on purpose");
+        throw new NullPointerException("Failed on purpose");
     }
 
     @GET

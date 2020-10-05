@@ -66,12 +66,12 @@ public class MicrometerCounterInterceptorTest {
 
     @Test
     void testCountAllMetrics_MetricsOnFailure() {
-        Assertions.assertThrows(RuntimeException.class, () -> counted.countAllInvocations(true));
+        Assertions.assertThrows(NullPointerException.class, () -> counted.countAllInvocations(true));
         Counter counter = registry.get("metric.all")
                 .tag("method", "countAllInvocations")
                 .tag("class", "io.quarkus.micrometer.test.CountedResource")
                 .tag("extra", "tag")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("result", "failure").counter();
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());
@@ -93,11 +93,11 @@ public class MicrometerCounterInterceptorTest {
 
     @Test
     void testCountEmptyMetricName_Failure() {
-        Assertions.assertThrows(RuntimeException.class, () -> counted.emptyMetricName(true));
+        Assertions.assertThrows(NullPointerException.class, () -> counted.emptyMetricName(true));
         Counter counter = registry.get("method.counted")
                 .tag("method", "emptyMetricName")
                 .tag("class", "io.quarkus.micrometer.test.CountedResource")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("result", "failure").counter();
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());
@@ -134,14 +134,14 @@ public class MicrometerCounterInterceptorTest {
     void testCountAsyncAllMetrics_MetricsOnFailure() {
         GuardedResult guardedResult = new GuardedResult();
         CompletableFuture<?> completableFuture = counted.countAllAsyncInvocations(guardedResult);
-        guardedResult.complete(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> completableFuture.join());
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         Counter counter = registry.get("async.all")
                 .tag("method", "countAllAsyncInvocations")
                 .tag("class", "io.quarkus.micrometer.test.CountedResource")
                 .tag("extra", "tag")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("result", "failure").counter();
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());
@@ -168,13 +168,13 @@ public class MicrometerCounterInterceptorTest {
     void testCountAsyncEmptyMetricName_Failure() {
         GuardedResult guardedResult = new GuardedResult();
         CompletableFuture<?> completableFuture = counted.emptyAsyncMetricName(guardedResult);
-        guardedResult.complete(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> completableFuture.join());
+        guardedResult.complete(new NullPointerException());
+        Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         Counter counter = registry.get("method.counted")
                 .tag("method", "emptyMetricName")
                 .tag("class", "io.quarkus.micrometer.test.CountedResource")
-                .tag("exception", "RuntimeException")
+                .tag("exception", "NullPointerException")
                 .tag("result", "failure").counter();
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());

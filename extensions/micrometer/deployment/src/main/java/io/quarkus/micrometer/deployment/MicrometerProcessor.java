@@ -31,6 +31,7 @@ import io.quarkus.deployment.annotations.*;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.micrometer.deployment.export.PrometheusRegistryProcessor;
@@ -90,6 +91,7 @@ public class MicrometerProcessor {
     @BuildStep(onlyIf = MicrometerEnabled.class)
     UnremovableBeanBuildItem registerAdditionalBeans(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MicrometerRegistryProviderBuildItem> providerClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Create and keep some basic Providers
@@ -156,6 +158,9 @@ public class MicrometerProcessor {
                     break;
             }
         }
+
+        reflectiveClasses.produce(createReflectiveBuildItem(COUNTED_ANNOTATION, index));
+        reflectiveClasses.produce(createReflectiveBuildItem(TIMED_ANNOTATION, index));
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(keepMe));
     }
@@ -230,6 +235,26 @@ public class MicrometerProcessor {
             }
         }
         return null;
+    }
+
+    ReflectiveClassBuildItem createReflectiveBuildItem(DotName sourceAnnotation, IndexView index) {
+        Set<String> classes = new HashSet<>();
+
+        for (AnnotationInstance annotation : index.getAnnotations(sourceAnnotation)) {
+            AnnotationTarget target = annotation.target();
+            switch (target.kind()) {
+                case METHOD:
+                    MethodInfo method = target.asMethod();
+                    classes.add(method.declaringClass().name().toString());
+                    break;
+                case TYPE:
+                    classes.add(target.asClass().name().toString());
+                default:
+                    break;
+            }
+        }
+
+        return ReflectiveClassBuildItem.builder(classes.toArray(new String[0])).build();
     }
 
     AnnotationsTransformerBuildItem createAnnotationTransformer(DotName sourceAnnotation, DotName bindingAnnotation) {

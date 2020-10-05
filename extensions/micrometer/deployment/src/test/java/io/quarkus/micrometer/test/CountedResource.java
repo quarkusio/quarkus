@@ -17,14 +17,14 @@ public class CountedResource {
     @Counted(value = "metric.all", extraTags = { "extra", "tag" })
     public void countAllInvocations(boolean fail) {
         if (fail) {
-            throw new RuntimeException("Failed on purpose");
+            throw new NullPointerException("Failed on purpose");
         }
     }
 
     @Counted(description = "nice description")
     public void emptyMetricName(boolean fail) {
         if (fail) {
-            throw new RuntimeException("Failed on purpose");
+            throw new NullPointerException("Failed on purpose");
         }
     }
 

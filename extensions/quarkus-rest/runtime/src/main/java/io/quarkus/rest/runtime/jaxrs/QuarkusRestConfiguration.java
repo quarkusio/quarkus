@@ -42,6 +42,7 @@ public class QuarkusRestConfiguration implements Configuration {
     private final Map<String, Object> properties;
     private final Map<Class<?>, Object> allInstances;
     private final List<Feature> enabledFeatures;
+    private final Map<Class<?>, Map<Class<?>, Integer>> contracts;
     private final MultivaluedMap<Integer, ClientRequestFilter> requestFilters;
     private final MultivaluedMap<Integer, ClientResponseFilter> responseFilters;
     private final MultivaluedMap<Integer, WriterInterceptor> writerInterceptors;
@@ -54,6 +55,7 @@ public class QuarkusRestConfiguration implements Configuration {
         this.properties = new HashMap<>();
         this.allInstances = new HashMap<>();
         this.enabledFeatures = new ArrayList<>();
+        this.contracts = new HashMap<>();
         this.requestFilters = new MultivaluedTreeMap<>();
         this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
         this.readerInterceptors = new MultivaluedTreeMap<>();
@@ -69,6 +71,7 @@ public class QuarkusRestConfiguration implements Configuration {
             // we want to preserve all the registration metadata
             QuarkusRestConfiguration quarkusRestConfiguration = (QuarkusRestConfiguration) configuration;
             this.enabledFeatures = new ArrayList<>(quarkusRestConfiguration.enabledFeatures);
+            this.contracts = new HashMap<>(quarkusRestConfiguration.contracts);
             this.allInstances = new HashMap<>(quarkusRestConfiguration.allInstances);
             this.requestFilters = new MultivaluedTreeMap<>();
             this.requestFilters.putAll(quarkusRestConfiguration.requestFilters);
@@ -85,6 +88,7 @@ public class QuarkusRestConfiguration implements Configuration {
         } else {
             this.allInstances = new HashMap<>();
             this.enabledFeatures = new ArrayList<>();
+            this.contracts = new HashMap<>();
             this.requestFilters = new MultivaluedTreeMap<>();
             this.responseFilters = new MultivaluedTreeMap<>(
                     Collections.reverseOrder());
@@ -146,7 +150,11 @@ public class QuarkusRestConfiguration implements Configuration {
 
     @Override
     public Map<Class<?>, Integer> getContracts(Class<?> componentClass) {
-        return Collections.emptyMap();
+        Map<Class<?>, Integer> componentContracts = contracts.get(componentClass);
+        if (componentContracts == null) {
+            return Collections.emptyMap();
+        }
+        return componentContracts;
     }
 
     @Override
@@ -280,15 +288,24 @@ public class QuarkusRestConfiguration implements Configuration {
         register(component, priorities);
     }
 
-    public void register(Object component, Map<Class<?>, Integer> contracts) {
-        if (contracts == null || contracts.isEmpty()) {
+    public void register(Class<?> componentClass, Map<Class<?>, Integer> contracts) {
+        try {
+            register(componentClass.getDeclaredConstructor().newInstance(), contracts);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void register(Object component, Map<Class<?>, Integer> componentContracts) {
+        if (componentContracts == null || componentContracts.isEmpty()) {
             return;
         }
-        if (allInstances.containsKey(component.getClass())) {
+        Class<?> componentClass = component.getClass();
+        if (allInstances.containsKey(componentClass)) {
             return;
         }
         boolean added = false;
-        Integer priority = contracts.get(Feature.class);
+        Integer priority = componentContracts.get(Feature.class);
         if (component instanceof Feature && priority != null) {
             Feature thisFeature = (Feature) component;
             added = true;
@@ -296,30 +313,29 @@ public class QuarkusRestConfiguration implements Configuration {
                 enabledFeatures.add(priority, (Feature) component);
             }
         }
-        priority = contracts.get(ClientRequestFilter.class);
+        priority = componentContracts.get(ClientRequestFilter.class);
         if (component instanceof ClientRequestFilter && priority != null) {
             added = true;
             requestFilters.add(priority, (ClientRequestFilter) component);
         }
-        priority = contracts.get(ClientResponseFilter.class);
+        priority = componentContracts.get(ClientResponseFilter.class);
         if (component instanceof ClientResponseFilter && priority != null) {
             added = true;
             responseFilters.add(priority, (ClientResponseFilter) component);
         }
-        priority = contracts.get(WriterInterceptor.class);
+        priority = componentContracts.get(WriterInterceptor.class);
         if (component instanceof WriterInterceptor && priority != null) {
             added = true;
             writerInterceptors.add(priority, (WriterInterceptor) component);
         }
-        priority = contracts.get(ReaderInterceptor.class);
+        priority = componentContracts.get(ReaderInterceptor.class);
         if (component instanceof ReaderInterceptor && priority != null) {
             added = true;
             readerInterceptors.add(priority, (ReaderInterceptor) component);
         }
-        priority = contracts.get(MessageBodyReader.class);
+        priority = componentContracts.get(MessageBodyReader.class);
         if (component instanceof MessageBodyReader && priority != null) {
             added = true;
-            Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
                 ResourceReader resourceReader = new ResourceReader();
@@ -333,10 +349,9 @@ public class QuarkusRestConfiguration implements Configuration {
                         resourceReader);
             }
         }
-        priority = contracts.get(MessageBodyWriter.class);
+        priority = componentContracts.get(MessageBodyWriter.class);
         if (component instanceof MessageBodyWriter && priority != null) {
             added = true;
-            Class<?> componentClass = component.getClass();
             ConstrainedTo constrainedTo = componentClass.getAnnotation(ConstrainedTo.class);
             if ((constrainedTo == null) || (constrainedTo.value() == runtimeType)) {
                 ResourceWriter resourceWriter = new ResourceWriter();
@@ -351,7 +366,8 @@ public class QuarkusRestConfiguration implements Configuration {
             }
         }
         if (added) {
-            allInstances.put(component.getClass(), component);
+            allInstances.put(componentClass, component);
+            contracts.put(componentClass, componentContracts);
         }
 
     }

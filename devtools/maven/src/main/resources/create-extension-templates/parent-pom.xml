@@ -7,11 +7,13 @@
         <groupId>[=grandParentGroupId]</groupId>
         <artifactId>[=grandParentArtifactId]</artifactId>
         <version>[=grandParentVersion]</version>
-        <relativePath>[=grandParentRelativePath]</relativePath>
+[#if grandParentRelativePath?? ]        <relativePath>[=grandParentRelativePath]</relativePath>
+[/#if]
     </parent>
 [/#if]
 
-[#if grandParentGroupId?? ][#if groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>[/#if][#else ]    <groupId>[=groupId]</groupId>
+[#if grandParentGroupId?? ][#if groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>
+[/#if][#else ]    <groupId>[=groupId]</groupId>
 [/#if]
     <artifactId>[=artifactId]-parent</artifactId>
 [#if groupId?? && (!grandParentGroupId?? || groupId != grandParentGroupId) && version?? && (!grandParentVersion?? || version != grandParentVersion) ]    <version>[=version]</version>

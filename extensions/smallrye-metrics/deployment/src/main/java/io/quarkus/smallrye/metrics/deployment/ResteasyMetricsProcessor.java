@@ -41,6 +41,7 @@ public class ResteasyMetricsProcessor {
             BuildProducer<FilterBuildItem> servletFilters,
             Capabilities capabilities) {
 
+        warnIfDeprecatedResteasyPropertiesPresent();
         if (metricsCapabilityBuildItem.isPresent()) {
             if (capabilities.isPresent(Capability.SERVLET)) {
                 // if running with servlet, use the MetricsFilter implementation from SmallRye
@@ -60,6 +61,15 @@ public class ResteasyMetricsProcessor {
                 jaxRsProviders.produce(
                         new ResteasyJaxrsProviderBuildItem(SMALLRYE_JAXRS_QUARKUS_FILTER_CLASS_NAME));
             }
+        }
+    }
+
+    private void warnIfDeprecatedResteasyPropertiesPresent() {
+        if (ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, boolean.class).isPresent()) {
+            SmallRyeMetricsProcessor.LOGGER.warn(
+                    "`quarkus.resteasy.metrics.enabled` is deprecated and will be removed in a future version. "
+                            + "Use `quarkus.smallrye-metrics.jaxrs.enabled` to enable metrics for REST endpoints "
+                            + "using the smallrye-metrics extension");
         }
     }
 }

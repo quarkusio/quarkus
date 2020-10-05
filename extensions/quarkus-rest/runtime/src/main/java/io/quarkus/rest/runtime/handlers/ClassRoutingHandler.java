@@ -2,7 +2,9 @@ package io.quarkus.rest.runtime.handlers;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.NotAcceptableException;
 import javax.ws.rs.NotAllowedException;
@@ -18,6 +20,7 @@ import io.quarkus.rest.runtime.mapping.RequestMapper;
 import io.quarkus.rest.runtime.mapping.RuntimeResource;
 import io.quarkus.rest.runtime.util.MediaTypeHelper;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class ClassRoutingHandler implements RestHandler {
@@ -34,26 +37,38 @@ public class ClassRoutingHandler implements RestHandler {
         RoutingContext event = requestContext.getContext();
         RequestMapper<RuntimeResource> mapper = mappers.get(requestContext.getMethod());
         if (mapper == null) {
-            mapper = mappers.get(null);
-            if (mapper == null) {
-                if (requestContext.getMethod().equals(HttpMethod.HEAD.name())) {
-                    mapper = mappers.get(HttpMethod.GET.name());
-                } else if (requestContext.getMethod().equals(HttpMethod.OPTIONS.name())) {
-                    //just send back 200
-                    event.response().end();
-                    return;
-                }
-                if (mapper == null) {
-                    // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
-                    String remaining = getRemaining(requestContext);
-                    for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
-                        if (existingMapper.map(remaining) != null) {
-                            throw new NotAllowedException(
-                                    new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
-                        }
+            String requestMethod = requestContext.getMethod();
+            if (requestMethod.equals(HttpMethod.HEAD.name())) {
+                mapper = mappers.get(HttpMethod.GET.name());
+            } else if (requestMethod.equals(HttpMethod.OPTIONS.name())) {
+                Set<String> allowedMethods = new HashSet<>();
+                for (String method : mappers.keySet()) {
+                    if (method == null) {
+                        continue;
                     }
-                    throw new NotFoundException();
+                    allowedMethods.add(method);
                 }
+                allowedMethods.add(HttpMethod.OPTIONS.name());
+                allowedMethods.add(HttpMethod.HEAD.name());
+                HttpServerResponse vertxResponse = event.response();
+                vertxResponse.putHeader(HttpHeaders.ALLOW, allowedMethods);
+                vertxResponse.end();
+                return;
+            }
+            if (mapper == null) {
+                mapper = mappers.get(null);
+            }
+            if (mapper == null) {
+
+                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+                String remaining = getRemaining(requestContext);
+                for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
+                    if (existingMapper.map(remaining) != null) {
+                        throw new NotAllowedException(
+                                new QuarkusRestResponseBuilder().status(Response.Status.METHOD_NOT_ALLOWED).build());
+                    }
+                }
+                throw new NotFoundException();
             }
         }
         String remaining = getRemaining(requestContext);

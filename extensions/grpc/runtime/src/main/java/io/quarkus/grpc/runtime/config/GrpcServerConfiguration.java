@@ -78,5 +78,5 @@ public class GrpcServerConfiguration {
      * Configures the netty server settings.
      */
     @ConfigItem
-    public GrpcServerNettyConfig nettyConfig;
+    public GrpcServerNettyConfig netty;
 }

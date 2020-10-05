@@ -175,8 +175,8 @@ public class GrpcServerRecorder {
     }
 
     private void applyNettySettings(GrpcServerConfiguration configuration, VertxServerBuilder builder) {
-        if (configuration.nettyConfig != null) {
-            GrpcServerNettyConfig config = configuration.nettyConfig;
+        if (configuration.netty != null) {
+            GrpcServerNettyConfig config = configuration.netty;
             config.keepAliveTime.ifPresent(duration -> builder.nettyBuilder()
                     .keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
         }
